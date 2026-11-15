@@ -101,6 +101,7 @@ use function is_string;
 use function krsort;
 use function ksort;
 use function ltrim;
+use function max;
 use function min;
 use function preg_match;
 use function preg_replace;
@@ -3423,26 +3424,34 @@ final class Codebase
      */
     public function getGuardedPhpVersionId(?Context $context): ?int
     {
-        $type = $context?->vars_in_scope[Context::PHP_VERSION_ID_VAR_ID] ?? null;
+        $guarded = null;
 
-        if ($type === null) {
-            return null;
-        }
+        foreach ([Context::PHP_VERSION_ID_VAR_ID, Context::PHP_SYMBOL_GUARD_VAR_ID] as $var_id) {
+            $type = $context?->vars_in_scope[$var_id] ?? null;
 
-        $min = null;
-        foreach ($type->getAtomicTypes() as $atomic) {
-            if ($atomic instanceof TLiteralInt) {
-                $atomic_min = $atomic->value;
-            } elseif ($atomic instanceof TIntRange && $atomic->min_bound !== null) {
-                $atomic_min = $atomic->min_bound;
-            } else {
-                return null;
+            if ($type === null) {
+                continue;
             }
 
-            $min = $min === null ? $atomic_min : min($min, $atomic_min);
+            $min = null;
+            foreach ($type->getAtomicTypes() as $atomic) {
+                if ($atomic instanceof TLiteralInt) {
+                    $atomic_min = $atomic->value;
+                } elseif ($atomic instanceof TIntRange && $atomic->min_bound !== null) {
+                    $atomic_min = $atomic->min_bound;
+                } else {
+                    continue 2;
+                }
+
+                $min = $min === null ? $atomic_min : min($min, $atomic_min);
+            }
+
+            if ($min !== null && $min > $this->analysis_php_version_id) {
+                $guarded = max($guarded ?? $min, $min);
+            }
         }
 
-        return $min > $this->analysis_php_version_id ? $min : null;
+        return $guarded;
     }
 
     /**
