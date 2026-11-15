@@ -272,6 +272,68 @@ final class ClosureTest extends TestCase
                         $callback();
                     }',
             ],
+            'byRefCapturedArrayShapeLiteralIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $state = ["k" => "idle"];
+                        $callback = function () use (&$state): void {
+                            if ($state["k"] === "running") {
+                                echo "running";
+                            }
+                        };
+                        $state["k"] = "running";
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedListLiteralIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $flags = [false];
+                        $callback = function () use (&$flags): void {
+                            if ($flags[0]) {
+                                echo "set";
+                            }
+                        };
+                        $flags[0] = true;
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedNestedArrayShapeLiteralIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $state = ["a" => ["b" => 1]];
+                        $callback = function () use (&$state): void {
+                            if ($state["a"]["b"] === 2) {
+                                echo "two";
+                            }
+                        };
+                        $state["a"]["b"] = 2;
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedGenericArrayLiteralIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    /** @param array<string, "idle"> $state */
+                    function f(array $state): void {
+                        $callback = function () use (&$state): void {
+                            if (($state["k"] ?? null) === "running") {
+                                echo "running";
+                            }
+                        };
+                        $state["k"] = "running";
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedArrayShapeKeepsItsLiteralsInTheEnclosingScope' => [
+                'code' => '<?php
+                    $state = ["k" => "idle"];
+                    $callback = function () use (&$state): void {
+                        echo $state["k"];
+                    };',
+                'assertions' => [
+                    '$state===' => "array{k: 'idle'}",
+                ],
+            ],
             'closureByRefWriteInABranchBeforeAReturnIsKept' => [
                 'code' => '<?php
                     $i = 0;
