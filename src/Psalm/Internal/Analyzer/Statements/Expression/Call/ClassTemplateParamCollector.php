@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 use AssertionError;
 use Psalm\Codebase;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
@@ -253,7 +254,8 @@ final class ClassTemplateParamCollector
                     // a receiver without type arguments is its templates' bounds, also where the templates of the
                     // classes it extends are mapped already
                     if (!isset($class_template_params[$type_name][$class_storage->name])) {
-                        $class_template_params[$type_name][$class_storage->name] = $type;
+                        $class_template_params[$type_name][$class_storage->name]
+                            = PurityArguments::getOmittedArgument($type);
                     }
                 }
             }

@@ -35,6 +35,7 @@ final class ClassLikeStorageCacheProvider
             $storage_dir . 'FunctionLikeStorage.php',
             $storage_dir . 'ClassLikeStorage.php',
             $storage_dir . 'MethodStorage.php',
+            $storage_dir . 'PropertyStorage.php',
         ];
 
         if ($config->eventDispatcher->hasAfterClassLikeVisitHandlers()) {
