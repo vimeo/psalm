@@ -1145,6 +1145,41 @@ final class WhileTest extends TestCase
                     $b = $a;',
                 'assertions' => ['$b' => 'A'],
             ],
+            'conditionNotRedundantWhenForeachConditionallyUnsetsOffsets' => [
+                'code' => '<?php
+                    function f(): void {
+                        $l = [1, 2];
+                        while ($l !== []) {
+                            foreach ($l as $k => $_) {
+                                if (rand(0, 1)) {
+                                    unset($l[$k]);
+                                }
+                            }
+                        }
+                    }',
+            ],
+            'conditionNotRedundantWhenIfUnsetsOffsets' => [
+                'code' => '<?php
+                    function f(): void {
+                        $l = [1, 2];
+                        while ($l !== []) {
+                            if (rand(0, 1)) {
+                                unset($l[0], $l[1]);
+                            }
+                        }
+                    }',
+            ],
+            'conditionNotRedundantWhenIfUnsetsStringOffset' => [
+                'code' => '<?php
+                    /** @param array{a: int} $l */
+                    function f(array $l): void {
+                        while ($l) {
+                            if (rand(0, 1)) {
+                                unset($l["a"]);
+                            }
+                        }
+                    }',
+            ],
             'thornyLoop' => [
                 'code' => '<?php
 
@@ -1522,6 +1557,18 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'conditionSeesOffsetUnsetInIf' => [
+                'code' => '<?php
+                    function f(): void {
+                        $l = [1, 2];
+                        while ($l) {
+                            if (rand(0, 1)) {
+                                unset($l[0]);
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - Type array{0?: 1, 1: 2} for $l is never falsy',
+            ],
             'variableDefinedOnlyBeforeAContinueIsPossiblyUndefined' => [
                 'code' => '<?php
                     function f(): void {
