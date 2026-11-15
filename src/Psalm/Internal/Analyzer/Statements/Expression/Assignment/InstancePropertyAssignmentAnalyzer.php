@@ -509,7 +509,8 @@ final class InstancePropertyAssignmentAnalyzer
     }
 
     /**
-     * Reports writing a readonly property where PHP forbids it, and returns whether the scope may set it
+     * Reports writing a readonly property where PHP forbids it, and returns whether the write is the class
+     * initialising its own property: a `public(set)` readonly one written elsewhere is allowed, but still a mutation
      */
     public static function checkReadonlyPropertyWrite(
         StatementsAnalyzer $statements_analyzer,

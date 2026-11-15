@@ -668,6 +668,20 @@ final class AsymmetricVisibilityTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.4',
             ],
+            'readonlyWithPublicSetInitialisedInMutationFreeMethod' => [
+                'code' => '<?php
+                    final class A {
+                        public public(set) readonly string $name;
+
+                        /** @psalm-mutation-free */
+                        public function init(): void {
+                            $this->name = "x";
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+                'error_levels' => ['MissingConstructor'],
+                'php_version' => '8.4',
+            ],
             'readonlyWithProtectedSetWrittenFromOutside' => [
                 'code' => '<?php
                     final class A {
