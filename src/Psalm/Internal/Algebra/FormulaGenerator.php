@@ -505,15 +505,17 @@ final class FormulaGenerator
             if ($receiver_id !== null && $result_id !== null) {
                 // a truthy result means the receiver wasn't null, but a falsy one says nothing about it
                 $not_null = new IsNotType(new TNull());
+                $truthy = new Truthy();
+                $falsy = new Falsy();
 
                 return [
                     new Clause(
-                        [$result_id => ['truthy' => new Truthy()]],
+                        [$result_id => [(string) $truthy => $truthy]],
                         $conditional_object_id,
                         $creating_object_id,
                     ),
                     new Clause(
-                        [$result_id => ['falsy' => new Falsy()], $receiver_id => [(string) $not_null => $not_null]],
+                        [$result_id => [(string) $falsy => $falsy], $receiver_id => [(string) $not_null => $not_null]],
                         $conditional_object_id,
                         $creating_object_id,
                     ),
@@ -822,8 +824,8 @@ final class FormulaGenerator
         // the character the result must have on the side the condition asserts: identical to `true` and
         // not identical to `false` both assert a truthy result, the other two a falsy one
         $asserted_truthy = $literal_is_true !== $negated;
-        $asserted_key = $asserted_truthy ? 'truthy' : 'falsy';
         $asserted = $asserted_truthy ? new Truthy() : new Falsy();
+        $asserted_key = (string) $asserted;
 
         if ($negated) {
             // the result has the asserted character, or the receiver is null (which makes the call null,
@@ -840,8 +842,8 @@ final class FormulaGenerator
         }
 
         // the result has the asserted character, which also means the receiver was not null
-        $opposite_key = $asserted_truthy ? 'falsy' : 'truthy';
         $opposite = $asserted_truthy ? new Falsy() : new Truthy();
+        $opposite_key = (string) $opposite;
         $not_null = new IsNotType(new TNull());
 
         return [

@@ -1177,14 +1177,14 @@ final class TypeAlgebraTest extends TestCase
                     }
                     function identicalFalse(?Box $box): void {
                         if ($box?->check() === false) {
-                            /** @psalm-check-type-exact $box = Box|null */;
+                            /** @psalm-check-type-exact $box = Box */;
                         } else {
                             /** @psalm-check-type-exact $box = Box|null */;
                         }
                     }
                     function identicalFalseLiteralOnLeft(?Box $box): void {
                         if (false === $box?->check()) {
-                            /** @psalm-check-type-exact $box = Box|null */;
+                            /** @psalm-check-type-exact $box = Box */;
                         }
                     }
                     function identicalTrue(?Box $box): void {
