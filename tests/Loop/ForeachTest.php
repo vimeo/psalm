@@ -210,6 +210,33 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachIntRangeSummedByEveryIterationIsWidened' => [
+                'code' => '<?php
+                    /** @param list<int<1, 3>> $values */
+                    function f(array $values): int {
+                        $sum = 0;
+                        foreach ($values as $value) {
+                            $sum += $value;
+                        }
+                        /** @psalm-check-type-exact $sum = int<0, max> */;
+                        return $sum;
+                    }',
+            ],
+            'foreachIntRangeSummedInArrayValuesIsWidened' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $words
+                     * @return array<string, int>
+                     */
+                    function f(array $words): array {
+                        $counts = [];
+                        foreach ($words as $word) {
+                            $counts[$word] = ($counts[$word] ?? 0) + rand(1, 2);
+                        }
+                        /** @psalm-check-type-exact $counts = array<string, int<1, max>> */;
+                        return $counts;
+                    }',
+            ],
             'mixedIteratedByForeachIsNonEmptyInTheBodyAndMixedAfterIt' => [
                 'code' => '<?php
                     function getMixed(): mixed {

@@ -140,6 +140,80 @@ final class ArrayAssignmentTest extends TestCase
                     $nested = ["a" => [9223372036854775807 => 1]];
                     $nested["b"][] = 2;',
             ],
+            'issetOfANestedOffsetUnderAKeyWithAQuoteNarrowsTheParent' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{"it's"?: array{z?: int}} $a */
+                    function f(array $a): void {
+                        if (isset($a["it's"]["z"])) {
+                            /** @psalm-check-type-exact $a = array{'it\'s': array{z: int}} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'notIdenticalToNullOfANestedOffsetUnderAKeyWithAQuoteNarrowsTheParent' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{"it's": array{z: int|null}} $a */
+                    function f(array $a): void {
+                        if ($a["it's"]["z"] !== null) {
+                            /** @psalm-check-type-exact $a = array{'it\'s': array{z: int}} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayKeyWithQuotesIsNotNestedOffset' => [
+                'code' => '<?php
+                    $foo = [];
+                    $foo["bar"] = ["baz" => 1];
+                    $foo["bar\']\'[baz"] = "s";
+                    $foo["bar\'][\'baz"] = "s";
+                    $v = $foo["bar"]["baz"];',
+                'assertions' => [
+                    '$v' => 'int',
+                ],
+            ],
+            'arrayKeyExistsWithABackslashInTheKeyNarrows' => [
+                'code' => '<?php
+                    final class C {
+                        const K = "a\\\\b";
+                    }
+
+                    function literal(): int {
+                        $a = rand(0, 1) ? ["a\\\\b" => 1] : [];
+                        if (array_key_exists("a\\\\b", $a)) {
+                            return $a["a\\\\b"];
+                        }
+
+                        return 0;
+                    }
+
+                    function classConstant(): int {
+                        $a = rand(0, 1) ? ["a\\\\b" => 1] : [];
+                        if (array_key_exists(C::K, $a)) {
+                            return $a["a\\\\b"];
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'arrayKeyWithBackslashAndQuoteNarrowing' => [
+                'code' => '<?php
+                    /** @param array<string, int|string> $a */
+                    function f(array $a): int {
+                        if (is_int($a["it\'s"]) && is_int($a["a\\\\b"]) && isset($a["x\\\'y"])) {
+                            return $a["it\'s"] + $a["a\\\\b"];
+                        }
+
+                        return 0;
+                    }',
+            ],
             'arrayKeyAssignedInALoopFromAnInvalidOffsetIsArrayKey' => [
                 'code' => '<?php
                     /** @var list<array|int|string> $items */

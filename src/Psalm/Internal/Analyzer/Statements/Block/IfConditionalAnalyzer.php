@@ -189,11 +189,37 @@ final class IfConditionalAnalyzer
 
             $if_conditional_context->inside_conditional = true;
 
+            $pre_cond_remove_vars = $if_conditional_context->parent_remove_vars;
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $cond, $if_conditional_context) === false) {
                 throw new ScopeAnalysisException();
             }
 
             $if_conditional_context->inside_conditional = $was_inside_conditional;
+
+            // the operands analysed only here may be skipped, so what they write or forget may have changed after
+            // the condition
+            $post_if_context->mergeChangesOfPossiblySkippedBranch(
+                $if_conditional_context,
+                $pre_cond_remove_vars,
+                $codebase,
+            );
+            $outer_context->mergeChangesOfPossiblySkippedBranch(
+                $if_conditional_context,
+                $pre_cond_remove_vars,
+                $codebase,
+            );
+
+            // what the operands analysed only here changed is dropped by the analyser of the condition once checked,
+            // and by the scope enclosing an elseif once its body was analysed
+            $outer_context->parent_remove_vars = [
+                ...$outer_context->parent_remove_vars,
+                ...$if_conditional_context->parent_remove_vars,
+            ];
+            $if_context->parent_remove_vars = [
+                ...$if_context->parent_remove_vars,
+                ...$if_conditional_context->parent_remove_vars,
+            ];
 
             /** @var array<string, bool> */
             $more_cond_referenced_var_ids = $if_conditional_context->cond_referenced_var_ids;
