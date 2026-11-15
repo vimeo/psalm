@@ -1087,6 +1087,55 @@ final class BinaryOperationTest extends TestCase
                         return $loaded;
                     }',
             ],
+            'variableExtractedInTheRightOperandOfAndMayHaveChanged' => [
+                'code' => '<?php
+                    function f(bool $c): bool {
+                        $x = 1;
+                        $ok = $c && extract(["x" => null]);
+                        /** @psalm-check-type-exact $x = 1|null */;
+                        return $ok;
+                    }',
+            ],
+            'getterResultKeptWhenTheRightOperandOfAndOrOrNeverReturns' => [
+                'code' => '<?php
+                    final class A {
+                        private ?int $foo = 1;
+
+                        public function getFoo(): ?int {
+                            return $this->foo;
+                        }
+
+                        public function abort(): never {
+                            $this->foo = null;
+                            throw new Exception();
+                        }
+                    }
+
+                    function f(A $a, bool $c): void {
+                        if ($a->getFoo() === null) {
+                            return;
+                        }
+                        $ok = $c && $a->abort();
+                        $foo = $a->getFoo();
+                        /** @psalm-check-type-exact $foo = int */;
+                        if ($c && $a->abort()) {
+                            return;
+                        }
+                        $foo = $a->getFoo();
+                        /** @psalm-check-type-exact $foo = int */;
+                        $ok = $c || $a->abort();
+                        $foo = $a->getFoo();
+                        /** @psalm-check-type-exact $foo = int */;
+                        if ($c || $a->abort()) {
+                            echo "a";
+                        }
+                        $foo = $a->getFoo();
+                        /** @psalm-check-type-exact $foo = int */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'propertyNotWrittenInTheRightOperandOfAndKeepsItsNarrowedType' => [
                 'code' => '<?php
                     final class A {

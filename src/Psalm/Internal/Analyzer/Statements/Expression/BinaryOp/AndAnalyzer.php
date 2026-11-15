@@ -209,7 +209,11 @@ final class AndAnalyzer
 
         $context->intersectNullArrayOffsets($right_context);
         $context->removeClausesOfVarsChangedIn($left_context);
-        $context->removeClausesOfVarsChangedIn($right_context);
+
+        // what a right side that never returns changes is never seen after the expression
+        if (!$right_context->has_returned) {
+            $context->removeClausesOfVarsChangedIn($right_context);
+        }
 
         $context->cond_referenced_var_ids = array_merge(
             $right_context->cond_referenced_var_ids,

@@ -303,6 +303,15 @@ final class NamedFunctionCallHandler
                                 );
                             }
 
+                            if (isset($context->vars_in_scope[$var_id])) {
+                                $context->removeDescendents(
+                                    $var_id,
+                                    $context->vars_in_scope[$var_id],
+                                    $type,
+                                    $statements_analyzer,
+                                );
+                            }
+
                             $context->vars_in_scope[$var_id] = $type;
                             $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
                         }
@@ -341,6 +350,7 @@ final class NamedFunctionCallHandler
                     'parent_nodes' => $context->vars_in_scope[$var_id]->parent_nodes,
                 ]);
 
+                $context->removeDescendents($var_id, $context->vars_in_scope[$var_id], $mixed_type);
                 $context->vars_in_scope[$var_id] = $mixed_type;
                 $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
                 $context->possibly_assigned_var_ids[$var_id] = true;

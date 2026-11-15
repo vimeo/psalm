@@ -1254,6 +1254,10 @@ final class Context
         array $parent_remove_vars,
         Codebase $codebase,
     ): void {
+        if ($branch->has_returned) {
+            return;
+        }
+
         foreach ($branch->parent_remove_vars as $changed_var_id => $stamp) {
             if (($parent_remove_vars[$changed_var_id] ?? null) === $stamp) {
                 continue;
