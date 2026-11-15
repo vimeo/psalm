@@ -446,8 +446,17 @@ final class AtomicStaticCallAnalyzer
 
         $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
+        $method_visible = $naive_method_exists
+            && MethodAnalyzer::isMethodVisible($method_id, $context, $statements_analyzer->getSource());
+
+        // the caller can't access the method, so PHP calls __callStatic() of the class, which forwards to its mixins
+        $hidden_by_magic_call = $naive_method_exists
+            && !$method_visible
+            && isset($class_storage->declaring_method_ids['__callstatic'])
+            && $stmt->getAttribute(ClassAnalyzer::FAKE_CONSTRUCTOR_CALL_ATTRIBUTE) !== true;
+
         // a `@method static` of the class or of its interfaces wins over its mixins
-        if (!$naive_method_exists
+        if ((!$naive_method_exists || $hidden_by_magic_call)
             && self::findPseudoMethodAndClassStorages($codebase, $class_storage, $method_name_lc, false) === null
         ) {
             $mixin = MixinLookup::findMember(
@@ -496,9 +505,6 @@ final class AtomicStaticCallAnalyzer
         }
 
         $config = $codebase->config;
-
-        $method_visible = $naive_method_exists
-            && MethodAnalyzer::isMethodVisible($method_id, $context, $statements_analyzer->getSource());
 
         $found_method_and_class_storage = self::findPseudoMethodAndClassStorages(
             $codebase,

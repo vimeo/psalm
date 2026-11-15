@@ -6,7 +6,6 @@ namespace Psalm\Internal\Analyzer\Statements\Block\IfElse;
 
 use PhpParser;
 use Psalm\CodeLocation;
-use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
@@ -167,9 +166,7 @@ final class IfAnalyzer
             return false;
         }
 
-        foreach ($if_context->parent_remove_vars as $var_id => $_) {
-            $outer_context->removeVarFromConflictingClauses($var_id);
-        }
+        $outer_context->removeClausesOfVarsChangedIn($if_context);
 
         $final_actions = ScopeAnalyzer::getControlActions(
             $stmt->stmts,
@@ -225,25 +222,25 @@ final class IfAnalyzer
 
         if (!$has_leaving_statements) {
             self::updateIfScope(
-                $codebase,
+                $statements_analyzer,
                 $if_scope,
                 $if_context,
                 $outer_context,
                 array_merge($new_assigned_var_ids, $if_conditional_scope->assigned_in_conditional_var_ids),
                 $new_possibly_assigned_var_ids,
                 $if_scope->if_cond_changed_var_ids,
+                assigned_in_conditional_var_ids: $if_conditional_scope->assigned_in_conditional_var_ids,
+                branch_nodes: $stmt->stmts,
             );
 
             if ($if_scope->reasonable_clauses) {
                 // remove all reasonable clauses that would be negated by the if stmts
-                foreach ($new_assigned_var_ids as $var_id => $_) {
-                    $if_scope->reasonable_clauses = Context::filterClauses(
-                        $var_id,
-                        $if_scope->reasonable_clauses,
-                        $if_context->vars_in_scope[$var_id] ?? null,
-                        $statements_analyzer,
-                    );
-                }
+                $if_scope->reasonable_clauses = Context::filterClausesOfAssignedVars(
+                    $if_scope->reasonable_clauses,
+                    $new_assigned_var_ids,
+                    $if_context,
+                    $statements_analyzer,
+                );
             }
         } else {
             if (!$has_break_statement) {
@@ -429,9 +426,12 @@ final class IfAnalyzer
      * @param  array<string, int>    $assigned_var_ids
      * @param  array<string, bool>   $possibly_assigned_var_ids
      * @param  array<string, bool>   $newly_reconciled_var_ids
+     * @param  array<string, int>    $assigned_in_conditional_var_ids
+     * @param  array<PhpParser\Node> $branch_nodes the code of the branch: what it rebinds by reference is detached
+     *                                             in the outer context
      */
     public static function updateIfScope(
-        Codebase $codebase,
+        StatementsAnalyzer $statements_analyzer,
         IfScope $if_scope,
         Context $if_context,
         Context $outer_context,
@@ -439,8 +439,35 @@ final class IfAnalyzer
         array $possibly_assigned_var_ids,
         array $newly_reconciled_var_ids,
         bool $update_new_vars = true,
+        array $assigned_in_conditional_var_ids = [],
+        array $branch_nodes = [],
     ): void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $if_scope->addBranchReachingTheEnd($if_context);
+
+        if ($branch_nodes) {
+            $outer_context->detachReferencesReboundIn($if_context, $statements_analyzer, $branch_nodes);
+        }
+
         $redefined_vars = $if_context->getRedefinedVars($outer_context->vars_in_scope);
+
+        foreach (array_diff_key($if_context->vars_in_scope, $outer_context->vars_in_scope) as $new_var => $type) {
+            // only variables the branch defines: `$a->b` and `$a['b']` are narrowings of an expression, `isset($a)`
+            // doesn't define `$a`, and the type of a variable possibly defined before the branch (by an earlier
+            // iteration) or by its condition (which the paths skipping the branch evaluate too) isn't all in it
+            if (!preg_match('/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $new_var)
+                || (!isset($assigned_var_ids[$new_var]) && !isset($possibly_assigned_var_ids[$new_var]))
+                || isset($outer_context->vars_possibly_in_scope[$new_var])
+                || isset($assigned_in_conditional_var_ids[$new_var])
+            ) {
+                continue;
+            }
+
+            $if_scope->partial_new_vars[$new_var] = isset($if_scope->partial_new_vars[$new_var])
+                ? Type::combineUnionTypes($if_scope->partial_new_vars[$new_var], $type, $codebase)
+                : $type;
+        }
 
         if ($if_scope->new_vars === null) {
             if ($update_new_vars) {

@@ -735,7 +735,9 @@ final class ParseTreeCreator
             throw new TypeParseTreeException('Unexpected space');
         }
 
-        if ($this->current_leaf instanceof KeyedArrayTree) {
+        // a space inside the braces of a shape is not significant, one after it separates a method parameter's type
+        // from its name
+        if ($this->current_leaf instanceof KeyedArrayTree && !$this->current_leaf->terminated) {
             return;
         }
 

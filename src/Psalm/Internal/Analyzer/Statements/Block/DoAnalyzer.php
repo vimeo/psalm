@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
@@ -17,9 +18,8 @@ use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
 use function array_diff;
-use function array_filter;
 use function array_keys;
-use function array_values;
+use function array_map;
 use function in_array;
 use function is_array;
 use function preg_match;
@@ -70,25 +70,24 @@ final class DoAnalyzer
             $codebase,
         );
 
-        $while_clauses = array_values(
-            array_filter(
-                $while_clauses,
-                static function (Clause $c) use ($mixed_var_ids): bool {
-                    $keys = array_keys($c->possibilities);
+        // a clause on an offset or property of a mixed variable says nothing, but its negation is not true either
+        $while_clauses = array_map(
+            static function (Clause $c) use ($mixed_var_ids, $cond_id): Clause {
+                $keys = array_keys($c->possibilities);
 
-                    $mixed_var_ids = array_diff($mixed_var_ids, $keys);
+                $mixed_var_ids = array_diff($mixed_var_ids, $keys);
 
-                    foreach ($keys as $key) {
-                        foreach ($mixed_var_ids as $mixed_var_id) {
-                            if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                                return false;
-                            }
+                foreach ($keys as $key) {
+                    foreach ($mixed_var_ids as $mixed_var_id) {
+                        if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
+                            return new Clause([], $cond_id, $cond_id, true);
                         }
                     }
+                }
 
-                    return true;
-                },
-            ),
+                return $c;
+            },
+            $while_clauses,
         );
 
         if (!$while_clauses) {
@@ -113,7 +112,11 @@ final class DoAnalyzer
             throw new UnexpectedValueException('There should be an inner loop context');
         }
 
-        $negated_while_clauses = Algebra::negateFormula($while_clauses);
+        try {
+            $negated_while_clauses = Algebra::negateFormula($while_clauses);
+        } catch (ComplicatedExpressionException) {
+            $negated_while_clauses = [];
+        }
 
         $negated_while_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
@@ -139,7 +142,14 @@ final class DoAnalyzer
                 );
         }
 
-        LoopAnalyzer::setLoopVars($inner_loop_context, $context, $loop_scope);
+        $cond_type = $statements_analyzer->node_data->getType($stmt->cond);
+
+        LoopAnalyzer::setLoopVars(
+            $inner_loop_context,
+            $context,
+            $loop_scope,
+            is_only_left_by_break: $cond_type && $cond_type->isAlwaysTruthy(),
+        );
 
         // the body of a do-while runs once, unless it leaves the loop
         if (!in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)

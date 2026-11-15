@@ -53,6 +53,8 @@ final class TernaryAnalyzer
 
         $if_scope = new IfScope();
 
+        $pre_condition_remove_vars = $context->parent_remove_vars;
+
         try {
             $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
 
@@ -139,6 +141,8 @@ final class TernaryAnalyzer
             $stmt->cond,
             $assigned_in_conditional_var_ids,
         );
+
+        $context->removeClausesOfVarsChangedSince($pre_condition_remove_vars);
 
         $if_clauses = Algebra::simplifyCNF($if_clauses);
 
@@ -286,6 +290,14 @@ final class TernaryAnalyzer
         $if_exits = $if_type !== null && $if_type->isNever();
         $else_exits = $else_type !== null && $else_type->isNever();
 
+        if (!$if_exits) {
+            $context->removeClausesOfVarsChangedIn($if_context);
+        }
+
+        if (!$else_exits) {
+            $context->removeClausesOfVarsChangedIn($t_else_context);
+        }
+
         if ($if_exits !== $else_exits) {
             $completing_context = $if_exits ? $t_else_context : $if_context;
 
@@ -306,6 +318,8 @@ final class TernaryAnalyzer
                 ...$completing_context->vars_possibly_in_scope,
             ];
 
+            $context->null_array_offsets_read = $completing_context->null_array_offsets_read;
+
             $context->cond_referenced_var_ids = [
                 ...$context->cond_referenced_var_ids,
                 ...$completing_context->cond_referenced_var_ids,
@@ -313,6 +327,9 @@ final class TernaryAnalyzer
 
             return self::setResultType($statements_analyzer, $stmt, $context);
         }
+
+        $context->detachReferencesReboundIn($if_context, $statements_analyzer, $stmt->if ? [$stmt->if] : []);
+        $context->detachReferencesReboundIn($t_else_context, $statements_analyzer, [$stmt->else]);
 
         $assign_var_ifs = $if_context->assigned_var_ids;
         $assign_var_else = $t_else_context->assigned_var_ids;
@@ -382,6 +399,12 @@ final class TernaryAnalyzer
             ...$if_context->vars_possibly_in_scope,
             ...$t_else_context->vars_possibly_in_scope,
         ];
+
+        // every way past the ternary goes through one of its branches
+        $context->null_array_offsets_read = array_intersect_key(
+            $if_context->null_array_offsets_read,
+            $t_else_context->null_array_offsets_read,
+        );
 
         $context->cond_referenced_var_ids = [
             ...$context->cond_referenced_var_ids,
