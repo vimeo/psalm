@@ -195,6 +195,7 @@ final class ElseIfAnalyzer
         $entry_clauses = [
             ...$entry_clauses,
             ...IfConditionalAnalyzer::getClausesAddedByCondition(
+                $elseif->cond,
                 $pre_conditional_context->clauses,
                 $elseif_context->clauses,
             ),

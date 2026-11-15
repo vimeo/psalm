@@ -182,7 +182,11 @@ final class IfElseAnalyzer
         // what the earlier conditions said of a variable the condition assigns is not true of the new value: the
         // body does not get those clauses (the paradox check below drops them per operand by itself). The clauses
         // the condition's own assignments added are about the new value.
-        $cond_added_clauses = IfConditionalAnalyzer::getClausesAddedByCondition($pre_cond_clauses, $entry_clauses);
+        $cond_added_clauses = IfConditionalAnalyzer::getClausesAddedByCondition(
+            $stmt->cond,
+            $pre_cond_clauses,
+            $entry_clauses,
+        );
         $body_entry_clauses = [];
 
         foreach ($entry_clauses as $c) {
