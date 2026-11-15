@@ -21,12 +21,16 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_diff_key;
 use function array_filter;
+use function array_flip;
 use function array_intersect_key;
 use function array_keys;
 use function array_map;
@@ -38,6 +42,8 @@ use function count;
 use function in_array;
 use function is_numeric;
 use function is_string;
+use function max;
+use function min;
 use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
@@ -275,6 +281,7 @@ final class LoopAnalyzer
             // the data flow of the last pass is linked to the reads of the first one by one more pass
             $max_passes = $assignment_depth;
             $data_flow_pass_added = false;
+            $widening_pass_added = false;
             $force_pass = false;
 
             for ($i = 0; $i < $max_passes; ++$i) {
@@ -414,6 +421,8 @@ final class LoopAnalyzer
                 $continue_context->clauses = $pre_loop_context->clauses;
                 $continue_context->byref_constraints = $pre_loop_context->byref_constraints;
 
+                $vars_at_iteration_start = $continue_context->vars_in_scope;
+
                 $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
                 IssueBuffer::startRecording();
 
@@ -512,6 +521,25 @@ final class LoopAnalyzer
                 $recorded_issues = IssueBuffer::clearRecordingLevel();
 
                 IssueBuffer::stopRecording();
+
+                // a range the passes keep shifting (`$i += rand(1, 3)`) would go further on the iterations not
+                // analysed: its bound is dropped and the body analysed once more with it
+                if ($i + 1 === $max_passes && !$widening_pass_added) {
+                    $widened_var_types = self::getWidenedIntRanges(
+                        array_diff_key(
+                            $vars_at_iteration_start,
+                            array_flip($always_assigned_before_loop_body_vars),
+                        ),
+                        $continue_context->vars_in_scope,
+                    );
+
+                    if ($widened_var_types) {
+                        $continue_context->vars_in_scope = $widened_var_types + $continue_context->vars_in_scope;
+                        ++$max_passes;
+                        $widening_pass_added = true;
+                        $force_pass = true;
+                    }
+                }
 
                 if ($i + 1 === $max_passes
                     && !$data_flow_pass_added
@@ -1385,6 +1413,103 @@ final class LoopAnalyzer
         }
 
         return $max_depth;
+    }
+
+    /**
+     * The variables whose int range at the end of an iteration goes past the ints they started it with, with that
+     * side unbounded. Literals are left alone: they come from assignments, so the passes reach all of them.
+     *
+     * @param array<string, Union> $vars_at_start
+     * @param array<string, Union> $vars_at_end
+     * @return array<string, Union>
+     * @psalm-pure
+     */
+    private static function getWidenedIntRanges(array $vars_at_start, array $vars_at_end): array
+    {
+        $widened_var_types = [];
+
+        foreach ($vars_at_end as $var_id => $end_type) {
+            if (!isset($vars_at_start[$var_id])) {
+                continue;
+            }
+
+            $start_bounds = self::getIntBounds($vars_at_start[$var_id]);
+
+            if ($start_bounds === null) {
+                continue;
+            }
+
+            [$start_min, $start_max] = $start_bounds;
+
+            $widen_min = false;
+            $widen_max = false;
+
+            foreach ($end_type->getAtomicTypes() as $atomic) {
+                if (!$atomic instanceof TIntRange) {
+                    continue;
+                }
+
+                if ($start_min !== null && ($atomic->min_bound === null || $atomic->min_bound < $start_min)) {
+                    $widen_min = true;
+                }
+
+                if ($start_max !== null && ($atomic->max_bound === null || $atomic->max_bound > $start_max)) {
+                    $widen_max = true;
+                }
+            }
+
+            if (!$widen_min && !$widen_max) {
+                continue;
+            }
+
+            [$end_min, $end_max] = self::getIntBounds($end_type) ?? [null, null];
+
+            $types = array_filter(
+                $end_type->getAtomicTypes(),
+                static fn(Atomic $atomic): bool => !$atomic instanceof TInt,
+            );
+
+            $min = $widen_min || $start_min === null || $end_min === null ? null : min($start_min, $end_min);
+            $max = $widen_max || $start_max === null || $end_max === null ? null : max($start_max, $end_max);
+
+            $types[] = $min === null && $max === null ? new TInt() : new TIntRange($min, $max);
+
+            $widened_var_types[$var_id] = $end_type->setTypes($types);
+        }
+
+        return $widened_var_types;
+    }
+
+    /**
+     * The lowest and highest of the ints a type holds, null for an unbounded side, or null if it holds no int
+     *
+     * @return ?array{?int, ?int}
+     * @psalm-pure
+     */
+    private static function getIntBounds(Union $type): ?array
+    {
+        $bounds = null;
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TInt) {
+                continue;
+            }
+
+            $range = TIntRange::convertToIntRange($atomic);
+
+            if ($bounds === null) {
+                $bounds = [$range->min_bound, $range->max_bound];
+
+                continue;
+            }
+
+            $bounds = [
+                $bounds[0] === null || $range->min_bound === null ? null : min($bounds[0], $range->min_bound),
+                $bounds[1] === null || $range->max_bound === null ? null : max($bounds[1], $range->max_bound),
+            ];
+        }
+
+        return $bounds;
     }
 
     /**

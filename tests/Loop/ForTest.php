@@ -23,6 +23,28 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'forIntRangeShiftedByEveryIterationIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $total = 0;
+                        for ($i = 0; $i < 100; $i++) {
+                            $total += rand(1, 3);
+                        }
+                        /** @psalm-check-type-exact $total = int<1, max> */;
+                        return $total;
+                    }',
+            ],
+            'forIntRangeComputedFromTheCounterIsNotWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $x = 0;
+                        for ($i = 0; $i < 10; $i++) {
+                            $x = $i * 2;
+                        }
+                        /** @psalm-check-type-exact $x = int<0, 18> */;
+                        return $x;
+                    }',
+            ],
             'forEverVariableIsWhatTheBreaksLeave' => [
                 'code' => '<?php
                     function f(): void {

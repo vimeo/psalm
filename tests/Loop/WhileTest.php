@@ -217,6 +217,110 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'whileTrueIntRangeShiftedByEveryIterationIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $i = 0;
+                        while (true) {
+                            $i += rand(1, 3);
+                            if ($i > 10) {
+                                break;
+                            }
+                        }
+                        /** @psalm-check-type-exact $i = int<11, max> */;
+                        return $i;
+                    }',
+            ],
+            'whileTrueIntRangeDecrementedByEveryIterationIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $i = 0;
+                        while (true) {
+                            $i -= rand(1, 3);
+                            if ($i < -10) {
+                                break;
+                            }
+                        }
+                        /** @psalm-check-type-exact $i = int<min, -11> */;
+                        return $i;
+                    }',
+            ],
+            'whileTrueIntRangeShiftedThroughAnotherVariableIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $i = 0;
+                        while (true) {
+                            $j = $i + rand(1, 3);
+                            $i = $j;
+                            if ($i > 10) {
+                                break;
+                            }
+                        }
+                        /** @psalm-check-type-exact $i = int<11, max> */;
+                        return $i;
+                    }',
+            ],
+            'whileTrueIntRangeShiftedBeforeAContinueIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $i = 0;
+                        while (true) {
+                            $i += rand(1, 3);
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            if ($i > 10) {
+                                break;
+                            }
+                        }
+                        /** @psalm-check-type-exact $i = int<11, max> */;
+                        return $i;
+                    }',
+            ],
+            'whileTrueIntRangeShiftedInANestedLoopIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $total = 0;
+                        foreach ([1, 2] as $_) {
+                            $i = 0;
+                            while (true) {
+                                $i += rand(1, 3);
+                                if ($i > 10) {
+                                    break;
+                                }
+                            }
+                            $total += $i;
+                        }
+                        /** @psalm-check-type-exact $total = int<11, max> */;
+                        return $total;
+                    }',
+            ],
+            'whileIntRangeAssignedOnEveryIterationIsNotWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $i = 0;
+                        while (rand(0, 1)) {
+                            $i = rand(1, 3);
+                        }
+                        /** @psalm-check-type-exact $i = int<0, 3> */;
+                        return $i;
+                    }',
+            ],
+            'whileLiteralIntsAssignedInTheLoopAreNotWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $state = 0;
+                        while (rand(0, 1)) {
+                            if ($state === 0) {
+                                $state = 1;
+                            } elseif ($state === 1) {
+                                $state = 2;
+                            }
+                        }
+                        /** @psalm-check-type-exact $state = 0|1|2 */;
+                        return $state;
+                    }',
+            ],
             'whileTrueVariableIsNotWhatAContinueLeaves' => [
                 'code' => '<?php
                     interface T {
@@ -399,8 +503,6 @@ final class WhileTest extends TestCase
                         }
                         return $i;
                     }',
-                'assertions' => [],
-                'ignored_issues' => ['TypeDoesNotContainType'],
             ],
             'mixedConditionVariableOfAWhileLoopIsNotNonEmptyAfterIt' => [
                 'code' => '<?php
@@ -1522,6 +1624,20 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'whileTrueWidenedIntRangeKeepsTheBoundItDoesNotShift' => [
+                'code' => '<?php
+                    function f(): int {
+                        $i = 0;
+                        while (true) {
+                            $i += rand(1, 3);
+                            if ($i < 0) {
+                                break;
+                            }
+                        }
+                        return $i;
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33 - Type int<1, max> for $i is never < 0',
+            ],
             'variableDefinedOnlyBeforeAContinueIsPossiblyUndefined' => [
                 'code' => '<?php
                     function f(): void {
