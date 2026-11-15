@@ -3521,6 +3521,26 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'NullableReturnStatement',
             ],
+            'methodWritingAByReferenceParameterMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child ?? null; }
+                    }
+                    final class Clearer {
+                        public function clear(?Child &$slot): void { $slot = null; }
+                    }
+                    function afterClear(Owner $owner, Clearer $clearer): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $clearer->clear($owner->child);
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
             'mutatorWritingThroughAnotherMethodMustNotKeepGetterOfAnAlias' => [
                 'code' => '<?php
                     final class Box {
@@ -7203,6 +7223,41 @@ final class CapabilitiesTest extends TestCase
                         return new Child();
                     }
                     $other->touch();
+                    return $owner->getChild();
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testCallToAShallowScannedMethodForgetsGetters(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullableReturnStatement');
+
+        $this->addFile(
+            'dependency.php',
+            '<?php
+                final class Child {}
+                final class Owner {
+                    public ?Child $child = null;
+                    /** @psalm-mutation-free */
+                    public function getChild(): ?Child { return $this->child; }
+                }
+                final class Clearer {
+                    public function clear(Owner $owner): void { $owner->child = null; }
+                }',
+        );
+        $this->project_analyzer->getCodebase()->scanner->addFilesToShallowScan(['dependency.php' => 'dependency.php']);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function afterClear(Owner $owner, Clearer $clearer): Child {
+                    if ($owner->getChild() === null) {
+                        return new Child();
+                    }
+                    $clearer->clear($owner);
                     return $owner->getChild();
                 }',
         );
