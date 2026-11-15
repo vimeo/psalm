@@ -657,7 +657,7 @@ final class AssignmentAnalyzer
             );
         } else {
             // a property never fetched may still be in clauses, from the assertion of a call
-            if ($extended_var_id) {
+            if ($extended_var_id !== null) {
                 $context->removeVarFromConflictingClauses(
                     $extended_var_id,
                     $assign_value_type,
