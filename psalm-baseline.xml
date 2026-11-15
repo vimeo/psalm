@@ -321,7 +321,6 @@
       <code><![CDATA[$namespace]]></code>
       <code><![CDATA[$parent_fqcln]]></code>
       <code><![CDATA[$parent_fqcln]]></code>
-      <code><![CDATA[$storage->cased_name]]></code>
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$template_types]]></code>
       <code><![CDATA[$this->function->getStmts()]]></code>
@@ -1215,12 +1214,6 @@
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$var_id]]></code>
       <code><![CDATA[$var_id]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Fetch/VariableFetchAnalyzer.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$branch_point]]></code>
-      <code><![CDATA[$branch_point]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/IncDecExpressionAnalyzer.php">

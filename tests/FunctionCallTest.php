@@ -948,6 +948,30 @@ final class FunctionCallTest extends TestCase
                     '$b===' => '\'y\'',
                 ],
             ],
+            'extractSkipDefinesAPossiblyUndefinedVariable' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        $a = 1;
+                    }
+
+                    extract(["a" => 2], EXTR_SKIP);
+
+                    $b = $a;',
+                'assertions' => [
+                    '$b===' => '1|2',
+                ],
+            ],
+            'extractSkipDefinesAVariableOfAPreviousIteration' => [
+                'code' => '<?php
+                    function f(array $xs): void {
+                        foreach ($xs as $_) {
+                            extract(["a" => 2], EXTR_SKIP);
+                            /** @psalm-check-type-exact $a = 1|2 */;
+                            echo $a;
+                            $a = 1;
+                        }
+                    }',
+            ],
             'compact' => [
                 'code' => '<?php
                     /**
