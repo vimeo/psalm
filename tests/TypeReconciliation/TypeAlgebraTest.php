@@ -1034,6 +1034,63 @@ final class TypeAlgebraTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['RiskyTruthyFalsyComparison', 'MixedReturnStatement', 'MixedInferredReturnType'],
             ],
+            'aStringThatIsNoTraitOrAnyOtherLoadedSymbolIsLeftByAConditionWithAnUnknownCall' => [
+                'code' => '<?php
+                    final class Registry {
+                        public function has(string $name): bool {
+                            return true;
+                        }
+                    }
+
+                    function f(Registry $registry, string $name): void {
+                        if ($registry->has($name)
+                            || (!class_exists($name, false)
+                                && !interface_exists($name, false)
+                                && !enum_exists($name, false)
+                                && !trait_exists($name, false))
+                        ) {
+                            return;
+                        }
+
+                        new ReflectionClass($name);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'aStringThatIsNoClassAndNoTraitIsLeftByAnEarlyReturn' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        if (!class_exists($s, false) && !trait_exists($s, false)) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $s = class-string|trait-string */
+                        echo $s;
+                    }',
+            ],
+            'aFailedTraitExistsCheckWithoutAutoloadKeepsATraitString' => [
+                'code' => '<?php
+                    /** @param trait-string $t */
+                    function a(string $t): void {
+                        if (!trait_exists($t, false)) {
+                            /** @psalm-check-type-exact $t = trait-string */
+                            echo $t;
+                        }
+                    }',
+            ],
+            'aTraitExistsCheckWithoutAutoloadKeepsATraitStringAfterAnEarlyReturn' => [
+                'code' => '<?php
+                    /** @param trait-string $t */
+                    function b(string $t): void {
+                        if (trait_exists($t, false)) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $t = trait-string */
+                        echo $t;
+                    }',
+            ],
             'aCaseOfASwitchTrueAssigningAVariableHasNoClausesOfItsOldValue' => [
                 'code' => '<?php
                     function f(string $s): int {
