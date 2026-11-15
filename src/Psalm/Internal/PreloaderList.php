@@ -1047,6 +1047,7 @@ final class PreloaderList {
         \Psalm\Internal\TypeVisitor\TemplateBoundNarrower::class,
         \Psalm\Internal\TypeVisitor\TemplateDefaultFiller::class,
         \Psalm\Internal\TypeVisitor\TemplateTypeCollector::class,
+        \Psalm\Internal\TypeVisitor\TraitSelfResolver::class,
         \Psalm\Internal\TypeVisitor\TypeChecker::class,
         \Psalm\Internal\TypeVisitor\TypeLocalizer::class,
         \Psalm\Internal\TypeVisitor\TypeScanner::class,
