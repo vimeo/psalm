@@ -2595,6 +2595,95 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'foreachReadBeforeAReferenceAssignment' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $arr): void {
+                        foreach ($arr as $k => $_) {
+                            if ($k) {
+                                echo $r;
+                            }
+                            $r = &$arr[$k];
+                        }
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:18',
+            ],
+            'foreachReadOfAVariableAssignedOnlyBeforeContinue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $arr): void {
+                        foreach ($arr as $v) {
+                            if (rand(0, 1)) {
+                                echo $x;
+                            }
+                            if ($v) {
+                                $x = 1;
+                                continue;
+                            }
+                            break;
+                        }
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:18',
+                'error_levels' => ['MixedAssignment'],
+            ],
+            'foreachReadBeforeTheValueOfAnInnerForeach' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $xs, array $ys): void {
+                        foreach ($xs as $_) {
+                            if (rand(0, 1)) {
+                                echo $v;
+                            }
+                            foreach ($ys as $v) {}
+                        }
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:18',
+            ],
+            'foreachReadBeforeTheKeyOfAnInnerForeachOverANonEmptyArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $xs): void {
+                        foreach ($xs as $_) {
+                            if (rand(0, 1)) {
+                                echo $k;
+                            }
+                            foreach (["a" => 1] as $k => $_v) {}
+                        }
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:18',
+            ],
+            'foreachReadBeforeAStaticDeclaration' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $xs): void {
+                        foreach ($xs as $_) {
+                            if (rand(0, 1)) {
+                                echo $s;
+                            }
+                            static $s = 1;
+                        }
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:18',
+            ],
+            'foreachReadBeforeANestedListAssignment' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $xs): void {
+                        foreach ($xs as $_) {
+                            if (rand(0, 1)) {
+                                echo $n;
+                            }
+                            [[$n]] = [[1]];
+                        }
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:18',
+            ],
             'arrayIteratedByForeachIsNotNonEmptyAfterIt' => [
                 'code' => '<?php
                     /** @param non-empty-array<int> $vals */
@@ -2722,7 +2811,7 @@ final class ForeachTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference',
             ],
-            'variableAssignedOnlyInTheRightOperandOfAnOrConditionIsUndefinedInTheLoopBody' => [
+            'variableAssignedOnlyInTheRightOperandOfAnOrConditionIsPossiblyUndefinedInTheLoopBody' => [
                 'code' => '<?php
                     function check(string $value): bool {
                         return $value === "a";
@@ -2736,7 +2825,7 @@ final class ForeachTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'UndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38',
             ],
             'foreachKeyAndDestructuredValueNotNullAfterBreakingLoopOnNonEmptyArray' => [
                 'code' => '<?php
