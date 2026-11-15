@@ -949,7 +949,7 @@ final class AtomicTypeComparator
             && $array->fallback_params
             && count($array->properties) === 1
             && $array->properties[0]->possibly_undefined
-            && $array->properties[0]->equals($array->fallback_params[1], true, true, false)
+            && $array->properties[0]->equals($array->fallback_params[1], false, false, false)
         ;
     }
     /**

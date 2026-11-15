@@ -3711,6 +3711,23 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'protectedCallbackOfASubclassGivenToAParentMethod' => [
+                'code' => '<?php
+                    class Command
+                    {
+                        public function setCode(callable $code): void {}
+                    }
+
+                    abstract class EndlessCommand extends Command
+                    {
+                        public function __construct()
+                        {
+                            parent::setCode([$this, "runLoop"]);
+                        }
+
+                        protected function runLoop(): void {}
+                    }',
+            ],
         ];
     }
 
@@ -5250,6 +5267,42 @@ final class CallableTest extends TestCase
                 'error_message' => 'InvalidArgument',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'privateCallbackOfASubclassGivenToAParentMethod' => [
+                'code' => '<?php
+                    class Command
+                    {
+                        public function setCode(callable $code): void {}
+                    }
+
+                    abstract class EndlessCommand extends Command
+                    {
+                        public function __construct()
+                        {
+                            parent::setCode([$this, "runLoop"]);
+                        }
+
+                        private function runLoop(): void {}
+                    }',
+                'error_message' => 'expects a public callable',
+            ],
+            'protectedCallbackGivenToAnUnrelatedClassMethod' => [
+                'code' => '<?php
+                    class Other
+                    {
+                        public function take(callable $code): void {}
+                    }
+
+                    class Runner
+                    {
+                        public function __construct(private Other $other)
+                        {
+                            $this->other->take([$this, "runLoop"]);
+                        }
+
+                        protected function runLoop(): void {}
+                    }',
+                'error_message' => 'expects a public callable',
             ],
         ];
     }
