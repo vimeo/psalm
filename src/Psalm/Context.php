@@ -29,6 +29,7 @@ use RuntimeException;
 
 use function array_diff_key;
 use function array_filter;
+use function array_intersect_key;
 use function array_keys;
 use function array_map;
 use function array_search;
@@ -181,6 +182,17 @@ final class Context
      * @var array<string, CodeLocation>
      */
     public array $references_possibly_from_confusing_scope = [];
+
+    /**
+     * The array offsets read from a nullable array on a path of this context, whose remembered type holds the null of
+     * that array: the read is not analysed again while the offset is in here, as the null was reported where it was
+     * first read. It leaves with what Psalm knows of the offset (see remove(), forgetNullArrayOffsets()); like the
+     * variables, it is copied into the branches and loops, and brought back to the context around them only from
+     * the paths that reach it.
+     *
+     * @var array<string, true>
+     */
+    public array $null_array_offsets_read = [];
 
     /**
      * The variables a variable may still be bound to by reference: those it was bound to before a block that rebound
@@ -891,6 +903,33 @@ final class Context
         $this->forgetNarrowedShapeProperty($var_id);
     }
 
+    /**
+     * The offsets of the array are read again: that they were read is not true of what it holds next
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function forgetNullArrayOffsets(string $array_var_id): void
+    {
+        foreach ($this->null_array_offsets_read as $offset_id => $_) {
+            if (str_starts_with($offset_id, $array_var_id . '[')) {
+                unset($this->null_array_offsets_read[$offset_id]);
+            }
+        }
+    }
+
+    /**
+     * Past a branch that can fall through, only the offsets it still knows to have been read were read
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function intersectNullArrayOffsets(Context $branch): void
+    {
+        $this->null_array_offsets_read = array_intersect_key(
+            $this->null_array_offsets_read,
+            $branch->null_array_offsets_read,
+        );
+    }
+
     public function remove(string $remove_var_id, bool $removeDescendents = true): void
     {
         if (isset($this->vars_in_scope[$remove_var_id])) {
@@ -903,7 +942,8 @@ final class Context
             }
         }
         $this->removePossibleReference($remove_var_id);
-        unset($this->vars_possibly_in_scope[$remove_var_id]);
+        unset($this->vars_possibly_in_scope[$remove_var_id], $this->null_array_offsets_read[$remove_var_id]);
+        $this->forgetNullArrayOffsets($remove_var_id);
     }
 
     /**
@@ -1017,7 +1057,7 @@ final class Context
 
             foreach ($clause->possibilities as $var_id => $_) {
                 if (preg_match('/' . $quoted_remove_var_id . '[\]\[\-]/', $var_id)) {
-                    break 2;
+                    continue 2;
                 }
             }
 
