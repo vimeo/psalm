@@ -914,9 +914,7 @@ class Reconciler
                     $string_char = null;
                 }
 
-                if ($char === '\\') {
-                    $escape_char = !$escape_char;
-                }
+                $escape_char = $char === '\\' && !$escape_char;
 
                 $parts[$parts_offset] .= $char;
                 continue;
