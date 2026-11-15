@@ -52,90 +52,6 @@ final class WhileTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'variableAssignedInANegatedWhileConditionIsWhatTheConditionLeavesOfItAfterTheLoop' => [
-                'code' => '<?php
-                    /** @return Slot|false */
-                    function acquire() {
-                        return rand(0, 1) ? new Slot() : false;
-                    }
-
-                    final class Slot {
-                        public function use(): void {}
-                    }
-
-                    function nextLine(): string|false {
-                        return false;
-                    }
-
-                    while (!($slot = acquire())) {
-                        usleep(10);
-                    }
-
-                    $slot->use();
-
-                    while (($line = nextLine()) !== false) {
-                        echo $line;
-                    }
-
-                    while (!($other = acquire())) {
-                        if (rand(0, 1)) {
-                            break;
-                        }
-                    }',
-                'assertions' => [
-                    '$slot===' => 'Slot',
-                    '$line===' => 'false',
-                    '$other===' => 'Slot|false',
-                ],
-                'ignored_issues' => ['RedundantCondition', 'MixedAssignment'],
-                'php_version' => '8.2',
-            ],
-            'variableAssignedInTheWhileConditionIsDefinedAfterTheLoop' => [
-                'code' => '<?php
-                    function next_int(): int {
-                        return 1;
-                    }
-
-                    function f(): int {
-                        while ($value = next_int()) {
-                            echo $value;
-                        }
-
-                        return $value;
-                    }',
-            ],
-            'variableAssignedInAComparisonInTheWhileConditionIsDefinedAfterTheLoop' => [
-                'code' => '<?php
-                    function next_int(): int {
-                        return 1;
-                    }
-
-                    function f(): ?int {
-                        while (0 < $written = next_int()) {
-                            if ($written > 5) {
-                                return null;
-                            }
-                        }
-
-                        return $written;
-                    }',
-            ],
-            'variableAssignedInTheWhileConditionIsDefinedAfterABreak' => [
-                'code' => '<?php
-                    function next_int(): int {
-                        return 1;
-                    }
-
-                    function f(): int {
-                        while ($value = next_int()) {
-                            if (rand(0, 1)) {
-                                break;
-                            }
-                        }
-
-                        return $value;
-                    }',
-            ],
             'preIncrementInAConditionThatHoldsForTheFirstValueIsNotNeverTrue' => [
                 'code' => '<?php
                     $try = 8;
@@ -226,6 +142,127 @@ final class WhileTest extends TestCase
                         }
                         /** @psalm-check-type-exact $i = int<0, 5> */;
                         return $i;
+                    }',
+            ],
+            'variableDefinedBeforeTheLoopAndAssignedInTheConditionHasWhatTheConditionLeaves' => [
+                'code' => '<?php
+                    $result = 1;
+                    while ($result = random_int(0, 6)) {
+                        echo "again";
+                    }',
+                'assertions' => [
+                    '$result===' => '0',
+                ],
+            ],
+            'variableDefinedBeforeALoopThatAlsoBreaksKeepsWhatTheBreakLeaves' => [
+                'code' => '<?php
+                    $result = 1;
+                    while ($result = random_int(0, 6)) {
+                        if (random_int(0, 1)) {
+                            break;
+                        }
+                    }',
+                'assertions' => [
+                    '$result===' => 'int<0, 6>',
+                ],
+            ],
+            'variableAssignedInACastConditionIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    $a = 1;
+                    while ((bool) ($a = random_int(0, 6))) {
+                        echo "again";
+                    }
+
+                    while ((bool) ($b = random_int(0, 6))) {
+                        echo "again";
+                    }',
+                'assertions' => [
+                    '$a===' => '0',
+                    '$b===' => '0',
+                ],
+            ],
+            'variableAssignedInANegatedWhileConditionIsWhatTheConditionLeavesOfItAfterTheLoop' => [
+                'code' => '<?php
+                    /** @return Slot|false */
+                    function acquire() {
+                        return rand(0, 1) ? new Slot() : false;
+                    }
+
+                    final class Slot {
+                        public function use(): void {}
+                    }
+
+                    function nextLine(): string|false {
+                        return false;
+                    }
+
+                    while (!($slot = acquire())) {
+                        usleep(10);
+                    }
+
+                    $slot->use();
+
+                    while (($line = nextLine()) !== false) {
+                        echo $line;
+                    }
+
+                    while (!($other = acquire())) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }',
+                'assertions' => [
+                    '$slot===' => 'Slot',
+                    '$line===' => 'false',
+                    '$other===' => 'Slot|false',
+                ],
+                'ignored_issues' => ['RedundantCondition', 'MixedAssignment'],
+                'php_version' => '8.2',
+            ],
+            'variableAssignedInTheWhileConditionIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function next_int(): int {
+                        return 1;
+                    }
+
+                    function f(): int {
+                        while ($value = next_int()) {
+                            echo $value;
+                        }
+
+                        return $value;
+                    }',
+            ],
+            'variableAssignedInAComparisonInTheWhileConditionIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function next_int(): int {
+                        return 1;
+                    }
+
+                    function f(): ?int {
+                        while (0 < $written = next_int()) {
+                            if ($written > 5) {
+                                return null;
+                            }
+                        }
+
+                        return $written;
+                    }',
+            ],
+            'variableAssignedInTheWhileConditionIsDefinedAfterABreak' => [
+                'code' => '<?php
+                    function next_int(): int {
+                        return 1;
+                    }
+
+                    function f(): int {
+                        while ($value = next_int()) {
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        }
+
+                        return $value;
                     }',
             ],
             'variableAssignedInTheConditionOfAnIfThatBreaks' => [
@@ -1082,6 +1119,31 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'preIncrementInAConditionThatFailsForTheFirstValueIsNeverTrue' => [
+                'code' => '<?php
+                    $try = 9;
+                    while (++$try < 10) {
+                        $name = "thing";
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:28 - Type int<10, max> for $try is never < 10',
+            ],
+            'preDecrementInAConditionThatFailsForTheFirstValueIsNeverTrue' => [
+                'code' => '<?php
+                    $try = 1;
+                    while (--$try > 0) {
+                        $name = "thing";
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:28 - Type int<min, 0> for $try is never > 0',
+            ],
+            'variableAssignedOnlyInTheSkippableOperandOfTheConditionIsPossiblyUndefined' => [
+                'code' => '<?php
+                    while (rand(0, 1) && ($value = rand())) {
+                        echo "again";
+                    }
+
+                    echo $value;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
             'variableAssignedInTheRightOperandOfAnAndInTheWhileConditionIsPossiblyUndefined' => [
                 'code' => '<?php
                     function next_int(): int {
@@ -1127,14 +1189,6 @@ final class WhileTest extends TestCase
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
                 'error_levels' => ['TypeDoesNotContainType'],
             ],
-            'preIncrementInAConditionThatFailsForTheFirstValueIsNeverTrue' => [
-                'code' => '<?php
-                    $try = 9;
-                    while (++$try < 10) {
-                        $name = "thing";
-                    }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:28 - Type int<10, max> for $try is never < 10',
-            ],
             'variableAssignedInALoopWhoseConditionFailsForTheInitialLiteralIsPossiblyUndefined' => [
                 'code' => '<?php
                     $try = 10;
@@ -1154,14 +1208,6 @@ final class WhileTest extends TestCase
                     echo $name;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
                 'error_levels' => ['TypeDoesNotContainType'],
-            ],
-            'preDecrementInAConditionThatFailsForTheFirstValueIsNeverTrue' => [
-                'code' => '<?php
-                    $try = 1;
-                    while (--$try > 0) {
-                        $name = "thing";
-                    }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:28 - Type int<min, 0> for $try is never > 0',
             ],
             'variableAssignedInALoopOverAnUnknownStartIsPossiblyUndefined' => [
                 'code' => '<?php

@@ -20,14 +20,13 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\MixinLookup;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\MixedMethodCall;
 use Psalm\IssueBuffer;
-use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -35,7 +34,6 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
-use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
@@ -46,10 +44,7 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-use function array_keys;
 use function array_merge;
-use function array_reverse;
-use function array_search;
 use function array_shift;
 use function array_values;
 use function count;
@@ -373,10 +368,17 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         // the class whose @mixin the method is found through, as the call goes through its __call()
         $mixin_user_class = null;
         $mixin_method_id = null;
+        // the mixin whose `@method` is called
+        $pseudo_method_mixin = null;
 
-        if (!$naive_method_exists) {
+        // the caller can't access the method, so PHP calls __call() of the class, which forwards to its mixins
+        $hidden_by_magic_call = $naive_method_exists
+            && isset($class_storage->declaring_method_ids['__call'])
+            && !MethodAnalyzer::isMethodVisible($method_id, $context, $statements_analyzer->getSource());
+
+        if (!$naive_method_exists || $hidden_by_magic_call) {
             // if the method doesn't exist we check for any method existence providers
-            if ($codebase->methods->existence_provider->has($fq_class_name)) {
+            if (!$naive_method_exists && $codebase->methods->existence_provider->has($fq_class_name)) {
                 $method_exists = $codebase->methods->existence_provider->doesMethodExist(
                     $fq_class_name,
                     $method_id->method_name,
@@ -389,56 +391,44 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            $naive_method_exists = false;
-            $class_name_before_mixins = $fq_class_name;
-            $method_id_before_mixins = $method_id;
-
-            // @mixin attributes are an absolute pain! Lots of complexity here,
-            // as they can redefine the called class, method id etc.
-            if ($class_storage->templatedMixins
-                && $lhs_type_part instanceof TGenericObject
-                && $class_storage->template_types
+            // a `@method` of the class, of its parent classes or of its interfaces, or a method an existence provider
+            // adds to the class, wins over its mixins
+            if (!$fake_method_exists
+                && MissingMethodCallHandler::findPseudoMethodAndClassStorages(
+                    $codebase,
+                    $class_storage,
+                    $method_name_lc,
+                ) === null
             ) {
-                [$lhs_type_part, $class_storage, $naive_method_exists, $method_id, $fq_class_name]
-                    = self::handleTemplatedMixins(
-                        $class_storage,
-                        $lhs_type_part,
-                        $method_name_lc,
-                        $codebase,
-                        $context,
-                        $method_id,
-                        $source,
-                        $stmt,
-                        $statements_analyzer,
-                        $fq_class_name,
-                    );
-            }
+                [$mixin, $mixin_method_exists] = self::findMixinWithMethod(
+                    $statements_analyzer,
+                    $stmt,
+                    $codebase,
+                    $context,
+                    $class_storage,
+                    $lhs_type_part,
+                    $method_name_lc,
+                    $lhs_var_id === '$this',
+                );
 
-            // a templated mixin without the method falls back to the named ones
-            if ($method_id === $method_id_before_mixins
-                && $class_storage->mixin_declaring_fqcln
-                && $class_storage->namedMixins
-            ) {
-                [$lhs_type_part, $class_storage, $naive_method_exists, $method_id, $fq_class_name]
-                    = self::handleRegularMixins(
-                        $class_storage,
-                        $lhs_type_part,
-                        $method_name_lc,
-                        $codebase,
-                        $context,
-                        $method_id,
-                        $source,
-                        $stmt,
-                        $statements_analyzer,
-                        $fq_class_name,
-                        $lhs_var_id,
-                    );
-            }
+                if ($mixin !== null) {
+                    if ($mixin_method_exists || $class_storage->is_interface) {
+                        $mixin_user_class = $fq_class_name;
+                        ['type' => $lhs_type_part, 'storage' => $class_storage] = $mixin;
+                        $fq_class_name = $class_storage->name;
+                        $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
+                        $mixin_method_id = $method_id;
+                        $naive_method_exists = $mixin_method_exists;
 
-            // a templated mixin keeps $fq_class_name, only the method id moves to the mixin
-            if ($naive_method_exists && $method_id !== $method_id_before_mixins) {
-                $mixin_user_class = $class_name_before_mixins;
-                $mixin_method_id = $method_id;
+                        // an interface has no __call(): a `@method` of its mixin goes through the mixin's
+                        if (!$mixin_method_exists) {
+                            $naive_method_id = $method_id;
+                        }
+                    } else {
+                        // the call goes through the __call() of the class, with `$this` the class
+                        $pseudo_method_mixin = $mixin;
+                    }
+                }
             }
         }
 
@@ -517,6 +507,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $result,
                     $lhs_type_part,
                     $lhs_var_id,
+                    $pseudo_method_mixin,
                 );
 
                 if ($new_call_context) {
@@ -845,197 +836,68 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
     }
 
     /**
+     * The mixin with the method, bound for the receiver, and whether the method is a real one rather than a
+     * `@method`, which is only reached through the `__call()` of the class. Methods existence providers add to a
+     * mixin are not looked for: a provider forwarding the call back to the class would recurse.
+     *
      * @param lowercase-string $method_name_lc
-     * @return array{TNamedObject, ClassLikeStorage, bool, MethodIdentifier, string}
+     * @return array{
+     *     array{type: TNamedObject, storage: ClassLikeStorage, declared: TNamedObject|TTemplateParam}|null,
+     *     bool,
+     * }
      */
-    private static function handleTemplatedMixins(
+    private static function findMixinWithMethod(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        Codebase $codebase,
+        Context $context,
         ClassLikeStorage $class_storage,
         TNamedObject $lhs_type_part,
         string $method_name_lc,
-        Codebase $codebase,
-        Context $context,
-        MethodIdentifier $method_id,
-        StatementsSource $source,
-        PhpParser\Node\Expr\MethodCall $stmt,
-        StatementsAnalyzer $statements_analyzer,
-        string $fq_class_name,
+        bool $self_call,
     ): array {
-        if ($class_storage->templatedMixins
-            && $lhs_type_part instanceof TGenericObject
-            && $class_storage->template_types
-        ) {
-            $template_type_keys = array_keys($class_storage->template_types);
+        $mixin_method_exists = false;
+        $is_interface = $class_storage->is_interface;
+        $has_magic_call = isset($class_storage->declaring_method_ids['__call']);
 
-            foreach (array_reverse($class_storage->templatedMixins) as $mixin) {
-                $param_position = array_search(
-                    $mixin->param_name,
-                    $template_type_keys,
-                    true,
-                );
-
-                if ($param_position !== false
-                    && isset($lhs_type_part->type_params[$param_position])
-                ) {
-                    $current_type_param = $lhs_type_part->type_params[$param_position];
-                    if ($current_type_param->isSingle()) {
-                        $lhs_type_part_new = array_values(
-                            $current_type_param->getAtomicTypes(),
-                        )[0];
-
-                        if ($lhs_type_part_new instanceof TNamedObject) {
-                            $new_method_id = new MethodIdentifier(
-                                $lhs_type_part_new->value,
-                                $method_name_lc,
-                            );
-
-                            $mixin_class_storage = $codebase->classlike_storage_provider->get(
-                                $lhs_type_part_new->value,
-                            );
-
-                            if ($codebase->methodExists(
-                                $new_method_id,
-                                $context->calling_method_id,
-                                $codebase->collect_locations
-                                    ? new CodeLocation($source, $stmt->name)
-                                    : null,
-                                !$context->collect_initializations
-                                && !$context->collect_mutations
-                                    ? $statements_analyzer
-                                    : null,
-                                $statements_analyzer->getFilePath(),
-                                true,
-                                $context->insideUse(),
-                            )) {
-                                return [
-                                    $lhs_type_part_new,
-                                    $mixin_class_storage,
-                                    true,
-                                    $new_method_id,
-                                    $fq_class_name,
-                                ];
-                            }
-
-                            if (isset($mixin_class_storage->pseudo_methods[$method_name_lc])) {
-                                return [
-                                    $lhs_type_part_new,
-                                    $mixin_class_storage,
-                                    false,
-                                    $new_method_id,
-                                    $fq_class_name,
-                                ];
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return [
-            $lhs_type_part,
+        $mixin = MixinLookup::findMember(
+            $codebase,
             $class_storage,
-            false,
-            $method_id,
-            $fq_class_name,
-        ];
-    }
-
-    /**
-     * @param lowercase-string $method_name_lc
-     * @return array{TNamedObject, ClassLikeStorage, bool, MethodIdentifier, string}
-     */
-    private static function handleRegularMixins(
-        ClassLikeStorage $class_storage,
-        TNamedObject $lhs_type_part,
-        string $method_name_lc,
-        Codebase $codebase,
-        Context $context,
-        MethodIdentifier $method_id,
-        StatementsSource $source,
-        PhpParser\Node\Expr\MethodCall $stmt,
-        StatementsAnalyzer $statements_analyzer,
-        string $fq_class_name,
-        ?string $lhs_var_id,
-    ): array {
-        $mixin_declaring_fqcln = $class_storage->mixin_declaring_fqcln;
-
-        if ($mixin_declaring_fqcln !== null) {
-            foreach (array_reverse($class_storage->getNamedMixinsForLookup()) as $mixin) {
-                $new_method_id = new MethodIdentifier(
-                    $mixin->value,
-                    $method_name_lc,
-                );
-
-                if (!$codebase->methodExists(
-                    $new_method_id,
+            $lhs_type_part,
+            static function (ClassLikeStorage $mixin_storage) use (
+                $statements_analyzer,
+                $stmt,
+                $codebase,
+                $context,
+                $method_name_lc,
+                $is_interface,
+                $has_magic_call,
+                &$mixin_method_exists,
+            ): bool {
+                $mixin_method_exists = $codebase->methodExists(
+                    new MethodIdentifier($mixin_storage->name, $method_name_lc),
                     $context->calling_method_id,
                     $codebase->collect_locations
-                        ? new CodeLocation($source, $stmt->name)
+                        ? new CodeLocation($statements_analyzer->getSource(), $stmt->name)
                         : null,
                     !$context->collect_initializations
                     && !$context->collect_mutations
                         ? $statements_analyzer
                         : null,
                     $statements_analyzer->getFilePath(),
-                    true,
-                    $context->insideUse(),
-                )) {
-                    continue;
-                }
-
-                $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get(
-                    $class_storage->getNamedMixinDeclaringClass($mixin),
-                );
-
-                $mixin_class_template_params = ClassTemplateParamCollector::collect(
-                    $codebase,
-                    $mixin_declaring_class_storage,
-                    $class_storage,
-                    null,
-                    $lhs_type_part,
-                    $lhs_var_id === '$this',
-                );
-
-                $mixin_type_part = $mixin->replaceTemplateTypesWithArgTypes(
-                    new TemplateResult([], $mixin_class_template_params ?: []),
-                    $codebase,
-                );
-
-                $lhs_type_expanded = TypeExpander::expandUnion(
-                    $codebase,
-                    new Union([$mixin_type_part]),
-                    $mixin_declaring_class_storage->name,
-                    $fq_class_name,
-                    $class_storage->parent_class,
-                    true,
                     false,
-                    $class_storage->final,
+                    $context->insideUse(),
                 );
 
-                $new_lhs_type_part = $lhs_type_expanded->getSingleAtomic();
+                // an interface has no __call(): a `@method` of its mixin goes through the mixin's
+                return $mixin_method_exists
+                    || (isset($mixin_storage->pseudo_methods[$method_name_lc])
+                        && ($is_interface ? isset($mixin_storage->declaring_method_ids['__call']) : $has_magic_call));
+            },
+            $self_call,
+        );
 
-                if ($new_lhs_type_part instanceof TNamedObject) {
-                    $mixin_type_part = $new_lhs_type_part;
-                }
-
-                $mixin_class_storage = $codebase->classlike_storage_provider->get($mixin->value);
-
-                return [
-                    $mixin_type_part,
-                    $mixin_class_storage,
-                    true,
-                    $new_method_id,
-                    $mixin_class_storage->name,
-                ];
-            }
-        }
-
-        return [
-            $lhs_type_part,
-            $class_storage,
-            false,
-            $method_id,
-            $fq_class_name,
-        ];
+        return [$mixin, $mixin_method_exists];
     }
 
     private static function handleCallableObject(

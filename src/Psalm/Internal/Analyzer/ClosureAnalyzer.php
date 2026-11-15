@@ -23,7 +23,10 @@ use Psalm\Storage\Capabilities;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyMixed;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 
 use function in_array;
@@ -174,6 +177,38 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
+     * `use ($a)` binds `$a` in the closure, to null when it is undefined
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getBoundUseType(Union $type): Union
+    {
+        if (!$type->possibly_undefined && !$type->possibly_undefined_from_try) {
+            return $type;
+        }
+
+        $type = $type->setPossiblyUndefined(false, false);
+
+        if ($type->isNullable()) {
+            return $type;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TNonEmptyMixed) {
+                return $type->getBuilder()
+                    ->addType(new TMixed($atomic->from_loop_isset, $atomic->from_docblock))
+                    ->freeze();
+            }
+
+            if ($atomic instanceof TMixed) {
+                return $type;
+            }
+        }
+
+        return $type->getBuilder()->addType(new TNull())->freeze();
+    }
+
+    /**
      * The type of a variable captured by a closure, as seen in its body. The value is shared with
      * the enclosing scope, so an object the enclosing scope created is not fresh in the closure:
      * the closure may be called more than once, and writing that object writes state that outlives
@@ -297,7 +332,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 $use_context->vars_in_scope[$use_var_id] =
                     $context->hasVariable($use_var_id)
-                    ? self::getCapturedType($context->vars_in_scope[$use_var_id])
+                    ? self::getCapturedType(self::getBoundUseType($context->vars_in_scope[$use_var_id]))
                     : Type::getMixed();
 
                 if ($use->byRef) {
@@ -373,7 +408,11 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         }
 
         // a closure runs on the PHP version and in the SAPI of the code creating it
-        foreach ([Context::PHP_VERSION_ID_VAR_ID, Context::PHP_SAPI_VAR_ID] as $var_id) {
+        foreach ([
+            Context::PHP_VERSION_ID_VAR_ID,
+            Context::PHP_SYMBOL_GUARD_VAR_ID,
+            Context::PHP_SAPI_VAR_ID,
+        ] as $var_id) {
             if (isset($context->vars_in_scope[$var_id])) {
                 $use_context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id];
             }
@@ -552,6 +591,31 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                     IssueBuffer::maybeAdd(
                         new UndefinedVariable(
                             'Cannot find referenced variable ' . $use_var_id,
+                            new CodeLocation($statements_analyzer->getSource(), $use->var),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+            } elseif (!$use->byRef) {
+                $use_type = $context->vars_in_scope[$use_var_id];
+
+                if ($use_type->possibly_undefined_from_try) {
+                    IssueBuffer::maybeAdd(
+                        new PossiblyUndefinedVariable(
+                            'Possibly undefined variable ' . $use_var_id . ' defined in try block',
+                            new CodeLocation($statements_analyzer->getSource(), $use->var),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                } elseif ($use_type->possibly_undefined) {
+                    // extract() defines variables without a first appearance
+                    $first_appearance = $statements_analyzer->getFirstAppearance($use_var_id);
+
+                    IssueBuffer::maybeAdd(
+                        new PossiblyUndefinedVariable(
+                            'Possibly undefined variable ' . $use_var_id . ($first_appearance
+                                ? ', first seen on line ' . $first_appearance->getLineNumber()
+                                : ''),
                             new CodeLocation($statements_analyzer->getSource(), $use->var),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
