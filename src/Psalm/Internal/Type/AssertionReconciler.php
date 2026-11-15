@@ -325,8 +325,9 @@ final class AssertionReconciler extends Reconciler
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
         $zero = TLiteralString::make('0');
+        $zero_types = self::getZeroStringTypes($codebase, $existing_var_type, $zero);
 
-        if (!self::canBeZeroString($codebase, $existing_var_type, $zero)) {
+        if (!$zero_types) {
             return self::reconcile(
                 $assertion instanceof IsLooselyEqual ? new Falsy() : new Truthy(),
                 $existing_var_type,
@@ -341,11 +342,9 @@ final class AssertionReconciler extends Reconciler
             );
         }
 
-        // what the truthiness check reports would be wrong about '0'
-        $failed_reconciliation = Reconciler::RECONCILIATION_OK;
-
+        // the truthiness check is done without issues, they would be wrong about '0'
         if ($assertion instanceof IsLooselyEqual) {
-            return self::reconcile(
+            $result = self::reconcile(
                 new IsNotIdentical($zero),
                 self::reconcile(
                     new Falsy(),
@@ -360,40 +359,73 @@ final class AssertionReconciler extends Reconciler
                 $inside_loop,
                 $template_type_map,
             );
+        } else {
+            $result = Type::combineUnionTypes(
+                self::reconcile(
+                    new Truthy(),
+                    $existing_var_type,
+                    $key,
+                    $statements_analyzer,
+                    $inside_loop,
+                    $template_type_map,
+                ),
+                new Union($zero_types),
+                $codebase,
+            );
         }
 
-        return Type::combineUnionTypes(
-            self::reconcile(
-                new Truthy(),
+        $failed_reconciliation = Reconciler::RECONCILIATION_OK;
+
+        $impossible = $result->isNever() || $result->isUnionEmpty();
+
+        if ($impossible) {
+            $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+        }
+
+        if ($key !== null
+            && $code_location
+            && ($impossible || $result->getId() === $existing_var_type->getId())
+        ) {
+            self::triggerIssueForImpossible(
                 $existing_var_type,
+                $existing_var_type->getId(),
                 $key,
-                $statements_analyzer,
-                $inside_loop,
-                $template_type_map,
-            ),
-            new Union([$zero]),
-            $codebase,
-        );
+                $assertion,
+                !$impossible,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+            );
+        }
+
+        return $result;
     }
 
     /**
-     * A mixed is left out: it stays non-empty-mixed rather than becoming '0'|non-empty-mixed
+     * The parts of $type that can be '0'. A mixed is left out: it stays non-empty-mixed rather than becoming
+     * '0'|non-empty-mixed
+     *
+     * @return list<Atomic>
      */
-    private static function canBeZeroString(Codebase $codebase, Union $type, TLiteralString $zero): bool
+    private static function getZeroStringTypes(Codebase $codebase, Union $type, TLiteralString $zero): array
     {
+        $zero_types = [];
+
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TTemplateParam) {
-                if (self::canBeZeroString($codebase, $atomic_type->as, $zero)) {
-                    return true;
+                $as_zero_types = self::getZeroStringTypes($codebase, $atomic_type->as, $zero);
+
+                if ($as_zero_types) {
+                    $zero_types[] = $atomic_type->replaceAs(new Union($as_zero_types));
                 }
             } elseif (!$atomic_type instanceof TMixed
                 && AtomicTypeComparator::isContainedBy($codebase, $zero, $atomic_type)
             ) {
-                return true;
+                $zero_types[] = $zero;
             }
         }
 
-        return false;
+        return $zero_types;
     }
 
     /**
@@ -417,6 +449,11 @@ final class AssertionReconciler extends Reconciler
             || $assertion instanceof HasAtLeastCount
         ) {
             return Type::getMixed();
+        }
+
+        // false, 0, '' and [] are loosely null too
+        if ($assertion instanceof IsLooselyEqual && $assertion->type instanceof TNull) {
+            return Type::getMixed($inside_loop);
         }
 
         if (!$assertion->isNegation()) {

@@ -3635,6 +3635,34 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'looseNullComparisonKeepsTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template T of ?string
+                     * @param T $t
+                     * @return T
+                     */
+                    function notEqual($t) {
+                        if ($t != null) {
+                            return $t;
+                        }
+
+                        return $t;
+                    }
+
+                    /**
+                     * @template T of string
+                     * @param T $t
+                     * @return T
+                     */
+                    function equal($t) {
+                        if ($t == null) {
+                            return $t;
+                        }
+
+                        return $t;
+                    }',
+            ],
             'looseNullComparisonWithZeroString' => [
                 'code' => '<?php
                     /** @param "0"|null $s */
@@ -5096,6 +5124,22 @@ final class ConditionalTest extends TestCase
                         if ($s == null) {}
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'looseNullEqualityOfNonEmptyStringIsImpossible' => [
+                'code' => '<?php
+                    /** @param non-empty-string $s */
+                    function f(string $s): void {
+                        if ($s == null) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'looseNullInequalityOfZeroOrOneIsRedundant' => [
+                'code' => '<?php
+                    /** @param "0"|"1" $s */
+                    function f(string $s): void {
+                        if ($s != null) {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
             ],
             'looseNullInequalityOfEmptyStringIsImpossible' => [
                 'code' => '<?php
