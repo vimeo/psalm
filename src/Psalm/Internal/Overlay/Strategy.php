@@ -34,10 +34,10 @@ final class Strategy
     /** S2 takes every project file, see SCOPE_ENV */
     public const SCOPE_PROJECT = 'project';
 
-    /** S2 takes the files the reference index names, see SCOPE_ENV */
+    /** S2 takes the files the reference index names, the default */
     public const SCOPE_INDEX = 'index';
 
-    /** Overrides the S2 scope until the oracle shows where the index is complete */
+    /** `project` makes S2 analyse every project file, to compare with the files the index names */
     public const SCOPE_ENV = 'PSALM_OVERLAY_SIGNATURE_SCOPE';
 
     /** Computes the S2 answer too for S1 requests and reports differences on STDERR */
@@ -49,6 +49,6 @@ final class Strategy
     /** @return self::SCOPE_* */
     public static function getSignatureScope(): string
     {
-        return getenv(self::SCOPE_ENV) === self::SCOPE_INDEX ? self::SCOPE_INDEX : self::SCOPE_PROJECT;
+        return getenv(self::SCOPE_ENV) === self::SCOPE_PROJECT ? self::SCOPE_PROJECT : self::SCOPE_INDEX;
     }
 }

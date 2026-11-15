@@ -163,6 +163,31 @@ final class OverlayEndToEndTest extends TestCase
         );
     }
 
+    public function testSignatureChangeAnalysesTheDependentsTheIndexNames(): void
+    {
+        $a = '<?php namespace App; class A { public function foo(): int { return 1; } }';
+        $this->writeFiles([
+            'A.php' => $a,
+            'B.php' => '<?php namespace App; final class B { public function f(A $a): int { return $a->foo(); } }',
+            'C.php' => '<?php namespace App; final class C { public function f(): int { return 1; } }',
+        ]);
+        $this->recordReferences();
+        $overlay = ['src/A.php' => str_replace('foo(): int { return 1; }', 'foo(): string { return ""; }', $a)];
+
+        [, $envelope] = $this->overlay($overlay);
+        // C references nothing of A
+        $this->assertSame(['src/A.php', 'src/B.php'], $envelope['analyzed_files']);
+        $this->assertSame(
+            [['InvalidReturnStatement', 'src/B.php', 'error'], ['InvalidReturnType', 'src/B.php', 'error']],
+            self::summarize($envelope),
+        );
+
+        // every project file, to compare with
+        [, $all_files] = $this->overlay($overlay, ['PSALM_OVERLAY_SIGNATURE_SCOPE' => 'project']);
+        $this->assertSame(['src/A.php', 'src/B.php', 'src/C.php'], $all_files['analyzed_files']);
+        $this->assertSame($envelope['new_issues'], $all_files['new_issues']);
+    }
+
     public function testVisibilityChangeAnalysesTheReferencesOfTheMember(): void
     {
         $a = '<?php namespace App; class A { public function foo(): int { return 1; } public function bar(): void {} }';
