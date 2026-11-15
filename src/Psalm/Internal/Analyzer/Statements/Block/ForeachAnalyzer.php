@@ -802,9 +802,12 @@ final class ForeachAnalyzer
             return true;
         }
 
+        $array_root_id = '$' . $array_root;
+
         $value_var_name = substr($value_var_id, 1);
 
-        $is_reference = isset($context->references_to_external_scope[$array_var_id])
+        $is_reference = $statements_analyzer->isCapturedByReference($array_root_id)
+            || isset($context->references_to_external_scope[$array_var_id])
             || isset($context->references_in_scope[$array_var_id])
             || array_any(
                 $context->references_in_scope,

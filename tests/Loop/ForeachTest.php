@@ -2058,6 +2058,40 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'foreachByReferenceKeepsTheItemTypesWhenAClosureCapturedTheArrayByReference' => [
+                'code' => '<?php
+                    $a = [1, 2];
+                    $write = function (int $k) use (&$a): void {
+                        $a[$k] = 5;
+                    };
+
+                    foreach ($a as $k => &$v) {
+                        $v = "x";
+                        $write($k);
+                    }
+
+                    unset($v);',
+                'assertions' => [
+                    '$a===' => "non-empty-array<int, 'x'|1|2|5>",
+                ],
+            ],
+            'foreachByReferenceReplacesTheItemTypesWhenAClosureCapturedTheArrayByValue' => [
+                'code' => '<?php
+                    $a = [1, 2];
+                    $read = function (int $k) use ($a): int {
+                        return $a[$k];
+                    };
+
+                    foreach ($a as $k => &$v) {
+                        $v = "x";
+                        $read($k);
+                    }
+
+                    unset($v);',
+                'assertions' => [
+                    '$a===' => "list{'x', 'x'}",
+                ],
+            ],
             'foreachByReferenceThatUnsetsTheValueVariableKeepsTheItemTypes' => [
                 'code' => '<?php
                     $a = [1, 2];
