@@ -945,6 +945,20 @@ final class StarProjectionTest extends TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - Argument 1 of takesMixed expects Box<mixed>, but parent type Box<*> provided',
             ],
+            'starProjectionOfAnUnboundedTemplateIsNotAMixedValue' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @param Box<int> $b */
+                    function takesInt(Box $b): void {}
+
+                    /** @param Box<*> $b */
+                    function f(Box $b): void {
+                        takesInt($b);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:34 - Argument 1 of takesInt expects Box<int>, but parent type Box<*> provided',
+            ],
             'starProjectionFitsOnlyACovariantArgumentHoldingTheBound' => [
                 'code' => '<?php
                     /** @template-covariant T */

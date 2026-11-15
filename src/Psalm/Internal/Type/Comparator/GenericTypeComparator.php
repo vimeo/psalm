@@ -116,6 +116,17 @@ final class GenericTypeComparator
                     continue;
                 }
 
+                // a `*` is one unknown type, not a mixed value: `U<*>` is a parent type of each `U<X>` whose `X` it
+                // may be, whatever the bound
+                if (StarProjection::isStar($input_param)) {
+                    $param_comparison_result->type_coerced = UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $container_param,
+                        StarProjection::read($input_param),
+                    );
+                    $param_comparison_result->type_coerced_from_mixed = false;
+                }
+
                 if ($atomic_comparison_result) {
                     $atomic_comparison_result->type_coerced
                         = $param_comparison_result->type_coerced === true
