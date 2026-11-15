@@ -1298,6 +1298,46 @@ final class IssetTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
+            'coalesceChainKeepsTheTypeOfTheArrayItReads' => [
+                'code' => '<?php
+                    /** @param list<mixed> $l */
+                    function f(array $l): void {
+                        $x = $l[0]["w"] ?? $l[1]["x"] ?? null;
+                        $w = $l[1]["x"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
+            'coalesceOnAnOffsetKeepsTheTypeOfTheArrayItReads' => [
+                'code' => '<?php
+                    /** @param list<mixed> $l */
+                    function f(array $l): void {
+                        $y = $l[0] ?? [];
+                        $w = $l[0]["w"];
+                    }
+
+                    /** @param list<mixed> $l */
+                    function g(array $l): void {
+                        $y = isset($l[0]) ? 1 : 2;
+                        $w = $l[0]["w"];
+                    }
+
+                    /** @param list<mixed> $l */
+                    function h(array $l): void {
+                        $x = $l[0] ?? false;
+                        $w = $l[0];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
+            'ternaryCombinesANarrowingWithAnAssignmentOfAnotherType' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? null : 1;
+                    $a === null ? 0 : ($a = "s");',
+                'assertions' => [
+                    '$a===' => "'s'|null",
+                ],
+            ],
             'issetTernaryKeepsTheTypeOfTheArrayItReads' => [
                 'code' => '<?php
                     /** @return list<mixed> */

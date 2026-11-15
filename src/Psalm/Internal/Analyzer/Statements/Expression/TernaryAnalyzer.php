@@ -365,11 +365,36 @@ final class TernaryAnalyzer
         $redef_var_else = array_keys($t_else_context->getRedefinedVars($context->vars_in_scope));
         $redef_all = array_intersect($redef_var_ifs, $redef_var_else);
 
+        $if_narrowed_var_ids = self::getOnlyNarrowedVarIds(
+            $context,
+            $if_context,
+            $if_start_vars,
+            $if_start_assigned_var_ids,
+            $assigned_in_conditional_var_ids,
+            $redef_var_ifs,
+        );
+        $else_narrowed_var_ids = self::getOnlyNarrowedVarIds(
+            $context,
+            $t_else_context,
+            $else_start_vars,
+            $else_start_assigned_var_ids,
+            $assigned_in_conditional_var_ids + $else_rederived_var_ids,
+            $redef_var_else,
+        );
+
         //these vars were changed in both branches
         foreach ($redef_all as $redef_var_id) {
             if (self::keepsOuterMixedType($statements_analyzer, $context, $if_context, $redef_var_id)
                 && self::keepsOuterMixedType($statements_analyzer, $context, $t_else_context, $redef_var_id)
             ) {
+                continue;
+            }
+
+            if (isset($if_narrowed_var_ids[$redef_var_id], $else_narrowed_var_ids[$redef_var_id])) {
+                $context->vars_in_scope[$redef_var_id] = $context->vars_in_scope[$redef_var_id]
+                    ->addParentNodes($if_context->vars_in_scope[$redef_var_id]->parent_nodes)
+                    ->addParentNodes($t_else_context->vars_in_scope[$redef_var_id]->parent_nodes);
+
                 continue;
             }
 
@@ -387,15 +412,7 @@ final class TernaryAnalyzer
                 continue;
             }
 
-            if (self::isOnlyNarrowed(
-                $statements_analyzer,
-                $context,
-                $if_context,
-                $if_start_vars,
-                $if_start_assigned_var_ids,
-                $assigned_in_conditional_var_ids,
-                $redef_var_ifs_id,
-            )) {
+            if (isset($if_narrowed_var_ids[$redef_var_ifs_id])) {
                 $context->vars_in_scope[$redef_var_ifs_id] = $context->vars_in_scope[$redef_var_ifs_id]
                     ->addParentNodes($if_context->vars_in_scope[$redef_var_ifs_id]->parent_nodes);
 
@@ -416,15 +433,7 @@ final class TernaryAnalyzer
                 continue;
             }
 
-            if (self::isOnlyNarrowed(
-                $statements_analyzer,
-                $context,
-                $t_else_context,
-                $else_start_vars,
-                $else_start_assigned_var_ids,
-                $assigned_in_conditional_var_ids + $else_rederived_var_ids,
-                $redef_var_else_id,
-            )) {
+            if (isset($else_narrowed_var_ids[$redef_var_else_id])) {
                 $context->vars_in_scope[$redef_var_else_id] = $context->vars_in_scope[$redef_var_else_id]
                     ->addParentNodes($t_else_context->vars_in_scope[$redef_var_else_id]->parent_nodes);
 
@@ -482,35 +491,42 @@ final class TernaryAnalyzer
     }
 
     /**
-     * A variable that only the condition narrowed in this branch, and that the branch then left untouched, keeps its
-     * outer type, as IfAnalyzer does: the narrowing says nothing about the paths through the other branch
+     * The variables that only the condition narrowed in this branch, and that the branch then left untouched. They
+     * keep their outer type, as IfAnalyzer does: the condition doesn't change their value, and the narrowing says
+     * nothing about the paths through the other branch
      *
      * @param array<string, Union> $start_vars the branch's variables once the condition is applied
      * @param array<string, int> $start_assigned_var_ids
      * @param array<string, mixed> $condition_assigned_var_ids
+     * @param list<string> $redefined_var_ids
+     * @return array<string, true>
      */
-    private static function isOnlyNarrowed(
-        StatementsAnalyzer $statements_analyzer,
+    private static function getOnlyNarrowedVarIds(
         Context $outer_context,
         Context $branch_context,
         array $start_vars,
         array $start_assigned_var_ids,
         array $condition_assigned_var_ids,
-        string $var_id,
-    ): bool {
-        return !isset($condition_assigned_var_ids[$var_id])
-            && isset(
-                $start_vars[$var_id],
-                $branch_context->vars_in_scope[$var_id],
-                $outer_context->vars_in_scope[$var_id],
-            )
-            && ($branch_context->assigned_var_ids[$var_id] ?? null) === ($start_assigned_var_ids[$var_id] ?? null)
-            && $branch_context->vars_in_scope[$var_id]->equals($start_vars[$var_id])
-            && UnionTypeComparator::isContainedBy(
-                $statements_analyzer->getCodebase(),
-                $start_vars[$var_id],
-                $outer_context->vars_in_scope[$var_id],
-            );
+        array $redefined_var_ids,
+    ): array {
+        $narrowed_var_ids = [];
+
+        foreach ($redefined_var_ids as $var_id) {
+            if (!isset($condition_assigned_var_ids[$var_id])
+                && isset(
+                    $start_vars[$var_id],
+                    $branch_context->vars_in_scope[$var_id],
+                    $outer_context->vars_in_scope[$var_id],
+                )
+                && ($branch_context->assigned_var_ids[$var_id] ?? null)
+                    === ($start_assigned_var_ids[$var_id] ?? null)
+                && $branch_context->vars_in_scope[$var_id]->equals($start_vars[$var_id])
+            ) {
+                $narrowed_var_ids[$var_id] = true;
+            }
+        }
+
+        return $narrowed_var_ids;
     }
 
     private static function setResultType(
