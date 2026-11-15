@@ -100,16 +100,7 @@ final class ExpressionAnalyzer
 
         $if_body_context = $context->if_body_context;
 
-        // only the operands that all hold where the condition does reach the if body: those of an `&&`, or of an `||`
-        // under a `!`, not those of a `xor`, of a negated `&&`, of a call argument...
-        if ($if_body_context
-            && !$stmt instanceof PhpParser\Node\Expr\BooleanNot
-            && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
-            && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
-            && ($context->inside_negation
-                || (!$stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
-                    && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd))
-        ) {
+        if ($if_body_context && !self::passesIfBodyContext($stmt, $context->inside_negation)) {
             $context->if_body_context = null;
         }
 
@@ -206,6 +197,41 @@ final class ExpressionAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Whether the operands of an expression of the condition all hold where it does, so that what they assign or
+     * narrow reaches the if body: those of an `&&`, of an `||` under a `!`, of a comparison to `true`, not those of a
+     * `xor`, of a negated `&&` or of a call argument
+     *
+     * @psalm-pure
+     */
+    private static function passesIfBodyContext(PhpParser\Node\Expr $stmt, bool $inside_negation): bool
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+        ) {
+            return !$inside_negation;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+        ) {
+            return self::isTrueConst($stmt->left) || self::isTrueConst($stmt->right);
+        }
+
+        return $stmt instanceof PhpParser\Node\Expr\BooleanNot
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isTrueConst(PhpParser\Node\Expr $expr): bool
+    {
+        return $expr instanceof PhpParser\Node\Expr\ConstFetch
+            && strtolower($expr->name->toString()) === 'true';
     }
 
     /**

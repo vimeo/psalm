@@ -278,6 +278,18 @@ final class ConditionalTest extends TestCase
                         }
                     }
 
+                    function comparedToTrue(bool $b, string $input): void {
+                        if (($b && ($s = $input)) === true) {
+                            /** @psalm-check-type-exact $s = non-falsy-string */
+                            echo $s;
+                        }
+
+                        if (true == ($b && ($t = $input))) {
+                            /** @psalm-check-type-exact $t = non-falsy-string */
+                            echo $t;
+                        }
+                    }
+
                     function g(?int $a): void {
                         if (takesBool($a !== null && $a > 0)) {
                             /** @psalm-check-type-exact $a = int|null */
