@@ -127,7 +127,7 @@ final class ForTest extends TestCase
                         echo "again";
                     }',
                 'assertions' => [
-                    '$value===' => 'int<0, 3>',
+                    '$value===' => '0',
                 ],
             ],
             'variableAssignedInALaterCommaSeparatedForConditionIsDefinedAfterTheLoop' => [
