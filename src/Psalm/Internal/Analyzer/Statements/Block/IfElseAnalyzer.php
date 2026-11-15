@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\Scope\IfScope;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type;
@@ -177,6 +178,23 @@ final class IfElseAnalyzer
 
         $entry_clauses = $context->clauses;
 
+        // what the earlier conditions said of a variable the condition assigns is not true of the new value: the
+        // body does not get those clauses (the paradox check below drops them per operand by itself)
+        $body_entry_clauses = [];
+
+        foreach ($entry_clauses as $c) {
+            foreach ($c->possibilities as $key => $_value) {
+                foreach ($assigned_in_conditional_var_ids as $conditional_assigned_var_id => $_) {
+                    if (preg_match('/^' . preg_quote($conditional_assigned_var_id, '/') . '(\[|-|$)/', $key)) {
+                        $c = new Clause([], $cond_object_id, $cond_object_id, true);
+                        break 2;
+                    }
+                }
+            }
+
+            $body_entry_clauses[] = $c;
+        }
+
         // the clauses the condition has already reconciled are not established independently of it
         $already_reconciled_clauses = [
             ...$if_context->reconciled_expression_clauses,
@@ -199,8 +217,8 @@ final class IfElseAnalyzer
 
         $if_clauses = Algebra::simplifyCNF($if_clauses);
 
-        $if_context->clauses = $entry_clauses
-            ? Algebra::simplifyCNF([...$entry_clauses, ...$if_clauses])
+        $if_context->clauses = $body_entry_clauses
+            ? Algebra::simplifyCNF([...$body_entry_clauses, ...$if_clauses])
             : $if_clauses;
 
         if ($if_context->reconciled_expression_clauses) {
@@ -440,6 +458,12 @@ final class IfElseAnalyzer
             unset($type);
         }
 
+        foreach ($if_scope->partial_new_vars as $var_id => $type) {
+            if (!isset($context->vars_in_scope[$var_id])) {
+                $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true);
+            }
+        }
+
         if ($if_scope->redefined_vars) {
             foreach ($if_scope->redefined_vars as $var_id => $type) {
                 $previous_type = $context->vars_in_scope[$var_id] ?? null;
@@ -488,8 +512,20 @@ final class IfElseAnalyzer
 
                         $context->vars_in_scope[$var_id] = $combined_type;
                     } else {
-                        $context->vars_in_scope[$var_id] =
-                            $context->vars_in_scope[$var_id]->addParentNodes($type->parent_nodes);
+                        $updated_type = $context->vars_in_scope[$var_id]->addParentNodes($type->parent_nodes);
+
+                        // what a later branch writes (`elseif`, `else`) is not in the type the first branch's
+                        // update left
+                        if (!$type->failed_reconciliation
+                            && !$type->hasMixed()
+                            && isset($if_scope->possibly_assigned_var_ids[$var_id])
+                            && !UnionTypeComparator::isContainedBy($codebase, $type, $updated_type)
+                        ) {
+                            $updated_type = Type::combineUnionTypes($updated_type, $type, $codebase);
+                            $context->removeDescendents($var_id, $updated_type);
+                        }
+
+                        $context->vars_in_scope[$var_id] = $updated_type;
                     }
                 }
             }

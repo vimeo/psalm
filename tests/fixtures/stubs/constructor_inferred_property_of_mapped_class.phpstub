@@ -1,0 +1,11 @@
+<?php
+
+class PhpToken implements Stringable
+{
+    public $pos;
+
+    public function __construct(?int $pos)
+    {
+        $this->pos = $pos;
+    }
+}
