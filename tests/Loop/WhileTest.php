@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class WhileTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -21,6 +23,53 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'mixedConditionVariableOfAWhileLoopIsNotNonEmptyAfterIt' => [
+                'code' => '<?php
+                    function check(mixed $w): void {
+                        $j = 0;
+                        while ($j < 3 && $w) {
+                            $j++;
+                        }
+
+                        $after = $w;
+                        /** @psalm-check-type-exact $after = mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'variableDefinedBeforeAPlainBreakIsDefinedAfterTheInnerLoopOfABreakTwo' => [
+                'code' => '<?php
+                    while (true) {
+                        while (true) {
+                            if (rand(0, 1)) {
+                                break 2;
+                            }
+
+                            $x = 1;
+                            break;
+                        }
+
+                        echo $x;
+                        break;
+                    }
+
+                    function f(): void {
+                        while (true) {
+                            while (true) {
+                                if (rand(0, 1)) {
+                                    break 2;
+                                }
+
+                                $y = 1;
+                                break;
+                            }
+
+                            echo $y;
+                            break;
+                        }
+                    }',
+            ],
             'variableDefinedBeforeTheLoopAndAssignedInTheConditionHasWhatTheConditionLeaves' => [
                 'code' => '<?php
                     $result = 1;
@@ -996,6 +1045,28 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'whileBreakBeforeDefinition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        while (rand()) {
+                            if (rand()) {
+                                $y = 1;
+                                break;
+                            }
+
+                            if (rand()) {
+                                break;
+                            }
+                        }
+
+                        echo $y;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:10',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'variableAssignedOnlyInTheSkippableOperandOfTheConditionIsPossiblyUndefined' => [
                 'code' => '<?php
                     while (rand(0, 1) && ($value = rand())) {

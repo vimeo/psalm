@@ -99,6 +99,9 @@ final class AndAnalyzer
             }
         }
 
+        // the left side always runs, so the offsets it read are read after the expression too
+        $context->null_array_offsets_read = $left_context->null_array_offsets_read;
+
         /** @var array<string, bool> */
         $left_referenced_var_ids = $left_context->cond_referenced_var_ids;
         $context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $left_referenced_var_ids);
@@ -145,6 +148,7 @@ final class AndAnalyzer
             // what the left side guards (function_exists(), class_exists(), defined()...) holds for the right one
             $right_context->updateChecks($left_context);
             $right_context->phantom_classes += $left_context->phantom_classes;
+            $right_context->negated_phantom_classes += $left_context->negated_phantom_classes;
             $right_context->phantom_functions += $left_context->phantom_functions;
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
@@ -178,6 +182,8 @@ final class AndAnalyzer
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
 
+        $context->intersectNullArrayOffsets($right_context);
+
         $context->cond_referenced_var_ids = array_merge(
             $right_context->cond_referenced_var_ids,
             $left_context->cond_referenced_var_ids,
@@ -186,6 +192,7 @@ final class AndAnalyzer
         if ($context->inside_conditional) {
             $context->updateChecks($right_context);
             $context->phantom_classes += $right_context->phantom_classes;
+            $context->negated_phantom_classes += $right_context->negated_phantom_classes;
             $context->phantom_functions += $right_context->phantom_functions;
 
             // where both sides hold, so does a file_exists() check of either, unless it was negated
@@ -213,6 +220,9 @@ final class AndAnalyzer
                 ...$if_body_context->vars_in_scope,
                 ...$context->vars_in_scope,
             ];
+
+            // the body runs where both sides ran
+            $if_body_context->null_array_offsets_read = $right_context->null_array_offsets_read;
 
             $if_body_context->cond_referenced_var_ids = [
                 ...$if_body_context->cond_referenced_var_ids,
@@ -244,6 +254,7 @@ final class AndAnalyzer
 
             $if_body_context->updateChecks($context);
             $if_body_context->phantom_classes += $context->phantom_classes;
+            $if_body_context->negated_phantom_classes += $context->negated_phantom_classes;
             $if_body_context->phantom_functions += $context->phantom_functions;
             $if_body_context->phantom_files = [
                 ...$if_body_context->phantom_files,

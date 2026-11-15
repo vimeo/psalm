@@ -140,6 +140,42 @@ final class ArrayAssignmentTest extends TestCase
                     $nested = ["a" => [9223372036854775807 => 1]];
                     $nested["b"][] = 2;',
             ],
+            'arrayKeyAssignedInALoopFromAnInvalidOffsetIsArrayKey' => [
+                'code' => '<?php
+                    /** @var list<array|int|string> $items */
+                    $items = [];
+                    $new = [];
+                    foreach ($items as $element) {
+                        $new[$element] = 1;
+                    }',
+                'assertions' => [
+                    '$new' => 'array<array-key, int>',
+                ],
+                'ignored_issues' => ['PossiblyInvalidArrayOffset'],
+            ],
+            'templateOffsetBoundByArrayKeyAssignedToAnArray' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @param array<string, int> $arr
+                     * @param K $key
+                     */
+                    function foo(array $arr, $key): void {
+                        $arr[$key] = 1;
+                        echo count($arr);
+                    }',
+            ],
+            'intOrStringOffsetAssignedToAnArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int> $arr
+                     * @param int|string $key
+                     */
+                    function foo(array $arr, $key): void {
+                        $arr[$key] = 1;
+                        echo count($arr);
+                    }',
+            ],
             'appendToANestedElementOfASealedKeyedArray' => [
                 'code' => '<?php
                     $conditions = ["A" => "B"];
@@ -2996,6 +3032,63 @@ final class ArrayAssignmentTest extends TestCase
                     $array = [9223372036854775807 => "last"];
                     $array[] = "one more";',
                 'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Cannot add an element to the array as the next element is already occupied',
+            ],
+            'possiblyInvalidArrayOffsetWhenAssigningInALoop' => [
+                'code' => '<?php
+                    /**
+                     * @param array<array|int|string> $arg
+                     */
+                    function foo($arg): array {
+                        $new = [];
+                        foreach ($arg as $element) {
+                            $new[$element] = rand(0, 10);
+                        }
+
+                        return $new;
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29',
+            ],
+            'possiblyInvalidArrayOffsetWhenAssigningToAnEmptyArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array|int|string $key
+                     */
+                    function foo($key): array {
+                        $new = [];
+                        $new[$key] = 1;
+
+                        return $new;
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - '
+                    . 'Cannot access value on variable $new[$key] using a array<array-key, mixed>|int|string offset',
+            ],
+            'possiblyInvalidArrayOffsetWhenAssigningToANonEmptyArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int> $arr
+                     * @param array|int|string $key
+                     */
+                    function foo(array $arr, $key): array {
+                        $arr[$key] = 1;
+
+                        return $arr;
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - '
+                    . 'Cannot access value on variable $arr[$key] using a array<array-key, mixed>|int|string offset',
+            ],
+            'invalidArrayOffsetWhenAssigningToANonEmptyArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int> $arr
+                     * @param array $key
+                     */
+                    function foo(array $arr, array $key): array {
+                        $arr[$key] = 1;
+
+                        return $arr;
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - '
+                    . 'Cannot access value on variable $arr[$key] using a array<array-key, mixed> offset',
             ],
             'assignToTheItemOfAnArrayAFunctionReturnsByValue' => [
                 'code' => '<?php

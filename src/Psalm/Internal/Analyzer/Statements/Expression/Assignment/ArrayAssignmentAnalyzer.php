@@ -309,6 +309,7 @@ final class ArrayAssignmentAnalyzer
                     $root_type,
                     $context,
                     false,
+                    true,
                 );
 
                 self::trackPropertyElementImpurity($statements_analyzer, $root_array_expr, $context);
@@ -342,6 +343,7 @@ final class ArrayAssignmentAnalyzer
                 && !$root_type->possibly_undefined_from_try
                     ? $root_type->setPossiblyUndefined(false)
                     : $root_type;
+            $context->writeToReferencesPossiblyBound($root_var_id, $root_type, $codebase);
         }
 
         if ($root_array_expr instanceof PhpParser\Node\Expr\MethodCall
@@ -1002,7 +1004,9 @@ final class ArrayAssignmentAnalyzer
                     }
                 }
 
-                $array_atomic_key_type = ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type);
+                $array_atomic_key_type = ArrayFetchAnalyzer::castInvalidOffsetTypes(
+                    ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type),
+                );
             } else {
                 $array_atomic_key_type = Type::getArrayKey();
             }
