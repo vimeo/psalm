@@ -634,6 +634,25 @@ class Reconciler
     }
 
     /**
+     * What a comparison narrows of a template is its bound: the template keeps its name and gets the narrowed bound,
+     * and is dropped when nothing is left of the bound
+     *
+     * @param callable(Union): Union $reconcile_bound
+     */
+    protected static function narrowTemplateBound(
+        MutableUnion $existing_var_type,
+        TTemplateParam $template,
+        callable $reconcile_bound,
+    ): void {
+        $existing_var_type->removeType($template->getKey());
+        $narrowed_bound = $reconcile_bound($template->as);
+
+        if (!$narrowed_bound->isNever()) {
+            $existing_var_type->addType($template->replaceAs($narrowed_bound));
+        }
+    }
+
+    /**
      * `'0' !== $s` leaves `string` as it is, so it is only worth something after `'' !== $s` has made the string
      * non-empty: the assertions of a variable that exclude `''` are applied before the one that excludes `'0'`,
      * whatever order they were written in. The other assertions (`is_string()`) keep their place.
