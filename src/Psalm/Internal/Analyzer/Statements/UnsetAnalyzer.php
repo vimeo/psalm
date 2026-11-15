@@ -189,6 +189,7 @@ final class UnsetAnalyzer
      * The atomic types of $array_type once its element under $key_type is unset
      *
      * @return non-empty-list<Atomic>
+     * @psalm-capabilities read-props
      */
     private static function removeOffset(Union $array_type, Union $key_type): array
     {
