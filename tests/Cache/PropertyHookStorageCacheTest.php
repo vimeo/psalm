@@ -39,6 +39,8 @@ final class PropertyHookStorageCacheTest extends TestCase
         );
         $config->array_cache = false;
         $storage_dir = dirname(__DIR__, 2) . '/src/Psalm/Storage/';
+        // These lists mirror the providers before PropertyStorage and PropertyHookStorage
+        // became cache dependencies. Keep this legacy snapshot to seed the old cache namespace.
         $dependencies = [''];
         foreach (['FileStorage', 'FunctionLikeStorage', 'ClassLikeStorage', 'MethodStorage'] as $class) {
             $dependencies[] = filemtime($storage_dir . $class . '.php');
@@ -67,7 +69,13 @@ final class PropertyHookStorageCacheTest extends TestCase
             self::assertNull($classes->getLatestFromCache('contract', $path, $code));
             self::assertNull($files->getLatestFromCache($path, $code));
 
-            $property->hook_set->param_type = Type::parseString('string|array');
+            $property->hook_set = new PropertyHookStorage(
+                false,
+                false,
+                false,
+                null,
+                Type::parseString('string|array'),
+            );
             $classes->writeToCache($storage, $path, $code);
             $files->writeToCache($file_storage, $code);
             unset($classes, $files);
