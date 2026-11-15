@@ -1017,7 +1017,7 @@ final class Context
 
             foreach ($clause->possibilities as $var_id => $_) {
                 if (preg_match('/' . $quoted_remove_var_id . '[\]\[\-]/', $var_id)) {
-                    break 2;
+                    continue 2;
                 }
             }
 

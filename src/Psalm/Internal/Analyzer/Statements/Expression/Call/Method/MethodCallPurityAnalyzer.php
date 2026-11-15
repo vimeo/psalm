@@ -625,7 +625,9 @@ final class MethodCallPurityAnalyzer
                     $context->possibly_assigned_var_ids[$mutation_var_id] = true;
                 }
 
-                $context->removeVarFromConflictingClauses($mutation_var_id);
+                if ($lhs_var_id !== null) {
+                    $context->removeVarFromConflictingClauses($mutation_var_id);
+                }
             }
         } else {
             if (!$config->remember_property_assignments_after_call) {

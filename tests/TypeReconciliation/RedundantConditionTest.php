@@ -1461,6 +1461,60 @@ final class RedundantConditionTest extends TestCase
                         }
                     }',
             ],
+            'assigningAPropertyKeepsTheClausesAfterOneOnAnItemOfIt' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var list<int> */
+                        public array $items = [];
+                    }
+
+                    function f(C $c, ?string $s, bool $b): string {
+                        if (!(isset($c->items[0]) || $b)) {
+                            return "";
+                        }
+
+                        if ($s === null && !$b) {
+                            return "";
+                        }
+
+                        $c->items = [];
+
+                        if (!$b) {
+                            return $s;
+                        }
+
+                        return "";
+                    }',
+            ],
+            'aMethodWritingAPropertyKeepsTheClausesAfterOneOnAnItemOfIt' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        public function reset(): void {
+                            $this->items = [];
+                        }
+                    }
+
+                    function f(C $c, ?string $s, bool $b): string {
+                        if (!(isset($c->items[0]) || $b)) {
+                            return "";
+                        }
+
+                        if ($s === null && !$b) {
+                            return "";
+                        }
+
+                        $c->reset();
+
+                        if (!$b) {
+                            return $s;
+                        }
+
+                        return "";
+                    }',
+            ],
             'identicalComparisonOfAShapeWithAListOfARangeOfItsValues' => [
                 'code' => '<?php
                     /** @param list<int<1, max>> $ints */
@@ -2434,6 +2488,25 @@ final class RedundantConditionTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:33',
+            ],
+            'propertyThatAMethodOfAnotherObjectWrites' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        public function reset(): bool {
+                            $this->items = [];
+                            return true;
+                        }
+                    }
+
+                    function f(C $c): void {
+                        if (isset($c->items[0]) && (new C())->reset() && isset($c->items[0])) {
+                            echo "if";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:29 - $c->items[0] is isset has already been asserted',
             ],
             'identicalComparisonOfAShapeWithAShorterOneIsImpossible' => [
                 'code' => '<?php
