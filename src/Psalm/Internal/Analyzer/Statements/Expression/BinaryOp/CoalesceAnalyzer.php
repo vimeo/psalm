@@ -77,16 +77,19 @@ final class CoalesceAnalyzer
                 $context->inside_isset = $was_inside_isset;
                 $context->inside_general_use = $was_inside_general_use;
             } else {
-                // the call is evaluated unconditionally: what it assigns is set on the right too
+                // the call is evaluated unconditionally: what it assigns is set on the right too (the type of a
+                // variable it didn't assign is the same object, also on a later pass of a loop)
                 foreach ($cloned->assigned_var_ids as $assigned_var_id => $assigned_offset) {
-                    if (($context->assigned_var_ids[$assigned_var_id] ?? null) !== $assigned_offset
-                        && isset($cloned->vars_in_scope[$assigned_var_id])
+                    if (isset($cloned->vars_in_scope[$assigned_var_id])
+                        && ($context->vars_in_scope[$assigned_var_id] ?? null)
+                            !== $cloned->vars_in_scope[$assigned_var_id]
                     ) {
                         $context->vars_in_scope[$assigned_var_id] = $cloned->vars_in_scope[$assigned_var_id];
                         $context->assigned_var_ids[$assigned_var_id] = $assigned_offset;
-                        $context->vars_possibly_in_scope[$assigned_var_id] = true;
                     }
                 }
+
+                $context->vars_possibly_in_scope += $cloned->vars_possibly_in_scope;
             }
 
             if ($root_expr !== $left_expr) {

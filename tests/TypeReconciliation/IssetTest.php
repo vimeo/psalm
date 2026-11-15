@@ -1414,6 +1414,33 @@ final class IssetTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'variableAssignedInTheCallOnTheLeftOfACoalesceInALoopHasTheAssignedType' => [
+                'code' => '<?php
+                    function f(int $n): ?int {
+                        return $n ?: null;
+                    }
+
+                    function whileCoalesce(): void {
+                        $x = "a";
+                        while (rand(0, 1)) {
+                            $r = f($x = 5) ?? 0;
+                            /** @psalm-check-type-exact $x = 5 */
+                            echo $x, $r;
+                        }
+                    }
+
+                    function forCoalesce(): void {
+                        $x = "a";
+                        for ($i = 0; $i < 3; $i++) {
+                            $r = f($x = $i) ?? 0;
+                            /** @psalm-check-type-exact $x = int<0, 2> */
+                            echo $x, $r;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'issetOnPropertyOfUnionWhereALaterMemberHasAMagicGetterStillSeesTheMissingOne' => [
                 'code' => '<?php
                     final class A {
@@ -1573,6 +1600,46 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableAssignedInANullsafeCallOnTheLeftOfACoalesceIsPossiblyUndefined' => [
+                'code' => '<?php
+                    final class K {
+                        public function m(int $x): ?int {
+                            return $x ?: null;
+                        }
+                    }
+
+                    function f(?K $k): void {
+                        $r = $k?->m($x = 1) ?? 0;
+                        echo $x, $r;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'variableAssignedInATernaryOnTheLeftOfACoalesceIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(int $n): ?int {
+                        return $n ?: null;
+                    }
+
+                    $r = (rand(0, 1) ? f($x = 1) : null) ?? 0;
+                    echo $x, $r;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'variableAssignedInAMatchOnTheLeftOfACoalesceIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(int $n): ?int {
+                        return $n ?: null;
+                    }
+
+                    function g(int $i): void {
+                        $r = match ($i) { 1 => f($x = 1), default => null } ?? 0;
+                        echo $x, $r;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'issetOnPropertyOfUnionWhoseMembersAllHaveItThroughAnIntersectionIsRedundant' => [
                 'code' => '<?php
                     final class A {
