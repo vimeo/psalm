@@ -21,7 +21,6 @@ use Psalm\Storage\Assertion\NotInArray;
 use Psalm\Type\Atomic\TNull;
 
 use function array_filter;
-use function array_intersect_key;
 use function array_key_first;
 use function array_keys;
 use function array_unique;
@@ -91,6 +90,30 @@ final class AlgebraAnalyzer
         return count($clause->possibilities[$var_id]) === 1
             ? [$var_id, reset($clause->possibilities[$var_id])]
             : null;
+    }
+
+    /**
+     * Whether the clause tests one of the variables, an item or property of one, or an item whose key is one
+     * (`$a[$i]` for `$i`)
+     *
+     * @param array<string, int> $var_ids
+     * @psalm-pure
+     */
+    private static function testsAnyVar(Clause $clause, array $var_ids): bool
+    {
+        foreach ($clause->possibilities as $key => $_) {
+            if (isset($var_ids[$key])) {
+                return true;
+            }
+
+            foreach ($var_ids as $var_id => $_) {
+                if (preg_match('/' . preg_quote($var_id, '/') . '[\]\[\-]/', $key)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -166,7 +189,7 @@ final class AlgebraAnalyzer
                     || isset($formula_2_hashes[$hash])
                     // isset($x) already says that $x is not null
                     || ($not_null_var_id !== null && isset($isset_var_ids[$not_null_var_id])))
-                && !array_intersect_key($new_assigned_var_ids, $formula_2_clause->possibilities)
+                && !self::testsAnyVar($formula_2_clause, $new_assigned_var_ids)
                 && !self::hasInArrayPossibility($formula_2_clause)
             ) {
                 IssueBuffer::maybeAdd(

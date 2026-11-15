@@ -40,7 +40,7 @@ final class UnsetAnalyzer
     /**
      * Marks an expression unset() is given, as opposed to one an unset expression goes through
      */
-    private const TARGET_ATTRIBUTE = 'psalmUnsetTarget';
+    public const TARGET_ATTRIBUTE = 'psalmUnsetTarget';
 
     /**
      * Marks an expression PHP fetches for unsetting rather than reads: the unset target, and the array or object
@@ -246,6 +246,7 @@ final class UnsetAnalyzer
                         new Union($root_types),
                         $key_type,
                     );
+                    $context->possibly_assigned_var_ids[$root_var_id] = true;
 
                     $context->removeVarFromConflictingClauses(
                         $root_var_id,

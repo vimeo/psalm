@@ -210,11 +210,10 @@ final class NegatedAssertionReconciler extends Reconciler
             // do nothing
         } elseif ($assertion instanceof IsClassNotEqual) {
             // do nothing
-        } elseif ($assertion instanceof IsNotType
-            && $assertion->upper_bound_only
-            && $assertion_type instanceof TTraitString
+        } elseif (($assertion_type instanceof TClassString || $assertion_type instanceof TTraitString)
+            && $assertion_type->is_loaded
         ) {
-            // the name of a trait that has not been loaded
+            // do nothing
         } elseif (!($assertion instanceof IsNotType && $assertion->exact)
             && $existing_var_type->isSingle()
             && $existing_var_type->hasNamedObjectType()
@@ -224,8 +223,6 @@ final class NegatedAssertionReconciler extends Reconciler
         ) {
             // the type may already be narrowed by the condition the negation is applied after, and checking if two
             // types share a common parent is not enough to guarantee children are instanceof each other
-        } elseif ($assertion_type instanceof TClassString && $assertion_type->is_loaded) {
-            // do nothing
         } elseif ($existing_var_type->isArray()
             && ($assertion->getAtomicType() instanceof TArray
                 || $assertion->getAtomicType() instanceof TKeyedArray)

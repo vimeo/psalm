@@ -49,6 +49,7 @@ final class ElseAnalyzer
             $if_scope->new_vars = [];
             $if_scope->redefined_vars = [];
             $if_scope->reasonable_clauses = [];
+            $if_scope->addBranchReachingTheEnd($else_context);
 
             return null;
         }
@@ -123,9 +124,7 @@ final class ElseAnalyzer
             }
         }
 
-        foreach ($else_context->parent_remove_vars as $var_id => $_) {
-            $outer_context->removeVarFromConflictingClauses($var_id);
-        }
+        $outer_context->removeClausesOfVarsChangedIn($else_context, $statements_analyzer);
 
         /** @var array<string, int> */
         $new_assigned_var_ids = $else_context->assigned_var_ids;

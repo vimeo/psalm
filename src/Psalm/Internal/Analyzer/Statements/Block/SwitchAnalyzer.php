@@ -17,6 +17,7 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 use SplFixedArray;
 
+use function array_intersect_key;
 use function array_merge;
 use function count;
 use function in_array;
@@ -154,10 +155,9 @@ final class SwitchAnalyzer
             foreach ($reconcilable_if_types as $var_id => $anded_types) {
                 foreach ($anded_types as $anded_offset => $orred_types) {
                     foreach ($orred_types as $orred_offset => $assertion) {
-                        if ($assertion instanceof IsNotType && !$assertion->upper_bound_only) {
+                        if ($assertion instanceof IsNotType) {
                             $reconcilable_if_types[$var_id][$anded_offset][$orred_offset] = new IsNotType(
                                 $assertion->type,
-                                false,
                                 true,
                             );
                         }
@@ -201,6 +201,10 @@ final class SwitchAnalyzer
         // only update vars if there is a default or all possible cases accounted for
         // if the default has a throw/return/continue, that should be handled above
         if ($all_options_matched) {
+            foreach ($switch_scope->unknown_offsets as $var_id => $_) {
+                unset($context->vars_in_scope[$var_id], $context->vars_possibly_in_scope[$var_id]);
+            }
+
             if ($switch_scope->new_vars_in_scope) {
                 $context->vars_in_scope = array_merge($context->vars_in_scope, $switch_scope->new_vars_in_scope);
             }
@@ -246,6 +250,13 @@ final class SwitchAnalyzer
 
         if ($switch_scope->new_assigned_var_ids) {
             $context->assigned_var_ids += $switch_scope->new_assigned_var_ids;
+        }
+
+        // the offsets read on every way out of the cases, and, when a value may match no case, on the way past them
+        if ($switch_scope->null_array_offsets_read !== null) {
+            $context->null_array_offsets_read = $all_options_matched
+                ? $switch_scope->null_array_offsets_read
+                : array_intersect_key($context->null_array_offsets_read, $switch_scope->null_array_offsets_read);
         }
 
         $context->vars_possibly_in_scope = [

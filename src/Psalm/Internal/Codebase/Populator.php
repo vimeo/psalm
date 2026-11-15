@@ -688,6 +688,7 @@ final class Populator
             foreach ($storage->properties as $property) {
                 if (!$property->is_static) {
                     $property->readonly = true;
+                    $property->readonly_public_set = false;
                     $property->allow_private_mutation = false;
                 }
             }
@@ -705,6 +706,7 @@ final class Populator
                 foreach ($storage->properties as $property) {
                     if (!$property->is_static) {
                         $property->readonly = true;
+                        $property->readonly_public_set = false;
                     }
                 }
             }

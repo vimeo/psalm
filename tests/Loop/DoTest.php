@@ -23,6 +23,32 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'doWhileIntRangeShiftedByEveryIterationIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $i = 0;
+                        do {
+                            $i = $i + rand(1, 3);
+                        } while ($i <= 10);
+                        /** @psalm-check-type-exact $i = int<11, 13> */;
+                        return $i;
+                    }',
+            ],
+            'doWhileTrueVariableIsWhatTheBreaksLeave' => [
+                'code' => '<?php
+                    function f(): void {
+                        do {
+                            $x = rand(0, 1) ? "s" : null;
+                            if ($x === null) {
+                                continue;
+                            }
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        } while (true);
+                        /** @psalm-check-type-exact $x = "s" */;
+                    }',
+            ],
             'doWhileConditionOnUnsetPropertyIsNotRedundant' => [
                 'code' => '<?php
                     class Options {
@@ -417,6 +443,140 @@ final class DoTest extends TestCase
                         echo "here";
                     } while ($code === 1);',
             ],
+            'doWhileConditionAssignmentKeepsTheAssignedTypeAfterTheLoop' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $try = 0;
+                    do {
+                        $try++;
+                    } while ((null !== $error = fetchError()) && $try < 3);
+
+                    $result = $error;
+
+                    if (null !== $error) {
+                        echo "failed";
+                    }',
+                'assertions' => [
+                    '$result===' => 'null|stdClass',
+                ],
+            ],
+            'doWhileConditionAssignmentAfterTheFirstOperandMayBeSkipped' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $try = 0;
+                    $error = null;
+                    do {
+                        $try++;
+                    } while ($try < 3 && null !== ($error = fetchError()));
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => 'null|stdClass',
+                ],
+            ],
+            'doWhileConditionAssignmentIsNarrowedWhenTheLoopEndsOnIt' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    do {
+                        $x = 1;
+                    } while (null !== ($error = fetchError()));
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => 'null',
+                ],
+            ],
+            'doWhileConditionAssignmentInAnOrOperandEndsAsFalsy' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $try = 0;
+                    do {
+                        $try++;
+                    } while (($error = fetchError()) || $try < 3);
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => 'null',
+                ],
+            ],
+            'doWhileConditionAssignmentInInstanceofKeepsTheAssignedType' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    do {
+                        $x = 1;
+                    } while (($error = fetchError()) instanceof stdClass && rand(0, 1));
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => 'null|stdClass',
+                ],
+            ],
+            'doWhileConditionAssignmentInAFunctionCallKeepsTheAssignedType' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $try = 0;
+                    do {
+                        $try++;
+                    } while (!is_null($error = fetchError()) && $try < 3);
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => 'null|stdClass',
+                ],
+            ],
+            'doWhileConditionAssignmentOfAVariableAssignedInTheBody' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $error = 5;
+                    $try = 0;
+                    do {
+                        $error = 6;
+                        $try++;
+                    } while ($try < 3 && null !== ($error = fetchError()));
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => '6|null|stdClass',
+                ],
+            ],
+            'doWhileConditionAssignmentToAPropertyKeepsTheAssignedType' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $o = new stdClass();
+                    $o->error = null;
+                    do {
+                        $x = 1;
+                    } while ((null !== $o->error = fetchError()) && rand(0, 1));
+
+                    $result = $o->error;',
+                'assertions' => [
+                    '$result===' => 'null|stdClass',
+                ],
+            ],
             'doWhileConditionOnVariableIncrementedAfterIt' => [
                 'code' => '<?php
                     $v = 0;
@@ -439,6 +599,82 @@ final class DoTest extends TestCase
                         }
                         $i++;
                     } while ($i < 10);',
+            ],
+            'doWhileBodyWithoutAssignmentRunsBeforeTheCondition' => [
+                'code' => '<?php
+                    function f(?int $a): void {
+                        do {
+                            if ($a === null) {
+                                echo "null";
+                            }
+                        } while ($a !== null && rand(0, 1) > 5);
+                    }',
+            ],
+            'doWhileBodyWithoutAssignmentThenNegatedCondition' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? null : rand();
+                    do {
+                        echo (string) $a;
+                    } while ($a === null);
+                    $b = rand(0, 1) ? null : rand(0, 10);
+                    do {
+                        echo (string) $b;
+                    } while ($b !== null && $b > 5);',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int<0, 5>|null',
+                ],
+            ],
+            'doWhileConditionOnMixedOffsetSaysNothingOnceNegated' => [
+                'code' => '<?php
+                    /** @var mixed $m */
+                    $m = json_decode("[]");
+                    $a = rand(0, 1) ? null : rand();
+                    do {
+                        echo "";
+                    } while ($a !== null && $m["x"]);
+                    /** @var mixed $n */
+                    $n = json_decode("[]");
+                    $b = rand(0, 1) ? null : rand();
+                    do {
+                        $b = $b;
+                    } while ($b !== null && $n["x"]);',
+                'assertions' => [
+                    '$a===' => 'int|null',
+                    '$b===' => 'int|null',
+                ],
+                'ignored_issues' => ['MixedArrayAccess'],
+            ],
+            'doWhileBodyThatAlwaysBreaksNeverEvaluatesTheCondition' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        do {
+                            $s = null;
+                            break;
+                        } while (strlen($s) === 2);
+                    }',
+            ],
+            'doWhileWithContinueIsLeftWhenItsConditionIsFalse' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? null : rand();
+                    do {
+                        if (rand(0, 1)) {
+                            continue;
+                        }
+                        echo "";
+                    } while ($a === null);
+                    $b = null;
+                    do {
+                        if (rand(0, 1)) {
+                            $b = 5;
+                            continue;
+                        }
+                        $b = null;
+                    } while ($b === null);',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => '5',
+                ],
             ],
         ];
     }

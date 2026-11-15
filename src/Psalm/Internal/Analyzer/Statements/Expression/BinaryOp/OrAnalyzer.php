@@ -65,6 +65,8 @@ final class OrAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
+        $pre_phantom_classes = $context->phantom_classes;
+
         $post_leaving_if_context = null;
 
         // we cap this at max depth of 4 to prevent quadratic behaviour
@@ -112,9 +114,7 @@ final class OrAnalyzer
                 return false;
             }
 
-            foreach ($left_context->parent_remove_vars as $var_id => $_) {
-                $context->removeVarFromConflictingClauses($var_id);
-            }
+            $context->removeClausesOfVarsChangedIn($left_context);
 
             IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->left);
 
@@ -130,6 +130,8 @@ final class OrAnalyzer
                     );
                 }
             }
+
+            $context->null_array_offsets_read = $left_context->null_array_offsets_read;
 
             $left_referenced_var_ids = $left_context->cond_referenced_var_ids;
             $left_context->cond_referenced_var_ids = [
@@ -166,21 +168,17 @@ final class OrAnalyzer
         );
 
         try {
-            $negated_left_clauses = Algebra::negateFormula($left_clauses);
+            $negated_left_clauses = FormulaGenerator::getNegatedFormula(
+                $left_clauses,
+                $stmt->left,
+                $left_cond_id,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+                true,
+            );
         } catch (ComplicatedExpressionException) {
-            try {
-                $negated_left_clauses = FormulaGenerator::getFormula(
-                    $left_cond_id,
-                    $left_cond_id,
-                    new VirtualBooleanNot($stmt->left),
-                    $context->self,
-                    $statements_analyzer,
-                    $codebase,
-                    false,
-                );
-            } catch (ComplicatedExpressionException) {
-                return false;
-            }
+            return false;
         }
 
         if ($left_context->reconciled_expression_clauses) {
@@ -217,6 +215,21 @@ final class OrAnalyzer
         $changed_var_ids = [];
 
         $right_context = clone $context;
+
+        // the classes the right side is only reached for when they exist, and those of checks on the left whose
+        // result GuardedClasses doesn't follow, which every check adds (the left context no longer has those of a
+        // negated check: they are missing where the left holds)
+        $right_context->phantom_classes = [
+            ...$pre_phantom_classes,
+            ...array_diff_key(
+                array_diff_key($context->phantom_classes + $left_context->phantom_classes, $pre_phantom_classes),
+                GuardedClasses::checkedIn($stmt->left),
+            ),
+            ...GuardedClasses::unknownWhenResult($stmt->left, false, $codebase),
+        ];
+
+        // the classes checked with class_exists() on the left are checked after the condition too
+        $context->phantom_classes = array_merge($context->phantom_classes, $left_context->phantom_classes);
 
         if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             && $left_assigned_var_ids
@@ -287,6 +300,9 @@ final class OrAnalyzer
         }
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
+
+        $context->phantom_classes = array_merge($context->phantom_classes, $right_context->phantom_classes);
+        $context->removeClausesOfVarsChangedIn($right_context);
 
         $right_referenced_var_ids = $right_context->cond_referenced_var_ids;
         $right_context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $right_referenced_var_ids);
@@ -374,6 +390,8 @@ final class OrAnalyzer
             $context->updateChecks($right_context);
         }
 
+        $context->intersectNullArrayOffsets($right_context);
+
         $context->cond_referenced_var_ids = [
             ...$right_context->cond_referenced_var_ids,
             ...$context->cond_referenced_var_ids,
@@ -406,6 +424,12 @@ final class OrAnalyzer
                     );
                 }
             }
+
+            // the body runs where the left side held, or where the right one ran and held
+            $if_body_context->null_array_offsets_read = array_intersect_key(
+                $left_context->null_array_offsets_read,
+                $right_context->null_array_offsets_read,
+            );
 
             $if_body_context->cond_referenced_var_ids = [
                 ...$context->cond_referenced_var_ids,
