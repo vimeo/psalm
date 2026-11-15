@@ -634,7 +634,7 @@ final class CallableTest extends TestCase
                     $pair = $p("x");
                     $direct = $box->pair("x");',
                 'assertions' => [
-                    // T and U can't be told apart in the closure: its own types stay
+                    // whether null is part of T can't be read back from the closure: its own types stay
                     '$pair===' => 'list{int|null|string, mixed}',
                     '$direct===' => "list{int|null|string, 'x'}",
                 ],
