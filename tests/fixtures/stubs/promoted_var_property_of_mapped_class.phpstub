@@ -1,0 +1,6 @@
+<?php
+
+class PhpToken implements Stringable
+{
+    public function __construct(/** @var non-empty-string */ public $text) {}
+}
