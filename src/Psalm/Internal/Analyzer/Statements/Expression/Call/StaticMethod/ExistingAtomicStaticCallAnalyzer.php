@@ -32,6 +32,7 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\ImpureMethodCall;
@@ -434,11 +435,26 @@ final class ExistingAtomicStaticCallAnalyzer
             $trait_self_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
                 ?? $class_storage->name;
 
+            // `static` in the called method: the class named by the call, or the caller's when the call forwards it
+            $assertion_static_class = $static_is_called_class
+                ? $fq_class_name
+                : ($stmt->class instanceof PhpParser\Node\Name
+                    && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
+                    ? 'static'
+                    : null);
+
             if ($assertions) {
                 CallAnalyzer::applyAssertionsToContext(
                     $stmt_name,
                     null,
-                    CallAnalyzer::getAssertionsOnArgs($assertions, $method_storage, $stmt->getArgs()),
+                    CallAnalyzer::resolveStaticPropertyAssertionClasses(
+                        CallAnalyzer::getAssertionsOnArgs($assertions, $method_storage, $stmt->getArgs()),
+                        $codebase,
+                        $context,
+                        $trait_self_class,
+                        $assertion_static_class,
+                        $fq_class_name,
+                    ),
                     $stmt->getArgs(),
                     $template_result,
                     $context,
@@ -456,10 +472,17 @@ final class ExistingAtomicStaticCallAnalyzer
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
                             $trait_self_class,
                         ),
-                        CallAnalyzer::getAssertionsOnArgs(
-                            $method_storage->if_true_assertions,
-                            $method_storage,
-                            $stmt->getArgs(),
+                        CallAnalyzer::resolveStaticPropertyAssertionClasses(
+                            CallAnalyzer::getAssertionsOnArgs(
+                                $method_storage->if_true_assertions,
+                                $method_storage,
+                                $stmt->getArgs(),
+                            ),
+                            $codebase,
+                            $context,
+                            $trait_self_class,
+                            $assertion_static_class,
+                            $fq_class_name,
                         ),
                     ),
                 );
@@ -473,10 +496,17 @@ final class ExistingAtomicStaticCallAnalyzer
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
                             $trait_self_class,
                         ),
-                        CallAnalyzer::getAssertionsOnArgs(
-                            $method_storage->if_false_assertions,
-                            $method_storage,
-                            $stmt->getArgs(),
+                        CallAnalyzer::resolveStaticPropertyAssertionClasses(
+                            CallAnalyzer::getAssertionsOnArgs(
+                                $method_storage->if_false_assertions,
+                                $method_storage,
+                                $stmt->getArgs(),
+                            ),
+                            $codebase,
+                            $context,
+                            $trait_self_class,
+                            $assertion_static_class,
+                            $fq_class_name,
                         ),
                     ),
                 );
@@ -549,6 +579,10 @@ final class ExistingAtomicStaticCallAnalyzer
                     }
                 }
             }
+        }
+
+        if ($return_type_candidate) {
+            $return_type_candidate = TypeVariableTracker::resolveTypeVariables($return_type_candidate, $codebase);
         }
 
         if ($config->eventDispatcher->hasAfterMethodCallAnalysisHandlers()) {
