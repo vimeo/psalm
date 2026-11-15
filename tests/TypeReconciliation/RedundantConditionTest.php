@@ -5,9 +5,18 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_map;
+use function array_values;
+use function sort;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -15,6 +24,128 @@ final class RedundantConditionTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testPropertyThatAMethodCalledInTheConditionWritesWithoutRememberingPropertyAssignments(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Counter {
+                    public int $n = 1;
+
+                    public function reset(): bool {
+                        $this->n = 0;
+                        return true;
+                    }
+                }
+
+                function f(Counter $c): void {
+                    if ($c->n && $c->reset() && $c->n) {
+                        echo "if";
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testMixedAssignmentOfALoopWhoseConditionsCallAMethodWritingAProperty(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Dumper {
+                    private bool $used = false;
+
+                    private function dumpValue(mixed $v, bool $interpolate = true): string {
+                        $this->used = true;
+                        return "";
+                    }
+
+                    public function isTrivial(array $args): bool {
+                        foreach ($args as $arg) {
+                            if (!$arg) {
+                                continue;
+                            }
+                            if (is_array($arg) && 3 >= count($arg)) {
+                                foreach ($arg as $k => $v) {
+                                    if ($this->dumpValue($k) !== $this->dumpValue($k, false)) {
+                                        return false;
+                                    }
+                                    if (!$v) {
+                                        continue;
+                                    }
+                                    if (!is_scalar($v) || $this->dumpValue($v) !== $this->dumpValue($v, false)) {
+                                        return false;
+                                    }
+                                }
+                            } elseif (!is_scalar($arg) || $this->dumpValue($arg) !== $this->dumpValue($arg, false)) {
+                                return false;
+                            }
+                        }
+
+                        return true;
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_map(
+            static fn(IssueData $issue): array => [$issue->line_from, $issue->message],
+            array_values(array_filter(
+                IssueBuffer::getIssuesDataForFile($file_path),
+                static fn(IssueData $issue): bool => $issue->type === 'MixedAssignment',
+            )),
+        );
+        sort($issues);
+
+        self::assertSame(
+            [
+                [11, 'Unable to determine the type that $arg is being assigned to'],
+                [16, 'Unable to determine the type that $v is being assigned to'],
+            ],
+            $issues,
+        );
+    }
+
+    public function testMessagesOfACoalesceOnACallNameTheCodeOfTheOperand(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class A {
+                    /** @return object */
+                    public function m() { return new stdClass; }
+                }
+
+                function f(A $a): object {
+                    return $a->m() ?? new stdClass;
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            [
+                'RedundantConditionGivenDocblockType: Docblock-defined type object for $a->m() is never null',
+                'DocblockTypeContradiction: Cannot resolve types for $a->m() - docblock-defined type object does not '
+                    . 'contain null',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
 
     /**
      * @psalm-pure
@@ -67,29 +198,6 @@ final class RedundantConditionTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
-            'notNullBeforeAnIssetOfTheSameVariableIsNotRedundant' => [
-                'code' => '<?php
-                    final class Item {
-                        public function name(): string {
-                            return "i";
-                        }
-                    }
-
-                    function pick(bool $first): string {
-                        if ($first) {
-                            $item = new Item();
-                        }
-
-                        if ($item !== null && isset($item)) {
-                            return $item->name();
-                        }
-
-                        return "";
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedMethodCall', 'PossiblyUndefinedVariable'],
                 'php_version' => '8.1',
             ],
             'ctypeCheckOfNumericStringExpressionIsNotRedundant' => [
@@ -557,12 +665,9 @@ final class RedundantConditionTest extends TestCase
                         $options = ["option" => true];
                     }
 
-                    /** @psalm-suppress PossiblyUndefinedGlobalVariable */
                     $option = $options["option"] ?? false;
 
                     if ($option !== false) {}',
-                'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
             'allowIntValueCheckAfterComparisonDueToOverflow' => [
                 'code' => '<?php
@@ -1395,6 +1500,124 @@ final class RedundantConditionTest extends TestCase
                         return $list === $shape;
                     }',
             ],
+            'issetOfAnOffsetWhoseKeyTheConditionChanges' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a, int $i): void {
+                        if (isset($a[$i]) && ++$i && isset($a[$i])) {
+                            echo "if";
+                        }
+                    }',
+            ],
+            'issetOfAnOffsetWhoseKeyTheConditionChangesInATernary' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a, int $i): int {
+                        return isset($a[$i]) && ++$i && isset($a[$i]) ? 1 : 2;
+                    }',
+            ],
+            'issetOfAnOffsetWhoseKeyTheConditionChangesInAnElseif' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a, int $i, bool $b): void {
+                        if ($b) {
+                            echo "if";
+                        } elseif (isset($a[$i]) && ++$i && isset($a[$i])) {
+                            echo "elseif";
+                        }
+                    }',
+            ],
+            'propertyThatAMethodCalledInTheConditionWrites' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+
+                        public function reset(): bool {
+                            $this->n = 0;
+                            return true;
+                        }
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n && $c->reset() && $c->n) {
+                            echo "if";
+                        }
+                    }',
+            ],
+            'propertyThatAMethodCalledBeforeTheConditionWrites' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+
+                        public function reset(): void {
+                            $this->n = 0;
+                        }
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n) {
+                            $c->reset();
+
+                            if ($c->n) {
+                                echo "if";
+                            }
+                        }
+                    }',
+            ],
+            'assigningAPropertyKeepsTheClausesAfterOneOnAnItemOfIt' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var list<int> */
+                        public array $items = [];
+                    }
+
+                    function f(C $c, ?string $s, bool $b): string {
+                        if (!(isset($c->items[0]) || $b)) {
+                            return "";
+                        }
+
+                        if ($s === null && !$b) {
+                            return "";
+                        }
+
+                        $c->items = [];
+
+                        if (!$b) {
+                            return $s;
+                        }
+
+                        return "";
+                    }',
+            ],
+            'aMethodWritingAPropertyKeepsTheClausesAfterOneOnAnItemOfIt' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        public function reset(): void {
+                            $this->items = [];
+                        }
+                    }
+
+                    function f(C $c, ?string $s, bool $b): string {
+                        if (!(isset($c->items[0]) || $b)) {
+                            return "";
+                        }
+
+                        if ($s === null && !$b) {
+                            return "";
+                        }
+
+                        $c->reset();
+
+                        if (!$b) {
+                            return $s;
+                        }
+
+                        return "";
+                    }',
+            ],
             'identicalComparisonOfAShapeWithAListOfARangeOfItsValues' => [
                 'code' => '<?php
                     /** @param list<int<1, max>> $ints */
@@ -1422,6 +1645,51 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'redundantCoalesceOnCallNamesTheLeftOperand' => [
+                'code' => '<?php
+                    function getArray(): array {
+                        return [];
+                    }
+
+                    echo count(getArray() ?? []);',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:32 - Type array<array-key, mixed> for getArray() is never null',
+            ],
+            'redundantCoalesceOnMethodCallNamesTheCode' => [
+                'code' => '<?php
+                    final class A {
+                        public function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(A $a): int {
+                        return $a->m() ?? ($a->m() ?? 1);
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:32 - Type int for $a->m() is never null',
+            ],
+            'issetAfterANotNullCheckOfAConditionallyDefinedVariableIsRedundant' => [
+                'code' => '<?php
+                    final class Item {
+                        public function name(): string {
+                            return "i";
+                        }
+                    }
+
+                    function pick(bool $first): string {
+                        if ($first) {
+                            $item = new Item();
+                        }
+
+                        if ($item !== null && isset($item)) {
+                            return $item->name();
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:29',
+                'error_levels' => ['PossiblyUndefinedVariable'],
+                'php_version' => '8.1',
+            ],
             'notNullAfterAnIssetOfAConditionallyDefinedVariableIsRedundant' => [
                 'code' => '<?php
                     final class Item {
@@ -1441,7 +1709,7 @@ final class RedundantConditionTest extends TestCase
 
                         return "";
                     }',
-                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:29',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:45',
                 'error_levels' => ['MixedReturnStatement', 'MixedMethodCall'],
                 'php_version' => '8.1',
             ],
@@ -2294,6 +2562,76 @@ final class RedundantConditionTest extends TestCase
                         return $list === $shape;
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+            ],
+            'issetOfAnOffsetWhoseKeyTheConditionDoesNotChange' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a, int $i, int $j): void {
+                        if (isset($a[$i]) && ++$j && isset($a[$i])) {
+                            echo "if";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - $a[$i] is isset has already been asserted',
+            ],
+            'propertyThatAMethodCalledInTheConditionDoesNotWrite' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+                        public int $m = 1;
+
+                        public function reset(): bool {
+                            $this->m = 0;
+                            return true;
+                        }
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n && $c->reset() && $c->n) {
+                            echo "if";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:29 - $c->n has already been asserted',
+            ],
+            'propertyThatAMethodCalledBeforeTheConditionDoesNotWrite' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+                        public int $m = 1;
+
+                        public function reset(): void {
+                            $this->m = 0;
+                        }
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n) {
+                            $c->reset();
+
+                            if ($c->n) {
+                                echo "if";
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:33',
+            ],
+            'propertyThatAMethodOfAnotherObjectWrites' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        public function reset(): bool {
+                            $this->items = [];
+                            return true;
+                        }
+                    }
+
+                    function f(C $c): void {
+                        if (isset($c->items[0]) && (new C())->reset() && isset($c->items[0])) {
+                            echo "if";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:29 - $c->items[0] is isset has already been asserted',
             ],
             'identicalComparisonOfAShapeWithAShorterOneIsImpossible' => [
                 'code' => '<?php
