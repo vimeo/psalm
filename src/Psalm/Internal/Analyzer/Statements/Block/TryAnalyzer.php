@@ -457,6 +457,7 @@ final class TryAnalyzer
             $catch_doesnt_leave_parent_scope = in_array(ScopeAnalyzer::ACTION_NONE, $catch_actions[$i], true);
 
             if ($catch_doesnt_leave_parent_scope) {
+                $context->intersectNullArrayOffsets($catch_context);
                 $context->removeClausesOfVarsChangedIn($catch_context);
 
                 $definitely_newly_assigned_var_ids = array_intersect_key(
@@ -547,6 +548,8 @@ final class TryAnalyzer
 
                 $statements_analyzer->analyze($stmt->finally->stmts, $finally_context);
 
+                // the code after the try runs after the finally
+                $context->intersectNullArrayOffsets($finally_context);
                 $context->removeClausesOfVarsChangedIn($finally_context);
 
                 $context->constructor_exits?->applyFinally(

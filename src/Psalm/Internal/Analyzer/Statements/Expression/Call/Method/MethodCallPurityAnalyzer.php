@@ -607,6 +607,8 @@ final class MethodCallPurityAnalyzer
             foreach ($method_storage->this_property_mutations as $name => $_) {
                 $mutation_var_id = $lhs_var_id . '->' . $name;
 
+                $context->forgetNullArrayOffsets($mutation_var_id);
+
                 $this_property_didnt_exist = $lhs_var_id === '$this'
                     && isset($context->vars_in_scope[$mutation_var_id])
                     && !isset($class_storage->declaring_property_ids[$name]);
@@ -625,7 +627,9 @@ final class MethodCallPurityAnalyzer
                     $context->possibly_assigned_var_ids[$mutation_var_id] = true;
                 }
 
-                $context->removeVarFromConflictingClauses($mutation_var_id);
+                if ($lhs_var_id !== null) {
+                    $context->removeVarFromConflictingClauses($mutation_var_id);
+                }
             }
         } else {
             if (!$config->remember_property_assignments_after_call) {
@@ -643,6 +647,12 @@ final class MethodCallPurityAnalyzer
                 // of an iterator): what its receiver's methods returned before may have changed, even
                 // when the receiver is fresh and the caller is not charged
                 $context->removeMutableObjectVars(true);
+            }
+        }
+
+        if ($context->inside_conditional && $lhs_var_id !== null) {
+            foreach ($method_storage->this_property_mutations ?? [] as $name => $_) {
+                $context->assigned_var_ids[$lhs_var_id . '->' . $name] ??= 0;
             }
         }
     }
