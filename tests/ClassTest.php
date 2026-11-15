@@ -121,6 +121,86 @@ final class ClassTest extends TestCase
 
                     f(["string", Countable::class]);',
             ],
+            'classStringNewWithMatchingArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        final public function __construct(public int $val = 0, public string $name = "") {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        $a = new $class();
+                        $b = new $class(1);
+                        return new $class(val: 1, name: "a");
+                    }',
+            ],
+            'classStringNewOfAnIntersectionKeepsTheIntersection' => [
+                'code' => '<?php
+                    interface I {
+                        public function i(): void;
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        public function __construct(public int $v = 0) {}
+                    }
+
+                    /**
+                     * @return class-string<A&I>
+                     */
+                    function getClass(): string {
+                        throw new RuntimeException();
+                    }
+
+                    $c = getClass();
+                    $x = new $c(1);
+                    $x->i();',
+                'assertions' => [
+                    '$x===' => 'A&I',
+                ],
+            ],
+            'classStringNewOfAnAbstractClassIsNotAnAbstractInstantiation' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    abstract class A {
+                        public function __construct(public int $val = 0) {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        return new $class(1);
+                    }',
+            ],
+            'classStringNewOfGenericClassKeepsTheTemplateArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     * @template T
+                     */
+                    class Box {
+                        /** @param T $value */
+                        public function __construct(public $value) {}
+                    }
+
+                    /**
+                     * @param class-string<Box<int>> $class
+                     * @return Box<int>
+                     */
+                    function f(string $class): Box {
+                        return new $class(1);
+                    }',
+            ],
             'instanceofIterableDoesNotNarrowTheVariable' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1626,6 +1706,71 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classStringNewChecksTheConstructorArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        final public function __construct(public int $val) {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        return new $class();
+                    }',
+                'error_message' => 'TooFewArguments',
+            ],
+            'classStringNewOfAClassWithoutConsistentConstructorOnlyReportsTheUnsafeInstantiation' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct(public int $val) {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        return new $class("x");
+                    }',
+                'error_message' => 'UnsafeInstantiation',
+            ],
+            'classStringNewWithTooManyArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        final public function __construct(public int $val) {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        return new $class(1, 2);
+                    }',
+                'error_message' => 'TooManyArguments',
+            ],
+            'classStringNewWithWrongArgumentType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        final public function __construct(public int $val) {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        return new $class("x");
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
             'instanceofIterableIsReportedOnlyAsAReservedWord' => [
                 'code' => '<?php
                     function f(ArrayObject $o): void {

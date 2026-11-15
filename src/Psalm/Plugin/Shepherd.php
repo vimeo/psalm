@@ -113,10 +113,6 @@ final class Shepherd implements AfterAnalysisInterface
 
         unset($build_info['git']);
 
-        if ($build_info === []) {
-            return null;
-        }
-
         $issues_grouped_by_filename = $event->getIssues();
         $normalized_data = $issues_grouped_by_filename === [] ? [] : array_values(array_filter(
             array_merge(...array_values($issues_grouped_by_filename)), // flatten an array
