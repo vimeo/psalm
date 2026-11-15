@@ -2931,6 +2931,142 @@ final class MixinAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'protectedMethodOfTheClassIsHiddenByItsMixinPseudoMethodThroughMagicCall' => [
+                'code' => '<?php
+                    /** @method Registrar prefix(string $prefix) */
+                    class Registrar
+                    {
+                        public function __call(string $method, array $parameters): mixed
+                        {
+                            return $this;
+                        }
+                    }
+
+                    /** @mixin Registrar */
+                    class Router
+                    {
+                        public function __call(string $method, array $parameters): mixed
+                        {
+                            return (new Registrar())->$method(...$parameters);
+                        }
+
+                        protected function prefix(string $uri): string
+                        {
+                            return $uri;
+                        }
+                    }
+
+                    function register(Router $router): void
+                    {
+                        $registrar = $router->prefix("{locale}");
+                        /** @psalm-check-type-exact $registrar = Registrar */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'privateMethodOfTheClassIsHiddenByTheRealMethodOfItsMixinThroughMagicCall' => [
+                'code' => '<?php
+                    final class RouteRegistrar
+                    {
+                        public function prefix(string $prefix): int
+                        {
+                            return strlen($prefix);
+                        }
+                    }
+
+                    /** @mixin RouteRegistrar */
+                    final class Router
+                    {
+                        public function __call(string $method, array $parameters): mixed
+                        {
+                            return (new RouteRegistrar())->$method(...$parameters);
+                        }
+
+                        private function prefix(string $uri): string
+                        {
+                            return $uri;
+                        }
+                    }
+
+                    function register(Router $router): void
+                    {
+                        $length = $router->prefix("{locale}");
+                        /** @psalm-check-type-exact $length = int */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'protectedMethodOfTheClassStaysCalledFromInsideTheClassWithItsMixin' => [
+                'code' => '<?php
+                    /** @method Registrar prefix(string $prefix) */
+                    class Registrar
+                    {
+                        public function __call(string $method, array $parameters): mixed
+                        {
+                            return $this;
+                        }
+                    }
+
+                    /** @mixin Registrar */
+                    class Router
+                    {
+                        public function __call(string $method, array $parameters): mixed
+                        {
+                            return (new Registrar())->$method(...$parameters);
+                        }
+
+                        protected function prefix(string $uri): string
+                        {
+                            return $uri;
+                        }
+
+                        public function group(): string
+                        {
+                            $prefix = $this->prefix("api");
+                            /** @psalm-check-type-exact $prefix = string */
+
+                            return $prefix;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'protectedStaticMethodOfTheClassIsHiddenByTheStaticMethodOfItsMixinThroughMagicCallStatic' => [
+                'code' => '<?php
+                    final class RouteRegistrar
+                    {
+                        public static function prefix(string $prefix): int
+                        {
+                            return strlen($prefix);
+                        }
+                    }
+
+                    /** @mixin RouteRegistrar */
+                    final class Router
+                    {
+                        public static function __callStatic(string $method, array $parameters): mixed
+                        {
+                            return RouteRegistrar::$method(...$parameters);
+                        }
+
+                        protected static function prefix(string $uri): string
+                        {
+                            return $uri;
+                        }
+                    }
+
+                    function register(): void
+                    {
+                        $length = Router::prefix("{locale}");
+                        /** @psalm-check-type-exact $length = int */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'cycleOfGenericMixinsEnds' => [
                 'code' => '<?php
                     /**
@@ -3038,6 +3174,31 @@ final class MixinAnnotationTest extends TestCase
 
                     Bar::missing();',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'protectedMethodOfAClassWithoutMagicCallIsNotForwardedToTheMixin' => [
+                'code' => '<?php
+                    final class Registrar
+                    {
+                        public function prefix(string $prefix): Registrar
+                        {
+                            return $this;
+                        }
+                    }
+
+                    /** @mixin Registrar */
+                    final class Router
+                    {
+                        protected function prefix(string $uri): string
+                        {
+                            return $uri;
+                        }
+                    }
+
+                    function register(Router $router): void
+                    {
+                        $router->prefix("{locale}");
+                    }',
+                'error_message' => 'InaccessibleMethod',
             ],
             'mixinMethodChargesTheCallOfTheClassUsingTheMixin' => [
                 'code' => '<?php
