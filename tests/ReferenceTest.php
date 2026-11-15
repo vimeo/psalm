@@ -29,6 +29,16 @@ final class ReferenceTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayCreatedByAnItemPassedByReferenceInAnIfIsReadInACoalesce' => [
+                'code' => '<?php
+                    function f(string $s): string {
+                        if (rand(0, 1)) {
+                            /** @psalm-suppress UndefinedVariable, MixedArrayAccess */
+                            preg_match("/(.*)/", $s, $out["m"]);
+                        }
+                        return $out["m"][1] ?? "";
+                    }',
+            ],
             'arrayItemPassedByReferenceHoldsWhatTheCallLeavesInIt' => [
                 'code' => '<?php
                     function read_value(string &$value): void {
@@ -925,12 +935,12 @@ final class ReferenceTest extends TestCase
             ],
             'arrayCreatedByAnItemPassedByReferenceInAnIfIsPossiblyUndefined' => [
                 'code' => '<?php
-                    function f(string $s): string {
+                    function f(string $s): void {
                         if (rand(0, 1)) {
                             /** @psalm-suppress UndefinedVariable, MixedArrayAccess */
                             preg_match("/(.*)/", $s, $out["m"]);
                         }
-                        return $out["m"][1] ?? "";
+                        echo $out["m"][1];
                     }',
                 'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7',
             ],
