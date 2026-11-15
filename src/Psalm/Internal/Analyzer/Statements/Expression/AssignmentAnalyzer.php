@@ -13,6 +13,7 @@ use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Algebra;
@@ -371,7 +372,7 @@ final class AssignmentAnalyzer
             $base_assign_value = $base_assign_value->expr;
         }
 
-        if ($base_assign_value !== $assign_value) {
+        if ($base_assign_value !== null && $base_assign_value !== $assign_value) {
             ExpressionAnalyzer::analyze($statements_analyzer, $base_assign_value, $context);
 
             $assign_value_type = $statements_analyzer->node_data->getType($base_assign_value) ?? $assign_value_type;
@@ -655,6 +656,15 @@ final class AssignmentAnalyzer
                 $statements_analyzer,
             );
         } else {
+            // a property never fetched may still be in clauses, from the assertion of a call
+            if ($extended_var_id !== null) {
+                $context->removeVarFromConflictingClauses(
+                    $extended_var_id,
+                    $assign_value_type,
+                    $statements_analyzer,
+                );
+            }
+
             $root_var_id = ExpressionIdentifier::getRootVarId(
                 $assign_var,
                 $statements_analyzer->getFQCLN(),
@@ -1596,6 +1606,20 @@ final class AssignmentAnalyzer
                 $context,
                 modifies_value: true,
             );
+
+            $property_var_id = ExpressionIdentifier::getExtendedVarId(
+                $stmt,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($property_var_id !== null) {
+                $context->removeVarFromConflictingClauses(
+                    $property_var_id,
+                    $by_ref_out_type,
+                    $statements_analyzer,
+                );
+            }
 
             return;
         }
@@ -2589,35 +2613,46 @@ final class AssignmentAnalyzer
                     );
                 }
 
+                $assigned_condition = $assign_value instanceof PhpParser\Node\Expr\BooleanNot
+                    ? $assign_value->expr
+                    : $assign_value;
+
                 if ($assign_value_type->getId() === 'bool'
-                    && ($assign_value instanceof PhpParser\Node\Expr\BinaryOp
-                        || $assign_value instanceof PhpParser\Node\Expr\Instanceof_
-                        || ($assign_value instanceof PhpParser\Node\Expr\BooleanNot
-                            && ($assign_value->expr instanceof PhpParser\Node\Expr\BinaryOp
-                                || $assign_value->expr instanceof PhpParser\Node\Expr\Instanceof_)))
+                    && $assign_value !== null
+                    && ($assigned_condition instanceof PhpParser\Node\Expr\BinaryOp
+                        || $assigned_condition instanceof PhpParser\Node\Expr\Instanceof_
+                        || $assigned_condition instanceof PhpParser\Node\Expr\FuncCall
+                        || $assigned_condition instanceof PhpParser\Node\Expr\MethodCall
+                        || $assigned_condition instanceof PhpParser\Node\Expr\StaticCall
+                        || $assigned_condition instanceof PhpParser\Node\Expr\Isset_
+                        || $assigned_condition instanceof PhpParser\Node\Expr\Empty_)
                 ) {
                     $var_object_id = spl_object_id($assign_var);
                     $cond_object_id = spl_object_id($assign_value);
 
-                    $right_clauses = FormulaGenerator::getFormula(
-                        $cond_object_id,
-                        $cond_object_id,
-                        $assign_value,
-                        $context->self,
-                        $statements_analyzer,
-                        $codebase,
-                    );
+                    try {
+                        $right_clauses = FormulaGenerator::getFormula(
+                            $cond_object_id,
+                            $cond_object_id,
+                            $assign_value,
+                            $context->self,
+                            $statements_analyzer,
+                            $codebase,
+                        );
 
-                    $right_clauses = Context::filterClauses(
-                        $var_id,
-                        $right_clauses,
-                    );
+                        $right_clauses = Context::filterClauses(
+                            $var_id,
+                            $right_clauses,
+                        );
 
-                    $assignment_clauses = Algebra::combineOredClauses(
-                        [new Clause([$var_id => ['falsy' => new Falsy()]], $var_object_id, $var_object_id)],
-                        $right_clauses,
-                        $cond_object_id,
-                    );
+                        $assignment_clauses = Algebra::combineOredClauses(
+                            [new Clause([$var_id => ['falsy' => new Falsy()]], $var_object_id, $var_object_id)],
+                            $right_clauses,
+                            $cond_object_id,
+                        );
+                    } catch (ComplicatedExpressionException) {
+                        $assignment_clauses = [];
+                    }
 
                     $context->clauses = [...$context->clauses, ...$assignment_clauses];
                 }

@@ -114,6 +114,39 @@ final class RedundantConditionTest extends TestCase
         );
     }
 
+    public function testMessagesOfACoalesceOnACallNameTheCodeOfTheOperand(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class A {
+                    /** @return object */
+                    public function m() { return new stdClass; }
+                }
+
+                function f(A $a): object {
+                    return $a->m() ?? new stdClass;
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            [
+                'RedundantConditionGivenDocblockType: Docblock-defined type object for $a->m() is never null',
+                'DocblockTypeContradiction: Cannot resolve types for $a->m() - docblock-defined type object does not '
+                    . 'contain null',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     /**
      * @psalm-pure
      */
@@ -1225,7 +1258,7 @@ final class RedundantConditionTest extends TestCase
                             throw new RuntimeException("");
                         }
                         if (rand(0, 1)) {
-                            $p["a"] = 3;
+                            unset($p["a"]);
                         }
                         assert(!!$p);
                     }',
@@ -1612,6 +1645,44 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'secondFalsyTwiceWithOffsetAdded' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a?:int,b?:string} $p
+                     */
+                    function f(array $p) : void {
+                        if (!$p) {
+                            throw new RuntimeException("");
+                        }
+                        if (rand(0, 1)) {
+                            $p["a"] = 3;
+                        }
+                        assert(!!$p);
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'redundantCoalesceOnCallNamesTheLeftOperand' => [
+                'code' => '<?php
+                    function getArray(): array {
+                        return [];
+                    }
+
+                    echo count(getArray() ?? []);',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:32 - Type array<array-key, mixed> for getArray() is never null',
+            ],
+            'redundantCoalesceOnMethodCallNamesTheCode' => [
+                'code' => '<?php
+                    final class A {
+                        public function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(A $a): int {
+                        return $a->m() ?? ($a->m() ?? 1);
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:32 - Type int for $a->m() is never null',
+            ],
             'issetAfterANotNullCheckOfAConditionallyDefinedVariableIsRedundant' => [
                 'code' => '<?php
                     final class Item {
