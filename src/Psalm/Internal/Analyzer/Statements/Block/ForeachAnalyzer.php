@@ -862,7 +862,7 @@ final class ForeachAnalyzer
 
     /**
      * @param bool $is_reference whether the array is a reference: then a write to another variable may reach it
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     private static function writesToTheArray(
         PhpParser\Node\Expr $target,
@@ -890,7 +890,7 @@ final class ForeachAnalyzer
     /**
      * The name of the variable an expression is a part of (`$a` of `$a['k']->p`), null when it is not one with a name
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     private static function getRootVariableName(PhpParser\Node\Expr $expr): ?string
     {
