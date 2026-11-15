@@ -1242,6 +1242,46 @@ final class Context
     }
 
     /**
+     * Applies what a branch that may have been skipped, analysed in a clone of this context, changed since it had
+     * the stamps $parent_remove_vars: the types it wrote are combined with the ones here, and what it forgot is
+     * forgotten here too
+     *
+     * @param array<string, int> $parent_remove_vars
+     * @internal
+     */
+    public function mergeChangesOfPossiblySkippedBranch(
+        Context $branch,
+        array $parent_remove_vars,
+        Codebase $codebase,
+    ): void {
+        foreach ($branch->parent_remove_vars as $changed_var_id => $stamp) {
+            if (($parent_remove_vars[$changed_var_id] ?? null) === $stamp) {
+                continue;
+            }
+
+            foreach ($this->vars_in_scope as $var_id => $type) {
+                if ($var_id !== $changed_var_id
+                    && !str_starts_with($var_id, $changed_var_id . '->')
+                    && !str_starts_with($var_id, $changed_var_id . '[')
+                ) {
+                    continue;
+                }
+
+                if (!isset($branch->vars_in_scope[$var_id])) {
+                    $this->remove($var_id, false);
+                    $this->vars_possibly_in_scope[$var_id] = true;
+                } elseif ($branch->vars_in_scope[$var_id] !== $type) {
+                    $this->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $type,
+                        $branch->vars_in_scope[$var_id],
+                        $codebase,
+                    );
+                }
+            }
+        }
+    }
+
+    /**
      * This method is used after assignments to variables to remove any existing
      * items in $vars_in_scope that are now made redundant by an update to some data
      */
