@@ -100,7 +100,8 @@ final class InstancePropertyAssignmentAnalyzer
     /**
      * @param   PropertyFetch|PropertyItem  $stmt
      * @param   bool                        $direct_assignment whether the variable is assigned explicitly
-     * @param   bool                        $modifies_value written through a reference or as an array element
+     * @param   bool                        $modifies_value written through a reference, as an array element or
+     *                                                      from its current value
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
