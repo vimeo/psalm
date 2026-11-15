@@ -1418,6 +1418,54 @@ final class NewAnalyzer extends CallAnalyzer
             return;
         }
     }
+    /**
+     * `new $object` is as unsafe as `new static` when a child class may change the constructor
+     */
+    private static function checkNewOfAnObject(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        PhpParser\Node\Expr\New_ $stmt,
+        TNamedObject $lhs_type_part,
+        bool &$unsafe_instantiation_reported,
+    ): void {
+        if ($lhs_type_part instanceof TAnonymousClassInstance
+            || $statements_analyzer->node_data->getType($stmt)
+            || !$codebase->classlikes->classExists($lhs_type_part->value, null, $context)
+        ) {
+            return;
+        }
+
+        $object_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+
+        // a final class has no child that could change the constructor, and the object of an internal
+        // class is mostly one just created (`$o = new stdClass; new $o`)
+        if ($unsafe_instantiation_reported
+            || !$object_storage->user_defined
+            || $object_storage->final
+            || self::childConstructorsAcceptArgs(
+                $statements_analyzer,
+                $codebase,
+                $context,
+                $object_storage,
+                $stmt->getArgs(),
+            )
+        ) {
+            return;
+        }
+
+        $unsafe_instantiation_reported = true;
+
+        IssueBuffer::maybeAdd(
+            new UnsafeInstantiation(
+                'Cannot safely instantiate class ' . $lhs_type_part->value
+                . ' with "new $object" as its constructor might change in child classes',
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+    }
+
     private static function getNewType(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -1641,37 +1689,14 @@ final class NewAnalyzer extends CallAnalyzer
             ) {
                 // do nothing
             } elseif ($lhs_type_part instanceof TNamedObject) {
-                if (!$lhs_type_part instanceof TAnonymousClassInstance
-                    && !$statements_analyzer->node_data->getType($stmt)
-                    && $codebase->classlikes->classExists($lhs_type_part->value, null, $context)
-                ) {
-                    $object_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
-
-                    // a final class has no child that could change the constructor, and the object of an internal
-                    // class is mostly one just created (`$o = new stdClass; new $o`)
-                    if (!$unsafe_instantiation_reported
-                        && $object_storage->user_defined
-                        && !$object_storage->final
-                        && !self::childConstructorsAcceptArgs(
-                            $statements_analyzer,
-                            $codebase,
-                            $context,
-                            $object_storage,
-                            $stmt->getArgs(),
-                        )
-                    ) {
-                        $unsafe_instantiation_reported = true;
-
-                        IssueBuffer::maybeAdd(
-                            new UnsafeInstantiation(
-                                'Cannot safely instantiate class ' . $lhs_type_part->value
-                                . ' with "new $object" as its constructor might change in child classes',
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-                    }
-                }
+                self::checkNewOfAnObject(
+                    $statements_analyzer,
+                    $codebase,
+                    $context,
+                    $stmt,
+                    $lhs_type_part,
+                    $unsafe_instantiation_reported,
+                );
 
                 $new_types []= new Union([$lhs_type_part]);
                 continue;
