@@ -306,7 +306,7 @@ final class InstancePropertyFetchAnalyzer
         $short_circuit_null = $receiver_state !== NullsafeChainState::None && $stmt_var_type->isNullable();
 
         if ($short_circuit_null) {
-            $receiver_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
+            $receiver_state->afterLink($stmt_type && NullsafeChainState::canBeNull($stmt_type))->markOn($stmt);
         }
 
         // isset()/empty()/`??` only skip the null of the fetch itself, the `?->` short-circuit stays in the result

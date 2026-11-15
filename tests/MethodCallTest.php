@@ -2329,6 +2329,98 @@ final class MethodCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafeMixedMethodCallNotIdenticalToNullElseBranchKeepsPossiblyNullReceiver' => [
+                'code' => '<?php
+                    final class B {
+                        public function m(): mixed {
+                            return null;
+                        }
+
+                        public function exec(): void {}
+                    }
+
+                    function a(?B $b): void {
+                        if ($b?->m() !== null) {
+                            return;
+                        }
+
+                        $b->exec();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeUntypedMethodCallNotIdenticalToNullElseBranchKeepsPossiblyNullReceiver' => [
+                'code' => '<?php
+                    final class B {
+                        /** @psalm-suppress MissingReturnType */
+                        public function u() {
+                            return null;
+                        }
+
+                        public function exec(): void {}
+                    }
+
+                    function a(?B $b): void {
+                        if ($b?->u() !== null) {
+                            return;
+                        }
+
+                        $b->exec();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeTemplateMethodCallNotIdenticalToNullElseBranchKeepsPossiblyNullReceiver' => [
+                'code' => '<?php
+                    final class B {
+                        /**
+                         * @template T
+                         * @param T $t
+                         * @return T
+                         */
+                        public function id($t) {
+                            return $t;
+                        }
+
+                        public function exec(): void {}
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $x
+                     */
+                    function a(?B $b, $x): void {
+                        if ($b?->id($x) !== null) {
+                            return;
+                        }
+
+                        $b->exec();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeMixedPropertyFetchNotIdenticalToNullElseBranchKeepsPossiblyNullReceiver' => [
+                'code' => '<?php
+                    final class B {
+                        public mixed $m = null;
+
+                        public function exec(): void {}
+                    }
+
+                    function a(?B $b): void {
+                        if ($b?->m !== null) {
+                            return;
+                        }
+
+                        $b->exec();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafeMethodCallNotIdenticalToNullElseBranchIsNullReceiver' => [
                 'code' => '<?php
                     final class B {

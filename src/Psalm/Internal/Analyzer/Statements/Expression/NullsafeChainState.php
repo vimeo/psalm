@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser\Node\Expr;
+use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNonEmptyMixed;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 /**
  * Where the null in the type of a `?->` chain node comes from.
@@ -66,5 +71,29 @@ enum NullsafeChainState
     public function afterLink(bool $own_nullable): self
     {
         return $own_nullable ? self::ShortCircuitAndNull : $this;
+    }
+
+    /**
+     * Whether the result of a link can be null itself: `mixed` and a template whose bound can be null can,
+     * though `isNullable()` is false for them
+     *
+     * @psalm-pure
+     */
+    public static function canBeNull(Union $type): bool
+    {
+        if ($type->isNullable()) {
+            return true;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (($atomic_type instanceof TMixed && !$atomic_type instanceof TNonEmptyMixed)
+                || ($atomic_type instanceof TTemplateParam && self::canBeNull($atomic_type->as))
+                || $atomic_type instanceof TConditional
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

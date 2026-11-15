@@ -339,7 +339,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
         if ($class_state !== NullsafeChainState::None) {
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
-            $class_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
+            $class_state->afterLink($stmt_type && NullsafeChainState::canBeNull($stmt_type))->markOn($stmt);
 
             if ($stmt_type && !$stmt_type->isNullable()) {
                 $statements_analyzer->node_data->setType(
