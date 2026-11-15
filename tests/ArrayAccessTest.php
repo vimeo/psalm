@@ -745,6 +745,62 @@ final class ArrayAccessTest extends TestCase
         $this->assertSame([7, 10, 18, 21, 27, 32, 37], $lines);
     }
 
+    public function testTheFlagOfAReadOffsetFollowsTheFlowOfTheBranches(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function f(?array $m, ?array $n): void {
+                    echo $m[0];
+                    if (rand(0, 1)) { $m = $n; } else { echo $m[0]; }
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function g(?array $m, ?array $n): void {
+                    echo $m[0];
+                    if (rand(0, 1)) { $m = $n; return; }
+                    echo $m[0];
+                }
+
+                final class G {
+                    /** @var list<string>|null */
+                    public ?array $p = null;
+                    public int $n = 0;
+                    public function wrap(): void { $this->n++; }
+                    public function f(): void {
+                        echo $this->p[0];
+                        $this->wrap();
+                        echo $this->p[0];
+                    }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'PossiblyNullArrayAccess') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        sort($lines);
+
+        // each offset is reported where it is first read: the branch that assigns `$m` and returns does not end the
+        // flag after the if, a call that only writes `$this->n` does not end it for `$this->p`
+        $this->assertSame([7, 16, 27], $lines);
+    }
+
     public function testAnAssertionDoesNotEndTheDeduplicationOfTheNullOfAnArray(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;

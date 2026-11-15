@@ -464,8 +464,7 @@ final class ArrayFetchAnalyzer
             $context->vars_possibly_in_scope[$keyed_array_var_id] = true;
 
             if ($stmt_var_type && $stmt_var_type->isNullable()) {
-                $context->null_array_offsets_read[$keyed_array_var_id]
-                    = $context->null_array_offset_drops[$keyed_array_var_id] ?? 0;
+                $context->null_array_offsets_read[$keyed_array_var_id] = true;
             }
 
             // reference the variable too
@@ -476,17 +475,15 @@ final class ArrayFetchAnalyzer
     }
 
     /**
-     * Whether the remembered offset is still the one read earlier from the same array: it was not dropped since (an
-     * assignment, a by-reference pass or a mutation of the array, or a branch or loop that dropped it). An assertion
-     * that only narrows the array or the offset does not end it.
+     * Whether the remembered offset is still the one read earlier from the same array: what Psalm knows of it was not
+     * dropped since (an assignment, a by-reference pass, a mutation, or a branch or loop that dropped it). An
+     * assertion that only narrows the array or the offset does not end it.
      *
      * @psalm-capabilities read-props
      */
     private static function wasReadOnThisPath(string $keyed_array_var_id, Context $context): bool
     {
-        return isset($context->null_array_offsets_read[$keyed_array_var_id])
-            && $context->null_array_offsets_read[$keyed_array_var_id]
-                === ($context->null_array_offset_drops[$keyed_array_var_id] ?? 0);
+        return isset($context->null_array_offsets_read[$keyed_array_var_id]);
     }
 
     /**

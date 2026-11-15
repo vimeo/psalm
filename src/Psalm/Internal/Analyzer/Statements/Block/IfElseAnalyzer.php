@@ -432,6 +432,11 @@ final class IfElseAnalyzer
             ...$if_scope->possibly_assigned_var_ids ?: [],
         ];
 
+        // the branches that reach the end of the if dropped what was known of the offsets of what they assigned
+        foreach ($if_scope->possibly_assigned_var_ids ?: [] as $assigned_var_id => $_) {
+            $context->forgetNullArrayOffsets($assigned_var_id);
+        }
+
         // vars can only be defined/redefined if there was an else (defined in every block)
         $context->assigned_var_ids = array_merge(
             $context->assigned_var_ids,

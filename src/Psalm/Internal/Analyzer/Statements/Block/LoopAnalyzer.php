@@ -156,6 +156,11 @@ final class LoopAnalyzer
             }
 
             $loop_parent_context->vars_possibly_in_scope += $continue_context->vars_possibly_in_scope;
+
+            // what the body assigned is not what the offsets were read from
+            foreach ($continue_context->possibly_assigned_var_ids as $assigned_var_id => $_) {
+                $loop_parent_context->forgetNullArrayOffsets($assigned_var_id);
+            }
         } else {
             $original_parent_context = clone $loop_parent_context;
 
@@ -260,6 +265,7 @@ final class LoopAnalyzer
                             $pre_loop_context->removeVarFromConflictingClauses($var_id);
 
                             $loop_parent_context->possibly_assigned_var_ids[$var_id] = true;
+                            $loop_parent_context->forgetNullArrayOffsets($var_id);
                         }
 
                         if (isset($loop_context->vars_in_scope[$var_id])
@@ -321,6 +327,11 @@ final class LoopAnalyzer
                 $continue_context->has_returned = false;
 
                 $loop_parent_context->vars_possibly_in_scope += $continue_context->vars_possibly_in_scope;
+
+                // what the body assigned is not what the offsets were read from
+                foreach ($continue_context->possibly_assigned_var_ids as $assigned_var_id => $_) {
+                    $loop_parent_context->forgetNullArrayOffsets($assigned_var_id);
+                }
 
                 // if there are no changes to the types, no need to re-examine
                 if (!$has_changes && !$force_pass) {
@@ -475,6 +486,7 @@ final class LoopAnalyzer
                 );
 
                 $loop_parent_context->possibly_assigned_var_ids[$var] = true;
+                $loop_parent_context->forgetNullArrayOffsets($var);
             }
         }
 
