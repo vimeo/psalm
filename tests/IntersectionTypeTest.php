@@ -157,6 +157,96 @@ final class IntersectionTypeTest extends TestCase
                         return $param->custom() + $param->count();
                     }',
             ],
+            'methodOfTheClassOfAnObjectShapeIntersection' => [
+                'code' => '<?php
+                    final class Card {
+                        public function brand(): string {
+                            return "visa";
+                        }
+                    }
+
+                    /** @param object{last4: string}&Card $card */
+                    function test(object $card): string {
+                        return $card->brand();
+                    }',
+            ],
+            'methodOfTheClassAnObjectShapeIsNarrowedTo' => [
+                'code' => '<?php
+                    class Entity {
+                        public function get(string $key): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @property null|(object{brand: string}&Entity) $card
+                     */
+                    final class PaymentMethod extends Entity {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    function test(PaymentMethod $paymentMethod): int {
+                        $card = $paymentMethod->card;
+                        if (!$card instanceof Entity) {
+                            return 0;
+                        }
+
+                        return $card->get("brand");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticReturnOfAMethodOfAnObjectShapeIntersectionKeepsTheShape' => [
+                'code' => '<?php
+                    class Card {
+                        /** @return static */
+                        public function fluent(): self {
+                            return $this;
+                        }
+                    }
+
+                    /** @param object{last4: string}&Card $card */
+                    function test(object $card): string {
+                        return $card->fluent()->last4;
+                    }',
+            ],
+            'methodOfTheSecondClassOfAnObjectShapeIntersection' => [
+                'code' => '<?php
+                    interface Card {}
+
+                    interface Expirable {
+                        public function expiresAt(): string;
+                    }
+
+                    /** @param object{last4: string}&Card&Expirable $card */
+                    function test(object $card): string {
+                        return $card->expiresAt();
+                    }',
+            ],
+            'templatedMethodOfAnObjectShapeIntersection' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @return T */
+                        public function get(): mixed {
+                            return $this->value;
+                        }
+                    }
+
+                    /** @param object{label: string}&Box<int> $box */
+                    function test(object $box): int {
+                        return $box->get();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'intersectionElementOfAnArrayKeepsItsInterfacesInAnArrayMapClosure' => [
                 'code' => '<?php
                     interface A {}
@@ -336,48 +426,6 @@ final class IntersectionTypeTest extends TestCase
                 'assertions' => [
                     '$id===' => 'int',
                 ],
-            ],
-            'methodOfTheClassOfAnObjectShapeIntersection' => [
-                'code' => '<?php
-                    final class Card {
-                        public function brand(): string {
-                            return "visa";
-                        }
-                    }
-
-                    /** @param object{last4: string}&Card $card */
-                    function test(object $card): string {
-                        return $card->brand();
-                    }',
-            ],
-            'methodOfTheClassAnObjectShapeIsNarrowedTo' => [
-                'code' => '<?php
-                    class Entity {
-                        public function get(string $key): int {
-                            return 1;
-                        }
-                    }
-
-                    /**
-                     * @property null|(object{brand: string}&Entity) $card
-                     */
-                    final class PaymentMethod extends Entity {
-                        public function __get(string $name): mixed {
-                            return null;
-                        }
-                    }
-
-                    function test(PaymentMethod $paymentMethod): int {
-                        $card = $paymentMethod->card;
-                        if (!$card instanceof Entity) {
-                            return 0;
-                        }
-
-                        return $card->get("brand");
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
             ],
             'objectShapePropertyOnFinalClassWithMagicGetter' => [
                 'code' => '<?php

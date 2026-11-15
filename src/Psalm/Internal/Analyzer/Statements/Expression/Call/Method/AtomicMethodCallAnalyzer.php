@@ -157,6 +157,11 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $other_types = $lhs_type_part->extra_types;
                 unset($other_types[$key]);
                 $shape = $lhs_type_part->setIntersectionTypes([]);
+                $named = $extra_type->setIntersectionTypes([
+                    ...$extra_type->getIntersectionTypes(),
+                    ...$other_types,
+                    $shape->getKey() => $shape,
+                ]);
 
                 self::analyze(
                     $statements_analyzer,
@@ -164,12 +169,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $codebase,
                     $context,
                     $lhs_type,
-                    $extra_type->setIntersectionTypes([
-                        ...$extra_type->getIntersectionTypes(),
-                        ...$other_types,
-                        $shape->getKey() => $shape,
-                    ]),
-                    $extra_type,
+                    $named,
+                    $static_type ?? $named,
                     false,
                     $lhs_var_id,
                     $result,
