@@ -964,14 +964,14 @@ final class ClassLikeNodeScanner
 
                     if ($mixin_type instanceof TNamedObject) {
                         $storage->namedMixins[] = $mixin_type;
+                        $storage->declaredMixins[] = $mixin_type;
                     }
 
                     if ($mixin_type instanceof TTemplateParam) {
                         $storage->templatedMixins[] = $mixin_type;
+                        $storage->declaredMixins[] = $mixin_type;
                     }
                 }
-
-                $storage->mixin_declaring_fqcln = $storage->name;
             }
 
             $deferred_capabilities = [];
@@ -1175,23 +1175,29 @@ final class ClassLikeNodeScanner
             $mapped_properties = PropertyMap::getPropertyMap()[strtolower($fq_classlike_name)];
 
             foreach ($mapped_properties as $property_name => $public_mapped_property) {
-                $property_type = Type::parseString($public_mapped_property);
+                $property_storage = $classlike_storage->properties[$property_name] ??= new PropertyStorage();
 
-                /** @psalm-suppress UnusedMethodCall */
-                $property_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+                // Stubs are curated by hand and win over the map, like they do over the CallMap.
+                // The map still corrects real sources (e.g. vendored php-parser nodes) and types merely
+                // inferred from the constructor, which have no type location.
+                $is_declared_by_stub = $classlike_storage->stubbed
+                    && ($property_storage->type_location !== null || $property_storage->is_promoted);
+                $property_type = $is_declared_by_stub ? $property_storage->type : null;
 
-                if (!isset($classlike_storage->properties[$property_name])) {
-                    $classlike_storage->properties[$property_name] = new PropertyStorage();
+                if ($property_type === null) {
+                    $property_type = Type::parseString($public_mapped_property);
+
+                    /** @psalm-suppress UnusedMethodCall */
+                    $property_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
                 }
 
                 $property_id = $fq_classlike_name . '::$' . $property_name;
 
                 if ($property_id === 'DateInterval::$days') {
-                    /** @psalm-suppress InaccessibleProperty We just parsed this type */
-                    $property_type->ignore_falsable_issues = true;
+                    $property_type = $property_type->setProperties(['ignore_falsable_issues' => true]);
                 }
 
-                $classlike_storage->properties[$property_name]->type = $property_type;
+                $property_storage->type = $property_type;
 
                 $classlike_storage->declaring_property_ids[$property_name] = $fq_classlike_name;
                 $classlike_storage->appearing_property_ids[$property_name] = $property_id;
@@ -2063,7 +2069,14 @@ final class ClassLikeNodeScanner
         foreach ($stmt->props as $property) {
             $doc_var_location = null;
 
-            if (isset($storage->properties[$property->name->name])) {
+            $existing_property = $storage->properties[$property->name->name] ?? null;
+
+            // only a property declared in the same file is a duplicate; stubs refine properties from reflection and
+            // other stubs
+            if ($existing_property
+                && $existing_property->location
+                && $existing_property->location->file_path === $this->file_path
+            ) {
                 $this->file_storage->scan_issues[] = new DuplicateProperty(
                     'Property ' . $fq_classlike_name . '::$' . $property->name->name . ' has already been defined',
                     new CodeLocation($this->file_scanner, $stmt, null, true),
@@ -2077,6 +2090,7 @@ final class ClassLikeNodeScanner
             $property_storage->signature_type = $signature_type;
             $property_storage->signature_type_location = $signature_type_location;
             $property_storage->type_location = $signature_type_location;
+            $property_storage->has_docblock_type = $doc_var_group_type !== null;
             $property_storage->location = new CodeLocation($this->file_scanner, $property->name);
             $property_storage->stmt_location = new CodeLocation($this->file_scanner, $stmt);
             $property_storage->has_default = (bool)$property->default;
@@ -2089,10 +2103,10 @@ final class ClassLikeNodeScanner
             if (count($property_storage->internal) === 0 && $var_comment && $var_comment->internal) {
                 $property_storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name)];
             }
-            $property_storage->readonly = $storage->readonly
-                || $stmt->isReadonly()
+            $property_storage->native_readonly = $storage->readonly || $stmt->isReadonly();
+            $property_storage->readonly = $property_storage->native_readonly
                 || ($var_comment && $var_comment->readonly);
-            $property_storage->readonly_default = ($storage->readonly || $stmt->isReadonly())
+            $property_storage->readonly_default = $property_storage->native_readonly
                 && !$stmt->isStatic()
                 && $property->default !== null;
             $property_storage->allow_private_mutation = $var_comment ? $var_comment->allow_private_mutation : false;

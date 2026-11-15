@@ -182,6 +182,30 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'notIterableOfOtherTypesKeepsTheTraversableObjectsOfOtherTypes' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true iterable<int, string> $x */
+                    function isStringIterable(mixed $x): bool {
+                        return is_iterable($x);
+                    }
+
+                    /** @param Traversable<int, int>|int $v */
+                    function f($v): void {
+                        if (!isStringIterable($v)) {
+                            /** @psalm-check-type-exact $v = Traversable<int, int>|int */
+                        }
+                    }
+
+                    /** @param Generator<int, string>|int $v */
+                    function g($v): void {
+                        if (!isStringIterable($v)) {
+                            /** @psalm-check-type-exact $v = int */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'identicalKeyedArraysWithAnOptionalKeyOfOverlappingTypes' => [
                 'code' => '<?php
                     /** @param array{a?: int|string} $x */
