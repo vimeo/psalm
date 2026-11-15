@@ -521,7 +521,9 @@ final class UnionTypeComparator
                 $any_to_string_cast = $any_to_string_cast || $failed_part['to_string_cast'];
                 $all_coerced_from_mixed = $all_coerced_from_mixed && $failed_part['coerced_from_mixed'];
                 $all_coerced_from_as_mixed = $all_coerced_from_as_mixed && $failed_part['coerced_from_as_mixed'];
-                $all_scalar_match = $all_scalar_match && $failed_part['scalar_match'];
+                // a part that only fails because it is mixed says nothing about the scalar match of the others
+                $all_scalar_match = $all_scalar_match
+                    && ($failed_part['scalar_match'] || $failed_part['coerced_from_mixed']);
 
                 if ($failed_part['missing_shape_fields'] !== null) {
                     $missing_shape_fields = array_merge($missing_shape_fields, $failed_part['missing_shape_fields']);
