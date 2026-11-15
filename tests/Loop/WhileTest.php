@@ -1054,6 +1054,25 @@ final class WhileTest extends TestCase
                     '$a===' => 'int<-10, 0>|null',
                 ],
             ],
+            'whileLoopNeverEnteredStillHasWhatItsConditionWrites' => [
+                'code' => '<?php
+                    /** @param-out int<1, 10> $a */
+                    function nextValue(int &$a): bool {
+                        $a = rand(1, 10);
+                        return (bool) rand(0, 1);
+                    }
+
+                    $a = 0;
+                    while (nextValue($a) || $a > 5) {}
+                    $b = rand(0, 1) ? null : rand(0, 10);
+                    while ($b && abs($b) < 20) {
+                        $b--;
+                    }',
+                'assertions' => [
+                    '$a===' => 'int<1, 5>',
+                    '$b===' => 'int<0, 10>|null',
+                ],
+            ],
             'whileLoopAlwaysEnteredGetsTheNegatedCondition' => [
                 'code' => '<?php
                     $a = null;

@@ -485,6 +485,15 @@ final class DoTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedArrayAccess'],
             ],
+            'doWhileBodyThatAlwaysBreaksNeverEvaluatesTheCondition' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        do {
+                            $s = null;
+                            break;
+                        } while (strlen($s) === 2);
+                    }',
+            ],
             'doWhileWithContinueIsLeftWhenItsConditionIsFalse' => [
                 'code' => '<?php
                     $a = rand(0, 1) ? null : rand();
