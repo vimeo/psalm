@@ -27,7 +27,6 @@ use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\BinaryOp\VirtualEqual;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualArray;
-use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualVariable;
@@ -436,24 +435,16 @@ final class SwitchCaseAnalyzer
 
         if ($case_clauses && $case_equality_expr) {
             try {
-                $negated_case_clauses = Algebra::negateFormula($case_clauses);
+                $negated_case_clauses = FormulaGenerator::getNegatedFormula(
+                    $case_clauses,
+                    $case_equality_expr,
+                    spl_object_id($case_equality_expr),
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                );
             } catch (ComplicatedExpressionException) {
-                $case_equality_expr_id = spl_object_id($case_equality_expr);
-
-                try {
-                    $negated_case_clauses = FormulaGenerator::getFormula(
-                        $case_equality_expr_id,
-                        $case_equality_expr_id,
-                        new VirtualBooleanNot($case_equality_expr),
-                        $context->self,
-                        $statements_analyzer,
-                        $codebase,
-                        false,
-                        false,
-                    );
-                } catch (ComplicatedExpressionException) {
-                    $negated_case_clauses = [];
-                }
+                $negated_case_clauses = [];
             }
 
             $switch_scope->negated_clauses = [...$switch_scope->negated_clauses, ...$negated_case_clauses];

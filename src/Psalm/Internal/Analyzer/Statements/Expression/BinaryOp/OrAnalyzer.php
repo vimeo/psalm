@@ -168,21 +168,16 @@ final class OrAnalyzer
         );
 
         try {
-            $negated_left_clauses = Algebra::negateFormula($left_clauses);
+            $negated_left_clauses = FormulaGenerator::getNegatedFormula(
+                $left_clauses,
+                $stmt->left,
+                $left_cond_id,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+            );
         } catch (ComplicatedExpressionException) {
-            try {
-                $negated_left_clauses = FormulaGenerator::getFormula(
-                    $left_cond_id,
-                    $left_cond_id,
-                    new VirtualBooleanNot($stmt->left),
-                    $context->self,
-                    $statements_analyzer,
-                    $codebase,
-                    false,
-                );
-            } catch (ComplicatedExpressionException) {
-                return false;
-            }
+            return false;
         }
 
         if ($left_context->reconciled_expression_clauses) {

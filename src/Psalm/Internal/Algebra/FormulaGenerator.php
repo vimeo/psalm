@@ -7,6 +7,7 @@ namespace Psalm\Internal\Algebra;
 use Override;
 use PhpParser;
 use Psalm\Codebase;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\FileSource;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
@@ -190,7 +191,22 @@ final class FormulaGenerator
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
-            if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr) {
+            if ($conditional->expr instanceof PhpParser\Node\Expr\BooleanNot) {
+                return self::getFormula(
+                    $conditional_object_id,
+                    spl_object_id($conditional->expr->expr),
+                    $conditional->expr->expr,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation,
+                    $cache,
+                );
+            }
+
+            if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                || $conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+            ) {
                 $and_expr = new VirtualBooleanAnd(
                     new VirtualBooleanNot(
                         $conditional->expr->left,
@@ -323,17 +339,15 @@ final class FormulaGenerator
                     || $conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
                     || $conditional->left instanceof PhpParser\Node\Expr\BooleanNot)
             ) {
-                return Algebra::negateFormula(
-                    self::getFormula(
-                        $conditional_object_id,
-                        spl_object_id($conditional->left),
-                        $conditional->left,
-                        $this_class_name,
-                        $source,
-                        $codebase,
-                        !$inside_negation,
-                        $cache,
-                    ),
+                return self::getFormula(
+                    $conditional_object_id,
+                    spl_object_id($conditional->left),
+                    new VirtualBooleanNot($conditional->left, $conditional->getAttributes()),
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation,
+                    $cache,
                 );
             }
 
@@ -343,17 +357,15 @@ final class FormulaGenerator
                     || $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
                     || $conditional->right instanceof PhpParser\Node\Expr\BooleanNot)
             ) {
-                return Algebra::negateFormula(
-                    self::getFormula(
-                        $conditional_object_id,
-                        spl_object_id($conditional->right),
-                        $conditional->right,
-                        $this_class_name,
-                        $source,
-                        $codebase,
-                        !$inside_negation,
-                        $cache,
-                    ),
+                return self::getFormula(
+                    $conditional_object_id,
+                    spl_object_id($conditional->right),
+                    new VirtualBooleanNot($conditional->right, $conditional->getAttributes()),
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation,
+                    $cache,
                 );
             }
 
@@ -406,17 +418,15 @@ final class FormulaGenerator
                     || $conditional->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
                     || $conditional->left instanceof PhpParser\Node\Expr\BooleanNot)
             ) {
-                return Algebra::negateFormula(
-                    self::getFormula(
-                        $conditional_object_id,
-                        spl_object_id($conditional->left),
-                        $conditional->left,
-                        $this_class_name,
-                        $source,
-                        $codebase,
-                        !$inside_negation,
-                        $cache,
-                    ),
+                return self::getFormula(
+                    $conditional_object_id,
+                    spl_object_id($conditional->left),
+                    new VirtualBooleanNot($conditional->left, $conditional->getAttributes()),
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation,
+                    $cache,
                 );
             }
 
@@ -426,17 +436,15 @@ final class FormulaGenerator
                     || $conditional->right instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
                     || $conditional->right instanceof PhpParser\Node\Expr\BooleanNot)
             ) {
-                return Algebra::negateFormula(
-                    self::getFormula(
-                        $conditional_object_id,
-                        spl_object_id($conditional->right),
-                        $conditional->right,
-                        $this_class_name,
-                        $source,
-                        $codebase,
-                        !$inside_negation,
-                        $cache,
-                    ),
+                return self::getFormula(
+                    $conditional_object_id,
+                    spl_object_id($conditional->right),
+                    new VirtualBooleanNot($conditional->right, $conditional->getAttributes()),
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation,
+                    $cache,
                 );
             }
 
@@ -677,18 +685,61 @@ final class FormulaGenerator
     }
 
     /**
-     * Whether the formula of the condition leaves out what the left side of an `&&` tested of a variable that the right
-     * side assigns: it holds where the whole condition does, so its negation has to be made from the negated condition
-     * (`!A || !B`), where the right side is only evaluated if the left one holds
+     * The negation of the formula of a condition, without what it says of a variable that the right side of one of its
+     * `||` assigns (see withoutClausesOfReassignedVars())
+     *
+     * Where the right side of an `&&` or `||` of the condition assigns a variable, the formula either leaves out what
+     * the left side tested of it (`A && B`, also `!(A || B)`) or tests its old and new value in one clause (`A || B`,
+     * also `!(A && B)`). The negation is then made from the negated condition, where each side is only evaluated where
+     * the sides before it let it be.
+     *
+     * @param list<Clause> $clauses
+     * @return list<Clause>
+     * @throws ComplicatedExpressionException
      */
-    public static function leavesOutClausesOfAssignedVars(
+    public static function getNegatedFormula(
+        array $clauses,
         PhpParser\Node\Expr $conditional,
+        int $conditional_object_id,
         ?string $this_class_name,
-    ): bool {
+        FileSource $source,
+        ?Codebase $codebase,
+    ): array {
+        if (!self::hasAssigningRightSide($conditional, $this_class_name)) {
+            try {
+                return self::withoutClausesOfReassignedVars(
+                    Algebra::negateFormula($clauses),
+                    $conditional,
+                    $this_class_name,
+                );
+            } catch (ComplicatedExpressionException) {
+                // too big to negate: made from the negated condition instead
+            }
+        }
+
+        return self::withoutClausesOfReassignedVars(
+            self::getFormula(
+                $conditional_object_id,
+                $conditional_object_id,
+                new VirtualBooleanNot($conditional),
+                $this_class_name,
+                $source,
+                $codebase,
+                false,
+            ),
+            $conditional,
+            $this_class_name,
+        );
+    }
+
+    private static function hasAssigningRightSide(PhpParser\Node\Expr $conditional, ?string $this_class_name): bool
+    {
         return (new PhpParser\NodeFinder())->findFirst(
             $conditional,
             static fn(PhpParser\Node $node): bool => ($node instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
-                    || $node instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd)
+                    || $node instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+                    || $node instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                    || $node instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr)
                 && self::getAssignedVarIds($node->right, $this_class_name) !== [],
         ) !== null;
     }
