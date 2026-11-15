@@ -1552,6 +1552,7 @@ final class LoopAnalyzer
      * @param array<string, Union> $vars_at_end
      * @param ?list<int> $bounds sorted
      * @return array<string, Union>
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function getWidenedIntRanges(array $vars_at_start, array $vars_at_end, ?array $bounds): array
     {
@@ -1576,6 +1577,7 @@ final class LoopAnalyzer
      * Literals are left alone: they come from assignments, so the passes reach all of them.
      *
      * @param ?list<int> $bounds sorted
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function widenIntRanges(Union $start_type, Union $end_type, ?array $bounds): Union
     {
@@ -1635,6 +1637,7 @@ final class LoopAnalyzer
 
     /**
      * @param ?list<int> $bounds sorted
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function widenArrayValueIntRanges(Union $start_type, Union $end_type, ?array $bounds): Union
     {
