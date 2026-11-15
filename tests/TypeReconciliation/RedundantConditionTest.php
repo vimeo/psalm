@@ -69,29 +69,6 @@ final class RedundantConditionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'notNullBeforeAnIssetOfTheSameVariableIsNotRedundant' => [
-                'code' => '<?php
-                    final class Item {
-                        public function name(): string {
-                            return "i";
-                        }
-                    }
-
-                    function pick(bool $first): string {
-                        if ($first) {
-                            $item = new Item();
-                        }
-
-                        if ($item !== null && isset($item)) {
-                            return $item->name();
-                        }
-
-                        return "";
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedMethodCall', 'PossiblyUndefinedVariable'],
-                'php_version' => '8.1',
-            ],
             'ctypeCheckOfNumericStringExpressionIsNotRedundant' => [
                 'code' => <<<'PHP'
                     <?php
@@ -557,12 +534,9 @@ final class RedundantConditionTest extends TestCase
                         $options = ["option" => true];
                     }
 
-                    /** @psalm-suppress PossiblyUndefinedGlobalVariable */
                     $option = $options["option"] ?? false;
 
                     if ($option !== false) {}',
-                'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
             'allowIntValueCheckAfterComparisonDueToOverflow' => [
                 'code' => '<?php
@@ -1422,6 +1396,29 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'issetAfterANotNullCheckOfAConditionallyDefinedVariableIsRedundant' => [
+                'code' => '<?php
+                    final class Item {
+                        public function name(): string {
+                            return "i";
+                        }
+                    }
+
+                    function pick(bool $first): string {
+                        if ($first) {
+                            $item = new Item();
+                        }
+
+                        if ($item !== null && isset($item)) {
+                            return $item->name();
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:29',
+                'error_levels' => ['PossiblyUndefinedVariable'],
+                'php_version' => '8.1',
+            ],
             'notNullAfterAnIssetOfAConditionallyDefinedVariableIsRedundant' => [
                 'code' => '<?php
                     final class Item {
@@ -1441,7 +1438,7 @@ final class RedundantConditionTest extends TestCase
 
                         return "";
                     }',
-                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:29',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:45',
                 'error_levels' => ['MixedReturnStatement', 'MixedMethodCall'],
                 'php_version' => '8.1',
             ],
