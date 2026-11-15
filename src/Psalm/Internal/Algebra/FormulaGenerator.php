@@ -619,31 +619,6 @@ final class FormulaGenerator
     }
 
     /**
-     * The negation of a condition without what it says of a variable that the right side of one of its `||` assigns.
-     * Where the condition is false that right side has run, so what the negated left side says of the variable is
-     * about the value it had before; leaving out conjuncts of a negation keeps it true.
-     *
-     * @param list<Clause> $negated_clauses
-     * @return list<Clause>
-     */
-    public static function withoutClausesOfReassignedVars(
-        array $negated_clauses,
-        PhpParser\Node\Expr $condition,
-        ?string $this_class_name,
-    ): array {
-        $reassigned_var_ids = self::getVarsAssignedByOredRightSides($condition, $this_class_name);
-
-        if (!$reassigned_var_ids) {
-            return $negated_clauses;
-        }
-
-        return array_values(array_filter(
-            $negated_clauses,
-            static fn(Clause $clause): bool => !self::testsAnyVar($clause, $reassigned_var_ids),
-        ));
-    }
-
-    /**
      * The clauses that say nothing of the variables the expression assigns, or of an item or property of one: what
      * they said is about the value the variables had before
      *
@@ -685,8 +660,7 @@ final class FormulaGenerator
     }
 
     /**
-     * The negation of the formula of a condition, without what it says of a variable that the right side of one of its
-     * `||` assigns (see withoutClausesOfReassignedVars())
+     * The negation of the formula of a condition
      *
      * Where the right side of an `&&` or `||` of the condition assigns a variable, the formula either leaves out what
      * the left side tested of it (`A && B`, also `!(A || B)`) or tests its old and new value in one clause (`A || B`,
@@ -707,28 +681,20 @@ final class FormulaGenerator
     ): array {
         if (!self::hasAssigningRightSide($conditional, $this_class_name)) {
             try {
-                return self::withoutClausesOfReassignedVars(
-                    Algebra::negateFormula($clauses),
-                    $conditional,
-                    $this_class_name,
-                );
+                return Algebra::negateFormula($clauses);
             } catch (ComplicatedExpressionException) {
                 // too big to negate: made from the negated condition instead
             }
         }
 
-        return self::withoutClausesOfReassignedVars(
-            self::getFormula(
-                $conditional_object_id,
-                $conditional_object_id,
-                new VirtualBooleanNot($conditional),
-                $this_class_name,
-                $source,
-                $codebase,
-                false,
-            ),
-            $conditional,
+        return self::getFormula(
+            $conditional_object_id,
+            $conditional_object_id,
+            new VirtualBooleanNot($conditional),
             $this_class_name,
+            $source,
+            $codebase,
+            false,
         );
     }
 

@@ -783,7 +783,7 @@ final class TypeAlgebraTest extends TestCase
                             return;
                         }
 
-                        /** @psalm-check-type-exact $a = int|null */
+                        /** @psalm-check-type-exact $a = 0|null */
                         echo 1;
                     }',
                 'assertions' => [],
@@ -974,6 +974,65 @@ final class TypeAlgebraTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'aLoopRetryingUntilTheVariableItAssignsIsNotNullIsLeftWithItNotNull' => [
+                'code' => '<?php
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a): int {
+                        while ($a === null || ($a = load()) === null) {
+                            echo 1;
+                        }
+
+                        return $a;
+                    }
+
+                    function g(?int $a): int {
+                        do {
+                            echo 1;
+                        } while ($a === null || ($a = load()) === null);
+
+                        return $a;
+                    }',
+            ],
+            'aVariableAssignedOnTheRightOfAnOrIsDefinedWhereTheOrIsFalse' => [
+                'code' => '<?php
+                    function get(int $a): ?string {
+                        return $a > 1 ? "x" : null;
+                    }
+
+                    /**
+                     * @param mixed $v
+                     * @psalm-assert falsy $v
+                     */
+                    function assertFalsy($v): void {}
+
+                    function f(?int $a): string {
+                        do {
+                            echo 1;
+                        } while (!$a || !($b = get($a)));
+
+                        return $b;
+                    }
+
+                    function g(?int $a): string {
+                        switch (true) {
+                            case !$a || !($b = get($a)):
+                                return "";
+                            default:
+                                return $b;
+                        }
+                    }
+
+                    function h(?int $a): string {
+                        assertFalsy(!$a || !($b = get($a)));
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison', 'MixedReturnStatement', 'MixedInferredReturnType'],
             ],
             'aCaseOfASwitchTrueAssigningAVariableHasNoClausesOfItsOldValue' => [
                 'code' => '<?php
