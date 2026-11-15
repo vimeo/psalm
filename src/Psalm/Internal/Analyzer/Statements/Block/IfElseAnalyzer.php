@@ -452,6 +452,10 @@ final class IfElseAnalyzer
             $if_scope->assigned_var_ids ?: [],
         );
 
+        foreach ($if_scope->unknown_offsets as $var_id => $_) {
+            unset($context->vars_in_scope[$var_id], $context->vars_possibly_in_scope[$var_id]);
+        }
+
         if ($if_scope->new_vars) {
             foreach ($if_scope->new_vars as $var_id => &$type) {
                 // a variable every branch assigns no longer holds what it held before: only the use of variables
