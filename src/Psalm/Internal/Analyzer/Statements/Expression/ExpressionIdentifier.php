@@ -11,6 +11,7 @@ use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\PrettyPrinter;
 
 use function count;
 use function implode;
@@ -130,7 +131,7 @@ final class ExpressionIdentifier
         return $var_id ?? (string) preg_replace(
             '/\s+/',
             ' ',
-            (new PhpParser\PrettyPrinter\Standard())->prettyPrintExpr($expr),
+            PrettyPrinter::printExpr($expr),
         );
     }
 

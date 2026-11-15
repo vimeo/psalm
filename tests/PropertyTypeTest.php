@@ -6113,6 +6113,15 @@ final class PropertyTypeTest extends TestCase
                     f()->name = "x";',
                 'error_message' => 'PossiblyNullPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - f() with possibly null type',
             ],
+            'partialApplicationInTheObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function wrap(Closure $c): ?stdClass { return rand(0, 1) ? null : new stdClass; }
+                    function add(int $a, int $b): int { return $a + $b; }
+                    wrap(add(1, ?))->x = 1;',
+                'error_message' => 'PossiblyNullPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:21 - wrap(add(1, ?)) with possibly null type',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
             'nonObjectOfPropertyAssignmentIsNamed' => [
                 'code' => '<?php
                     function f(): int { return 1; }
