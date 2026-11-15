@@ -238,6 +238,7 @@ final class IfAnalyzer
                 array_merge($new_assigned_var_ids, $if_conditional_scope->assigned_in_conditional_var_ids),
                 $new_possibly_assigned_var_ids,
                 $if_scope->if_cond_changed_var_ids,
+                assigned_in_conditional_var_ids: $if_conditional_scope->assigned_in_conditional_var_ids,
             );
 
             if ($if_scope->reasonable_clauses) {
@@ -435,6 +436,7 @@ final class IfAnalyzer
      * @param  array<string, int>    $assigned_var_ids
      * @param  array<string, bool>   $possibly_assigned_var_ids
      * @param  array<string, bool>   $newly_reconciled_var_ids
+     * @param  array<string, int>    $assigned_in_conditional_var_ids
      */
     public static function updateIfScope(
         Codebase $codebase,
@@ -445,8 +447,26 @@ final class IfAnalyzer
         array $possibly_assigned_var_ids,
         array $newly_reconciled_var_ids,
         bool $update_new_vars = true,
+        array $assigned_in_conditional_var_ids = [],
     ): void {
         $redefined_vars = $if_context->getRedefinedVars($outer_context->vars_in_scope);
+
+        foreach (array_diff_key($if_context->vars_in_scope, $outer_context->vars_in_scope) as $new_var => $type) {
+            // only variables the branch defines: `$a->b` and `$a['b']` are narrowings of an expression, `isset($a)`
+            // doesn't define `$a`, and the type of a variable possibly defined before the branch (by an earlier
+            // iteration) or by its condition (which the paths skipping the branch evaluate too) isn't all in it
+            if (!preg_match('/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $new_var)
+                || (!isset($assigned_var_ids[$new_var]) && !isset($possibly_assigned_var_ids[$new_var]))
+                || isset($outer_context->vars_possibly_in_scope[$new_var])
+                || isset($assigned_in_conditional_var_ids[$new_var])
+            ) {
+                continue;
+            }
+
+            $if_scope->partial_new_vars[$new_var] = isset($if_scope->partial_new_vars[$new_var])
+                ? Type::combineUnionTypes($if_scope->partial_new_vars[$new_var], $type, $codebase)
+                : $type;
+        }
 
         if ($if_scope->new_vars === null) {
             if ($update_new_vars) {
