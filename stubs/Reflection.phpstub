@@ -16,6 +16,7 @@ class ReflectionClass implements Reflector {
      * @param T|class-string<T>|interface-string<T>|trait-string|enum-string<T> $objectOrClass
      * @psalm-pure
      * @psalm-taint-sink callable $objectOrClass
+     * @psalm-flow ($objectOrClass) -> ReflectionException::$messages[*]
      */
     public function __construct(object|string $objectOrClass) {}
 

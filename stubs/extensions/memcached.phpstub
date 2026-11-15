@@ -1548,5 +1548,8 @@ class Memcached
  */
 class MemcachedException extends RuntimeException
 {
+    /**
+     * @psalm-flow ($errmsg) -> $this->message
+     */
     public function __construct($errmsg = "", $errcode = 0) {}
 }

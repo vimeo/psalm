@@ -723,6 +723,7 @@ namespace RdKafka {
          * @param boolean $isFatal
          * @param boolean $isRetriable
          * @param boolean $transactionRequiresAbort
+         * @psalm-flow ($message) -> $this->message
          */
         public function __construct($message, $code, $errorString, $isFatal, $isRetriable, $transactionRequiresAbort)
         {

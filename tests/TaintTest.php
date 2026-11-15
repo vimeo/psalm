@@ -4354,6 +4354,17 @@ final class TaintTest extends TestCase
                         echo $e->getMessage();
                     }',
             ],
+            'dontTaintMessageReadThroughASubclassOfTheConstructedClass' => [
+                'code' => '<?php
+                    function a(): void {
+                        throw new LogicException((string) $_GET["x"]);
+                    }
+                    try {
+                        a();
+                    } catch (DomainException $e) {
+                        echo $e->getMessage();
+                    }',
+            ],
             'dontTaintSpecializedInstanceStoredInAnotherWithOtherInstances' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -15734,6 +15745,25 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintMessageOfAnExceptionConstructedAsStaticReadThroughASubclass' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class AppException extends RuntimeException {
+                        public static function create(string $message): static {
+                            return new static($message);
+                        }
+                    }
+                    final class NotFound extends AppException {}
+                    function find(): void {
+                        throw NotFound::create((string) $_GET["x"]);
+                    }
+                    try {
+                        find();
+                    } catch (NotFound $e) {
+                        echo $e->getMessage();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintCaughtExceptionDump' => [
                 'code' => '<?php
                     function foo(string $s): void {
@@ -15773,6 +15803,31 @@ final class TaintTest extends TestCase
                     } catch (Exception $e) {
                         echo $e->getMessage();
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheMessageOfTheExceptionReflectionClassThrowsOnAMissingClass' => [
+                'code' => '<?php
+                    /** @psalm-taint-escape callable */
+                    function asClassName(string $s): string {
+                        return $s;
+                    }
+                    try {
+                        new ReflectionClass(asClassName((string) $_GET["class"]));
+                    } catch (ReflectionException $e) {
+                        echo $e->getMessage();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintMemcachedExceptionMessage' => [
+                'code' => '<?php
+                    $e = new MemcachedException((string) $_GET["x"]);
+                    echo $e->getMessage();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintKafkaErrorExceptionMessage' => [
+                'code' => '<?php
+                    $e = new RdKafka\KafkaErrorException((string) $_GET["x"], 1, "", false, false, false);
+                    echo $e->getMessage();',
                 'error_message' => 'TaintedHtml',
             ],
             'taintTheMessageOfTheExceptionDateTimeZoneThrowsReadAsThrowable' => [

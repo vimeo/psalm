@@ -305,6 +305,7 @@ final class ReceiverPropertyTaints
      * $object_type holding what is set, when the taints of the properties of the class are kept per instance
      *
      * @param array<array-key, Arg> $args
+     * @param bool $is_exact_class whether the object is of $class itself, not of a class extending it (`new static`)
      */
     public static function taintConstruction(
         StatementsAnalyzer $statements_analyzer,
@@ -314,6 +315,7 @@ final class ReceiverPropertyTaints
         string $class,
         CodeLocation $call_location,
         Union $object_type,
+        bool $is_exact_class = false,
     ): Union {
         if ($storage->taint_property_writes === []
             && $storage->taint_keyed_property_writes === []
@@ -341,6 +343,7 @@ final class ReceiverPropertyTaints
             $object_node,
             null,
             $call_location,
+            $is_exact_class,
         ) && $class_storage->specialize_instance) {
             $graph->addNode($object_node);
             $object_type = $object_type->addParentNodes([$object_node->id => $object_node]);
@@ -367,6 +370,7 @@ final class ReceiverPropertyTaints
         ?DataFlowNode $object_node,
         ?Context $context,
         CodeLocation $call_location,
+        bool $is_exact_class = false,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
         $sets_any = false;
@@ -415,7 +419,7 @@ final class ReceiverPropertyTaints
                     $call_location,
                 );
             } else {
-                self::addWrite($codebase, $graph, $class_storage, $names, $write_node);
+                self::addWrite($codebase, $graph, $class_storage, $names, $write_node, $is_exact_class);
             }
         }
 
@@ -433,7 +437,7 @@ final class ReceiverPropertyTaints
                     $graph->addPath($array_node, $write_node, '=');
                 }
 
-                self::addKeyedWrite($codebase, $graph, $class_storage, $write_node);
+                self::addKeyedWrite($codebase, $graph, $class_storage, $write_node, $is_exact_class);
 
                 continue;
             }
@@ -465,7 +469,7 @@ final class ReceiverPropertyTaints
                     $call_location,
                 );
             } else {
-                self::addWrite($codebase, $graph, $class_storage, $names, $write_node);
+                self::addWrite($codebase, $graph, $class_storage, $names, $write_node, $is_exact_class);
             }
         }
 
@@ -496,7 +500,7 @@ final class ReceiverPropertyTaints
                 }
             } elseif (self::addValuePaths($statements_analyzer, $graph, $args, $args_by_param, $params, $write_node)) {
                 $sets_any = true;
-                self::addKeyedWrite($codebase, $graph, $class_storage, $write_node);
+                self::addKeyedWrite($codebase, $graph, $class_storage, $write_node, $is_exact_class);
             }
         }
 
@@ -789,6 +793,7 @@ final class ReceiverPropertyTaints
         ClassLikeStorage $class_storage,
         array $names,
         DataFlowNode $write_node,
+        bool $is_exact_class = false,
     ): void {
         $ancestors = self::getAncestors($codebase, $class_storage);
 
@@ -801,6 +806,7 @@ final class ReceiverPropertyTaints
                 $prop_name,
                 $write_node,
                 'property-assignment',
+                $is_exact_class,
             );
         }
 
@@ -837,6 +843,7 @@ final class ReceiverPropertyTaints
         TaintFlowGraph $graph,
         ClassLikeStorage $class_storage,
         DataFlowNode $write_node,
+        bool $is_exact_class = false,
     ): void {
         $ancestors = self::getAncestors($codebase, $class_storage);
 
@@ -849,6 +856,7 @@ final class ReceiverPropertyTaints
                 $prop_name,
                 $write_node,
                 'arrayvalue-fetch-\'' . $prop_name . '\'',
+                $is_exact_class,
             );
         }
 
@@ -870,11 +878,13 @@ final class ReceiverPropertyTaints
         string $prop_name,
         DataFlowNode $write_node,
         string $path_type,
+        bool $is_exact_class = false,
     ): void {
+        // an object constructed as one of the class only is none of its subclasses
         $property_storages = [
             $class_storage,
             ...$ancestors,
-            ...self::getSubclassesHolding($codebase, $class_storage, $prop_name),
+            ...($is_exact_class ? [] : self::getSubclassesHolding($codebase, $class_storage, $prop_name)),
         ];
 
         foreach ($property_storages as $storage) {
@@ -884,7 +894,7 @@ final class ReceiverPropertyTaints
         }
 
         // what the subclasses read of a property they inherit (see InstancePropertyAssignmentAnalyzer)
-        if (!$class_storage->final) {
+        if (!$class_storage->final && !$is_exact_class) {
             $inherited_property_node = DataFlowNode::getForInheritedProperty($class_storage->name . '::$' . $prop_name);
             $graph->addNode($inherited_property_node);
             $graph->addPath($write_node, $inherited_property_node, $path_type);

@@ -837,7 +837,7 @@ final class NewAnalyzer extends CallAnalyzer
             }
         }
 
-        self::taintNewObject($statements_analyzer, $stmt, $method_id, $fq_class_name, $storage);
+        self::taintNewObject($statements_analyzer, $stmt, $method_id, $fq_class_name, $storage, $can_extend);
     }
 
     /**
@@ -912,6 +912,7 @@ final class NewAnalyzer extends CallAnalyzer
         MethodIdentifier $method_id,
         string $fq_class_name,
         ClassLikeStorage $storage,
+        bool $can_extend,
     ): void {
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
@@ -1023,6 +1024,7 @@ final class NewAnalyzer extends CallAnalyzer
                 $fq_class_name,
                 $code_location,
                 $stmt_type,
+                !$can_extend,
             );
 
             $stmt_type = TaintStore::taintCall(
