@@ -388,6 +388,22 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'leavingIfKeepsTheOffsetsItsConditionCoalesces' => [
+                'code' => '<?php
+                    /** @param list<array<string, mixed>> $all_streams */
+                    function f(array $all_streams): void {
+                        $streams = array_values(array_filter($all_streams, fn(array $stream): bool => isset($stream["width"])));
+
+                        if (!($streams[0]["width"] ?? false) || !($streams[0]["height"] ?? false)) {
+                            return;
+                        }
+
+                        $width = $streams[0]["width"];
+                        /** @psalm-check-type-exact $width = mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'notIterableDropsTheObjectsThatAreTraversable' => [
                 'code' => '<?php
                     function f(Throwable $e): void {

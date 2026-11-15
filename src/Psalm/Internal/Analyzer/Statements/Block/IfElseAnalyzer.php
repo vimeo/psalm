@@ -588,7 +588,7 @@ final class IfElseAnalyzer
             if ($post_cond_type === null) {
                 $post_leaving_if_context->remove($var_id, false);
                 $post_leaving_if_context->vars_possibly_in_scope[$var_id] = true;
-            } elseif (!$post_cond_type->equals($type, true, false)) {
+            } elseif (!$post_cond_type->equals($type, false, false)) {
                 $post_leaving_if_context->vars_in_scope[$var_id] = $post_cond_type;
             } else {
                 continue;
