@@ -2235,10 +2235,7 @@ final class AssertionFinder
             if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                 $if_types[$var_name] = [[new IsNotType(new TNull())]];
             } else {
-                $if_types[$var_name] = self::getLooselyNullAssertions(
-                    false,
-                    $source instanceof StatementsAnalyzer ? $source->node_data->getType($base_conditional) : null,
-                ) ?? [[new IsNotLooselyEqual(new TNull())]];
+                $if_types[$var_name] = [[new IsNotLooselyEqual(new TNull())]];
             }
         }
 
@@ -2282,54 +2279,6 @@ final class AssertionFinder
         }
 
         return $if_types ? [$if_types] : [];
-    }
-
-    /**
-     * `$x == null` holds for null, false, 0, 0.0, '' and [], but not for '0' (unlike `!$x`). When the value can only be
-     * null, a string, an object or true, that is null or the empty string.
-     *
-     * @return non-empty-list<non-empty-list<Assertion>>|null null when the loose comparison with null asserts the
-     *     same
-     * @psalm-pure
-     */
-    private static function getLooselyNullAssertions(bool $equal, ?Union $var_type): ?array
-    {
-        if ($var_type === null) {
-            return null;
-        }
-
-        $has_string = false;
-        $has_null = false;
-
-        foreach ($var_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TString) {
-                $has_string = true;
-            } elseif ($atomic_type instanceof TNull) {
-                $has_null = true;
-            } elseif (!$atomic_type instanceof TNamedObject
-                && !$atomic_type instanceof TObject
-                && !$atomic_type instanceof TTrue
-            ) {
-                return null;
-            }
-        }
-
-        if (!$has_string) {
-            return null;
-        }
-
-        $empty_string = TLiteralString::make('');
-
-        // without null in the type, null is not a thing to assert (it would be a redundant condition)
-        if ($equal) {
-            return $has_null
-                ? [[new IsType(new TNull()), new IsIdentical($empty_string)]]
-                : [[new IsIdentical($empty_string)]];
-        }
-
-        return $has_null
-            ? [[new IsNotType(new TNull())], [new IsNotIdentical($empty_string)]]
-            : [[new IsNotIdentical($empty_string)]];
     }
 
     /**
@@ -3011,10 +2960,7 @@ final class AssertionFinder
             if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
                 $if_types[$var_name] = [[new IsType(new TNull())]];
             } else {
-                $if_types[$var_name] = self::getLooselyNullAssertions(
-                    true,
-                    $source instanceof StatementsAnalyzer ? $source->node_data->getType($base_conditional) : null,
-                ) ?? [[new IsLooselyEqual(new TNull())]];
+                $if_types[$var_name] = [[new IsLooselyEqual(new TNull())]];
             }
         }
 
