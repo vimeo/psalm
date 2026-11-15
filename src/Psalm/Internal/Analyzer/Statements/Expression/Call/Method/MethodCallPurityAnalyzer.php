@@ -607,6 +607,8 @@ final class MethodCallPurityAnalyzer
             foreach ($method_storage->this_property_mutations as $name => $_) {
                 $mutation_var_id = $lhs_var_id . '->' . $name;
 
+                $context->forgetNullArrayOffsets($mutation_var_id);
+
                 $this_property_didnt_exist = $lhs_var_id === '$this'
                     && isset($context->vars_in_scope[$mutation_var_id])
                     && !isset($class_storage->declaring_property_ids[$name]);
