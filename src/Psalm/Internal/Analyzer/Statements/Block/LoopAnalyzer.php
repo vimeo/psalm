@@ -1694,6 +1694,8 @@ final class LoopAnalyzer
 
     /**
      * What the arrays of a type hold at an offset, or at any offset for null; null if it holds no array
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function getArrayValueType(Union $type, int|string|null $offset): ?Union
     {
