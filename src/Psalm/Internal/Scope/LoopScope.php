@@ -6,6 +6,7 @@ namespace Psalm\Internal\Scope;
 
 use Psalm\Context;
 use Psalm\Storage\Assertion;
+use Psalm\Type;
 use Psalm\Type\Union;
 
 use function array_intersect_key;
@@ -60,6 +61,14 @@ final class LoopScope
     public array $possibly_defined_loop_parent_vars = [];
 
     /**
+     * What the variables hold where the latest pass over the body breaks out of the loop, null before a break.
+     * A variable missing at one of the breaks is possibly undefined.
+     *
+     * @var array<string, Union>|null
+     */
+    public ?array $vars_at_breaks = null;
+
+    /**
      * The number of break statements seen in the first iteration
      */
     public int $break_count = 0;
@@ -94,6 +103,32 @@ final class LoopScope
         $this->null_array_offsets_read_at_jumps = $this->null_array_offsets_read_at_jumps === null
             ? $context->null_array_offsets_read
             : array_intersect_key($this->null_array_offsets_read_at_jumps, $context->null_array_offsets_read);
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function addBreak(Context $context): void
+    {
+        if ($this->vars_at_breaks === null) {
+            $this->vars_at_breaks = $context->vars_in_scope;
+
+            return;
+        }
+
+        $vars_at_breaks = [];
+
+        foreach ($this->vars_at_breaks as $var_id => $type) {
+            $vars_at_breaks[$var_id] = isset($context->vars_in_scope[$var_id])
+                ? Type::combineUnionTypes($type, $context->vars_in_scope[$var_id])
+                : $type->setPossiblyUndefined(true);
+        }
+
+        foreach ($context->vars_in_scope as $var_id => $type) {
+            $vars_at_breaks[$var_id] ??= $type->setPossiblyUndefined(true);
+        }
+
+        $this->vars_at_breaks = $vars_at_breaks;
     }
 
     /**

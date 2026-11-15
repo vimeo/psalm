@@ -157,6 +157,8 @@ final class LoopAnalyzer
 
             $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
 
+            $loop_scope->vars_at_breaks = null;
+
             $statements_analyzer->analyze($stmts, $continue_context);
             self::updateLoopScopeContexts($loop_scope, $loop_context, $continue_context, $loop_parent_context);
 
@@ -226,6 +228,8 @@ final class LoopAnalyzer
             $continue_context->loop_scope = $loop_scope;
 
             $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
+
+            $loop_scope->vars_at_breaks = null;
 
             $statements_analyzer->analyze($stmts, $continue_context);
 
@@ -457,6 +461,8 @@ final class LoopAnalyzer
                 $traverser->traverse($stmts);
 
                 $vars_at_pass_start = $continue_context->vars_in_scope;
+
+                $loop_scope->vars_at_breaks = null;
 
                 $statements_analyzer->analyze($stmts, $continue_context);
 
@@ -805,7 +811,7 @@ final class LoopAnalyzer
             || in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
 
         if ($always_enters_loop && $can_leave_loop) {
-            self::setLoopVars($inner_loop_context, $context, $loop_scope);
+            self::setLoopVars($inner_loop_context, $context, $loop_scope, is_only_left_by_break: $while_true);
         }
 
         if ($can_leave_loop) {
@@ -970,13 +976,44 @@ final class LoopAnalyzer
 
     /**
      * @param list<string> $always_assigned_before_loop_body_vars
+     * @param bool $is_only_left_by_break whether the loop is only left by a break (`while (true)`): the variables then
+     *                                    hold what they held at the breaks, not what an iteration ended with
      */
     public static function setLoopVars(
         Context $inner_context,
         Context $context,
         LoopScope $loop_scope,
         array $always_assigned_before_loop_body_vars = [],
+        bool $is_only_left_by_break = false,
     ): void {
+        if ($is_only_left_by_break && $loop_scope->vars_at_breaks !== null) {
+            foreach ($loop_scope->vars_at_breaks as $var_id => $type) {
+                if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
+                    // defined in the loop: possibly undefined after it if a break of any pass leaves it undefined
+                    if ($loop_scope->possibly_defined_loop_parent_vars[$var_id]->possibly_undefined) {
+                        $type = $type->setPossiblyUndefined(true);
+                    }
+                } elseif (!isset($context->vars_in_scope[$var_id])
+                    // a property or offset missing at a break is unknown there, not unset
+                    || ($type->possibly_undefined && !self::isLoopVar($var_id))
+                ) {
+                    continue;
+                }
+
+                if (isset($inner_context->vars_in_scope[$var_id])) {
+                    $type = $type->addParentNodes($inner_context->vars_in_scope[$var_id]->parent_nodes);
+                }
+
+                if (isset($context->vars_in_scope[$var_id])) {
+                    $type = $type->addParentNodes($context->vars_in_scope[$var_id]->parent_nodes);
+                }
+
+                $context->vars_in_scope[$var_id] = $type;
+            }
+
+            return;
+        }
+
         foreach ($inner_context->vars_in_scope as $var_id => $type) {
             // if there are break statements in the loop it's not certain
             // that the loop has finished executing, so the assertions at the end
