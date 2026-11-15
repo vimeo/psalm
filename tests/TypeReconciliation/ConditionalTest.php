@@ -5164,6 +5164,15 @@ final class ConditionalTest extends TestCase
                     }',
                 'error_message' => 'RedundantConditionGivenDocblockType',
             ],
+            'repeatedLooseNullInequalityIsRedundant' => [
+                'code' => '<?php
+                    function f(?string $s): void {
+                        if ($s != null) {
+                            if ($s != null) {}
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33',
+            ],
             'looseNullInequalityOfEmptyStringIsImpossible' => [
                 'code' => '<?php
                     /** @param "" $s */
