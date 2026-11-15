@@ -10,6 +10,7 @@ use PhpParser\Node\Name;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\FileSource;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
@@ -28,6 +29,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Internal\TypeVisitor\TraitSelfResolver;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidScalarArgument;
@@ -831,6 +833,33 @@ abstract class CallAnalyzer
     }
 
     /**
+     * `self` written in the assertions of a method of a trait, at any depth of the types, is the class using the trait
+     */
+    public static function resolveTraitSelf(Possibilities $possibilities, string $self_class): Possibilities
+    {
+        $rules = [];
+
+        foreach ($possibilities->rule as $rule) {
+            $atomic_type = $rule->getAtomicType();
+
+            if ($atomic_type === null) {
+                $rules[] = $rule;
+
+                continue;
+            }
+
+            $union = new Union([$atomic_type]);
+            (new TraitSelfResolver($self_class))->traverse($union);
+
+            foreach ($union->getAtomicTypes() as $resolved_atomic_type) {
+                $rules[] = $rule->setAtomicType($resolved_atomic_type);
+            }
+        }
+
+        return new Possibilities($possibilities->var_id, $rules);
+    }
+
+    /**
      * @param Identifier|Name $expr
      * @param  Possibilities[] $var_assertions
      * @param  list<PhpParser\Node\Arg> $args
@@ -844,6 +873,7 @@ abstract class CallAnalyzer
         Context $context,
         StatementsAnalyzer $statements_analyzer,
         ?string $static_class = null,
+        ?string $self_class = null,
     ): void {
         $type_assertions = [];
 
@@ -917,7 +947,7 @@ abstract class CallAnalyzer
                                 $template_result,
                                 $codebase,
                             ),
-                            null,
+                            $self_class,
                             $static_class !== null ? new TNamedObject($static_class) : null,
                             null,
                         );
@@ -1016,16 +1046,20 @@ abstract class CallAnalyzer
                         $statements_analyzer->getCodebase(),
                     );
                 } elseif ($single_rule instanceof Falsy) {
-                    $assert_clauses = Algebra::negateFormula(
-                        FormulaGenerator::getFormula(
-                            spl_object_id($arg_value),
-                            spl_object_id($arg_value),
-                            $arg_value,
-                            $context->self,
-                            $statements_analyzer,
-                            $codebase,
-                        ),
-                    );
+                    try {
+                        $assert_clauses = Algebra::negateFormula(
+                            FormulaGenerator::getFormula(
+                                spl_object_id($arg_value),
+                                spl_object_id($arg_value),
+                                $arg_value,
+                                $context->self,
+                                $statements_analyzer,
+                                $codebase,
+                            ),
+                        );
+                    } catch (ComplicatedExpressionException) {
+                        $assert_clauses = [];
+                    }
                 } elseif ($single_rule instanceof IsType
                     && $single_rule->type instanceof TTrue
                 ) {

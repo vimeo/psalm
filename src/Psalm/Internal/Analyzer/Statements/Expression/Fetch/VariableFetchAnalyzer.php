@@ -499,7 +499,7 @@ final class VariableFetchAnalyzer
                 }
             }
 
-            if ($stmt_type->possibly_undefined_from_try && !$context->inside_isset) {
+            if ($stmt_type->possibly_undefined_from_try && !$context->inside_isset && !$assigned_to_reference) {
                 if ($context->is_global) {
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedGlobalVariable(
