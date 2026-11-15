@@ -1310,8 +1310,6 @@ final class TraitTemplateTest extends TestCase
                         /**
                          * @param TKey $offset
                          * @return TValue|null
-                         * @psalm-suppress LessSpecificImplementedReturnType
-                         * @psalm-suppress ImplementedParamTypeMismatch
                          */
                         public function offsetGet($offset) {
                             return $this->mocks[$offset] ?? null;
@@ -1341,7 +1339,6 @@ final class TraitTemplateTest extends TestCase
 
                         /**
                          * @param TKey $offset
-                         * @psalm-suppress MixedMethodCall
                          */
                         public function foo($offset) : void {
                             $this->offsetGet($offset)->bar();
@@ -1364,8 +1361,6 @@ final class TraitTemplateTest extends TestCase
                         /**
                          * @param TKey $offset
                          * @return TValue|null
-                         * @psalm-suppress LessSpecificImplementedReturnType
-                         * @psalm-suppress ImplementedParamTypeMismatch
                          */
                         public function offsetGet($offset) {
                             return $this->mocks[$offset] ?? null;

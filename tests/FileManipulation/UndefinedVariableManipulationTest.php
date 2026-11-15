@@ -18,6 +18,32 @@ final class UndefinedVariableManipulationTest extends FileManipulationTestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'possiblyUndefinedVariableInIfElseifOfAFunction' => [
+                'input' => '<?php
+                    function g(): void {
+                        if (rand(0, 1)) {
+                            $a = 1;
+                        } elseif (rand(0, 1)) {
+                            $a = "b";
+                        }
+
+                        echo $a;
+                    }',
+                'output' => '<?php
+                    function g(): void {
+                        $a = null;
+                        if (rand(0, 1)) {
+                            $a = 1;
+                        } elseif (rand(0, 1)) {
+                            $a = "b";
+                        }
+
+                        echo $a;
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUndefinedVariable'],
+                'safe_types' => true,
+            ],
             'possiblyUndefinedVariable' => [
                 'input' => '<?php
                     $flag = rand(0, 1);
@@ -106,6 +132,134 @@ final class UndefinedVariableManipulationTest extends FileManipulationTestCase
 
                     echo $a;',
                 'php_version' => '5.6',
+                'issues_to_fix' => ['PossiblyUndefinedGlobalVariable'],
+                'safe_types' => true,
+            ],
+            'possiblyUndefinedVariableDefinedByAPreviousIteration' => [
+                'input' => '<?php
+                    function f(array $xs): void {
+                        foreach ($xs as $x) {
+                            if ($x) {
+                                echo $a;
+                            }
+                            $a = "s";
+                        }
+                    }',
+                'output' => '<?php
+                    function f(array $xs): void {
+                        $a = null;
+                        foreach ($xs as $x) {
+                            if ($x) {
+                                echo $a;
+                            }
+                            $a = "s";
+                        }
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUndefinedVariable'],
+                'safe_types' => true,
+            ],
+            'possiblyUndefinedGlobalVariableDefinedByAPreviousIteration' => [
+                'input' => '<?php
+                    foreach ([1, 0] as $x) {
+                        if ($x) {
+                            echo $a;
+                        }
+                        $a = "s";
+                    }',
+                'output' => '<?php
+                    $a = null;
+                    foreach ([1, 0] as $x) {
+                        if ($x) {
+                            echo $a;
+                        }
+                        $a = "s";
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUndefinedGlobalVariable'],
+                'safe_types' => true,
+            ],
+            'suppressedPossiblyUndefinedVariable' => [
+                'input' => '<?php
+                    /** @psalm-suppress PossiblyUndefinedVariable */
+                    function f(): void {
+                        if (rand(0, 1)) {
+                            $a = 5;
+                        }
+                        echo $a;
+                    }',
+                'output' => '<?php
+                    /** @psalm-suppress PossiblyUndefinedVariable */
+                    function f(): void {
+                        if (rand(0, 1)) {
+                            $a = 5;
+                        }
+                        echo $a;
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUndefinedVariable'],
+                'safe_types' => true,
+            ],
+            'suppressedPossiblyUndefinedGlobalVariable' => [
+                'input' => '<?php
+                    if (rand(0, 1)) {
+                        $a = 5;
+                    }
+                    /** @psalm-suppress PossiblyUndefinedGlobalVariable */
+                    echo $a;',
+                'output' => '<?php
+                    if (rand(0, 1)) {
+                        $a = 5;
+                    }
+                    /** @psalm-suppress PossiblyUndefinedGlobalVariable */
+                    echo $a;',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUndefinedGlobalVariable'],
+                'safe_types' => true,
+            ],
+            'suppressedPossiblyUndefinedVariableDefinedByAPreviousIteration' => [
+                'input' => '<?php
+                    /** @psalm-suppress PossiblyUndefinedVariable */
+                    function f(array $xs): void {
+                        foreach ($xs as $x) {
+                            if ($x) {
+                                echo $a;
+                            }
+                            $a = "s";
+                        }
+                    }',
+                'output' => '<?php
+                    /** @psalm-suppress PossiblyUndefinedVariable */
+                    function f(array $xs): void {
+                        foreach ($xs as $x) {
+                            if ($x) {
+                                echo $a;
+                            }
+                            $a = "s";
+                        }
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUndefinedVariable'],
+                'safe_types' => true,
+            ],
+            'suppressedPossiblyUndefinedGlobalVariableDefinedByAPreviousIteration' => [
+                'input' => '<?php
+                    foreach ([1, 0] as $x) {
+                        if ($x) {
+                            /** @psalm-suppress PossiblyUndefinedGlobalVariable */
+                            echo $a;
+                        }
+                        $a = "s";
+                    }',
+                'output' => '<?php
+                    foreach ([1, 0] as $x) {
+                        if ($x) {
+                            /** @psalm-suppress PossiblyUndefinedGlobalVariable */
+                            echo $a;
+                        }
+                        $a = "s";
+                    }',
+                'php_version' => '7.1',
                 'issues_to_fix' => ['PossiblyUndefinedGlobalVariable'],
                 'safe_types' => true,
             ],
