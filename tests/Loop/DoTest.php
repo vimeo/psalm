@@ -23,6 +23,21 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'doWhileTrueVariableIsWhatTheBreaksLeave' => [
+                'code' => '<?php
+                    function f(): void {
+                        do {
+                            $x = rand(0, 1) ? "s" : null;
+                            if ($x === null) {
+                                continue;
+                            }
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        } while (true);
+                        /** @psalm-check-type-exact $x = "s" */;
+                    }',
+            ],
             'doWhileConditionOnUnsetPropertyIsNotRedundant' => [
                 'code' => '<?php
                     class Options {
@@ -573,6 +588,82 @@ final class DoTest extends TestCase
                         }
                         $i++;
                     } while ($i < 10);',
+            ],
+            'doWhileBodyWithoutAssignmentRunsBeforeTheCondition' => [
+                'code' => '<?php
+                    function f(?int $a): void {
+                        do {
+                            if ($a === null) {
+                                echo "null";
+                            }
+                        } while ($a !== null && rand(0, 1) > 5);
+                    }',
+            ],
+            'doWhileBodyWithoutAssignmentThenNegatedCondition' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? null : rand();
+                    do {
+                        echo (string) $a;
+                    } while ($a === null);
+                    $b = rand(0, 1) ? null : rand(0, 10);
+                    do {
+                        echo (string) $b;
+                    } while ($b !== null && $b > 5);',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int<0, 5>|null',
+                ],
+            ],
+            'doWhileConditionOnMixedOffsetSaysNothingOnceNegated' => [
+                'code' => '<?php
+                    /** @var mixed $m */
+                    $m = json_decode("[]");
+                    $a = rand(0, 1) ? null : rand();
+                    do {
+                        echo "";
+                    } while ($a !== null && $m["x"]);
+                    /** @var mixed $n */
+                    $n = json_decode("[]");
+                    $b = rand(0, 1) ? null : rand();
+                    do {
+                        $b = $b;
+                    } while ($b !== null && $n["x"]);',
+                'assertions' => [
+                    '$a===' => 'int|null',
+                    '$b===' => 'int|null',
+                ],
+                'ignored_issues' => ['MixedArrayAccess'],
+            ],
+            'doWhileBodyThatAlwaysBreaksNeverEvaluatesTheCondition' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        do {
+                            $s = null;
+                            break;
+                        } while (strlen($s) === 2);
+                    }',
+            ],
+            'doWhileWithContinueIsLeftWhenItsConditionIsFalse' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? null : rand();
+                    do {
+                        if (rand(0, 1)) {
+                            continue;
+                        }
+                        echo "";
+                    } while ($a === null);
+                    $b = null;
+                    do {
+                        if (rand(0, 1)) {
+                            $b = 5;
+                            continue;
+                        }
+                        $b = null;
+                    } while ($b === null);',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => '5',
+                ],
             ],
         ];
     }
