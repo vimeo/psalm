@@ -16,6 +16,7 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 use SplFixedArray;
 
+use function array_intersect_key;
 use function array_merge;
 use function count;
 use function in_array;
@@ -241,6 +242,13 @@ final class SwitchAnalyzer
 
         if ($switch_scope->new_assigned_var_ids) {
             $context->assigned_var_ids += $switch_scope->new_assigned_var_ids;
+        }
+
+        // the offsets read on every way out of the cases, and, when a value may match no case, on the way past them
+        if ($switch_scope->null_array_offsets_read !== null) {
+            $context->null_array_offsets_read = $all_options_matched
+                ? $switch_scope->null_array_offsets_read
+                : array_intersect_key($context->null_array_offsets_read, $switch_scope->null_array_offsets_read);
         }
 
         $context->vars_possibly_in_scope = [

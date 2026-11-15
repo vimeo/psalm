@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -78,6 +79,7 @@ use function array_intersect_key;
 use function array_keys;
 use function array_merge;
 use function array_search;
+use function array_values;
 use function count;
 use function is_nan;
 use function is_numeric;
@@ -679,7 +681,9 @@ final class AssertionReconciler extends Reconciler
                     if ($existing_var_type->from_docblock) {
                         IssueBuffer::maybeAdd(
                             new DocblockTypeContradiction(
-                                'Cannot resolve types for ' . $key . ' - docblock-defined type '
+                                'Cannot resolve types for '
+                                    . CoalesceAnalyzer::getDisplayName($key, $code_location)
+                                    . ' - docblock-defined type '
                                     . $existing_var_type . ' does not contain null',
                                 $code_location,
                                 $existing_var_type->getId() . ' null',
@@ -689,7 +693,9 @@ final class AssertionReconciler extends Reconciler
                     } else {
                         IssueBuffer::maybeAdd(
                             new TypeDoesNotContainNull(
-                                'Cannot resolve types for ' . $key . ' - ' . $existing_var_type
+                                'Cannot resolve types for '
+                                    . CoalesceAnalyzer::getDisplayName($key, $code_location)
+                                    . ' - ' . $existing_var_type
                                     . ' does not contain null',
                                 $code_location,
                                 $existing_var_type->getId(),
@@ -705,7 +711,9 @@ final class AssertionReconciler extends Reconciler
                     if ($existing_var_type->from_docblock) {
                         IssueBuffer::maybeAdd(
                             new DocblockTypeContradiction(
-                                'Cannot resolve types for ' . $key . ' - docblock-defined type '
+                                'Cannot resolve types for '
+                                    . CoalesceAnalyzer::getDisplayName($key, $code_location)
+                                    . ' - docblock-defined type '
                                     . $existing_var_type->getId() . ' does not contain ' . $new_type_part->getId(),
                                 $code_location,
                                 $existing_var_type->getId() . ' ' . $new_type_part->getId(),
@@ -715,7 +723,9 @@ final class AssertionReconciler extends Reconciler
                     } else {
                         IssueBuffer::maybeAdd(
                             new TypeDoesNotContainType(
-                                'Cannot resolve types for ' . $key . ' - ' . $existing_var_type->getId()
+                                'Cannot resolve types for '
+                                    . CoalesceAnalyzer::getDisplayName($key, $code_location)
+                                    . ' - ' . $existing_var_type->getId()
                                     . ' does not contain ' . $new_type_part->getId(),
                                 $code_location,
                                 $existing_var_type->getId() . ' ' . $new_type_part->getId(),
@@ -1596,6 +1606,37 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
+     * An object with a `__toString()` can be loosely equal to a string: it stays in the type next to the literal
+     *
+     * @param array<string, Atomic> $existing_var_atomic_types
+     */
+    private static function addStringableObjects(
+        StatementsAnalyzer $statements_analyzer,
+        Assertion $assertion,
+        Union $literal_type,
+        array $existing_var_atomic_types,
+    ): Union {
+        if (!$assertion instanceof IsLooselyEqual) {
+            return $literal_type;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $atomic_types = $literal_type->getAtomicTypes();
+
+        foreach ($existing_var_atomic_types as $atomic_type) {
+            // an `object` may be one with a __toString too
+            if ($atomic_type::class === TObject::class
+                || ($atomic_type instanceof TNamedObject
+                    && $codebase->methodExists(new MethodIdentifier($atomic_type->value, '__tostring')))
+            ) {
+                $atomic_types[$atomic_type->getKey()] = $atomic_type;
+            }
+        }
+
+        return new Union(array_values($atomic_types), ['from_docblock' => $literal_type->from_docblock]);
+    }
+
+    /**
      * @param array<string, Atomic> $existing_var_atomic_types
      * @param string[]     $suppressed_issues
      */
@@ -1650,11 +1691,21 @@ final class AssertionReconciler extends Reconciler
                     return $existing_var_type;
                 }
 
-                return $literal_asserted_type_string;
+                return self::addStringableObjects(
+                    $statements_analyzer,
+                    $assertion,
+                    $literal_asserted_type_string,
+                    $existing_var_atomic_types,
+                );
             }
 
             if ($existing_var_atomic_type instanceof TString && !$existing_var_atomic_type instanceof TLiteralString) {
-                return $literal_asserted_type_string;
+                return self::addStringableObjects(
+                    $statements_analyzer,
+                    $assertion,
+                    $literal_asserted_type_string,
+                    $existing_var_atomic_types,
+                );
             }
 
             if ($existing_var_atomic_type instanceof TTemplateParam) {
@@ -2028,7 +2079,8 @@ final class AssertionReconciler extends Reconciler
             if (!$allow_string_comparison && $code_location) {
                 IssueBuffer::maybeAdd(
                     new TypeDoesNotContainType(
-                        'Cannot allow string comparison to object for ' . $key,
+                        'Cannot allow string comparison to object for '
+                            . CoalesceAnalyzer::getDisplayName($key, $code_location),
                         $code_location,
                         "no string comparison to $key",
                     ),

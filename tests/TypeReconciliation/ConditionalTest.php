@@ -176,6 +176,315 @@ final class ConditionalTest extends TestCase
                     '$equal===' => "''|null",
                 ],
             ],
+            'ifSkippedByAnotherOperandKeepsTheValuesThatSkipIt' => [
+                'code' => '<?php
+                    final class A {}
+
+                    function f(?A $a, bool $b): void {
+                        if ($b || $a === null) {
+                            if ($a !== null) {
+                                return;
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $a = A|null */
+                    }
+
+                    /** @param int|string|null $a */
+                    function g($a, bool $b): void {
+                        if ($a === null || (is_int($a) && $b)) {
+                            if ($a !== null) {
+                                return;
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $a = int|null|string */
+                    }',
+            ],
+            'ifSkippedByAnotherOperandDoesNotNarrowTheValuesThatSkipIt' => [
+                'code' => '<?php
+                    /**
+                     * @param 1|2|3 $a
+                     * @param 1|2|3 $b
+                     */
+                    function test(int $a, int $b): string {
+                        if ($a == 1 || $a == 2 || $b == 1 || $b == 2) {
+                            if ($b == 3 || $a == 3) {
+                                return "false1";
+                            }
+                        }
+
+                        if ($a == 3) {
+                            return "true";
+                        }
+
+                        return "false2";
+                    }',
+            ],
+            'ifSkippedByAnotherOperandStillNarrowsWhatTheBodyAssigns' => [
+                'code' => '<?php
+                    final class A {}
+
+                    function f(?A $a, bool $force): A {
+                        if ($a === null || $force) {
+                            $a = new A();
+                        }
+
+                        /** @psalm-check-type-exact $a = A */
+                        return $a;
+                    }
+
+                    function g(?A $a, bool $b): A {
+                        if ($b || $a === null) {
+                            return new A();
+                        }
+
+                        /** @psalm-check-type-exact $a = A */
+                        return $a;
+                    }
+
+                    function h(?string $s): string {
+                        if ($s === null || $s === "") {
+                            $s = "a";
+                        }
+
+                        /** @psalm-check-type-exact $s = non-empty-string */
+                        return $s;
+                    }',
+            ],
+            'andOutsideTheConjunctsOfTheConditionDoesNotNarrowTheBody' => [
+                'code' => '<?php
+                    function f(?int $a, bool $d): void {
+                        if ($d xor ($a !== null && $a > 0)) {
+                            /** @psalm-check-type-exact $a = int|null */
+                        }
+                    }
+
+                    function g(?int $p, ?string $q, bool $r): void {
+                        if (!($p === 0 && !($q !== null && $r))) {
+                            /** @psalm-check-type-exact $p = int|null */
+                        }
+                    }',
+            ],
+            'andConjunctsOfTheConditionNarrowTheBody' => [
+                'code' => '<?php
+                    function takesBool(bool $b): bool {
+                        return $b;
+                    }
+
+                    function f(?int $a, ?string $s, bool $c): void {
+                        if ($a !== null && $a > 0) {
+                            /** @psalm-check-type-exact $a = int<1, max> */
+                        }
+
+                        if ($c && ($a !== null && $a > 0)) {
+                            /** @psalm-check-type-exact $a = int<1, max> */
+                        }
+
+                        if (($t = $s) !== null && $c) {
+                            /** @psalm-check-type-exact $t = string */
+                        }
+                    }
+
+                    function negatedOr(?string $s, bool $c): void {
+                        if (!(($t = $s) === null || $c)) {
+                            /** @psalm-check-type-exact $t = string */
+                            echo $t;
+                        }
+                    }
+
+                    function doubleNegatedAnd(?string $s, bool $c): void {
+                        if (!!(($t = $s) !== null && $c)) {
+                            /** @psalm-check-type-exact $t = string */
+                            echo $t;
+                        }
+                    }
+
+                    function comparedToTrue(bool $b, string $input): void {
+                        if (($b && ($s = $input)) === true) {
+                            /** @psalm-check-type-exact $s = non-falsy-string */
+                            echo $s;
+                        }
+
+                        if (true == ($b && ($t = $input))) {
+                            /** @psalm-check-type-exact $t = non-falsy-string */
+                            echo $t;
+                        }
+                    }
+
+                    function g(?int $a): void {
+                        if (takesBool($a !== null && $a > 0)) {
+                            /** @psalm-check-type-exact $a = int|null */
+                        }
+                    }',
+            ],
+            'leavingIfKeepsWhatItsConditionChanged' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var int|null */
+                        public $foo = 1;
+
+                        public function load(): bool {
+                            $this->foo = null;
+                            return true;
+                        }
+
+                        public function leftCall(bool $c): void {
+                            if ($this->foo === null) {
+                                return;
+                            }
+
+                            if (!$this->load() || $c) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $this->foo = int|null */
+                        }
+
+                        public function rightCall(bool $c): void {
+                            if ($this->foo === null) {
+                                return;
+                            }
+
+                            if ($c || !$this->load()) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $this->foo = int|null */
+                        }
+
+                        public function andCall(bool $c): void {
+                            if ($this->foo === null) {
+                                return;
+                            }
+
+                            if (!$this->load() && $c) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $this->foo = int|null */
+                        }
+                    }',
+            ],
+            'leavingIfKeepsTheNarrowingsItsConditionLeaves' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var int|null */
+                        public $foo = 1;
+
+                        /** @psalm-mutation-free */
+                        public function check(): bool {
+                            return true;
+                        }
+
+                        public function load(): bool {
+                            $this->foo = null;
+                            return true;
+                        }
+
+                        public function pureCall(bool $c): void {
+                            if ($this->foo === null) {
+                                return;
+                            }
+
+                            if (!$this->check() || $c) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $this->foo = int */
+                        }
+
+                        public function assignment(?string $s): void {
+                            if ($this->foo === null) {
+                                return;
+                            }
+
+                            if (($t = $s) === null || !$this->load()) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $t = string */
+                            echo $t;
+
+                            /** @psalm-check-type-exact $this->foo = int|null */
+                        }
+                    }',
+            ],
+            'leavingIfKeepsTheOffsetsItsConditionCoalesces' => [
+                'code' => '<?php
+                    /** @param list<array<string, mixed>> $all_streams */
+                    function f(array $all_streams): void {
+                        $streams = array_values(array_filter($all_streams, fn(array $stream): bool => isset($stream["width"])));
+
+                        if (!($streams[0]["width"] ?? false) || !($streams[0]["height"] ?? false)) {
+                            return;
+                        }
+
+                        $width = $streams[0]["width"];
+                        /** @psalm-check-type-exact $width = mixed */
+                    }
+
+                    /** @param list<mixed> $l */
+                    function g(array $l): void {
+                        if (!($l[0]["w"] ?? false) || !($l[0]["h"] ?? false)) {
+                            return;
+                        }
+
+                        $w = $l[0]["w"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
+            'ifWithAMixedVariableKeepsWhatItsBranchesAssign' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    function f(mixed $a, int $id): void {
+                        if (!is_null($a)) {
+                            echo 1;
+                        } else {
+                            $a = $id;
+                        }
+
+                        takesInt($a);
+                    }
+
+                    interface Job {}
+
+                    function make(): mixed {
+                        return null;
+                    }
+
+                    function worker(): void {
+                        if (!is_null($job = make())) {
+                            echo 1;
+                        }
+
+                        /** @psalm-check-type-exact $job = mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument', 'MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'ifThatLeavesTheTypeAsItIsKeepsIt' => [
+                'code' => '<?php
+                    /** @param array<string, int> $d */
+                    function f(array $d): void {
+                        $e = ["default" => 1];
+
+                        foreach ($d as $k => $v) {
+                            $e[$k] = $v;
+                        }
+
+                        if (count($e) > 0) {
+                            echo 1;
+                        }
+
+                        /** @psalm-check-type-exact $e = non-empty-array<string, int> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+            ],
             'notIterableDropsTheObjectsThatAreTraversable' => [
                 'code' => '<?php
                     function f(Throwable $e): void {

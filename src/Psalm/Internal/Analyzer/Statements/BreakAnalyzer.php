@@ -69,6 +69,15 @@ final class BreakAnalyzer
                 : 0;
             $ends_this_loop = !$leaving_switch && $loops_between === 0;
 
+            // a break out of a switch only reaches the end of the switch, which keeps what every case read
+            if (!$leaving_switch) {
+                $loop_scope->addJump($context);
+            }
+
+            if ($ends_this_loop) {
+                $loop_scope->addBreak($context);
+            }
+
             $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
 
             foreach ($redefined_vars as $var => $type) {
@@ -117,6 +126,8 @@ final class BreakAnalyzer
 
                 if ($target_scope && $target_scope !== $loop_scope) {
                     $target_scope->final_actions[] = ScopeAnalyzer::ACTION_BREAK;
+                    $target_scope->addJump($context);
+                    $target_scope->addBreak($context);
 
                     $target_redefined_vars = $context->getRedefinedVars(
                         $target_scope->loop_parent_context->vars_in_scope,
@@ -159,6 +170,8 @@ final class BreakAnalyzer
 
         $case_scope = $context->case_scope;
         if ($case_scope && $leaving_switch) {
+            $case_scope->addBreak($context);
+
             foreach ($context->vars_in_scope as $var_id => $type) {
                 if ($case_scope->break_vars === null) {
                     $case_scope->break_vars = [];

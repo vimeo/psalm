@@ -29,6 +29,7 @@ use RuntimeException;
 
 use function array_diff_key;
 use function array_filter;
+use function array_intersect_key;
 use function array_keys;
 use function array_map;
 use function array_search;
@@ -183,6 +184,17 @@ final class Context
     public array $references_possibly_from_confusing_scope = [];
 
     /**
+     * The array offsets read from a nullable array on a path of this context, whose remembered type holds the null of
+     * that array: the read is not analysed again while the offset is in here, as the null was reported where it was
+     * first read. It leaves with what Psalm knows of the offset (see remove(), forgetNullArrayOffsets()); like the
+     * variables, it is copied into the branches and loops, and brought back to the context around them only from
+     * the paths that reach it.
+     *
+     * @var array<string, true>
+     */
+    public array $null_array_offsets_read = [];
+
+    /**
      * The variables a variable may still be bound to by reference: those it was bound to before a block that rebound
      * one of them, where the block did not run. A write to the variable is combined into their types.
      *
@@ -277,6 +289,12 @@ final class Context
      * @var array<lowercase-string,true>
      */
     public array $phantom_classes = [];
+
+    /**
+     * Whether this is the context of an operand of `&&`, which passes the classes it checked with class_exists
+     * on to the operator it is part of
+     */
+    public bool $inside_logical_operand = false;
 
     /**
      * Classes checked in a negated condition (`!class_exists($c)`): where that condition holds the class is missing,
@@ -481,9 +499,14 @@ final class Context
     public bool $inside_attribute = false;
 
     /**
-     * @var array<string, true>
+     * The variables whose clauses were dropped, each with a stamp of the removal: a clone keeps the stamps, so an
+     * enclosing scope tells what a nested scope analysed in a clone of it changed (see removeClausesOfVarsChangedIn())
+     *
+     * @var array<string, int>
      */
     public array $parent_remove_vars = [];
+
+    private static int $clause_removal_count = 0;
 
     /**
      * @internal
@@ -891,19 +914,52 @@ final class Context
         $this->forgetNarrowedShapeProperty($var_id);
     }
 
+    /**
+     * The offsets of the array are read again: that they were read is not true of what it holds next
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function forgetNullArrayOffsets(string $array_var_id): void
+    {
+        foreach ($this->null_array_offsets_read as $offset_id => $_) {
+            if (str_starts_with($offset_id, $array_var_id . '[')) {
+                unset($this->null_array_offsets_read[$offset_id]);
+            }
+        }
+    }
+
+    /**
+     * Past a branch that can fall through, only the offsets it still knows to have been read were read
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function intersectNullArrayOffsets(Context $branch): void
+    {
+        $this->null_array_offsets_read = array_intersect_key(
+            $this->null_array_offsets_read,
+            $branch->null_array_offsets_read,
+        );
+    }
+
     public function remove(string $remove_var_id, bool $removeDescendents = true): void
     {
+        $existing_type = null;
+
         if (isset($this->vars_in_scope[$remove_var_id])) {
             $this->forgetNarrowedShapeProperty($remove_var_id);
             $existing_type = $this->vars_in_scope[$remove_var_id];
             unset($this->vars_in_scope[$remove_var_id]);
-
-            if ($removeDescendents) {
-                $this->removeDescendents($remove_var_id, $existing_type);
-            }
         }
+
+        // detached first: what the variable was bound to by reference keeps its value
         $this->removePossibleReference($remove_var_id);
-        unset($this->vars_possibly_in_scope[$remove_var_id]);
+
+        if ($existing_type && $removeDescendents) {
+            $this->removeDescendents($remove_var_id, $existing_type);
+        }
+
+        unset($this->vars_possibly_in_scope[$remove_var_id], $this->null_array_offsets_read[$remove_var_id]);
+        $this->forgetNullArrayOffsets($remove_var_id);
     }
 
     /**
@@ -1017,7 +1073,7 @@ final class Context
 
             foreach ($clause->possibilities as $var_id => $_) {
                 if (preg_match('/' . $quoted_remove_var_id . '[\]\[\-]/', $var_id)) {
-                    break 2;
+                    continue 2;
                 }
             }
 
@@ -1057,6 +1113,25 @@ final class Context
                         $type_changed = true;
                         break;
                     }
+
+                    // the assertion not narrowing the new type doesn't mean it holds for every value of it
+                    // (truthy on int): it does when its negation can't hold for any
+                    $negated_result_type = AssertionReconciler::reconcile(
+                        $assertion->getNegation(),
+                        $new_type,
+                        null,
+                        $statements_analyzer,
+                        false,
+                        [],
+                        null,
+                        [],
+                        $failed_reconciliation,
+                    );
+
+                    if (!$negated_result_type->isNever()) {
+                        $type_changed = true;
+                        break;
+                    }
                 }
 
                 if (!$type_changed) {
@@ -1068,13 +1143,102 @@ final class Context
         return $clauses_to_keep;
     }
 
+    /**
+     * The clauses that still hold after a branch analysed in $branch_context assigned $assigned_var_ids
+     *
+     * @param  list<Clause>       $clauses
+     * @param  array<string, int> $assigned_var_ids
+     * @return list<Clause>
+     */
+    public static function filterClausesOfAssignedVars(
+        array $clauses,
+        array $assigned_var_ids,
+        Context $branch_context,
+        StatementsAnalyzer $statements_analyzer,
+    ): array {
+        foreach ($assigned_var_ids as $var_id => $_) {
+            foreach ([$var_id, ...$branch_context->getVarsBoundTo($var_id)] as $changed_var_id) {
+                $clauses = self::filterClauses(
+                    $changed_var_id,
+                    $clauses,
+                    $branch_context->vars_in_scope[$var_id] ?? null,
+                    $statements_analyzer,
+                );
+            }
+        }
+
+        return $clauses;
+    }
+
+    /**
+     * The variables bound to it by reference, which change with it
+     *
+     * @return list<string>
+     * @psalm-mutation-free
+     */
+    public function getVarsBoundTo(string $var_id): array
+    {
+        $referenced_var_id = $this->references_in_scope[$var_id] ?? $var_id;
+        $bound_var_ids = [];
+        $references = [$referenced_var_id => $referenced_var_id] + $this->references_in_scope;
+
+        foreach ($references as $reference_id => $target_id) {
+            if ($target_id === $referenced_var_id && $reference_id !== $var_id) {
+                $bound_var_ids[] = $reference_id;
+            }
+        }
+
+        return $bound_var_ids;
+    }
+
     public function removeVarFromConflictingClauses(
         string $remove_var_id,
         ?Union $new_type = null,
         ?StatementsAnalyzer $statements_analyzer = null,
     ): void {
         $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_analyzer);
-        $this->parent_remove_vars[$remove_var_id] = true;
+        $this->parent_remove_vars[$remove_var_id] = ++self::$clause_removal_count;
+
+        foreach ($this->getVarsBoundTo($remove_var_id) as $bound_var_id) {
+            $this->clauses = self::filterClauses($bound_var_id, $this->clauses, $new_type, $statements_analyzer);
+            $this->parent_remove_vars[$bound_var_id] = ++self::$clause_removal_count;
+        }
+    }
+
+    /**
+     * Drops the clauses about the variables a nested scope, analysed in a clone of this context, changed. Inside a
+     * condition, the clauses are only marked as changed: the condition is checked against them for paradoxes
+     * first, and its analyser drops them afterwards (see removeClausesOfVarsChangedSince()).
+     */
+    public function removeClausesOfVarsChangedIn(Context $nested_context): void
+    {
+        foreach ($nested_context->parent_remove_vars as $var_id => $stamp) {
+            if (($this->parent_remove_vars[$var_id] ?? null) !== $stamp) {
+                if ($this->inside_conditional) {
+                    $this->parent_remove_vars[$var_id] = $stamp;
+                } else {
+                    $this->removeVarFromConflictingClauses($var_id);
+                }
+            }
+        }
+    }
+
+    /**
+     * Drops the clauses about the variables changed since $parent_remove_vars was taken from this context
+     *
+     * @param array<string, int> $parent_remove_vars
+     */
+    public function removeClausesOfVarsChangedSince(array $parent_remove_vars): void
+    {
+        if ($this->inside_conditional) {
+            return;
+        }
+
+        foreach ($this->parent_remove_vars as $var_id => $stamp) {
+            if (($parent_remove_vars[$var_id] ?? null) !== $stamp) {
+                $this->removeVarFromConflictingClauses($var_id);
+            }
+        }
     }
 
     /**
@@ -1340,6 +1504,7 @@ final class Context
             $this->remove($var_id, false);
             // forgotten, not unset: Context::update() tells the two apart
             $this->vars_possibly_in_scope[$var_id] = true;
+            $this->parent_remove_vars[$var_id] = ++self::$clause_removal_count;
         }
 
         $clauses_to_keep = [];
@@ -1354,6 +1519,7 @@ final class Context
                     && (!$methods_only || strpos($key, '()'))
                 ) {
                     $abandon_clause = true;
+                    $this->parent_remove_vars[$key] = ++self::$clause_removal_count;
                     break;
                 }
             }

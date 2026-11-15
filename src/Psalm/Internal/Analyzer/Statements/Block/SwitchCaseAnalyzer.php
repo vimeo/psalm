@@ -474,6 +474,8 @@ final class SwitchCaseAnalyzer
         $statements_analyzer->node_data = $old_node_data;
 
         if ($case_exit_type !== 'return_throw') {
+            $context->removeClausesOfVarsChangedIn($case_context);
+
             if (self::handleNonReturningCase(
                 $statements_analyzer,
                 $switch_var_id,
@@ -489,6 +491,10 @@ final class SwitchCaseAnalyzer
 
                 return false;
             }
+        }
+
+        if ($case_scope->null_array_offsets_read_at_breaks !== null) {
+            $switch_scope->addWayOut($case_scope->null_array_offsets_read_at_breaks);
         }
 
         // augment the information with data from break statements
@@ -613,6 +619,8 @@ final class SwitchCaseAnalyzer
                 }
             }
         } else {
+            $switch_scope->addWayOut($case_context->null_array_offsets_read);
+
             $case_redefined_vars = $case_context->getRedefinedVars($original_context->vars_in_scope);
 
             if ($switch_scope->possibly_redefined_vars === null) {
