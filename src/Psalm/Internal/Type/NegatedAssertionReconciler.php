@@ -38,6 +38,7 @@ use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
@@ -209,7 +210,9 @@ final class NegatedAssertionReconciler extends Reconciler
             // do nothing
         } elseif ($assertion instanceof IsClassNotEqual) {
             // do nothing
-        } elseif ($assertion_type instanceof TClassString && $assertion_type->is_loaded) {
+        } elseif (($assertion_type instanceof TClassString || $assertion_type instanceof TTraitString)
+            && $assertion_type->is_loaded
+        ) {
             // do nothing
         } elseif ($existing_var_type->isSingle()
             && $existing_var_type->hasNamedObjectType()

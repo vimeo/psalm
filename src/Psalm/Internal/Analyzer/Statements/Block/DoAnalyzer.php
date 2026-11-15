@@ -113,7 +113,14 @@ final class DoAnalyzer
         }
 
         try {
-            $negated_while_clauses = Algebra::negateFormula($while_clauses);
+            $negated_while_clauses = FormulaGenerator::getNegatedFormula(
+                $while_clauses,
+                $stmt->cond,
+                $cond_id,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+            );
         } catch (ComplicatedExpressionException) {
             $negated_while_clauses = [];
         }

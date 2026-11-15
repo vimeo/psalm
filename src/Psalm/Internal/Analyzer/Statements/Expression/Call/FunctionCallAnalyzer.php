@@ -471,6 +471,17 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $context->vars_in_scope[$const_name] = $const_type;
         }
 
+        // a called closure may write what it captured by reference
+        foreach ($function_call_info->byref_uses as $use_name => $_) {
+            $use_var_id = '$' . $use_name;
+
+            $context->removeVarFromConflictingClauses(
+                $use_var_id,
+                $context->vars_in_scope[$use_var_id] ?? null,
+                $statements_analyzer,
+            );
+        }
+
         if ($function_call_info->function_storage) {
             GlobalAnalyzer::readGlobalsWrittenBy($statements_analyzer, $context, $function_call_info->function_storage);
         }

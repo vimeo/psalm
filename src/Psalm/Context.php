@@ -18,12 +18,14 @@ use Psalm\Internal\Scope\FinallyScope;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Scope\TryScope;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Atomic\DependentType;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use RuntimeException;
 
@@ -1085,18 +1087,15 @@ final class Context
             } elseif ($statements_analyzer &&
                 $new_type &&
                 !$new_type->hasMixed()
+                // the types don't say whether the variable is set
+                && !$new_type->possibly_undefined
+                && !$new_type->possibly_undefined_from_try
             ) {
                 $type_changed = false;
 
                 // if the clause contains any possibilities that would be altered
                 // by the new type
                 foreach ($clause->possibilities[$remove_var_id] as $assertion) {
-                    // if we're negating a type, we generally don't need the clause anymore
-                    if ($assertion->isNegation()) {
-                        $type_changed = true;
-                        break;
-                    }
-
                     $result_type = AssertionReconciler::reconcile(
                         $assertion,
                         $new_type,
@@ -1128,7 +1127,16 @@ final class Context
                         $failed_reconciliation,
                     );
 
-                    if (!$negated_result_type->isNever()) {
+                    // an impossible assertion may be reconciled to the asserted type instead of never: no value of the
+                    // new type is then left
+                    if (!$negated_result_type->isNever()
+                        && $failed_reconciliation !== Reconciler::RECONCILIATION_EMPTY
+                        && UnionTypeComparator::isContainedBy(
+                            $statements_analyzer->getCodebase(),
+                            $negated_result_type,
+                            $new_type,
+                        )
+                    ) {
                         $type_changed = true;
                         break;
                     }
@@ -1209,13 +1217,26 @@ final class Context
      * Drops the clauses about the variables a nested scope, analysed in a clone of this context, changed. Inside a
      * condition, the clauses are only marked as changed: the condition is checked against them for paradoxes
      * first, and its analyser drops them afterwards (see removeClausesOfVarsChangedSince()).
+     *
+     * With $statements_analyzer, the nested scope must only lead here from its end (an if branch): the clauses that
+     * still hold for the types it leaves are kept.
      */
-    public function removeClausesOfVarsChangedIn(Context $nested_context): void
-    {
+    public function removeClausesOfVarsChangedIn(
+        Context $nested_context,
+        ?StatementsAnalyzer $statements_analyzer = null,
+    ): void {
         foreach ($nested_context->parent_remove_vars as $var_id => $stamp) {
-            if (($this->parent_remove_vars[$var_id] ?? null) !== $stamp) {
+            // an older stamp than this context's is one the nested scope was cloned with before a sibling scope
+            // changed the variable (an else after its if), not a change of its own
+            if ($stamp > ($this->parent_remove_vars[$var_id] ?? 0)) {
                 if ($this->inside_conditional) {
                     $this->parent_remove_vars[$var_id] = $stamp;
+                } elseif ($statements_analyzer) {
+                    $this->removeVarFromConflictingClauses(
+                        $var_id,
+                        $nested_context->vars_in_scope[$var_id] ?? null,
+                        $statements_analyzer,
+                    );
                 } else {
                     $this->removeVarFromConflictingClauses($var_id);
                 }

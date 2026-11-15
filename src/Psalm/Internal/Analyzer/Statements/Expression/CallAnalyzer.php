@@ -1048,7 +1048,7 @@ abstract class CallAnalyzer
                     );
                 } elseif ($single_rule instanceof Falsy) {
                     try {
-                        $assert_clauses = Algebra::negateFormula(
+                        $assert_clauses = FormulaGenerator::getNegatedFormula(
                             FormulaGenerator::getFormula(
                                 spl_object_id($arg_value),
                                 spl_object_id($arg_value),
@@ -1057,6 +1057,11 @@ abstract class CallAnalyzer
                                 $statements_analyzer,
                                 $codebase,
                             ),
+                            $arg_value,
+                            spl_object_id($arg_value),
+                            $context->self,
+                            $statements_analyzer,
+                            $codebase,
                         );
                     } catch (ComplicatedExpressionException) {
                         $assert_clauses = [];
