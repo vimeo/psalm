@@ -32,6 +32,7 @@ use function array_filter;
 use function array_map;
 use function array_values;
 use function count;
+use function is_array;
 use function spl_object_id;
 use function str_starts_with;
 use function strcspn;
@@ -897,20 +898,7 @@ final class FormulaGenerator
 
         foreach ($call->getArgs() as $arg) {
             $targets[] = $arg->value;
-
-            foreach ((new PhpParser\NodeFinder())->find($arg->value, static fn(): bool => true) as $node) {
-                if ($node instanceof PhpParser\Node\Expr\Assign
-                    || $node instanceof PhpParser\Node\Expr\AssignRef
-                    || $node instanceof PhpParser\Node\Expr\AssignOp
-                    || $node instanceof PhpParser\Node\Expr\PreInc
-                    || $node instanceof PhpParser\Node\Expr\PreDec
-                    || $node instanceof PhpParser\Node\Expr\PostInc
-                    || $node instanceof PhpParser\Node\Expr\PostDec
-                    || ($node instanceof PhpParser\Node\ClosureUse && $node->byRef)
-                ) {
-                    $targets[] = $node->var;
-                }
-            }
+            self::collectWrittenExprs($arg->value, $targets);
         }
 
         foreach ($targets as $target) {
@@ -926,6 +914,62 @@ final class FormulaGenerator
         }
 
         return false;
+    }
+
+    /**
+     * The expressions the node writes to in the current scope: function bodies write to their own scope, and only the
+     * variables a closure uses by reference are the enclosing scope's
+     *
+     * @param list<PhpParser\Node\Expr> $targets
+     * @param-out list<PhpParser\Node\Expr> $targets
+     */
+    private static function collectWrittenExprs(PhpParser\Node $node, array &$targets): void
+    {
+        if ($node instanceof PhpParser\Node\Expr\Closure) {
+            foreach ($node->uses as $use) {
+                if ($use->byRef) {
+                    $targets[] = $use->var;
+                }
+            }
+
+            return;
+        }
+
+        if ($node instanceof PhpParser\Node\Expr\ArrowFunction
+            || $node instanceof PhpParser\Node\Stmt\Function_
+            || $node instanceof PhpParser\Node\Stmt\Class_
+        ) {
+            return;
+        }
+
+        if ($node instanceof PhpParser\Node\Expr\Assign
+            || $node instanceof PhpParser\Node\Expr\AssignRef
+            || $node instanceof PhpParser\Node\Expr\AssignOp
+            || $node instanceof PhpParser\Node\Expr\PreInc
+            || $node instanceof PhpParser\Node\Expr\PreDec
+            || $node instanceof PhpParser\Node\Expr\PostInc
+            || $node instanceof PhpParser\Node\Expr\PostDec
+        ) {
+            $targets[] = $node->var;
+        }
+
+        foreach ($node->getSubNodeNames() as $name) {
+            /** @var mixed $children a sub node, a list of them or a scalar */
+            $children = $node->{$name};
+
+            if ($children instanceof PhpParser\Node) {
+                $children = [$children];
+            } elseif (!is_array($children)) {
+                continue;
+            }
+
+            /** @var mixed $child */
+            foreach ($children as $child) {
+                if ($child instanceof PhpParser\Node) {
+                    self::collectWrittenExprs($child, $targets);
+                }
+            }
+        }
     }
 
     private static function isBoolLiteral(PhpParser\Node\Expr $expr): bool

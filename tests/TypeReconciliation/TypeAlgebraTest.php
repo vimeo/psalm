@@ -1272,6 +1272,17 @@ final class TypeAlgebraTest extends TestCase
                             /** @psalm-check-type-exact $box = Box */;
                         }
                     }
+                    function closureLocalVariable(?Box $box): void {
+                        if ($box?->run(function (): void { $box = null; echo (string) $box; })) {
+                            /** @psalm-check-type-exact $box = Box */;
+                        }
+                        if ($box?->run(fn() => $box = null) === false) {
+                            /** @psalm-check-type-exact $box = Box */;
+                        }
+                        if ($box?->take(static function (?Box $box): void { $box = null; echo (string) $box; }) === false) {
+                            /** @psalm-check-type-exact $box = Box */;
+                        }
+                    }
                     function propertyOfReceiverPassed(?Box $box): void {
                         if ($box?->check($box->inner) === false) {
                             /** @psalm-check-type-exact $box = Box */;
@@ -1305,6 +1316,12 @@ final class TypeAlgebraTest extends TestCase
                     function nullsafeCall(?A $a, ?int $s): void {
                         $r = $s;
                         if ($r && ($r = $a?->foo())) {
+                            /** @psalm-check-type-exact $r = int */;
+                        }
+                    }
+                    function nestedAnd(?A $a, ?int $s): void {
+                        $r = $s;
+                        if ($r && $a && ($r = $a->ofoo())) {
                             /** @psalm-check-type-exact $r = int */;
                         }
                     }

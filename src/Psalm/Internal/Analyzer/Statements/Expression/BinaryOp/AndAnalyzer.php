@@ -19,6 +19,7 @@ use Psalm\Node\Stmt\VirtualIf;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 
+use function array_diff;
 use function array_diff_key;
 use function array_fill_keys;
 use function array_filter;
@@ -262,25 +263,41 @@ final class AndAnalyzer
                 ...$context->assigned_var_ids,
             ];
 
-            // clauses simplification derived from the reconciled ones (a nullsafe call's receiver) are applied too,
-            // but not those on a variable the right side reassigns: they are about its old value, and the clauses
-            // with the same hash are about the new one
-            $if_body_context->reconciled_expression_clauses = [
-                ...$if_body_context->reconciled_expression_clauses,
-                ...array_map(
+            // clauses simplification derived from the reconciled ones (a nullsafe call's receiver) are applied too
+            $reconciled_hashes = array_map(
+                /** @return string|int */
+                static fn(Clause $c) => $c->hash,
+                [
+                    ...$partitioned_clauses[1],
+                    ...Context::removeReconciledClauses($simplified_clauses, $changed_var_ids)[1],
+                ],
+            );
+
+            if ($right_assigned_var_ids) {
+                // but not the left side's clauses on a variable the right side reassigns, here or in a nested `&&`:
+                // they are about its old value, and the clauses with the same hash are about the new one
+                $old_value_hashes = array_map(
                     /** @return string|int */
                     static fn(Clause $c) => $c->hash,
                     array_filter(
-                        [
-                            ...$partitioned_clauses[1],
-                            ...Context::removeReconciledClauses($simplified_clauses, $changed_var_ids)[1],
-                        ],
-                        static fn(Clause $c): bool => !$right_assigned_var_ids || count(self::removeAssignedVarIds(
+                        [...$left_context->clauses, ...$left_clauses, ...$simplified_clauses],
+                        static fn(Clause $c): bool => count(self::removeAssignedVarIds(
                             array_fill_keys(array_keys($c->possibilities), true),
                             $right_assigned_var_ids,
-                        )) === count($c->possibilities),
+                        )) !== count($c->possibilities),
                     ),
-                ),
+                );
+
+                $if_body_context->reconciled_expression_clauses = array_values(array_diff(
+                    $if_body_context->reconciled_expression_clauses,
+                    $old_value_hashes,
+                ));
+                $reconciled_hashes = array_diff($reconciled_hashes, $old_value_hashes);
+            }
+
+            $if_body_context->reconciled_expression_clauses = [
+                ...$if_body_context->reconciled_expression_clauses,
+                ...$reconciled_hashes,
             ];
 
             $if_body_context->vars_possibly_in_scope = [
