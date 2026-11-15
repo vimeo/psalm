@@ -178,13 +178,20 @@ function fail(string $message): never
     exit(1);
 }
 
-/** Run a command, streaming output; abort on failure. */
-function run(string $cmd): void
+/** Run a command, streaming output; retry transient failures (registry and download 5xx), abort if all fail. */
+function run(string $cmd, int $attempts = 3): void
 {
-    echo "> $cmd\n";
-    passthru($cmd, $exit);
-    if ($exit !== 0) {
-        exit($exit);
+    for ($attempt = 1;; $attempt++) {
+        echo "> $cmd\n";
+        passthru($cmd, $exit);
+        if ($exit === 0) {
+            return;
+        }
+        if ($attempt === $attempts) {
+            exit($exit);
+        }
+        echo "Attempt $attempt of $attempts failed with exit code $exit, retrying in 30 s\n";
+        sleep(30);
     }
 }
 
@@ -555,7 +562,7 @@ function pieStep(array $pieInstalls): string
     }
     $pieVersion = PIE_VERSION;
     return "\nRUN case \"\$(uname -m)\" in aarch64) arch=ARM64 ;; *) arch=X64 ;; esac && \\\n"
-        . "    curl -fsSL -o /usr/local/bin/pie https://github.com/php/pie/releases/download/$pieVersion/pie-Linux-\$arch && \\\n"
+        . "    curl -fsSL --retry 5 --retry-delay 2 -o /usr/local/bin/pie https://github.com/php/pie/releases/download/$pieVersion/pie-Linux-\$arch && \\\n"
         . "    chmod +x /usr/local/bin/pie && \\\n"
         . '    apk add --no-cache $PHPIZE_DEPS libtool ' . implode(' ', array_unique($packages)) . " && \\\n    "
         . implode(" && \\\n    ", $commands) . "\n";

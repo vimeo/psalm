@@ -85,6 +85,7 @@ final class MatchAnalyzer
                     || $stmt->cond->name->getParts() === ['get_debug_type']
                     || $stmt->cond->name->getParts() === ['count']
                     || $stmt->cond->name->getParts() === ['sizeof'])
+                && !CallAnalyzer::isPartialFunctionApplication($stmt->cond)
                 && $stmt->cond->getArgs()
             ) {
                 $first_arg = $stmt->cond->getArgs()[0];

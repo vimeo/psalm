@@ -14833,7 +14833,7 @@ return array (
   ),
   'eventhttprequest::gethost' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'eventhttprequest::getinputbuffer' => 
   array (
@@ -14857,7 +14857,7 @@ return array (
   ),
   'eventhttprequest::geturi' => 
   array (
-    0 => 'string',
+    0 => 'null|string',
   ),
   'eventhttprequest::removeheader' => 
   array (
@@ -49928,7 +49928,7 @@ return array (
   array (
     0 => 'bool',
     'signal_no' => 'int',
-    'callback=' => 'callable|null',
+    'callback=' => 'callable|int|null',
   ),
   'swoole\\process::start' => 
   array (

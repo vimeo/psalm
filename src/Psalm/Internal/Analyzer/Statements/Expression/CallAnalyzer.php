@@ -65,6 +65,7 @@ use function implode;
 use function in_array;
 use function is_int;
 use function is_numeric;
+use function method_exists;
 use function mt_rand;
 use function pathinfo;
 use function preg_match;
@@ -82,6 +83,19 @@ use const PATHINFO_EXTENSION;
  */
 abstract class CallAnalyzer
 {
+    /**
+     * Whether the call has `?` or `...` placeholders, which make getArgs() throw. php-parser before 5.9
+     * has no partial function application, so there only a first-class callable `f(...)` has them.
+     */
+    public static function isPartialFunctionApplication(PhpParser\Node\Expr\CallLike $call): bool
+    {
+        if (method_exists($call, 'isPartialFunctionApplication')) {
+            return $call->isPartialFunctionApplication();
+        }
+
+        return $call->isFirstClassCallable();
+    }
+
     public static function collectSpecialInformation(
         FunctionLikeAnalyzer $source,
         string $method_name,
@@ -743,7 +757,6 @@ abstract class CallAnalyzer
                     continue;
                 }
 
-                /** @var PhpParser\Node\Expr\Variable $arg_value */
                 $arg_value = $args[$var_id]->value;
 
                 $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $statements_analyzer);
@@ -764,6 +777,7 @@ abstract class CallAnalyzer
                         $statements_analyzer->getNodeTypeProvider(),
                         $statements_analyzer->getCodebase()->classlike_storage_provider,
                         $arg_value,
+                        $arg_var_id,
                     );
 
                     if (null !== $failedMessage) {

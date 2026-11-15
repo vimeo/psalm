@@ -17,6 +17,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitToStringCast;
@@ -171,7 +172,8 @@ final class ConcatAnalyzer
 
                     foreach ($left_type->getAtomicTypes() as $left_type_part) {
                         foreach ($right_type->getAtomicTypes() as $right_type_part) {
-                            $literal = $left_type_part->value . $right_type_part->value;
+                            $literal = LiteralCast::toString($left_type_part->value)
+                                . LiteralCast::toString($right_type_part->value);
                             if (strlen($literal) >= $config->max_string_length) {
                                 // Literal too long, use non-literal type instead
                                 $literal_concat = false;

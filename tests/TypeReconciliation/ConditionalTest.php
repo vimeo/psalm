@@ -3305,6 +3305,62 @@ final class ConditionalTest extends TestCase
                     '$after' => 'Countable|string',
                 ],
             ],
+            'firstClassCallableInCountComparison' => [
+                'code' => '<?php
+                    while (count(...) > 1) {}
+                    while (sizeof(...) <= 1) {}
+                    if (count(...) === 1) {}
+                    if (1 !== sizeof(...)) {}
+                    if (2 <= count(...)) {}
+                    if (3 > count(...)) {}
+                    if (count(...) == 1) {}
+                    if (1 != sizeof(...)) {}',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainType'],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableInGettypeComparison' => [
+                'code' => '<?php
+                    if (gettype(...) === "x") {}
+                    if ("x" !== gettype(...)) {}
+                    if (get_debug_type(...) === "x") {}
+                    if ("x" != get_debug_type(...)) {}',
+                'assertions' => [],
+                'ignored_issues' => [
+                    'TypeDoesNotContainType',
+                    'RedundantCondition',
+                ],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableInGetClassComparison' => [
+                'code' => '<?php
+                    class A {
+                        public function f(): void {
+                            if (get_class(...) === A::class) {}
+                            if (A::class !== get_class(...)) {}
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [
+                    'TypeDoesNotContainType',
+                    'RedundantCondition',
+                ],
+                'php_version' => '8.1',
+            ],
+            'getClassInequalityWithoutArgumentsNarrowsThis' => [
+                'code' => '<?php
+                    class A {
+                        public function f(): void {
+                            if (get_class() !== B::class) {
+                                return;
+                            }
+                            $this->onlyB();
+                        }
+                    }
+                    final class B extends A {
+                        public function onlyB(): void {}
+                    }',
+            ],
         ];
     }
 
