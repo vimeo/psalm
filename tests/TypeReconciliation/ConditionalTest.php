@@ -3550,6 +3550,229 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'looseNullComparisonKeepsZeroString' => [
+                'code' => '<?php
+                    function notEqual(?string $s): void {
+                        if ($s != null) {
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                        } else {
+                            /** @psalm-check-type-exact $s = ""|null */
+                        }
+                    }
+
+                    function equal(?string $s): void {
+                        if ($s == null) {
+                            /** @psalm-check-type-exact $s = ""|null */
+                        } else {
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                        }
+                    }
+
+                    function reversed(?string $s): void {
+                        if (null != $s) {
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                        }
+                    }
+
+                    function notNullable(string $s): void {
+                        if ($s != null) {
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                        } else {
+                            /** @psalm-check-type-exact $s = "" */
+                        }
+                    }
+
+                    function union(int|string|null $s): void {
+                        if ($s != null) {
+                            /** @psalm-check-type-exact $s = int|non-empty-string */
+                        } else {
+                            /** @psalm-check-type-exact $s = ""|0|null */
+                        }
+                    }
+
+                    function earlyExit(?string $s): string {
+                        if ($s == null) {
+                            return "";
+                        }
+
+                        /** @psalm-check-type-exact $s = non-empty-string */
+                        return $s;
+                    }
+
+                    function assignment(?string $s): void {
+                        if (($t = $s) != null) {
+                            /** @psalm-check-type-exact $t = non-empty-string */
+                        }
+                    }
+
+                    function negated(?string $s): void {
+                        if (!($s != null)) {
+                            /** @psalm-check-type-exact $s = ""|null */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'identicalToNullAssertIfTrueIsNotNegated' => [
+                'code' => '<?php
+                    final class Token {}
+
+                    final class Lexer {
+                        public ?Token $lookahead = null;
+
+                        /** @psalm-assert-if-true !=null $this->lookahead */
+                        public function isNextToken(int $type): bool {
+                            return $this->lookahead !== null && $type === 1;
+                        }
+                    }
+
+                    function f(Lexer $lexer): void {
+                        switch (true) {
+                            case $lexer->isNextToken(1):
+                                break;
+                            case $lexer->isNextToken(2):
+                                /** @psalm-check-type-exact $lexer->lookahead = Token */
+                                break;
+                        }
+                    }',
+            ],
+            'looseNullComparisonKeepsZeroStringInLoopsAndSwitch' => [
+                'code' => '<?php
+                    function loop(?string $s): void {
+                        while ($s != null) {
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                            break;
+                        }
+                    }
+
+                    function switchCase(?string $s): void {
+                        switch ($s) {
+                            case null:
+                                /** @psalm-check-type-exact $s = ""|null */
+                                break;
+                            default:
+                                /** @psalm-check-type-exact $s = non-empty-string */
+                        }
+                    }',
+            ],
+            'looseComparisonWithNullTypedValueKeepsZeroString' => [
+                'code' => '<?php
+                    function f(?string $s, null $n): void {
+                        if ($s != $n) {
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                        } else {
+                            /** @psalm-check-type-exact $s = ""|null */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'looseNullComparisonOfNumericString' => [
+                'code' => '<?php
+                    /** @param numeric-string|null $s */
+                    function f(?string $s): void {
+                        if ($s != null) {
+                            /** @psalm-check-type-exact $s = numeric-string */
+                        } else {
+                            /** @psalm-check-type-exact $s = null */
+                        }
+                    }',
+            ],
+            'looseNullComparisonKeepsTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template T of ?string
+                     * @param T $t
+                     * @return T
+                     */
+                    function notEqual($t) {
+                        if ($t != null) {
+                            return $t;
+                        }
+
+                        return $t;
+                    }
+
+                    /**
+                     * @template T of string
+                     * @param T $t
+                     * @return T
+                     */
+                    function equal($t) {
+                        if ($t == null) {
+                            return $t;
+                        }
+
+                        return $t;
+                    }',
+            ],
+            'looseNullComparisonWithZeroString' => [
+                'code' => '<?php
+                    /** @param "0"|null $s */
+                    function f(?string $s): void {
+                        if ($s != null) {
+                            /** @psalm-check-type-exact $s = "0" */
+                        } else {
+                            /** @psalm-check-type-exact $s = null */
+                        }
+                    }',
+            ],
+            'looseNullComparisonOfMixedIsTruthiness' => [
+                'code' => '<?php
+                    function f(mixed $m): void {
+                        if ($m != null) {
+                            /** @psalm-check-type-exact $m = non-empty-mixed */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'looseNullComparisonOfNonStringsIsTruthiness' => [
+                'code' => '<?php
+                    function integer(?int $i): void {
+                        if ($i != null) {
+                            /** @psalm-check-type-exact $i = int */
+                        } else {
+                            /** @psalm-check-type-exact $i = 0|null */
+                        }
+                    }
+
+                    function boolean(?bool $b): void {
+                        if ($b != null) {
+                            /** @psalm-check-type-exact $b = true */
+                        } else {
+                            /** @psalm-check-type-exact $b = false|null */
+                        }
+                    }
+
+                    function arr(?array $a): void {
+                        if ($a == null) {
+                            /** @psalm-check-type-exact $a = array<never, never>|null */
+                        } else {
+                            /** @psalm-check-type-exact $a = non-empty-array<array-key, mixed> */
+                        }
+                    }
+
+                    function obj(?stdClass $o): void {
+                        if ($o != null) {
+                            /** @psalm-check-type-exact $o = stdClass */
+                        } else {
+                            /** @psalm-check-type-exact $o = null */
+                        }
+                    }
+
+                    /** @param non-falsy-string|null $s */
+                    function nonFalsy(?string $s): void {
+                        if ($s != null) {
+                            /** @psalm-check-type-exact $s = non-falsy-string */
+                        } else {
+                            /** @psalm-check-type-exact $s = null */
+                        }
+                    }',
+            ],
             'onlySingleErrorForEarlyExit' => [
                 'code' => '<?php
                     class App {
@@ -4931,6 +5154,55 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'looseNullInequalityOfNonFalsyStringIsRedundant' => [
+                'code' => '<?php
+                    /** @param non-falsy-string $s */
+                    function f(string $s): void {
+                        if ($s != null) {}
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'looseNullEqualityOfNonFalsyStringIsImpossible' => [
+                'code' => '<?php
+                    /** @param non-falsy-string $s */
+                    function f(string $s): void {
+                        if ($s == null) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'looseNullEqualityOfNonEmptyStringIsImpossible' => [
+                'code' => '<?php
+                    /** @param non-empty-string $s */
+                    function f(string $s): void {
+                        if ($s == null) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'looseNullInequalityOfZeroOrOneIsRedundant' => [
+                'code' => '<?php
+                    /** @param "0"|"1" $s */
+                    function f(string $s): void {
+                        if ($s != null) {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'repeatedLooseNullInequalityIsRedundant' => [
+                'code' => '<?php
+                    function f(?string $s): void {
+                        if ($s != null) {
+                            if ($s != null) {}
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33',
+            ],
+            'looseNullInequalityOfEmptyStringIsImpossible' => [
+                'code' => '<?php
+                    /** @param "" $s */
+                    function f(string $s): void {
+                        if ($s != null) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'notIterableOfATraversableObjectIsImpossible' => [
                 'code' => '<?php
                     function f(ArrayObject $a): void {

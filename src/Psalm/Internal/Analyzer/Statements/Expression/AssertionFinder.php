@@ -2238,7 +2238,7 @@ final class AssertionFinder
                 $if_types[$var_name] = self::getLooselyNullAssertions(
                     false,
                     $source instanceof StatementsAnalyzer ? $source->node_data->getType($base_conditional) : null,
-                ) ?? [[new Truthy()]];
+                ) ?? [[new IsNotLooselyEqual(new TNull())]];
             }
         }
 
@@ -2288,7 +2288,8 @@ final class AssertionFinder
      * `$x == null` holds for null, false, 0, 0.0, '' and [], but not for '0' (unlike `!$x`). When the value can only be
      * null, a string, an object or true, that is null or the empty string.
      *
-     * @return non-empty-list<non-empty-list<Assertion>>|null null when `Falsy` / `Truthy` is the same
+     * @return non-empty-list<non-empty-list<Assertion>>|null null when the loose comparison with null asserts the
+     *     same
      * @psalm-pure
      */
     private static function getLooselyNullAssertions(bool $equal, ?Union $var_type): ?array
@@ -3013,7 +3014,7 @@ final class AssertionFinder
                 $if_types[$var_name] = self::getLooselyNullAssertions(
                     true,
                     $source instanceof StatementsAnalyzer ? $source->node_data->getType($base_conditional) : null,
-                ) ?? [[new Falsy()]];
+                ) ?? [[new IsLooselyEqual(new TNull())]];
             }
         }
 

@@ -23,6 +23,7 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 use WeakMap;
@@ -128,10 +129,20 @@ final class GlobalAnalyzer
                     $context->vars_in_scope[$var_id] = $global_type;
                     $context->vars_possibly_in_scope[$var_id] = true;
                 } else {
-                    $context->vars_in_scope[$var_id] =
-                        $global_context && $global_context->hasVariable($var_id)
-                            ? $global_context->vars_in_scope[$var_id]
-                            : VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
+                    $global_type = $global_context && $global_context->hasVariable($var_id)
+                        ? $global_context->vars_in_scope[$var_id]
+                        : VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
+
+                    // `global` creates the global as null when it is not set
+                    if ($global_type->possibly_undefined || $global_type->possibly_undefined_from_try) {
+                        $global_type = $global_type->setPossiblyUndefined(false, false);
+
+                        if (!$global_type->isNullable() && !$global_type->hasMixed()) {
+                            $global_type = $global_type->getBuilder()->addType(new TNull())->freeze();
+                        }
+                    }
+
+                    $context->vars_in_scope[$var_id] = $global_type;
 
                     $context->vars_possibly_in_scope[$var_id] = true;
 
@@ -171,6 +182,7 @@ final class GlobalAnalyzer
                 ?? $global_type
                 ?? VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
             $context->references_to_external_scope[$var_id] = true;
+            $context->forgetReferencesPossiblyBound($var_id);
 
             if (isset($context->references_in_scope[$var_id])) {
                 // Global shadows existing reference

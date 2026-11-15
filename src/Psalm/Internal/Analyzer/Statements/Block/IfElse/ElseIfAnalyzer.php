@@ -112,10 +112,11 @@ final class ElseIfAnalyzer
         // it: what the condition assigns is assigned for the elseifs and the else after it too
         $post_if_context = $if_conditional_scope->post_if_context;
 
-        foreach ($assigned_in_conditional_var_ids as $var_id => $_) {
+        foreach ($assigned_in_conditional_var_ids as $var_id => $offset) {
             if (isset($post_if_context->vars_in_scope[$var_id])) {
                 $else_context->vars_in_scope[$var_id] = $post_if_context->vars_in_scope[$var_id];
                 $else_context->vars_possibly_in_scope[$var_id] = true;
+                $if_scope->elseif_cond_assigned_var_ids[$var_id] = $offset;
             }
         }
 
@@ -190,6 +191,16 @@ final class ElseIfAnalyzer
 
             $entry_clauses[] = $c;
         }
+
+        // the clauses the condition's own assignments added are about the new value
+        $entry_clauses = [
+            ...$entry_clauses,
+            ...IfConditionalAnalyzer::getClausesAddedByCondition(
+                $elseif->cond,
+                $pre_conditional_context->clauses,
+                $elseif_context->clauses,
+            ),
+        ];
 
         // this will see whether any of the clauses in set A conflict with the clauses in set B
         AlgebraAnalyzer::checkForParadox(
@@ -383,13 +394,15 @@ final class ElseIfAnalyzer
         // update the parent context as necessary
         if (!$has_leaving_statements) {
             IfAnalyzer::updateIfScope(
-                $codebase,
+                $statements_analyzer,
                 $if_scope,
                 $elseif_context,
                 $outer_context,
                 array_merge($new_stmts_assigned_var_ids, $assigned_in_conditional_var_ids),
                 $new_stmts_possibly_assigned_var_ids,
                 $newly_reconciled_var_ids,
+                assigned_in_conditional_var_ids: $assigned_in_conditional_var_ids,
+                branch_nodes: [$elseif->cond, ...$elseif->stmts],
             );
 
             $reasonable_clause_count = count($if_scope->reasonable_clauses);

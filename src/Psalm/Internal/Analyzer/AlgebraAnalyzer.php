@@ -131,7 +131,7 @@ final class AlgebraAnalyzer
         array $new_assigned_var_ids,
     ): void {
         try {
-            $negated_formula2 = Algebra::negateFormula($formula_2);
+            $negated_formula2 = Algebra::negateFormula($formula_2, true);
         } catch (ComplicatedExpressionException) {
             return;
         }
@@ -220,7 +220,7 @@ final class AlgebraAnalyzer
                     $statements_analyzer,
                     $statements_analyzer->getCodebase(),
                 );
-                $operand_formulas[] = [$operand, Algebra::negateFormula($operand_formula)];
+                $operand_formulas[] = [$operand, Algebra::negateFormula($operand_formula, true)];
             } catch (ComplicatedExpressionException) {
                 return;
             }
@@ -359,7 +359,7 @@ final class AlgebraAnalyzer
         Clause $negated_clause_2,
         Clause $clause_1,
     ): void {
-        $mini_formula_2 = Algebra::negateFormula([$negated_clause_2]);
+        $mini_formula_2 = Algebra::negateFormula([$negated_clause_2], true);
 
         if (!$mini_formula_2[0]->wedge) {
             if (count($mini_formula_2) > 1) {
