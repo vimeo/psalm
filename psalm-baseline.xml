@@ -1999,7 +1999,6 @@
       <code><![CDATA[self::$storage]]></code>
       <code><![CDATA[self::$storage]]></code>
       <code><![CDATA[self::$storage]]></code>
-      <code><![CDATA[self::$storage]]></code>
     </ImpureStaticProperty>
   </file>
   <file src="src/Psalm/Internal/Provider/DynamicFunctionStorageProvider.php">
@@ -2112,7 +2111,6 @@
       <code><![CDATA[self::$new_storage]]></code>
       <code><![CDATA[self::$new_storage]]></code>
       <code><![CDATA[self::$new_storage]]></code>
-      <code><![CDATA[self::$storage]]></code>
       <code><![CDATA[self::$storage]]></code>
       <code><![CDATA[self::$storage]]></code>
       <code><![CDATA[self::$storage]]></code>
@@ -2978,11 +2976,6 @@
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
     </ImmutableDependency>
-  </file>
-  <file src="src/Psalm/Storage/Assertion/NotInArray.php">
-    <ImplicitToStringCast>
-      <code><![CDATA[$this->type]]></code>
-    </ImplicitToStringCast>
   </file>
   <file src="src/Psalm/Storage/ClassConstantStorage.php">
     <MutableDependency>

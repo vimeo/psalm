@@ -371,7 +371,7 @@ final class AssignmentAnalyzer
             $base_assign_value = $base_assign_value->expr;
         }
 
-        if ($base_assign_value !== $assign_value) {
+        if ($base_assign_value !== null && $base_assign_value !== $assign_value) {
             ExpressionAnalyzer::analyze($statements_analyzer, $base_assign_value, $context);
 
             $assign_value_type = $statements_analyzer->node_data->getType($base_assign_value) ?? $assign_value_type;
