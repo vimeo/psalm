@@ -242,6 +242,18 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'foreachIntRangeSummedByEveryIterationIsWidened' => [
+                'code' => '<?php
+                    /** @param list<int<1, 3>> $values */
+                    function f(array $values): int {
+                        $sum = 0;
+                        foreach ($values as $value) {
+                            $sum += $value;
+                        }
+                        /** @psalm-check-type-exact $sum = int<0, max> */;
+                        return $sum;
+                    }',
+            ],
             'mixedIteratedByForeachIsNonEmptyInTheBodyAndMixedAfterIt' => [
                 'code' => '<?php
                     function getMixed(): mixed {

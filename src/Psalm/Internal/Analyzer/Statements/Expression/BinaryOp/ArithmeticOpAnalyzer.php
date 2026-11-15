@@ -631,9 +631,7 @@ final class ArithmeticOpAnalyzer
                     || $left_type_part instanceof TKeyedArray
                 ) {
                     $has_valid_left_operand = true;
-                } elseif ($right_type_part instanceof TArray
-                    || $right_type_part instanceof TKeyedArray
-                ) {
+                } else {
                     $has_valid_right_operand = true;
                 }
 
@@ -729,11 +727,6 @@ final class ArithmeticOpAnalyzer
                 return null;
             }
         }
-        /**
-         * @var Atomic $left_type_part
-         * @var Atomic $right_type_part
-         * // Todo remove this hint reset after fixing #10267
-         */
 
         if (($left_type_part instanceof TNamedObject && strtolower($left_type_part->value) === 'gmp')
             || ($right_type_part instanceof TNamedObject && strtolower($right_type_part->value) === 'gmp')
