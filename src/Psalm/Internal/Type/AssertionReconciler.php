@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -28,9 +29,12 @@ use Psalm\Storage\Assertion\IsClassEqual;
 use Psalm\Storage\Assertion\IsEqualIsset;
 use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsLooselyEqual;
+use Psalm\Storage\Assertion\IsNotIdentical;
+use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\NestedAssertions;
 use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
+use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -75,6 +79,7 @@ use function array_intersect_key;
 use function array_keys;
 use function array_merge;
 use function array_search;
+use function array_values;
 use function count;
 use function is_nan;
 use function is_numeric;
@@ -168,6 +173,23 @@ final class AssertionReconciler extends Reconciler
             }
 
             return new Union($type_variables);
+        }
+
+        if (($assertion instanceof IsLooselyEqual || $assertion instanceof IsNotLooselyEqual)
+            && $assertion->type instanceof TNull
+        ) {
+            return self::reconcileLooseNullComparison(
+                $assertion,
+                $existing_var_type,
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $negated,
+            );
         }
 
         if ($is_negation) {
@@ -285,6 +307,130 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
+     * `$x == null` is `!$x`, except that null is compared to a string as '': the falsy '0' is still != null
+     *
+     * @param   string[]            $suppressed_issues
+     * @param   array<string, array<string, Union>> $template_type_map
+     * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileLooseNullComparison(
+        IsLooselyEqual|IsNotLooselyEqual $assertion,
+        Union $existing_var_type,
+        ?string $key,
+        StatementsAnalyzer $statements_analyzer,
+        bool $inside_loop,
+        array $template_type_map,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        ?int &$failed_reconciliation,
+        bool $negated,
+    ): Union {
+        $codebase = $statements_analyzer->getCodebase();
+        $zero = TLiteralString::make('0');
+        $zero_types = self::getZeroStringTypes($codebase, $existing_var_type, $zero);
+
+        if (!$zero_types) {
+            return self::reconcile(
+                $assertion instanceof IsLooselyEqual ? new Falsy() : new Truthy(),
+                $existing_var_type,
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $negated,
+            );
+        }
+
+        // the truthiness check is done without issues, they would be wrong about '0'
+        if ($assertion instanceof IsLooselyEqual) {
+            $result = self::reconcile(
+                new IsNotIdentical($zero),
+                self::reconcile(
+                    new Falsy(),
+                    $existing_var_type,
+                    $key,
+                    $statements_analyzer,
+                    $inside_loop,
+                    $template_type_map,
+                ),
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+            );
+        } else {
+            $result = Type::combineUnionTypes(
+                self::reconcile(
+                    new Truthy(),
+                    $existing_var_type,
+                    $key,
+                    $statements_analyzer,
+                    $inside_loop,
+                    $template_type_map,
+                ),
+                new Union($zero_types),
+                $codebase,
+            );
+        }
+
+        $failed_reconciliation = Reconciler::RECONCILIATION_OK;
+
+        $impossible = $result->isNever() || $result->isUnionEmpty();
+
+        if ($impossible) {
+            $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+        }
+
+        if ($key !== null
+            && $code_location
+            && ($impossible || $result->getId() === $existing_var_type->getId())
+        ) {
+            self::triggerIssueForImpossible(
+                $existing_var_type,
+                $existing_var_type->getId(),
+                $key,
+                $assertion,
+                !$impossible,
+                $negated,
+                $code_location,
+                $suppressed_issues,
+            );
+        }
+
+        return $result;
+    }
+
+    /**
+     * The parts of $type that can be '0'. A mixed is left out: it stays non-empty-mixed rather than becoming
+     * '0'|non-empty-mixed
+     *
+     * @return list<Atomic>
+     */
+    private static function getZeroStringTypes(Codebase $codebase, Union $type, TLiteralString $zero): array
+    {
+        $zero_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam) {
+                $as_zero_types = self::getZeroStringTypes($codebase, $atomic_type->as, $zero);
+
+                if ($as_zero_types) {
+                    $zero_types[] = $atomic_type->replaceAs(new Union($as_zero_types));
+                }
+            } elseif (!$atomic_type instanceof TMixed
+                && AtomicTypeComparator::isContainedBy($codebase, $zero, $atomic_type)
+            ) {
+                $zero_types[] = $zero;
+            }
+        }
+
+        return $zero_types;
+    }
+
+    /**
      * @psalm-pure
      */
     private static function getMissingType(
@@ -305,6 +451,11 @@ final class AssertionReconciler extends Reconciler
             || $assertion instanceof HasAtLeastCount
         ) {
             return Type::getMixed();
+        }
+
+        // false, 0, '' and [] are loosely null too
+        if ($assertion instanceof IsLooselyEqual && $assertion->type instanceof TNull) {
+            return Type::getMixed($inside_loop);
         }
 
         if (!$assertion->isNegation()) {
@@ -530,7 +681,9 @@ final class AssertionReconciler extends Reconciler
                     if ($existing_var_type->from_docblock) {
                         IssueBuffer::maybeAdd(
                             new DocblockTypeContradiction(
-                                'Cannot resolve types for ' . $key . ' - docblock-defined type '
+                                'Cannot resolve types for '
+                                    . CoalesceAnalyzer::getDisplayName($key, $code_location)
+                                    . ' - docblock-defined type '
                                     . $existing_var_type . ' does not contain null',
                                 $code_location,
                                 $existing_var_type->getId() . ' null',
@@ -540,7 +693,9 @@ final class AssertionReconciler extends Reconciler
                     } else {
                         IssueBuffer::maybeAdd(
                             new TypeDoesNotContainNull(
-                                'Cannot resolve types for ' . $key . ' - ' . $existing_var_type
+                                'Cannot resolve types for '
+                                    . CoalesceAnalyzer::getDisplayName($key, $code_location)
+                                    . ' - ' . $existing_var_type
                                     . ' does not contain null',
                                 $code_location,
                                 $existing_var_type->getId(),
@@ -556,7 +711,9 @@ final class AssertionReconciler extends Reconciler
                     if ($existing_var_type->from_docblock) {
                         IssueBuffer::maybeAdd(
                             new DocblockTypeContradiction(
-                                'Cannot resolve types for ' . $key . ' - docblock-defined type '
+                                'Cannot resolve types for '
+                                    . CoalesceAnalyzer::getDisplayName($key, $code_location)
+                                    . ' - docblock-defined type '
                                     . $existing_var_type->getId() . ' does not contain ' . $new_type_part->getId(),
                                 $code_location,
                                 $existing_var_type->getId() . ' ' . $new_type_part->getId(),
@@ -566,7 +723,9 @@ final class AssertionReconciler extends Reconciler
                     } else {
                         IssueBuffer::maybeAdd(
                             new TypeDoesNotContainType(
-                                'Cannot resolve types for ' . $key . ' - ' . $existing_var_type->getId()
+                                'Cannot resolve types for '
+                                    . CoalesceAnalyzer::getDisplayName($key, $code_location)
+                                    . ' - ' . $existing_var_type->getId()
                                     . ' does not contain ' . $new_type_part->getId(),
                                 $code_location,
                                 $existing_var_type->getId() . ' ' . $new_type_part->getId(),
@@ -1058,9 +1217,7 @@ final class AssertionReconciler extends Reconciler
             $matching_atomic_type = $new_range;
         }
 
-        $refined_string = $type_1_atomic instanceof TString && $type_2_atomic instanceof TString
-            ? StringRefinement::intersect($type_1_atomic, $type_2_atomic)
-            : null;
+        $refined_string = StringRefinement::intersectAsserted($type_1_atomic, $type_2_atomic);
 
         if ($refined_string !== null) {
             // e.g. lowercase-string and non-falsy-string, none of which is contained into the other completely
@@ -1449,6 +1606,37 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
+     * An object with a `__toString()` can be loosely equal to a string: it stays in the type next to the literal
+     *
+     * @param array<string, Atomic> $existing_var_atomic_types
+     */
+    private static function addStringableObjects(
+        StatementsAnalyzer $statements_analyzer,
+        Assertion $assertion,
+        Union $literal_type,
+        array $existing_var_atomic_types,
+    ): Union {
+        if (!$assertion instanceof IsLooselyEqual) {
+            return $literal_type;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $atomic_types = $literal_type->getAtomicTypes();
+
+        foreach ($existing_var_atomic_types as $atomic_type) {
+            // an `object` may be one with a __toString too
+            if ($atomic_type::class === TObject::class
+                || ($atomic_type instanceof TNamedObject
+                    && $codebase->methodExists(new MethodIdentifier($atomic_type->value, '__tostring')))
+            ) {
+                $atomic_types[$atomic_type->getKey()] = $atomic_type;
+            }
+        }
+
+        return new Union(array_values($atomic_types), ['from_docblock' => $literal_type->from_docblock]);
+    }
+
+    /**
      * @param array<string, Atomic> $existing_var_atomic_types
      * @param string[]     $suppressed_issues
      */
@@ -1503,11 +1691,21 @@ final class AssertionReconciler extends Reconciler
                     return $existing_var_type;
                 }
 
-                return $literal_asserted_type_string;
+                return self::addStringableObjects(
+                    $statements_analyzer,
+                    $assertion,
+                    $literal_asserted_type_string,
+                    $existing_var_atomic_types,
+                );
             }
 
             if ($existing_var_atomic_type instanceof TString && !$existing_var_atomic_type instanceof TLiteralString) {
-                return $literal_asserted_type_string;
+                return self::addStringableObjects(
+                    $statements_analyzer,
+                    $assertion,
+                    $literal_asserted_type_string,
+                    $existing_var_atomic_types,
+                );
             }
 
             if ($existing_var_atomic_type instanceof TTemplateParam) {
@@ -1881,7 +2079,8 @@ final class AssertionReconciler extends Reconciler
             if (!$allow_string_comparison && $code_location) {
                 IssueBuffer::maybeAdd(
                     new TypeDoesNotContainType(
-                        'Cannot allow string comparison to object for ' . $key,
+                        'Cannot allow string comparison to object for '
+                            . CoalesceAnalyzer::getDisplayName($key, $code_location),
                         $code_location,
                         "no string comparison to $key",
                     ),

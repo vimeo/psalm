@@ -1395,7 +1395,8 @@ final class Config
         // Hack for Symfonys own argv resolution.
         // @see https://github.com/vimeo/psalm/issues/10465
         if (self::$add_command_line_paths && basename($argv[0] ?? '') !== 'psalm-plugin') {
-            $paths_to_check = CliUtils::getPathsToCheck(null);
+            // reading STDIN here would consume it before Psalm restarts, so the paths of `psalm -` are left out
+            $paths_to_check = CliUtils::getPathsToCheck(null, false);
         }
 
         if ($paths_to_check !== null) {
@@ -2871,7 +2872,8 @@ final class Config
                 static fn(string $classlike): bool => $codebase->classlike_storage_provider->has($classlike),
             ) || array_any(
                 $functions,
-                static fn(string $function): bool => $codebase->functions->isDeclaredInCode($function),
+                static fn(string $function): bool
+                    => $codebase->functions->isDeclaredInCode($function, $codebase->scanner),
             )) {
                 $library_stubs[] = $library_stub;
                 // the real definitions of the class-likes, which the stub then refines like a class the scan found
@@ -3390,7 +3392,15 @@ final class Config
             // may have been removed in the meantime
             clearstatcache(true, $dir);
             if (is_dir($dir)) {
-                rmdir($dir);
+                try {
+                    rmdir($dir);
+                } catch (RuntimeException $e) {
+                    // another Psalm process may have removed the directory or created files in it in the meantime
+                    clearstatcache(true, $dir);
+                    if (is_dir($dir) && count((array) scandir($dir, SCANDIR_SORT_NONE)) <= 2) {
+                        throw $e;
+                    }
+                }
             }
         }
     }

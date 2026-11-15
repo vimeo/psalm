@@ -23,6 +23,156 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'forIntRangeShiftedByEveryIterationIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $total = 0;
+                        for ($i = 0; $i < 100; $i++) {
+                            $total += rand(1, 3);
+                        }
+                        /** @psalm-check-type-exact $total = int<1, max> */;
+                        return $total;
+                    }',
+            ],
+            'forIntRangeComputedFromTheCounterIsNotWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $x = 0;
+                        for ($i = 0; $i < 10; $i++) {
+                            $x = $i * 2;
+                        }
+                        /** @psalm-check-type-exact $x = int<0, 18> */;
+                        return $x;
+                    }',
+            ],
+            'forIntRangeShiftedByThePostExpressionOfABodyEndingInAReturnIsWidened' => [
+                'code' => '<?php
+                    function f(): void {
+                        for ($i = 0; ; $i += rand(1, 3)) {
+                            if ($i > 10) {
+                                echo "reachable";
+                            }
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            return;
+                        }
+                    }',
+            ],
+            'forIntRangeShiftedByThePostExpressionBeforeAReturnIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        for ($i = 0; ; $i += rand(1, 3)) {
+                            if ($i < 10) {
+                                continue;
+                            }
+                            /** @psalm-check-type-exact $i = int<10, max> */;
+                            return $i;
+                        }
+                    }',
+            ],
+            'forEverVariableIsWhatTheBreaksLeave' => [
+                'code' => '<?php
+                    function f(): void {
+                        for (;;) {
+                            $x = rand(0, 1) ? "s" : null;
+                            if ($x === null) {
+                                continue;
+                            }
+                            break;
+                        }
+                        /** @psalm-check-type-exact $x = "s" */;
+                    }',
+            ],
+            'mixedConditionVariableOfAForLoopIsNotNonEmptyAfterIt' => [
+                'code' => '<?php
+                    function check(mixed $m): void {
+                        for ($i = 0; $i < 3 && $m; $i++) {
+                        }
+
+                        $after = $m;
+                        /** @psalm-check-type-exact $after = mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'variableNarrowedAndReassignedByAnIfKeepsTheTypesOfBothBranches' => [
+                'code' => '<?php
+                    function normalize(array|string|int $raw): array {
+                        if (!is_array($raw)) {
+                            $raw = [];
+                        }
+
+                        /** @psalm-check-type-exact $raw = array<array-key, mixed> */
+                        return $raw;
+                    }
+
+                    function toggle(): void {
+                        $flag = true;
+
+                        while (rand(0, 1)) {
+                            if ($flag) {
+                                $flag = false;
+                            } else {
+                                $flag = true;
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $flag = bool */
+                        echo 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'flagToggledByAnIfAndAnElseifKeepsBothValuesAfterTheLoop' => [
+                'code' => '<?php
+                    function toggle(): void {
+                        $flag = false;
+
+                        for ($i = 0; $i < 10; $i++) {
+                            if ($flag) {
+                                $flag = false;
+                            } elseif ($i > 8) {
+                                $flag = true;
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $flag = bool */;
+
+                        if ($flag) {
+                            echo "Flag set";
+                        }
+                    }
+
+                    class Config {}
+
+                    /** @param mixed $raw */
+                    function defaulted(?Config $config, $raw): void {
+                        if ($config === null) {
+                            $config = new Config();
+                        }
+
+                        /** @psalm-check-type-exact $config = Config */;
+
+                        if (!is_array($raw)) {
+                            $raw = [];
+                        }
+
+                        /** @psalm-check-type-exact $raw = array<array-key, mixed> */;
+                    }
+
+                    function pick(bool $flag, int $i): void {
+                        if ($flag) {
+                            $flag = false;
+                        } elseif ($i > 8) {
+                            $flag = true;
+                        }
+
+                        /** @psalm-check-type-exact $flag = bool */;
+                    }',
+            ],
             'variableAssignedSeveralTimesInTheForConditionHasTheLastAssignedType' => [
                 'code' => '<?php
                     for (; $value = 42, $value = rand(0, 1) === 1;) {
@@ -31,8 +181,28 @@ final class ForTest extends TestCase
                 'assertions' => [
                     '$value===' => 'bool',
                 ],
-                'ignored_issues' => ['UnusedVariable'],
+                'ignored_issues' => [],
                 'php_version' => '8.2',
+            ],
+            'variableDefinedBeforeAForAndAssignedSeveralTimesInItsConditionHasWhatTheLastConditionLeaves' => [
+                'code' => '<?php
+                    $value = "a";
+                    for (; $value = 42, $value = rand(0, 1) === 1;) {
+                        echo "again";
+                    }',
+                'assertions' => [
+                    '$value===' => 'false',
+                ],
+            ],
+            'variableDefinedBeforeAForAndAssignedInALaterConditionHasWhatTheLastConditionLeaves' => [
+                'code' => '<?php
+                    $value = "a";
+                    for (; print("x"), $value = random_int(0, 3);) {
+                        echo "again";
+                    }',
+                'assertions' => [
+                    '$value===' => '0',
+                ],
             ],
             'variableAssignedInALaterCommaSeparatedForConditionIsDefinedAfterTheLoop' => [
                 'code' => '<?php
@@ -265,6 +435,41 @@ final class ForTest extends TestCase
                         }
                     }',
             ],
+            'forLoopWithAlwaysTruthyLastConditionIsInfinite' => [
+                'code' => '<?php
+                    function g(): int {
+                        for ($i = 0; $i < 5, true; $i++) {
+                            if (rand(0, 1)) {
+                                return $i;
+                            }
+                        }
+                    }',
+            ],
+            'forLoopBodyOnlyGetsTheLastCondition' => [
+                'code' => '<?php
+                    function f(?int $a, int $n): void {
+                        for ($i = 0; $a !== null, $i < $n; $i++) {
+                            if ($a === null) {
+                                echo "null";
+                            }
+                        }
+                    }',
+            ],
+            'forLoopIsOnlyLeftByTheLastCondition' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? null : rand();
+                    for (; rand(0, 1), $a !== null;) {
+                        echo "";
+                    }
+                    $n = rand();
+                    for ($i = 0, $j = 0; $i < 10, $j < $n; $i++, $j++) {
+                        echo "";
+                    }',
+                'assertions' => [
+                    '$a===' => 'null',
+                    '$i===' => 'int<0, max>',
+                ],
+            ],
         ];
     }
 
@@ -275,6 +480,38 @@ final class ForTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'forBreakBeforeDefinitionAndBreakAfter' => [
+                'code' => '<?php
+                    for ($i = 0; $i < 4; $i++) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+
+                        $car = "Volvo";
+
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    echo $car;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:26',
+            ],
+            'flagFalseInEveryBranchThatChangesItIsStillAlwaysFalsy' => [
+                'code' => '<?php
+                    function check(bool $flag, int $i): void {
+                        if ($flag) {
+                            $flag = false;
+                        } elseif ($i > 8) {
+                            $flag = false;
+                        }
+
+                        if ($flag) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'variableAssignedAfterAnInnerLoopBreakingTheOuterOneIsPossiblyUndefined' => [
                 'code' => '<?php
                     function f(): void {

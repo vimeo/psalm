@@ -20,6 +20,32 @@ final class IntersectionTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'genericWithoutArgumentsInIntersectionGetsItsDefaultsLikeAlone' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @template T of object */
+                    interface Coll {}
+
+                    abstract class B {
+                        /** @return Coll */
+                        abstract public function alone(): Coll;
+
+                        /** @return I&Coll */
+                        abstract public function both(): I;
+                    }
+
+                    function b(): B {
+                        throw new Exception();
+                    }
+
+                    $alone = b()->alone();
+                    $both = b()->both();',
+                'assertions' => [
+                    '$alone===' => 'Coll<object>',
+                    '$both===' => 'I&Coll<object>',
+                ],
+            ],
             'propertyFetchOfTheSecondClassOfAnIntersectionWithAnInterface' => [
                 'code' => '<?php
                     interface I {}
@@ -594,7 +620,6 @@ final class IntersectionTypeTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidArgument',
-                'error_levels' => ['UnsafeInstantiation', 'MixedMethodCall'],
             ],
             'classStringOfCallableObjectWithInvalidStringArgument' => [
                 'code' => '<?php

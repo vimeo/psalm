@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\FileManipulation;
 
+use Psalm\Internal\FileLink;
 use SebastianBergmann\Diff\Differ;
 use SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder;
 
@@ -11,9 +12,6 @@ use function array_pop;
 use function array_slice;
 use function count;
 use function explode;
-use function get_cfg_var;
-use function ini_get;
-use function is_string;
 use function max;
 use function min;
 use function ord;
@@ -22,7 +20,6 @@ use function str_ends_with;
 use function strlen;
 use function strrev;
 use function strspn;
-use function strtr;
 use function substr;
 use function substr_count;
 
@@ -104,6 +101,9 @@ final class UnifiedDiffRenderer
         return min($line, max(1, $last_line));
     }
 
+    /**
+     * @psalm-external-mutation-free
+     */
     private function formatTitle(string $title, string $absolute_path, int $line): string
     {
         $title = "\e[1m" . $title . self::RESET;
@@ -112,18 +112,7 @@ final class UnifiedDiffRenderer
             return $title;
         }
 
-        $link_format = ini_get('xdebug.file_link_format');
-        if (!is_string($link_format) || $link_format === '') {
-            $link_format = get_cfg_var('xdebug.file_link_format');
-        }
-
-        if (!is_string($link_format) || $link_format === '') {
-            $link_format = 'file://%f#L%l';
-        }
-
-        $link = strtr($link_format, ['%f' => $absolute_path, '%l' => (string) $line]);
-
-        return "\e]8;;" . $link . "\e\\" . $title . "\e]8;;\e\\";
+        return FileLink::hyperlink($title, $absolute_path, $line);
     }
 
     /**
