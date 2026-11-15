@@ -1672,7 +1672,7 @@ final class AssertionFinder
 
             if ($left_type && $left_type->isSingle()) {
                 foreach ($left_type->getAtomicTypes() as $type_part) {
-                    if ($type_part instanceof TClassString) {
+                    if ($type_part instanceof TClassString || $type_part instanceof TLiteralClassString) {
                         $left_class_string_t = true;
                         break;
                     }
@@ -1706,7 +1706,7 @@ final class AssertionFinder
 
             if ($right_type && $right_type->isSingle()) {
                 foreach ($right_type->getAtomicTypes() as $type_part) {
-                    if ($type_part instanceof TClassString) {
+                    if ($type_part instanceof TClassString || $type_part instanceof TLiteralClassString) {
                         $right_class_string_t = true;
                         break;
                     }
@@ -2787,13 +2787,16 @@ final class AssertionFinder
             $var_type = $whichclass_expr->value;
         } elseif ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $whichclass_expr->class instanceof PhpParser\Node\Name
+            && $whichclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($whichclass_expr->name->name) === 'class'
         ) {
             $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $whichclass_expr->class,
                 $source->getAliases(),
             );
         } else {
-            throw new UnexpectedValueException('Shouldn’t get here');
+            // a constant other than ::class says nothing about the class
+            return [];
         }
 
         if (!isset(ClassLikeAnalyzer::GETTYPE_TYPES[$var_type])) {
@@ -2853,13 +2856,16 @@ final class AssertionFinder
             $var_type = $whichclass_expr->value;
         } elseif ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $whichclass_expr->class instanceof PhpParser\Node\Name
+            && $whichclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($whichclass_expr->name->name) === 'class'
         ) {
             $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $whichclass_expr->class,
                 $source->getAliases(),
             );
         } else {
-            throw new UnexpectedValueException('Shouldn’t get here');
+            // a constant other than ::class says nothing about the class
+            return [];
         }
 
         if ($var_name && $var_type) {
@@ -2907,6 +2913,8 @@ final class AssertionFinder
             );
         } elseif ($getclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $getclass_expr->class instanceof PhpParser\Node\Expr
+            && $getclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($getclass_expr->name->name) === 'class'
         ) {
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $getclass_expr->class,
@@ -2921,6 +2929,8 @@ final class AssertionFinder
             $var_type = $whichclass_expr->value;
         } elseif ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $whichclass_expr->class instanceof PhpParser\Node\Name
+            && $whichclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($whichclass_expr->name->name) === 'class'
         ) {
             $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $whichclass_expr->class,
@@ -2945,6 +2955,9 @@ final class AssertionFinder
                                 $type_part->defining_class,
                             ),
                         )]];
+                    } elseif ($type->isSingle() && $type_part instanceof TLiteralClassString) {
+                        // not for a `class-string<Bar>`: a different class can still be a subclass of Bar
+                        $if_types[$var_name] = [[new IsClassNotEqual($type_part->value)]];
                     }
                 }
             }
@@ -3584,13 +3597,16 @@ final class AssertionFinder
             $var_type = $whichclass_expr->value;
         } elseif ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $whichclass_expr->class instanceof PhpParser\Node\Name
+            && $whichclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($whichclass_expr->name->name) === 'class'
         ) {
             $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $whichclass_expr->class,
                 $source->getAliases(),
             );
         } else {
-            throw new UnexpectedValueException('Shouldn’t get here');
+            // a constant other than ::class says nothing about the class
+            return [];
         }
 
         if ($var_name && $var_type) {
@@ -3644,6 +3660,8 @@ final class AssertionFinder
             );
         } elseif ($getclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $getclass_expr->class instanceof PhpParser\Node\Expr
+            && $getclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($getclass_expr->name->name) === 'class'
         ) {
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $getclass_expr->class,
@@ -3656,6 +3674,8 @@ final class AssertionFinder
 
         if ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
             && $whichclass_expr->class instanceof PhpParser\Node\Name
+            && $whichclass_expr->name instanceof PhpParser\Node\Identifier
+            && strtolower($whichclass_expr->name->name) === 'class'
         ) {
             $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
                 $whichclass_expr->class,
@@ -3700,6 +3720,13 @@ final class AssertionFinder
                                 $type_part->defining_class,
                             )),
                         ]];
+                    } elseif ($type->isSingle() && $type_part instanceof TLiteralClassString) {
+                        $if_types[$var_name] = [[new IsClassEqual($type_part->value)]];
+                    } elseif ($type->isSingle() && $type_part instanceof TClassString && $type_part->as_type) {
+                        // the class of the object is the class-string, so the object is one of its bound; as for
+                        // `instanceof $cs`, the check isn't redundant and its negation tells nothing: the object
+                        // may be of another subclass of the bound
+                        $if_types[$var_name] = [[new IsIdentical($type_part->as_type)]];
                     }
                 }
             }

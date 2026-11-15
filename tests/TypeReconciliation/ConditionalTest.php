@@ -154,6 +154,77 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'getClassComparedToAClassStringConstantNarrowsToItsBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    final class Holder {
+                        /** @var class-string<Bar> */
+                        public const TYPE = Bar::class;
+
+                        public function check(Foo|Bar $x): void {
+                            if (get_class($x) === static::TYPE) {
+                                /** @psalm-check-type-exact $x = Bar */
+                            }
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classComparedToAClassStringOfANonFinalClassNarrowsOnlyWhereItIsTrue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Bar {}
+                    final class Sub extends Bar {}
+                    final class Foo {}
+
+                    /** @param class-string<Bar> $cs */
+                    function f(Bar $x, string $cs): void {
+                        if ($x::class === $cs) {
+                            /** @psalm-check-type-exact $x = Bar */
+                            echo 1;
+                        }
+                    }
+
+                    /** @param class-string<Bar> $cs */
+                    function g(Bar|Foo $x, string $cs): void {
+                        if ($x::class === $cs) {
+                            /** @psalm-check-type-exact $x = Bar */
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $x = Bar|Foo */
+                            echo 2;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classNotEqualToALiteralClassStringConstantNarrowsAfterAnEarlyReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Holder {
+                        private const CLS = \stdClass::class;
+
+                        public function check(object $o): void {
+                            if ($o::class !== self::CLS) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $o = stdClass */
+                            echo 1;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'ifSkippedByAnotherOperandKeepsTheValuesThatSkipIt' => [
                 'code' => '<?php
                     final class A {}
@@ -5102,6 +5173,74 @@ final class ConditionalTest extends TestCase
                             }
 
                             return "Not Zero";
+                        }
+                    }',
+            ],
+            'classEqualToAClassConstantIsNotTheClassOfTheConstantFetch' => [
+                'code' => '<?php
+                    class Bar {}
+
+                    class Foo {
+                        /** @var class-string<Bar> */
+                        protected const TYPE = Bar::class;
+
+                        public function check(object $bar): void {
+                            assert($bar::class === static::TYPE);
+                            /** @psalm-check-type-exact $bar = Bar */
+                        }
+
+                        public function checkSelf(object $bar): void {
+                            if (self::TYPE === $bar::class) {
+                                /** @psalm-check-type-exact $bar = Bar */
+                            }
+                        }
+                    }',
+            ],
+            'typeNameFunctionsComparedToAClassConstant' => [
+                'code' => '<?php
+                    class A {
+                        private const TYPE = "int";
+                        private const GETTYPE = "integer";
+
+                        public function f(mixed $x): void {
+                            if (get_debug_type($x) === self::TYPE) {
+                                /** @psalm-check-type-exact $x = mixed */
+                                echo 1;
+                            }
+
+                            if (get_debug_type($x) !== self::TYPE) {
+                                /** @psalm-check-type-exact $x = mixed */
+                                echo 2;
+                            }
+
+                            if (gettype($x) === self::GETTYPE) {
+                                /** @psalm-check-type-exact $x = mixed */
+                                echo 3;
+                            }
+
+                            if (gettype($x) !== self::GETTYPE) {
+                                /** @psalm-check-type-exact $x = mixed */
+                                echo 4;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classEqualToTheClassOfAnotherClassStillNarrows' => [
+                'code' => '<?php
+                    class Bar {}
+
+                    class Foo {
+                        public function check(object $bar): void {
+                            assert($bar::class === static::class);
+                            /** @psalm-check-type-exact $bar = Foo */
+                        }
+
+                        public function checkOther(object $bar): void {
+                            assert($bar::class === Bar::class);
+                            /** @psalm-check-type-exact $bar = Bar */
                         }
                     }',
             ],
