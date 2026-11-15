@@ -361,6 +361,61 @@ final class TernaryAnalyzer
             }
         }
 
+        self::mergeRedefinedVars(
+            $statements_analyzer,
+            $context,
+            $if_context,
+            $t_else_context,
+            $if_start_vars,
+            $if_start_assigned_var_ids,
+            $else_start_vars,
+            $else_start_assigned_var_ids,
+            $assigned_in_conditional_var_ids,
+            $assigned_in_conditional_var_ids + $else_rederived_var_ids,
+        );
+
+        $context->vars_possibly_in_scope = [
+            ...$context->vars_possibly_in_scope,
+            ...$if_context->vars_possibly_in_scope,
+            ...$t_else_context->vars_possibly_in_scope,
+        ];
+
+        // every way past the ternary goes through one of its branches
+        $context->null_array_offsets_read = array_intersect_key(
+            $if_context->null_array_offsets_read,
+            $t_else_context->null_array_offsets_read,
+        );
+
+        $context->cond_referenced_var_ids = [
+            ...$context->cond_referenced_var_ids,
+            ...$t_else_context->cond_referenced_var_ids,
+        ];
+
+        return self::setResultType($statements_analyzer, $stmt, $context);
+    }
+
+    /**
+     * Merges into the outer context the variables that the branches changed
+     *
+     * @param array<string, Union> $if_start_vars
+     * @param array<string, int> $if_start_assigned_var_ids
+     * @param array<string, Union> $else_start_vars
+     * @param array<string, int> $else_start_assigned_var_ids
+     * @param array<string, mixed> $if_condition_assigned_var_ids
+     * @param array<string, mixed> $else_condition_assigned_var_ids
+     */
+    private static function mergeRedefinedVars(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        Context $if_context,
+        Context $t_else_context,
+        array $if_start_vars,
+        array $if_start_assigned_var_ids,
+        array $else_start_vars,
+        array $else_start_assigned_var_ids,
+        array $if_condition_assigned_var_ids,
+        array $else_condition_assigned_var_ids,
+    ): void {
         $redef_var_ifs = array_keys($if_context->getRedefinedVars($context->vars_in_scope));
         $redef_var_else = array_keys($t_else_context->getRedefinedVars($context->vars_in_scope));
         $redef_all = array_intersect($redef_var_ifs, $redef_var_else);
@@ -370,7 +425,7 @@ final class TernaryAnalyzer
             $if_context,
             $if_start_vars,
             $if_start_assigned_var_ids,
-            $assigned_in_conditional_var_ids,
+            $if_condition_assigned_var_ids,
             $redef_var_ifs,
         );
         $else_narrowed_var_ids = self::getOnlyNarrowedVarIds(
@@ -378,7 +433,7 @@ final class TernaryAnalyzer
             $t_else_context,
             $else_start_vars,
             $else_start_assigned_var_ids,
-            $assigned_in_conditional_var_ids + $else_rederived_var_ids,
+            $else_condition_assigned_var_ids,
             $redef_var_else,
         );
 
@@ -445,25 +500,6 @@ final class TernaryAnalyzer
                 $t_else_context->vars_in_scope[$redef_var_else_id],
             );
         }
-
-        $context->vars_possibly_in_scope = [
-            ...$context->vars_possibly_in_scope,
-            ...$if_context->vars_possibly_in_scope,
-            ...$t_else_context->vars_possibly_in_scope,
-        ];
-
-        // every way past the ternary goes through one of its branches
-        $context->null_array_offsets_read = array_intersect_key(
-            $if_context->null_array_offsets_read,
-            $t_else_context->null_array_offsets_read,
-        );
-
-        $context->cond_referenced_var_ids = [
-            ...$context->cond_referenced_var_ids,
-            ...$t_else_context->cond_referenced_var_ids,
-        ];
-
-        return self::setResultType($statements_analyzer, $stmt, $context);
     }
 
     /**
@@ -500,6 +536,7 @@ final class TernaryAnalyzer
      * @param array<string, mixed> $condition_assigned_var_ids
      * @param list<string> $redefined_var_ids
      * @return array<string, true>
+     * @psalm-capabilities read-props
      */
     private static function getOnlyNarrowedVarIds(
         Context $outer_context,
