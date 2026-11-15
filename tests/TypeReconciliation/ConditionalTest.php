@@ -264,6 +264,20 @@ final class ConditionalTest extends TestCase
                         }
                     }
 
+                    function negatedOr(?string $s, bool $c): void {
+                        if (!(($t = $s) === null || $c)) {
+                            /** @psalm-check-type-exact $t = string */
+                            echo $t;
+                        }
+                    }
+
+                    function doubleNegatedAnd(?string $s, bool $c): void {
+                        if (!!(($t = $s) !== null && $c)) {
+                            /** @psalm-check-type-exact $t = string */
+                            echo $t;
+                        }
+                    }
+
                     function g(?int $a): void {
                         if (takesBool($a !== null && $a > 0)) {
                             /** @psalm-check-type-exact $a = int|null */
