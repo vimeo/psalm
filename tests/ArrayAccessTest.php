@@ -553,6 +553,64 @@ final class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testAFalseOffsetIsReportedOnceAndOnlyWhenItIsTheOnlyProblem(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param array<int, string> $a */
+                function onlyFalse(array $a): string { return $a[false]; }
+
+                /** @param array{a: int, b: int} $s */
+                function shape(array $s, string|false $k): int { return $s[$k]; }
+
+                /** @param array<int, string> $a */
+                function floatFalse(array $a, float|false $k): void { $a[$k] = "y"; }
+
+                /** @param array<int, string> $a */
+                function coalesceAssign(array $a, int|false $k): void { $a[$k] ??= "x"; }
+
+                /** @param list<string> $l */
+                function search(array $l): string { return $l[array_search("a", $l)]; }
+
+                /** @param array<int, string> $a */
+                function narrowed(array $a): string {
+                    $k = array_search("a", $a);
+                    if ($k !== false) {
+                        return $a[$k];
+                    }
+
+                    return "";
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $messages = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if (str_contains($issue->message, 'Cannot access')) {
+                $messages[] = $issue->line_from . ' ' . $issue->type . ': ' . $issue->message;
+            }
+        }
+
+        $this->assertSame(
+            [
+                '3 InvalidArrayOffset: Cannot access value on variable $a using a false offset, expecting array-key',
+                '6 InvalidArrayOffset: Cannot access value on variable $s using a false|string offset, '
+                    . 'expecting \'a\'|\'b\'',
+                '9 InvalidArrayOffset: Cannot access value on variable $a[$k] using a false|float offset, '
+                    . 'expecting array-key',
+                '12 PossiblyInvalidArrayOffset: Cannot access value on variable $a[$k] using a false|int offset, '
+                    . 'expecting array-key',
+                '15 PossiblyInvalidArrayOffset: Cannot access value on variable $l using possibly false offset '
+                    . 'false|int<0, max>, which is 0',
+            ],
+            $messages,
+        );
+    }
+
     public function testMessagesNameAnArrayWithoutVariable(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
@@ -3011,16 +3069,6 @@ final class ArrayAccessTest extends TestCase
                         $a[$k] = "x";
                     }',
                 'error_message' => 'PossiblyInvalidArrayOffset',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'falseOffsetRead' => [
-                'code' => '<?php
-                    /** @param array<int, string> $a */
-                    function f(array $a): string {
-                        return $a[false];
-                    }',
-                'error_message' => 'InvalidArrayOffset',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
