@@ -1180,6 +1180,28 @@ final class WhileTest extends TestCase
                         }
                     }',
             ],
+            'conditionNotRedundantWhenIfPopsArray' => [
+                'code' => '<?php
+                    function f(): void {
+                        $l = [1, 2];
+                        while ($l !== []) {
+                            if (rand(0, 1)) {
+                                array_pop($l);
+                            }
+                        }
+                    }',
+            ],
+            'conditionNotRedundantWhenIfShiftsArray' => [
+                'code' => '<?php
+                    function f(): void {
+                        $l = [1, 2];
+                        while ($l !== []) {
+                            if (rand(0, 1)) {
+                                array_shift($l);
+                            }
+                        }
+                    }',
+            ],
             'thornyLoop' => [
                 'code' => '<?php
 
