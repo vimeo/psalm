@@ -402,9 +402,6 @@ final class SprintfTest extends TestCase
                     $x = sprintf("hello", "abc");
                 ',
                 'error_message' => 'TooManyArguments',
-                'error_levels' => [
-                    'RedundantFunctionCall',
-                ],
             ],
             'sprintfPaddedComplexEmptyStringFormat' => [
                 'code' => '<?php

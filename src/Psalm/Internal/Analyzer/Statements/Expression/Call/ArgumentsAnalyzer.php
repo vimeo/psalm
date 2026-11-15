@@ -58,6 +58,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
@@ -1111,10 +1112,34 @@ final class ArgumentsAnalyzer
 
         $class_generic_params = [];
 
+        // what replaces the templates in the types of the parameters: a template of the function itself that an
+        // argument outside its bound gave is not replaced, as the bound is compared with the argument then
+        $param_class_generic_params = [];
+
         foreach ($template_result->lower_bounds as $template_name => $type_map) {
             foreach ($type_map as $class => $lower_bounds) {
-                if (count($lower_bounds) === 1) {
-                    $class_generic_params[$template_name][$class] = reset($lower_bounds)->type;
+                if (count($lower_bounds) !== 1) {
+                    continue;
+                }
+
+                $lower_bound_type = reset($lower_bounds)->type;
+                $class_generic_params[$template_name][$class] = $lower_bound_type;
+
+                $template_bound = $function_storage->template_types[$template_name][$class] ?? null;
+                $bound_comparison = new TypeComparisonResult();
+
+                if ($template_bound === null
+                    || UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $lower_bound_type,
+                        $template_bound,
+                        false,
+                        false,
+                        $bound_comparison,
+                    )
+                    || $bound_comparison->type_coerced
+                ) {
+                    $param_class_generic_params[$template_name][$class] = $lower_bound_type;
                 }
             }
         }
@@ -1174,7 +1199,7 @@ final class ArgumentsAnalyzer
                             ),
                             $default_type,
                             $context,
-                            $class_generic_params,
+                            $param_class_generic_params,
                             $template_result,
                             $specialize_taint,
                             $in_call_map,
@@ -1418,7 +1443,7 @@ final class ArgumentsAnalyzer
                     $arg,
                     $arg_value_type,
                     $context,
-                    $class_generic_params,
+                    $param_class_generic_params,
                     $template_result,
                     $specialize_taint,
                     $in_call_map,
@@ -2201,6 +2226,19 @@ final class ArgumentsAnalyzer
             && self::phpTakesArgumentByReference($method_id, $argument_offset);
 
         try {
+            // passing a variable by reference defines it, as null when it was not set
+            if ($var_id !== null
+                && $arg->value instanceof PhpParser\Node\Expr\Variable
+                && isset($context->vars_in_scope[$var_id])
+                && $context->vars_in_scope[$var_id]->possibly_undefined
+            ) {
+                $var_type = $context->vars_in_scope[$var_id]->setPossiblyUndefined(false, false);
+
+                $context->vars_in_scope[$var_id] = $var_type->isNullable() || $var_type->hasMixed()
+                    ? $var_type
+                    : $var_type->getBuilder()->addType(new TNull())->freeze();
+            }
+
             if (($var_id && isset($context->vars_in_scope[$var_id]))
                 || ($method_id
                     && in_array(
