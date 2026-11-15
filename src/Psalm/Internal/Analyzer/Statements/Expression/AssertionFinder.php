@@ -2235,7 +2235,7 @@ final class AssertionFinder
             if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                 $if_types[$var_name] = [[new IsNotType(new TNull())]];
             } else {
-                $if_types[$var_name] = [[new Truthy()]];
+                $if_types[$var_name] = [[new IsNotLooselyEqual(new TNull())]];
             }
         }
 
@@ -2960,7 +2960,7 @@ final class AssertionFinder
             if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
                 $if_types[$var_name] = [[new IsType(new TNull())]];
             } else {
-                $if_types[$var_name] = [[new Falsy()]];
+                $if_types[$var_name] = [[new IsLooselyEqual(new TNull())]];
             }
         }
 

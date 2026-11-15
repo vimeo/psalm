@@ -286,6 +286,7 @@ final class ArrayAssignmentAnalyzer
                     $root_type,
                     $context,
                     false,
+                    true,
                 );
 
                 self::trackPropertyElementImpurity($statements_analyzer, $root_array_expr, $context);
@@ -319,6 +320,7 @@ final class ArrayAssignmentAnalyzer
                 && !$root_type->possibly_undefined_from_try
                     ? $root_type->setPossiblyUndefined(false)
                     : $root_type;
+            $context->writeToReferencesPossiblyBound($root_var_id, $root_type, $codebase);
         }
 
         if ($root_array_expr instanceof PhpParser\Node\Expr\MethodCall
