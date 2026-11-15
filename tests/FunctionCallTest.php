@@ -182,6 +182,68 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'filterVarEmptyStringNullOnlyForAnEmptyInput' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string $s
+                     * @param non-empty-string $non_empty
+                     */
+                    function filter(string $s, string $non_empty, bool $flag): void {
+                        $stripped = filter_var($s, FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL | FILTER_FLAG_STRIP_LOW);
+                        $stripped_non_empty = filter_var(
+                            $non_empty,
+                            FILTER_DEFAULT,
+                            FILTER_FLAG_EMPTY_STRING_NULL | FILTER_FLAG_STRIP_LOW,
+                        );
+                        $literal = filter_var('abc', FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL);
+                        $false = filter_var(false, FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL);
+                        $bool = filter_var($flag, FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL);
+                        $unsafe_raw = filter_var($s, FILTER_UNSAFE_RAW, FILTER_FLAG_EMPTY_STRING_NULL);
+                        $encoded_literal = filter_var(
+                            'a&b',
+                            FILTER_DEFAULT,
+                            FILTER_FLAG_EMPTY_STRING_NULL | FILTER_FLAG_ENCODE_AMP,
+                        );
+                        $stripped_literal = filter_var('abc', FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL | FILTER_FLAG_STRIP_LOW);
+                        $null = filter_var(null, FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL);
+
+                        /** @psalm-check-type-exact $stripped = string|null */
+                        /** @psalm-check-type-exact $stripped_non_empty = string */
+                        /** @psalm-check-type-exact $literal = 'abc' */
+                        /** @psalm-check-type-exact $false = null */
+                        /** @psalm-check-type-exact $bool = '1'|null */
+                        /** @psalm-check-type-exact $unsafe_raw = non-empty-string|null */
+                        /** @psalm-check-type-exact $encoded_literal = non-empty-string */
+                        /** @psalm-check-type-exact $stripped_literal = string */
+                        /** @psalm-check-type-exact $null = null */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'filterVarEmptyStringNullOfTheDefaultFilter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string $s
+                     * @param non-empty-string $non_empty
+                     */
+                    function filter(string $s, string $non_empty): void {
+                        $maybe_empty = filter_var($s, options: FILTER_FLAG_EMPTY_STRING_NULL);
+                        $empty = filter_var('', options: FILTER_FLAG_EMPTY_STRING_NULL);
+                        $filled = filter_var($non_empty, options: FILTER_FLAG_EMPTY_STRING_NULL);
+
+                        /** @psalm-check-type-exact $maybe_empty = non-empty-string|null */
+                        /** @psalm-check-type-exact $empty = null */
+                        /** @psalm-check-type-exact $filled = non-empty-string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'classExistsComparedWithTrueGuardsTheRightOperandOfAnd' => [
                 'code' => '<?php
                     function check(): bool {
@@ -3751,6 +3813,17 @@ final class FunctionCallTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
                     . 'overload(string $a:int is not a valid method: Unterminated method in docblock for pick',
+            ],
+            'filterVarEmptyStringNullIsRedundantForAFilterWithoutIt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function filter(string $s): void {
+                        filter_var($s, FILTER_VALIDATE_INT, FILTER_FLAG_EMPTY_STRING_NULL);
+                    }
+                    PHP,
+                'error_message' => 'RedundantFlag',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'classExistsIdenticalToFalseDoesNotGuardTheRightOperandOfAnd' => [
                 'code' => '<?php

@@ -36,6 +36,8 @@ final class FileStorageCacheProvider
             $storage_dir . 'FunctionLikeStorage.php',
             $storage_dir . 'ClassLikeStorage.php',
             $storage_dir . 'MethodStorage.php',
+            $storage_dir . 'PropertyStorage.php',
+            $storage_dir . 'PropertyHookStorage.php',
             $storage_dir . 'FunctionLikeParameter.php',
         ];
 

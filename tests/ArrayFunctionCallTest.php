@@ -134,6 +134,30 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayMergeAfterAnArrayOfAnyLengthPutsTheNextElementsInTheRest' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<int, string> $generic
+                     * @param list<string> $list
+                     * @param non-empty-array<int, string> $non_empty
+                     */
+                    function f(array $generic, array $list, array $non_empty): void {
+                        $after_generic = array_merge($generic, ['x']);
+                        $after_list = array_merge($list, ['x'], ['y']);
+                        $after_non_empty = array_merge($non_empty, ['x']);
+                        $known = array_merge(['a'], ['x']);
+
+                        /** @psalm-check-type-exact $after_generic = non-empty-list<string> */
+                        /** @psalm-check-type-exact $after_list = non-empty-list<string> */
+                        /** @psalm-check-type-exact $after_non_empty = non-empty-list<string> */
+                        /** @psalm-check-type-exact $known = list{'a', 'x'} */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrayPopAndShiftOfAnArrayElementMakeItPossiblyEmpty' => [
                 'code' => '<?php
                     /**
@@ -974,9 +998,7 @@ final class ArrayFunctionCallTest extends TestCase
                     $c = array_merge($a, $b);
                     $d = array_merge($b, $a);',
                 'assertions' => [
-                    // todo: this first type is not entirely correct
-                    //'$c===' => "list{int|string, ...<int<0, max>, int|string>}",
-                    '$c===' => "list{string, ...<int|string>}",
+                    '$c===' => "non-empty-list<int|string>",
                     '$d===' => "list{string, ...<int|string>}",
                 ],
             ],
@@ -4520,6 +4542,46 @@ final class ArrayFunctionCallTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedArgument', 'MixedAssignment'],
                 'php_version' => '8.0',
+            ],
+            'arrayMergeAccumulatesInALoop' => [
+                'code' => '<?php
+                    $array = [];
+
+                    for ($i = 0; $i <= 5; ++$i) {
+                        $array = array_merge($array, [$i]);
+                    }',
+                'assertions' => [
+                    '$array===' => 'non-empty-list<int<0, 5>>',
+                ],
+            ],
+            'arrayMergeAfterAnArrayOfUnknownLengthPutsTheNextElementsInTheRest' => [
+                'code' => '<?php
+                    /** @param list{int, ...<string>} $list */
+                    function f(array $list): void {
+                        $merged = array_merge($list, [true]);
+                        /** @psalm-check-type-exact $merged = list{int, ...<string|true>} */
+                    }',
+            ],
+            'arrayMergeAfterStringKeysKeepsTheOffsetsOfTheNextList' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int> $generic
+                     * @param array{a: int, ...<string, int>} $shape
+                     */
+                    function f(array $generic, array $shape): void {
+                        $after_generic = array_merge($generic, ["x"]);
+                        $after_shape = array_merge($shape, ["x"]);
+                        /** @psalm-check-type-exact $after_generic = array{0: "x", ...<string, int>} */
+                        /** @psalm-check-type-exact $after_shape = array{0: "x", a: int, ...<string, int>} */
+                    }',
+            ],
+            'arrayMergeAfterAnOptionalElementPutsTheNextElementsInTheRest' => [
+                'code' => '<?php
+                    /** @param list{0?: string} $optional */
+                    function f(array $optional): void {
+                        $merged = array_merge($optional, [1]);
+                        /** @psalm-check-type-exact $merged = non-empty-list<1|string> */
+                    }',
             ],
             'arrayMapOnATemplateBoundedByAListKeepsTheList' => [
                 'code' => '<?php
