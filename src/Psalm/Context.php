@@ -291,6 +291,12 @@ final class Context
     public array $phantom_classes = [];
 
     /**
+     * Whether this is the context of an operand of `&&`, which passes the classes it checked with class_exists
+     * on to the operator it is part of
+     */
+    public bool $inside_logical_operand = false;
+
+    /**
      * Classes checked in a negated condition (`!class_exists($c)`): where that condition holds the class is missing,
      * so only the `::class` of it is valid
      *
