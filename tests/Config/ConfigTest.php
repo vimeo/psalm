@@ -2033,8 +2033,8 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                 $functions . '$handle = curl_init(); if ($handle !== false) { find((string) curl_exec($handle)); }',
                 'TaintedCustom',
             ],
-            'a taint added to input comes from a caught exception' => [
-                $functions . 'try { param(); } catch (Exception $e) { find(print_r($e, true)); }',
+            'a taint added to input comes from the trace of a caught exception' => [
+                $functions . 'try { param(); } catch (Exception $e) { find($e->getTraceAsString()); }',
                 'TaintedCustom',
             ],
             'a number holds no taint added to input' => [
