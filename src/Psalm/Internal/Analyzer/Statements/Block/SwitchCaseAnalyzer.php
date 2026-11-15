@@ -558,6 +558,8 @@ final class SwitchCaseAnalyzer
                         unset($switch_scope->redefined_vars[$var_id]);
                     }
                 }
+            } elseif ($case_exit_type === 'return_throw' || $ends_unless_breaking) {
+                $switch_scope->redefined_vars = array_intersect_key($case_scope->break_vars, $context->vars_in_scope);
             }
         }
 
