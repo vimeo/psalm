@@ -587,27 +587,24 @@ final class AssertionFinder
                         $source,
                     );
 
-                    $var_assertion_different = $var_type->getId() !== $intersection_type->getId();
-
-                    $all_assertions = [];
-                    foreach ($intersection_type->getAtomicTypes() as $atomic_type) {
-                        $all_assertions[] = new IsIdentical($atomic_type);
-                    }
-
-                    if ($var_name_left && $var_assertion_different) {
-                        $if_types[$var_name_left] = [$all_assertions];
-                    }
-
                     $var_name_right = ExpressionIdentifier::getExtendedVarId(
                         $conditional->right,
                         $this_class_name,
                         $source,
                     );
 
-                    $other_assertion_different = $other_type->getId() !== $intersection_type->getId();
+                    if ($var_name_left && $var_type->getId() !== $intersection_type->getId()) {
+                        $if_types[$var_name_left] = [self::getIdenticalAssertions(
+                            $intersection_type,
+                            $var_name_right ?? self::getOperandId($conditional->right, $this_class_name, $source),
+                        )];
+                    }
 
-                    if ($var_name_right && $other_assertion_different) {
-                        $if_types[$var_name_right] = [$all_assertions];
+                    if ($var_name_right && $other_type->getId() !== $intersection_type->getId()) {
+                        $if_types[$var_name_right] = [self::getIdenticalAssertions(
+                            $intersection_type,
+                            $var_name_left ?? self::getOperandId($conditional->left, $this_class_name, $source),
+                        )];
                     }
 
                     return $if_types ? [$if_types] : [];
@@ -912,8 +909,16 @@ final class AssertionFinder
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[new HasMethod($expr->getArgs()[1]->value->value)]];
             }
-        } elseif (self::hasInArrayCheck($expr) && $source instanceof StatementsAnalyzer) {
-            return self::getInarrayAssertions($expr, $source, $first_var_name);
+        } elseif (self::hasInArrayCheck($expr)
+            && $source instanceof StatementsAnalyzer
+            && isset($expr->getArgs()[1])
+        ) {
+            return self::getInarrayAssertions(
+                $expr,
+                $source,
+                $first_var_name,
+                self::getOperandId($expr->getArgs()[1]->value, $this_class_name, $source),
+            );
         } elseif (self::hasArrayKeyExistsCheck($expr)) {
             return self::getArrayKeyExistsAssertions(
                 $expr,
@@ -1434,6 +1439,12 @@ final class AssertionFinder
         FileSource $source,
     ): array {
         if ($stmt->class instanceof PhpParser\Node\Name) {
+            // no object is an instance of `iterable` (a reserved word reported where it is analysed): the check
+            // says nothing about the variable, instead of being resolved to the type iterable
+            if (strtolower($stmt->class->toString()) === 'iterable') {
+                return [];
+            }
+
             if (!in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)) {
                 $instanceof_class = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $stmt->class,
@@ -2909,6 +2920,7 @@ final class AssertionFinder
 
             $other_type = $source->node_data->getType($conditional->left);
             $var_type = $source->node_data->getType($conditional->right);
+            $var_type_expr = $conditional->right;
         } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $conditional->right,
@@ -2918,12 +2930,14 @@ final class AssertionFinder
 
             $var_type = $source->node_data->getType($conditional->left);
             $other_type = $source->node_data->getType($conditional->right);
+            $var_type_expr = $conditional->left;
         } else {
             throw new UnexpectedValueException('$typed_value_position value');
         }
 
         if ($var_type) {
             if ($var_name) {
+                $var_type_operand_id = self::getOperandId($var_type_expr, $this_class_name, $source);
                 $not_identical = $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
                     || ($other_type
                         && (($var_type->isInt() && $other_type->isInt())
@@ -2934,9 +2948,15 @@ final class AssertionFinder
 
                 foreach ($var_type->getAtomicTypes() as $atomic_var_type) {
                     if ($not_identical) {
-                        $anded_types[] = [new IsNotIdentical($atomic_var_type)];
+                        $anded_types[] = [new IsNotIdentical(
+                            $atomic_var_type,
+                            self::getComparand($atomic_var_type, $var_type_operand_id),
+                        )];
                     } else {
-                        $anded_types[] = [new IsNotLooselyEqual($atomic_var_type)];
+                        $anded_types[] = [new IsNotLooselyEqual(
+                            $atomic_var_type,
+                            self::getComparand($atomic_var_type, $var_type_operand_id),
+                        )];
                     }
                 }
 
@@ -3645,6 +3665,8 @@ final class AssertionFinder
 
             $other_type = $source->node_data->getType($conditional->left);
             $var_type = $source->node_data->getType($conditional->right);
+            $var_type_expr = $conditional->right;
+            $other_type_expr = $conditional->left;
         } elseif ($typed_value_position === self::ASSIGNMENT_TO_LEFT) {
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $conditional->right,
@@ -3660,6 +3682,8 @@ final class AssertionFinder
 
             $var_type = $source->node_data->getType($conditional->left);
             $other_type = $source->node_data->getType($conditional->right);
+            $var_type_expr = $conditional->left;
+            $other_type_expr = $conditional->right;
         } else {
             throw new UnexpectedValueException('$typed_value_position value');
         }
@@ -3679,12 +3703,15 @@ final class AssertionFinder
             && count($var_type->getAtomicTypes()) === 1
         ) {
             $orred_types = [];
+            $var_type_operand_id = self::getOperandId($var_type_expr, $this_class_name, $source);
 
             foreach ($var_type->getAtomicTypes() as $atomic_var_type) {
+                $comparand = self::getComparand($atomic_var_type, $var_type_operand_id);
+
                 if ($identical) {
-                    $orred_types[] = new IsIdentical($atomic_var_type);
+                    $orred_types[] = new IsIdentical($atomic_var_type, $comparand);
                 } else {
-                    $orred_types[] = new IsLooselyEqual($atomic_var_type);
+                    $orred_types[] = new IsLooselyEqual($atomic_var_type, $comparand);
                 }
             }
 
@@ -3698,12 +3725,15 @@ final class AssertionFinder
             && $other_var_name[0] === '$' //don't try to assert on constant or other, it's too perf consuming
         ) {
             $orred_types = [];
+            $other_type_operand_id = self::getOperandId($other_type_expr, $this_class_name, $source);
 
             foreach ($other_type->getAtomicTypes() as $atomic_other_type) {
+                $comparand = self::getComparand($atomic_other_type, $other_type_operand_id);
+
                 if ($identical) {
-                    $orred_types[] = new IsIdentical($atomic_other_type);
+                    $orred_types[] = new IsIdentical($atomic_other_type, $comparand);
                 } else {
-                    $orred_types[] = new IsLooselyEqual($atomic_other_type);
+                    $orred_types[] = new IsLooselyEqual($atomic_other_type, $comparand);
                 }
             }
 
@@ -3858,6 +3888,52 @@ final class AssertionFinder
     }
 
     /**
+     * What identifies the value of an operand: its id, or else where it is
+     */
+    private static function getOperandId(
+        PhpParser\Node\Expr $expr,
+        ?string $this_class_name,
+        StatementsAnalyzer $source,
+    ): string {
+        return ExpressionIdentifier::getExtendedVarId($expr, $this_class_name, $source)
+            ?? '*' . (int) $expr->getAttribute('startFilePos') . ':' . (int) $expr->getAttribute('endFilePos');
+    }
+
+    /**
+     * The operand a value compared with an operand of this type is identical to, unless the type has a single value
+     * and says it all: two comparisons with different values of the same type are not each other's negation
+     *
+     * @psalm-pure
+     */
+    private static function getComparand(Atomic $type, string $operand_id): ?string
+    {
+        return $type instanceof TLiteralInt
+            || $type instanceof TLiteralFloat
+            || $type instanceof TLiteralString
+            || $type instanceof TEnumCase
+            || $type instanceof TNull
+            || $type instanceof TTrue
+            || $type instanceof TFalse
+            ? null
+            : $operand_id;
+    }
+
+    /**
+     * @return non-empty-list<IsIdentical>
+     * @psalm-pure
+     */
+    private static function getIdenticalAssertions(Union $type, string $operand_id): array
+    {
+        $assertions = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            $assertions[] = new IsIdentical($atomic_type, self::getComparand($atomic_type, $operand_id));
+        }
+
+        return $assertions;
+    }
+
+    /**
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
@@ -3865,6 +3941,7 @@ final class AssertionFinder
         PhpParser\Node\Expr\FuncCall $expr,
         StatementsAnalyzer $source,
         ?string $first_var_name,
+        string $haystack,
     ): array {
         $if_types = [];
 
@@ -3898,7 +3975,7 @@ final class AssertionFinder
                         //
                         // NOTE: the negation of the negation is the original assertion.
                         if ($value_type->getId() !== '' && !$value_type->isMixed() && !$value_type->hasTemplate()) {
-                            $assertions[] = new InArray($value_type);
+                            $assertions[] = new InArray($value_type, $haystack);
                         }
                     } else {
                         foreach ($value_type->getAtomicTypes() as $atomic_value_type) {
@@ -3917,7 +3994,7 @@ final class AssertionFinder
                                 // mixed doesn't tell us anything and can be omitted.
                                 //
                                 // For the meaning of in-array, see the above comment.
-                                $assertions[] = new InArray($value_type);
+                                $assertions[] = new InArray($value_type, $haystack);
                             }
                         }
                     }
