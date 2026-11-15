@@ -122,6 +122,11 @@ final class Cache
         string $subdir,
         array $dependencies = [],
         private readonly bool $persistent = true,
+        /**
+         * Whether entries stay in memory without a disk cache even when arrayCache is off, as the only copy.
+         * Callers that can compute the entries again on a miss pass false.
+         */
+        private readonly bool $keep_without_disk = true,
     ) {
         $this->serializer = $config->getCacheSerializer();
         $this->consolidated_serializer = $this->serializer;
@@ -517,9 +522,9 @@ final class Cache
                 $payload,
             );
         }
-        // Without a disk cache the array is the only copy. With one, keep it only if arrayCache is on,
-        // otherwise a cold run holds every parsed AST and storage object in memory for nothing.
-        if (!$this->persistent || $this->arrayCache) {
+        // Without a disk cache the array is the only copy. Otherwise keep it only if arrayCache is on,
+        // or a run holds every parsed AST and storage object in memory for nothing.
+        if ($this->arrayCache || (!$this->persistent && $this->keep_without_disk)) {
             $this->cache[$key] = [$hash, $item];
         }
     }

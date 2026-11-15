@@ -26,15 +26,24 @@ final class ParserCacheProvider
      */
     private readonly Cache $stmtCache;
 
-    public function __construct(Config $config, string $composerLock, bool $persistent = true)
-    {
+    /**
+     * @param bool $tracks_changes whether hasChanged() must find the files changed since they were parsed, as when
+     *     the language server reloads them. If not, without a disk cache and with arrayCache off, the statements
+     *     are not kept: a file needed again is parsed again.
+     */
+    public function __construct(
+        Config $config,
+        string $composerLock,
+        bool $persistent = true,
+        bool $tracks_changes = true,
+    ) {
         $deps = [
             $composerLock,
             PHP_PARSER_VERSION,
             (string) filemtime(__DIR__.DIRECTORY_SEPARATOR.'StatementsProvider.php'),
         ];
 
-        $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY, $deps, $persistent);
+        $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY, $deps, $persistent, $tracks_changes);
     }
 
     public function consolidate(): void

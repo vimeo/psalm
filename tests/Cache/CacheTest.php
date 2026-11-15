@@ -6,6 +6,7 @@ namespace Psalm\Tests\Cache;
 
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PhpParser\Node\Stmt\Nop;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -292,6 +293,117 @@ final class CacheTest extends TestCase
         yield 'persistent with array cache' => [true, true, true];
         yield 'persistent without array cache' => [true, false, false];
         yield 'not persistent without array cache' => [false, false, true];
+    }
+
+    #[DataProvider('provideParsedStatementsRetention')]
+    public function testParsedStatementsRetention(
+        bool $persistent,
+        bool $array_cache,
+        bool $tracks_changes,
+        bool $kept,
+    ): void {
+        $config = $this->newConfig();
+        $config->array_cache = $array_cache;
+
+        $provider = new ParserCacheProvider($config, '', $persistent, $tracks_changes);
+        $provider->saveStatementsToCache(self::KEY, '<?php ;', [new Nop()], []);
+
+        self::assertSame($kept, $provider->loadStatementsFromCache(self::KEY, '<?php ;') !== null);
+        self::assertSame($kept, $provider->hasChanged(self::KEY, '<?php echo 1;'));
+    }
+
+    /**
+     * @return iterable<string, array{bool, bool, bool, bool}>
+     * @psalm-pure
+     */
+    public static function provideParsedStatementsRetention(): iterable
+    {
+        yield 'no disk cache, no array cache, changes not tracked' => [false, false, false, false];
+        yield 'no disk cache, no array cache, changes tracked' => [false, false, true, true];
+        yield 'no disk cache, array cache, changes not tracked' => [false, true, false, true];
+        yield 'disk cache, no array cache, changes not tracked' => [true, false, false, true];
+    }
+
+    /**
+     * Statements that are not kept are parsed again: by the scanner, then by the analyzer. Changes are still
+     * found between runs where they are tracked.
+     */
+    #[DataProvider('provideAnalysisWithoutDiskCacheOrArrayCache')]
+    public function testAnalysisWithoutDiskCacheOrArrayCache(bool $tracks_changes): void
+    {
+        $config = Config::loadFromXML(
+            __DIR__ . DIRECTORY_SEPARATOR . 'test_base_dir',
+            <<<'XML'
+                <?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>
+                XML,
+        );
+        $config->setIncludeCollector(new IncludeCollector());
+        $config->array_cache = false;
+
+        $file_provider = new FakeFileProvider();
+        $providers = new Providers(
+            $file_provider,
+            new ParserCacheProvider($config, '', false, $tracks_changes),
+            new FileStorageCacheProvider($config, '', false),
+            new ClassLikeStorageCacheProvider($config, '', false),
+            new FileReferenceCacheProvider($config, '', false),
+            new ProjectCacheProvider(),
+        );
+
+        $a_path = $config->base_dir . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php';
+        $b_path = $config->base_dir . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php';
+        $file_provider->registerFile(
+            $a_path,
+            '<?php final class A { public function foo(): int { return (new B)->bar(); } }',
+        );
+        $file_provider->registerFile(
+            $b_path,
+            '<?php final class B { public function bar(): string { return ""; } }',
+        );
+
+        $analyze = static function () use ($config, $providers): array {
+            RuntimeCaches::clearAll();
+            $project_analyzer = new ProjectAnalyzer($config, $providers);
+            $project_analyzer->check($config->base_dir, true);
+            $project_analyzer->finish(microtime(true), PSALM_VERSION);
+
+            $types = [];
+            foreach (IssueBuffer::getIssuesData() as $issues) {
+                foreach ($issues as $issue) {
+                    $types[] = $issue->type;
+                }
+            }
+            sort($types);
+
+            return $types;
+        };
+
+        self::assertSame(['InvalidReturnStatement', 'InvalidReturnType'], $analyze());
+
+        if (!$tracks_changes) {
+            return;
+        }
+
+        $file_provider->registerFile(
+            $b_path,
+            '<?php final class B { public function bar(): int { return 1; } }',
+        );
+        self::assertSame([], $analyze());
+    }
+
+    /**
+     * @return iterable<string, array{bool}>
+     * @psalm-pure
+     */
+    public static function provideAnalysisWithoutDiskCacheOrArrayCache(): iterable
+    {
+        yield 'changes not tracked' => [false];
+        yield 'changes tracked' => [true];
     }
 
     /** Callers such as ParserCacheProvider keep the previous file contents as the hash to compare them */

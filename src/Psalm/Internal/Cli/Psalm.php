@@ -726,7 +726,7 @@ final class Psalm
         if ($config->cache_directory === null || isset($options['i'])) {
             $providers = new Providers(
                 new FileProvider,
-                new ParserCacheProvider($config, Composer::getLockFile($current_dir), false),
+                new ParserCacheProvider($config, Composer::getLockFile($current_dir), false, false),
                 new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), false),
                 new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), false),
                 new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), false),
@@ -738,7 +738,7 @@ final class Psalm
 
             $providers = new Providers(
                 new FileProvider,
-                new ParserCacheProvider($config, Composer::getLockFile($current_dir), !$no_file_cache),
+                new ParserCacheProvider($config, Composer::getLockFile($current_dir), !$no_file_cache, false),
                 new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), !$no_reflection_cache),
                 new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), !$no_reflection_cache),
                 new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), !$no_reference_cache),

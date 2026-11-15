@@ -336,6 +336,8 @@ When `false`, Psalm will disable usage of the array cache.
 
 The array cache is used together with the file cache to avoid re-loading cache entries when re-scanning the same file, which offers a nice performance improvement.
 
+With `--no-cache` or `--no-file-cache`, the array cache keeps the parsed statements of every file so that they are not parsed again. When `false`, `psalm` parses them again when needed instead, which uses less memory.
+
 A cache created by [`--consolidate-cache`](./command_line_usage.md#consolidating-the-cache) is only read when the array cache is enabled.
 
 Defaults to `true`.
