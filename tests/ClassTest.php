@@ -112,6 +112,33 @@ final class ClassTest extends TestCase
                         return new $class(val: 1, name: "a");
                     }',
             ],
+            'classStringNewOfAnIntersectionKeepsTheIntersection' => [
+                'code' => '<?php
+                    interface I {
+                        public function i(): void;
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        public function __construct(public int $v = 0) {}
+                    }
+
+                    /**
+                     * @return class-string<A&I>
+                     */
+                    function getClass(): string {
+                        throw new RuntimeException();
+                    }
+
+                    $c = getClass();
+                    $x = new $c(1);
+                    $x->i();',
+                'assertions' => [
+                    '$x===' => 'A&I',
+                ],
+            ],
             'classStringNewOfAnAbstractClassIsNotAnAbstractInstantiation' => [
                 'code' => '<?php
                     /**
