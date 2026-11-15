@@ -104,6 +104,7 @@ final class IfElseAnalyzer
         $branch_point = $context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
 
         $pre_cond_reconciled_clauses = $context->reconciled_expression_clauses;
+        $pre_cond_clauses = $context->clauses;
 
         $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
 
@@ -179,10 +180,17 @@ final class IfElseAnalyzer
         $entry_clauses = $context->clauses;
 
         // what the earlier conditions said of a variable the condition assigns is not true of the new value: the
-        // body does not get those clauses (the paradox check below drops them per operand by itself)
+        // body does not get those clauses (the paradox check below drops them per operand by itself). The clauses
+        // the condition's own assignments added are about the new value.
+        $cond_added_clauses = IfConditionalAnalyzer::getClausesAddedByCondition($pre_cond_clauses, $entry_clauses);
         $body_entry_clauses = [];
 
         foreach ($entry_clauses as $c) {
+            if (in_array($c, $cond_added_clauses, true)) {
+                $body_entry_clauses[] = $c;
+                continue;
+            }
+
             foreach ($c->possibilities as $key => $_value) {
                 foreach ($assigned_in_conditional_var_ids as $conditional_assigned_var_id => $_) {
                     if (preg_match('/^' . preg_quote($conditional_assigned_var_id, '/') . '(\[|-|$)/', $key)) {

@@ -58,6 +58,68 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'anIfConditionAssigningAnAndKeepsTheNarrowingOfItsOperands' => [
+                'code' => '<?php
+                    function takesInt(int $x): void {}
+
+                    function f(?int $min, int $w): bool {
+                        if ($wrapped = $min && $w > 3) {
+                            takesInt($min);
+                        }
+
+                        return $wrapped;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'anIfConditionAssigningAComparisonKeepsTheNarrowingOfItsOperand' => [
+                'code' => '<?php
+                    function f(?float $a): void {
+                        if ($r = $a !== null && $a > 1.0) {
+                            /** @psalm-check-type-exact $a = float */
+                            echo $a - 1.0;
+                        }
+                    }',
+            ],
+            'anIfConditionReassigningAVariableKeepsOnlyTheClausesOfItsNewValue' => [
+                'code' => '<?php
+                    function f(?int $min, ?int $other): void {
+                        $r = $other !== null;
+
+                        if ($r = $min !== null) {
+                            /** @psalm-check-type-exact $min = int */
+                            echo $min;
+                            /** @psalm-check-type-exact $other = int|null */
+                            echo (int) $other;
+                        }
+                    }',
+            ],
+            'anElseifConditionAssigningAnAndKeepsTheNarrowingOfItsOperands' => [
+                'code' => '<?php
+                    function f(?int $min, int $w, bool $b): void {
+                        if ($b) {
+                            echo 1;
+                        } elseif ($r = $min !== null && $w > 3) {
+                            /** @psalm-check-type-exact $min = int */
+                            echo $min;
+                        }
+                    }',
+            ],
+            'anElseifConditionReassigningAVariableKeepsOnlyTheClausesOfItsNewValue' => [
+                'code' => '<?php
+                    function f(?int $min, ?int $other, bool $b): void {
+                        $r = $other !== null;
+
+                        if ($b) {
+                            echo 1;
+                        } elseif ($r = $min !== null) {
+                            /** @psalm-check-type-exact $min = int */
+                            echo $min;
+                            /** @psalm-check-type-exact $other = int|null */
+                            echo (int) $other;
+                        }
+                    }',
+            ],
             'aCaseOfASwitchTrueAssigningAVariableHasNoClausesOfItsOldValue' => [
                 'code' => '<?php
                     function f(string $s): int {

@@ -301,6 +301,28 @@ final class IfConditionalAnalyzer
     }
 
     /**
+     * The clauses that analysing the condition added to the context: what its own assignments say of the new values
+     *
+     * @param list<Clause> $pre_condition_clauses
+     * @param list<Clause> $clauses
+     * @return list<Clause>
+     * @psalm-pure
+     */
+    public static function getClausesAddedByCondition(array $pre_condition_clauses, array $clauses): array
+    {
+        $pre_condition_hashes = [];
+
+        foreach ($pre_condition_clauses as $clause) {
+            $pre_condition_hashes[$clause->hash] = true;
+        }
+
+        return array_values(array_filter(
+            $clauses,
+            static fn(Clause $clause): bool => !isset($pre_condition_hashes[$clause->hash]),
+        ));
+    }
+
+    /**
      * Returns statements that are definitely evaluated before any statements after the end of the
      * if/elseif/else blocks
      */

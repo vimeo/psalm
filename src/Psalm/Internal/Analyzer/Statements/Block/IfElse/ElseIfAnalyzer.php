@@ -191,6 +191,15 @@ final class ElseIfAnalyzer
             $entry_clauses[] = $c;
         }
 
+        // the clauses the condition's own assignments added are about the new value
+        $entry_clauses = [
+            ...$entry_clauses,
+            ...IfConditionalAnalyzer::getClausesAddedByCondition(
+                $pre_conditional_context->clauses,
+                $elseif_context->clauses,
+            ),
+        ];
+
         // this will see whether any of the clauses in set A conflict with the clauses in set B
         AlgebraAnalyzer::checkForParadox(
             $entry_clauses,
