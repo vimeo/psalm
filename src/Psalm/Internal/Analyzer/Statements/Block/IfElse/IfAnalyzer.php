@@ -448,7 +448,9 @@ final class IfAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        $outer_context->detachReferencesReboundIn($if_context, $statements_analyzer, $branch_nodes);
+        if ($branch_nodes) {
+            $outer_context->detachReferencesReboundIn($if_context, $statements_analyzer, $branch_nodes);
+        }
 
         $redefined_vars = $if_context->getRedefinedVars($outer_context->vars_in_scope);
 

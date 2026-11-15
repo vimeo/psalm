@@ -1083,6 +1083,58 @@ final class ReferenceTest extends TestCase
                     '$reference2===' => 'array{id: 2}',
                 ],
             ],
+            'parameterBoundToASuperglobalInABranchIsDefined' => [
+                'code' => '<?php
+                    function f(?array $session = null): void {
+                        if (null === $session) {
+                            $session = &$_SESSION;
+                        }
+                        $session["a"] = 1;
+                    }',
+            ],
+            'referenceToAPossiblyUndefinedVariableDefinesBothAsNull' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        $a = 1;
+                    }
+                    $b = &$a;
+                    $c = $a;
+                    $d = $b;',
+                'assertions' => [
+                    '$c===' => '1|null',
+                    '$d===' => '1|null',
+                ],
+            ],
+            'referenceToAVariableDefinedInATryDefinesIt' => [
+                'code' => '<?php
+                    function f(): string {
+                        try {
+                            $a = (string) rand(0, 1);
+                        } catch (Exception $e) {
+                        }
+                        $b = &$a;
+                        return (string) $a;
+                    }',
+            ],
+            'referenceReboundBeforeABreakInALoopIsDefined' => [
+                'code' => '<?php
+                    /** @param list<string> $parts */
+                    function f(array &$tree, array $parts): void {
+                        $elem = &$tree;
+                        foreach ($parts as $part) {
+                            if (isset($elem[$part])) {
+                                $elem = &$elem["x"];
+                                break;
+                            }
+                            $elem = &$elem[$part];
+                        }
+                        if (is_string($elem)) {
+                            echo $elem;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedArrayOffset'],
+            ],
         ];
     }
 
@@ -1225,6 +1277,14 @@ final class ReferenceTest extends TestCase
                 'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:41 - '
                     . 'Variable $data is limited to values of type array<string, string> because it is passed by '
                     . 'reference, array<string, 5|string> type found',
+            ],
+            'referenceToTheResponseHeaderVariableIsNullWhenItIsNotSet' => [
+                'code' => '<?php
+                    function f(): array {
+                        $h = &$http_response_header;
+                        return $h;
+                    }',
+                'error_message' => 'NullableReturnStatement',
             ],
             'issueInTheKeyOfAnArrayItemPassedByReference' => [
                 'code' => '<?php
