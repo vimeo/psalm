@@ -175,6 +175,26 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'classNotEqualToALiteralClassStringConstantNarrowsAfterAnEarlyReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Holder {
+                        private const CLS = \stdClass::class;
+
+                        public function check(object $o): void {
+                            if ($o::class !== self::CLS) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $o = stdClass */
+                            echo 1;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'notIterableDropsTheObjectsThatAreTraversable' => [
                 'code' => '<?php
                     function f(Throwable $e): void {
@@ -4737,27 +4757,32 @@ final class ConditionalTest extends TestCase
                 'code' => '<?php
                     class A {
                         private const TYPE = "int";
+                        private const GETTYPE = "integer";
 
                         public function f(mixed $x): void {
                             if (get_debug_type($x) === self::TYPE) {
+                                /** @psalm-check-type-exact $x = mixed */
                                 echo 1;
                             }
 
                             if (get_debug_type($x) !== self::TYPE) {
+                                /** @psalm-check-type-exact $x = mixed */
                                 echo 2;
                             }
 
-                            if (gettype($x) === self::TYPE) {
+                            if (gettype($x) === self::GETTYPE) {
+                                /** @psalm-check-type-exact $x = mixed */
                                 echo 3;
                             }
 
-                            if (gettype($x) !== self::TYPE) {
+                            if (gettype($x) !== self::GETTYPE) {
+                                /** @psalm-check-type-exact $x = mixed */
                                 echo 4;
                             }
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'classEqualToTheClassOfAnotherClassStillNarrows' => [

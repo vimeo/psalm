@@ -2843,6 +2843,9 @@ final class AssertionFinder
                                 $type_part->defining_class,
                             ),
                         )]];
+                    } elseif ($type->isSingle() && $type_part instanceof TLiteralClassString) {
+                        // not for a `class-string<Bar>`: a different class can still be a subclass of Bar
+                        $if_types[$var_name] = [[new IsClassNotEqual($type_part->value)]];
                     }
                 }
             }
