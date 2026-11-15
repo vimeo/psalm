@@ -948,6 +948,30 @@ final class FunctionCallTest extends TestCase
                     '$b===' => '\'y\'',
                 ],
             ],
+            'extractSkipDefinesAPossiblyUndefinedVariable' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        $a = 1;
+                    }
+
+                    extract(["a" => 2], EXTR_SKIP);
+
+                    $b = $a;',
+                'assertions' => [
+                    '$b===' => '1|2',
+                ],
+            ],
+            'extractSkipDefinesAVariableOfAPreviousIteration' => [
+                'code' => '<?php
+                    function f(array $xs): void {
+                        foreach ($xs as $_) {
+                            extract(["a" => 2], EXTR_SKIP);
+                            /** @psalm-check-type-exact $a = 1|2 */;
+                            echo $a;
+                            $a = 1;
+                        }
+                    }',
+            ],
             'compact' => [
                 'code' => '<?php
                     /**
@@ -3232,6 +3256,75 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'arrayIsListOfAShapeWithAGapInItsListKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{0?: string, 2?: int} $gap */
+                    function gap(array $gap): void {
+                        if (array_is_list($gap)) {
+                            /** @psalm-check-type-exact $gap = list{0?: string} */
+                        }
+                    }
+
+                    /** @param array{0?: string, 1: int} $requiredLast */
+                    function requiredLast(array $requiredLast): void {
+                        if (array_is_list($requiredLast)) {
+                            /** @psalm-check-type-exact $requiredLast = list{string, int} */
+                        }
+                    }
+
+                    /** @param array{1?: int, 0: string} $outOfOrder */
+                    function outOfOrder(array $outOfOrder): void {
+                        if (array_is_list($outOfOrder)) {
+                            /** @psalm-check-type-exact $outOfOrder = list{0: string, 1?: int} */
+                        }
+                    }
+
+                    /** @param array{2?: bool, 0?: string, 1: int} $outOfOrderWithRequiredKey */
+                    function outOfOrderWithRequiredKey(array $outOfOrderWithRequiredKey): void {
+                        if (array_is_list($outOfOrderWithRequiredKey)) {
+                            /** @psalm-check-type-exact $outOfOrderWithRequiredKey = list{0: string, 1: int, 2?: bool} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayIsListOfASealedShapeWithOptionalKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{a?: string} $onlyAString */
+                    function stringKey(array $onlyAString): void {
+                        if (array_is_list($onlyAString)) {
+                            /** @psalm-check-type-exact $onlyAString = array<never, never> */
+                        }
+                    }
+
+                    /** @param array{0?: string, 1?: int} $listKeys */
+                    function listKeys(array $listKeys): void {
+                        if (array_is_list($listKeys)) {
+                            /** @psalm-check-type-exact $listKeys = list{0?: string, 1?: int} */
+                        }
+                    }
+
+                    /** @param array{0?: string, a?: int} $mixedKeys */
+                    function mixedKeys(array $mixedKeys): void {
+                        if (array_is_list($mixedKeys)) {
+                            /** @psalm-check-type-exact $mixedKeys = list{0?: string} */
+                        }
+                    }
+
+                    /** @param array{0?: string, 1?: int} $listKeys */
+                    function nonEmpty(array $listKeys): void {
+                        assert(array_is_list($listKeys) && $listKeys !== []);
+                        /** @psalm-check-type-exact $listKeys = list{0: string, 1?: int} */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -3252,6 +3345,74 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'TooManyArguments',
                 'error_levels' => [],
                 'php_version' => '8.5',
+            ],
+            'callableAndScalarUnionIsInvalidForInt' => [
+                'code' => '<?php
+                    /** @param int $i */
+                    function takesInt($i): void {}
+
+                    /** @param callable|scalar $x */
+                    function f($x): void {
+                        takesInt($x);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'scalarAndCallableUnionIsInvalidForInt' => [
+                'code' => '<?php
+                    /** @param int $i */
+                    function takesInt($i): void {}
+
+                    /** @param scalar|callable $x */
+                    function f($x): void {
+                        takesInt($x);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayAndScalarUnionIsAPlainMismatchForString' => [
+                'code' => '<?php
+                    function takesString(string $s): void {}
+
+                    /** @param array<mixed>|scalar $x */
+                    function f($x): void {
+                        takesString($x);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'stringableAndArrayAndScalarUnionIsPossiblyInvalidForStringable' => [
+                'code' => '<?php
+                    function takesStringable(Stringable $s): void {}
+
+                    /** @param Stringable|UnitEnum|array<mixed>|int|null|string $x */
+                    function g($x): void {
+                        takesStringable($x);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'floatAndIntUnionIsAnInvalidOffsetOfAConstantArray' => [
+                'code' => '<?php
+                    final class A {
+                        const S = [1 => "a", 1024 => "b"];
+
+                        /** @param float|int $x */
+                        public static function f($x): string {
+                            return self::S[$x];
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:36',
+            ],
+            'intAndFloatUnionIsAnInvalidOffsetOfAConstantArray' => [
+                'code' => '<?php
+                    final class A {
+                        const S = [1 => "a", 1024 => "b"];
+
+                        /** @param int|float $x */
+                        public static function f($x): string {
+                            return self::S[$x];
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:36',
             ],
             'emptyStringIsNotANonEmptyLowercaseString' => [
                 'code' => '<?php
@@ -4163,6 +4324,17 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'arrayIsListOfALiteralArrayOutOfOrderWithAnOptionalKey' => [
+                'code' => '<?php
+                    $list = [1 => 0, 0 => 1];
+                    if (rand(0, 1)) {
+                        $list[2] = 2;
+                    }
+                    assert(array_is_list($list));',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'array_is_list_on_list_shape' => [
                 'code' => '<?php
                     /** @param list{string, int} $arr */
@@ -4416,6 +4588,30 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
                 'error_levels' => [],
                 'php_version' => '7.4',
+            ],
+            'arrayIsListOfAShapeWithARequiredKeyAfterAGapInItsListKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{0?: string, 2: int} $a */
+                    function f(array $a): void {
+                        if (array_is_list($a)) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:9 - Type array{0?: string, 2: int} for $a is never list',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayIsListOfAShapeWithARequiredStringKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{a: string} $a */
+                    function f(array $a): void {
+                        if (array_is_list($a)) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

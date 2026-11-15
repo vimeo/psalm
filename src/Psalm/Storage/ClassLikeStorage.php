@@ -202,6 +202,11 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $final = false;
 
+    /**
+     * An anonymous class cannot be extended
+     */
+    public bool $anonymous = false;
+
     public bool $final_from_docblock = false;
 
     public bool $trait_used = false;

@@ -8,10 +8,14 @@ use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function array_map;
 use function function_exists;
+use function sort;
 
 use const DIRECTORY_SEPARATOR;
 use const PHP_VERSION_ID;
@@ -91,6 +95,36 @@ final class ArrayFunctionCallTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testArrayColumnIndexColumnOfAStringableObjectReportsEveryIssueSincePhp8(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class S {
+                    public function __toString(): string {
+                        return "k";
+                    }
+                }
+
+                $result = array_column([[new S, 1]], 1, 0);',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_map(
+            static fn(IssueData $issue): string => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+            IssueBuffer::getIssuesDataForFile($file_path),
+        );
+        sort($issues);
+
+        self::assertSame(['InvalidArgument 8:27', 'NoValue 8:17'], $issues);
     }
 
     /**
@@ -517,6 +551,223 @@ final class ArrayFunctionCallTest extends TestCase
                     function foo(array $a) : array {
                         return array_filter($a, "is_object");
                     }',
+            ],
+            'arrayFilterFirstClassCallableFunction' => [
+                'code' => '<?php
+                    /** @var list<int|string> $values */
+                    $values = [];
+                    $ints = array_filter($values, is_int(...));',
+                'assertions' => [
+                    '$ints' => 'array<int<0, max>, int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayFilterFirstClassCallableNamespacedFunction' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @psalm-assert-if-true string $value
+                     */
+                    function is_int(mixed $value): bool {
+                        return \is_string($value);
+                    }
+
+                    /** @var list<int|string|float> $values */
+                    $values = [];
+                    $namespaced = array_filter($values, is_int(...));
+                    $global = array_filter($values, \is_int(...));
+                    $fallback = array_filter($values, is_float(...));',
+                'assertions' => [
+                    '$namespaced' => 'array<int<0, max>, string>',
+                    '$global' => 'array<int<0, max>, int>',
+                    '$fallback' => 'array<int<0, max>, float>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayFilterFirstClassCallableMethod' => [
+                'code' => '<?php
+                    class Base {}
+                    final class Sub extends Base {}
+
+                    final class Checker {
+                        /**
+                         * @psalm-assert-if-true Sub $base
+                         */
+                        public static function isSubStatic(Base $base): bool {
+                            return $base instanceof Sub;
+                        }
+
+                        /**
+                         * @psalm-assert-if-true Sub $base
+                         */
+                        public function isSub(Base $base): bool {
+                            return $base instanceof Sub;
+                        }
+                    }
+
+                    /** @var list<Base> $items */
+                    $items = [];
+                    $checker = new Checker();
+                    $static = array_filter($items, Checker::isSubStatic(...));
+                    $instance = array_filter($items, $checker->isSub(...));',
+                'assertions' => [
+                    '$static' => 'array<int<0, max>, Sub>',
+                    '$instance' => 'array<int<0, max>, Sub>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayFilterFirstClassCallableMethodOfTheSameClass' => [
+                'code' => '<?php
+                    class Base {}
+                    final class Sub extends Base {}
+
+                    class ParentChecker {
+                        /**
+                         * @psalm-assert-if-true Sub $base
+                         */
+                        public static function isSubInParent(Base $base): bool {
+                            return $base instanceof Sub;
+                        }
+                    }
+
+                    final class Checker extends ParentChecker {
+                        /**
+                         * @psalm-assert-if-true Sub $base
+                         */
+                        public static function isSubStatic(Base $base): bool {
+                            return $base instanceof Sub;
+                        }
+
+                        /**
+                         * @psalm-assert-if-true Sub $base
+                         */
+                        public function isSub(Base $base): bool {
+                            return $base instanceof Sub;
+                        }
+
+                        /**
+                         * @param list<Base> $items
+                         * @return array<int, Sub>
+                         */
+                        public function viaSelf(array $items): array {
+                            return array_filter($items, self::isSubStatic(...));
+                        }
+
+                        /**
+                         * @param list<Base> $items
+                         * @return array<int, Sub>
+                         */
+                        public function viaUppercaseSelf(array $items): array {
+                            return array_filter($items, SELF::isSubStatic(...));
+                        }
+
+                        /**
+                         * @param list<Base> $items
+                         * @return array<int, Sub>
+                         */
+                        public function viaStatic(array $items): array {
+                            return array_filter($items, static::isSubStatic(...));
+                        }
+
+                        /**
+                         * @param list<Base> $items
+                         * @return array<int, Sub>
+                         */
+                        public function viaParent(array $items): array {
+                            return array_filter($items, parent::isSubInParent(...));
+                        }
+
+                        /**
+                         * @param list<Base> $items
+                         * @return array<int, Sub>
+                         */
+                        public function viaThis(array $items): array {
+                            return array_filter($items, $this->isSub(...));
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayFilterFirstClassCallableWithoutAssertionKeepsTheType' => [
+                'code' => '<?php
+                    function isLong(string $text): bool {
+                        return strlen($text) > 3;
+                    }
+
+                    /** @var list<string> $texts */
+                    $texts = [];
+                    $long = array_filter($texts, isLong(...));',
+                'assertions' => [
+                    '$long' => 'array<int<0, max>, string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayFilterCallbackReturnedByACall' => [
+                'code' => '<?php
+                    final class Filters {
+                        /**
+                         * @return Closure(int|string): bool
+                         */
+                        public function ints(): Closure {
+                            return static fn (int|string $value): bool => is_int($value);
+                        }
+
+                        /**
+                         * @return Closure(int|string): bool
+                         */
+                        public static function strings(): Closure {
+                            return static fn (int|string $value): bool => is_string($value);
+                        }
+                    }
+
+                    /** @var list<int|string> $values */
+                    $values = [];
+                    $filters = new Filters();
+                    $byMethod = array_filter($values, $filters->ints());
+                    $byStaticMethod = array_filter($values, Filters::strings());',
+                'assertions' => [
+                    '$byMethod' => 'array<int<0, max>, int|string>',
+                    '$byStaticMethod' => 'array<int<0, max>, int|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayFilterFirstClassCallableWithDynamicName' => [
+                'code' => '<?php
+                    final class Checker {
+                        public static function isLong(string $text): bool {
+                            return strlen($text) > 3;
+                        }
+
+                        public function isShort(string $text): bool {
+                            return strlen($text) < 3;
+                        }
+                    }
+
+                    /** @var list<string> $texts */
+                    $texts = [];
+                    $function = "strlen";
+                    $class = Checker::class;
+                    $method = "isShort";
+                    $checker = new Checker();
+                    $byFunctionName = array_filter($texts, $function(...));
+                    $byClassName = array_filter($texts, $class::isLong(...));
+                    $byStaticMethodName = array_filter($texts, Checker::{"isLong"}(...));
+                    $byMethodName = array_filter($texts, $checker->$method(...));',
+                'assertions' => [
+                    '$byFunctionName' => 'array<int<0, max>, string>',
+                    '$byClassName' => 'array<int<0, max>, string>',
+                    '$byStaticMethodName' => 'array<int<0, max>, string>',
+                    '$byMethodName' => 'array<int<0, max>, string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'arrayFilterFleshOutType' => [
                 'code' => '<?php
@@ -2382,6 +2633,31 @@ final class ArrayFunctionCallTest extends TestCase
                     '$o' => 'list<int>',
                     '$p' => 'list<int>',
                 ],
+            ],
+            'arrayColumnIndexColumnOfASkippedRowIsNotRead' => [
+                'code' => '<?php
+                    /**
+                     * @param list<array{0: stdClass}> $rows
+                     * @return array<array-key, mixed>
+                     */
+                    function f(array $rows): array {
+                        return array_column($rows, 1, 0);
+                    }
+
+                    final class S {
+                        public function __toString(): string {
+                            return "k";
+                        }
+                    }
+
+                    $literal = array_column([[new stdClass]], 1, 0);
+                    $stringable = array_column([[new S]], 1, 0);
+                    $after = 1;',
+                'assertions' => [
+                    '$after===' => '1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'arrayColumnKeyIsCastToAnArrayKey' => [
                 'code' => '<?php
@@ -4365,6 +4641,92 @@ final class ArrayFunctionCallTest extends TestCase
                 'code' => '<?php
                     $result = array_column([[new stdClass, 1]], 1, 0);',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:31 - The index column has the type stdClass',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayColumnIndexColumnOfAStringableObjectIsNotAnArrayKeySincePhp8' => [
+                'code' => '<?php
+                    final class S {
+                        public function __toString(): string {
+                            return "k";
+                        }
+                    }
+
+                    $result = array_column([[new S, 1]], 1, 0);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:31 - The index column has the type S',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayColumnIndexColumnOfAnObjectIsNotAnArrayKeyWithANullValueColumn' => [
+                'code' => '<?php
+                    $result = array_column([[new stdClass]], null, 0);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:31 - The index column has the type stdClass, which cannot',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayColumnIndexColumnOfARowThatMayBeSkippedMayBeAnObject' => [
+                'code' => '<?php
+                    /** @param list<array{0: stdClass, 1?: int}> $rows */
+                    function f(array $rows): void {
+                        array_column($rows, 1, 0);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayColumnIndexColumnOfAnUnsealedRowMayBeAnObject' => [
+                'code' => '<?php
+                    /** @param list<array{0: stdClass, ...}> $rows */
+                    function f(array $rows): void {
+                        array_column($rows, 1, 0);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayColumnIndexColumnThatMayBeMissingMayBeAnObject' => [
+                'code' => '<?php
+                    /** @param non-empty-list<array{value: int, index?: stdClass}> $rows */
+                    function f(array $rows): void {
+                        array_column($rows, "value", "index");
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayColumnIndexColumnOfAnObjectRowWithAMagicValueColumnMayBeAnObject' => [
+                'code' => '<?php
+                    final class Row {
+                        public stdClass $index;
+
+                        public function __construct() {
+                            $this->index = new stdClass;
+                        }
+
+                        public function __isset(string $name): bool {
+                            return $name === "value";
+                        }
+
+                        public function __get(string $name): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @param non-empty-list<Row> $rows */
+                    function f(array $rows): void {
+                        array_column($rows, "value", "index");
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayColumnIndexColumnMayBeAnObjectWithAnUnknownValueColumn' => [
+                'code' => '<?php
+                    /** @param list<array{0: stdClass, 1: int}> $rows */
+                    function f(array $rows, int $column): void {
+                        array_column($rows, $column, 0);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
