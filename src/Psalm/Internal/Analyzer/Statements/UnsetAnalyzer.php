@@ -246,6 +246,7 @@ final class UnsetAnalyzer
                         new Union($root_types),
                         $key_type,
                     );
+                    $context->possibly_assigned_var_ids[$root_var_id] = true;
 
                     $context->removeVarFromConflictingClauses(
                         $root_var_id,

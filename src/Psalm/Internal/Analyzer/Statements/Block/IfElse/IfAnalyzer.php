@@ -28,6 +28,7 @@ use Psalm\Type\Union;
 
 use function array_any;
 use function array_combine;
+use function array_diff;
 use function array_diff_key;
 use function array_filter;
 use function array_intersect;
@@ -41,6 +42,7 @@ use function in_array;
 use function preg_match;
 use function preg_quote;
 use function spl_object_id;
+use function str_ends_with;
 
 /**
  * @internal
@@ -166,7 +168,7 @@ final class IfAnalyzer
             return false;
         }
 
-        $outer_context->removeClausesOfVarsChangedIn($if_context);
+        $outer_context->removeClausesOfVarsChangedIn($if_context, $statements_analyzer);
 
         $final_actions = ScopeAnalyzer::getControlActions(
             $stmt->stmts,
@@ -280,13 +282,52 @@ final class IfAnalyzer
                 array_keys($if_scope->negated_types),
             );
 
+            // update() replaces the part of the type that enters the if, which is only known when the code skipping
+            // the if cannot see the same values (unlike with `if ($b || $a === null)`). Without an else, the type
+            // after the if is then the one at the end of its body or at the start of the implicit else. A mixed
+            // type, which update() cannot split either, and a type the body leaves as it is are left to it.
+            $overlapping_var_ids = $stmt->else || $stmt->elseifs ? [] : array_filter(
+                $vars_to_update,
+                static function (string $var_id) use (
+                    $old_if_context,
+                    $if_context,
+                    $pre_assignment_else_redefined_vars,
+                    $codebase,
+                ): bool {
+                    $if_type = $old_if_context->vars_in_scope[$var_id] ?? null;
+                    $else_type = $pre_assignment_else_redefined_vars[$var_id];
+
+                    return $if_type !== null
+                        && !($if_context->vars_in_scope[$var_id] ?? null)?->equals($if_type)
+                        && !$if_type->hasMixed()
+                        && !$else_type->hasMixed()
+                        && !$else_type->isNever()
+                        && !$else_type->failed_reconciliation
+                        && UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $if_type, $else_type);
+                },
+            );
+
             $outer_context->update(
                 $old_if_context,
                 $if_context,
                 $has_leaving_statements,
-                $vars_to_update,
+                array_diff($vars_to_update, $overlapping_var_ids),
                 $if_scope->updated_vars,
             );
+
+            // after a leaving if, the code continues from the else, whose type IfElseAnalyzer applies
+            if (!$has_leaving_statements) {
+                foreach ($overlapping_var_ids as $var_id) {
+                    if ($if_context->hasVariable($var_id)) {
+                        $outer_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $if_context->vars_in_scope[$var_id],
+                            $pre_assignment_else_redefined_vars[$var_id],
+                            $codebase,
+                        );
+                        $if_scope->updated_vars[$var_id] = true;
+                    }
+                }
+            }
         }
 
         if (!$has_ending_statements) {
@@ -477,6 +518,11 @@ final class IfAnalyzer
             foreach ($if_scope->new_vars as $new_var => $type) {
                 if (!$if_context->hasVariable($new_var)) {
                     unset($if_scope->new_vars[$new_var]);
+                } elseif (str_ends_with($new_var, ']')
+                    && $type->possibly_undefined !== $if_context->vars_in_scope[$new_var]->possibly_undefined
+                ) {
+                    unset($if_scope->new_vars[$new_var]);
+                    $if_scope->unknown_offsets[$new_var] = true;
                 } else {
                     $if_scope->new_vars[$new_var] = Type::combineUnionTypes(
                         $type,
