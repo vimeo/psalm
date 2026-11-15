@@ -835,6 +835,9 @@ final class FormulaGenerator
         return $var_ids;
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     private static function getNodeData(FileSource $source): ?NodeDataProvider
     {
         return $source instanceof StatementsAnalyzer ? $source->node_data : null;
