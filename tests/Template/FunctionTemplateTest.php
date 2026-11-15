@@ -2857,6 +2857,563 @@ final class FunctionTemplateTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'narrowTemplateBoundOnNegatedInstanceof' => [
+                'code' => '<?php
+                    interface Node {}
+                    final class A implements Node {}
+                    final class B implements Node {}
+
+                    function takesA(A $_a): void {}
+
+                    /**
+                     * @template T as Node
+                     * @param T $node
+                     */
+                    function f(Node $node): void {
+                        if (!$node instanceof A && !$node instanceof B) {
+                            return;
+                        }
+
+                        if (!$node instanceof B) {
+                            takesA($node);
+                        }
+                    }',
+            ],
+            'narrowTemplateBoundOfThreeTypesOnNegatedInstanceof' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+                    final class C {}
+
+                    /** @param A|B $_ab */
+                    function takesAOrB(object $_ab): void {}
+
+                    /**
+                     * @template T as A|B|C
+                     * @param T $abc
+                     */
+                    function f(object $abc): void {
+                        if (!$abc instanceof C) {
+                            takesAOrB($abc);
+                        }
+                    }',
+            ],
+            'narrowTemplateBoundInUnionOnNegatedInstanceof' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    function takesA(A $_a): void {}
+
+                    /**
+                     * @template T as A|B
+                     * @param T|null $ab
+                     */
+                    function f(?object $ab): void {
+                        if ($ab !== null && !$ab instanceof B) {
+                            takesA($ab);
+                        }
+                    }',
+            ],
+            'narrowTemplateBoundOnNegatedInstanceofOfSupertype' => [
+                'code' => '<?php
+                    interface I {}
+                    class ParentA {}
+                    final class A extends ParentA implements I {}
+                    final class B {}
+
+                    function takesB(B $_b): void {}
+
+                    /**
+                     * @template T as A|B
+                     * @param T $ab
+                     */
+                    function notParent(object $ab): void {
+                        if (!$ab instanceof ParentA) {
+                            takesB($ab);
+                        }
+                    }
+
+                    /**
+                     * @template T as A|B
+                     * @param T $ab
+                     */
+                    function notInterface(object $ab): void {
+                        if (!$ab instanceof I) {
+                            takesB($ab);
+                        }
+                    }',
+            ],
+            'templateBoundNotNarrowedOnNegatedInstanceofOfUnrelatedInterface' => [
+                'code' => '<?php
+                    interface I {}
+                    class A {}
+                    class B {}
+
+                    /** @param A|B $_ab */
+                    function takesAOrB(object $_ab): void {}
+
+                    /**
+                     * @template T as A|B
+                     * @param T $ab
+                     */
+                    function f(object $ab): void {
+                        if (!$ab instanceof I) {
+                            takesAOrB($ab);
+                        }
+                    }',
+            ],
+            'narrowTemplateBoundOnNegatedTraversable' => [
+                'code' => '<?php
+                    /** @param array<int> $_a */
+                    function takesArray(array $_a): void {}
+
+                    /**
+                     * @template T as iterable<int>
+                     * @param T $i
+                     */
+                    function f(iterable $i): void {
+                        if (!$i instanceof Traversable) {
+                            takesArray($i);
+                        }
+                    }',
+            ],
+            'narrowTemplateBoundOnNegatedLiteralEquality' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                        case Spades;
+                    }
+
+                    /** @param 2|3 $_i */
+                    function takesTwoOrThree(int $_i): void {}
+
+                    /** @param Suit::Spades $_s */
+                    function takesSpades(Suit $_s): void {}
+
+                    /**
+                     * @template T as 1|2|3
+                     * @param T $i
+                     */
+                    function notOne(int $i): void {
+                        if ($i !== 1) {
+                            takesTwoOrThree($i);
+                        }
+                    }
+
+                    /**
+                     * @template T as Suit
+                     * @param T $s
+                     */
+                    function notHearts(Suit $s): void {
+                        if ($s !== Suit::Hearts) {
+                            takesSpades($s);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'templateBoundNotWidenedOnNegatedArrayAssertion' => [
+                'code' => '<?php
+                    /** @param array<int, string> $_a */
+                    function takesIntToString(array $_a): void {}
+
+                    /** @param array<string, int> $_a */
+                    function takesStringToInt(array $_a): void {}
+
+                    /** @psalm-assert-if-true array<string> $_a */
+                    function isStringArray(array $_a): bool {
+                        return true;
+                    }
+
+                    /**
+                     * @template T as array<int, string>
+                     * @param T $a
+                     */
+                    function notList(array $a): void {
+                        if (!array_is_list($a)) {
+                            takesIntToString($a);
+                        }
+                    }
+
+                    /**
+                     * @template T as array<string, int>
+                     * @param T $a
+                     */
+                    function notStringArray(array $a): void {
+                        if (!isStringArray($a)) {
+                            takesStringToInt($a);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'templateEnumCaseBoundEmptiedByNegatedEqualityIsNotReported' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                        case Spades;
+                    }
+
+                    /**
+                     * @template T as Suit
+                     * @param T $s
+                     */
+                    function matchDefault(Suit $s): int {
+                        return match ($s) {
+                            Suit::Hearts => 1,
+                            Suit::Spades => 2,
+                            default => 3,
+                        };
+                    }
+
+                    /**
+                     * @template T as Suit::Hearts
+                     * @param T $s
+                     */
+                    function notHearts(Suit $s): void {
+                        if ($s !== Suit::Hearts) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'templateBoundNotCheckedOnNegatedEqualityToALiteralBesideIt' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                        case Spades;
+                        case Clubs;
+                    }
+
+                    /**
+                     * @template T as "a"|"b"
+                     * @param T|"" $s
+                     */
+                    function notEmptyString(string $s): void {
+                        if ($s !== "") {}
+                    }
+
+                    /**
+                     * @template T as 1|2
+                     * @param T|3 $i
+                     */
+                    function notThree(int $i): void {
+                        if ($i !== 3) {}
+                    }
+
+                    /**
+                     * @template T as Suit::Hearts|Suit::Spades
+                     * @param T|Suit::Clubs $s
+                     */
+                    function notClubs(Suit $s): void {
+                        if ($s !== Suit::Clubs) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'narrowTemplateBoundOnNegatedIsA' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    function takesA(A $_a): void {}
+
+                    /**
+                     * @template T as A|B
+                     * @param T $ab
+                     */
+                    function f(object $ab): void {
+                        if (!is_a($ab, B::class)) {
+                            takesA($ab);
+                        }
+                    }',
+            ],
+            'narrowClassTemplateBoundOnNegatedInstanceof' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    function takesA(A $_a): void {}
+
+                    /** @template T as A|B */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public object $value) {}
+
+                        public function f(): void {
+                            if (!$this->value instanceof B) {
+                                takesA($this->value);
+                            }
+                        }
+                    }',
+            ],
+            'narrowNestedTemplateBoundOnNegatedInstanceof' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    function takesA(A $_a): void {}
+
+                    /**
+                     * @template T as A|B
+                     * @template U as T
+                     * @param U $ab
+                     */
+                    function f(object $ab): void {
+                        if (!$ab instanceof B) {
+                            takesA($ab);
+                        }
+                    }',
+            ],
+            'narrowIntersectedTemplateBoundOnNegatedInstanceof' => [
+                'code' => '<?php
+                    interface I {}
+                    final class A {}
+                    final class B {}
+
+                    /** @param A&I $_a */
+                    function takesAAndI(object $_a): void {}
+
+                    /**
+                     * @template T as A|B
+                     * @param T&I $ab
+                     */
+                    function f(object $ab): void {
+                        if (!$ab instanceof B) {
+                            takesAAndI($ab);
+                        }
+                    }',
+            ],
+            'narrowTemplateBoundedByUnboundedTemplateOnTypeAssertions' => [
+                'code' => '<?php
+                    /**
+                     * @template U
+                     * @template T of U
+                     * @param T $v
+                     */
+                    function f($v): void {
+                        if (is_object($v)) {
+                            takesObject($v);
+                        }
+                        if (is_string($v)) {
+                            takesString($v);
+                        }
+                        if (is_int($v)) {
+                            takesInt($v);
+                        }
+                        if (is_float($v)) {
+                            takesFloat($v);
+                        }
+                        if (is_bool($v)) {
+                            takesBool($v);
+                        }
+                        if ($v === true) {
+                            takesTrue($v);
+                        }
+                        if ($v === false) {
+                            takesFalse($v);
+                        }
+                        if (is_scalar($v)) {
+                            takesScalar($v);
+                        }
+                        if (is_numeric($v)) {
+                            takesNumeric($v);
+                        }
+                        if (is_array($v)) {
+                            takesArray($v);
+                        }
+                        if (is_callable($v)) {
+                            takesCallable($v);
+                        }
+                    }
+
+                    function takesObject(object $_v): void {}
+                    function takesString(string $_v): void {}
+                    function takesInt(int $_v): void {}
+                    function takesFloat(float $_v): void {}
+                    function takesBool(bool $_v): void {}
+                    function takesTrue(true $_v): void {}
+                    function takesFalse(false $_v): void {}
+                    /** @param scalar $_v */
+                    function takesScalar($_v): void {}
+                    /** @param numeric $_v */
+                    function takesNumeric($_v): void {}
+                    function takesArray(array $_v): void {}
+                    function takesCallable(callable $_v): void {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'narrowTemplateBoundedByBoundedTemplateOnTypeAssertions' => [
+                'code' => '<?php
+                    /**
+                     * @template U of int|string
+                     * @template T of U
+                     * @param T $v
+                     */
+                    function f($v): void {
+                        if (is_string($v)) {
+                            takesString($v);
+                        }
+                        if (is_int($v)) {
+                            takesInt($v);
+                        }
+                        if (is_numeric($v)) {
+                            takesNumeric($v);
+                        }
+                    }
+
+                    function takesString(string $_v): void {}
+                    function takesInt(int $_v): void {}
+                    /** @param numeric $_v */
+                    function takesNumeric($_v): void {}',
+            ],
+            'narrowTemplateBoundedByTemplateChainOnTypeAssertion' => [
+                'code' => '<?php
+                    /**
+                     * @template V
+                     * @template U of V
+                     * @template T of U
+                     * @param T $v
+                     */
+                    function f($v): void {
+                        if (is_object($v)) {
+                            takesObject($v);
+                        }
+                    }
+
+                    function takesObject(object $_v): void {}',
+            ],
+            'narrowTemplateBoundedByUnionWithTemplateOnTypeAssertion' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /**
+                     * @template U of int|string
+                     * @template T of Foo|U
+                     * @param T $x
+                     */
+                    function f($x): void {
+                        if (is_string($x)) {
+                            takesString($x);
+                        }
+
+                        if (!$x instanceof Foo) {
+                            takesIntOrString($x);
+                        }
+                    }
+
+                    function takesString(string $_s): void {}
+
+                    /** @param int|string $_v */
+                    function takesIntOrString($_v): void {}',
+                'assertions' => [],
+            ],
+            'narrowTemplateBoundOnInstanceofOfASupertypeAfterNegatedInstanceof' => [
+                'code' => '<?php
+                    /**
+                     * @template T of DateTimeInterface|string
+                     * @param T $value
+                     */
+                    function f($value): void {
+                        if ($value instanceof DateTimeImmutable) {
+                            return;
+                        }
+
+                        if ($value instanceof DateTimeInterface) {
+                            DateTimeImmutable::createFromInterface($value);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowTemplateBoundedByTemplateOnTypeAssertionAfterNegatedInstanceof' => [
+                'code' => '<?php
+                    interface PromiseInterface {}
+
+                    /**
+                     * @template TValue
+                     * @template TParam of TValue
+                     * @param TParam $value
+                     */
+                    function f($value): void {
+                        if ($value instanceof PromiseInterface) {
+                            return;
+                        }
+
+                        if (is_object($value) && method_exists($value, "then")) {
+                            takesObject($value);
+                        }
+                    }
+
+                    function takesObject(object $_v): void {}',
+            ],
+            'keepTemplatesInBoundOnInstanceof' => [
+                'code' => '<?php
+                    interface PromiseInterface {}
+
+                    /** @template T */
+                    final class FulfilledPromise implements PromiseInterface {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    final class Create {
+                        /**
+                         * @template TValue
+                         * @template TPromise of PromiseInterface
+                         * @param TValue|TPromise $value
+                         * @return ($value is PromiseInterface ? TPromise : FulfilledPromise<TValue>)
+                         */
+                        public static function promiseFor($value): PromiseInterface {
+                            if ($value instanceof PromiseInterface) {
+                                return $value;
+                            }
+
+                            return new FulfilledPromise($value);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateBoundedByUnboundedTemplateCanBeNull' => [
+                'code' => '<?php
+                    /**
+                     * @template U
+                     * @template T of U
+                     * @param T $v
+                     * @return T|int
+                     */
+                    function f($v) {
+                        if ($v === null) {
+                            return 0;
+                        }
+
+                        return $v;
+                    }',
+            ],
+            'keepTemplateBoundedByTemplateOnTypeAssertion' => [
+                'code' => '<?php
+                    /**
+                     * @template U
+                     * @template T of U
+                     * @param T $v
+                     * @return T|null
+                     */
+                    function f($v) {
+                        if (is_object($v)) {
+                            return $v;
+                        }
+
+                        return null;
+                    }',
+            ],
             'methodClassStringTemplateTakesAClassOfItsBound' => [
                 'code' => '<?php
                     interface Vehicle {}
@@ -3006,6 +3563,30 @@ final class FunctionTemplateTest extends TestCase
                         takesInt($value);
                     }',
                 'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:34 - Argument 1 of takesInt expects int, but T:fn-baz as int|string provided',
+            ],
+            'templateBoundedByBoundedTemplateIsNeverOtherType' => [
+                'code' => '<?php
+                    /**
+                     * @template U of int
+                     * @template T of U
+                     * @param T $v
+                     */
+                    function f($v): void {
+                        if (is_string($v)) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Docblock-defined type T:fn-f as U:fn-f as int for $v is never string',
+            ],
+            'templateBoundedByNonNullableTemplateIsNeverNull' => [
+                'code' => '<?php
+                    /**
+                     * @template U of int
+                     * @template T of U
+                     * @param T $v
+                     */
+                    function f($v): void {
+                        if ($v === null) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - T does not contain null',
             ],
             'invalidTemplatedType' => [
                 'code' => '<?php
@@ -3669,6 +4250,50 @@ final class FunctionTemplateTest extends TestCase
                         throw new Exception();
                     }',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - Class, interface or enum named Missing does not exist',
+            ],
+            'templateBoundOfSupertypeNotNarrowedOnNegatedInstanceofOfSubtype' => [
+                'code' => '<?php
+                    interface Node {}
+                    final class A implements Node {}
+
+                    function takesA(A $_a): void {}
+
+                    /**
+                     * @template T as Node
+                     * @param T $node
+                     */
+                    function f(Node $node): void {
+                        if (!$node instanceof A) {
+                            takesA($node);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'templateBoundEmptiedByNegatedInstanceof' => [
+                'code' => '<?php
+                    class ParentA {}
+                    final class A extends ParentA {}
+                    final class B extends ParentA {}
+
+                    /**
+                     * @template T as A|B
+                     * @param T $a
+                     */
+                    function f(ParentA $a): void {
+                        if (!$a instanceof ParentA) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'templateBoundEmptiedByNegatedLiteralEquality' => [
+                'code' => '<?php
+                    /**
+                     * @template T as 1
+                     * @param T $i
+                     */
+                    function f(int $i): void {
+                        if ($i !== 1) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
             ],
             'methodTemplateBoundAfterTheClassStringOfAFinalClassWasExcluded' => [
                 'code' => '<?php
