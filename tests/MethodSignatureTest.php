@@ -883,6 +883,25 @@ final class MethodSignatureTest extends TestCase
                 'ignored_issues' => ['ImplementedParamTypeMismatch', 'MoreSpecificImplementedParamType'],
                 'php_version' => '8.3',
             ],
+            'inheritedParamTypeThatTheNativeTypeDoesNotContainIsNotInTheFirstClassCallable' => [
+                'code' => '<?php
+                    class P {
+                        /** @param string $x */
+                        public function g($x, int $y): void {}
+                    }
+
+                    final class Q extends P {
+                        /** @param positive-int $y */
+                        #[\Override]
+                        public function g(int $x, int $y): void {}
+                    }
+
+                    $c = (new Q)->g(...);
+                    /** @psalm-check-type-exact $c = Closure(int, positive-int):void */;',
+                'assertions' => [],
+                'ignored_issues' => ['ImplementedParamTypeMismatch', 'MoreSpecificImplementedParamType'],
+                'php_version' => '8.3',
+            ],
             'unrelatedInterfacesDocumentingAParameterAlikeGiveTheOverrideTheirType' => [
                 'code' => '<?php
                     interface A {

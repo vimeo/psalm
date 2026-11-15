@@ -9,6 +9,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -474,12 +475,11 @@ final class Methods
 
                 // a type the native type of the override doesn't contain is not the type of the override's parameter
                 // (the documenting method's types are applied as they always were)
-                if ($source
-                    && !$is_from_documenting_method
+                if (!$is_from_documenting_method
                     && $param->signature_type
                     && !$inherited_type->hasTemplate()
                     && !UnionTypeComparator::isContainedBy(
-                        $source->getCodebase(),
+                        $source ? $source->getCodebase() : ProjectAnalyzer::getInstance()->getCodebase(),
                         $inherited_type,
                         $param->signature_type,
                     )
