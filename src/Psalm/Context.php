@@ -1223,24 +1223,26 @@ final class Context
      */
     public function addPhantomClass(string $class_name): void
     {
+        $this->phantom_classes[$class_name] = true;
+
         if ($this->inside_negation) {
             $this->negated_phantom_classes[$class_name] = true;
-        } else {
-            $this->phantom_classes[$class_name] = true;
         }
     }
 
     /**
-     * Where a negated condition about classes is false they exist: the phantom classes of what it checked, not of a
-     * negated condition that encloses it
+     * Where a negated condition about classes holds they are missing: the classes of what it checked, not of a
+     * negated condition that encloses it, stop being phantom classes
      *
      * @param array<lowercase-string,true> $negated_before the negated classes before the condition
-     * @param array<lowercase-string,true>|null $negated the negated classes after it, by default those of this context
      * @psalm-external-mutation-free
      */
-    public function promoteNegatedPhantomClasses(array $negated_before, ?array $negated = null): void
+    public function demoteNegatedPhantomClasses(array $negated_before): void
     {
-        $this->phantom_classes += array_diff_key($negated ?? $this->negated_phantom_classes, $negated_before);
+        $this->phantom_classes = array_diff_key(
+            $this->phantom_classes,
+            array_diff_key($this->negated_phantom_classes, $negated_before),
+        );
     }
 
     /**
