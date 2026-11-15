@@ -63,13 +63,28 @@ final class TypeAlgebraTest extends TestCase
                     if (!in_array($id, $ids, true)) {
                         echo "not in";
                     }
+                }
+
+                /**
+                 * @param mixed $x
+                 * @psalm-assert "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-one" $x
+                 */
+                function assertOne($x): void {}
+
+                function g(int $x): void {
+                    assertOne($x);
                 }',
         );
 
         $this->analyzeFile($file_path, new Context(), false);
 
         self::assertSame(
-            ['Operand of type true is always truthy', 'Type null|string for $id is never in-array-int'],
+            [
+                'Operand of type true is always truthy',
+                'Type null|string for $id is never in-array-int',
+                'Type int for $x is never '
+                    . "'https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarte...'",
+            ],
             array_column(IssueBuffer::getIssuesDataForFile($file_path), 'message'),
         );
     }
