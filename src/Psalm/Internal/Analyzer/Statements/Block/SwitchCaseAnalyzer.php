@@ -433,7 +433,12 @@ final class SwitchCaseAnalyzer
             }
 
             if ($changed_var_ids) {
-                $case_context->clauses = Context::removeReconciledClauses($case_context->clauses, $changed_var_ids)[0];
+                $case_context->clauses = AlgebraAnalyzer::removeReconciledClauses(
+                    $case_context->clauses,
+                    $changed_var_ids,
+                    $case_context->vars_in_scope,
+                    $statements_analyzer,
+                )[0];
             }
         }
 

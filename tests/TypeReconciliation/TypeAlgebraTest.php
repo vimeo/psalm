@@ -3969,6 +3969,66 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }',
             ],
+            'truthinessOfANullableIntIsForgottenWhenItChanges' => [
+                'code' => '<?php
+                    final class B {
+                        public ?int $p = null;
+
+                        public function reset(): void {
+                            $this->p = 0;
+                        }
+                    }
+
+                    function reassigned(?int $x): void {
+                        if ($x) {
+                            $x = rand(0, 1);
+                            if (!$x) {
+                                echo "zero";
+                            }
+                        }
+                    }
+
+                    function decremented(?int $x): void {
+                        if ($x) {
+                            $x--;
+                            if (!$x) {
+                                echo "zero";
+                            }
+                        }
+                    }
+
+                    function byReference(?int $x): void {
+                        if ($x) {
+                            settype($x, "int");
+                            if (!$x) {
+                                echo "zero";
+                            }
+                        }
+                    }
+
+                    function property(B $b): void {
+                        if ($b->p) {
+                            $b->reset();
+                            if (!$b->p) {
+                                echo "zero";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'notNullClauseOfANullableIntIsLeftToItsType' => [
+                'code' => '<?php
+                    function f(?int $x): void {
+                        if ($x !== null) {
+                            if ($x === null) {
+                                echo "never";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainNull'],
+            ],
         ];
     }
 
@@ -5431,6 +5491,135 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullArgument',
+            ],
+            'truthyResultOfAnAssignedNullsafeCallContradictsItsNegation' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?A $a): void {
+                        if ($r = $a?->foo()) {
+                            if (!$r) {
+                                echo "never";
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:33',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'truthyNullableIntContradictsItsNegationInTheIf' => [
+                'code' => '<?php
+                    function f(?int $x): void {
+                        if ($x) {
+                            if (!$x) {
+                                echo "never";
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyNullableIntIsRedundantInTheIf' => [
+                'code' => '<?php
+                    function f(?int $x): void {
+                        if ($x) {
+                            if ($x) {
+                                echo "always";
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyIntOrFalseContradictsItsNegationInTheIf' => [
+                'code' => '<?php
+                    function f(int|false $x): void {
+                        if ($x) {
+                            if (!$x) {
+                                echo "never";
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'truthyNullableIntContradictsItsNegationInTheElse' => [
+                'code' => '<?php
+                    function f(?int $x): void {
+                        if (!$x) {
+                            echo "falsy";
+                        } else {
+                            if (!$x) {
+                                echo "never";
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyNullableIntContradictsItsNegationInTheElseif' => [
+                'code' => '<?php
+                    function f(bool $y, ?int $x): void {
+                        if ($y) {
+                            echo "y";
+                        } elseif ($x) {
+                            if (!$x) {
+                                echo "never";
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyNullableIntContradictsItsNegationInTheTernaryElse' => [
+                'code' => '<?php
+                    function f(?int $x): int {
+                        return !$x ? 0 : (!$x ? 1 : 2);
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:43',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyNullableIntContradictsItsNegationAfterAssert' => [
+                'code' => '<?php
+                    function f(?int $x): void {
+                        assert((bool) $x);
+                        if (!$x) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyNullableIntContradictsItsNegationInASwitchCase' => [
+                'code' => '<?php
+                    function f(?int $x): void {
+                        switch (true) {
+                            case (bool) $x:
+                                if (!$x) {
+                                    echo "never";
+                                }
+                                break;
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:37',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyNullableIntOfTheLeftOfAnAndContradictsItsNegationInTheIf' => [
+                'code' => '<?php
+                    function f(?int $x, ?int $y): void {
+                        if ($x && $y) {
+                            if (!$x) {
+                                echo "never";
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
             ],
         ];
     }
