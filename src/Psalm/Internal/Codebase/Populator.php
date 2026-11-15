@@ -920,17 +920,17 @@ final class Populator
                         }
                     }
 
-                    if (!$is_own_method) {
-                        continue;
-                    }
-
-                    // tell the declaring class it's overridden downstream
+                    // tell the declaring class it's overridden downstream, by a method of this class or of a trait
                     $declaring_method_storage->overridden_downstream = true;
                     $declaring_method_storage->overridden_somewhere = true;
 
                     if ($declaring_method_storage->mutation_free_assumed) {
                         $declaring_method_storage->capabilities = Capabilities::ALL;
                         $declaring_method_storage->mutation_free_assumed = false;
+                    }
+
+                    if (!$is_own_method) {
+                        continue;
                     }
 
                     if ($declaring_method_storage->throws
