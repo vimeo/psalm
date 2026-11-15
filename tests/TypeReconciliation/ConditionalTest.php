@@ -413,24 +413,6 @@ final class ConditionalTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
-            'leavingIfAppliesWhatItsConditionCoercesWhereItIsFalse' => [
-                'code' => '<?php
-                    function takes(?string $s): bool {
-                        return true;
-                    }
-
-                    function f(mixed $t): string {
-                        if (!$t || !takes($t)) {
-                            return "";
-                        }
-
-                        /** @psalm-check-type-exact $t = non-falsy-string */
-                        return $t;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['MixedArgument'],
-                'php_version' => '8.0',
-            ],
             'ifWithAMixedVariableKeepsWhatItsBranchesAssign' => [
                 'code' => '<?php
                     function takesInt(int $i): void {}

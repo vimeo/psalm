@@ -262,9 +262,10 @@ final class IfAnalyzer
                 }
             }
 
-            // the code after the if starts from the context before the condition, where the condition is false: what
-            // evaluating it assigns or changes (a property an impure call resets) is applied there
-            if ($if_scope->post_leaving_if_context) {
+            // If we're assigning inside
+            if ($if_conditional_scope->assigned_in_conditional_var_ids
+                && $if_scope->post_leaving_if_context
+            ) {
                 self::addConditionallyAssignedVarsToContext(
                     $statements_analyzer,
                     $stmt->cond,
@@ -377,6 +378,10 @@ final class IfAnalyzer
     ): void {
         // this filters out coercions to expected types in ArgumentAnalyzer
         $assigned_in_conditional_var_ids = array_filter($assigned_in_conditional_var_ids);
+
+        if (!$assigned_in_conditional_var_ids) {
+            return;
+        }
 
         $exprs = self::getDefinitelyEvaluatedOredExpressions($cond);
 
