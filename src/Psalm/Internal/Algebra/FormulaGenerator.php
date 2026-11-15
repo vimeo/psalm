@@ -518,15 +518,23 @@ final class FormulaGenerator
             if ($receiver_id !== null && $result_id !== null) {
                 // a truthy result means the receiver wasn't null, but a falsy one says nothing about it
                 $not_null = new IsNotType(new TNull());
+                $truthy = new Truthy();
+                $falsy = new Falsy();
+
+                $truthy_clause = new Clause(
+                    [$result_id => [(string) $truthy => $truthy]],
+                    $conditional_object_id,
+                    $creating_object_id,
+                );
+
+                if (self::argumentsMayReassign($nullsafe_call, $receiver_id, $this_class_name, $source)) {
+                    return [$truthy_clause];
+                }
 
                 return [
+                    $truthy_clause,
                     new Clause(
-                        [$result_id => ['truthy' => new Truthy()]],
-                        $conditional_object_id,
-                        $creating_object_id,
-                    ),
-                    new Clause(
-                        [$result_id => ['falsy' => new Falsy()], $receiver_id => [(string) $not_null => $not_null]],
+                        [$result_id => [(string) $falsy => $falsy], $receiver_id => [(string) $not_null => $not_null]],
                         $conditional_object_id,
                         $creating_object_id,
                     ),
@@ -794,65 +802,9 @@ final class FormulaGenerator
      */
     public static function getAssignedVarIds(PhpParser\Node\Expr $expr, ?string $this_class_name): array
     {
-        $visitor = new class extends PhpParser\NodeVisitorAbstract {
-            /** @var list<PhpParser\Node\Expr> */
-            public array $targets = [];
-
-            /** @psalm-capabilities read-props|write-this-props|write-refs */
-            #[Override]
-            public function enterNode(PhpParser\Node $node): ?int
-            {
-                // the body of a closure assigns its own variables; only what it takes by reference is the outer's
-                if ($node instanceof PhpParser\Node\Expr\Closure) {
-                    foreach ($node->uses as $use) {
-                        if ($use->byRef) {
-                            $this->targets[] = $use->var;
-                        }
-                    }
-
-                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
-                }
-
-                if ($node instanceof PhpParser\Node\Expr\ArrowFunction
-                    || $node instanceof PhpParser\Node\Stmt\ClassLike
-                ) {
-                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
-                }
-
-                if ($node instanceof PhpParser\Node\Expr\Assign
-                    || $node instanceof PhpParser\Node\Expr\AssignRef
-                    || $node instanceof PhpParser\Node\Expr\AssignOp
-                    || $node instanceof PhpParser\Node\Expr\PreInc
-                    || $node instanceof PhpParser\Node\Expr\PreDec
-                    || $node instanceof PhpParser\Node\Expr\PostInc
-                    || $node instanceof PhpParser\Node\Expr\PostDec
-                ) {
-                    if ($node->var instanceof PhpParser\Node\Expr\List_
-                        || $node->var instanceof PhpParser\Node\Expr\Array_
-                    ) {
-                        foreach ($node->var->items as $item) {
-                            if ($item !== null) {
-                                $this->targets[] = $item->value;
-                            }
-                        }
-                    } else {
-                        $this->targets[] = $node->var;
-                    }
-                }
-
-                return null;
-            }
-        };
-
-        $traverser = new PhpParser\NodeTraverser();
-        $traverser->addVisitor($visitor);
-        $traverser->traverse([$expr]);
-
-        $targets = $visitor->targets;
-
         $var_ids = [];
 
-        foreach ($targets as $target) {
+        foreach (self::getWrittenExprs([$expr], false) as $target) {
             $var_id = ExpressionIdentifier::getRootVarId($target, $this_class_name);
 
             if ($var_id !== null) {
@@ -916,10 +868,17 @@ final class FormulaGenerator
         // the character the result must have on the side the condition asserts: identical to `true` and
         // not identical to `false` both assert a truthy result, the other two a falsy one
         $asserted_truthy = $literal_is_true !== $negated;
-        $asserted_key = $asserted_truthy ? 'truthy' : 'falsy';
         $asserted = $asserted_truthy ? new Truthy() : new Falsy();
+        $asserted_key = (string) $asserted;
+
+        // the call may have changed the receiver, so what it was when called says nothing about it afterwards
+        $receiver_may_change = self::argumentsMayReassign($nullsafe_call, $receiver_id, $this_class_name, $source);
 
         if ($negated) {
+            if ($receiver_may_change) {
+                return [new Clause([], $conditional_object_id, $creating_object_id, true)];
+            }
+
             // the result has the asserted character, or the receiver is null (which makes the call null,
             // and null is not identical to either bool literal)
             $null = new IsType(new TNull());
@@ -934,22 +893,138 @@ final class FormulaGenerator
         }
 
         // the result has the asserted character, which also means the receiver was not null
-        $opposite_key = $asserted_truthy ? 'falsy' : 'truthy';
         $opposite = $asserted_truthy ? new Falsy() : new Truthy();
+        $opposite_key = (string) $opposite;
         $not_null = new IsNotType(new TNull());
 
+        $asserted_clause = new Clause(
+            [$result_id => [$asserted_key => $asserted]],
+            $conditional_object_id,
+            $creating_object_id,
+        );
+
+        if ($receiver_may_change) {
+            return [$asserted_clause];
+        }
+
         return [
-            new Clause(
-                [$result_id => [$asserted_key => $asserted]],
-                $conditional_object_id,
-                $creating_object_id,
-            ),
+            $asserted_clause,
             new Clause(
                 [$result_id => [$opposite_key => $opposite], $receiver_id => [(string) $not_null => $not_null]],
                 $conditional_object_id,
                 $creating_object_id,
             ),
         ];
+    }
+
+    /**
+     * Whether the arguments of the call can reassign its receiver: by passing it (or what holds it) to a call, which
+     * may take it by reference, by assigning it, or by capturing it by reference in a closure
+     */
+    private static function argumentsMayReassign(
+        PhpParser\Node\Expr\NullsafeMethodCall $call,
+        string $receiver_id,
+        ?string $this_class_name,
+        FileSource $source,
+    ): bool {
+        if ($call->isFirstClassCallable()) {
+            return false;
+        }
+
+        foreach (self::getWrittenExprs($call->getArgs(), true) as $target) {
+            $target_id = ExpressionIdentifier::getExtendedVarId($target, $this_class_name, $source);
+
+            if ($target_id !== null
+                && ($target_id === $receiver_id
+                    || str_starts_with($receiver_id, $target_id . '->')
+                    || str_starts_with($receiver_id, $target_id . '['))
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The expressions the nodes assign in the current scope, and with $with_arguments what they pass to calls, which
+     * may take them by reference. The body of a closure assigns its own variables: only what it uses by reference is
+     * the outer scope's.
+     *
+     * @param array<PhpParser\Node> $nodes
+     * @return list<PhpParser\Node\Expr>
+     */
+    private static function getWrittenExprs(array $nodes, bool $with_arguments): array
+    {
+        $visitor = new class ($with_arguments) extends PhpParser\NodeVisitorAbstract {
+            /** @var list<PhpParser\Node\Expr> */
+            public array $targets = [];
+
+            public function __construct(private readonly bool $with_arguments)
+            {
+            }
+
+            /** @psalm-capabilities read-props|write-this-props|write-refs */
+            #[Override]
+            public function enterNode(PhpParser\Node $node): ?int
+            {
+                if ($node instanceof PhpParser\Node\Expr\Closure) {
+                    foreach ($node->uses as $use) {
+                        if ($use->byRef) {
+                            $this->targets[] = $use->var;
+                        }
+                    }
+
+                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
+
+                if ($node instanceof PhpParser\Node\Expr\ArrowFunction
+                    || $node instanceof PhpParser\Node\Stmt\Function_
+                    || $node instanceof PhpParser\Node\Stmt\ClassLike
+                ) {
+                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
+
+                if ($this->with_arguments && $node instanceof PhpParser\Node\Arg) {
+                    $this->targets[] = $node->value;
+                }
+
+                if ($node instanceof PhpParser\Node\Expr\Assign
+                    || $node instanceof PhpParser\Node\Expr\AssignRef
+                    || $node instanceof PhpParser\Node\Expr\AssignOp
+                    || $node instanceof PhpParser\Node\Expr\PreInc
+                    || $node instanceof PhpParser\Node\Expr\PreDec
+                    || $node instanceof PhpParser\Node\Expr\PostInc
+                    || $node instanceof PhpParser\Node\Expr\PostDec
+                ) {
+                    $this->addAssigned($node->var);
+                }
+
+                return null;
+            }
+
+            /** @psalm-capabilities read-props|write-this-props */
+            private function addAssigned(PhpParser\Node\Expr $var): void
+            {
+                if (!$var instanceof PhpParser\Node\Expr\List_ && !$var instanceof PhpParser\Node\Expr\Array_) {
+                    $this->targets[] = $var;
+
+                    return;
+                }
+
+                foreach ($var->items as $item) {
+                    if ($item !== null) {
+                        $this->addAssigned($item->value);
+                    }
+                }
+            }
+        };
+
+        $traverser = new PhpParser\NodeTraverser();
+        $traverser->addVisitor($visitor);
+        $traverser->traverse($nodes);
+
+        return $visitor->targets;
     }
 
     private static function isBoolLiteral(PhpParser\Node\Expr $expr): bool

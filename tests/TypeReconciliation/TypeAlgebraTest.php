@@ -1525,7 +1525,7 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
                 'php_version' => '8.1',
             ],
-            'nullsafeCallComparedToBoolLiteralDoesNotNarrowReceiver' => [
+            'nullsafeCallComparedToBoolLiteral' => [
                 'code' => <<<'PHP'
                     <?php
                     final class Box
@@ -1535,14 +1535,14 @@ final class TypeAlgebraTest extends TestCase
                     }
                     function identicalFalse(?Box $box): void {
                         if ($box?->check() === false) {
-                            /** @psalm-check-type-exact $box = Box|null */;
+                            /** @psalm-check-type-exact $box = Box */;
                         } else {
                             /** @psalm-check-type-exact $box = Box|null */;
                         }
                     }
                     function identicalFalseLiteralOnLeft(?Box $box): void {
                         if (false === $box?->check()) {
-                            /** @psalm-check-type-exact $box = Box|null */;
+                            /** @psalm-check-type-exact $box = Box */;
                         }
                     }
                     function identicalTrue(?Box $box): void {
@@ -1569,6 +1569,172 @@ final class TypeAlgebraTest extends TestCase
                     PHP,
                 'assertions' => [],
                 'php_version' => '8.1',
+            ],
+            'nullsafeCallWhoseArgumentsMayReassignTheReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Box
+                    {
+                        public function check(?Box &$arg): bool { $arg = null; return false; }
+                        public function take(mixed $_v): bool { return (bool) rand(0, 1); }
+                        public function run(callable $f): bool { $f(); return (bool) rand(0, 1); }
+                        public ?Box $inner = null;
+                    }
+                    final class Holder
+                    {
+                        public ?Box $box = null;
+                    }
+                    function byRef(?Box $box): void {
+                        if ($box?->check($box) === false) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                        if ($box?->check($box) === true) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                        if ($box?->check($box) !== true) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        } else {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                        if ($box?->check($box)) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                        if ($r = $box?->check($box)) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                    }
+                    function makeBox(): ?Box { return rand(0, 1) ? new Box() : null; }
+                    function assignedInArgument(?Box $box): void {
+                        if ($box?->take($box = makeBox()) === true) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                        if ($box?->take([$box = makeBox()])) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                    }
+                    function capturedByReference(?Box $box): void {
+                        if ($box?->run(function () use (&$box): void { $box = null; })) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                    }
+                    function holderPassedByReference(Holder $h): void {
+                        if ($h->box?->check($h->box) === false) {
+                            /** @psalm-check-type-exact $h->box = Box|null */;
+                        }
+                    }
+                    function otherArgument(?Box $box, ?Box $other): void {
+                        if ($box?->check($other) === false) {
+                            /** @psalm-check-type-exact $box = Box */;
+                        }
+                        if ($box?->check($other)) {
+                            /** @psalm-check-type-exact $box = Box */;
+                        }
+                    }
+                    function nullify(?Box &$b): bool { $b = null; return false; }
+                    function passedByReferenceToNestedCall(?Box $box, ?Box $o): void {
+                        if ($box?->take(nullify($box)) === false) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                        if ($box?->take($o?->take(nullify($box))) === false) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                        if ($box?->take(nullify($box))) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                    }
+                    function destructuredInArgument(?Box $box): void {
+                        if ($box?->take([$box] = [makeBox()]) === false) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                        if ($box?->take(list(, $box) = [1, makeBox()]) === false) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                        if ($box?->take(['k' => [$box]] = ['k' => [makeBox()]]) === false) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                    }
+                    function closureLocalVariable(?Box $box): void {
+                        if ($box?->run(function (): void { $box = null; echo (string) $box; })) {
+                            /** @psalm-check-type-exact $box = Box */;
+                        }
+                        if ($box?->run(fn() => $box = null) === false) {
+                            /** @psalm-check-type-exact $box = Box */;
+                        }
+                        if ($box?->take(static function (?Box $box): void { $box = null; echo (string) $box; }) === false) {
+                            /** @psalm-check-type-exact $box = Box */;
+                        }
+                    }
+                    function propertyOfReceiverPassed(?Box $box): void {
+                        if ($box?->check($box->inner) === false) {
+                            /** @psalm-check-type-exact $box = Box */;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['UnusedVariable'],
+                'php_version' => '8.1',
+            ],
+            'variableReassignedOnTheRightOfAndKeepsItsNewNarrowing' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A
+                    {
+                        public function foo(): int { return rand(0, 1); }
+                        public function ofoo(): ?int { return rand(0, 1) ? 1 : null; }
+                    }
+                    function call(A $a): void {
+                        $r = $a->ofoo();
+                        if ($r !== null && ($r = $a->ofoo()) !== null) {
+                            /** @psalm-check-type-exact $r = int */;
+                        }
+                    }
+                    function truthyCall(A $a, ?int $s): void {
+                        $r = $s;
+                        if ($r && ($r = $a->ofoo())) {
+                            /** @psalm-check-type-exact $r = int */;
+                        }
+                    }
+                    function nullsafeCall(?A $a, ?int $s): void {
+                        $r = $s;
+                        if ($r && ($r = $a?->foo())) {
+                            /** @psalm-check-type-exact $r = int */;
+                        }
+                    }
+                    function nestedAnd(?A $a, ?int $s): void {
+                        $r = $s;
+                        if ($r && $a && ($r = $a->ofoo())) {
+                            /** @psalm-check-type-exact $r = int */;
+                        }
+                    }
+                    function otherVariableStaysNarrowed(A $a, ?int $s): void {
+                        if ($s && ($r = $a->ofoo())) {
+                            /** @psalm-check-type-exact $s = int */;
+                            /** @psalm-check-type-exact $r = int */;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.1',
+            ],
+            'argumentCoercedOnTheRightOfAndIsNotReassigned' => [
+                'code' => <<<'PHP'
+                    <?php
+                    declare(strict_types=1);
+
+                    /** @param list<string> $argv */
+                    function f(array $argv): void {
+                        for ($i = 0, $iMax = count($argv); $i < $iMax; ++$i) {
+                            $input_path = $argv[$i];
+                            if ($input_path[0] === '-' && strlen($input_path) === 2) {
+                                continue;
+                            }
+                            if (strlen($input_path) > 2 && $input_path[0] === '-' && $input_path[2] === '=') {
+                                continue;
+                            }
+                        }
+                    }
+                    PHP,
             ],
             'boolVarIdenticalToFalseNarrowsItsConjuncts' => [
                 'code' => <<<'PHP'
