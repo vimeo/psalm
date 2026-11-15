@@ -24,8 +24,11 @@ use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 
 use function array_diff;
+use function array_diff_assoc;
+use function array_diff_key;
 use function array_fill_keys;
 use function array_filter;
 use function array_intersect;
@@ -230,6 +233,9 @@ final class TernaryAnalyzer
             );
         }
 
+        $if_narrowed_var_ids = array_diff_key($changed_var_ids, $assigned_in_conditional_var_ids);
+        $if_narrowed_vars = $if_context->vars_in_scope;
+
         $t_else_context = clone $context;
 
         // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
@@ -279,6 +285,13 @@ final class TernaryAnalyzer
 
             $t_else_context->clauses = Context::removeReconciledClauses($t_else_context->clauses, $changed_var_ids)[0];
         }
+
+        $else_narrowed_var_ids = array_diff_key(
+            $changed_var_ids,
+            $assigned_in_conditional_var_ids,
+            $else_rederived_var_ids,
+        );
+        $else_narrowed_vars = $t_else_context->vars_in_scope;
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->else, $t_else_context) === false) {
             return false;
@@ -331,8 +344,9 @@ final class TernaryAnalyzer
         $context->detachReferencesReboundIn($if_context, $statements_analyzer, $stmt->if ? [$stmt->if] : []);
         $context->detachReferencesReboundIn($t_else_context, $statements_analyzer, [$stmt->else]);
 
-        $assign_var_ifs = $if_context->assigned_var_ids;
-        $assign_var_else = $t_else_context->assigned_var_ids;
+        // the branches start with the assignments made before the ternary
+        $assign_var_ifs = array_diff_assoc($if_context->assigned_var_ids, $context->assigned_var_ids);
+        $assign_var_else = array_diff_assoc($t_else_context->assigned_var_ids, $context->assigned_var_ids);
         $assign_all = array_intersect_key($assign_var_ifs, $assign_var_else);
 
         //if the same var was assigned in both branches
@@ -374,6 +388,7 @@ final class TernaryAnalyzer
         foreach ($redef_var_ifs as $redef_var_ifs_id) {
             if (isset($context->vars_in_scope[$redef_var_ifs_id])
                 && !self::keepsOuterMixedType($statements_analyzer, $context, $if_context, $redef_var_ifs_id)
+                && !self::isOnlyNarrowed($if_context, $if_narrowed_var_ids, $if_narrowed_vars, $redef_var_ifs_id)
             ) {
                 $context->vars_in_scope[$redef_var_ifs_id] = Type::combineUnionTypes(
                     $context->vars_in_scope[$redef_var_ifs_id],
@@ -386,6 +401,12 @@ final class TernaryAnalyzer
         foreach ($redef_var_else as $redef_var_else_id) {
             if (isset($context->vars_in_scope[$redef_var_else_id])
                 && !self::keepsOuterMixedType($statements_analyzer, $context, $t_else_context, $redef_var_else_id)
+                && !self::isOnlyNarrowed(
+                    $t_else_context,
+                    $else_narrowed_var_ids,
+                    $else_narrowed_vars,
+                    $redef_var_else_id,
+                )
             ) {
                 $context->vars_in_scope[$redef_var_else_id] = Type::combineUnionTypes(
                     $context->vars_in_scope[$redef_var_else_id],
@@ -436,6 +457,24 @@ final class TernaryAnalyzer
                 $branch_context->vars_in_scope[$var_id],
                 $outer_context->vars_in_scope[$var_id],
             );
+    }
+
+    /**
+     * A variable that only the condition narrowed in this branch keeps its outer type, as IfAnalyzer does: the
+     * narrowing says nothing about the paths through the other branch
+     *
+     * @param array<string, mixed> $narrowed_var_ids
+     * @param array<string, Union> $narrowed_vars
+     * @psalm-capabilities read-props
+     */
+    private static function isOnlyNarrowed(
+        Context $branch_context,
+        array $narrowed_var_ids,
+        array $narrowed_vars,
+        string $var_id,
+    ): bool {
+        return isset($narrowed_var_ids[$var_id], $narrowed_vars[$var_id], $branch_context->vars_in_scope[$var_id])
+            && $branch_context->vars_in_scope[$var_id]->equals($narrowed_vars[$var_id], false, false);
     }
 
     private static function setResultType(
