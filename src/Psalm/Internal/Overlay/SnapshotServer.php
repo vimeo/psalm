@@ -41,6 +41,7 @@ use const STDOUT;
  * at once, each in workers forked from the snapshot
  *
  * @psalm-import-type IssueArray from IssueDiff
+ * @psalm-import-type Removed from RuntimeDeclarations
  * @internal
  */
 final class SnapshotServer
@@ -66,7 +67,7 @@ final class SnapshotServer
 
     /**
      * @param positive-int $threads
-     * @param Closure(Request, ?float): array{resource, resource} $start_fresh
+     * @param Closure(Request, ?float, Removed): array{resource, resource} $start_fresh
      */
     public function __construct(
         private readonly ?Engine $engine,

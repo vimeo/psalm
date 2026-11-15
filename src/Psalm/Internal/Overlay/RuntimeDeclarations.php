@@ -4,100 +4,159 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Overlay;
 
-use PhpParser\ErrorHandler\Collecting;
-use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Name;
-use PhpParser\Node\Scalar\String_;
-use PhpParser\Node\Stmt\Const_;
-use PhpParser\Node\Stmt\Function_;
-use PhpParser\NodeFinder;
-use PhpParser\NodeTraverser;
-use PhpParser\NodeVisitor\NameResolver;
-use PhpParser\ParserFactory;
+use JsonException;
+use Psalm\Codebase;
 use Psalm\Config;
 
 use function array_diff_key;
+use function array_filter;
 use function array_flip;
 use function array_keys;
-use function file_get_contents;
+use function array_values;
+use function get_defined_constants;
+use function get_defined_functions;
 use function get_included_files;
-use function ltrim;
+use function getenv;
+use function is_array;
+use function is_string;
+use function json_decode;
+use function json_encode;
+use function strrpos;
 use function strtolower;
+use function substr;
+
+use const JSON_THROW_ON_ERROR;
 
 /**
  * The functions and constants of an overlaid file that the process defines already: Composer loaded the file as it is
- * on disk (`autoload.files`). What the overlay no longer declares must not be taken from the process.
+ * on disk (`autoload.files`). What the scan of the file declares and the scan of its overlay no longer does must not
+ * be taken from the process.
  *
+ * @psalm-type Declarations = array{functions: array<string, true>, constants: array<string, true>}
+ * @psalm-type Removed = array{functions: list<string>, constants: list<string>}
  * @internal
  */
 final class RuntimeDeclarations
 {
-    /**
-     * @param array<string, string> $overlays path => contents
-     */
-    public static function forgetRemoved(Config $config, array $overlays): void
-    {
-        // the files Composer's autoload.files loaded; other project files declare nothing in this process
-        $loaded = array_flip(get_included_files());
+    /** What a fresh process forgets: the declarations the overlay pass found removed, as JSON */
+    public const REMOVED_ENV = 'PSALM_OVERLAY_REMOVED';
 
-        foreach ($overlays as $path => $contents) {
-            $original = isset($loaded[$path]) ? @file_get_contents($path) : false;
-            if ($original === false) {
+    /**
+     * What the scans of the files this process loaded declare: lowercase function ids and constant names
+     *
+     * @param list<string> $paths
+     * @return Declarations
+     */
+    public static function getDeclarations(Codebase $codebase, array $paths): array
+    {
+        $loaded = array_flip(get_included_files());
+        $declarations = ['functions' => [], 'constants' => []];
+
+        foreach ($paths as $path) {
+            if (!isset($loaded[$path]) || !$codebase->file_storage_provider->has($path)) {
                 continue;
             }
 
-            [$original_functions, $original_constants] = self::getDeclarations($original);
-            [$functions, $constants] = self::getDeclarations($contents);
-
-            $config->forgetPredefined(
-                array_keys(array_diff_key($original_functions, $functions)),
-                array_keys(array_diff_key($original_constants, $constants)),
-            );
+            $file_storage = $codebase->file_storage_provider->get($path);
+            foreach (array_keys($file_storage->functions) as $function_id) {
+                $declarations['functions'][$function_id] = true;
+            }
+            foreach (array_keys($file_storage->constants) as $constant) {
+                $declarations['constants'][$constant] = true;
+            }
         }
+
+        return $declarations;
     }
 
     /**
-     * The functions (lowercase ids) and constants a file declares, wherever in it
-     *
-     * @return array{array<string, true>, array<string, true>}
+     * @param Declarations $before
+     * @param Declarations $after
+     * @return Removed
+     * @psalm-pure
      */
-    private static function getDeclarations(string $contents): array
+    public static function getRemoved(array $before, array $after): array
     {
-        $statements = (new ParserFactory())->createForHostVersion()->parse($contents, new Collecting()) ?? [];
-        $statements = (new NodeTraverser(new NameResolver()))->traverse($statements);
-        $finder = new NodeFinder();
+        return [
+            'functions' => array_keys(array_diff_key($before['functions'], $after['functions'])),
+            'constants' => array_keys(array_diff_key($before['constants'], $after['constants'])),
+        ];
+    }
 
-        $functions = [];
-        foreach ($finder->findInstanceOf($statements, Function_::class) as $function) {
-            if ($function->namespacedName !== null) {
-                $functions[$function->namespacedName->toLowerString()] = true;
+    /**
+     * Only what the process defines from its own code: what PHP and its extensions define stays
+     *
+     * @param Removed $removed
+     */
+    public static function forget(Config $config, array $removed): void
+    {
+        $user_functions = array_flip(get_defined_functions()['user']);
+        $user_constants = get_defined_constants(true)['user'] ?? [];
+
+        $config->forgetPredefined(
+            array_values(array_filter(
+                $removed['functions'],
+                static fn(string $function): bool => isset($user_functions[$function]),
+            )),
+            array_values(array_filter(
+                $removed['constants'],
+                static fn(string $constant): bool => isset($user_constants[$constant])
+                    || isset($user_constants[self::getRuntimeName($constant)]),
+            )),
+        );
+    }
+
+    /**
+     * @param Removed $removed
+     * @psalm-pure
+     */
+    public static function encode(array $removed): string
+    {
+        return json_encode($removed, JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * What the process that started this one passed on
+     *
+     * @return Removed
+     */
+    public static function fromEnvironment(): array
+    {
+        $json = getenv(self::REMOVED_ENV);
+        $removed = ['functions' => [], 'constants' => []];
+        if (!is_string($json)) {
+            return $removed;
+        }
+
+        try {
+            /** @var mixed $data */
+            $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return $removed;
+        }
+
+        foreach (['functions', 'constants'] as $kind) {
+            /** @var mixed $names */
+            $names = is_array($data) ? $data[$kind] ?? [] : [];
+            if (is_array($names)) {
+                $removed[$kind] = array_values(array_filter($names, is_string(...)));
             }
         }
 
-        $constants = [];
-        foreach ($finder->findInstanceOf($statements, Const_::class) as $statement) {
-            foreach ($statement->consts as $constant) {
-                if ($constant->namespacedName !== null) {
-                    $constants[$constant->namespacedName->toString()] = true;
-                }
-            }
-        }
+        return $removed;
+    }
 
-        foreach ($finder->findInstanceOf($statements, FuncCall::class) as $call) {
-            if ($call->isFirstClassCallable()) {
-                continue;
-            }
+    /**
+     * The name PHP gives a constant: its namespace in lowercase
+     *
+     * @psalm-pure
+     */
+    private static function getRuntimeName(string $constant): string
+    {
+        $separator = strrpos($constant, '\\');
 
-            $argument = $call->getArgs()[0] ?? null;
-            if ($call->name instanceof Name
-                && strtolower($call->name->getLast()) === 'define'
-                && $argument !== null
-                && $argument->value instanceof String_
-            ) {
-                $constants[ltrim($argument->value->value, '\\')] = true;
-            }
-        }
-
-        return [$functions, $constants];
+        return $separator === false
+            ? $constant
+            : strtolower(substr($constant, 0, $separator)) . substr($constant, $separator);
     }
 }

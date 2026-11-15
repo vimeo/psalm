@@ -988,6 +988,40 @@ final class OverlayEndToEndTest extends TestCase
             [['MixedReturnStatement', 'src/UseFn.php', 'error'], ['UndefinedConstant', 'src/UseFn.php', 'error']],
         ];
 
+        yield 'constant with a computed name removed from an autoloaded file' => [
+            [
+                'functions.php' => '<?php namespace App; define(__NAMESPACE__ . "\\\\LIMIT", 3); function helper(): int { return 1; }',
+                'UseFn.php' => '<?php namespace App; final class UseFn { public function f(): int { return LIMIT; } }',
+            ],
+            ['src/functions.php' => '<?php namespace App; function helper(): int { return 1; }'],
+            [['MixedReturnStatement', 'src/UseFn.php', 'error'], ['UndefinedConstant', 'src/UseFn.php', 'error']],
+        ];
+
+        yield 'constant with a computed name renamed in an autoloaded file' => [
+            [
+                'functions.php' => '<?php namespace App; define(__NAMESPACE__ . "\\\\LIMIT", 3); function helper(): int { return 1; }',
+                'UseFn.php' => '<?php namespace App; final class UseFn { public function f(): int { return LIMIT; } }',
+            ],
+            ['src/functions.php' => '<?php namespace App;
+                define(__NAMESPACE__ . "\\\\MAXIMUM", 3); function helper(): int { return 1; }'],
+            [['MixedReturnStatement', 'src/UseFn.php', 'error'], ['UndefinedConstant', 'src/UseFn.php', 'error']],
+        ];
+
+        // the call is to App\define: PHP_OS stays what PHP defines
+        yield 'call removed to a function of the project named define' => [
+            [
+                'functions.php' => '<?php namespace App;
+                    function define(string $name, int $value): void {}
+                    define("PHP_OS", 99);
+                    function helper(): int { return 1; }',
+                'UseFn.php' => '<?php namespace App; final class UseFn { public function f(): string { return PHP_OS; } }',
+            ],
+            ['src/functions.php' => '<?php namespace App;
+                    function define(string $name, int $value): void {}
+                    function helper(): int { return 1; }'],
+            [],
+        ];
+
         yield 'first-class callables in an ordinary and an autoloaded file' => [
             [
                 'functions.php' => '<?php namespace App; function helper(string $s): int { return (strlen(...))($s); }',

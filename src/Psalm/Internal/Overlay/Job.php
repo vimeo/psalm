@@ -29,6 +29,7 @@ use const SIGKILL;
  * passes analyse and says so first, so the pass without the overlays starts while the overlay pass runs.
  *
  * @psalm-import-type IssueArray from IssueDiff
+ * @psalm-import-type Removed from RuntimeDeclarations
  * @internal
  */
 final class Job
@@ -66,8 +67,8 @@ final class Job
     /**
      * @param Closure(list<string>, bool): (list<IssueArray>|null) $memo_get
      * @param Closure(list<string>, bool, list<IssueArray>): void $memo_set
-     * @param Closure(Request, ?float): array{resource, resource} $start_fresh a fresh process and its STDOUT, given
-     *      the deadline
+     * @param Closure(Request, ?float, Removed): array{resource, resource} $start_fresh a fresh process and its
+     *      STDOUT, given the deadline and what the overlays no longer declare
      */
     public function __construct(
         private readonly Engine $engine,
@@ -85,8 +86,8 @@ final class Job
         $request = $this->request;
 
         $this->overlay_worker = Worker::fork(static function (Closure $send) use ($engine, $request): void {
-            [$strategy, $files] = $engine->chooseFiles($request);
-            $send(['strategy' => $strategy, 'files' => $files]);
+            [$strategy, $files, $removed] = $engine->chooseFiles($request);
+            $send(['strategy' => $strategy, 'files' => $files, 'removed' => $removed]);
 
             if ($strategy !== Strategy::FRESH && $files) {
                 $send(['issues' => $engine->analyze($engine->project_analyzer, $files, $request->whole_project)]);
@@ -189,11 +190,11 @@ final class Job
                 break;
             }
 
-            /** @var array{strategy: Strategy::*, files: list<string>} $frame */
+            /** @var array{strategy: Strategy::*, files: list<string>, removed: Removed} $frame */
             unset($worker->frames[0]);
             $worker->frames = array_values($worker->frames);
             $this->strategy = $frame['strategy'];
-            $this->onFilesChosen($frame['files']);
+            $this->onFilesChosen($frame['files'], $frame['removed']);
 
             if ($this->isDone()) {
                 return;
@@ -216,13 +217,15 @@ final class Job
 
     /**
      * @param list<string> $files
+     * @param Removed $removed
      */
-    private function onFilesChosen(array $files): void
+    private function onFilesChosen(array $files, array $removed): void
     {
         if ($this->strategy === Strategy::FRESH) {
             $this->overlay_worker?->kill();
             $this->overlay_worker = null;
-            [$this->fresh_process, $this->fresh_stdout] = ($this->start_fresh)($this->request, $this->deadline);
+            [$this->fresh_process, $this->fresh_stdout]
+                = ($this->start_fresh)($this->request, $this->deadline, $removed);
             stream_set_blocking($this->fresh_stdout, false);
 
             return;
