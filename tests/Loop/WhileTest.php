@@ -231,6 +231,87 @@ final class WhileTest extends TestCase
                         return $i;
                     }',
             ],
+            'whileTrueIntRangeShiftedInAnArrayOffsetIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $a = ["n" => 0, "s" => "x"];
+                        while (true) {
+                            $a["n"] += rand(1, 3);
+                            if ($a["n"] > 10) {
+                                break;
+                            }
+                        }
+                        /** @psalm-check-type-exact $a = array{n: int<11, 13>, s: "x"} */;
+                        return $a["n"];
+                    }',
+            ],
+            'whileTrueIntRangeShiftedInANestedArrayOffsetIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $a = ["x" => ["n" => 0]];
+                        while (true) {
+                            $a["x"]["n"] += rand(1, 3);
+                            if ($a["x"]["n"] > 10) {
+                                break;
+                            }
+                        }
+                        /** @psalm-check-type-exact $a = array{x: array{n: int<11, 13>}} */;
+                        return $a["x"]["n"];
+                    }',
+            ],
+            'whileTrueIntRangeShiftedInAListOffsetIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $a = [0, 0];
+                        while (true) {
+                            $a[0] += rand(1, 3);
+                            if ($a[0] > 10) {
+                                break;
+                            }
+                        }
+                        /** @psalm-check-type-exact $a = list{int<11, 13>, 0} */;
+                        return $a[0];
+                    }',
+            ],
+            'whileTrueIntRangeShiftedInAnOffsetAssignedBeforeTheLoopIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $a = [];
+                        $a["n"] = 0;
+                        while (true) {
+                            $a["n"] += rand(1, 3);
+                            if ($a["n"] > 10) {
+                                break;
+                            }
+                        }
+                        /** @psalm-check-type-exact $a = array{n: int<11, 13>} */;
+                        return $a["n"];
+                    }',
+            ],
+            'whileIntRangeAssignedToAnArrayOffsetOnEveryIterationIsNotWidened' => [
+                'code' => '<?php
+                    /** @return array{n: int} */
+                    function f(): array {
+                        $a = ["n" => 0];
+                        while (rand(0, 1)) {
+                            $a["n"] = rand(1, 3);
+                        }
+                        /** @psalm-check-type-exact $a = array{n: int<0, 3>} */;
+                        return $a;
+                    }',
+            ],
+            'whileIntRangeTheBodyBoundsInAnArrayOffsetKeepsTheBoundAfterWidening' => [
+                'code' => '<?php
+                    /** @return array{n: int} */
+                    function f(): array {
+                        $a = ["n" => 0];
+                        while (rand(0, 1)) {
+                            $a["n"] = min(10, $a["n"] + rand(1, 3));
+                        }
+                        /** @psalm-check-type-exact $a = array{n: int<0, 10>} */;
+                        return $a;
+                    }',
+            ],
             'whileTrueIntRangeDecrementedByEveryIterationIsWidened' => [
                 'code' => '<?php
                     function f(): int {
@@ -1786,6 +1867,20 @@ final class WhileTest extends TestCase
                         return $i;
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33 - Type int<1, max> for $i is never < 0',
+            ],
+            'whileTrueWidenedIntRangeInAnArrayOffsetKeepsTheBoundItDoesNotShift' => [
+                'code' => '<?php
+                    function f(): int {
+                        $a = ["n" => 0];
+                        while (true) {
+                            $a["n"] += rand(1, 3);
+                            if ($a["n"] < 0) {
+                                break;
+                            }
+                        }
+                        return $a["n"];
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33 - Type int<1, max> for $a[\'n\'] is never < 0',
             ],
             'conditionSeesOffsetUnsetInIf' => [
                 'code' => '<?php
