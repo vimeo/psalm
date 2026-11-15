@@ -18,6 +18,7 @@ use Psalm\Internal\Overlay\OverlayFailure;
 use Psalm\Internal\Overlay\Protocol;
 use Psalm\Internal\Overlay\ReferenceIndex;
 use Psalm\Internal\Overlay\Request;
+use Psalm\Internal\Overlay\RuntimeDeclarations;
 use Psalm\Internal\Overlay\Strategy;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\IssueBuffer;
@@ -64,6 +65,7 @@ use const STDOUT;
  * `psalm --overlay=ORIGINAL=REPLACEMENT` and `psalm --overlays-from=FILE`: the issues the overlays introduce
  *
  * @psalm-import-type IssueArray from IssueDiff
+ * @psalm-import-type Removed from RuntimeDeclarations
  * @internal
  */
 final class OverlayCommand
@@ -248,10 +250,9 @@ final class OverlayCommand
         }
 
         $fresh = getenv(self::FRESH_ENV) === '1' && $fresh_request !== null;
-        [$project_files, $taint] = Engine::scanSnapshot(
-            $project_analyzer,
-            $fresh ? $fresh_request->overlays : [],
-        );
+        [$project_files, $taint] = $fresh
+            ? Engine::scanSnapshot($project_analyzer, $fresh_request->overlays, RuntimeDeclarations::fromEnvironment())
+            : Engine::scanSnapshot($project_analyzer);
 
         $codebase = $project_analyzer->getCodebase();
         $not_checked = [];
@@ -303,8 +304,8 @@ final class OverlayCommand
             static fn(): ?array => null,
             static function (): void {
             },
-            static fn(Request $request, ?float $deadline): array
-                => self::startFreshProcess($request, $argv, $cwd, $deadline),
+            static fn(Request $request, ?float $deadline, array $removed): array
+                => self::startFreshProcess($request, $argv, $cwd, $deadline, $removed),
         );
 
         // the deadline of the process stops what the job started
@@ -340,10 +341,16 @@ final class OverlayCommand
      * @param array<int, string> $argv
      * @param string $cwd where this process started, which the paths in $argv are relative to
      * @param float|null $deadline when the request times out, a microtime(true)
+     * @param Removed $removed see RuntimeDeclarations
      * @return array{resource, resource}
      */
-    public static function startFreshProcess(Request $request, array $argv, string $cwd, ?float $deadline): array
-    {
+    public static function startFreshProcess(
+        Request $request,
+        array $argv,
+        string $cwd,
+        ?float $deadline,
+        array $removed,
+    ): array {
         $command = [PHP_BINARY, Path::makeAbsolute($argv[0] ?? '', $cwd), ...self::getAnalysisArguments($argv)];
         $command[] = '--overlays-from=-';
         $command[] = '--output-format=json';
@@ -360,6 +367,8 @@ final class OverlayCommand
         // stopped at once with what it starts, by this process or, once this process is gone, by its watchdog
         $env[OverlayExitGuard::GROUP_ENV] = '1';
         $env[OverlayExitGuard::OWNER_ENV] = (string) getmypid();
+        // it scans the overlays only: what they no longer declare comes from the overlay pass
+        $env[RuntimeDeclarations::REMOVED_ENV] = RuntimeDeclarations::encode($removed);
 
         $process = proc_open(
             CliUtils::withoutShell($command),

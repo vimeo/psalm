@@ -26,6 +26,7 @@ use const STDERR;
  * forked from it, or, where nothing can fork, in this process after the snapshot is built again.
  *
  * @psalm-import-type IssueArray from IssueDiff
+ * @psalm-import-type Removed from RuntimeDeclarations
  * @internal
  */
 final class Engine
@@ -54,10 +55,14 @@ final class Engine
      * Builds the snapshot: what check() scans, nothing populated, no taint analysis
      *
      * @param array<string, string> $overlays registered before anything is scanned (a fresh run of the overlays)
+     * @param Removed $removed what the overlays no longer declare, see RuntimeDeclarations
      * @return array{array<string, string>, bool} the project files, and whether the configuration runs taints
      */
-    public static function scanSnapshot(ProjectAnalyzer $project_analyzer, array $overlays = []): array
-    {
+    public static function scanSnapshot(
+        ProjectAnalyzer $project_analyzer,
+        array $overlays = [],
+        array $removed = ['functions' => [], 'constants' => []],
+    ): array {
         $codebase = $project_analyzer->getCodebase();
         $taint = $codebase->taint_flow_graph !== null;
         $codebase->taint_flow_graph = null;
@@ -68,7 +73,7 @@ final class Engine
         }
 
         $project_files = $project_analyzer->scanWithoutPopulating();
-        RuntimeDeclarations::forgetRemoved($project_analyzer->getConfig(), $overlays);
+        RuntimeDeclarations::forget($project_analyzer->getConfig(), $removed);
 
         return [$project_files, $taint];
     }
@@ -107,12 +112,19 @@ final class Engine
     /**
      * The overlay pass up to the choice of the files to analyse, in a process that is not usable afterwards
      *
-     * @return array{Strategy::*, list<string>}
+     * @return array{Strategy::*, list<string>, Removed} and what a fresh run forgets, see RuntimeDeclarations
      */
     public function chooseFiles(Request $request): array
     {
-        $signatures = Pass::applyOverlays($this->project_analyzer, $request->overlays);
         $paths = array_keys($request->overlays);
+        $codebase = $this->project_analyzer->getCodebase();
+        $declarations = RuntimeDeclarations::getDeclarations($codebase, $paths);
+        $signatures = Pass::applyOverlays($this->project_analyzer, $request->overlays);
+        $removed = RuntimeDeclarations::getRemoved(
+            $declarations,
+            RuntimeDeclarations::getDeclarations($codebase, $paths),
+        );
+        RuntimeDeclarations::forget($this->project_analyzer->getConfig(), $removed);
 
         if (getenv(Strategy::DEBUG_ENV) === '1') {
             foreach ($signatures as $path => $signature) {
@@ -143,6 +155,7 @@ final class Engine
         return [
             $strategy,
             Pass::getAffectedFiles($strategy, $paths, $members, $this->index, $this->project_files),
+            $removed,
         ];
     }
 
@@ -168,10 +181,10 @@ final class Engine
             $files = $this->getProjectFileList();
             $overlay_issues = $this->analyze($this->project_analyzer, $files, $request->whole_project);
         } else {
-            [$strategy, $files] = $this->chooseFiles($request);
+            [$strategy, $files, $removed] = $this->chooseFiles($request);
 
             if ($strategy === Strategy::FRESH) {
-                $project_analyzer = $this->rebuildSnapshot($request->overlays);
+                $project_analyzer = $this->rebuildSnapshot($request->overlays, $removed);
 
                 return [Strategy::FRESH, ...$this->runFreshPasses($project_analyzer, $request)];
             }
@@ -217,13 +230,16 @@ final class Engine
 
     /**
      * @param array<string, string> $overlays
+     * @param Removed $removed see RuntimeDeclarations
      */
-    private function rebuildSnapshot(array $overlays): ProjectAnalyzer
-    {
+    private function rebuildSnapshot(
+        array $overlays,
+        array $removed = ['functions' => [], 'constants' => []],
+    ): ProjectAnalyzer {
         // the reset Psalm's own tests make between two analyses, with a new config, new providers and new caches
         RuntimeCaches::clearAll();
         $project_analyzer = ($this->rebootstrap)();
-        self::scanSnapshot($project_analyzer, $overlays);
+        self::scanSnapshot($project_analyzer, $overlays, $removed);
 
         return $project_analyzer;
     }
