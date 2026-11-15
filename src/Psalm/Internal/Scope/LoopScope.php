@@ -8,6 +8,8 @@ use Psalm\Context;
 use Psalm\Storage\Assertion;
 use Psalm\Type\Union;
 
+use function array_intersect_key;
+
 /**
  * @internal
  */
@@ -58,6 +60,11 @@ final class LoopScope
     public array $possibly_defined_loop_parent_vars = [];
 
     /**
+     * The number of break statements seen in the first iteration
+     */
+    public int $break_count = 0;
+
+    /**
      * @var array<string, bool>
      */
     public array $vars_possibly_in_scope = [];
@@ -71,6 +78,23 @@ final class LoopScope
      * @var string[]
      */
     public array $final_actions = [];
+
+    /**
+     * The offsets of nullable arrays read on every `break` and `continue` path so far, null before there is one
+     *
+     * @var array<string, true>|null
+     */
+    public ?array $null_array_offsets_read_at_jumps = null;
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function addJump(Context $context): void
+    {
+        $this->null_array_offsets_read_at_jumps = $this->null_array_offsets_read_at_jumps === null
+            ? $context->null_array_offsets_read
+            : array_intersect_key($this->null_array_offsets_read_at_jumps, $context->null_array_offsets_read);
+    }
 
     /**
      * @psalm-mutation-free

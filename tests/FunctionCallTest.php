@@ -24,6 +24,30 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'lvaluesCanBePassedToByRefParams' => [
+                'code' => '<?php
+                    class A {
+                        public int $p = 1;
+                        public static int $s = 1;
+                    }
+                    function fooFoo(int &$v): void {}
+                    $a = ["k" => 1];
+                    $o = new A();
+                    $v = 1;
+                    fooFoo($v);
+                    fooFoo($a["k"]);
+                    fooFoo($o->p);
+                    fooFoo(A::$s);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'internalFunctionsPreferringRefsAcceptAnAssignment' => [
+                'code' => '<?php
+                    $read = [STDIN];
+                    $r = stream_select($read, $w = null, $e = null, 0);',
+                'assertions' => [],
+            ],
             'existenceChecksOfALowercaseOrLiteralStringKeepTheNameType' => [
                 'code' => <<<'PHP'
                     <?php
@@ -947,6 +971,30 @@ final class FunctionCallTest extends TestCase
                     '$a===' => '1',
                     '$b===' => '\'y\'',
                 ],
+            ],
+            'extractSkipDefinesAPossiblyUndefinedVariable' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        $a = 1;
+                    }
+
+                    extract(["a" => 2], EXTR_SKIP);
+
+                    $b = $a;',
+                'assertions' => [
+                    '$b===' => '1|2',
+                ],
+            ],
+            'extractSkipDefinesAVariableOfAPreviousIteration' => [
+                'code' => '<?php
+                    function f(array $xs): void {
+                        foreach ($xs as $_) {
+                            extract(["a" => 2], EXTR_SKIP);
+                            /** @psalm-check-type-exact $a = 1|2 */;
+                            echo $a;
+                            $a = 1;
+                        }
+                    }',
             ],
             'compact' => [
                 'code' => '<?php
@@ -3219,6 +3267,72 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'pregReplaceCallbackWithNamedUnmatchedAsNullFlag' => [
+                'code' => '<?php
+                    preg_replace_callback(
+                        pattern: "#^([a-z]+)$|^([0-9]+)$#",
+                        callback: fn (array $m): string => $m[1] === null ? "1" : "a",
+                        subject: "1234567890",
+                        flags: PREG_UNMATCHED_AS_NULL,
+                    );',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'pregReplaceCallbackWithFlagsThatAreNotKnown' => [
+                'code' => '<?php
+                    function spread(): void {
+                        $args = ["#(a)#", fn (array $m): string => "x", "a", -1, null, PREG_UNMATCHED_AS_NULL];
+                        preg_replace_callback(...$args);
+                    }
+
+                    function variable(int $flags): void {
+                        preg_replace_callback(
+                            "#(a)#",
+                            fn (array $m): string => "x",
+                            "a",
+                            -1,
+                            $count,
+                            $flags,
+                        );
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument', 'ArgumentTypeCoercion', 'PossiblyInvalidArgument', 'InvalidArgument'],
+            ],
+            'pregReplaceCallbackWithUnmatchedAsNullFlag' => [
+                'code' => '<?php
+                    $a = preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        fn ($m) => null === $m[1] ? "1" : "a",
+                        "1234567890",
+                        1,
+                        $count,
+                        PREG_UNMATCHED_AS_NULL,
+                    );
+
+                    $b = preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        function (array $m): string {
+                            return $m[1][0] === null ? "1" : "a";
+                        },
+                        "1234567890",
+                        -1,
+                        $count,
+                        PREG_OFFSET_CAPTURE | PREG_UNMATCHED_AS_NULL,
+                    );
+
+                    $c = preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        function (array $m): string {
+                            return $m[1][0] . $m[1][1];
+                        },
+                        "1234567890",
+                        -1,
+                        $count,
+                        PREG_OFFSET_CAPTURE,
+                    );',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedIntArrayOffset'],
+            ],
             'filterVarIpGlobalRangeFlag' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3232,6 +3346,75 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'arrayIsListOfAShapeWithAGapInItsListKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{0?: string, 2?: int} $gap */
+                    function gap(array $gap): void {
+                        if (array_is_list($gap)) {
+                            /** @psalm-check-type-exact $gap = list{0?: string} */
+                        }
+                    }
+
+                    /** @param array{0?: string, 1: int} $requiredLast */
+                    function requiredLast(array $requiredLast): void {
+                        if (array_is_list($requiredLast)) {
+                            /** @psalm-check-type-exact $requiredLast = list{string, int} */
+                        }
+                    }
+
+                    /** @param array{1?: int, 0: string} $outOfOrder */
+                    function outOfOrder(array $outOfOrder): void {
+                        if (array_is_list($outOfOrder)) {
+                            /** @psalm-check-type-exact $outOfOrder = list{0: string, 1?: int} */
+                        }
+                    }
+
+                    /** @param array{2?: bool, 0?: string, 1: int} $outOfOrderWithRequiredKey */
+                    function outOfOrderWithRequiredKey(array $outOfOrderWithRequiredKey): void {
+                        if (array_is_list($outOfOrderWithRequiredKey)) {
+                            /** @psalm-check-type-exact $outOfOrderWithRequiredKey = list{0: string, 1: int, 2?: bool} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayIsListOfASealedShapeWithOptionalKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{a?: string} $onlyAString */
+                    function stringKey(array $onlyAString): void {
+                        if (array_is_list($onlyAString)) {
+                            /** @psalm-check-type-exact $onlyAString = array<never, never> */
+                        }
+                    }
+
+                    /** @param array{0?: string, 1?: int} $listKeys */
+                    function listKeys(array $listKeys): void {
+                        if (array_is_list($listKeys)) {
+                            /** @psalm-check-type-exact $listKeys = list{0?: string, 1?: int} */
+                        }
+                    }
+
+                    /** @param array{0?: string, a?: int} $mixedKeys */
+                    function mixedKeys(array $mixedKeys): void {
+                        if (array_is_list($mixedKeys)) {
+                            /** @psalm-check-type-exact $mixedKeys = list{0?: string} */
+                        }
+                    }
+
+                    /** @param array{0?: string, 1?: int} $listKeys */
+                    function nonEmpty(array $listKeys): void {
+                        assert(array_is_list($listKeys) && $listKeys !== []);
+                        /** @psalm-check-type-exact $listKeys = list{0: string, 1?: int} */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -3242,6 +3425,19 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'pregReplaceCallbackWithOffsetCaptureGivesPairsNotStrings' => [
+                'code' => '<?php
+                    preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        fn ($m) => strtoupper($m[1]),
+                        "1234567890",
+                        1,
+                        $count,
+                        PREG_OFFSET_CAPTURE,
+                    );',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => ['PossiblyUndefinedIntArrayOffset'],
+            ],
             'streamSelectDoesNotTakeAContextBeforePhp86' => [
                 'code' => '<?php
                     $read = [STDIN];
@@ -3252,6 +3448,74 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'TooManyArguments',
                 'error_levels' => [],
                 'php_version' => '8.5',
+            ],
+            'callableAndScalarUnionIsInvalidForInt' => [
+                'code' => '<?php
+                    /** @param int $i */
+                    function takesInt($i): void {}
+
+                    /** @param callable|scalar $x */
+                    function f($x): void {
+                        takesInt($x);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'scalarAndCallableUnionIsInvalidForInt' => [
+                'code' => '<?php
+                    /** @param int $i */
+                    function takesInt($i): void {}
+
+                    /** @param scalar|callable $x */
+                    function f($x): void {
+                        takesInt($x);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayAndScalarUnionIsAPlainMismatchForString' => [
+                'code' => '<?php
+                    function takesString(string $s): void {}
+
+                    /** @param array<mixed>|scalar $x */
+                    function f($x): void {
+                        takesString($x);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'stringableAndArrayAndScalarUnionIsPossiblyInvalidForStringable' => [
+                'code' => '<?php
+                    function takesStringable(Stringable $s): void {}
+
+                    /** @param Stringable|UnitEnum|array<mixed>|int|null|string $x */
+                    function g($x): void {
+                        takesStringable($x);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'floatAndIntUnionIsAnInvalidOffsetOfAConstantArray' => [
+                'code' => '<?php
+                    final class A {
+                        const S = [1 => "a", 1024 => "b"];
+
+                        /** @param float|int $x */
+                        public static function f($x): string {
+                            return self::S[$x];
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:36',
+            ],
+            'intAndFloatUnionIsAnInvalidOffsetOfAConstantArray' => [
+                'code' => '<?php
+                    final class A {
+                        const S = [1 => "a", 1024 => "b"];
+
+                        /** @param int|float $x */
+                        public static function f($x): string {
+                            return self::S[$x];
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:36',
             ],
             'emptyStringIsNotANonEmptyLowercaseString' => [
                 'code' => '<?php
@@ -3504,6 +3768,203 @@ final class FunctionCallTest extends TestCase
                     function fooFoo(string &$v): void {}
                     fooFoo("a");',
                 'error_message' => 'InvalidPassByReference',
+            ],
+            'badByRefWithAssignArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo($s = "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithAssignOpArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo($t .= "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithBooleanNotArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(!$t);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithUnaryMinusArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(-$n);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithPostIncArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo($n++);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithPreIncArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(++$n);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithIssetArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(isset($t));',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithEmptyArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(empty($t));',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithInstanceofArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo($t instanceof stdClass);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithCloneArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(clone $o);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithClosureArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(function (): void {});',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithArrowFunctionArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(fn(): int => 1);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithMatchArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(match (1) { default => 2 });',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithErrorSuppressArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $a = 1;
+                    fooFoo(@$a);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithPrintArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    fooFoo(print "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithNewArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    fooFoo(new stdClass());',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithAssignArgumentOfAMethod' => [
+                'code' => '<?php
+                    class A {
+                        public function m(mixed &$v): void {}
+                    }
+                    (new A())->m($s = "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithAssignArgumentOfAStaticMethod' => [
+                'code' => '<?php
+                    class A {
+                        public static function m(mixed &$v): void {}
+                    }
+                    A::m($s = "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithAssignArgumentOfAVariadicParam' => [
+                'code' => '<?php
+                    function fooFoo(mixed &...$v): void {}
+                    $a = 1;
+                    fooFoo($a, $s = "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'badArrayByRef' => [
                 'code' => '<?php
@@ -4163,6 +4624,17 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'arrayIsListOfALiteralArrayOutOfOrderWithAnOptionalKey' => [
+                'code' => '<?php
+                    $list = [1 => 0, 0 => 1];
+                    if (rand(0, 1)) {
+                        $list[2] = 2;
+                    }
+                    assert(array_is_list($list));',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'array_is_list_on_list_shape' => [
                 'code' => '<?php
                     /** @param list{string, int} $arr */
@@ -4416,6 +4888,56 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
                 'error_levels' => [],
                 'php_version' => '7.4',
+            ],
+            'pregReplaceCallbackWithoutUnmatchedAsNullFlag' => [
+                'code' => '<?php
+                    preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        fn ($m) => null === $m[1] ? "1" : "a",
+                        "1234567890",
+                        1,
+                        $count,
+                        0,
+                    );',
+                'error_message' => 'DocblockTypeContradiction',
+                'error_levels' => ['PossiblyUndefinedIntArrayOffset'],
+            ],
+            'pregReplaceCallbackWithUnmatchedAsNullFlagMayGiveNull' => [
+                'code' => '<?php
+                    preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        fn ($m) => strtoupper($m[1]),
+                        "1234567890",
+                        1,
+                        $count,
+                        PREG_UNMATCHED_AS_NULL,
+                    );',
+                'error_message' => 'PossiblyNullArgument',
+                'error_levels' => ['PossiblyUndefinedIntArrayOffset'],
+            ],
+            'arrayIsListOfAShapeWithARequiredKeyAfterAGapInItsListKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{0?: string, 2: int} $a */
+                    function f(array $a): void {
+                        if (array_is_list($a)) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:9 - Type array{0?: string, 2: int} for $a is never list',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayIsListOfAShapeWithARequiredStringKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{a: string} $a */
+                    function f(array $a): void {
+                        if (array_is_list($a)) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

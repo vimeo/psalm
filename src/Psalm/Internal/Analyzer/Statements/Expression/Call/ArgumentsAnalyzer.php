@@ -58,6 +58,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
@@ -112,6 +113,40 @@ final class ArgumentsAnalyzer
      * @return  false|null
      */
     public static function analyze(
+        StatementsAnalyzer $statements_analyzer,
+        array $args,
+        ?array $function_params,
+        ?string $method_id,
+        bool $allow_named_args,
+        Context $context,
+        ?TemplateResult $template_result = null,
+    ): ?bool {
+        // what is negated is the call, not what its arguments are made of: a `class_exists()` in an argument of a
+        // negated call checks the class where the argument is evaluated
+        $was_inside_negation = $context->inside_negation;
+        $context->inside_negation = false;
+
+        try {
+            return self::analyzeArguments(
+                $statements_analyzer,
+                $args,
+                $function_params,
+                $method_id,
+                $allow_named_args,
+                $context,
+                $template_result,
+            );
+        } finally {
+            $context->inside_negation = $was_inside_negation;
+        }
+    }
+
+    /**
+     * @param   list<PhpParser\Node\Arg>          $args
+     * @param   array<int, FunctionLikeParameter>|null  $function_params
+     * @return  false|null
+     */
+    private static function analyzeArguments(
         StatementsAnalyzer $statements_analyzer,
         array $args,
         ?array $function_params,
@@ -1653,6 +1688,23 @@ final class ArgumentsAnalyzer
                 || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
                 || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
                 || $arg->value instanceof PhpParser\Node\Expr\Ternary
+                // an internal function may take other expressions by reference only when it prefers it, like
+                // `stream_select()`, so only functions with storage outside the call map are strict about them
+                || ($function_storage !== null
+                    && !(
+                        $arg->value instanceof PhpParser\Node\Expr\Variable
+                        || $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\PropertyFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\StaticPropertyFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\AssignRef
+                        // these are checked below, by the type of their result
+                        || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\FuncCall
+                        || $arg->value instanceof PhpParser\Node\Expr\MethodCall
+                        || $arg->value instanceof PhpParser\Node\Expr\NullsafeMethodCall
+                        || $arg->value instanceof PhpParser\Node\Expr\StaticCall
+                    ))
                 || (
                     (
                     $arg->value instanceof PhpParser\Node\Expr\ConstFetch
@@ -2130,6 +2182,7 @@ final class ArgumentsAnalyzer
                 $declaring_class_storage,
                 $context,
                 $lhs_var_id,
+                true,
             );
         }
     }
@@ -2225,6 +2278,19 @@ final class ArgumentsAnalyzer
             && self::phpTakesArgumentByReference($method_id, $argument_offset);
 
         try {
+            // passing a variable by reference defines it, as null when it was not set
+            if ($var_id !== null
+                && $arg->value instanceof PhpParser\Node\Expr\Variable
+                && isset($context->vars_in_scope[$var_id])
+                && $context->vars_in_scope[$var_id]->possibly_undefined
+            ) {
+                $var_type = $context->vars_in_scope[$var_id]->setPossiblyUndefined(false, false);
+
+                $context->vars_in_scope[$var_id] = $var_type->isNullable() || $var_type->hasMixed()
+                    ? $var_type
+                    : $var_type->getBuilder()->addType(new TNull())->freeze();
+            }
+
             if (($var_id && isset($context->vars_in_scope[$var_id]))
                 || ($method_id
                     && in_array(
