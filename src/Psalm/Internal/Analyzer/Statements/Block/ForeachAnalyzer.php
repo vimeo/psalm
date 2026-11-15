@@ -248,8 +248,9 @@ final class ForeachAnalyzer
                 }
 
                 if (isset($context->vars_in_scope[$var_comment->var_id])) {
-                    /** @psalm-suppress InaccessibleProperty We just created this type */
-                    $comment_type->parent_nodes = $context->vars_in_scope[$var_comment->var_id]->parent_nodes;
+                    $comment_type = $comment_type->setParentNodes(
+                        $context->vars_in_scope[$var_comment->var_id]->parent_nodes,
+                    );
                 }
 
                 $context->vars_in_scope[$var_comment->var_id] = $comment_type;
@@ -401,10 +402,10 @@ final class ForeachAnalyzer
 
             if (isset($foreach_context->vars_in_scope[$var_comment->var_id])) {
                 $existing_var_type = $foreach_context->vars_in_scope[$var_comment->var_id];
-                /** @psalm-suppress InaccessibleProperty We just created this type */
-                $comment_type->parent_nodes = $existing_var_type->parent_nodes;
-                /** @psalm-suppress InaccessibleProperty We just created this type */
-                $comment_type->by_ref = $existing_var_type->by_ref;
+                $comment_type = $comment_type->setProperties([
+                    'parent_nodes' => $existing_var_type->parent_nodes,
+                    'by_ref' => $existing_var_type->by_ref,
+                ]);
             }
 
             $foreach_context->vars_in_scope[$var_comment->var_id] = $comment_type;

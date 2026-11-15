@@ -39,7 +39,6 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_shift;
 use function array_values;
-use function rtrim;
 use function strtolower;
 
 /**
@@ -147,7 +146,8 @@ final class InstancePropertyFetchAnalyzer
         if ($stmt_var_type->isNull()) {
             return !IssueBuffer::accepts(
                 new NullPropertyFetch(
-                    'Cannot get property on null variable ' . $stmt_var_id,
+                    'Cannot get property on null variable '
+                        . ExpressionIdentifier::getNameForMessage($stmt_var_id, $stmt->var),
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -221,7 +221,8 @@ final class InstancePropertyFetchAnalyzer
                 if ($receiver_state !== NullsafeChainState::ShortCircuit) {
                     IssueBuffer::maybeAdd(
                         new PossiblyNullPropertyFetch(
-                            rtrim('Cannot get property on possibly null variable ' . $stmt_var_id)
+                            'Cannot get property on possibly null variable '
+                            . ExpressionIdentifier::getNameForMessage($stmt_var_id, $stmt->var)
                             . ' of type ' . $stmt_var_type,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),

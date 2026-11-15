@@ -245,6 +245,10 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 self::getFQCLNFromNameObject($trait, $aliases),
             );
 
+            if (!$codebase->classlikes->hasFullyQualifiedTraitName($fq_trait_name)) {
+                continue;
+            }
+
             $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
             $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name);
             $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name);
