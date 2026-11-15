@@ -32,7 +32,6 @@ use function array_filter;
 use function array_map;
 use function array_values;
 use function count;
-use function is_array;
 use function spl_object_id;
 use function str_starts_with;
 use function strcspn;
@@ -709,65 +708,9 @@ final class FormulaGenerator
      */
     public static function getAssignedVarIds(PhpParser\Node\Expr $expr, ?string $this_class_name): array
     {
-        $visitor = new class extends PhpParser\NodeVisitorAbstract {
-            /** @var list<PhpParser\Node\Expr> */
-            public array $targets = [];
-
-            /** @psalm-capabilities read-props|write-this-props|write-refs */
-            #[Override]
-            public function enterNode(PhpParser\Node $node): ?int
-            {
-                // the body of a closure assigns its own variables; only what it takes by reference is the outer's
-                if ($node instanceof PhpParser\Node\Expr\Closure) {
-                    foreach ($node->uses as $use) {
-                        if ($use->byRef) {
-                            $this->targets[] = $use->var;
-                        }
-                    }
-
-                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
-                }
-
-                if ($node instanceof PhpParser\Node\Expr\ArrowFunction
-                    || $node instanceof PhpParser\Node\Stmt\ClassLike
-                ) {
-                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
-                }
-
-                if ($node instanceof PhpParser\Node\Expr\Assign
-                    || $node instanceof PhpParser\Node\Expr\AssignRef
-                    || $node instanceof PhpParser\Node\Expr\AssignOp
-                    || $node instanceof PhpParser\Node\Expr\PreInc
-                    || $node instanceof PhpParser\Node\Expr\PreDec
-                    || $node instanceof PhpParser\Node\Expr\PostInc
-                    || $node instanceof PhpParser\Node\Expr\PostDec
-                ) {
-                    if ($node->var instanceof PhpParser\Node\Expr\List_
-                        || $node->var instanceof PhpParser\Node\Expr\Array_
-                    ) {
-                        foreach ($node->var->items as $item) {
-                            if ($item !== null) {
-                                $this->targets[] = $item->value;
-                            }
-                        }
-                    } else {
-                        $this->targets[] = $node->var;
-                    }
-                }
-
-                return null;
-            }
-        };
-
-        $traverser = new PhpParser\NodeTraverser();
-        $traverser->addVisitor($visitor);
-        $traverser->traverse([$expr]);
-
-        $targets = $visitor->targets;
-
         $var_ids = [];
 
-        foreach ($targets as $target) {
+        foreach (self::getWrittenExprs([$expr], false) as $target) {
             $var_id = ExpressionIdentifier::getRootVarId($target, $this_class_name);
 
             if ($var_id !== null) {
@@ -894,13 +837,7 @@ final class FormulaGenerator
             return false;
         }
 
-        $targets = [];
-
-        foreach ($call->getArgs() as $arg) {
-            self::collectWrittenExprs($arg, $targets);
-        }
-
-        foreach ($targets as $target) {
+        foreach (self::getWrittenExprs($call->getArgs(), true) as $target) {
             $target_id = ExpressionIdentifier::getExtendedVarId($target, $this_class_name, $source);
 
             if ($target_id !== null
@@ -916,84 +853,84 @@ final class FormulaGenerator
     }
 
     /**
-     * The expressions the node may write to in the current scope: what it assigns, and what it passes to a call, which
-     * may take it by reference. Function bodies write to their own scope, and only the variables a closure uses by
-     * reference are the enclosing scope's.
+     * The expressions the nodes assign in the current scope, and with $with_arguments what they pass to calls, which
+     * may take them by reference. The body of a closure assigns its own variables: only what it uses by reference is
+     * the outer scope's.
      *
-     * @param list<PhpParser\Node\Expr> $targets
-     * @param-out list<PhpParser\Node\Expr> $targets
+     * @param array<PhpParser\Node> $nodes
+     * @return list<PhpParser\Node\Expr>
      */
-    private static function collectWrittenExprs(PhpParser\Node $node, array &$targets): void
+    private static function getWrittenExprs(array $nodes, bool $with_arguments): array
     {
-        if ($node instanceof PhpParser\Node\Arg) {
-            $targets[] = $node->value;
-        }
+        $visitor = new class ($with_arguments) extends PhpParser\NodeVisitorAbstract {
+            /** @var list<PhpParser\Node\Expr> */
+            public array $targets = [];
 
-        if ($node instanceof PhpParser\Node\Expr\Closure) {
-            foreach ($node->uses as $use) {
-                if ($use->byRef) {
-                    $targets[] = $use->var;
+            public function __construct(private readonly bool $with_arguments)
+            {
+            }
+
+            /** @psalm-capabilities read-props|write-this-props|write-refs */
+            #[Override]
+            public function enterNode(PhpParser\Node $node): ?int
+            {
+                if ($node instanceof PhpParser\Node\Expr\Closure) {
+                    foreach ($node->uses as $use) {
+                        if ($use->byRef) {
+                            $this->targets[] = $use->var;
+                        }
+                    }
+
+                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
+
+                if ($node instanceof PhpParser\Node\Expr\ArrowFunction
+                    || $node instanceof PhpParser\Node\Stmt\Function_
+                    || $node instanceof PhpParser\Node\Stmt\ClassLike
+                ) {
+                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
+
+                if ($this->with_arguments && $node instanceof PhpParser\Node\Arg) {
+                    $this->targets[] = $node->value;
+                }
+
+                if ($node instanceof PhpParser\Node\Expr\Assign
+                    || $node instanceof PhpParser\Node\Expr\AssignRef
+                    || $node instanceof PhpParser\Node\Expr\AssignOp
+                    || $node instanceof PhpParser\Node\Expr\PreInc
+                    || $node instanceof PhpParser\Node\Expr\PreDec
+                    || $node instanceof PhpParser\Node\Expr\PostInc
+                    || $node instanceof PhpParser\Node\Expr\PostDec
+                ) {
+                    $this->addAssigned($node->var);
+                }
+
+                return null;
+            }
+
+            /** @psalm-capabilities read-props|write-this-props */
+            private function addAssigned(PhpParser\Node\Expr $var): void
+            {
+                if (!$var instanceof PhpParser\Node\Expr\List_ && !$var instanceof PhpParser\Node\Expr\Array_) {
+                    $this->targets[] = $var;
+
+                    return;
+                }
+
+                foreach ($var->items as $item) {
+                    if ($item !== null) {
+                        $this->addAssigned($item->value);
+                    }
                 }
             }
+        };
 
-            return;
-        }
+        $traverser = new PhpParser\NodeTraverser();
+        $traverser->addVisitor($visitor);
+        $traverser->traverse($nodes);
 
-        if ($node instanceof PhpParser\Node\Expr\ArrowFunction
-            || $node instanceof PhpParser\Node\Stmt\Function_
-            || $node instanceof PhpParser\Node\Stmt\Class_
-        ) {
-            return;
-        }
-
-        if ($node instanceof PhpParser\Node\Expr\Assign
-            || $node instanceof PhpParser\Node\Expr\AssignRef
-            || $node instanceof PhpParser\Node\Expr\AssignOp
-            || $node instanceof PhpParser\Node\Expr\PreInc
-            || $node instanceof PhpParser\Node\Expr\PreDec
-            || $node instanceof PhpParser\Node\Expr\PostInc
-            || $node instanceof PhpParser\Node\Expr\PostDec
-        ) {
-            self::addAssignedExprs($node->var, $targets);
-        }
-
-        foreach ($node->getSubNodeNames() as $name) {
-            /** @var mixed $children a sub node, a list of them or a scalar */
-            $children = $node->{$name};
-
-            if ($children instanceof PhpParser\Node) {
-                $children = [$children];
-            } elseif (!is_array($children)) {
-                continue;
-            }
-
-            /** @var mixed $child */
-            foreach ($children as $child) {
-                if ($child instanceof PhpParser\Node) {
-                    self::collectWrittenExprs($child, $targets);
-                }
-            }
-        }
-    }
-
-    /**
-     * @param list<PhpParser\Node\Expr> $targets
-     * @param-out list<PhpParser\Node\Expr> $targets
-     * @psalm-capabilities read-props|write-this-props|write-refs
-     */
-    private static function addAssignedExprs(PhpParser\Node\Expr $var, array &$targets): void
-    {
-        if (!$var instanceof PhpParser\Node\Expr\Array_ && !$var instanceof PhpParser\Node\Expr\List_) {
-            $targets[] = $var;
-
-            return;
-        }
-
-        foreach ($var->items as $item) {
-            if ($item !== null) {
-                self::addAssignedExprs($item->value, $targets);
-            }
-        }
+        return $visitor->targets;
     }
 
     private static function isBoolLiteral(PhpParser\Node\Expr $expr): bool

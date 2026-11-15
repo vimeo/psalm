@@ -1359,6 +1359,25 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
                 'php_version' => '8.1',
             ],
+            'argumentCoercedOnTheRightOfAndIsNotReassigned' => [
+                'code' => <<<'PHP'
+                    <?php
+                    declare(strict_types=1);
+
+                    /** @param list<string> $argv */
+                    function f(array $argv): void {
+                        for ($i = 0, $iMax = count($argv); $i < $iMax; ++$i) {
+                            $input_path = $argv[$i];
+                            if ($input_path[0] === '-' && strlen($input_path) === 2) {
+                                continue;
+                            }
+                            if (strlen($input_path) > 2 && $input_path[0] === '-' && $input_path[2] === '=') {
+                                continue;
+                            }
+                        }
+                    }
+                    PHP,
+            ],
             'boolVarIdenticalToFalseNarrowsItsConjuncts' => [
                 'code' => <<<'PHP'
                     <?php

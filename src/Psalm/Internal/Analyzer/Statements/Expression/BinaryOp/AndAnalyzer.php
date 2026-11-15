@@ -198,7 +198,11 @@ final class AndAnalyzer
             return false;
         }
 
-        $right_assigned_var_ids = array_diff_key($right_context->assigned_var_ids, $pre_right_assigned_var_ids);
+        // an argument a call coerces to its parameter type is recorded at offset 0: its value doesn't change
+        $right_assigned_var_ids = array_filter(
+            array_diff_key($right_context->assigned_var_ids, $pre_right_assigned_var_ids),
+            static fn(int $offset): bool => $offset !== 0,
+        );
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
 
