@@ -3532,6 +3532,94 @@ final class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'PossiblyUndefinedVariable',
             ],
+            'callAssertionOnPropertyStoredInVariableIsForgottenWhenThePropertyIsPassedByReference' => [
+                'code' => '<?php
+                    final class C {
+                        public ?string $p = null;
+
+                        /** @psalm-assert-if-true !null $this->p */
+                        public function hasP(): bool {
+                            return $this->p !== null;
+                        }
+                    }
+
+                    function setNull(?string &$s): void {
+                        $s = null;
+                    }
+
+                    function f(C $c): int {
+                        $has = $c->hasP();
+                        setNull($c->p);
+
+                        if ($has) {
+                            return strlen($c->p);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckOfPropertyStoredInVariableIsForgottenWhenThePropertyIsPassedByReference' => [
+                'code' => '<?php
+                    final class C {
+                        public ?string $p = null;
+
+                        /** @psalm-assert-if-true !null $this->p */
+                        public function hasP(): bool {
+                            return $this->p !== null;
+                        }
+                    }
+
+                    function setNull(?string &$s): void {
+                        $s = null;
+                    }
+
+                    function f(C $c): int {
+                        $has = $c->p !== null;
+                        setNull($c->p);
+
+                        if ($has) {
+                            return strlen($c->p);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'functionCallStoredInVariableIsForgottenWhenAClosureCapturingItByReferenceIsCalled' => [
+                'code' => '<?php
+                    function f(?string $x): int {
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+                        $notNull = is_string($x);
+                        $f();
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckStoredInVariableIsForgottenWhenAClosureCapturingItByReferenceIsCalled' => [
+                'code' => '<?php
+                    function f(?string $x): int {
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+                        $notNull = $x !== null;
+                        $f();
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
             'nullCheckStoredInVariableIsForgottenWhenALoopAssignsNull' => [
                 'code' => '<?php
                     function f(?array $l): int {

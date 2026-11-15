@@ -1607,6 +1607,20 @@ final class AssignmentAnalyzer
                 modifies_value: true,
             );
 
+            $property_var_id = ExpressionIdentifier::getExtendedVarId(
+                $stmt,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($property_var_id !== null) {
+                $context->removeVarFromConflictingClauses(
+                    $property_var_id,
+                    $by_ref_out_type,
+                    $statements_analyzer,
+                );
+            }
+
             return;
         }
 
