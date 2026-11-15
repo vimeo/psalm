@@ -95,6 +95,7 @@ use function implode;
 use function in_array;
 use function is_string;
 use function reset;
+use function str_contains;
 use function stripos;
 use function strtolower;
 use function substr;
@@ -561,7 +562,8 @@ final class ForeachAnalyzer
         // keeps the item's type in what it ends with: when an item's type isn't in the written type, every
         // iteration wrote the variable
         $visits_every_item = !in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
-            && !self::mayDetachTheValueVariable($stmt->stmts, substr($value_var_id, 1));
+            && !self::mayDetachTheValueVariable($stmt->stmts, substr($value_var_id, 1))
+            && !self::mayWriteTheArrayOtherwise($statements_analyzer, $stmt, $array_var_id, $value_var_id, $context);
 
         $item_after_loop = static function (Union $item) use (
             $codebase,
@@ -780,6 +782,131 @@ final class ForeachAnalyzer
                 return false;
             },
         ) !== null;
+    }
+
+    /**
+     * Whether the body may write to the iterated array other than through the value variable: an assignment to it or
+     * to one of its offsets, passing it by reference, or, when the array is a property or a reference, a call (or a
+     * write to another variable, which may be bound to it)
+     */
+    private static function mayWriteTheArrayOtherwise(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Foreach_ $stmt,
+        string $array_var_id,
+        string $value_var_id,
+        Context $context,
+    ): bool {
+        $array_root = self::getRootVariableName($stmt->expr);
+
+        if ($array_root === null) {
+            return true;
+        }
+
+        $value_var_name = substr($value_var_id, 1);
+
+        $is_reference = isset($context->references_to_external_scope[$array_var_id])
+            || isset($context->references_in_scope[$array_var_id])
+            || array_any(
+                $context->references_in_scope,
+                static fn(string $referenced_id, string $reference_id): bool => $referenced_id === $array_var_id
+                    && $reference_id !== $value_var_id,
+            );
+        $any_call_writes = $is_reference || str_contains($array_var_id, '->') || str_contains($array_var_id, '::');
+
+        $writes = static fn(PhpParser\Node\Expr $target): bool => self::writesToTheArray(
+            $target,
+            $array_root,
+            $value_var_name,
+            $is_reference,
+        );
+
+        return (new NodeFinder())->findFirst(
+            $stmt->stmts,
+            static function (PhpParser\Node $node) use ($statements_analyzer, $writes, $any_call_writes): bool {
+                if ($node instanceof PhpParser\Node\Expr\CallLike) {
+                    if ($any_call_writes) {
+                        return true;
+                    }
+
+                    foreach ($node->getRawArgs() as $position => $arg) {
+                        if ($arg instanceof PhpParser\Node\Arg
+                            && self::mayPassByReference($statements_analyzer, $node, $position, $arg)
+                            && $writes($arg->value)
+                        ) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+
+                if ($node instanceof PhpParser\Node\Expr\Assign
+                    || $node instanceof PhpParser\Node\Expr\AssignOp
+                    || $node instanceof PhpParser\Node\Expr\AssignRef
+                    || $node instanceof PhpParser\Node\Expr\PreInc
+                    || $node instanceof PhpParser\Node\Expr\PreDec
+                    || $node instanceof PhpParser\Node\Expr\PostInc
+                    || $node instanceof PhpParser\Node\Expr\PostDec
+                ) {
+                    return $writes($node->var);
+                }
+
+                if ($node instanceof PhpParser\Node\Stmt\Unset_) {
+                    return array_any($node->vars, $writes);
+                }
+
+                return false;
+            },
+        ) !== null;
+    }
+
+    /**
+     * @param bool $is_reference whether the array is a reference: then a write to another variable may reach it
+     * @psalm-pure
+     */
+    private static function writesToTheArray(
+        PhpParser\Node\Expr $target,
+        string $array_root,
+        string $value_var_name,
+        bool $is_reference,
+    ): bool {
+        if ($target instanceof PhpParser\Node\Expr\List_ || $target instanceof PhpParser\Node\Expr\Array_) {
+            foreach ($target->items as $item) {
+                if ($item !== null
+                    && self::writesToTheArray($item->value, $array_root, $value_var_name, $is_reference)
+                ) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        $root = self::getRootVariableName($target);
+
+        return $root === null || $root === $array_root || ($is_reference && $root !== $value_var_name);
+    }
+
+    /**
+     * The name of the variable an expression is a part of (`$a` of `$a['k']->p`), null when it is not one with a name
+     *
+     * @psalm-pure
+     */
+    private static function getRootVariableName(PhpParser\Node\Expr $expr): ?string
+    {
+        while ($expr instanceof PhpParser\Node\Expr\ArrayDimFetch
+            || $expr instanceof PhpParser\Node\Expr\PropertyFetch
+            || $expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            || $expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
+            if ($expr instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+                return $expr->class instanceof PhpParser\Node\Name ? '::' . strtolower($expr->class->toString()) : null;
+            }
+
+            $expr = $expr->var;
+        }
+
+        return $expr instanceof PhpParser\Node\Expr\Variable && is_string($expr->name) ? $expr->name : null;
     }
 
     /**

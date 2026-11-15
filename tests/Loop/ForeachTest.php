@@ -2133,6 +2133,96 @@ final class ForeachTest extends TestCase
                     '$a===' => "list{'x'|1, 'x'|2}",
                 ],
             ],
+            'foreachByReferenceKeepsTheItemTypesWhenTheBodyWritesTheArray' => [
+                'code' => '<?php
+                    /** @return list<int> */
+                    function getList(): array {
+                        return [1, 2];
+                    }
+
+                    $a = getList();
+
+                    foreach ($a as $k => &$v) {
+                        $v = "x";
+                        $a[$k] = 5;
+                    }
+
+                    unset($v);',
+                'assertions' => [
+                    '$a===' => 'list<\'x\'|int>',
+                ],
+            ],
+            'foreachByReferenceKeepsTheItemTypesWhenTheBodyPassesTheArrayByReference' => [
+                'code' => '<?php
+                    /** @return list<int> */
+                    function getList(): array {
+                        return [1, 2];
+                    }
+
+                    /**
+                     * @param list<int> $arr
+                     * @param-out list<int> $arr
+                     */
+                    function fill(array &$arr): void {
+                        foreach ($arr as $k => $_) {
+                            $arr[$k] = 5;
+                        }
+                    }
+
+                    $a = getList();
+
+                    foreach ($a as &$v) {
+                        $v = "x";
+                        fill($a);
+                    }
+
+                    unset($v);',
+                'assertions' => [
+                    '$a===' => 'list<\'x\'|int>',
+                ],
+            ],
+            'foreachByReferenceOverAPropertyKeepsTheItemTypesWhenTheBodyCallsAMethod' => [
+                'code' => '<?php
+                    final class Bag {
+                        /** @var list<int|string> */
+                        public array $items = [1, 2];
+
+                        public function reset(): void {
+                            $this->items = [5, 5];
+                        }
+
+                        public function run(): void {
+                            foreach ($this->items as &$item) {
+                                $item = "x";
+                                $this->reset();
+                            }
+
+                            unset($item);
+
+                            /** @psalm-check-type-exact $this->items = list<int|string> */;
+                        }
+                    }',
+            ],
+            'foreachByReferenceReplacesTheItemTypesWhenTheBodyWritesAnotherArray' => [
+                'code' => '<?php
+                    /** @return list<int> */
+                    function getList(): array {
+                        return [1, 2];
+                    }
+
+                    $a = getList();
+                    $lengths = [];
+
+                    foreach ($a as $k => &$v) {
+                        $lengths[$k] = strlen((string) $v);
+                        $v = "x";
+                    }
+
+                    unset($v);',
+                'assertions' => [
+                    '$a===' => 'list<\'x\'>',
+                ],
+            ],
             'foreachByReferenceWritingEveryItemReplacesTheItemTypes' => [
                 'code' => '<?php
                     /**
