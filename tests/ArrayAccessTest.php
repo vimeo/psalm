@@ -2526,6 +2526,48 @@ final class ArrayAccessTest extends TestCase
                         }
                     }',
             ],
+            'nestedOffsetInACoalesceAfterIssetCheck' => [
+                'code' => '<?php
+                    function f(array $arr, int $bank, int $code): string {
+                        if (!isset($arr[$bank])) {
+                            echo 1;
+                        }
+                        return (string) ($arr[$bank][$code] ?? "?");
+                    }',
+            ],
+            'listOffsetAfterIssetCheckInASwitch' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        switch (true) {
+                            case isset($l[0]):
+                                break;
+                            default:
+                                break;
+                        }
+                        return $l[0];
+                    }',
+            ],
+            'listOffsetAfterIssetCheckInASwitchCaseFallingToTheEnd' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        switch (true) {
+                            case isset($l[0]):
+                                echo 1;
+                                break;
+                            default:
+                                echo 2;
+                        }
+                        return $l[0];
+                    }',
+            ],
         ];
     }
 
@@ -3135,6 +3177,23 @@ final class ArrayAccessTest extends TestCase
                     function f(array $l) {
                         if (isset($l[0])) {
                             return null;
+                        }
+                        return $l[0];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'listOffsetAfterLeavingIssetCheckInASwitch' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        switch (true) {
+                            case isset($l[0]):
+                                return null;
+                            default:
+                                break;
                         }
                         return $l[0];
                     }',

@@ -469,7 +469,7 @@ final class IfElseAnalyzer
         );
 
         foreach ($if_scope->unknown_offsets as $var_id => $_) {
-            unset($context->vars_in_scope[$var_id]);
+            unset($context->vars_in_scope[$var_id], $context->vars_possibly_in_scope[$var_id]);
         }
 
         if ($if_scope->new_vars) {
