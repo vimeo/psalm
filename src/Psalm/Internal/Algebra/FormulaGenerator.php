@@ -25,7 +25,12 @@ use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
+use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 use function array_diff_key;
 use function array_filter;
@@ -571,19 +576,85 @@ final class FormulaGenerator
             }
         }
 
-        if ($clauses) {
-            return $clauses;
-        }
-
         $truthy = new Truthy();
 
-        return [
-            new Clause(
-                [$conditional_ref => [(string) $truthy => $truthy]],
+        if (!$clauses) {
+            $clauses = [
+                new Clause(
+                    [$conditional_ref => [(string) $truthy => $truthy]],
+                    $conditional_object_id,
+                    $creating_object_id,
+                ),
+            ];
+        }
+
+        // `$x === $a?->p` with an `$x` that can't be null holds only if `$a` isn't null, a clause of its own so that
+        // its negation says nothing about `$a`: `$x !== $a?->p` is also true for another value of `$a->p`
+        $nullsafe_receiver_id = self::getReceiverOfANullsafeFetchIdenticalToANonNull(
+            $conditional,
+            $this_class_name,
+            $source,
+        );
+
+        if ($nullsafe_receiver_id !== null) {
+            $not_null = new IsNotType(new TNull());
+            $clauses[] = new Clause(
+                [$nullsafe_receiver_id => [(string) $not_null => $not_null]],
                 $conditional_object_id,
                 $creating_object_id,
-            ),
-        ];
+            );
+        }
+
+        return $clauses;
+    }
+
+    private static function getReceiverOfANullsafeFetchIdenticalToANonNull(
+        PhpParser\Node\Expr $conditional,
+        ?string $this_class_name,
+        FileSource $source,
+    ): ?string {
+        if (!$conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            || !$source instanceof StatementsAnalyzer
+        ) {
+            return null;
+        }
+
+        foreach ([[$conditional->left, $conditional->right], [$conditional->right, $conditional->left]] as $operands) {
+            [$nullsafe_operand, $other_operand] = $operands;
+
+            if (!$nullsafe_operand instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+                continue;
+            }
+
+            $other_operand_type = $source->node_data->getType($other_operand);
+
+            if ($other_operand_type && !self::canBeNull($other_operand_type)) {
+                return ExpressionIdentifier::getExtendedVarId($nullsafe_operand->var, $this_class_name, $source);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function canBeNull(Union $type): bool
+    {
+        if ($type->isNullable()) {
+            return true;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (($atomic_type instanceof TMixed && !$atomic_type instanceof TNonEmptyMixed)
+                || ($atomic_type instanceof TTemplateParam && self::canBeNull($atomic_type->as))
+                || $atomic_type instanceof TConditional
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
