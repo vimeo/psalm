@@ -19,9 +19,14 @@ final class IsNotType extends Assertion
     /**
      * @param bool $upper_bound_only the assertion only holds where it is true: where it is false, a value of
      *     this type may still be one (the name of a trait that `trait_exists()` has not loaded)
+     * @param bool $exact the type the value is known to have is not only a bound: it is removed from a value that
+     *     is exactly of it (the cases of a `switch` that were all negated)
      */
-    public function __construct(public readonly Atomic $type, public readonly bool $upper_bound_only = false)
-    {
+    public function __construct(
+        public readonly Atomic $type,
+        public readonly bool $upper_bound_only = false,
+        public readonly bool $exact = false,
+    ) {
     }
 
     /**
@@ -57,7 +62,7 @@ final class IsNotType extends Assertion
     #[Override]
     public function setAtomicType(Atomic $type): self
     {
-        return new static($type, $this->upper_bound_only);
+        return new static($type, $this->upper_bound_only, $this->exact);
     }
 
     #[Override]

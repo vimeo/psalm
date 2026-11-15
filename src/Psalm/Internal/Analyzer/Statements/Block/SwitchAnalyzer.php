@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Scope\SwitchScope;
+use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 use SplFixedArray;
@@ -148,6 +149,21 @@ final class SwitchAnalyzer
             );
 
             $reconcilable_if_types = Algebra::getTruthsFromFormula($entry_clauses);
+
+            // the value left once every case is negated: what a case checked is removed from a value of exactly it
+            foreach ($reconcilable_if_types as $var_id => $anded_types) {
+                foreach ($anded_types as $anded_offset => $orred_types) {
+                    foreach ($orred_types as $orred_offset => $assertion) {
+                        if ($assertion instanceof IsNotType && !$assertion->upper_bound_only) {
+                            $reconcilable_if_types[$var_id][$anded_offset][$orred_offset] = new IsNotType(
+                                $assertion->type,
+                                false,
+                                true,
+                            );
+                        }
+                    }
+                }
+            }
 
             // if the if has an || in the conditional, we cannot easily reason about it
             if ($reconcilable_if_types) {

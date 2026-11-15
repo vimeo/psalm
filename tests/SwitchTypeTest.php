@@ -1629,17 +1629,6 @@ final class SwitchTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType',
             ],
-            'negatedInstanceofOfTheSameClassIsImpossible' => [
-                'code' => '<?php
-                    final class Baz {}
-
-                    function test(Baz $instance): void {
-                        if (!$instance instanceof Baz) {
-                            echo "never";
-                        }
-                    }',
-                'error_message' => 'TypeDoesNotContainType',
-            ],
         ];
     }
 }

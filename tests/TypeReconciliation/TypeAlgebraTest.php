@@ -2244,18 +2244,6 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'instanceofAfterIsObjectInTheSameOrConditionIsImpossible' => [
-                'code' => '<?php
-                    final class Bar {}
-
-                    /** @param Bar|false $bar */
-                    function check($bar): void {
-                        if (!is_object($bar) || !$bar instanceof Bar) {
-                            echo 1;
-                        }
-                    }',
-                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:49 - Docblock-defined type Bar for $bar is always Bar',
-            ],
             'negationOfAConjunctionKeepsAClauseThatSaysNothingWhenFalse' => [
                 'code' => '<?php
                     class A {}

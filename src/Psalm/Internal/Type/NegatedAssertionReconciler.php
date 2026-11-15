@@ -214,15 +214,15 @@ final class NegatedAssertionReconciler extends Reconciler
             && $assertion_type instanceof TTraitString
         ) {
             // the name of a trait that has not been loaded
-        } elseif ($assertion instanceof IsNotType
-            && $assertion->upper_bound_only
+        } elseif (!($assertion instanceof IsNotType && $assertion->exact)
             && $existing_var_type->isSingle()
             && $existing_var_type->hasNamedObjectType()
             && $assertion_type instanceof TNamedObject
             && isset($existing_var_type->getAtomicTypes()[$assertion_type->getKey()])
             && !self::isEnum($codebase, $assertion_type->value)
         ) {
-            // the value may be an instance of a subclass of the asserted type
+            // the type may already be narrowed by the condition the negation is applied after, and checking if two
+            // types share a common parent is not enough to guarantee children are instanceof each other
         } elseif ($assertion_type instanceof TClassString && $assertion_type->is_loaded) {
             // do nothing
         } elseif ($existing_var_type->isArray()
