@@ -2369,6 +2369,52 @@ final class AssertAnnotationTest extends TestCase
                         return 0;
                     }',
             ],
+            'assertIfTrueSelfStaticPropertyThroughSubclass' => [
+                'code' => '<?php
+                    class A {
+                        public static ?string $s = null;
+                        /** @psalm-assert-if-true !null self::$s */
+                        public static function has(): bool { return self::$s !== null; }
+                    }
+                    final class B extends A {}
+                    function f(): int {
+                        if (B::has()) { return strlen(B::$s) + strlen(A::$s); }
+                        return 0;
+                    }',
+            ],
+            'assertIfTrueSelfStaticPropertyThroughSubclassInsideIt' => [
+                'code' => '<?php
+                    class A {
+                        public static ?string $s = null;
+                        /** @psalm-assert-if-true !null self::$s */
+                        public static function has(): bool { return self::$s !== null; }
+                    }
+                    final class B extends A {
+                        public static function f(): int {
+                            if (self::has()) { return strlen(self::$s); }
+                            return 0;
+                        }
+                        public static function g(): int {
+                            if (B::has()) { return strlen(self::$s); }
+                            return 0;
+                        }
+                    }',
+            ],
+            'assertIfTrueStaticStaticPropertyOnStaticTypedObject' => [
+                'code' => '<?php
+                    class S {
+                        public static ?string $s = null;
+                        /** @psalm-assert-if-true !null static::$s */
+                        public function has(): bool { return static::$s !== null; }
+                        final public function __construct() {}
+                        public static function make(): static { return new static(); }
+                        public function f(): int {
+                            $o = static::make();
+                            if ($o->has()) { return strlen(static::$s); }
+                            return 0;
+                        }
+                    }',
+            ],
             'assertIfTrueStaticStaticPropertyOutsideTheClass' => [
                 'code' => '<?php
                     class S {

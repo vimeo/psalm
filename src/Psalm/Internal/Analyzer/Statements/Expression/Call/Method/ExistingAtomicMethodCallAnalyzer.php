@@ -488,8 +488,10 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $trait_self_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
                 ?? $class_storage->name;
 
-            // `static` in the called method: the caller's on `$this`, the class of the object when it has no subclass
+            // `static` in the called method: the caller's on `$this` or on an object of type `static`, the class of the
+            // object when it has no subclass
             $assertion_static_class = $lhs_var_id === '$this'
+                || ($lhs_type_part->is_static && $lhs_type_part->value === $context->self)
                 ? 'static'
                 : ($class_storage->final || $class_storage->is_enum ? $fq_class_name : null);
 
@@ -503,6 +505,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $context,
                         $trait_self_class,
                         $assertion_static_class,
+                        $fq_class_name,
                     ),
                     $args,
                     $template_result,
@@ -532,6 +535,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $context,
                         $trait_self_class,
                         $assertion_static_class,
+                        $fq_class_name,
                     ),
                 );
                 if ($lhs_var_id === null) {
@@ -567,6 +571,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $context,
                         $trait_self_class,
                         $assertion_static_class,
+                        $fq_class_name,
                     ),
                 );
                 if ($lhs_var_id === null) {

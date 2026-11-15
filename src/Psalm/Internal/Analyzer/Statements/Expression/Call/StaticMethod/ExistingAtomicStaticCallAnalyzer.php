@@ -453,6 +453,7 @@ final class ExistingAtomicStaticCallAnalyzer
                         $context,
                         $trait_self_class,
                         $assertion_static_class,
+                        $fq_class_name,
                     ),
                     $stmt->getArgs(),
                     $template_result,
@@ -481,6 +482,7 @@ final class ExistingAtomicStaticCallAnalyzer
                             $context,
                             $trait_self_class,
                             $assertion_static_class,
+                            $fq_class_name,
                         ),
                     ),
                 );
@@ -504,6 +506,7 @@ final class ExistingAtomicStaticCallAnalyzer
                             $context,
                             $trait_self_class,
                             $assertion_static_class,
+                            $fq_class_name,
                         ),
                     ),
                 );

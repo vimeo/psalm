@@ -862,13 +862,14 @@ abstract class CallAnalyzer
 
     /**
      * An assertion on a static property of `self`, `parent` or `static` is about the property of the class they name
-     * in the called method, and also about `self::` of the caller when that is the same property. Those the caller
-     * cannot name are dropped.
+     * in the called method, and also about that property named through `self::` of the caller or through the class
+     * the call names, when it is the same property. Those the caller cannot name are dropped.
      *
      * @param array<Possibilities> $assertions
      * @param ?string $self_class the class `self` is in the called method, null for a function
      * @param ?string $static_class the class `static` is in the called method, `static` when the call forwards the
      *                              caller's, null when unknown
+     * @param ?string $called_class the class the call names, or the class of the object it is made on
      * @return list<Possibilities>
      * @psalm-capabilities read-props
      */
@@ -878,6 +879,7 @@ abstract class CallAnalyzer
         Context $context,
         ?string $self_class,
         ?string $static_class,
+        ?string $called_class = null,
     ): array {
         $resolved_assertions = [];
 
@@ -916,21 +918,23 @@ abstract class CallAnalyzer
                 continue;
             }
 
-            $resolved_assertions[] = new Possibilities(
-                $class_storage->name . '::$' . $property_name . $rest,
-                $assertion->rule,
-            );
+            $asserted_classes = [$class_storage->name => true];
 
-            $caller_storage = $context->self !== null ? $codebase->classlikes->getStorageFor($context->self) : null;
+            foreach ([$context->self, $called_class] as $alias_class) {
+                $alias_storage = $alias_class !== null ? $codebase->classlikes->getStorageFor($alias_class) : null;
 
-            if ($caller_storage !== null
-                && $caller_storage->name !== $class_storage->name
-                && isset($class_storage->appearing_property_ids[$property_name])
-                && ($caller_storage->appearing_property_ids[$property_name] ?? null)
-                    === $class_storage->appearing_property_ids[$property_name]
-            ) {
+                if ($alias_storage !== null
+                    && isset($class_storage->appearing_property_ids[$property_name])
+                    && ($alias_storage->appearing_property_ids[$property_name] ?? null)
+                        === $class_storage->appearing_property_ids[$property_name]
+                ) {
+                    $asserted_classes[$alias_storage->name] = true;
+                }
+            }
+
+            foreach ($asserted_classes as $asserted_class => $_) {
                 $resolved_assertions[] = new Possibilities(
-                    $caller_storage->name . '::$' . $property_name . $rest,
+                    $asserted_class . '::$' . $property_name . $rest,
                     $assertion->rule,
                 );
             }
