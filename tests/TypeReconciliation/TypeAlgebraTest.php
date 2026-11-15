@@ -1272,6 +1272,29 @@ final class TypeAlgebraTest extends TestCase
                             /** @psalm-check-type-exact $box = Box */;
                         }
                     }
+                    function nullify(?Box &$b): bool { $b = null; return false; }
+                    function passedByReferenceToNestedCall(?Box $box, ?Box $o): void {
+                        if ($box?->take(nullify($box)) === false) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                        if ($box?->take($o?->take(nullify($box))) === false) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                        if ($box?->take(nullify($box))) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                    }
+                    function destructuredInArgument(?Box $box): void {
+                        if ($box?->take([$box] = [makeBox()]) === false) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                        if ($box?->take(list(, $box) = [1, makeBox()]) === false) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                        if ($box?->take(['k' => [$box]] = ['k' => [makeBox()]]) === false) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                    }
                     function closureLocalVariable(?Box $box): void {
                         if ($box?->run(function (): void { $box = null; echo (string) $box; })) {
                             /** @psalm-check-type-exact $box = Box */;

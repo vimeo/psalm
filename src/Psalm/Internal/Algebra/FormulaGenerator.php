@@ -881,8 +881,8 @@ final class FormulaGenerator
     }
 
     /**
-     * Whether the arguments of the call can reassign its receiver: by passing it (or what holds it) to a by-reference
-     * parameter, by assigning it, or by capturing it by reference in a closure
+     * Whether the arguments of the call can reassign its receiver: by passing it (or what holds it) to a call, which
+     * may take it by reference, by assigning it, or by capturing it by reference in a closure
      */
     private static function argumentsMayReassign(
         PhpParser\Node\Expr\NullsafeMethodCall $call,
@@ -897,8 +897,7 @@ final class FormulaGenerator
         $targets = [];
 
         foreach ($call->getArgs() as $arg) {
-            $targets[] = $arg->value;
-            self::collectWrittenExprs($arg->value, $targets);
+            self::collectWrittenExprs($arg, $targets);
         }
 
         foreach ($targets as $target) {
@@ -917,14 +916,19 @@ final class FormulaGenerator
     }
 
     /**
-     * The expressions the node writes to in the current scope: function bodies write to their own scope, and only the
-     * variables a closure uses by reference are the enclosing scope's
+     * The expressions the node may write to in the current scope: what it assigns, and what it passes to a call, which
+     * may take it by reference. Function bodies write to their own scope, and only the variables a closure uses by
+     * reference are the enclosing scope's.
      *
      * @param list<PhpParser\Node\Expr> $targets
      * @param-out list<PhpParser\Node\Expr> $targets
      */
     private static function collectWrittenExprs(PhpParser\Node $node, array &$targets): void
     {
+        if ($node instanceof PhpParser\Node\Arg) {
+            $targets[] = $node->value;
+        }
+
         if ($node instanceof PhpParser\Node\Expr\Closure) {
             foreach ($node->uses as $use) {
                 if ($use->byRef) {
@@ -950,7 +954,7 @@ final class FormulaGenerator
             || $node instanceof PhpParser\Node\Expr\PostInc
             || $node instanceof PhpParser\Node\Expr\PostDec
         ) {
-            $targets[] = $node->var;
+            self::addAssignedExprs($node->var, $targets);
         }
 
         foreach ($node->getSubNodeNames() as $name) {
@@ -968,6 +972,26 @@ final class FormulaGenerator
                 if ($child instanceof PhpParser\Node) {
                     self::collectWrittenExprs($child, $targets);
                 }
+            }
+        }
+    }
+
+    /**
+     * @param list<PhpParser\Node\Expr> $targets
+     * @param-out list<PhpParser\Node\Expr> $targets
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function addAssignedExprs(PhpParser\Node\Expr $var, array &$targets): void
+    {
+        if (!$var instanceof PhpParser\Node\Expr\Array_ && !$var instanceof PhpParser\Node\Expr\List_) {
+            $targets[] = $var;
+
+            return;
+        }
+
+        foreach ($var->items as $item) {
+            if ($item !== null) {
+                self::addAssignedExprs($item->value, $targets);
             }
         }
     }
