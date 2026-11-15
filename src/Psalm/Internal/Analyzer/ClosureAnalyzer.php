@@ -535,6 +535,9 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             // the variable is shared with the closure, but is still this scope's own unless it
             // was a reference already
             $context->vars_in_scope[$key] = $value->setByRef($was_by_ref[$key] ?? false);
+
+            // the closure may change it whenever it is called
+            $context->removeVarFromConflictingClauses($key, $context->vars_in_scope[$key], $statements_analyzer);
         }
 
         // the closure writes variables it shares with this scope: when such a variable is

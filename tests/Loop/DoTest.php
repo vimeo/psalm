@@ -40,6 +40,32 @@ final class DoTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'doWhileIntRangeShiftedByEveryIterationIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $i = 0;
+                        do {
+                            $i = $i + rand(1, 3);
+                        } while ($i <= 10);
+                        /** @psalm-check-type-exact $i = int<11, 13> */;
+                        return $i;
+                    }',
+            ],
+            'doWhileTrueVariableIsWhatTheBreaksLeave' => [
+                'code' => '<?php
+                    function f(): void {
+                        do {
+                            $x = rand(0, 1) ? "s" : null;
+                            if ($x === null) {
+                                continue;
+                            }
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        } while (true);
+                        /** @psalm-check-type-exact $x = "s" */;
+                    }',
+            ],
             'doWhileConditionOnUnsetPropertyIsNotRedundant' => [
                 'code' => '<?php
                     class Options {

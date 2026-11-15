@@ -154,6 +154,386 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'getClassComparedToAClassStringConstantNarrowsToItsBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    final class Holder {
+                        /** @var class-string<Bar> */
+                        public const TYPE = Bar::class;
+
+                        public function check(Foo|Bar $x): void {
+                            if (get_class($x) === static::TYPE) {
+                                /** @psalm-check-type-exact $x = Bar */
+                            }
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classComparedToAClassStringOfANonFinalClassNarrowsOnlyWhereItIsTrue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Bar {}
+                    final class Sub extends Bar {}
+                    final class Foo {}
+
+                    /** @param class-string<Bar> $cs */
+                    function f(Bar $x, string $cs): void {
+                        if ($x::class === $cs) {
+                            /** @psalm-check-type-exact $x = Bar */
+                            echo 1;
+                        }
+                    }
+
+                    /** @param class-string<Bar> $cs */
+                    function g(Bar|Foo $x, string $cs): void {
+                        if ($x::class === $cs) {
+                            /** @psalm-check-type-exact $x = Bar */
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $x = Bar|Foo */
+                            echo 2;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classNotEqualToALiteralClassStringConstantNarrowsAfterAnEarlyReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Holder {
+                        private const CLS = \stdClass::class;
+
+                        public function check(object $o): void {
+                            if ($o::class !== self::CLS) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $o = stdClass */
+                            echo 1;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'ifSkippedByAnotherOperandKeepsTheValuesThatSkipIt' => [
+                'code' => '<?php
+                    final class A {}
+
+                    function f(?A $a, bool $b): void {
+                        if ($b || $a === null) {
+                            if ($a !== null) {
+                                return;
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $a = A|null */
+                    }
+
+                    /** @param int|string|null $a */
+                    function g($a, bool $b): void {
+                        if ($a === null || (is_int($a) && $b)) {
+                            if ($a !== null) {
+                                return;
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $a = int|null|string */
+                    }',
+            ],
+            'ifSkippedByAnotherOperandDoesNotNarrowTheValuesThatSkipIt' => [
+                'code' => '<?php
+                    /**
+                     * @param 1|2|3 $a
+                     * @param 1|2|3 $b
+                     */
+                    function test(int $a, int $b): string {
+                        if ($a == 1 || $a == 2 || $b == 1 || $b == 2) {
+                            if ($b == 3 || $a == 3) {
+                                return "false1";
+                            }
+                        }
+
+                        if ($a == 3) {
+                            return "true";
+                        }
+
+                        return "false2";
+                    }',
+            ],
+            'ifSkippedByAnotherOperandStillNarrowsWhatTheBodyAssigns' => [
+                'code' => '<?php
+                    final class A {}
+
+                    function f(?A $a, bool $force): A {
+                        if ($a === null || $force) {
+                            $a = new A();
+                        }
+
+                        /** @psalm-check-type-exact $a = A */
+                        return $a;
+                    }
+
+                    function g(?A $a, bool $b): A {
+                        if ($b || $a === null) {
+                            return new A();
+                        }
+
+                        /** @psalm-check-type-exact $a = A */
+                        return $a;
+                    }
+
+                    function h(?string $s): string {
+                        if ($s === null || $s === "") {
+                            $s = "a";
+                        }
+
+                        /** @psalm-check-type-exact $s = non-empty-string */
+                        return $s;
+                    }',
+            ],
+            'andOutsideTheConjunctsOfTheConditionDoesNotNarrowTheBody' => [
+                'code' => '<?php
+                    function f(?int $a, bool $d): void {
+                        if ($d xor ($a !== null && $a > 0)) {
+                            /** @psalm-check-type-exact $a = int|null */
+                        }
+                    }
+
+                    function g(?int $p, ?string $q, bool $r): void {
+                        if (!($p === 0 && !($q !== null && $r))) {
+                            /** @psalm-check-type-exact $p = int|null */
+                        }
+                    }',
+            ],
+            'andConjunctsOfTheConditionNarrowTheBody' => [
+                'code' => '<?php
+                    function takesBool(bool $b): bool {
+                        return $b;
+                    }
+
+                    function f(?int $a, ?string $s, bool $c): void {
+                        if ($a !== null && $a > 0) {
+                            /** @psalm-check-type-exact $a = int<1, max> */
+                        }
+
+                        if ($c && ($a !== null && $a > 0)) {
+                            /** @psalm-check-type-exact $a = int<1, max> */
+                        }
+
+                        if (($t = $s) !== null && $c) {
+                            /** @psalm-check-type-exact $t = string */
+                        }
+                    }
+
+                    function negatedOr(?string $s, bool $c): void {
+                        if (!(($t = $s) === null || $c)) {
+                            /** @psalm-check-type-exact $t = string */
+                            echo $t;
+                        }
+                    }
+
+                    function doubleNegatedAnd(?string $s, bool $c): void {
+                        if (!!(($t = $s) !== null && $c)) {
+                            /** @psalm-check-type-exact $t = string */
+                            echo $t;
+                        }
+                    }
+
+                    function comparedToTrue(bool $b, string $input): void {
+                        if (($b && ($s = $input)) === true) {
+                            /** @psalm-check-type-exact $s = non-falsy-string */
+                            echo $s;
+                        }
+
+                        if (true == ($b && ($t = $input))) {
+                            /** @psalm-check-type-exact $t = non-falsy-string */
+                            echo $t;
+                        }
+                    }
+
+                    function g(?int $a): void {
+                        if (takesBool($a !== null && $a > 0)) {
+                            /** @psalm-check-type-exact $a = int|null */
+                        }
+                    }',
+            ],
+            'leavingIfKeepsWhatItsConditionChanged' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var int|null */
+                        public $foo = 1;
+
+                        public function load(): bool {
+                            $this->foo = null;
+                            return true;
+                        }
+
+                        public function leftCall(bool $c): void {
+                            if ($this->foo === null) {
+                                return;
+                            }
+
+                            if (!$this->load() || $c) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $this->foo = int|null */
+                        }
+
+                        public function rightCall(bool $c): void {
+                            if ($this->foo === null) {
+                                return;
+                            }
+
+                            if ($c || !$this->load()) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $this->foo = int|null */
+                        }
+
+                        public function andCall(bool $c): void {
+                            if ($this->foo === null) {
+                                return;
+                            }
+
+                            if (!$this->load() && $c) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $this->foo = int|null */
+                        }
+                    }',
+            ],
+            'leavingIfKeepsTheNarrowingsItsConditionLeaves' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var int|null */
+                        public $foo = 1;
+
+                        /** @psalm-mutation-free */
+                        public function check(): bool {
+                            return true;
+                        }
+
+                        public function load(): bool {
+                            $this->foo = null;
+                            return true;
+                        }
+
+                        public function pureCall(bool $c): void {
+                            if ($this->foo === null) {
+                                return;
+                            }
+
+                            if (!$this->check() || $c) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $this->foo = int */
+                        }
+
+                        public function assignment(?string $s): void {
+                            if ($this->foo === null) {
+                                return;
+                            }
+
+                            if (($t = $s) === null || !$this->load()) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $t = string */
+                            echo $t;
+
+                            /** @psalm-check-type-exact $this->foo = int|null */
+                        }
+                    }',
+            ],
+            'leavingIfKeepsTheOffsetsItsConditionCoalesces' => [
+                'code' => '<?php
+                    /** @param list<array<string, mixed>> $all_streams */
+                    function f(array $all_streams): void {
+                        $streams = array_values(array_filter($all_streams, fn(array $stream): bool => isset($stream["width"])));
+
+                        if (!($streams[0]["width"] ?? false) || !($streams[0]["height"] ?? false)) {
+                            return;
+                        }
+
+                        $width = $streams[0]["width"];
+                        /** @psalm-check-type-exact $width = mixed */
+                    }
+
+                    /** @param list<mixed> $l */
+                    function g(array $l): void {
+                        if (!($l[0]["w"] ?? false) || !($l[0]["h"] ?? false)) {
+                            return;
+                        }
+
+                        $w = $l[0]["w"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
+            'ifWithAMixedVariableKeepsWhatItsBranchesAssign' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    function f(mixed $a, int $id): void {
+                        if (!is_null($a)) {
+                            echo 1;
+                        } else {
+                            $a = $id;
+                        }
+
+                        takesInt($a);
+                    }
+
+                    interface Job {}
+
+                    function make(): mixed {
+                        return null;
+                    }
+
+                    function worker(): void {
+                        if (!is_null($job = make())) {
+                            echo 1;
+                        }
+
+                        /** @psalm-check-type-exact $job = mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument', 'MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'ifThatLeavesTheTypeAsItIsKeepsIt' => [
+                'code' => '<?php
+                    /** @param array<string, int> $d */
+                    function f(array $d): void {
+                        $e = ["default" => 1];
+
+                        foreach ($d as $k => $v) {
+                            $e[$k] = $v;
+                        }
+
+                        if (count($e) > 0) {
+                            echo 1;
+                        }
+
+                        /** @psalm-check-type-exact $e = non-empty-array<string, int> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+            ],
             'notIterableDropsTheObjectsThatAreTraversable' => [
                 'code' => '<?php
                     function f(Throwable $e): void {
@@ -516,6 +896,110 @@ final class ConditionalTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'comparisonOfANullsafeFetchWithNullAssertsTheReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public ?int $p = null;
+                    }
+
+                    function notNull(?A $a): int {
+                        if ($a?->p !== null) {
+                            return $a->p;
+                        }
+
+                        return 0;
+                    }
+
+                    function throwsOnNull(?A $a): int {
+                        if (null === $a?->p) {
+                            throw new Exception();
+                        }
+
+                        return $a->p;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'identityOfANullsafeFetchWithAnotherVariableAssertsTheReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final readonly class A {
+                        public function __construct(public int $a, public int $b) {}
+                    }
+
+                    function left(A $a1, ?A $a2): bool {
+                        return $a1->a === $a2?->a && $a1->b === $a2->b;
+                    }
+
+                    function right(A $a1, ?A $a2): bool {
+                        return $a2?->a === $a1->a && $a1->b === $a2->b;
+                    }
+
+                    function scalar(int $x, ?A $a2): int {
+                        if ($x === $a2?->a) {
+                            return $a2->b;
+                        }
+
+                        return 0;
+                    }
+
+                    /**
+                     * @template T of int
+                     * @param T $x
+                     */
+                    function templateOfInt($x, ?A $a2): int {
+                        if ($x === $a2?->a) {
+                            return $a2->b;
+                        }
+
+                        return 0;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'identityOfANullsafeFetchSaysNothingOfTheReceiverWhereItIsFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final readonly class A {
+                        public function __construct(public int $a, public int $b) {}
+                    }
+
+                    function earlyReturn(A $a1, ?A $a2): void {
+                        if ($a1->a === $a2?->a) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $a2 = A|null */
+                        echo 1;
+                    }
+
+                    function variable(int $x, ?A $a2): void {
+                        if ($x === $a2?->a) {
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $a2 = A|null */
+                            echo 2;
+                        }
+                    }
+
+                    function literal(?A $a2): void {
+                        if ($a2?->a === 1) {
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $a2 = A|null */
+                            echo 2;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
             ],
             'negatedInstanceofRemovesTheClassFromTheBoundOfATemplateParam' => [
                 'code' => '<?php
@@ -4692,6 +5176,74 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'classEqualToAClassConstantIsNotTheClassOfTheConstantFetch' => [
+                'code' => '<?php
+                    class Bar {}
+
+                    class Foo {
+                        /** @var class-string<Bar> */
+                        protected const TYPE = Bar::class;
+
+                        public function check(object $bar): void {
+                            assert($bar::class === static::TYPE);
+                            /** @psalm-check-type-exact $bar = Bar */
+                        }
+
+                        public function checkSelf(object $bar): void {
+                            if (self::TYPE === $bar::class) {
+                                /** @psalm-check-type-exact $bar = Bar */
+                            }
+                        }
+                    }',
+            ],
+            'typeNameFunctionsComparedToAClassConstant' => [
+                'code' => '<?php
+                    class A {
+                        private const TYPE = "int";
+                        private const GETTYPE = "integer";
+
+                        public function f(mixed $x): void {
+                            if (get_debug_type($x) === self::TYPE) {
+                                /** @psalm-check-type-exact $x = mixed */
+                                echo 1;
+                            }
+
+                            if (get_debug_type($x) !== self::TYPE) {
+                                /** @psalm-check-type-exact $x = mixed */
+                                echo 2;
+                            }
+
+                            if (gettype($x) === self::GETTYPE) {
+                                /** @psalm-check-type-exact $x = mixed */
+                                echo 3;
+                            }
+
+                            if (gettype($x) !== self::GETTYPE) {
+                                /** @psalm-check-type-exact $x = mixed */
+                                echo 4;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classEqualToTheClassOfAnotherClassStillNarrows' => [
+                'code' => '<?php
+                    class Bar {}
+
+                    class Foo {
+                        public function check(object $bar): void {
+                            assert($bar::class === static::class);
+                            /** @psalm-check-type-exact $bar = Foo */
+                        }
+
+                        public function checkOther(object $bar): void {
+                            assert($bar::class === Bar::class);
+                            /** @psalm-check-type-exact $bar = Bar */
+                        }
+                    }',
+            ],
             'sideEffectInTheOrConditionRunsOnceInTheElse' => [
                 'code' => '<?php
                     /** @return list<string> */
@@ -5290,6 +5842,64 @@ final class ConditionalTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'identityOfANullsafeFetchWithANullableDoesNotAssertTheReceiver' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public ?int $a, public int $b) {}
+                    }
+
+                    function f(?int $x, ?A $a2): int {
+                        if ($x === $a2?->a) {
+                            return $a2->b;
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'identityOfANullsafeFetchWithATemplateDoesNotAssertTheReceiver' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public int $a, public int $b) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $x
+                     */
+                    function f($x, ?A $a2): int {
+                        if ($x === $a2?->a) {
+                            return $a2->b;
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'identityOfANullsafeFetchWithAUnionContainingMixedDoesNotAssertTheReceiver' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public int $a, public int $b) {}
+                    }
+
+                    /**
+                     * @param int|mixed $x
+                     */
+                    function f($x, ?A $a2): int {
+                        if ($x === $a2?->a) {
+                            return $a2->b;
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.2',
             ],
             'negatedInstanceofOfTheWholeBoundOfATemplateParamLeavesNoType' => [
                 'code' => '<?php
