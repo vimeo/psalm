@@ -554,6 +554,7 @@ final class AtomicStaticCallAnalyzer
                         array_values($codebase->getMethodParams($method_id)),
                         $codebase->getMethodReturnType($method_id, $self_fq_class_name),
                         $declaring_method_storage->capabilities,
+                        callable_id: strtolower((string) $declaring_method_id),
                     );
                     $method_template_types = $declaring_method_storage->template_types ?? [];
                 } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'parent'

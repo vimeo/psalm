@@ -43,6 +43,7 @@ use function in_array;
 use function preg_match;
 use function preg_quote;
 use function spl_object_id;
+use function str_contains;
 use function substr;
 
 /**
@@ -134,6 +135,15 @@ final class IfElseAnalyzer
             $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
         } catch (ScopeAnalysisException) {
             return false;
+        }
+
+        if ($if_scope->post_leaving_if_context) {
+            self::applyCalleeEffectsOfCondition(
+                $statements_analyzer,
+                $if_scope->post_leaving_if_context,
+                $post_if_context,
+                $assigned_in_conditional_var_ids,
+            );
         }
 
         $mixed_var_ids = [];
@@ -556,6 +566,43 @@ final class IfElseAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * The context the code after a leaving if starts from is taken before its condition, so it misses what the calls of
+     * the condition did: the properties and memoized calls an impure call forgets, and the properties a callee sets
+     * (recorded as assigned at offset 0). The variables the condition assigns itself are derived again from it
+     * (IfAnalyzer::addConditionallyAssignedVarsToContext()).
+     *
+     * @param array<string, int> $assigned_in_conditional_var_ids
+     */
+    private static function applyCalleeEffectsOfCondition(
+        StatementsAnalyzer $statements_analyzer,
+        Context $post_leaving_if_context,
+        Context $post_if_context,
+        array $assigned_in_conditional_var_ids,
+    ): void {
+        foreach ($post_leaving_if_context->vars_in_scope as $var_id => $_) {
+            $post_cond_type = $post_if_context->vars_in_scope[$var_id] ?? null;
+
+            if ($post_cond_type === null) {
+                $post_leaving_if_context->remove($var_id, false);
+                $post_leaving_if_context->vars_possibly_in_scope[$var_id] = true;
+            } elseif (($assigned_in_conditional_var_ids[$var_id] ?? null) === 0
+                && (str_contains($var_id, '->') || str_contains($var_id, '::'))
+            ) {
+                $post_leaving_if_context->vars_in_scope[$var_id] = $post_cond_type;
+            } else {
+                continue;
+            }
+
+            $post_leaving_if_context->clauses = Context::filterClauses(
+                $var_id,
+                $post_leaving_if_context->clauses,
+                $post_cond_type,
+                $statements_analyzer,
+            );
+        }
     }
 
     /**

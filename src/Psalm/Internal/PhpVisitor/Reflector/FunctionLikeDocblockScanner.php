@@ -757,13 +757,14 @@ final class FunctionLikeDocblockScanner
 
                                 $param_type_mapping[$token_body] = $template_name;
 
+                                // a check of the param against its docblock type is still one against the docblock
                                 $param_storage->type = new Union([
                                     new TTemplateParam(
                                         $template_name,
                                         $template_as_type,
                                         $template_function_id,
                                     ),
-                                ]);
+                                ], ['from_docblock' => $template_as_type->from_docblock]);
                             }
                         }
 
