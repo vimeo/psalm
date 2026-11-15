@@ -492,6 +492,44 @@ final class IntersectionTypeTest extends TestCase
                     '$fromMixin' => 'int',
                 ],
             ],
+            'objectShapePartIsNotAMixedReceiverNarrowsNull' => [
+                'code' => '<?php
+                    class Foo {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @var null|(Foo&object{a: int}) $x */
+                    $x = null;
+                    $x->get();
+                    $after = $x;',
+                'assertions' => [
+                    '$after===' => 'Foo&object{a:int}',
+                ],
+                'ignored_issues' => ['PossiblyNullReference'],
+            ],
+            'objectShapePartIsNotAMixedReceiverByRefArgument' => [
+                'code' => '<?php
+                    class Foo {
+                        public function fill(?int &$out): void {
+                            $out = 1;
+                        }
+                    }
+
+                    /** @var Foo&object{a: int} $x */
+                    $x->fill($filled);
+                    echo $filled;',
+            ],
+            'loneObjectShapeReceiverStaysMixed' => [
+                'code' => '<?php
+                    /** @var object{a: int} $x */
+                    $result = $x->anything();',
+                'assertions' => [
+                    '$result' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedMethodCall'],
+            ],
         ];
     }
 
@@ -702,6 +740,36 @@ final class IntersectionTypeTest extends TestCase
                 'error_message' => 'UndefinedPropertyFetch',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'objectShapePartDoesNotMakeUndefinedMagicMethodPossible' => [
+                'code' => '<?php
+                    /** @psalm-seal-methods */
+                    class Foo {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+
+                        /** @psalm-pure */
+                        public function known(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @var Foo&object{a: int} $x */
+                    $x->notmagic();',
+                'error_message' => 'UndefinedMagicMethod',
+            ],
+            'objectShapePartDoesNotMakeUndefinedMethodPossible' => [
+                'code' => '<?php
+                    final class Card {
+                        public function known(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @var Card&object{a: int} $x */
+                    $x->nope();',
+                'error_message' => 'UndefinedMethod',
             ],
         ];
     }
