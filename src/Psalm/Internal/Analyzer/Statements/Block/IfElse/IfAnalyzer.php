@@ -42,6 +42,7 @@ use function in_array;
 use function preg_match;
 use function preg_quote;
 use function spl_object_id;
+use function str_ends_with;
 
 /**
  * @internal
@@ -167,7 +168,7 @@ final class IfAnalyzer
             return false;
         }
 
-        $outer_context->removeClausesOfVarsChangedIn($if_context);
+        $outer_context->removeClausesOfVarsChangedIn($if_context, $statements_analyzer);
 
         $final_actions = ScopeAnalyzer::getControlActions(
             $stmt->stmts,
@@ -517,6 +518,11 @@ final class IfAnalyzer
             foreach ($if_scope->new_vars as $new_var => $type) {
                 if (!$if_context->hasVariable($new_var)) {
                     unset($if_scope->new_vars[$new_var]);
+                } elseif (str_ends_with($new_var, ']')
+                    && $type->possibly_undefined !== $if_context->vars_in_scope[$new_var]->possibly_undefined
+                ) {
+                    unset($if_scope->new_vars[$new_var]);
+                    $if_scope->unknown_offsets[$new_var] = true;
                 } else {
                     $if_scope->new_vars[$new_var] = Type::combineUnionTypes(
                         $type,

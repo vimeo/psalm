@@ -24,7 +24,6 @@ use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\IssueBuffer;
-use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
@@ -108,11 +107,8 @@ final class IfElseAnalyzer
         $pre_cond_clauses = $context->clauses;
         $pre_cond_remove_vars = $context->parent_remove_vars;
 
-        $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
-
         // the else of an `||` is analysed again from where the condition started, not from where it ended
-        $pre_condition_context = $reassigned_var_ids
-            || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+        $pre_condition_context = $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
                 ? clone $context
                 : null;
@@ -136,6 +132,12 @@ final class IfElseAnalyzer
         } catch (ScopeAnalysisException) {
             return false;
         }
+
+        $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides(
+            $stmt->cond,
+            $context->self,
+            $statements_analyzer->node_data,
+        );
 
         if ($if_scope->post_leaving_if_context) {
             self::applyCalleeEffectsOfCondition(
@@ -269,33 +271,18 @@ final class IfElseAnalyzer
         $if_scope->reasonable_clauses = $if_context->clauses;
 
         try {
-            if (FormulaGenerator::leavesOutClausesOfAssignedVars($stmt->cond, $context->self)) {
-                // the right side of an `&&` that assigns isn't evaluated where the left one is false
-                throw new ComplicatedExpressionException();
-            }
-
-            $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
+            $if_scope->negated_clauses = FormulaGenerator::getNegatedFormula(
+                $if_clauses,
+                $stmt->cond,
+                $cond_object_id,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+                true,
+            );
         } catch (ComplicatedExpressionException) {
-            try {
-                $if_scope->negated_clauses = FormulaGenerator::getFormula(
-                    $cond_object_id,
-                    $cond_object_id,
-                    new VirtualBooleanNot($stmt->cond),
-                    $context->self,
-                    $statements_analyzer,
-                    $codebase,
-                    false,
-                );
-            } catch (ComplicatedExpressionException) {
-                $if_scope->negated_clauses = [];
-            }
+            $if_scope->negated_clauses = [];
         }
-
-        $if_scope->negated_clauses = FormulaGenerator::withoutClausesOfReassignedVars(
-            $if_scope->negated_clauses,
-            $stmt->cond,
-            $context->self,
-        );
 
         $if_scope->negated_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
@@ -468,6 +455,10 @@ final class IfElseAnalyzer
             $if_scope->assigned_var_ids ?: [],
         );
 
+        foreach ($if_scope->unknown_offsets as $var_id => $_) {
+            unset($context->vars_in_scope[$var_id], $context->vars_possibly_in_scope[$var_id]);
+        }
+
         if ($if_scope->new_vars) {
             foreach ($if_scope->new_vars as $var_id => &$type) {
                 // a variable every branch assigns no longer holds what it held before: only the use of variables
@@ -502,7 +493,7 @@ final class IfElseAnalyzer
 
                 // what was known of an offset or property of a variable a branch assigned is no longer true
                 if ($previous_type && isset($if_scope->reassigned_var_ids[$var_id])) {
-                    $context->removeDescendents($var_id, $previous_type, $type);
+                    $context->removeDescendents($var_id, $previous_type, $type, $statements_analyzer);
                 }
 
                 if ($if_scope->reasonable_clauses) {
@@ -537,7 +528,7 @@ final class IfElseAnalyzer
                         );
 
                         if (!$combined_type->equals($context->vars_in_scope[$var_id], true, false)) {
-                            $context->removeDescendents($var_id, $combined_type);
+                            $context->removeDescendents($var_id, $combined_type, $type, $statements_analyzer);
                         }
 
                         $context->vars_in_scope[$var_id] = $combined_type;
@@ -552,7 +543,7 @@ final class IfElseAnalyzer
                             && !UnionTypeComparator::isContainedBy($codebase, $type, $updated_type)
                         ) {
                             $updated_type = Type::combineUnionTypes($updated_type, $type, $codebase);
-                            $context->removeDescendents($var_id, $updated_type);
+                            $context->removeDescendents($var_id, $updated_type, $type, $statements_analyzer);
                         }
 
                         $context->vars_in_scope[$var_id] = $updated_type;

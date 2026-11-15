@@ -27,7 +27,6 @@ use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\BinaryOp\VirtualEqual;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualArray;
-use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualVariable;
@@ -44,12 +43,15 @@ use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
+use function array_fill_keys;
 use function array_intersect_key;
+use function array_keys;
 use function array_merge;
 use function count;
 use function in_array;
 use function is_string;
 use function spl_object_id;
+use function str_ends_with;
 use function str_starts_with;
 use function strtolower;
 use function substr;
@@ -353,6 +355,7 @@ final class SwitchCaseAnalyzer
                 : $original_context->clauses,
             $case_equality_expr,
             $context->self,
+            $statements_analyzer->node_data,
         );
 
         if ($case_clauses && $case->cond) {
@@ -436,24 +439,17 @@ final class SwitchCaseAnalyzer
 
         if ($case_clauses && $case_equality_expr) {
             try {
-                $negated_case_clauses = Algebra::negateFormula($case_clauses);
+                $negated_case_clauses = FormulaGenerator::getNegatedFormula(
+                    $case_clauses,
+                    $case_equality_expr,
+                    spl_object_id($case_equality_expr),
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                    true,
+                );
             } catch (ComplicatedExpressionException) {
-                $case_equality_expr_id = spl_object_id($case_equality_expr);
-
-                try {
-                    $negated_case_clauses = FormulaGenerator::getFormula(
-                        $case_equality_expr_id,
-                        $case_equality_expr_id,
-                        new VirtualBooleanNot($case_equality_expr),
-                        $context->self,
-                        $statements_analyzer,
-                        $codebase,
-                        false,
-                        false,
-                    );
-                } catch (ComplicatedExpressionException) {
-                    $negated_case_clauses = [];
-                }
+                $negated_case_clauses = [];
             }
 
             $switch_scope->negated_clauses = [...$switch_scope->negated_clauses, ...$negated_case_clauses];
@@ -473,7 +469,14 @@ final class SwitchCaseAnalyzer
 
         $statements_analyzer->node_data = $old_node_data;
 
-        if ($case_exit_type !== 'return_throw') {
+        // a case whose end is unreachable (return/throw, possibly in a following case it falls through to)
+        // but that leaves the switch through `break` statements contributes the variables of its `break`s
+        $ends_unless_breaking = $case_context->has_returned
+            && $case_scope->break_vars !== null
+            && $case_actions !== [ScopeAnalyzer::ACTION_LEAVE_SWITCH]
+            && ($case_exit_type !== 'break' || in_array(ScopeAnalyzer::ACTION_END, $case_actions, true));
+
+        if ($case_exit_type !== 'return_throw' && !$ends_unless_breaking) {
             $context->removeClausesOfVarsChangedIn($case_context);
 
             if (self::handleNonReturningCase(
@@ -515,11 +518,22 @@ final class SwitchCaseAnalyzer
                 }
             }
 
-            if ($switch_scope->new_vars_in_scope !== null) {
+            if ($ends_unless_breaking && $switch_scope->new_vars_in_scope === null) {
+                $switch_scope->new_vars_in_scope = array_diff_key($case_scope->break_vars, $context->vars_in_scope);
+                $switch_scope->new_vars_possibly_in_scope = array_fill_keys(
+                    array_keys(array_diff_key($case_scope->break_vars, $context->vars_possibly_in_scope)),
+                    true,
+                );
+            } elseif ($switch_scope->new_vars_in_scope !== null) {
                 foreach ($switch_scope->new_vars_in_scope as $var_id => $type) {
                     if (isset($case_scope->break_vars[$var_id])) {
-                        if (!isset($case_context->vars_in_scope[$var_id])) {
+                        if (!$ends_unless_breaking && !isset($case_context->vars_in_scope[$var_id])) {
                             unset($switch_scope->new_vars_in_scope[$var_id]);
+                        } elseif (str_ends_with($var_id, ']')
+                            && $type->possibly_undefined !== $case_scope->break_vars[$var_id]->possibly_undefined
+                        ) {
+                            unset($switch_scope->new_vars_in_scope[$var_id]);
+                            $switch_scope->unknown_offsets[$var_id] = true;
                         } else {
                             $switch_scope->new_vars_in_scope[$var_id] = Type::combineUnionTypes(
                                 $case_scope->break_vars[$var_id],
@@ -543,6 +557,8 @@ final class SwitchCaseAnalyzer
                         unset($switch_scope->redefined_vars[$var_id]);
                     }
                 }
+            } elseif ($case_exit_type === 'return_throw' || $ends_unless_breaking) {
+                $switch_scope->redefined_vars = array_intersect_key($case_scope->break_vars, $context->vars_in_scope);
             }
         }
 
@@ -661,6 +677,11 @@ final class SwitchCaseAnalyzer
                 foreach ($switch_scope->new_vars_in_scope as $new_var => $type) {
                     if (!$case_context->hasVariable($new_var)) {
                         unset($switch_scope->new_vars_in_scope[$new_var]);
+                    } elseif (str_ends_with($new_var, ']')
+                        && $type->possibly_undefined !== $case_context->vars_in_scope[$new_var]->possibly_undefined
+                    ) {
+                        unset($switch_scope->new_vars_in_scope[$new_var]);
+                        $switch_scope->unknown_offsets[$new_var] = true;
                     } else {
                         $switch_scope->new_vars_in_scope[$new_var] =
                             Type::combineUnionTypes($case_context->vars_in_scope[$new_var], $type);

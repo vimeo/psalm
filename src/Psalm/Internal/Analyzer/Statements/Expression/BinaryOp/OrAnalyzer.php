@@ -168,21 +168,17 @@ final class OrAnalyzer
         );
 
         try {
-            $negated_left_clauses = Algebra::negateFormula($left_clauses);
+            $negated_left_clauses = FormulaGenerator::getNegatedFormula(
+                $left_clauses,
+                $stmt->left,
+                $left_cond_id,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+                true,
+            );
         } catch (ComplicatedExpressionException) {
-            try {
-                $negated_left_clauses = FormulaGenerator::getFormula(
-                    $left_cond_id,
-                    $left_cond_id,
-                    new VirtualBooleanNot($stmt->left),
-                    $context->self,
-                    $statements_analyzer,
-                    $codebase,
-                    false,
-                );
-            } catch (ComplicatedExpressionException) {
-                return false;
-            }
+            return false;
         }
 
         if ($left_context->reconciled_expression_clauses) {
@@ -306,7 +302,11 @@ final class OrAnalyzer
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
 
         $context->phantom_classes = array_merge($context->phantom_classes, $right_context->phantom_classes);
-        $context->removeClausesOfVarsChangedIn($right_context);
+
+        // what a right side that never returns changes is never seen after the expression
+        if (!$right_context->has_returned) {
+            $context->removeClausesOfVarsChangedIn($right_context);
+        }
 
         $right_referenced_var_ids = $right_context->cond_referenced_var_ids;
         $right_context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $right_referenced_var_ids);

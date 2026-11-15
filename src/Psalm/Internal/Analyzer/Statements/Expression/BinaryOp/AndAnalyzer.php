@@ -16,11 +16,13 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Node\Stmt\VirtualExpression;
 use Psalm\Node\Stmt\VirtualIf;
-use Psalm\Type;
 use Psalm\Type\Reconciler;
 
+use function array_diff;
 use function array_diff_key;
+use function array_fill_keys;
 use function array_filter;
+use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_values;
@@ -189,15 +191,29 @@ final class AndAnalyzer
 
         $right_context->clauses = $partitioned_clauses[0];
 
+        $pre_right_assigned_var_ids = $right_context->assigned_var_ids;
+        $pre_right_remove_vars = $right_context->parent_remove_vars;
+
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $right_context) === false) {
             return false;
         }
+
+        // offset 0 records what no assignment of the condition writes (an argument a call coerces to its parameter
+        // type, a property the callee writes): the condition has no clause about its new value
+        $right_assigned_var_ids = array_filter(
+            array_diff_key($right_context->assigned_var_ids, $pre_right_assigned_var_ids),
+            static fn(int $offset): bool => $offset !== 0,
+        );
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
 
         $context->intersectNullArrayOffsets($right_context);
         $context->removeClausesOfVarsChangedIn($left_context);
-        $context->removeClausesOfVarsChangedIn($right_context);
+
+        // what a right side that never returns changes is never seen after the expression
+        if (!$right_context->has_returned) {
+            $context->removeClausesOfVarsChangedIn($right_context);
+        }
 
         $context->cond_referenced_var_ids = array_merge(
             $right_context->cond_referenced_var_ids,
@@ -257,16 +273,40 @@ final class AndAnalyzer
             ];
 
             // clauses simplification derived from the reconciled ones (a nullsafe call's receiver) are applied too
-            $if_body_context->reconciled_expression_clauses = [
-                ...$if_body_context->reconciled_expression_clauses,
-                ...array_map(
+            $reconciled_hashes = array_map(
+                /** @return string|int */
+                static fn(Clause $c) => $c->hash,
+                [
+                    ...$partitioned_clauses[1],
+                    ...Context::removeReconciledClauses($simplified_clauses, $changed_var_ids)[1],
+                ],
+            );
+
+            if ($right_assigned_var_ids) {
+                // but not the left side's clauses on a variable the right side reassigns, here or in a nested `&&`:
+                // they are about its old value, and the clauses with the same hash are about the new one
+                $old_value_hashes = array_map(
                     /** @return string|int */
                     static fn(Clause $c) => $c->hash,
-                    [
-                        ...$partitioned_clauses[1],
-                        ...Context::removeReconciledClauses($simplified_clauses, $changed_var_ids)[1],
-                    ],
-                ),
+                    array_filter(
+                        [...$left_context->clauses, ...$left_clauses, ...$simplified_clauses],
+                        static fn(Clause $c): bool => count(self::removeAssignedVarIds(
+                            array_fill_keys(array_keys($c->possibilities), true),
+                            $right_assigned_var_ids,
+                        )) !== count($c->possibilities),
+                    ),
+                );
+
+                $if_body_context->reconciled_expression_clauses = array_values(array_diff(
+                    $if_body_context->reconciled_expression_clauses,
+                    $old_value_hashes,
+                ));
+                $reconciled_hashes = array_diff($reconciled_hashes, $old_value_hashes);
+            }
+
+            $if_body_context->reconciled_expression_clauses = [
+                ...$if_body_context->reconciled_expression_clauses,
+                ...$reconciled_hashes,
             ];
 
             $if_body_context->vars_possibly_in_scope = [
@@ -291,17 +331,7 @@ final class AndAnalyzer
             $context->vars_in_scope = $left_context->vars_in_scope;
 
             // the right operand is skipped when the left one is false
-            foreach ($right_context->assigned_var_ids as $var_id => $assigned_offset) {
-                if ((!isset($left_context->assigned_var_ids[$var_id])
-                        || $left_context->assigned_var_ids[$var_id] !== $assigned_offset)
-                    && isset($context->vars_in_scope[$var_id], $right_context->vars_in_scope[$var_id])
-                ) {
-                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                        $context->vars_in_scope[$var_id],
-                        $right_context->vars_in_scope[$var_id],
-                    );
-                }
-            }
+            $context->mergeChangesOfPossiblySkippedBranch($right_context, $pre_right_remove_vars, $codebase);
         }
 
         return true;

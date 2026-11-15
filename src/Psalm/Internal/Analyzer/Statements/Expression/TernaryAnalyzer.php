@@ -20,7 +20,6 @@ use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
-use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
@@ -58,11 +57,8 @@ final class TernaryAnalyzer
         $pre_condition_remove_vars = $context->parent_remove_vars;
 
         try {
-            $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
-
             // the else of an `||` is analysed again from where the condition started, not from where it ended
-            $pre_condition_context = $reassigned_var_ids
-                || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            $pre_condition_context = $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
                 || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
                     ? clone $context
                     : null;
@@ -84,6 +80,12 @@ final class TernaryAnalyzer
         } catch (ScopeAnalysisException) {
             return false;
         }
+
+        $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides(
+            $stmt->cond,
+            $context->self,
+            $statements_analyzer->node_data,
+        );
 
         $cond_object_id = spl_object_id($stmt->cond);
 
@@ -172,33 +174,18 @@ final class TernaryAnalyzer
         }
 
         try {
-            if (FormulaGenerator::leavesOutClausesOfAssignedVars($stmt->cond, $context->self)) {
-                // the right side of an `&&` that assigns isn't evaluated where the left one is false
-                throw new ComplicatedExpressionException();
-            }
-
-            $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
+            $if_scope->negated_clauses = FormulaGenerator::getNegatedFormula(
+                $if_clauses,
+                $stmt->cond,
+                $cond_object_id,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+                true,
+            );
         } catch (ComplicatedExpressionException) {
-            try {
-                $if_scope->negated_clauses = FormulaGenerator::getFormula(
-                    $cond_object_id,
-                    $cond_object_id,
-                    new VirtualBooleanNot($stmt->cond),
-                    $context->self,
-                    $statements_analyzer,
-                    $codebase,
-                    false,
-                );
-            } catch (ComplicatedExpressionException) {
-                $if_scope->negated_clauses = [];
-            }
+            $if_scope->negated_clauses = [];
         }
-
-        $if_scope->negated_clauses = FormulaGenerator::withoutClausesOfReassignedVars(
-            $if_scope->negated_clauses,
-            $stmt->cond,
-            $context->self,
-        );
 
         $if_scope->negated_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
