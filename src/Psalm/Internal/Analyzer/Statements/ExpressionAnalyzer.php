@@ -92,6 +92,31 @@ final class ExpressionAnalyzer
             return true;
         }
 
+        if ($context->in_do_naive_pass
+            && !$context->dropping_naive_pass_issues
+            && $context->hasVarOfTypeNever()
+        ) {
+            $context->dropping_naive_pass_issues = true;
+            IssueBuffer::startRecording();
+
+            try {
+                return self::analyze(
+                    $statements_analyzer,
+                    $stmt,
+                    $context,
+                    $array_assignment,
+                    $global_context,
+                    $from_stmt,
+                    $template_result,
+                    $assigned_to_reference,
+                );
+            } finally {
+                IssueBuffer::clearRecordingLevel();
+                IssueBuffer::stopRecording();
+                $context->dropping_naive_pass_issues = false;
+            }
+        }
+
         if (self::dispatchBeforeExpressionAnalysis($stmt, $context, $statements_analyzer) === false) {
             return false;
         }

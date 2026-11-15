@@ -438,6 +438,17 @@ final class Context
 
     public bool $inside_loop = false;
 
+    /**
+     * Whether this is the first pass over the body of a do-while, whose types are provisional: what it finds in a
+     * branch that narrows a variable to `never` is reachable in the next passes, which report on the real types
+     */
+    public bool $in_do_naive_pass = false;
+
+    /**
+     * Whether the issues of the expressions analyzed are dropped, as they are in such a branch
+     */
+    public bool $dropping_naive_pass_issues = false;
+
     public ?LoopScope $loop_scope = null;
 
     public ?CaseScope $case_scope = null;
@@ -501,6 +512,20 @@ final class Context
      * @internal
      * @psalm-mutation-free
      */
+    /**
+     * @psalm-mutation-free
+     */
+    public function hasVarOfTypeNever(): bool
+    {
+        foreach ($this->vars_in_scope as $type) {
+            if ($type->isNever()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function __construct(
         /**
          * @var string|null

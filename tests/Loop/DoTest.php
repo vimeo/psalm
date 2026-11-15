@@ -23,6 +23,23 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'operandsOfDoWhileThatIsNeverInItsFirstPassAreNotReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $counter = 0;
+
+                        do {
+                            echo $counter !== 0 && strlen((string) $counter) > 0 ? 'next' : 'first';
+                            echo $counter === 0 || (int) $counter > 0 ? 'ok' : 'no';
+                            $counter++;
+                        } while ($counter < 3);
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'doWhileConditionOnUnsetPropertyIsNotRedundant' => [
                 'code' => '<?php
                     class Options {
@@ -754,6 +771,52 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'invalidCastOfTheTypeOfTheFirstIterationOfDoWhileIsReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function castFirst(): void {
+                        $x = [];
+                        do {
+                            echo (string) $x;
+                            $x = 'a';
+                        } while (rand(0, 1));
+                    }
+                    PHP,
+                'error_message' => 'InvalidCast',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'invalidFunctionCallOfTheTypeOfTheFirstIterationOfDoWhileIsReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function callFirst(): void {
+                        $x = 5;
+                        do {
+                            echo $x();
+                            $x = static fn(): int => 1;
+                        } while (rand(0, 1));
+                    }
+                    PHP,
+                'error_message' => 'InvalidFunctionCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'invalidArrayOffsetOfTheTypeOfTheFirstIterationOfDoWhileIsReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $l */
+                    function offsetFirst(array $l): void {
+                        $i = new stdClass;
+                        do {
+                            echo $l[$i];
+                            $i = 0;
+                        } while (rand(0, 1));
+                    }
+                    PHP,
+                'error_message' => 'InvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'doWhileBreakBeforeDefinition' => [
                 'code' => <<<'PHP'
                     <?php

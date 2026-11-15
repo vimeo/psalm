@@ -18,10 +18,8 @@ use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
 use function array_diff;
-use function array_filter;
 use function array_keys;
 use function array_map;
-use function array_values;
 use function in_array;
 use function is_array;
 use function preg_match;
@@ -181,34 +179,37 @@ final class DoAnalyzer
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-        // the types of the first pass are provisional: `$counter = 0` is still `0` where the next passes see more,
-        // so a branch or an operand impossible in it is reachable (a `never` operand) in the next ones, which report
-        // what is wrong with the real types
-        $naive_pass_suppressed_issues = array_values(array_filter(
-            [
-                'RedundantCondition',
-                'RedundantConditionGivenDocblockType',
-                'TypeDoesNotContainType',
-                'NoValue',
-                'InvalidCast',
-                'MixedArgument',
-                'MixedArrayAccess',
-                'MixedAssignment',
-                'MixedMethodCall',
-                'MixedPropertyFetch',
-                'InvalidArrayOffset',
-                'InvalidFunctionCall',
-            ],
-            static fn(string $issue_type): bool => !isset($suppressed_issues[$issue_type]),
-        ));
+        if (!isset($suppressed_issues['RedundantCondition'])) {
+            $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
+        }
+        if (!isset($suppressed_issues['RedundantConditionGivenDocblockType'])) {
+            $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
+        }
+        if (!isset($suppressed_issues['TypeDoesNotContainType'])) {
+            $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
+        }
+        // a branch only impossible in the first iteration is reachable in the next ones
+        if (!isset($suppressed_issues['NoValue'])) {
+            $statements_analyzer->addSuppressedIssues(['NoValue']);
+        }
 
         $do_context->loop_scope = $loop_scope;
-
-        $statements_analyzer->addSuppressedIssues($naive_pass_suppressed_issues);
+        $do_context->in_do_naive_pass = true;
 
         $statements_analyzer->analyze($stmt->stmts, $do_context);
 
-        $statements_analyzer->removeSuppressedIssues($naive_pass_suppressed_issues);
+        if (!isset($suppressed_issues['RedundantCondition'])) {
+            $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
+        }
+        if (!isset($suppressed_issues['RedundantConditionGivenDocblockType'])) {
+            $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
+        }
+        if (!isset($suppressed_issues['TypeDoesNotContainType'])) {
+            $statements_analyzer->removeSuppressedIssues(['TypeDoesNotContainType']);
+        }
+        if (!isset($suppressed_issues['NoValue'])) {
+            $statements_analyzer->removeSuppressedIssues(['NoValue']);
+        }
     }
 
     /**

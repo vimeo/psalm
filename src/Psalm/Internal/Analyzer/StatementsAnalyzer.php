@@ -618,6 +618,24 @@ final class StatementsAnalyzer extends SourceAnalyzer
         Context $context,
         ?Context $global_context,
     ): ?bool {
+        // the first pass over a do-while is provisional: what it finds where a variable is `never` is reachable in
+        // the next passes, which report on the real types
+        if ($context->in_do_naive_pass
+            && !$context->dropping_naive_pass_issues
+            && $context->hasVarOfTypeNever()
+        ) {
+            $context->dropping_naive_pass_issues = true;
+            IssueBuffer::startRecording();
+
+            try {
+                return self::analyzeStatement($statements_analyzer, $stmt, $context, $global_context);
+            } finally {
+                IssueBuffer::clearRecordingLevel();
+                IssueBuffer::stopRecording();
+                $context->dropping_naive_pass_issues = false;
+            }
+        }
+
         if (self::dispatchBeforeStatementAnalysis($stmt, $context, $statements_analyzer) === false) {
             return false;
         }
