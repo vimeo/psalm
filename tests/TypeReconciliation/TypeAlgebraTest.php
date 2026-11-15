@@ -51,6 +51,44 @@ final class TypeAlgebraTest extends TestCase
         );
     }
 
+    public function testIssuesShowAComparisonWithoutWhatItComparesWith(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param list<int> $ids */
+                function f(?string $id, array $ids): void {
+                    if (!in_array($id, $ids, true)) {
+                        echo "not in";
+                    }
+                }
+
+                /**
+                 * @param mixed $x
+                 * @psalm-assert "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-one" $x
+                 */
+                function assertOne($x): void {}
+
+                function g(int $x): void {
+                    assertOne($x);
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            [
+                'Operand of type true is always truthy',
+                'Type null|string for $id is never in-array-int',
+                'Type int for $x is never '
+                    . "'https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarte...'",
+            ],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'message'),
+        );
+    }
+
     /**
      * @psalm-pure
      */
@@ -58,6 +96,330 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'isAAndItsNegationAreDifferentConditions' => [
+                'code' => '<?php
+                    final class A {}
+                    function f(object $a, ?int $b): void {
+                        if (!is_a($a, A::class) && $b === null) {
+                            return;
+                        }
+                        if (is_a($a, A::class)) {
+                            /** @psalm-check-type-exact $b = int|null */
+                            echo "is_a";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'isAIsStillTheNegationOfNotIsA' => [
+                'code' => '<?php
+                    final class A {}
+                    function f(object $a, ?int $b): void {
+                        if (is_a($a, A::class) && $b === null) {
+                            return;
+                        }
+                        if (is_a($a, A::class)) {
+                            /** @psalm-check-type-exact $b = int */
+                            echo "is_a";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'definedAndItsNegationAreDifferentConditions' => [
+                'code' => '<?php
+                    function f(?int $b): void {
+                        if (!defined("FOO") && $b === null) {
+                            return;
+                        }
+                        if (defined("FOO")) {
+                            /** @psalm-check-type-exact $b = int|null */
+                            echo "defined";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'definedIsStillTheNegationOfNotDefined' => [
+                'code' => '<?php
+                    function f(?int $b): void {
+                        if (defined("FOO") && $b === null) {
+                            return;
+                        }
+                        if (defined("FOO")) {
+                            /** @psalm-check-type-exact $b = int */
+                            echo "defined";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notIssetIsNotItsOwnNegation' => [
+                'code' => '<?php
+                    /** @param array<string, int> $arr */
+                    function f(array $arr, bool $x, bool $y): void {
+                        if ((!isset($arr["k"]) || $x) && (!isset($arr["k"]) || $y) && ($x || $y)) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $arr = array<string, int> */
+                            echo "else";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notIssetIsTheNegationOfIsset' => [
+                'code' => '<?php
+                    /** @param array<string, int> $arr */
+                    function f(array $arr, bool $x): void {
+                        if ((isset($arr["k"]) || $x) && (!isset($arr["k"]) || $x)) {
+                            /** @psalm-check-type-exact $x = true */
+                            echo "if";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inArrayOfAnotherArrayOfTheSameTypeIsADifferentCondition' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $allowed
+                     * @param list<string> $other
+                     */
+                    function f(string $a, array $allowed, array $other, ?int $b): void {
+                        if (in_array($a, $allowed, true) && $b === null) {
+                            return;
+                        }
+                        if (in_array($a, $other, true)) {
+                            /** @psalm-check-type-exact $b = int|null */
+                            echo "in";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inArrayOfTwoCallsIsADifferentCondition' => [
+                'code' => '<?php
+                    /** @return list<string> */
+                    function getList(): array {
+                        return [];
+                    }
+                    function f(string $a, ?int $b): void {
+                        if (in_array($a, getList(), true) && $b === null) {
+                            return;
+                        }
+                        if (in_array($a, getList(), true)) {
+                            /** @psalm-check-type-exact $b = int|null */
+                            echo "in";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inArrayOfTheSameArrayIsTheSameCondition' => [
+                'code' => '<?php
+                    /** @param list<string> $allowed */
+                    function f(string $a, array $allowed, ?int $b): void {
+                        if (in_array($a, $allowed, true) && $b === null) {
+                            return;
+                        }
+                        if (in_array($a, $allowed, true)) {
+                            /** @psalm-check-type-exact $b = int */
+                            echo "in";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'identicalToOneOfTwoArraysOfDifferentShapesKeepsBoth' => [
+                'code' => '<?php
+                    /**
+                     * @param array{id: int} $row
+                     * @param array{error: string} $failure
+                     */
+                    function f(array $x, array $row, array $failure): void {
+                        if ($x === $row || $x === $failure) {
+                            /** @psalm-check-type-exact $x = array{error?: string, id?: int} */
+                            echo "identical";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notIdenticalToAnotherStringIsNotTheNegationOfIdentical' => [
+                'code' => '<?php
+                    function f(string $a, string $b, string $c, ?int $n): void {
+                        if ($a === $b && ($a !== $c || $n !== null)) {
+                            /** @psalm-check-type-exact $n = int|null */
+                            echo "identical";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notIdenticalToAnotherCallIsNotTheNegationOfIdentical' => [
+                'code' => '<?php
+                    function getString(): string {
+                        return "";
+                    }
+                    function f(string $a, ?int $n): void {
+                        if ($a === getString() && ($a !== getString() || $n !== null)) {
+                            /** @psalm-check-type-exact $n = int|null */
+                            echo "identical";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notLooselyEqualToAnotherObjectIsNotTheNegationOfLooselyEqual' => [
+                'code' => '<?php
+                    final class A {}
+                    function f(A $a, A $b, A $c, ?int $n): void {
+                        if ($a == $b && ($a != $c || $n !== null)) {
+                            /** @psalm-check-type-exact $n = int|null */
+                            echo "equal";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notIdenticalToTheSameStringIsTheNegationOfIdentical' => [
+                'code' => '<?php
+                    function f(string $a, string $b, ?int $n): void {
+                        if ($a === $b && ($a !== $b || $n !== null)) {
+                            /** @psalm-check-type-exact $n = int */
+                            echo "identical";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notLooselyEqualToTheSameObjectIsTheNegationOfLooselyEqual' => [
+                'code' => '<?php
+                    final class A {}
+                    function f(A $a, A $b, ?int $n): void {
+                        if ($a == $b && ($a != $b || $n !== null)) {
+                            /** @psalm-check-type-exact $n = int */
+                            echo "equal";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'longStringLiteralsSharingTheirStartAreNotEachOthersNegation' => [
+                'code' => '<?php
+                    const ONE = "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-one";
+                    const TWO = "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-two";
+                    function f(string $x, bool $y): void {
+                        if (($x === ONE || $x !== TWO) && $y) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $y = bool */
+                            echo "else";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'aLongStringLiteralIsTheNegationOfItself' => [
+                'code' => '<?php
+                    const ONE = "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-one";
+                    function f(string $x, bool $y): void {
+                        if (($x === ONE || $x !== ONE) && $y) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $y = false */
+                            echo "else";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertedLongStringLiteralsSharingTheirStartAreNotEachOthersNegation' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-one" $x */
+                    function isOne(string $x): bool {
+                        return $x === "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-one";
+                    }
+                    /** @psalm-assert-if-true "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-two" $x */
+                    function isTwo(string $x): bool {
+                        return $x === "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-two";
+                    }
+                    function f(string $x, ?int $b): void {
+                        if (isOne($x) || $b !== null) {
+                            if (!isTwo($x)) {
+                                /** @psalm-check-type-exact $b = int|null */
+                                echo "not two";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'anAssertedLongStringLiteralIsTheNegationOfItself' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-one" $x */
+                    function isOne(string $x): bool {
+                        return $x === "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-one";
+                    }
+                    /** @psalm-assert-if-true "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-two" $x */
+                    function isTwo(string $x): bool {
+                        return $x === "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-two";
+                    }
+                    function f(string $x, ?int $b): void {
+                        if (isOne($x) || $b !== null) {
+                            if (!isOne($x)) {
+                                /** @psalm-check-type-exact $b = int */
+                                echo "not one";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assignedTypeChecksOfAnOrNarrowToEitherType' => [
+                'code' => '<?php
+                    function f(mixed $x): void {
+                        if (($ok = is_int($x)) || ($ok = is_string($x))) {
+                            /** @psalm-check-type-exact $x = int|string */
+                            echo "yes";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'anAssignedTypeCheckOrAnotherConditionDoesNotNarrow' => [
+                'code' => '<?php
+                    function f(mixed $x, bool $y): void {
+                        if (($ok = is_int($x)) || $y) {
+                            /** @psalm-check-type-exact $x = mixed */
+                            echo $ok ? "yes" : "no";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'theElseOfAnAndWithAnOperandThatAssertsNothingWhenFalseDoesNotNarrowTheOtherOperand' => [
                 'code' => '<?php
                     function f(?int $userId, ?string $filter, string $name): void {
@@ -2508,6 +2870,196 @@ final class TypeAlgebraTest extends TestCase
                     '$var===' => "'x'|null",
                 ],
             ],
+            'intTruthinessIsNotParadoxicalAfterReassignment' => [
+                'code' => '<?php
+                    function f(int $n): void {
+                        if ($n) {
+                            $n = $n - 1;
+
+                            if (!$n) {
+                                echo "zero";
+                            }
+                        }
+                    }',
+            ],
+            'clauseIsKeptByANestedScopeAfterAnEarlierReassignment' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b, bool $c): void {
+                        $a = load();
+
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        if ($c) {
+                            echo "c";
+                        }
+
+                        while ($c) {
+                            $c = rand(0, 1) === 1;
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+            ],
+            'clauseIsKeptWhenANestedScopeAssignsAnotherVar' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b, bool $c, bool $d): ?int {
+                        $z = null;
+
+                        if ($a === null && $b === null) {
+                            return null;
+                        }
+
+                        while ($c) {
+                            $z = load();
+                            $c = rand(0, 1) === 1;
+                        }
+
+                        $y = $d ? ($z = load()) : 1;
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+
+                        return $y ?? $z;
+                    }',
+            ],
+            'clauseIsKeptWhenAMethodCallWritesAnotherProperty' => [
+                'code' => '<?php
+                    final class C {
+                        public ?int $foo = 1;
+                        public ?int $other = 1;
+
+                        public function resetOther(): void {
+                            $this->other = null;
+                        }
+                    }
+
+                    function takesInt(int $_i): void {}
+
+                    function f(C $o, ?int $b): void {
+                        if ($o->foo === null && $b === null) {
+                            return;
+                        }
+
+                        $o->resetOther();
+
+                        if ($o->foo === null) {
+                            takesInt($b);
+                        }
+                    }',
+            ],
+            'clauseIsKeptWhenAReferenceToAnotherVarIsAssigned' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function f(?int $a, ?int $b, ?int $c): ?int {
+                        $r = &$c;
+
+                        if ($a === null && $b === null) {
+                            return null;
+                        }
+
+                        $r = null;
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+
+                        return $c;
+                    }',
+            ],
+            'clauseIsKeptWhenAReferenceToTheVarIsUnset' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b): void {
+                        $r = &$a;
+
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        unset($r);
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+            ],
+            'clauseIsKeptWhenOnlyAThrowingTernaryArmReassignsTheVar' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b, bool $c): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        $v = $c ? throw new RuntimeException((string) ($a = load())) : 0;
+                        echo $v;
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'clauseIsKeptWhenAMethodCallInANestedScopeNarrowsTheVar' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): bool {
+                            return true;
+                        }
+                    }
+
+                    final class B {
+                        public function foo(): bool {
+                            return true;
+                        }
+                    }
+
+                    function takesInt(int $_i): void {}
+
+                    /** @param A|B $o */
+                    function f($o, ?int $b, bool $c): void {
+                        if ($o instanceof B && $b === null) {
+                            return;
+                        }
+
+                        $x = $c ? $o->foo() : false;
+                        echo (int) $x;
+
+                        if ($o instanceof B) {
+                            takesInt($b);
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -3033,6 +3585,674 @@ final class TypeAlgebraTest extends TestCase
                     foobar($list);
                 ',
                 'error_message' => 'InvalidArgument',
+            ],
+            'clauseOnVarReassignedInWhileIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    /** @param list<int> $list */
+                    function f(?int $a, ?int $b, int $n, bool $c, array $list): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        while ($n-- > 0) {
+                            $a = load();
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInDoWhileIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    /** @param list<int> $list */
+                    function f(?int $a, ?int $b, int $n, bool $c, array $list): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        do {
+                            $a = load();
+                        } while ($n-- > 0);
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInForIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    /** @param list<int> $list */
+                    function f(?int $a, ?int $b, int $n, bool $c, array $list): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        for ($i = 0; $i < $n; $i++) {
+                            $a = load();
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInForeachIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    /** @param list<int> $list */
+                    function f(?int $a, ?int $b, int $n, bool $c, array $list): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        foreach ($list as $_) {
+                            $a = load();
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInTernaryIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    /** @param list<int> $list */
+                    function f(?int $a, ?int $b, int $n, bool $c, array $list): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        $x = $c ? ($a = load()) : 1;
+                        echo (int) $x;
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInCoalesceIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    /** @param list<int> $list */
+                    function f(?int $a, ?int $b, int $n, bool $c, array $list): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        $x = $list[0] ?? ($a = load());
+                        echo (int) $x;
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInAndOperandIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    /** @param list<int> $list */
+                    function f(?int $a, ?int $b, int $n, bool $c, array $list): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        $x = $c && ($a = load()) !== 2;
+                        echo (int) $x;
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInOrOperandIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    /** @param list<int> $list */
+                    function f(?int $a, ?int $b, int $n, bool $c, array $list): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        $x = $c || ($a = load()) !== 2;
+                        echo (int) $x;
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInSwitchCaseIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    /** @param list<int> $list */
+                    function f(?int $a, ?int $b, int $n, bool $c, array $list): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        switch ($n) {
+                            case 1:
+                                $a = load();
+                                break;
+                            default:
+                                echo 1;
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInMatchArmIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    /** @param list<int> $list */
+                    function f(?int $a, ?int $b, int $n, bool $c, array $list): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        $x = match ($n) {
+                            1 => ($a = load()),
+                            default => 2,
+                        };
+                        echo (int) $x;
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'clauseOnVarReassignedInCatchIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function mayThrow(): void {
+                        if (rand(0, 1)) {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param list<int> $list */
+                    function f(?int $a, ?int $b, int $n, bool $c, array $list): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        try {
+                            mayThrow();
+                        } catch (Exception) {
+                            $a = load();
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'clauseOnVarReassignedInFinallyIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function mayThrow(): void {
+                        if (rand(0, 1)) {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param list<int> $list */
+                    function f(?int $a, ?int $b, int $n, bool $c, array $list): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        try {
+                            mayThrow();
+                        } finally {
+                            $a = load();
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnIntTruthinessIsDroppedOnReassignment' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function zero(): int {
+                        return 0;
+                    }
+
+                    function f(int $a, ?int $b): void {
+                        if (!$a && $b === null) {
+                            return;
+                        }
+
+                        $a = zero();
+
+                        if (!$a) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnFloatTruthinessIsDroppedOnReassignment' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function zero(): float {
+                        return 0.0;
+                    }
+
+                    function f(float $a, ?int $b): void {
+                        if (!$a && $b === null) {
+                            return;
+                        }
+
+                        $a = zero();
+
+                        if (!$a) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnInArrayIsDroppedOnReassignment' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): int {
+                        return rand(0, 5);
+                    }
+
+                    /** @param list<int> $list */
+                    function f(int $a, ?int $b, array $list): void {
+                        if (!in_array($a, $list, true) && $b === null) {
+                            return;
+                        }
+
+                        $a = load();
+
+                        if (!in_array($a, $list, true)) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOfElseifConditionIsDroppedWhenItsBodyReassignsTheVar' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function f(?int $x, bool $a): void {
+                        if ($a) {
+                            echo "a";
+                        } elseif ($x !== null) {
+                            $x = null;
+                        } else {
+                            return;
+                        }
+
+                        if (!$a) {
+                            takesInt($x);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnPropertyIsDroppedWhenAMethodCallWritesIt' => [
+                'code' => '<?php
+                    final class C {
+                        public ?int $foo = 1;
+
+                        public function reset(): void {
+                            $this->foo = null;
+                        }
+                    }
+
+                    function takesInt(int $_i): void {}
+
+                    function f(C $o, ?int $b): void {
+                        if ($o->foo === null && $b === null) {
+                            return;
+                        }
+
+                        $o->reset();
+
+                        if ($o->foo === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarIsDroppedWhenAssignedThroughAReference' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b): void {
+                        $r = &$a;
+
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        $r = load();
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnReferenceIsDroppedWhenTheVarItIsBoundToIsAssigned' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b): void {
+                        $r = &$a;
+
+                        if ($r === null && $b === null) {
+                            return;
+                        }
+
+                        $a = load();
+
+                        if ($r === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarIsDroppedWhenAssignedThroughAReferenceInANestedScope' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b, bool $c): void {
+                        $r = &$a;
+
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        if ($c) {
+                            $r = load();
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInTheRightOfAnAndInAnIfConditionIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b, bool $c): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        if ($c && ($a = load()) !== 2) {
+                            echo "c";
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInTheRightOfAnOrInAnIfConditionIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b, bool $c): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        if ($c || ($a = load()) !== 2) {
+                            echo "c";
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInATernaryInAnIfConditionIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b, bool $c): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        if (($c ? ($a = load()) : 1) !== 3) {
+                            echo "c";
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInAnElseifConditionIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b, bool $c): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        if ($c) {
+                            echo "c";
+                        } elseif (($a = load()) !== 2) {
+                            echo "a";
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInACatchThatContinuesIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    /** @param list<int> $list */
+                    function f(?int $a, ?int $b, array $list): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        foreach ($list as $_) {
+                            try {
+                                if (rand(0, 1)) {
+                                    throw new Exception();
+                                }
+                            } catch (Exception $e) {
+                                $a = load();
+                                continue;
+                            }
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarIsDroppedWhenAnElseifBodyAssignsItThroughAReference' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b, bool $c, bool $d): void {
+                        $r = &$a;
+
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        if ($c) {
+                            echo "c";
+                        } elseif ($d) {
+                            $r = load();
+                        } else {
+                            return;
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInTheRightOfAnAndInAnElseifConditionIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b, bool $c, bool $d): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        if ($d) {
+                            echo "d";
+                        } elseif ($c && ($a = load()) !== 5) {
+                            echo "c";
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
             ],
         ];
     }

@@ -22,6 +22,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff;
 use function array_filter;
 use function array_intersect_key;
 use function array_map;
@@ -456,6 +457,11 @@ final class TryAnalyzer
 
             $catch_doesnt_leave_parent_scope = in_array(ScopeAnalyzer::ACTION_NONE, $catch_actions[$i], true);
 
+            // a catch that breaks or continues goes on after the loop or switch around the try
+            if (array_diff($catch_actions[$i], [ScopeAnalyzer::ACTION_END, ScopeAnalyzer::ACTION_RETURN]) !== []) {
+                $context->removeClausesOfVarsChangedIn($catch_context);
+            }
+
             if ($catch_doesnt_leave_parent_scope) {
                 $context->intersectNullArrayOffsets($catch_context);
 
@@ -549,6 +555,7 @@ final class TryAnalyzer
 
                 // the code after the try runs after the finally
                 $context->intersectNullArrayOffsets($finally_context);
+                $context->removeClausesOfVarsChangedIn($finally_context);
 
                 $context->constructor_exits?->applyFinally(
                     $try_context->finally_scope,

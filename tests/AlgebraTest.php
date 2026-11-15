@@ -80,7 +80,22 @@ final class AlgebraTest extends TestCase
     {
         $assertions = ['$s' => [[new IsIdentical(TLiteralString::make("é/\"\\\n"))]]];
         $assertion = $negated ? new NotNestedAssertions($assertions) : new NestedAssertions($assertions);
-        self::assertSame(($negated ? '!@' : '@') . json_encode($assertions, JSON_THROW_ON_ERROR), (string) $assertion);
+        self::assertSame(
+            ($negated ? '!@' : '@') . json_encode(['$s' => [["=string(é/\"\\\n)"]]], JSON_THROW_ON_ERROR),
+            (string) $assertion,
+        );
+    }
+
+    #[DataProvider('providerNestedAssertionNegations')]
+    public function testNestedAssertionsOfDifferentClassesWithTheSamePropertiesDiffer(bool $negated): void
+    {
+        $is_int = ['$x' => [[new IsType(new TInt())]]];
+        $is_not_int = ['$x' => [[new IsNotType(new TInt())]]];
+
+        self::assertNotSame(
+            (string) ($negated ? new NotNestedAssertions($is_int) : new NestedAssertions($is_int)),
+            (string) ($negated ? new NotNestedAssertions($is_not_int) : new NestedAssertions($is_not_int)),
+        );
     }
 
     /**
