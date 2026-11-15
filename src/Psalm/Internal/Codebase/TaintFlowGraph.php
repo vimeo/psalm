@@ -462,7 +462,9 @@ final class TaintFlowGraph extends DataFlowGraph
             foreach ($callees as $function_node_id => $_) {
                 // The nodes of a static method that some calls share have paths of their own: a call naming its
                 // class entered by the flow would follow them in its context, out of the other function-likes
-                // they lead to, which would then leave all their calls (see TaintFlowResolution::walk()).
+                // they lead to, which would then leave all their calls (see TaintFlowResolution::walk()). Those
+                // calls are the other callers of isCallSpecialized(): calls that may run an override, callables
+                // and dispatches to overrides, as well as override links (see addVirtualCallee()).
                 if (isset($this->non_virtual_calls[$specialization_key])
                     && isset($this->virtual_callees[$function_node_id])
                 ) {
