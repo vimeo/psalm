@@ -396,6 +396,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $statements_analyzer->getCodebase(),
             $method_storage,
             $node_location,
+            $stmt->class instanceof PhpParser\Node\Name && $stmt->class->toLowerString() !== 'static',
         ) ? $node_location : null;
 
         if (!$method_storage) {

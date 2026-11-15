@@ -1080,6 +1080,8 @@ final class ArgumentsAnalyzer
             $codebase,
             $function_storage,
             $code_location,
+            // a call naming its class (see StaticCallAnalyzer)
+            isset($args[0]) && $args[0]->value->getAttribute(ArgumentAnalyzer::NON_VIRTUAL_CALL_ATTRIBUTE) === true,
         );
 
         if ($method_id) {

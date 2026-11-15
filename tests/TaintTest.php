@@ -5185,6 +5185,41 @@ final class TaintTest extends TestCase
                         echo $safe;
                     }',
             ],
+            'byRefParamOutOfAPureStaticMethodOfANonFinalClassIsNotSharedByTheCallsNamingItsClass' => [
+                'code' => '<?php
+                    class Parser {
+                        /** @param-out array<array-key, string> $matches */
+                        public static function match(string $subject, ?array &$matches = null): int {
+                            return (int) preg_match("/(.*)/", $subject, $matches);
+                        }
+
+                        public function dump(): void {
+                            self::match((string) $_GET["x"]);
+                        }
+                    }
+
+                    function parse(string $s): void {
+                        if (Parser::match($s, $matches)) {
+                            unserialize($matches[1] ?? "");
+                        }
+                    }',
+            ],
+            'returnOfAPureStaticMethodOfANonFinalClassIsNotSharedByTheCallsNamingItsClass' => [
+                'code' => '<?php
+                    class Html {
+                        public static function bold(string $s): string {
+                            return "<b>" . $s . "</b>";
+                        }
+                    }
+
+                    class Page extends Html {
+                        public static function title(): string {
+                            return parent::bold((string) $_GET["title"]);
+                        }
+                    }
+
+                    echo Html::bold("safe");',
+            ],
             'getoptOptionCastToInt' => [
                 'code' => '<?php
                     $options = getopt("n:");
@@ -11625,6 +11660,116 @@ final class TaintTest extends TestCase
                         Store::get($value);
                         echo (string) $value;
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnOfAPureStaticMethodSharedByItsCallsThroughStatic' => [
+                'code' => '<?php
+                    class Html {
+                        public static function bold(string $s): string {
+                            return "<b>" . $s . "</b>";
+                        }
+
+                        public static function title(): string {
+                            return static::bold((string) $_GET["title"]);
+                        }
+
+                        public static function show(): void {
+                            echo static::bold("safe");
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnOfAPureStaticMethodCalledNamingItsClassAndThroughStatic' => [
+                'code' => '<?php
+                    class Html {
+                        public static function bold(string $s): string {
+                            return "<b>" . $s . "</b>";
+                        }
+
+                        public static function safeTitle(): string {
+                            return static::bold("safe");
+                        }
+                    }
+
+                    echo Html::bold((string) $_GET["title"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintByRefParamOutOfAPureStaticMethodCalledNamingItsClassAndThroughStatic' => [
+                'code' => '<?php
+                    class Parser {
+                        /** @param-out array<array-key, string> $matches */
+                        public static function match(string $subject, ?array &$matches = null): int {
+                            return (int) preg_match("/(.*)/", $subject, $matches);
+                        }
+
+                        public static function safeMatch(): string {
+                            static::match("safe", $matches);
+                            return $matches[1] ?? "";
+                        }
+                    }
+
+                    if (Parser::match((string) $_GET["x"], $matches)) {
+                        echo $matches[1] ?? "";
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnOfAStaticOverrideThroughStatic' => [
+                'code' => '<?php
+                    class Html {
+                        public static function title(): string {
+                            return "title";
+                        }
+
+                        public static function show(): void {
+                            echo static::title();
+                        }
+                    }
+
+                    class InputHtml extends Html {
+                        #[Override]
+                        public static function title(): string {
+                            return (string) $_GET["title"];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintByRefParamOutOfAStaticOverrideThroughStatic' => [
+                'code' => '<?php
+                    class Reader {
+                        public static function read(?string &$value = null): void {
+                            $value = "literal";
+                        }
+
+                        public static function show(): void {
+                            static::read($value);
+                            echo (string) $value;
+                        }
+                    }
+
+                    class InputReader extends Reader {
+                        #[Override]
+                        public static function read(?string &$value = null): void {
+                            $value = (string) $_GET["value"];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnOfAnImpureStaticMethodOfANonFinalClassSharedByItsCalls' => [
+                'code' => '<?php
+                    class Html {
+                        public static int $calls = 0;
+
+                        public static function bold(string $s): string {
+                            self::$calls++;
+                            return "<b>" . $s . "</b>";
+                        }
+                    }
+
+                    function title(): string {
+                        return Html::bold((string) $_GET["title"]);
+                    }
+
+                    echo Html::bold("safe");',
                 'error_message' => 'TaintedHtml',
             ],
             'taintPropertyPromotedByATraitConstructorOfAnImmutableClass' => [
