@@ -37,7 +37,6 @@ use function array_filter;
 use function array_flip;
 use function array_intersect_key;
 use function array_keys;
-use function array_map;
 use function array_merge;
 use function array_reverse;
 use function array_slice;
@@ -93,7 +92,7 @@ final class LoopAnalyzer
         $assignment_map = $assignment_mapper->getAssignmentMap();
 
         $loop_scope->assigned_root_var_ids = ($loop_parent_context->loop_scope?->assigned_root_var_ids ?? [])
-            + array_map(static fn(array $_): bool => true, $assignment_map);
+            + $assignment_mapper->getAssignedVarIds();
 
         $assignment_depth = 0;
 
@@ -149,6 +148,11 @@ final class LoopAnalyzer
             $first_var_id = array_keys($assignment_map)[0];
 
             $assignment_depth = self::getAssignmentMapDepth($first_var_id, $assignment_map);
+        }
+
+        // what an iteration defines otherwise is seen by the next one
+        if ($assignment_depth === 0 && $assignment_mapper->getDefinedVarIds()) {
+            $assignment_depth = 1;
         }
 
         if ($assignment_depth === 0 || $does_always_break) {
@@ -285,6 +289,7 @@ final class LoopAnalyzer
             // the types the variables the loop defines start an iteration with
             $loop_var_types_at_start = [];
             $unset_in_loop_vars = [];
+            $possibly_defined_in_loop_vars = [];
 
             // the data flow of the last pass is linked to the reads of the first one by one more pass
             $max_passes = $assignment_depth;
@@ -350,12 +355,7 @@ final class LoopAnalyzer
                             $has_changes = true;
                         }
 
-                        // if we're in a do block we don't want to remove vars before evaluating
-                        // the where conditional, but a property or array offset it narrowed was not
-                        // in scope when the loop was entered
-                        if (!$is_do || !self::isLoopVar($var_id)) {
-                            $vars_to_remove[] = $var_id;
-                        }
+                        $vars_to_remove[] = $var_id;
                     }
                 }
 
@@ -367,6 +367,19 @@ final class LoopAnalyzer
                         && self::isLoopVar($var_id)
                     ) {
                         $unset_in_loop_vars[$var_id] = true;
+                        $has_changes = true;
+                    }
+                }
+
+                // a variable an iteration only possibly defines (a foreach over a possibly empty array, the right
+                // operand of `||`) is possibly defined where the next one starts
+                foreach ($continue_context->vars_possibly_in_scope as $var_id => $_) {
+                    if (!isset($continue_context->vars_in_scope[$var_id])
+                        && !isset($pre_loop_context->vars_possibly_in_scope[$var_id])
+                        && !isset($possibly_defined_in_loop_vars[$var_id])
+                        && self::isLoopVar($var_id)
+                    ) {
+                        $possibly_defined_in_loop_vars[$var_id] = true;
                         $has_changes = true;
                     }
                 }
@@ -1512,7 +1525,7 @@ final class LoopAnalyzer
         $traverser->addVisitor($assignment_mapper);
         $traverser->traverse($exprs);
 
-        return array_map(static fn(array $_): bool => true, $assignment_mapper->getAssignmentMap());
+        return $assignment_mapper->getAssignedVarIds();
     }
 
     /**
