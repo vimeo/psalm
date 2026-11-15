@@ -6,7 +6,6 @@ namespace Psalm\Internal\Analyzer\Statements\Block\IfElse;
 
 use PhpParser;
 use Psalm\CodeLocation;
-use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
@@ -224,10 +223,8 @@ final class IfAnalyzer
         }
 
         if (!$has_leaving_statements) {
-            $outer_context->detachReferencesReboundIn($if_context, $statements_analyzer, $stmt->stmts);
-
             self::updateIfScope(
-                $codebase,
+                $statements_analyzer,
                 $if_scope,
                 $if_context,
                 $outer_context,
@@ -235,6 +232,7 @@ final class IfAnalyzer
                 $new_possibly_assigned_var_ids,
                 $if_scope->if_cond_changed_var_ids,
                 assigned_in_conditional_var_ids: $if_conditional_scope->assigned_in_conditional_var_ids,
+                branch_nodes: $stmt->stmts,
             );
 
             if ($if_scope->reasonable_clauses) {
@@ -433,9 +431,11 @@ final class IfAnalyzer
      * @param  array<string, bool>   $possibly_assigned_var_ids
      * @param  array<string, bool>   $newly_reconciled_var_ids
      * @param  array<string, int>    $assigned_in_conditional_var_ids
+     * @param  array<PhpParser\Node> $branch_nodes the code of the branch: what it rebinds by reference is detached
+     *                                             in the outer context
      */
     public static function updateIfScope(
-        Codebase $codebase,
+        StatementsAnalyzer $statements_analyzer,
         IfScope $if_scope,
         Context $if_context,
         Context $outer_context,
@@ -444,7 +444,12 @@ final class IfAnalyzer
         array $newly_reconciled_var_ids,
         bool $update_new_vars = true,
         array $assigned_in_conditional_var_ids = [],
+        array $branch_nodes = [],
     ): void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $outer_context->detachReferencesReboundIn($if_context, $statements_analyzer, $branch_nodes);
+
         $redefined_vars = $if_context->getRedefinedVars($outer_context->vars_in_scope);
 
         foreach (array_diff_key($if_context->vars_in_scope, $outer_context->vars_in_scope) as $new_var => $type) {

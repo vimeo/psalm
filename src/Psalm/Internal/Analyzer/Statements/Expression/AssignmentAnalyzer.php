@@ -1771,6 +1771,7 @@ final class AssignmentAnalyzer
                 if (!$context->inside_conditional) {
                     $context->possibly_assigned_var_ids[$var_id] = true;
                     $context->vars_in_scope[$var_id] = $by_ref_out_type;
+                    $context->writeToReferencesPossiblyBound($var_id, $by_ref_out_type, $codebase);
 
                     if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))
                         || $stmt_type->isNever()
@@ -1785,6 +1786,7 @@ final class AssignmentAnalyzer
             $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
 
             $context->vars_in_scope[$var_id] = $by_ref_out_type;
+            $context->writeToReferencesPossiblyBound($var_id, $by_ref_out_type, $codebase);
 
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 

@@ -181,7 +181,7 @@ final class ElseAnalyzer
             $outer_context->detachReferencesReboundIn($else_context, $statements_analyzer, $else->stmts ?? []);
 
             IfAnalyzer::updateIfScope(
-                $codebase,
+                $statements_analyzer,
                 $if_scope,
                 $else_context,
                 $original_context,

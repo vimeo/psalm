@@ -603,6 +603,8 @@ final class Context
         foreach ($references as $reference_id => $_) {
             if (!isset($this->references_in_scope[$reference_id])
                 && !isset($this->references_to_external_scope[$reference_id])
+                // a reference before the block that the block rebound
+                && !isset($this->references_possibly_bound_to[$reference_id])
                 && $reference_location = $statements_analyzer->getFirstAppearance($reference_id)
             ) {
                 $this->references_possibly_from_confusing_scope[$reference_id] = $reference_location;
