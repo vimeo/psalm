@@ -262,10 +262,12 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 $method_storage = $functionlike_node_scanner->storage;
 
                 // until a statement of the body says otherwise, see recordExternalEffects(), which only sees the
-                // body when it is scanned deep; the body of a stub is not what runs
+                // body when it is scanned deep; the body of a stub is not what runs, and the caller may write
+                // through a reference the method returns
                 $method_storage->writes_only_this_properties = $node->stmts !== null
                     && $this->scan_deep
-                    && !$method_storage->stubbed;
+                    && !$method_storage->stubbed
+                    && !$method_storage->returns_by_ref;
 
                 foreach ($method_storage->params as $param) {
                     // an assignment to it writes the caller's variable
@@ -483,9 +485,9 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
     /**
      * Clears MethodStorage::$writes_only_this_properties of the method being scanned when $node may change
      * something else than a property of `$this` or a local variable: a call (except building the exception thrown,
-     * when the method catches nothing), a write to anything else, a reference, the iteration of an object or a
-     * clone. What only reading may run (a hook or `__get` of another object, `__toString`) or releasing an object
-     * (`__destruct`) is not considered, as everywhere else.
+     * when the method catches nothing), a write to anything else, a reference, the iteration of an object (in a
+     * `foreach` or a spread) or a clone. What only reading may run (a hook or `__get` of another object,
+     * `__toString`) or releasing an object (`__destruct`) is not considered, as everywhere else.
      */
     private function recordExternalEffects(PhpParser\Node $node): void
     {
@@ -533,6 +535,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 || $node instanceof PhpParser\Node\Expr\Yield_
                 || $node instanceof PhpParser\Node\Expr\YieldFrom
                 || $node instanceof PhpParser\Node\Stmt\Foreach_
+                || ($node instanceof PhpParser\Node\ArrayItem && $node->unpack)
                 || $node instanceof PhpParser\Node\Stmt\TryCatch
                 || $node instanceof PhpParser\Node\Stmt\Global_
                 || $node instanceof PhpParser\Node\Stmt\Unset_

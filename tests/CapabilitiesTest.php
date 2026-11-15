@@ -3521,6 +3521,82 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'NullableReturnStatement',
             ],
+            'overrideFromATraitMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    trait Clears {
+                        protected function hook(Owner $owner): void { $owner->child = null; }
+                    }
+                    class Base {
+                        protected function hook(Owner $owner): void {}
+                        public function afterHook(Owner $owner): Child {
+                            if ($owner->getChild() === null) {
+                                return new Child();
+                            }
+                            $this->hook($owner);
+                            return $owner->getChild();
+                        }
+                    }
+                    final class Clearing extends Base {
+                        use Clears;
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'methodReturningByReferenceMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Holder {
+                        private Owner $owner;
+                        public function __construct(Owner $owner) { $this->owner = $owner; }
+                        public function &slot(): ?Child { return $this->owner->child; }
+                    }
+                    function afterWrite(Owner $owner, Holder $holder): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $slot = &$holder->slot();
+                        $slot = null;
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'methodSpreadingATraversableMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Drainer {
+                        /** @param Traversable<int, int> $items */
+                        public function drain(Traversable $items): array { return [...$items]; }
+                    }
+                    /** @return Generator<int, int> */
+                    function clearing(Owner $owner): Generator {
+                        $owner->child = null;
+                        yield 1;
+                    }
+                    function afterDrain(Owner $owner, Drainer $drainer): Child {
+                        $items = clearing($owner);
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $drainer->drain($items);
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
             'methodWritingAByReferenceParameterMustNotKeepGetter' => [
                 'code' => '<?php
                     final class Child {}
