@@ -138,7 +138,8 @@ final class TryAnalyzer
                 $try_context->vars_in_scope[$var_id] = $type;
 
                 // a property that was fetched in the try is not a variable that may have not been defined
-                $context->vars_in_scope[$var_id] = strpos($var_id, '->') !== false && strpos($var_id, '[') === false
+                $context->vars_in_scope[$var_id] = (strpos($var_id, '->') !== false || strpos($var_id, '::$') !== false)
+                    && strpos($var_id, '[') === false
                     ? $type
                     : $type->setPossiblyUndefined(true, true);
             } else {

@@ -126,6 +126,27 @@ final class TryCatchTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'staticPropertyFetchedInTryIsNotPossiblyUndefinedInArrayShape' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static string $id = "x";
+                    }
+
+                    /**
+                     * @return array{ID: string}
+                     */
+                    function foo(): array {
+                        try {
+                            echo Holder::$id;
+                        } catch (Exception $e) {
+                        }
+
+                        return ["ID" => Holder::$id];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'variableAssignedAfterABreakOfANestedLoopInADoWhileInATryIsDefinedAfterIt' => [
                 'code' => '<?php
                     function f(): string {
