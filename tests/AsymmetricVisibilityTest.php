@@ -279,6 +279,99 @@ final class AsymmetricVisibilityTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'promotedReadonlyWithPublicSet' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(
+                            public public(set) readonly string $name,
+                        ) {}
+                    }
+
+                    echo (new A("x"))->name;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'readonlyWithPublicSetInitialisedFromOutside' => [
+                'code' => '<?php
+                    final class A {
+                        public public(set) readonly string $name;
+                    }
+
+                    final class Hydrator {
+                        public function hydrate(A $a): void {
+                            $a->name = "x";
+                        }
+                    }
+
+                    $a = new A();
+                    $a->name = "x";',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor', 'PropertyNotSetInConstructor'],
+                'php_version' => '8.4',
+            ],
+            'readonlyWithPublicSetInitialisedInAnyMethod' => [
+                'code' => '<?php
+                    final class A {
+                        public public(set) readonly string $name;
+
+                        public function init(): void {
+                            $this->name = "x";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor', 'PropertyNotSetInConstructor'],
+                'php_version' => '8.4',
+            ],
+            'readonlyClassPropertyWithPublicSetInitialisedFromOutside' => [
+                'code' => '<?php
+                    final readonly class A {
+                        public public(set) string $name;
+
+                        public function __construct(
+                            public public(set) int $id = 0,
+                        ) {}
+                    }
+
+                    $a = new A();
+                    $a->name = "x";',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor', 'PropertyNotSetInConstructor'],
+                'php_version' => '8.4',
+            ],
+            'redeclaredReadonlyWithPublicSetInitialisedFromOutside' => [
+                'code' => '<?php
+                    abstract class P {
+                        public readonly int $v;
+                    }
+
+                    final class C extends P {
+                        public public(set) readonly int $v;
+                    }
+
+                    $c = new C();
+                    $c->v = 3;',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor', 'PropertyNotSetInConstructor'],
+                'php_version' => '8.4',
+            ],
+            'readonlyWithPublicSetConstrainsTemplateAfterConstruction' => [
+                'code' => '<?php
+                    /** @template T of int|string */
+                    final class Box {
+                        /** @var T */
+                        public public(set) readonly int|string $value;
+
+                        /** @param T $first */
+                        public function __construct(private int|string $first) {}
+                    }
+
+                    $box = new Box(1);
+                    $box->value = "two";',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor', 'PropertyNotSetInConstructor'],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
@@ -554,16 +647,49 @@ final class AsymmetricVisibilityTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.4',
             ],
-            'readonlyWithPublicSet' => [
+            'readonlyWithWiderPublicSet' => [
                 'code' => '<?php
                     final class A {
-                        public public(set) readonly int $foo;
-
-                        public function __construct() {
-                            $this->foo = 1;
-                        }
+                        protected public(set) readonly int $foo;
                     }',
                 'error_message' => 'ParseError',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'readonlyWithoutPublicSetWrittenFromOutside' => [
+                'code' => '<?php
+                    final class A {
+                        public readonly string $name;
+                    }
+
+                    $a = new A();
+                    $a->name = "x";',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:21 - A::$name is marked readonly',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'readonlyWithProtectedSetWrittenFromOutside' => [
+                'code' => '<?php
+                    final class A {
+                        public protected(set) readonly string $name;
+                    }
+
+                    $a = new A();
+                    $a->name = "x";',
+                'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'docblockReadonlyWithPublicSetWrittenFromOutside' => [
+                'code' => '<?php
+                    final class A {
+                        /** @readonly */
+                        public public(set) string $name = "";
+                    }
+
+                    $a = new A();
+                    $a->name = "x";',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:21 - A::$name is marked readonly',
                 'error_levels' => [],
                 'php_version' => '8.4',
             ],

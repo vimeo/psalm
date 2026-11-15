@@ -539,7 +539,10 @@ final class InstancePropertyAssignmentAnalyzer
                     || $property_storage->allow_private_mutation
                     || $property_var_pure_compatible);
 
-            if (!$can_set_readonly_property && $property_storage->readonly) {
+            if (!$can_set_readonly_property
+                && $property_storage->readonly
+                && !$property_storage->readonly_public_set
+            ) {
                 IssueBuffer::maybeAdd(
                     new InaccessibleProperty(
                         $property_id . ' is marked readonly',
