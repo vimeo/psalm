@@ -58,6 +58,17 @@ final class BreakAnalyzer
                 $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_BREAK;
             }
 
+            // a `break 2` or more out of a nested loop does not land after this loop: it leaves the loops around it too
+            $break_depth = $stmt->num instanceof PhpParser\Node\Scalar\Int_ ? $stmt->num->value : 1;
+            $target_index = count($context->break_types) - $break_depth;
+            $loops_between = $target_index >= 0
+                ? count(array_filter(
+                    array_slice($context->break_types, $target_index + 1),
+                    static fn(string $break_type): bool => $break_type === 'loop',
+                ))
+                : 0;
+            $ends_this_loop = !$leaving_switch && $loops_between === 0;
+
             $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
 
             foreach ($redefined_vars as $var => $type) {
@@ -70,7 +81,7 @@ final class BreakAnalyzer
             if ($loop_scope->iteration_count === 0) {
                 // a variable a break out of the loop leaves undefined is only possibly defined after the loop
                 foreach ($loop_scope->possibly_defined_loop_parent_vars as $var_id => $type) {
-                    if (!$leaving_switch && !isset($context->vars_in_scope[$var_id])) {
+                    if ($ends_this_loop && !isset($context->vars_in_scope[$var_id])) {
                         $loop_scope->possibly_defined_loop_parent_vars[$var_id] = $type->setPossiblyUndefined(true);
                     }
                 }
@@ -80,7 +91,7 @@ final class BreakAnalyzer
                         $previous_type = $loop_scope->possibly_defined_loop_parent_vars[$var_id] ?? null;
 
                         $loop_scope->possibly_defined_loop_parent_vars[$var_id] = Type::combineUnionTypes(
-                            !$leaving_switch && $loop_scope->break_count > 0 && $previous_type === null
+                            $ends_this_loop && $loop_scope->break_count > 0 && $previous_type === null
                                 ? $type->setPossiblyUndefined(true)
                                 : $type,
                             $previous_type,
@@ -88,24 +99,16 @@ final class BreakAnalyzer
                     }
                 }
 
-                if (!$leaving_switch) {
+                if ($ends_this_loop) {
                     ++$loop_scope->break_count;
                 }
             }
 
             // `break 2` or more also leaves the loops around the innermost one, up to the one it targets
-            $break_depth = $stmt->num instanceof PhpParser\Node\Scalar\Int_ ? $stmt->num->value : 1;
-            $target_index = count($context->break_types) - $break_depth;
-
             if ($break_depth > 1
                 && $target_index >= 0
                 && $context->break_types[$target_index] === 'loop'
             ) {
-                $loops_between = count(array_filter(
-                    array_slice($context->break_types, $target_index + 1),
-                    static fn(string $break_type): bool => $break_type === 'loop',
-                ));
-
                 $target_scope = $loop_scope;
 
                 for ($i = 0; $i < $loops_between && $target_scope; $i++) {
