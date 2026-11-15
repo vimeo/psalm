@@ -65,6 +65,12 @@ final class Context
     public const PHP_VERSION_ID_VAR_ID = 'PHP_VERSION_ID';
 
     /**
+     * The lowest PHP version a `function_exists()`, `class_exists()` or `method_exists()` check of a native symbol
+     * implies. Not PHP_VERSION_ID: a polyfill makes the symbol exist on an older version too.
+     */
+    public const PHP_SYMBOL_GUARD_VAR_ID = 'PHP_SYMBOL_GUARD';
+
+    /**
      * The pseudo-variable through which comparisons of the PHP_SAPI constant and of php_sapi_name() narrow them, so
      * a branch knows the SAPI it runs in (e.g. `if (PHP_SAPI === 'cli')`); it can't clash with a variable name.
      */
@@ -534,6 +540,16 @@ final class Context
         foreach ($start_context->vars_in_scope as $var_id => $old_type) {
             // this is only true if there was some sort of type negation
             if (in_array($var_id, $vars_to_update, true)) {
+                // a block that stays in the scope and forgot the variable (a call that may change what a
+                // memoized call or a property holds, not an unset()): nothing is known of it after the block
+                // but what it was before
+                if (!$has_leaving_statements
+                    && !$end_context->hasVariable($var_id)
+                    && isset($end_context->vars_possibly_in_scope[$var_id])
+                ) {
+                    continue;
+                }
+
                 // if we're leaving, we're effectively deleting the possibility of the if types
                 $new_type = !$has_leaving_statements && $end_context->hasVariable($var_id)
                     ? $end_context->vars_in_scope[$var_id]
@@ -1240,7 +1256,10 @@ final class Context
             : $class_name;
     }
 
-    private static function getStaticPropertyDeclaringClass(
+    /**
+     * @internal
+     */
+    public static function getStaticPropertyDeclaringClass(
         Codebase $codebase,
         string $class_name,
         string $property_name,
@@ -1308,6 +1327,8 @@ final class Context
 
         foreach ($vars_to_remove as $var_id) {
             $this->remove($var_id, false);
+            // forgotten, not unset: Context::update() tells the two apart
+            $this->vars_possibly_in_scope[$var_id] = true;
         }
 
         $clauses_to_keep = [];
