@@ -44,14 +44,14 @@ final class IsNotAClass extends Assertion
 
     public function __toString(): string
     {
-        return 'isa-' . ($this->allow_string ? 'string-' : '') . $this->type;
+        return '!isa-' . ($this->allow_string ? 'string-' : '') . $this->type;
     }
 
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof IsAClass
-            && $this->type === $assertion->type
+            && $this->type->getId() === $assertion->type->getId()
             && $this->allow_string === $assertion->allow_string;
     }
 }

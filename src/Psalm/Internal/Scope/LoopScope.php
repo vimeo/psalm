@@ -25,6 +25,13 @@ final class LoopScope
     public array $exit_truths = [];
 
     /**
+     * What evaluating the conditions left in the variables they write, over all the passes of the loop
+     *
+     * @var array<string, Union>
+     */
+    public array $condition_written_var_ids = [];
+
+    /**
      * The variables the loop (and the loops around it) may assign, written to, or pass to a call, as the root of
      * what is changed: `$a` for `$a['x']++` and `$a->p = 1`
      *
