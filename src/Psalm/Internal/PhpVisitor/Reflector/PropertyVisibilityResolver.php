@@ -94,13 +94,6 @@ final class PropertyVisibilityResolver
             );
         }
 
-        if ($set_visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC && ($flags & Modifiers::READONLY)) {
-            $class_storage->docblock_issues[] = new ParseError(
-                'Readonly property ' . $property_id . ' cannot have public(set) visibility',
-                $location,
-            );
-        }
-
         if ($set_visibility < $property_storage->visibility) {
             $class_storage->docblock_issues[] = new ParseError(
                 'Visibility of property ' . $property_id . ' must not be weaker than its set visibility ('
@@ -112,6 +105,8 @@ final class PropertyVisibilityResolver
         }
 
         $property_storage->set_visibility = $set_visibility;
+        $property_storage->readonly_public_set = $set_visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+            && $property_storage->native_readonly;
 
         if ($set_visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
             // private(set) properties are implicitly final

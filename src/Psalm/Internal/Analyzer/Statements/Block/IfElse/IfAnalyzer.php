@@ -6,7 +6,6 @@ namespace Psalm\Internal\Analyzer\Statements\Block\IfElse;
 
 use PhpParser;
 use Psalm\CodeLocation;
-use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
@@ -39,6 +38,7 @@ use function array_merge;
 use function array_reduce;
 use function count;
 use function in_array;
+use function preg_match;
 use function spl_object_id;
 
 /**
@@ -154,6 +154,7 @@ final class IfAnalyzer
         $assigned_var_ids = $if_context->assigned_var_ids;
         $possibly_assigned_var_ids = $if_context->possibly_assigned_var_ids;
         $if_context->assigned_var_ids = [];
+        $if_context->fully_assigned_var_ids = [];
         $if_context->possibly_assigned_var_ids = [];
 
         if ($statements_analyzer->analyze(
@@ -222,13 +223,15 @@ final class IfAnalyzer
 
         if (!$has_leaving_statements) {
             self::updateIfScope(
-                $codebase,
+                $statements_analyzer,
                 $if_scope,
                 $if_context,
                 $outer_context,
                 array_merge($new_assigned_var_ids, $if_conditional_scope->assigned_in_conditional_var_ids),
                 $new_possibly_assigned_var_ids,
                 $if_scope->if_cond_changed_var_ids,
+                assigned_in_conditional_var_ids: $if_conditional_scope->assigned_in_conditional_var_ids,
+                branch_nodes: $stmt->stmts,
             );
 
             if ($if_scope->reasonable_clauses) {
@@ -245,6 +248,16 @@ final class IfAnalyzer
         } else {
             if (!$has_break_statement) {
                 $if_scope->reasonable_clauses = [];
+            }
+
+            // unlike its assignments, the constants a `defined()` of the condition recorded exist after it
+            if ($if_scope->post_leaving_if_context) {
+                foreach ($outer_context->constants as $const_name => $const_type) {
+                    if (!isset($if_scope->post_leaving_if_context->constants[$const_name])) {
+                        $if_scope->post_leaving_if_context->constants[$const_name] = $const_type;
+                        $if_scope->post_leaving_if_context->vars_in_scope[$const_name] = $const_type;
+                    }
+                }
             }
 
             // If we're assigning inside
@@ -416,9 +429,12 @@ final class IfAnalyzer
      * @param  array<string, int>    $assigned_var_ids
      * @param  array<string, bool>   $possibly_assigned_var_ids
      * @param  array<string, bool>   $newly_reconciled_var_ids
+     * @param  array<string, int>    $assigned_in_conditional_var_ids
+     * @param  array<PhpParser\Node> $branch_nodes the code of the branch: what it rebinds by reference is detached
+     *                                             in the outer context
      */
     public static function updateIfScope(
-        Codebase $codebase,
+        StatementsAnalyzer $statements_analyzer,
         IfScope $if_scope,
         Context $if_context,
         Context $outer_context,
@@ -426,8 +442,35 @@ final class IfAnalyzer
         array $possibly_assigned_var_ids,
         array $newly_reconciled_var_ids,
         bool $update_new_vars = true,
+        array $assigned_in_conditional_var_ids = [],
+        array $branch_nodes = [],
     ): void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $if_scope->addBranchReachingTheEnd($if_context);
+
+        if ($branch_nodes) {
+            $outer_context->detachReferencesReboundIn($if_context, $statements_analyzer, $branch_nodes);
+        }
+
         $redefined_vars = $if_context->getRedefinedVars($outer_context->vars_in_scope);
+
+        foreach (array_diff_key($if_context->vars_in_scope, $outer_context->vars_in_scope) as $new_var => $type) {
+            // only variables the branch defines: `$a->b` and `$a['b']` are narrowings of an expression, `isset($a)`
+            // doesn't define `$a`, and the type of a variable possibly defined before the branch (by an earlier
+            // iteration) or by its condition (which the paths skipping the branch evaluate too) isn't all in it
+            if (!preg_match('/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $new_var)
+                || (!isset($assigned_var_ids[$new_var]) && !isset($possibly_assigned_var_ids[$new_var]))
+                || isset($outer_context->vars_possibly_in_scope[$new_var])
+                || isset($assigned_in_conditional_var_ids[$new_var])
+            ) {
+                continue;
+            }
+
+            $if_scope->partial_new_vars[$new_var] = isset($if_scope->partial_new_vars[$new_var])
+                ? Type::combineUnionTypes($if_scope->partial_new_vars[$new_var], $type, $codebase)
+                : $type;
+        }
 
         if ($if_scope->new_vars === null) {
             if ($update_new_vars) {
@@ -474,6 +517,7 @@ final class IfAnalyzer
         }
 
         $if_scope->possibly_assigned_var_ids += $possibly_assigned_var_ids;
+        $if_scope->reassigned_var_ids += $if_context->fully_assigned_var_ids;
 
         if ($if_scope->redefined_vars === null) {
             $if_scope->redefined_vars = $redefined_vars;

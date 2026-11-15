@@ -105,6 +105,9 @@ use const SORT_STRING;
  */
 final class Scanner
 {
+    /** A round of at most this many files is scanned in this process */
+    private const MAX_FILES_WITHOUT_FORKING = 512;
+
     /**
      * @var array<string, string>
      */
@@ -185,23 +188,26 @@ final class Scanner
 
         if ($this->codebase->classlike_storage_provider->has($fq_classlike_name)
             || !$this->codebase->classlikes->doesClassLikeExist($fq_classlike_name_lc)
-            || (!class_exists($fq_classlike_name, false)
-                && !interface_exists($fq_classlike_name, false)
-                && !enum_exists($fq_classlike_name, false)
-                && !trait_exists($fq_classlike_name, false))
         ) {
             return;
         }
 
-        $reflected_class = new ReflectionClass($fq_classlike_name);
+        // trait_exists() without autoloading asserts an equality, which a negation can't express: the narrowing must
+        // come from the positive condition
+        if (class_exists($fq_classlike_name, false)
+            || interface_exists($fq_classlike_name, false)
+            || enum_exists($fq_classlike_name, false)
+            || trait_exists($fq_classlike_name, false)
+        ) {
+            $reflected_class = new ReflectionClass($fq_classlike_name);
 
-        // Only built-in classlikes; a user-defined one loaded in Psalm's own process may differ from the analyzed code
-        if (!$reflected_class->isInternal()) {
-            return;
+            // Only built-in classlikes; a user-defined one loaded in Psalm's own process may differ from the analyzed
+            // code
+            if ($reflected_class->isInternal()) {
+                $this->reflection->registerClass($reflected_class);
+                $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
+            }
         }
-
-        $this->reflection->registerClass($reflected_class);
-        $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
     }
 
     /**
@@ -349,6 +355,36 @@ final class Scanner
         }
     }
 
+    /**
+     * Takes the files and classes queued for scanning out of the queue, to put them back with restoreQueue()
+     *
+     * @return array{array<string, string>, array<string, string>, array<string, bool>}
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function takeQueue(): array
+    {
+        $queue = [$this->files_to_scan, $this->classes_to_scan, $this->classes_to_deep_scan];
+
+        $this->files_to_scan = [];
+        $this->classes_to_scan = [];
+        $this->classes_to_deep_scan = [];
+
+        return $queue;
+    }
+
+    /**
+     * @param array{array<string, string>, array<string, string>, array<string, bool>} $queue
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function restoreQueue(array $queue): void
+    {
+        [$files_to_scan, $classes_to_scan, $classes_to_deep_scan] = $queue;
+
+        $this->files_to_scan += $files_to_scan;
+        $this->classes_to_scan += $classes_to_scan;
+        $this->classes_to_deep_scan += $classes_to_deep_scan;
+    }
+
     public function scanFiles(ClassLikes $classlikes, int $pool_size = 1): bool
     {
         $has_changes = false;
@@ -453,6 +489,48 @@ final class Scanner
                 || (isset($this->files_to_deep_scan[$file_path]) && !$this->scanned_files[$file_path]));
     }
 
+    /**
+     * Scanning a file with a cached storage takes about a tenth of the time of one without, and less than sending
+     * its storage back to the process that forked, so only the files without one are worth forking for.
+     *
+     * @param positive-int $max_pool_size
+     * @param int<0, max> $file_count
+     * @param int<0, max> $uncached_count the files among them without a cached storage
+     * @psalm-pure
+     */
+    public static function getScanPoolSize(int $max_pool_size, int $file_count, int $uncached_count): int
+    {
+        if ($file_count <= self::MAX_FILES_WITHOUT_FORKING || $uncached_count * 8 <= $file_count - $uncached_count) {
+            return 1;
+        }
+
+        return (int) ceil(min($max_pool_size, $uncached_count / 256));
+    }
+
+    /**
+     * @param array<string, string> $file_paths
+     * @param positive-int $max_pool_size
+     * @return int<0, max> the files without a cached storage, counted until they are enough for a pool of
+     *                     $max_pool_size: the pool size never shrinks as the count grows
+     */
+    private function countUncachedFiles(array $file_paths, int $max_pool_size): int
+    {
+        $file_count = count($file_paths);
+        $uncached = 0;
+
+        foreach ($file_paths as $file_path) {
+            if (!$this->file_storage_provider->isCached($file_path, $this->file_provider)) {
+                ++$uncached;
+
+                if (self::getScanPoolSize($max_pool_size, $file_count, $uncached) === $max_pool_size) {
+                    break;
+                }
+            }
+        }
+
+        return $uncached;
+    }
+
     private function scanFilePaths(int $pool_size): bool
     {
         $files_to_scan = array_filter(
@@ -473,13 +551,12 @@ final class Scanner
             ksort($files_to_scan, SORT_STRING);
         }
 
-        if (!$this->is_forked && $pool_size > 1 && count($files_to_scan) > 512) {
-            $pool_size = (int) ceil(min($pool_size, count($files_to_scan) / 256));
-        } else {
-            $pool_size = 1;
-        }
+        $file_count = count($files_to_scan);
+        $pool_size = !$this->is_forked && $pool_size > 1 && $file_count > self::MAX_FILES_WITHOUT_FORKING
+            ? self::getScanPoolSize($pool_size, $file_count, $this->countUncachedFiles($files_to_scan, $pool_size))
+            : 1;
 
-        $this->progress->expand(count($files_to_scan));
+        $this->progress->expand($file_count);
         if ($pool_size > 1) {
             $this->progress->debug('Forking process for scanning' . PHP_EOL);
 

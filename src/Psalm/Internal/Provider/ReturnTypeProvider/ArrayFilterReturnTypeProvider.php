@@ -71,7 +71,7 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
             $first_arg_array = $fallback;
         } else {
             $first_arg_type = $statements_source->node_data->getType($array_arg);
-            if (!$first_arg_type || $first_arg_type->isMixed()) {
+            if (!$first_arg_type || $first_arg_type->hasMixed()) {
                 $first_arg_array = $fallback;
             } else {
                 $first_arg_array = $first_arg_type->hasType('array')
@@ -188,6 +188,15 @@ final class ArrayFilterReturnTypeProvider implements FunctionReturnTypeProviderI
                         $mapping_function_ids[] = $atomic->value;
                     }
                 }
+            }
+
+            if ($function_call_arg->value instanceof PhpParser\Node\Expr\CallLike
+                && $function_call_arg->value->isFirstClassCallable()
+            ) {
+                $mapping_function_ids = CallAnalyzer::getFunctionIdsFromFirstClassCallable(
+                    $statements_source,
+                    $function_call_arg->value,
+                );
             }
 
             if ($function_call_arg->value instanceof PhpParser\Node\Scalar\String_
