@@ -165,8 +165,8 @@ final class GenericTypeComparator
                     && !$container_type_part instanceof TIterable
                     && !($container_type_params_covariant[$i] ?? false)
                     && !StarProjection::isStar($container_param)
-                    && !$container_param->from_template_default
-                    && !$container_param->had_template
+                    && !($container_type_part->omitted_params_from !== null
+                        && $i >= $container_type_part->omitted_params_from)
                 ) {
                     $all_types_contain = false;
 

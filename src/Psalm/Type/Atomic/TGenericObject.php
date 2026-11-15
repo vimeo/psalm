@@ -43,6 +43,9 @@ final class TGenericObject extends TNamedObject
      * @param string                $value the name of the object
      * @param non-empty-list<Union> $type_params
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
+     * @param int|null $omitted_params_from the offset of the first type parameter the use of the class left out,
+     *                                      which is its template's bound: 0 for `Pair` written without arguments.
+     *                                      A `*` argument fits a left-out one (`Pair<int, *>` is a `Pair`).
      */
     public function __construct(
         string $value,
@@ -52,6 +55,7 @@ final class TGenericObject extends TNamedObject
         bool $is_static = false,
         array $extra_types = [],
         bool $from_docblock = false,
+        public ?int $omitted_params_from = null,
     ) {
         if ($value[0] === '\\') {
             $value = substr($value, 1);

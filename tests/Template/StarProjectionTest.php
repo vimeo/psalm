@@ -1048,6 +1048,26 @@ final class StarProjectionTest extends TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:40 - Argument 1 of takesTemplated expects Box<mixed>, but parent type Box<*> provided',
             ],
+            'starProjectionDoesNotFitATemplateBoundByAnotherArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @param Box<T> $box
+                     */
+                    function pair(mixed $value, Box $box): void {}
+
+                    /** @param Box<*> $box */
+                    function f(Box $box): void {
+                        pair(1, $box);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:33 - Argument 2 of pair expects Box<mixed>, but parent type Box<*> provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'starProjectionDoesNotBindATemplateArgumentNextToStars' => [
                 'code' => '<?php
                     /**
