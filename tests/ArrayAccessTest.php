@@ -1299,6 +1299,62 @@ final class ArrayAccessTest extends TestCase
     }
 
     /**
+     * With data flow tracked, the branches of the check redefine the list, and their merge gives its first item a
+     * type that is not from the docblock, unlike its other items.
+     */
+    public function testListOffsetAfterIssetCheckWithTaintAnalysis(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(
+            '<?php
+                /**
+                 * @param list<mixed> $l
+                 * @return mixed
+                 */
+                function f(array $l) {
+                    if (isset($l[0])) {}
+                    return $l[0];
+                }',
+        );
+    }
+
+    public function testListOffsetFromVariableAfterIssetCheckWithTaintAnalysis(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(
+            '<?php
+                /**
+                 * @param list<mixed> $l
+                 * @return mixed
+                 */
+                function g(array $l) {
+                    if (isset($l[0])) {}
+                    $i = 0;
+                    return $l[$i];
+                }',
+        );
+    }
+
+    public function testListOffsetAfterAssignmentInABranchWithTaintAnalysis(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(
+            '<?php
+                /**
+                 * @param list<string> $l
+                 * @param string $s
+                 */
+                function g(array $l, $s): string {
+                    if (rand(0, 1)) {
+                        $l[0] = $s;
+                    }
+                    $i = 0;
+                    return $l[$i];
+                }',
+        );
+    }
+
+    /**
      * @psalm-pure
      */
     #[Override]
@@ -2376,6 +2432,142 @@ final class ArrayAccessTest extends TestCase
                         return $foo[bar($key)] ?? $default;
                     }',
             ],
+            'listOffsetAfterIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        if (isset($l[0])) {}
+                        return $l[0];
+                    }',
+            ],
+            'listOffsetAfterCoalesce' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        $x = $l[0] ?? false;
+                        return $l[0];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'stringArrayOffsetAfterIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $a
+                     * @return mixed
+                     */
+                    function f(array $a) {
+                        if (isset($a["x"])) {}
+                        return $a["x"];
+                    }',
+            ],
+            'intArrayOffsetAfterIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param array<int, mixed> $a
+                     * @return mixed
+                     */
+                    function f(array $a) {
+                        if (isset($a[0])) {}
+                        return $a[0];
+                    }',
+            ],
+            'listOffsetAfterIssetCheckInACondition' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l, bool $b) {
+                        if (isset($l[0]) && $b) {}
+                        return $l[0];
+                    }',
+            ],
+            'listOffsetAfterIssetCheckInAnElseif' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l, bool $b) {
+                        if ($b) {} elseif (isset($l[0])) {}
+                        return $l[0];
+                    }',
+            ],
+            'offsetCheckedAgainAfterNotEmptyCheck' => [
+                'code' => '<?php
+                    /** @param array{s?: mixed} $o */
+                    function f(array $o): void {
+                        if (!empty($o["s"])) {
+                            echo 1;
+                        }
+                        if (!empty($o["s"])) {
+                            echo 2;
+                        }
+                    }',
+            ],
+            'offsetCheckedAgainInALoopAfterNotEmptyCheck' => [
+                'code' => '<?php
+                    /** @param array{s?: mixed} $o */
+                    function f(array $o): void {
+                        if (!empty($o["s"])) {
+                            echo 1;
+                        }
+                        foreach ([1, 2] as $_) {
+                            if (!empty($o["s"])) {
+                                echo 2;
+                            }
+                        }
+                    }',
+            ],
+            'nestedOffsetInACoalesceAfterIssetCheck' => [
+                'code' => '<?php
+                    function f(array $arr, int $bank, int $code): string {
+                        if (!isset($arr[$bank])) {
+                            echo 1;
+                        }
+                        return (string) ($arr[$bank][$code] ?? "?");
+                    }',
+            ],
+            'listOffsetAfterIssetCheckInASwitch' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        switch (true) {
+                            case isset($l[0]):
+                                break;
+                            default:
+                                break;
+                        }
+                        return $l[0];
+                    }',
+            ],
+            'listOffsetAfterIssetCheckInASwitchCaseFallingToTheEnd' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        switch (true) {
+                            case isset($l[0]):
+                                echo 1;
+                                break;
+                            default:
+                                echo 2;
+                        }
+                        return $l[0];
+                    }',
+            ],
         ];
     }
 
@@ -2921,6 +3113,91 @@ final class ArrayAccessTest extends TestCase
                 }
                 PHP,
                 'error_message' => 'NamedArgumentNotAllowed',
+            ],
+            'possiblyUndefinedKeyedArrayOffsetAfterIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a?: mixed} $a
+                     * @return mixed
+                     */
+                    function f(array $a) {
+                        if (isset($a["a"])) {}
+                        return $a["a"];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'listOffsetInsideNegatedIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        if (!isset($l[0])) {
+                            return $l[0];
+                        }
+                        return null;
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'stringArrayOffsetInsideNegatedIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $a
+                     * @return mixed
+                     */
+                    function f(array $a) {
+                        if (!isset($a["x"])) {
+                            return $a["x"];
+                        }
+                        return null;
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'nestedArrayOffsetInsideNegatedIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, array> $a
+                     * @return mixed
+                     */
+                    function f(array $a, string $k) {
+                        if (!isset($a[$k]["x"])) {
+                            return $a[$k]["x"];
+                        }
+                        return null;
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'listOffsetAfterLeavingIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        if (isset($l[0])) {
+                            return null;
+                        }
+                        return $l[0];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'listOffsetAfterLeavingIssetCheckInASwitch' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        switch (true) {
+                            case isset($l[0]):
+                                return null;
+                            default:
+                                break;
+                        }
+                        return $l[0];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
         ];
     }

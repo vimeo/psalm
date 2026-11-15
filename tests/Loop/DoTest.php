@@ -23,6 +23,17 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'doWhileIntRangeShiftedByEveryIterationIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $i = 0;
+                        do {
+                            $i = $i + rand(1, 3);
+                        } while ($i <= 10);
+                        /** @psalm-check-type-exact $i = int<11, 13> */;
+                        return $i;
+                    }',
+            ],
             'doWhileTrueVariableIsWhatTheBreaksLeave' => [
                 'code' => '<?php
                     function f(): void {
