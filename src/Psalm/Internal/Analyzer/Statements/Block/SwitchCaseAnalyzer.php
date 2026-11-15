@@ -491,6 +491,10 @@ final class SwitchCaseAnalyzer
             }
         }
 
+        if ($case_scope->null_array_offsets_read_at_breaks !== null) {
+            $switch_scope->addWayOut($case_scope->null_array_offsets_read_at_breaks);
+        }
+
         // augment the information with data from break statements
         if ($case_scope->break_vars !== null) {
             if ($switch_scope->possibly_redefined_vars === null) {
@@ -613,6 +617,8 @@ final class SwitchCaseAnalyzer
                 }
             }
         } else {
+            $switch_scope->addWayOut($case_context->null_array_offsets_read);
+
             $case_redefined_vars = $case_context->getRedefinedVars($original_context->vars_in_scope);
 
             if ($switch_scope->possibly_redefined_vars === null) {

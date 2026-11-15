@@ -1394,6 +1394,12 @@ final class AssertionFinder
         FileSource $source,
     ): array {
         if ($stmt->class instanceof PhpParser\Node\Name) {
+            // no object is an instance of `iterable` (a reserved word reported where it is analysed): the check
+            // says nothing about the variable, instead of being resolved to the type iterable
+            if (strtolower($stmt->class->toString()) === 'iterable') {
+                return [];
+            }
+
             if (!in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)) {
                 $instanceof_class = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $stmt->class,
@@ -2231,7 +2237,7 @@ final class AssertionFinder
             if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
                 $if_types[$var_name] = [[new IsNotType(new TNull())]];
             } else {
-                $if_types[$var_name] = [[new Truthy()]];
+                $if_types[$var_name] = [[new IsNotLooselyEqual(new TNull())]];
             }
         }
 
@@ -2956,7 +2962,7 @@ final class AssertionFinder
             if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
                 $if_types[$var_name] = [[new IsType(new TNull())]];
             } else {
-                $if_types[$var_name] = [[new Falsy()]];
+                $if_types[$var_name] = [[new IsLooselyEqual(new TNull())]];
             }
         }
 
