@@ -1426,6 +1426,7 @@ final class NewAnalyzer extends CallAnalyzer
         Union $stmt_class_type,
         Config $config,
         bool &$can_extend,
+        bool &$unsafe_instantiation_reported = false,
     ): ?Union {
         $new_types = [];
 
@@ -1439,6 +1440,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $lhs_type_part->as,
                     $config,
                     $can_extend,
+                    $unsafe_instantiation_reported,
                 );
                 if ($as) {
                     $new_types []= new Union([$lhs_type_part->replaceAs($as)]);
@@ -1475,13 +1477,15 @@ final class NewAnalyzer extends CallAnalyzer
                             $lhs_type_part->as_type->value,
                         );
 
-                        if (!self::childConstructorsAcceptArgs(
+                        if (!$unsafe_instantiation_reported && !self::childConstructorsAcceptArgs(
                             $statements_analyzer,
                             $codebase,
                             $context,
                             $as_storage,
                             $stmt->getArgs(),
                         )) {
+                            $unsafe_instantiation_reported = true;
+
                             IssueBuffer::maybeAdd(
                                 new UnsafeInstantiation(
                                     'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
@@ -1538,13 +1542,15 @@ final class NewAnalyzer extends CallAnalyzer
                                 $lhs_type_part->as_type->value,
                             );
 
-                            if (!self::childConstructorsAcceptArgs(
+                            if (!$unsafe_instantiation_reported && !self::childConstructorsAcceptArgs(
                                 $statements_analyzer,
                                 $codebase,
                                 $context,
                                 $as_storage,
                                 $stmt->getArgs(),
                             )) {
+                                $unsafe_instantiation_reported = true;
+
                                 IssueBuffer::maybeAdd(
                                     new UnsafeInstantiation(
                                         'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
@@ -1643,7 +1649,8 @@ final class NewAnalyzer extends CallAnalyzer
 
                     // a final class has no child that could change the constructor, and the object of an internal
                     // class is mostly one just created (`$o = new stdClass; new $o`)
-                    if ($object_storage->user_defined
+                    if (!$unsafe_instantiation_reported
+                        && $object_storage->user_defined
                         && !$object_storage->final
                         && !self::childConstructorsAcceptArgs(
                             $statements_analyzer,
@@ -1653,6 +1660,8 @@ final class NewAnalyzer extends CallAnalyzer
                             $stmt->getArgs(),
                         )
                     ) {
+                        $unsafe_instantiation_reported = true;
+
                         IssueBuffer::maybeAdd(
                             new UnsafeInstantiation(
                                 'Cannot safely instantiate class ' . $lhs_type_part->value

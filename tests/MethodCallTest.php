@@ -6,9 +6,13 @@ namespace Psalm\Tests;
 
 use Override;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -27,6 +31,38 @@ final class MethodCallTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNewOfAnObjectOrAClassStringOfTheSameClassIsReportedOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                class A {
+                    public function __construct(array $items = []) {}
+                }
+
+                function f(mixed $c): A {
+                    if (!is_a($c, A::class, true)) {
+                        throw new Exception();
+                    }
+
+                    return new $c([]);
+                }',
+        );
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            ['UnsafeInstantiation'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
     }
 
     public function testMethodCallMemoize(): void
