@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Algebra;
 
+use Override;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\FileSource;
@@ -22,15 +23,18 @@ use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Node\Expr\VirtualPropertyFetch;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsNotType;
+use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type\Atomic\TNull;
 
+use function array_diff_key;
 use function array_filter;
 use function array_map;
 use function array_values;
 use function count;
 use function spl_object_id;
 use function str_starts_with;
+use function strcspn;
 use function strtolower;
 use function substr;
 
@@ -157,6 +161,18 @@ final class FormulaGenerator
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
         ) {
+            $bool_comparison_clauses = self::getNullsafeMethodCallBoolComparisonClauses(
+                $conditional,
+                $conditional_object_id,
+                $creating_object_id,
+                $this_class_name,
+                $source,
+            );
+
+            if ($bool_comparison_clauses !== null) {
+                return $bool_comparison_clauses;
+            }
+
             $nullsafe_expansion = self::expandNullsafePropertyNullComparison($conditional);
 
             if ($nullsafe_expansion !== null) {
@@ -571,6 +587,96 @@ final class FormulaGenerator
     }
 
     /**
+     * The variables that the right side of an `||` of the expression assigns, and its left side doesn't: where the
+     * whole expression is false the right side has run, so what the negated left side says of them is about the
+     * value they had before
+     *
+     * @return array<string, true>
+     */
+    public static function getVarsAssignedByOredRightSides(PhpParser\Node\Expr $expr, ?string $this_class_name): array
+    {
+        if (!$expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            && !$expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+        ) {
+            return [];
+        }
+
+        return [
+            ...self::getVarsAssignedByOredRightSides($expr->left, $this_class_name),
+            ...array_diff_key(
+                self::getAssignedVarIds($expr->right, $this_class_name),
+                self::getAssignedVarIds($expr->left, $this_class_name),
+            ),
+        ];
+    }
+
+    /**
+     * The negation of a condition without what it says of a variable that the right side of one of its `||` assigns.
+     * Where the condition is false that right side has run, so what the negated left side says of the variable is
+     * about the value it had before; leaving out conjuncts of a negation keeps it true.
+     *
+     * @param list<Clause> $negated_clauses
+     * @return list<Clause>
+     */
+    public static function withoutClausesOfReassignedVars(
+        array $negated_clauses,
+        PhpParser\Node\Expr $condition,
+        ?string $this_class_name,
+    ): array {
+        $reassigned_var_ids = self::getVarsAssignedByOredRightSides($condition, $this_class_name);
+
+        if (!$reassigned_var_ids) {
+            return $negated_clauses;
+        }
+
+        return array_values(array_filter(
+            $negated_clauses,
+            static fn(Clause $clause): bool => !self::testsAnyVar($clause, $reassigned_var_ids),
+        ));
+    }
+
+    /**
+     * The clauses that say nothing of the variables the expression assigns, or of an item or property of one: what
+     * they said is about the value the variables had before
+     *
+     * @param list<Clause> $clauses
+     * @return list<Clause>
+     */
+    public static function withoutClausesOfVarsAssignedIn(
+        array $clauses,
+        ?PhpParser\Node\Expr $expr,
+        ?string $this_class_name,
+    ): array {
+        $assigned_var_ids = $expr ? self::getAssignedVarIds($expr, $this_class_name) : [];
+
+        if (!$assigned_var_ids) {
+            return $clauses;
+        }
+
+        return array_values(array_filter(
+            $clauses,
+            static fn(Clause $clause): bool => !self::testsAnyVar($clause, $assigned_var_ids),
+        ));
+    }
+
+    /**
+     * Whether the clause tests one of the variables, or an item or property of one
+     *
+     * @param array<string, mixed> $var_ids
+     * @psalm-pure
+     */
+    private static function testsAnyVar(Clause $clause, array $var_ids): bool
+    {
+        foreach ($clause->possibilities as $var => $_) {
+            if (isset($var_ids[$var]) || isset($var_ids[substr($var, 0, strcspn($var, '[-'))])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Whether the formula of the condition leaves out what the left side of an `&&` tested of a variable that the right
      * side assigns: it holds where the whole condition does, so its negation has to be made from the negated condition
      * (`!A || !B`), where the right side is only evaluated if the left one holds
@@ -592,13 +698,33 @@ final class FormulaGenerator
      *
      * @return array<string, true>
      */
-    private static function getAssignedVarIds(PhpParser\Node\Expr $expr, ?string $this_class_name): array
+    public static function getAssignedVarIds(PhpParser\Node\Expr $expr, ?string $this_class_name): array
     {
-        $targets = [];
+        $visitor = new class extends PhpParser\NodeVisitorAbstract {
+            /** @var list<PhpParser\Node\Expr> */
+            public array $targets = [];
 
-        (new PhpParser\NodeFinder())->find(
-            $expr,
-            static function (PhpParser\Node $node) use (&$targets): bool {
+            /** @psalm-capabilities read-props|write-this-props|write-refs */
+            #[Override]
+            public function enterNode(PhpParser\Node $node): ?int
+            {
+                // the body of a closure assigns its own variables; only what it takes by reference is the outer's
+                if ($node instanceof PhpParser\Node\Expr\Closure) {
+                    foreach ($node->uses as $use) {
+                        if ($use->byRef) {
+                            $this->targets[] = $use->var;
+                        }
+                    }
+
+                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
+
+                if ($node instanceof PhpParser\Node\Expr\ArrowFunction
+                    || $node instanceof PhpParser\Node\Stmt\ClassLike
+                ) {
+                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
+
                 if ($node instanceof PhpParser\Node\Expr\Assign
                     || $node instanceof PhpParser\Node\Expr\AssignRef
                     || $node instanceof PhpParser\Node\Expr\AssignOp
@@ -612,17 +738,23 @@ final class FormulaGenerator
                     ) {
                         foreach ($node->var->items as $item) {
                             if ($item !== null) {
-                                $targets[] = $item->value;
+                                $this->targets[] = $item->value;
                             }
                         }
                     } else {
-                        $targets[] = $node->var;
+                        $this->targets[] = $node->var;
                     }
                 }
 
-                return false;
-            },
-        );
+                return null;
+            }
+        };
+
+        $traverser = new PhpParser\NodeTraverser();
+        $traverser->addVisitor($visitor);
+        $traverser->traverse([$expr]);
+
+        $targets = $visitor->targets;
 
         $var_ids = [];
 
@@ -635,6 +767,101 @@ final class FormulaGenerator
         }
 
         return $var_ids;
+    }
+
+    /**
+     * Clauses for a nullsafe method call compared strictly against a bool literal, e.g. `$a?->m() === false`.
+     *
+     * The assertion scraped for a nullsafe call (its receiver is not null) only describes the call's truthy
+     * side, so the equality paths cannot negate it or use it raw: a falsy result says nothing about the
+     * receiver, and a result identical to `false` even proves the receiver was not null, as a null receiver
+     * makes the call null rather than false.
+     *
+     * @return list<Clause>|null
+     */
+    private static function getNullsafeMethodCallBoolComparisonClauses(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        int $conditional_object_id,
+        int $creating_object_id,
+        ?string $this_class_name,
+        FileSource $source,
+    ): ?array {
+        if (!$conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            && !$conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+        ) {
+            return null;
+        }
+
+        if ($conditional->left instanceof PhpParser\Node\Expr\NullsafeMethodCall
+            && $conditional->right instanceof PhpParser\Node\Expr\ConstFetch
+            && self::isBoolLiteral($conditional->right)
+        ) {
+            $nullsafe_call = $conditional->left;
+            $literal_is_true = strtolower($conditional->right->name->getFirst()) === 'true';
+        } elseif ($conditional->right instanceof PhpParser\Node\Expr\NullsafeMethodCall
+            && $conditional->left instanceof PhpParser\Node\Expr\ConstFetch
+            && self::isBoolLiteral($conditional->left)
+        ) {
+            $nullsafe_call = $conditional->right;
+            $literal_is_true = strtolower($conditional->left->name->getFirst()) === 'true';
+        } else {
+            return null;
+        }
+
+        $receiver_id = ExpressionIdentifier::getExtendedVarId($nullsafe_call->var, $this_class_name, $source);
+
+        if ($receiver_id === null) {
+            return null;
+        }
+
+        $result_id = '*' . (int) $nullsafe_call->getAttribute('startFilePos')
+            . ':' . (int) $nullsafe_call->getAttribute('endFilePos');
+
+        $negated = $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical;
+
+        // the character the result must have on the side the condition asserts: identical to `true` and
+        // not identical to `false` both assert a truthy result, the other two a falsy one
+        $asserted_truthy = $literal_is_true !== $negated;
+        $asserted_key = $asserted_truthy ? 'truthy' : 'falsy';
+        $asserted = $asserted_truthy ? new Truthy() : new Falsy();
+
+        if ($negated) {
+            // the result has the asserted character, or the receiver is null (which makes the call null,
+            // and null is not identical to either bool literal)
+            $null = new IsType(new TNull());
+
+            return [
+                new Clause(
+                    [$result_id => [$asserted_key => $asserted], $receiver_id => [(string) $null => $null]],
+                    $conditional_object_id,
+                    $creating_object_id,
+                ),
+            ];
+        }
+
+        // the result has the asserted character, which also means the receiver was not null
+        $opposite_key = $asserted_truthy ? 'falsy' : 'truthy';
+        $opposite = $asserted_truthy ? new Falsy() : new Truthy();
+        $not_null = new IsNotType(new TNull());
+
+        return [
+            new Clause(
+                [$result_id => [$asserted_key => $asserted]],
+                $conditional_object_id,
+                $creating_object_id,
+            ),
+            new Clause(
+                [$result_id => [$opposite_key => $opposite], $receiver_id => [(string) $not_null => $not_null]],
+                $conditional_object_id,
+                $creating_object_id,
+            ),
+        ];
+    }
+
+    private static function isBoolLiteral(PhpParser\Node\Expr $expr): bool
+    {
+        return $expr instanceof PhpParser\Node\Expr\ConstFetch
+            && (strtolower($expr->name->getFirst()) === 'true' || strtolower($expr->name->getFirst()) === 'false');
     }
 
     /**
