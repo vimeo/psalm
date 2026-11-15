@@ -155,6 +155,341 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'invokeInheritedGenericFirstClassCallable' => [
+                'code' => '<?php
+                    class Helpers {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public static function identity($value) { return $value; }
+                    }
+                    final class Child extends Helpers {}
+                    $method = "identity";
+                    $instance = (new Child())->{$method}(...);
+                    $static = Child::{$method}(...);
+                    $text = $instance("hello");
+                    $number = $static(42);',
+                'assertions' => [
+                    '$text===' => "'hello'",
+                    '$number===' => '42',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeGenericFirstClassFunctionCallable' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return T
+                     */
+                    function identity($value) { return $value; }
+                    $identity = identity(...);
+                    $text = $identity("hello");
+                    $number = $identity(42);',
+                'assertions' => [
+                    '$text===' => "'hello'",
+                    '$number===' => '42',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeGenericFirstClassStaticCallable' => [
+                'code' => '<?php
+                    final class Helpers {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public static function identity($value) { return $value; }
+                    }
+                    $identity = Helpers::identity(...);
+                    $copy = $identity(...);
+                    $text = $copy("hello");
+                    $number = $identity(42);',
+                'assertions' => [
+                    '$text===' => "'hello'",
+                    '$number===' => '42',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeFirstClassCallableWithCapturedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Closure(): T
+                     */
+                    function capture($value): Closure {
+                        $closure = /** @return T */ static fn () => $value;
+                        return $closure(...);
+                    }
+                    $closure = capture("hello");
+                    $copy = $closure(...);
+                    $text = $copy();',
+                'assertions' => ['$text===' => "'hello'"],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeGenericFirstClassMethodCallable' => [
+                'code' => '<?php
+                    final class Helpers {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return T
+                         */
+                        public function identity($value) { return $value; }
+                    }
+                    $identity = (new Helpers())->identity(...);
+                    $text = $identity("hello");
+                    $number = $identity(42);',
+                'assertions' => [
+                    '$text===' => "'hello'",
+                    '$number===' => '42',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeFirstClassCallableOfHigherOrderGenericFunction' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     * @param callable(A): B $f
+                     * @param list<A> $list
+                     * @return list<B>
+                     */
+                    function mapList(callable $f, array $list): array { return array_map($f, $list); }
+                    /**
+                     * @template T
+                     * @param T ...$values
+                     * @return list<T>
+                     */
+                    function listOf(mixed ...$values): array { return array_values($values); }
+                    $map = mapList(...);
+                    $strings = $map(fn(int $i): string => (string) $i, [1, 2]);
+                    $list_of = listOf(...);
+                    $ints = $list_of(1, 2);',
+                'assertions' => [
+                    '$strings' => 'list<string>',
+                    '$ints' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeFirstClassCallableOfParamConditionalReturn' => [
+                'code' => '<?php
+                    /** @return ($x is string ? int : bool) */
+                    function pick(string|int $x): int|bool { return is_string($x) ? 1 : true; }
+                    final class Picker {
+                        /** @return ($x is string ? int : bool) */
+                        public function pick(string|int $x): int|bool { return is_string($x) ? 1 : true; }
+                    }
+                    $pick = pick(...);
+                    $int = $pick("a");
+                    $bool = $pick(1);
+                    $method = (new Picker())->pick(...);
+                    $from_method = $method("a");',
+                'assertions' => [
+                    '$pick===' => 'Closure[impure](int|string):(bool|int)',
+                    '$int===' => 'int',
+                    '$bool===' => 'bool',
+                    '$method===' => 'Closure[impure](int|string):(bool|int)',
+                    '$from_method===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeFirstClassCallableOfGenericFunctionWithPurityTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     * @param Closure[P](): T $f
+                     * @return T
+                     * @psalm-purity-from-template P
+                     */
+                    function run(Closure $f): mixed { return $f(); }
+                    $run = run(...);
+                    $int = $run(fn(): int => 1);',
+                'assertions' => [
+                    '$run===' => 'Closure[impure](Closure[impure]():mixed):mixed',
+                    '$int' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeUnionOfFirstClassCallablesKeepsTheirBounds' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return T
+                     */
+                    function identity(mixed $value): mixed { return $value; }
+                    function anything(mixed $value): mixed { return null; }
+                    $first = rand(0, 1) ? identity(...) : anything(...);
+                    $second = rand(0, 1) ? anything(...) : identity(...);
+                    if (rand(0, 1)) {
+                        $third = identity(...);
+                    } else {
+                        $third = anything(...);
+                    }
+                    $a = $first(1);
+                    $b = $second(1);
+                    $c = $third(1);',
+                'assertions' => [
+                    '$a===' => 'mixed',
+                    '$b===' => 'mixed',
+                    '$c===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
+            'invokeFirstClassCallableReassignedInALoopKeepsItsBounds' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return T
+                     */
+                    function identity(mixed $value): mixed { return $value; }
+                    function anything(mixed $value): mixed { return null; }
+                    $xs = array_fill(0, rand(0, 3), 1);
+                    $f = identity(...);
+                    foreach ($xs as $_) {
+                        $f = anything(...);
+                    }
+                    $a = $f(1);
+                    $g = identity(...);
+                    while (rand(0, 1)) {
+                        $g = anything(...);
+                    }
+                    $b = $g(1);',
+                'assertions' => [
+                    '$a===' => 'mixed',
+                    '$b===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
+            'invokeFirstClassCallableKeepsTheTemplatesInScope' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return array{T, U}
+                         */
+                        public function pair(mixed $u): array { return [$this->v, $u]; }
+
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return array{T, U}
+                         */
+                        public static function pairOf(mixed $t, mixed $u): array { return [$t, $u]; }
+
+                        /** @return T */
+                        public function first(): mixed {
+                            $p = $this->pair(...);
+                            $pair = $p("x");
+                            /** @psalm-check-type-exact $pair = list{T, \'x\'} */
+                            return $pair[0];
+                        }
+
+                        /** @return list{T, \'x\'} */
+                        public function viaStatic(): array {
+                            $p = self::pairOf(...);
+                            $pair = $p($this->v, "x");
+                            /** @psalm-check-type-exact $pair = list{T, \'x\'} */
+                            return $pair;
+                        }
+                    }
+
+                    /**
+                     * @template V
+                     * @param V $value
+                     * @return V
+                     */
+                    function identity(mixed $value): mixed { return $value; }
+
+                    /**
+                     * @template T
+                     * @param T $t
+                     * @return T
+                     */
+                    function viaIdentity(mixed $t): mixed {
+                        $id = identity(...);
+                        $result = $id($t);
+                        /** @psalm-check-type-exact $result = T */
+                        return $result;
+                    }
+
+                    /**
+                     * @template A
+                     * @template B
+                     * @param A $a
+                     * @return list{A, B}
+                     */
+                    function withUnbound(mixed $a): array { return [$a, null]; }
+                    $with_unbound = withUnbound(...);
+                    $unbound = $with_unbound(1);',
+                'assertions' => [
+                    '$unbound===' => 'list{1, mixed}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeFirstClassCallableOfMethodOfGenericObjectKeepsItsBounds' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /**
+                         * @template U of T
+                         * @param U $u
+                         * @return list<U>
+                         */
+                        public function wrap(mixed $u): array { return [$u]; }
+                    }
+                    /** @var Box<int> $box */;
+                    $wrap = $box->wrap(...);
+                    $wrapped = $wrap(5);',
+                'assertions' => [
+                    '$wrap===' => 'Closure[impure](int):list<int>',
+                    '$wrapped===' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeFirstClassCallableOfMethodReturningStaticOnASubclass' => [
+                'code' => '<?php
+                    class Base {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return list{T, static}
+                         */
+                        public function pair(mixed $value): array { return [$value, $this]; }
+                    }
+                    final class Child extends Base {}
+                    $pair = (new Child())->pair(...);
+                    $child = $pair(1)[1];',
+                'assertions' => [
+                    '$child===' => 'Child',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'byReferenceCallbackOfArrayWalkIsAccepted' => [
                 'code' => '<?php
                     /** @param list<int> $numbers */
@@ -3123,6 +3458,20 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'invokeGenericFirstClassCallableWithInvalidBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param T $value
+                     * @return T
+                     */
+                    function identity($value) { return $value; }
+                    $identity = identity(...);
+                    $identity(42);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'byReferenceFunctionNameIsNotCallableWithValue' => [
                 'code' => '<?php
                     /** @param callable(int): int $closure */

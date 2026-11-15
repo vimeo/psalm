@@ -1207,7 +1207,10 @@ final class FunctionCallReturnTypeFetcher
     ): ?FunctionLikeStorage {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$codebase->functions->functionExists($statements_analyzer, $function_id)) {
+        // the closure of a method has the method's id
+        if (str_contains($function_id, '::')
+            || !$codebase->functions->functionExists($statements_analyzer, $function_id)
+        ) {
             return null;
         }
 

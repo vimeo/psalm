@@ -7905,6 +7905,15 @@ final class TaintTest extends TestCase
                     $render((string) $_GET["x"], 3);',
                 'error_message' => 'TaintedHtml',
             ],
+            'sinkOfOneOfTwoFirstClassCallablesOfTheSameType' => [
+                'code' => '<?php
+                    function runIt(string $s): string { system($s); return $s; }
+                    function safe(string $s): string { return $s; }
+
+                    $f = rand(0, 1) ? safe(...) : runIt(...);
+                    $f((string) $_GET["a"]);',
+                'error_message' => 'TaintedShell',
+            ],
             'conditionalSinkOfAClosure' => [
                 'code' => '<?php
                     $render =
