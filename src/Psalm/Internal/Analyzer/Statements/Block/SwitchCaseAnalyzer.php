@@ -348,13 +348,14 @@ final class SwitchCaseAnalyzer
             );
         }
 
-        if ($switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50) {
-            $entry_clauses = Algebra::simplifyCNF(
-                [...$original_context->clauses, ...$switch_scope->negated_clauses],
-            );
-        } else {
-            $entry_clauses = $original_context->clauses;
-        }
+        // what the earlier conditions said of a variable the case assigns is not true of the new value
+        $entry_clauses = FormulaGenerator::withoutClausesOfVarsAssignedIn(
+            $switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50
+                ? Algebra::simplifyCNF([...$original_context->clauses, ...$switch_scope->negated_clauses])
+                : $original_context->clauses,
+            $case_equality_expr,
+            $context->self,
+        );
 
         if ($case_clauses && $case->cond) {
             // this will see whether any of the clauses in set A conflict with the clauses in set B
