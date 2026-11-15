@@ -29,6 +29,46 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'arrowFunctionParamNamedLikeAPossiblyUndefinedVariableDoesNotUseIt' => [
+                'code' => '<?php
+                    /** @param list<string> $names */
+                    function f(array $names, bool $b): int {
+                        if ($b) {
+                            $name = "x";
+                            echo $name;
+                        }
+
+                        $found = array_filter($names, static fn(string $name): bool => $name !== "");
+
+                        return count($found);
+                    }',
+            ],
+            'closureParamInAnArrowFunctionNamedLikeAPossiblyUndefinedVariableDoesNotUseIt' => [
+                'code' => '<?php
+                    function f(bool $b): Closure {
+                        if ($b) {
+                            $x = 1;
+                            echo $x;
+                        }
+
+                        return fn(): Closure => function (int $x): int {
+                            return $x + 1;
+                        };
+                    }',
+            ],
+            'possiblyUndefinedVariableReadInAnArrowFunctionIsUsed' => [
+                'code' => '<?php
+                    function f(bool $b): ?int {
+                        if ($b) {
+                            $x = 1;
+                        }
+
+                        /** @psalm-suppress PossiblyUndefinedVariable */
+                        $f = fn(): ?int => $x;
+
+                        return $f();
+                    }',
+            ],
             'incrementInTheKeyOfAnArrayItemIsReadByTheValue' => [
                 'code' => '<?php
                     function f(): array {
@@ -2330,10 +2370,7 @@ final class UnusedVariableTest extends TestCase
                             $hue = "goodbye";
                         }
 
-                        /**
-                         * @psalm-suppress PossiblyUndefinedVariable
-                         * @psalm-suppress MixedArgument
-                         */
+                        /** @psalm-suppress PossiblyUndefinedVariable */
                         echo $hue;
                     }',
             ],
@@ -2408,7 +2445,6 @@ final class UnusedVariableTest extends TestCase
                         }
 
                         if (isset($j)) {
-                            /** @psalm-suppress MixedArgument */
                             echo $j;
                         }
                     }',
@@ -2614,7 +2650,6 @@ final class UnusedVariableTest extends TestCase
                             $maybe_undefined = $arr;
                         }
 
-                        /** @psalm-suppress MixedAssignment */
                         $maybe_undefined = $maybe_undefined ?? [0];
 
                         print_r($maybe_undefined);

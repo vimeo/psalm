@@ -108,7 +108,7 @@ final class IssetTest extends TestCase
                             }
                         }
 
-                        return (int) $status;
+                        return $status;
                     }
 
                     function nested(bool $a, bool $b): void {
@@ -128,7 +128,7 @@ final class IssetTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'PossiblyUndefinedVariable'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'issetOfAnOptionalKeyOfAnUnsealedShapeKeepsTheShape' => [
