@@ -52,6 +52,8 @@ final class IfConditionalAnalyzer
         int $branch_point,
     ): IfConditionalScope {
         $entry_clauses = [];
+        $condition_context = $outer_context;
+        $negated_phantom_classes_before_cond = $outer_context->negated_phantom_classes;
 
         // used when evaluating elseifs
         if ($if_scope->negated_clauses) {
@@ -166,6 +168,13 @@ final class IfConditionalAnalyzer
         // we need to clone the current context so our ongoing updates
         // to $outer_context don't mess with elseif/else blocks
         $post_if_context = clone $outer_context;
+
+        // the condition may have been analysed on a copy of the context it was given
+        $condition_context->phantom_classes += $outer_context->phantom_classes;
+        $condition_context->negated_phantom_classes += $outer_context->negated_phantom_classes;
+
+        // where a negated condition about a class holds, the class is missing
+        $if_context->demoteNegatedPhantomClasses($negated_phantom_classes_before_cond);
 
         if ($internally_applied_if_cond_expr !== $cond
             || $externally_applied_if_cond_expr !== $cond

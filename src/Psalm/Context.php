@@ -27,6 +27,7 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Union;
 use RuntimeException;
 
+use function array_diff_key;
 use function array_filter;
 use function array_keys;
 use function array_map;
@@ -276,6 +277,14 @@ final class Context
      * @var array<lowercase-string,true>
      */
     public array $phantom_classes = [];
+
+    /**
+     * Classes checked in a negated condition (`!class_exists($c)`): where that condition holds the class is missing,
+     * so only the `::class` of it is valid
+     *
+     * @var array<lowercase-string,true>
+     */
+    public array $negated_phantom_classes = [];
 
     /**
      * A list of functions checked with function_exists
@@ -1391,6 +1400,34 @@ final class Context
     public function isPhantomClass(string $class_name): bool
     {
         return isset($this->phantom_classes[strtolower($class_name)]);
+    }
+
+    /**
+     * @param lowercase-string $class_name
+     * @psalm-external-mutation-free
+     */
+    public function addPhantomClass(string $class_name): void
+    {
+        $this->phantom_classes[$class_name] = true;
+
+        if ($this->inside_negation) {
+            $this->negated_phantom_classes[$class_name] = true;
+        }
+    }
+
+    /**
+     * Where a negated condition about classes holds they are missing: the classes of what it checked, not of a
+     * negated condition that encloses it, stop being phantom classes
+     *
+     * @param array<lowercase-string,true> $negated_before the negated classes before the condition
+     * @psalm-external-mutation-free
+     */
+    public function demoteNegatedPhantomClasses(array $negated_before): void
+    {
+        $this->phantom_classes = array_diff_key(
+            $this->phantom_classes,
+            array_diff_key($this->negated_phantom_classes, $negated_before),
+        );
     }
 
     /**
