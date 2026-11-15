@@ -1688,6 +1688,23 @@ final class ArgumentsAnalyzer
                 || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
                 || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
                 || $arg->value instanceof PhpParser\Node\Expr\Ternary
+                // an internal function may take other expressions by reference only when it prefers it, like
+                // `stream_select()`, so only functions with storage outside the call map are strict about them
+                || ($function_storage !== null
+                    && !(
+                        $arg->value instanceof PhpParser\Node\Expr\Variable
+                        || $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\PropertyFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\StaticPropertyFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\AssignRef
+                        // these are checked below, by the type of their result
+                        || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\FuncCall
+                        || $arg->value instanceof PhpParser\Node\Expr\MethodCall
+                        || $arg->value instanceof PhpParser\Node\Expr\NullsafeMethodCall
+                        || $arg->value instanceof PhpParser\Node\Expr\StaticCall
+                    ))
                 || (
                     (
                     $arg->value instanceof PhpParser\Node\Expr\ConstFetch
@@ -2165,6 +2182,7 @@ final class ArgumentsAnalyzer
                 $declaring_class_storage,
                 $context,
                 $lhs_var_id,
+                true,
             );
         }
     }
