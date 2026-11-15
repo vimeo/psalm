@@ -287,8 +287,8 @@ final class LoopAnalyzer
             $max_passes = $assignment_depth;
             $data_flow_pass_added = false;
             $widening_passes = 0;
-            $widening_bounds = self::getWideningBounds([...$pre_conditions, ...$stmts, ...$post_expressions]);
-            $post_expression_var_ids = self::getAssignedVarIds($post_expressions, $loop_context->self);
+            $widening_bounds = null;
+            $post_expression_var_ids = null;
             $force_pass = false;
 
             for ($i = 0; $i < $max_passes; ++$i) {
@@ -538,18 +538,36 @@ final class LoopAnalyzer
                     $widened_var_types = [];
 
                     if ($widening_passes !== 1) {
-                        $widened_var_types = self::getWidenedIntRanges(
-                            array_diff_key(
-                                $vars_at_iteration_start,
-                                array_flip($always_assigned_before_loop_body_vars),
-                            ),
-                            self::getVarsStartingNextIteration(
-                                $continue_context,
-                                $loop_scope,
-                                $post_expression_var_ids,
-                            ),
-                            $widening_passes === 3 ? null : $widening_bounds,
+                        if ($continue_context->has_returned && $post_expressions) {
+                            $post_expression_var_ids ??= self::getAssignedVarIds(
+                                $post_expressions,
+                                $loop_context->self,
+                            );
+                        }
+
+                        $vars_at_start = array_diff_key(
+                            $vars_at_iteration_start,
+                            array_flip($always_assigned_before_loop_body_vars),
                         );
+                        $vars_at_end = self::getVarsStartingNextIteration(
+                            $continue_context,
+                            $loop_scope,
+                            $post_expression_var_ids ?? [],
+                        );
+
+                        $widened_var_types = self::getWidenedIntRanges($vars_at_start, $vars_at_end, null);
+
+                        if ($widened_var_types && $widening_passes !== 3) {
+                            $widening_bounds ??= self::getWideningBounds(
+                                [...$pre_conditions, ...$stmts, ...$post_expressions],
+                            );
+
+                            $widened_var_types = self::getWidenedIntRanges(
+                                $vars_at_start,
+                                $vars_at_end,
+                                $widening_bounds,
+                            );
+                        }
                     }
 
                     if ($widened_var_types || $widening_passes === 1) {
@@ -1464,7 +1482,7 @@ final class LoopAnalyzer
     }
 
     /**
-     * @param list<PhpParser\Node\Expr> $exprs
+     * @param array<PhpParser\Node\Expr> $exprs
      * @return array<string, true>
      */
     private static function getAssignedVarIds(array $exprs, ?string $this_class_name): array
