@@ -62,6 +62,7 @@ final class LoopAnalyzer
         ?Context &$continue_context = null,
         bool $is_do = false,
         bool $always_enters_loop = false,
+        bool $only_last_condition_decides = false,
     ): ?bool {
         $traverser = new PhpParser\NodeTraverser;
 
@@ -92,6 +93,13 @@ final class LoopAnalyzer
 
         if ($pre_conditions) {
             foreach ($pre_conditions as $i => $pre_condition) {
+                // only the last of the comma separated conditions of a for decides whether the loop goes on
+                if ($only_last_condition_decides && $i !== count($pre_conditions) - 1) {
+                    $pre_condition_clauses[$i] = [];
+
+                    continue;
+                }
+
                 $pre_condition_id = spl_object_id($pre_condition);
 
                 $pre_condition_clauses[$i] = FormulaGenerator::getFormula(
@@ -128,21 +136,38 @@ final class LoopAnalyzer
             $continue_context = clone $loop_context;
             $continue_context->loop_scope = $loop_scope;
 
-            foreach ($pre_conditions as $condition_offset => $pre_condition) {
-                self::applyPreConditionToLoopContext(
-                    $statements_analyzer,
-                    $pre_condition,
-                    $pre_condition_clauses[$condition_offset],
-                    $continue_context,
-                    $loop_parent_context,
-                    $is_do,
-                );
+            if (!$is_do) {
+                foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                    self::applyPreConditionToLoopContext(
+                        $statements_analyzer,
+                        $pre_condition,
+                        $pre_condition_clauses[$condition_offset],
+                        $continue_context,
+                        $loop_parent_context,
+                        $is_do,
+                    );
+                }
             }
 
             $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
 
             $statements_analyzer->analyze($stmts, $continue_context);
             self::updateLoopScopeContexts($loop_scope, $loop_context, $continue_context, $loop_parent_context);
+
+            if ($is_do) {
+                $inner_do_context = clone $continue_context;
+
+                foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                    self::applyPreConditionToLoopContext(
+                        $statements_analyzer,
+                        $pre_condition,
+                        $pre_condition_clauses[$condition_offset],
+                        $continue_context,
+                        $loop_parent_context,
+                        $is_do,
+                    );
+                }
+            }
 
             foreach ($post_expressions as $post_expression) {
                 if (ExpressionAnalyzer::analyze(
@@ -561,11 +586,15 @@ final class LoopAnalyzer
             if ($negated_pre_condition_types) {
                 $changed_var_ids = [];
 
+                // a while or for loop is also left before its body ever runs: the parent context holds the types
+                // of both ways out
+                $exit_context = $is_do ? $continue_context : $loop_parent_context;
+
                 [$vars_in_scope_reconciled, $_] = Reconciler::reconcileKeyedTypes(
                     $negated_pre_condition_types,
                     [],
-                    $continue_context->vars_in_scope,
-                    $continue_context->references_in_scope,
+                    $exit_context->vars_in_scope,
+                    $exit_context->references_in_scope,
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
@@ -684,6 +713,9 @@ final class LoopAnalyzer
             $post_expressions,
             $loop_scope,
             $inner_loop_context,
+            false,
+            false,
+            $stmt instanceof PhpParser\Node\Stmt\For_,
         ) === false) {
             return false;
         }

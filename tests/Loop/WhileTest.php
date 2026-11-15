@@ -1020,6 +1020,50 @@ final class WhileTest extends TestCase
                         }
                     }',
             ],
+            'whileLoopNeverEnteredKeepsThePreLoopValues' => [
+                'code' => '<?php
+                    $b = rand(0, 1) ? null : rand(0, 10);
+                    while ($b) {
+                        $b--;
+                    }',
+                'assertions' => [
+                    '$b===' => '0|null',
+                ],
+            ],
+            'whileLoopNeverEnteredKeepsThePreLoopFalsyStrings' => [
+                'code' => '<?php
+                    function getString(): ?string {
+                        return rand(0, 1) ? null : (string) rand();
+                    }
+
+                    $s = getString();
+                    while ($s) {
+                        $s = null;
+                    }',
+                'assertions' => [
+                    '$s===' => "''|'0'|null",
+                ],
+            ],
+            'whileLoopWithAndConditionNeverEnteredKeepsThePreLoopValues' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? null : rand(-10, 10);
+                    while ($a !== null && $a > 0) {
+                        $a = rand(0, 1) ? null : $a - 1;
+                    }',
+                'assertions' => [
+                    '$a===' => 'int<-10, 0>|null',
+                ],
+            ],
+            'whileLoopAlwaysEnteredGetsTheNegatedCondition' => [
+                'code' => '<?php
+                    $a = null;
+                    while ($a === null) {
+                        $a = rand(0, 1) ? 1 : null;
+                    }',
+                'assertions' => [
+                    '$a===' => '1',
+                ],
+            ],
         ];
     }
 
