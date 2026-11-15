@@ -67,8 +67,11 @@ final class ContinueAnalyzer
                 && $count < 2
             ) {
                 $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_LEAVE_SWITCH;
+                // `continue` leaves a switch like `break`
+                $context->case_scope?->addBreak($context);
             } else {
                 $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_CONTINUE;
+                $loop_scope->addJump($context);
             }
 
             $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
