@@ -428,6 +428,28 @@ final class TypeAlgebraTest extends TestCase
                         echo $s;
                     }',
             ],
+            'aFailedTraitExistsCheckWithoutAutoloadKeepsATraitString' => [
+                'code' => '<?php
+                    /** @param trait-string $t */
+                    function a(string $t): void {
+                        if (!trait_exists($t, false)) {
+                            /** @psalm-check-type-exact $t = trait-string */
+                            echo $t;
+                        }
+                    }',
+            ],
+            'aTraitExistsCheckWithoutAutoloadKeepsATraitStringAfterAnEarlyReturn' => [
+                'code' => '<?php
+                    /** @param trait-string $t */
+                    function b(string $t): void {
+                        if (trait_exists($t, false)) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $t = trait-string */
+                        echo $t;
+                    }',
+            ],
             'aCaseOfASwitchTrueAssigningAVariableHasNoClausesOfItsOldValue' => [
                 'code' => '<?php
                     function f(string $s): int {
