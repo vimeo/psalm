@@ -814,6 +814,7 @@ final class TaintFlowResolution
      * @param array<string, array<string, string>> $specializations
      * @param array<string, true> $specialized_calls
      * @param array<string, true> $despecialized_calls
+     * @param array<string, true> $non_virtual_calls see TaintFlowGraph::isCallSpecialized()
      * @param array<string, true> $shared_state see TaintFlowGraph::addSharedState()
      * @psalm-capabilities read-props
      */
@@ -826,6 +827,7 @@ final class TaintFlowResolution
         private array $specializations,
         private readonly array $specialized_calls,
         private readonly array $despecialized_calls,
+        private readonly array $non_virtual_calls,
         private readonly array $shared_state,
         private readonly NodeTable $table,
         private readonly Config $config,
@@ -2086,6 +2088,51 @@ final class TaintFlowResolution
                 $this->enterConvergence($state, $id);
             } else {
                 $this->walkEdges($state, $id);
+            }
+
+            if (!isset($this->specializations[$id])) {
+                return;
+            }
+
+            // The node of a static method the calls naming its class have specializations of, while its other
+            // calls share it through its edges: leave through those of the calls naming the class too (see
+            // TaintFlowGraph::isCallSpecialized()), all of them outside of any specialized call, else that of the
+            // call the flow's body was entered through.
+            $context = $this->state_contexts[$state];
+            $outside_of_calls = $this->isOutsideOfCalls($context);
+            $has_specialized_calls = false;
+
+            foreach ($this->specializations[$id] as $specialization_key => $specialized_id) {
+                if (!isset($this->non_virtual_calls[$specialization_key])) {
+                    continue;
+                }
+
+                if ($outside_of_calls || isset($this->despecialized_calls[$specialization_key])) {
+                    $this->reach(
+                        $specialized_id,
+                        $context,
+                        $this->state_open_assignments[$state],
+                        $this->state_kept[$state],
+                        $this->state_added[$state],
+                        $state,
+                        0,
+                        -1,
+                    );
+                } else {
+                    $has_specialized_calls = true;
+                }
+            }
+
+            if ($has_specialized_calls && $this->isExitOfEntered($id, $this->entry_nodes[$context])) {
+                $this->addEntryExit(
+                    $context,
+                    $id,
+                    $this->state_open_assignments[$state],
+                    $state,
+                    0,
+                    $this->state_kept[$state],
+                    $this->state_added[$state],
+                );
             }
 
             return;

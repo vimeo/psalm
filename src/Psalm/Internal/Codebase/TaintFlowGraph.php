@@ -191,14 +191,13 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $speculative_calls = [];
 
     /**
-     * Speculatively specialized call sites of a static method its class's subclasses may override, by whether the
-     * call may run an override (`static::m()`, `$class::m()`, a callable) rather than only that method (`A::m()`,
-     * `self::m()`, `parent::m()`): specialization key => bool. Those that may are resolved as if they were not
-     * specialized, so that only the calls naming their class have nodes of their own (see isCallSpecialized()).
+     * Speculatively specialized calls naming the class of a static method its subclasses may override
+     * (`A::m()`, `self::m()`, `parent::m()`), whose other calls share its nodes: specialization key => true
+     * (see isCallSpecialized())
      *
-     * @var array<string, bool>
+     * @var array<string, true>
      */
-    private array $virtual_calls = [];
+    private array $non_virtual_calls = [];
 
     /**
      * Speculatively specialized call sites of a callee that turned out not to be pure,
@@ -228,10 +227,8 @@ final class TaintFlowGraph extends DataFlowGraph
      * overridden, and resolved as unspecialized calls if it turns out not to be pure
      * (see {@see self::despecializeImpureCalls()}).
      *
-     * A static method of a class that may be extended is specialized that way too, but only on the calls that
-     * name its class ($non_virtual): a call that may run an override is resolved as an unspecialized one. All its
-     * calls still have nodes of their own, since a node with paths of its own is never left through its
-     * specializations.
+     * A static method of a class that may be extended is specialized that way only on the calls that name its
+     * class ($non_virtual), which run that method and no override: its other calls share its nodes.
      */
     public static function isCallSpecialized(
         ?self $graph,
@@ -258,19 +255,21 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         $function_node_id = self::getSpeculativelySpecializedCallee($codebase, $storage);
-
-        if ($function_node_id === null) {
-            return false;
-        }
-
         $specialization_key = DataFlowNode::getSpecializationKey($call_location);
 
-        $graph->speculative_calls[$specialization_key][$function_node_id] = true;
+        if ($function_node_id === null) {
+            if (!$non_virtual
+                || !$storage instanceof MethodStorage
+                || !$storage->is_static
+                || ($function_node_id = self::getSpeculativelySpecializedCallee($codebase, $storage, true)) === null
+            ) {
+                return false;
+            }
 
-        if (self::isOverridable($codebase, $storage)) {
-            $graph->virtual_calls[$specialization_key] = !$non_virtual
-                && ($graph->virtual_calls[$specialization_key] ?? true);
+            $graph->non_virtual_calls[$specialization_key] = true;
         }
+
+        $graph->speculative_calls[$specialization_key][$function_node_id] = true;
 
         return true;
     }
@@ -280,8 +279,11 @@ final class TaintFlowGraph extends DataFlowGraph
      *
      * @psalm-capabilities read-props
      */
-    public static function getSpeculativelySpecializedCallee(Codebase $codebase, FunctionLikeStorage $storage): ?string
-    {
+    public static function getSpeculativelySpecializedCallee(
+        Codebase $codebase,
+        FunctionLikeStorage $storage,
+        bool $non_virtual = false,
+    ): ?string {
         if ($storage->specialize_call
             || $storage->builtin
             || $storage->has_mutations_annotation
@@ -300,26 +302,18 @@ final class TaintFlowGraph extends DataFlowGraph
                 return null;
             }
 
-            // an override could have side effects even if this implementation doesn't; a static method is only
-            // run by the calls naming its class (see isCallSpecialized())
-            if (!$storage->is_static && self::isOverridable($codebase, $storage)) {
+            // an override could have side effects even if this implementation doesn't, unless the call names the
+            // class of the method
+            if (!$non_virtual
+                && $storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                && !$storage->final
+                && !$codebase->classlike_storage_provider->get($storage->defining_fqcln)->final
+            ) {
                 return null;
             }
         }
 
         return CodeUseGraph::functionLikeNodeForStorage($storage);
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    private static function isOverridable(Codebase $codebase, FunctionLikeStorage $storage): bool
-    {
-        return $storage instanceof MethodStorage
-            && $storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            && !$storage->final
-            && $storage->defining_fqcln !== null
-            && !$codebase->classlike_storage_provider->get($storage->defining_fqcln)->final;
     }
 
     /**
@@ -432,11 +426,6 @@ final class TaintFlowGraph extends DataFlowGraph
         $mutation_levels = $codebase->code_use_graph->getMutationLevels();
 
         foreach ($this->speculative_calls as $specialization_key => $callees) {
-            if ($this->virtual_calls[$specialization_key] ?? false) {
-                $this->despecialized_calls[$specialization_key] = true;
-                continue;
-            }
-
             foreach ($callees as $function_node_id => $_) {
                 // A callee that only reads what other calls can see too (properties, globals) can't pass what one
                 // call gives it to another: its call stays specialized, and what it reads still flows out of all
@@ -984,9 +973,7 @@ final class TaintFlowGraph extends DataFlowGraph
             $this->speculative_calls[$key] = ($this->speculative_calls[$key] ?? []) + $map;
         }
 
-        foreach ($other->virtual_calls as $key => $virtual) {
-            $this->virtual_calls[$key] = $virtual && ($this->virtual_calls[$key] ?? true);
-        }
+        $this->non_virtual_calls += $other->non_virtual_calls;
 
         foreach ($other->forward_edges as $key => $map) {
             if (!isset($this->forward_edges[$key])) {
@@ -1144,6 +1131,7 @@ final class TaintFlowGraph extends DataFlowGraph
             $this->specializations,
             $this->specialized_calls,
             $this->despecialized_calls,
+            $this->non_virtual_calls,
             $this->shared_state,
             $this->table,
             Config::getInstance(),
