@@ -2058,6 +2058,53 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'foreachByReferenceThatUnsetsTheValueVariableKeepsTheItemTypes' => [
+                'code' => '<?php
+                    $a = [1, 2];
+                    foreach ($a as &$v) {
+                        if (rand(0, 1)) {
+                            unset($v);
+                        }
+
+                        $v = "x";
+                    }
+
+                    unset($v);',
+                'assertions' => [
+                    '$a===' => "list{'x'|1, 'x'|2}",
+                ],
+            ],
+            'foreachByReferenceThatAssignsTheValueVariableByReferenceKeepsTheItemTypes' => [
+                'code' => '<?php
+                    $a = [1, 2];
+                    $o = ["k" => 5];
+                    foreach ($a as &$v) {
+                        $v = &$o["k"];
+                        $v = "x";
+                    }
+
+                    unset($v);',
+                'assertions' => [
+                    '$a===' => "list{'x'|1, 'x'|2}",
+                ],
+            ],
+            'foreachByReferenceWithAGotoKeepsTheItemTypes' => [
+                'code' => '<?php
+                    $a = [1, 2];
+                    foreach ($a as &$v) {
+                        if (rand(0, 1)) {
+                            goto skip;
+                        }
+
+                        $v = "x";
+                        skip:
+                    }
+
+                    unset($v);',
+                'assertions' => [
+                    '$a===' => "list{'x'|1, 'x'|2}",
+                ],
+            ],
             'foreachByReferenceWritingEveryItemReplacesTheItemTypes' => [
                 'code' => '<?php
                     /**

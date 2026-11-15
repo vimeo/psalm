@@ -81,6 +81,7 @@ use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_any;
 use function array_filter;
 use function array_keys;
 use function array_map;
@@ -558,7 +559,8 @@ final class ForeachAnalyzer
         // a loop that is not left early visits every item, and an iteration that leaves the variable as it was
         // keeps the item's type in what it ends with: when an item's type isn't in the written type, every
         // iteration wrote the variable
-        $visits_every_item = !in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
+        $visits_every_item = !in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
+            && !self::mayDetachTheValueVariable($stmt->stmts, substr($value_var_id, 1));
 
         $item_after_loop = static function (Union $item) use (
             $codebase,
@@ -728,6 +730,50 @@ final class ForeachAnalyzer
         }
 
         return $keys;
+    }
+
+    /**
+     * Whether the body may end what the value variable is a reference to, so that an iteration does not write the
+     * item: it unsets the variable, assigns it by reference or makes a reference to it, binds it another way, or
+     * jumps with a `goto` over the statements that write it
+     *
+     * @param array<PhpParser\Node\Stmt> $stmts
+     */
+    private static function mayDetachTheValueVariable(array $stmts, string $var_name): bool
+    {
+        $is_the_variable = static fn(?PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Variable
+            && $node->name === $var_name;
+
+        return (new NodeFinder())->findFirst(
+            $stmts,
+            static function (PhpParser\Node $node) use ($is_the_variable, $var_name): bool {
+                if ($node instanceof PhpParser\Node\Stmt\Goto_) {
+                    return true;
+                }
+
+                if ($node instanceof PhpParser\Node\Stmt\Unset_) {
+                    return array_any($node->vars, $is_the_variable);
+                }
+
+                if ($node instanceof PhpParser\Node\Expr\AssignRef) {
+                    return $is_the_variable($node->var) || $is_the_variable($node->expr);
+                }
+
+                if ($node instanceof PhpParser\Node\Stmt\Foreach_) {
+                    return $is_the_variable($node->valueVar) || $is_the_variable($node->keyVar);
+                }
+
+                if ($node instanceof PhpParser\Node\Stmt\Global_) {
+                    return array_any($node->vars, $is_the_variable);
+                }
+
+                if ($node instanceof PhpParser\Node\Stmt\StaticVar) {
+                    return $node->var->name === $var_name;
+                }
+
+                return false;
+            },
+        ) !== null;
     }
 
     /**
