@@ -1073,6 +1073,43 @@ final class ArrayAccessTest extends TestCase
         );
     }
 
+    public function testALoopThatChangesTheTypeOfTheArrayKeepsTheReadItDoesAfterTheAssignment(): void
+    {
+        $this->assertPossiblyNullArrayAccessLines(
+            '<?php
+                /**
+                 * @param list<string>|null $m
+                 * @param list<int> $xs
+                 */
+                function switchInTheBody(?array $m, array $xs, int $k): void {
+                    echo $m[0]; // issue
+                    foreach ($xs as $_) {
+                        switch ($k) {
+                            case 1:
+                                $m = ["x"];
+                                break;
+                            default:
+                        }
+                        echo $m[0]; // issue
+                    }
+                    echo $m[0];
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<int> $xs
+                 */
+                function assignedAtTheEndOfTheBody(?array $m, array $xs): void {
+                    echo $m[0]; // issue
+                    foreach ($xs as $_) {
+                        $m = ["x"];
+                    }
+                    echo $m[0]; // issue
+                }',
+            '8.1',
+        );
+    }
+
     /**
      * Asserts that PossiblyNullArrayAccess is reported on the lines of the code marked `// issue`, and nowhere else
      */
