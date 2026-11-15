@@ -3592,6 +3592,29 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'identicalToNullAssertIfTrueIsNotNegated' => [
+                'code' => '<?php
+                    final class Token {}
+
+                    final class Lexer {
+                        public ?Token $lookahead = null;
+
+                        /** @psalm-assert-if-true !=null $this->lookahead */
+                        public function isNextToken(int $type): bool {
+                            return $this->lookahead !== null && $type === 1;
+                        }
+                    }
+
+                    function f(Lexer $lexer): void {
+                        switch (true) {
+                            case $lexer->isNextToken(1):
+                                break;
+                            case $lexer->isNextToken(2):
+                                /** @psalm-check-type-exact $lexer->lookahead = Token */
+                                break;
+                        }
+                    }',
+            ],
             'looseNullComparisonKeepsZeroStringInLoopsAndSwitch' => [
                 'code' => '<?php
                     function loop(?string $s): void {
