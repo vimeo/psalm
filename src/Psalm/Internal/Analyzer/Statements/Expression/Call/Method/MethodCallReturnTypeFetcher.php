@@ -1104,7 +1104,7 @@ final class MethodCallReturnTypeFetcher
             }
         }
 
-        return TypeExpander::expandUnion(
+        $closure_type = TypeExpander::expandUnion(
             $codebase,
             $closure_type,
             $self_class,
@@ -1115,6 +1115,22 @@ final class MethodCallReturnTypeFetcher
             $final,
             $expand_generic,
         );
+
+        // the closure returns what the call returns, whose type variables resolve as they do there
+        $closure_types = [];
+
+        foreach ($closure_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TClosure && $atomic_type->return_type) {
+                $atomic_type = $atomic_type->replace(
+                    $atomic_type->params,
+                    TypeVariableTracker::resolveTypeVariables($atomic_type->return_type, $codebase),
+                );
+            }
+
+            $closure_types[] = $atomic_type;
+        }
+
+        return $closure_type->setTypes($closure_types);
     }
 
     public static function replaceTemplateTypes(

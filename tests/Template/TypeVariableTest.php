@@ -1275,6 +1275,107 @@ final class TypeVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'firstClassCallableOfMethodResolvesTypeVariableInReturn' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+
+                        /** @return T */
+                        public function get(): mixed { return $this->v; }
+
+                        /** @return T */
+                        public function map(int $_i): mixed { return $this->v; }
+                    }
+
+                    $b = new Box(1);
+                    $g = $b->get(...);
+                    $r = $g();
+                    $dynamic = $b->{"get"}(...)();
+                    $mapped = array_map($b->map(...), [5]);',
+                'assertions' => [
+                    '$r===' => '1',
+                    '$dynamic===' => '1',
+                    '$mapped===' => 'list{1}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableOfMagicMethodResolvesTypeVariableInReturn' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @method T get()
+                     */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed { return $this->v; }
+                    }
+
+                    $b = new Box(1);
+                    $r = $b->get(...)();',
+                'assertions' => [
+                    '$r===' => '1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableOfMethodResolvesTypeVariableThroughLaterBounds' => [
+                'code' => '<?php
+                    /** @template T of int|string */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public int|string $v) {}
+
+                        /** @param T $v */
+                        public function set(int|string $v): void { $this->v = $v; }
+
+                        /** @return T */
+                        public function get(): int|string { return $this->v; }
+                    }
+
+                    $b = new Box(1);
+                    $b->set("two");
+                    $r = $b->get(...)();',
+                'assertions' => [
+                    '$r===' => "'two'|1",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableOfMethodKeepsNestedTypeVariables' => [
+                // as in the result of the call, a variable nested in the result stays the object's own
+                'code' => '<?php
+                    /** @template T of int|string */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public int|string $v) {}
+
+                        /** @param T $v */
+                        public function set(int|string $v): void { $this->v = $v; }
+
+                        /** @return list<T> */
+                        public function all(): array { return [$this->v]; }
+
+                        /** @return static */
+                        public function self(): static { return $this; }
+                    }
+
+                    $b = new Box(1);
+                    $all = $b->all(...);
+                    $self = $b->self(...)();
+                    $r = $all();',
+                'assertions' => [
+                    '$r===' => 'list<`_0:1>',
+                    '$self===' => 'Box<`_0:1>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -1712,6 +1813,28 @@ final class TypeVariableTest extends TestCase
                     takesIntBox(new Box("x"));',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . "somefile.php:15:33 - Type 'x' should be a subtype of int",
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableOfMethodResultIsCheckedAgainstResolvedTypeVariable' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+
+                        /** @return T */
+                        public function get(): mixed { return $this->v; }
+                    }
+
+                    function takesString(string $_s): void {}
+
+                    function f(): void {
+                        $b = new Box(1);
+                        $g = $b->get(...);
+                        takesString($g());
+                    }',
+                'error_message' => 'InvalidScalarArgument',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
