@@ -127,6 +127,7 @@ final class LoopAnalyzer
         if ($assignment_depth === 0 || $does_always_break) {
             $continue_context = clone $loop_context;
             $continue_context->loop_scope = $loop_scope;
+            $continue_context->startCollectingPossiblyAssignedVarIds();
 
             foreach ($pre_conditions as $condition_offset => $pre_condition) {
                 self::applyPreConditionToLoopContext(
@@ -189,6 +190,7 @@ final class LoopAnalyzer
             $continue_context = clone $loop_context;
 
             $continue_context->loop_scope = $loop_scope;
+            $continue_context->startCollectingPossiblyAssignedVarIds();
 
             $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
 

@@ -26,6 +26,7 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Union;
 use RuntimeException;
 
+use function array_intersect_key;
 use function array_keys;
 use function array_search;
 use function array_shift;
@@ -722,6 +723,29 @@ final class Context
                 unset($this->null_array_offsets_read[$offset_id]);
             }
         }
+    }
+
+    /**
+     * What is assigned from here on is what a block assigns, without what was assigned before it
+     *
+     * @psalm-capabilities write-this-props
+     */
+    public function startCollectingPossiblyAssignedVarIds(): void
+    {
+        $this->possibly_assigned_var_ids = [];
+    }
+
+    /**
+     * Past a branch that can fall through, only the offsets it still knows to have been read were read
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function intersectNullArrayOffsets(Context $branch): void
+    {
+        $this->null_array_offsets_read = array_intersect_key(
+            $this->null_array_offsets_read,
+            $branch->null_array_offsets_read,
+        );
     }
 
     public function remove(string $remove_var_id, bool $removeDescendents = true): void

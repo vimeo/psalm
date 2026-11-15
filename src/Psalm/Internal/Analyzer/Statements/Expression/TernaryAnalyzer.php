@@ -306,6 +306,8 @@ final class TernaryAnalyzer
                 ...$completing_context->vars_possibly_in_scope,
             ];
 
+            $context->intersectNullArrayOffsets($completing_context);
+
             $context->cond_referenced_var_ids = [
                 ...$context->cond_referenced_var_ids,
                 ...$completing_context->cond_referenced_var_ids,
@@ -382,6 +384,9 @@ final class TernaryAnalyzer
             ...$if_context->vars_possibly_in_scope,
             ...$t_else_context->vars_possibly_in_scope,
         ];
+
+        $context->intersectNullArrayOffsets($if_context);
+        $context->intersectNullArrayOffsets($t_else_context);
 
         $context->cond_referenced_var_ids = [
             ...$context->cond_referenced_var_ids,

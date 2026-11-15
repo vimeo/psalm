@@ -613,6 +613,8 @@ final class SwitchCaseAnalyzer
                 }
             }
         } else {
+            $context->intersectNullArrayOffsets($case_context);
+
             $case_redefined_vars = $case_context->getRedefinedVars($original_context->vars_in_scope);
 
             if ($switch_scope->possibly_redefined_vars === null) {
