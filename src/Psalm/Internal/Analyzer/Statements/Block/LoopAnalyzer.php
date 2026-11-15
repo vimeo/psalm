@@ -40,6 +40,7 @@ use function is_numeric;
 use function is_string;
 use function spl_object_id;
 use function str_contains;
+use function str_starts_with;
 
 /**
  * @internal
@@ -63,6 +64,7 @@ final class LoopAnalyzer
         ?Context &$continue_context = null,
         bool $is_do = false,
         bool $always_enters_loop = false,
+        bool $only_last_condition_decides = false,
     ): ?bool {
         $traverser = new PhpParser\NodeTraverser;
 
@@ -91,8 +93,18 @@ final class LoopAnalyzer
 
         $inner_do_context = null;
 
+        // the variables evaluating the condition writes, with what they hold once it is evaluated
+        $condition_written_var_ids = [];
+
         if ($pre_conditions) {
             foreach ($pre_conditions as $i => $pre_condition) {
+                // only the last of the comma separated conditions of a for decides whether the loop goes on
+                if ($only_last_condition_decides && $i !== count($pre_conditions) - 1) {
+                    $pre_condition_clauses[$i] = [];
+
+                    continue;
+                }
+
                 $pre_condition_id = spl_object_id($pre_condition);
 
                 $pre_condition_clauses[$i] = FormulaGenerator::getFormula(
@@ -129,21 +141,45 @@ final class LoopAnalyzer
             $continue_context = clone $loop_context;
             $continue_context->loop_scope = $loop_scope;
 
-            foreach ($pre_conditions as $condition_offset => $pre_condition) {
-                self::applyPreConditionToLoopContext(
-                    $statements_analyzer,
-                    $pre_condition,
-                    $pre_condition_clauses[$condition_offset],
-                    $continue_context,
-                    $loop_parent_context,
-                    $is_do,
-                );
+            if (!$is_do) {
+                foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                    self::applyPreConditionToLoopContext(
+                        $statements_analyzer,
+                        $pre_condition,
+                        $pre_condition_clauses[$condition_offset],
+                        $continue_context,
+                        $loop_parent_context,
+                        $is_do,
+                        written_var_ids: $condition_written_var_ids,
+                    );
+                }
             }
 
             $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
 
             $statements_analyzer->analyze($stmts, $continue_context);
             self::updateLoopScopeContexts($loop_scope, $loop_context, $continue_context, $loop_parent_context);
+
+            // a body that always breaks never gets to the condition
+            if ($is_do && !$does_always_break) {
+                $inner_do_context = clone $continue_context;
+
+                foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                    $vars_after_condition = [];
+
+                    self::applyPreConditionToLoopContext(
+                        $statements_analyzer,
+                        $pre_condition,
+                        $pre_condition_clauses[$condition_offset],
+                        $continue_context,
+                        $loop_parent_context,
+                        $is_do,
+                        $vars_after_condition,
+                    );
+
+                    self::applyVarsAfterCondition($inner_do_context, $vars_after_condition, $condition_offset > 0);
+                }
+            }
 
             foreach ($post_expressions as $post_expression) {
                 if (ExpressionAnalyzer::analyze(
@@ -180,6 +216,7 @@ final class LoopAnalyzer
                         $loop_context,
                         $loop_parent_context,
                         $is_do,
+                        written_var_ids: $condition_written_var_ids,
                     );
                 }
             }
@@ -382,6 +419,7 @@ final class LoopAnalyzer
                             $continue_context,
                             $loop_parent_context,
                             false,
+                            written_var_ids: $condition_written_var_ids,
                         );
                     }
                 }
@@ -587,11 +625,28 @@ final class LoopAnalyzer
             if ($negated_pre_condition_types) {
                 $changed_var_ids = [];
 
+                if ($is_do) {
+                    // a do-while is left after its body, where its condition is not yet assumed
+                    $exit_context = $inner_do_context ?? $continue_context;
+                    $exit_vars = $exit_context->vars_in_scope;
+                } else {
+                    // a while or for loop is also left before its body ever runs: the parent context holds the
+                    // types of both ways out, but what the condition writes holds what evaluating it left on either
+                    $exit_context = $loop_parent_context;
+                    $exit_vars = $exit_context->vars_in_scope;
+
+                    foreach ($condition_written_var_ids as $var_id => $type) {
+                        if (isset($exit_vars[$var_id])) {
+                            $exit_vars[$var_id] = $type;
+                        }
+                    }
+                }
+
                 [$vars_in_scope_reconciled, $_] = Reconciler::reconcileKeyedTypes(
                     $negated_pre_condition_types,
                     [],
-                    $continue_context->vars_in_scope,
-                    $continue_context->references_in_scope,
+                    $exit_vars,
+                    $exit_context->references_in_scope,
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
@@ -630,7 +685,12 @@ final class LoopAnalyzer
             );
         }
 
+        $loop_parent_context->removeClausesOfVarsChangedIn($loop_context);
+        $loop_parent_context->removeClausesOfVarsChangedIn($continue_context);
+
         if ($inner_do_context) {
+            // what the condition throws is thrown by the loop too
+            $inner_do_context->mergeExceptions($continue_context);
             $continue_context = $inner_do_context;
         }
 
@@ -731,6 +791,9 @@ final class LoopAnalyzer
             $post_expressions,
             $loop_scope,
             $inner_loop_context,
+            false,
+            false,
+            $stmt instanceof PhpParser\Node\Stmt\For_,
         ) === false) {
             return false;
         }
@@ -1122,6 +1185,8 @@ final class LoopAnalyzer
     /**
      * @param  list<Clause>  $pre_condition_clauses
      * @param  array<string, Union> $vars_after_condition the variables the condition changes, for a do-while
+     * @param  array<string, Union> $written_var_ids gets the variables evaluating the condition writes, with what they
+     *                                               hold once it is evaluated
      * @return list<string>
      */
     private static function applyPreConditionToLoopContext(
@@ -1132,6 +1197,7 @@ final class LoopAnalyzer
         Context $outer_context,
         bool $is_do,
         array &$vars_after_condition = [],
+        array &$written_var_ids = [],
     ): array {
         $vars_before_condition = $loop_context->vars_in_scope;
         $pre_referenced_var_ids = $loop_context->cond_referenced_var_ids;
@@ -1154,6 +1220,24 @@ final class LoopAnalyzer
             foreach ($loop_context->vars_in_scope as $var_id => $type) {
                 if (!isset($vars_before_condition[$var_id]) || $vars_before_condition[$var_id] !== $type) {
                     $vars_after_condition[$var_id] = $type;
+                }
+            }
+        }
+
+        // a variable is assigned at the position of the assignment; what it holds once the condition is evaluated,
+        // before the condition is assumed true, is what the loop is left with, whichever pass evaluated it
+        $condition_start = (int) $pre_condition->getAttribute('startFilePos');
+        $condition_end = (int) $pre_condition->getAttribute('endFilePos');
+
+        foreach ($loop_context->assigned_var_ids as $written_var_id => $assigned_offset) {
+            if ($assigned_offset >= $condition_start && $assigned_offset <= $condition_end) {
+                foreach ($loop_context->vars_in_scope as $var_id => $type) {
+                    if ($var_id === $written_var_id
+                        || str_starts_with($var_id, $written_var_id . '[')
+                        || str_starts_with($var_id, $written_var_id . '->')
+                    ) {
+                        $written_var_ids[$var_id] = Type::combineUnionTypes($written_var_ids[$var_id] ?? null, $type);
+                    }
                 }
             }
         }

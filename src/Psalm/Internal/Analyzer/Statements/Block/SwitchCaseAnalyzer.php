@@ -483,6 +483,8 @@ final class SwitchCaseAnalyzer
             && ($case_exit_type !== 'break' || in_array(ScopeAnalyzer::ACTION_END, $case_actions, true));
 
         if ($case_exit_type !== 'return_throw' && !$ends_unless_breaking) {
+            $context->removeClausesOfVarsChangedIn($case_context);
+
             if (self::handleNonReturningCase(
                 $statements_analyzer,
                 $switch_var_id,
