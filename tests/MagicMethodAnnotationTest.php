@@ -2111,6 +2111,29 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'methodParamOfAShapeIsEnforced' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @method static foo(array{k: int, l?: string} $x)
+                     */
+                    final class Foo
+                    {
+                        public function __call(string $name, array $arguments): static
+                        {
+                            return $this;
+                        }
+                    }
+
+                    function test(Foo $foo): void
+                    {
+                        $foo->foo(['k' => 'x']);
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:15',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'magicMethodOverloadReportsAMethodOfAnotherResult' => [
                 'code' => '<?php
                     final class PagedResult {

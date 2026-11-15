@@ -4,16 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Storage\Assertion;
 
-use JsonException;
 use Override;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
-
-use function bin2hex;
-use function json_encode;
-use function var_export;
-
-use const JSON_THROW_ON_ERROR;
 
 /**
  * @psalm-immutable
@@ -44,12 +37,7 @@ final class NotNestedAssertions extends Assertion
 
     public function __toString(): string
     {
-        try {
-            return '!@' . json_encode($this->assertions, JSON_THROW_ON_ERROR);
-        } catch (JsonException) {
-            // Keep binary assertions lossless and printable in condition diagnostics.
-            return '!@' . bin2hex(var_export($this->assertions, true));
-        }
+        return '!@' . NestedAssertions::getFormulaString($this->assertions);
     }
 
     /**

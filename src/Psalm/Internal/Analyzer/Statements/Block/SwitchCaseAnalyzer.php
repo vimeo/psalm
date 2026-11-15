@@ -474,6 +474,8 @@ final class SwitchCaseAnalyzer
         $statements_analyzer->node_data = $old_node_data;
 
         if ($case_exit_type !== 'return_throw') {
+            $context->removeClausesOfVarsChangedIn($case_context);
+
             if (self::handleNonReturningCase(
                 $statements_analyzer,
                 $switch_var_id,
