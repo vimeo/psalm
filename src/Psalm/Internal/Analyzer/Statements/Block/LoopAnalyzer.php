@@ -1696,7 +1696,8 @@ final class LoopAnalyzer
     }
 
     /**
-     * What the arrays of a type hold at an offset, or at any offset for null; null if it holds no array
+     * What the arrays of a type hold at an offset, or at the offsets their shapes don't list for null; null if it
+     * holds no array that has it
      *
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
@@ -1706,9 +1707,7 @@ final class LoopAnalyzer
 
         foreach ($type->getAtomicTypes() as $atomic) {
             if ($atomic instanceof TKeyedArray) {
-                if ($offset === null) {
-                    $atomic_value_type = $atomic->getGenericValueType();
-                } elseif (isset($atomic->properties[$offset])) {
+                if ($offset !== null && isset($atomic->properties[$offset])) {
                     $atomic_value_type = $atomic->properties[$offset];
                 } elseif ($atomic->fallback_params !== null) {
                     $atomic_value_type = $atomic->fallback_params[1];

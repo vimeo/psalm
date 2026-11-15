@@ -288,6 +288,19 @@ final class WhileTest extends TestCase
                         return $a["n"];
                     }',
             ],
+            'whileIntRangeAppendedToAListIsNotWidenedWithItsFixedOffsets' => [
+                'code' => '<?php
+                    /** @return list{0, ...<positive-int>} */
+                    function f(): array {
+                        $a = [0];
+                        $i = 0;
+                        while (rand(0, 1)) {
+                            $i += rand(1, 3);
+                            $a[] = $i;
+                        }
+                        return $a;
+                    }',
+            ],
             'whileIntRangeAssignedToAnArrayOffsetOnEveryIterationIsNotWidened' => [
                 'code' => '<?php
                     /** @return array{n: int} */
