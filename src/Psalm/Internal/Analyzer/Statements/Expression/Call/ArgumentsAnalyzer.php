@@ -58,6 +58,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
@@ -347,10 +348,6 @@ final class ArgumentsAnalyzer
             $was_inside_isset = $context->inside_isset;
             $context->inside_isset = false;
 
-            // a `!` around the call does not negate what its arguments check
-            $was_inside_negation = $context->inside_negation;
-            $context->inside_negation = false;
-
             if (ExpressionAnalyzer::analyze(
                 $statements_analyzer,
                 $arg->value,
@@ -360,14 +357,12 @@ final class ArgumentsAnalyzer
                 null,
                 $high_order_template_result,
             ) === false) {
-                $context->inside_negation = $was_inside_negation;
                 $context->inside_isset = $was_inside_isset;
                 $context->inside_call = $was_inside_call;
 
                 return false;
             }
 
-            $context->inside_negation = $was_inside_negation;
             $context->inside_isset = $was_inside_isset;
             $context->inside_call = $was_inside_call;
 
@@ -2265,6 +2260,19 @@ final class ArgumentsAnalyzer
             && self::phpTakesArgumentByReference($method_id, $argument_offset);
 
         try {
+            // passing a variable by reference defines it, as null when it was not set
+            if ($var_id !== null
+                && $arg->value instanceof PhpParser\Node\Expr\Variable
+                && isset($context->vars_in_scope[$var_id])
+                && $context->vars_in_scope[$var_id]->possibly_undefined
+            ) {
+                $var_type = $context->vars_in_scope[$var_id]->setPossiblyUndefined(false, false);
+
+                $context->vars_in_scope[$var_id] = $var_type->isNullable() || $var_type->hasMixed()
+                    ? $var_type
+                    : $var_type->getBuilder()->addType(new TNull())->freeze();
+            }
+
             if (($var_id && isset($context->vars_in_scope[$var_id]))
                 || ($method_id
                     && in_array(

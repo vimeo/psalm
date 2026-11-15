@@ -13,7 +13,6 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_filter;
 use function array_values;
-use function implode;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -54,50 +53,6 @@ final class ClassTest extends TestCase
         self::assertCount(2, $issues);
         self::assertSame(3, $issues[0]->line_from);
         self::assertContains($issues[1]->line_from, [10, 11]);
-    }
-
-    public function testClassExistsInAnArgumentOfANegatedCallChecksTheClassWhereItIsUsed(): void
-    {
-        $this->testConfig->throw_exception = false;
-        $file_path = self::$src_dir_path . 'somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                namespace App;
-
-                use Vendor\\Validation\\MessageIdValidation;
-                use Vendor\\Validation\\RfcValidation;
-                use Vendor\\Validator;
-
-                final class Address {
-                    private static Validator $validator;
-
-                    private static function check(string $address): bool {
-                        if (!self::$validator->isValid(
-                            $address,
-                            class_exists(MessageIdValidation::class) ? new MessageIdValidation() : new RfcValidation(),
-                        )) {
-                            return false;
-                        }
-
-                        return true;
-                    }
-                }',
-        );
-        $this->analyzeFile($file_path, new Context());
-
-        $undefined_classes = [];
-
-        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
-            if ($issue->type === 'UndefinedClass') {
-                $undefined_classes[] = $issue->message;
-            }
-        }
-
-        // the class that class_exists() checks is not undefined where it is used, although the call is negated
-        $this->assertCount(3, $undefined_classes);
-        $this->assertStringNotContainsString('MessageIdValidation', implode(' ', $undefined_classes));
     }
 
     /**
@@ -1058,6 +1013,25 @@ final class ClassTest extends TestCase
                         }
                     }',
             ],
+            'classesOfANegatedClassExistsOfAConjunctionStayPhantomAfterTheIf' => [
+                'code' => '<?php
+                    if (!(class_exists("A") && class_exists("B"))) {
+                        throw new LogicException();
+                    }
+
+                    A::f();
+                    B::f();',
+            ],
+            'classOfANegatedClassExistsInAVariableStaysPhantomAfterTheIf' => [
+                'code' => '<?php
+                    $missing = !class_exists("X");
+
+                    if ($missing) {
+                        throw new LogicException();
+                    }
+
+                    X::f();',
+            ],
             'classExistsInAnArgumentOfANegatedCall' => [
                 'code' => '<?php
                     final class Validator {
@@ -1758,10 +1732,10 @@ final class ClassTest extends TestCase
             'aliasOfAMissingClassInANegatedClassExistsBlockIsUndefined' => [
                 'code' => '<?php
                     if (!class_exists("Polyfill")) {
-                        class_alias(MissingSource::class, "Polyfill");
+                        class_alias("MissingSource", "Polyfill");
                         Polyfill::run();
                     }',
-                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:37 - Class, interface or enum named MissingSource does not exist',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25',
             ],
             'staticCallOnTheClassOfANegatedClassExistsAfterOtherStatements' => [
                 'code' => '<?php

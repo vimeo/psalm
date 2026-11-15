@@ -129,6 +129,20 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'useByReferenceOfAPossiblyUndefinedVariableDefinesIt' => [
+                'code' => '<?php
+                    function f(): ?int {
+                        if (rand(0, 1)) {
+                            $y = 1;
+                        }
+
+                        $f = function () use (&$y): ?int {
+                            return $y;
+                        };
+
+                        return $f();
+                    }',
+            ],
             'useOfAVariableDefinedInATryBindsItToNullWhenUndefined' => [
                 'code' => '<?php
                     function f(): int {
@@ -2548,6 +2562,19 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrowFunctionReadingAVariableDefinedInAnIfIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(): ?int {
+                        if (rand(0, 1)) {
+                            $y = 1;
+                        }
+
+                        $f = fn(): ?int => $y;
+
+                        return $f();
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:44',
+            ],
             'useOfAVariableDefinedByAPreviousIterationIsPossiblyUndefinedAtTheUse' => [
                 'code' => '<?php
                     function f(array $xs): void {
