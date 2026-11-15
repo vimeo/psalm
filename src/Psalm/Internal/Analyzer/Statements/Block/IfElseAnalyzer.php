@@ -129,8 +129,10 @@ final class IfElseAnalyzer
 
             // a class that doesn't exist is only known to be there in the block run when
             // `class_exists()` (or the like) is true
-            $context->phantom_classes = $phantom_classes_before_cond;
-            $context->promoteNegatedPhantomClasses($negated_phantom_classes_before_cond);
+            $context->restorePhantomClassesKeepingNegated(
+                $phantom_classes_before_cond,
+                $negated_phantom_classes_before_cond,
+            );
 
             // this is the context for stuff that happens within the `if` block
             $if_context = $if_conditional_scope->if_context;
