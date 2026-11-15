@@ -178,6 +178,7 @@ final class ElseAnalyzer
 
         // if it doesn't end in a return
         if (!$has_leaving_statements) {
+            // updateIfScope() gets the context from before the else, not the one the code after the if continues in
             $outer_context->detachReferencesReboundIn(
                 $else_context->references_in_scope,
                 $statements_analyzer,
