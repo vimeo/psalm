@@ -254,6 +254,72 @@ final class ReadonlyPropertyTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unsetOfAReadonlyPropertyAfterAFetch' => [
+                'code' => '<?php
+                    final class C {
+                        public function __construct(public readonly int $foo = 0) {}
+                    }
+
+                    function f(C $x): int {
+                        $old = $x->foo;
+                        unset($x->foo);
+
+                        return $old;
+                    }',
+                'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'unsetOfAReadonlyPropertyOfAnInterfaceGivenByAMixinAfterAFetch' => [
+                'code' => '<?php
+                    final class Data {
+                        public function __construct(public readonly int $foo = 0) {}
+                    }
+
+                    /** @mixin Data */
+                    interface J {}
+
+                    function f(J $x): int {
+                        $old = $x->foo;
+                        unset($x->foo);
+
+                        return $old;
+                    }',
+                'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'unsetOfAnItemOfAReadonlyPropertyAfterAFetch' => [
+                'code' => '<?php
+                    final class C {
+                        /** @param array<string, int> $items */
+                        public function __construct(public readonly array $items) {}
+                    }
+
+                    function f(C $c): void {
+                        foreach ($c->items as $key => $_) {
+                            unset($c->items[$key]);
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'unsetOfAPrivateSetPropertyAfterANarrowing' => [
+                'code' => '<?php
+                    final class P {
+                        private(set) ?int $q = null;
+                    }
+
+                    function f(P $p): void {
+                        if ($p->q !== null) {
+                            unset($p->q);
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
             'promotedPropertyOfReadonlyClassIsReadonly' => [
                 'code' => '<?php
                     readonly class Service

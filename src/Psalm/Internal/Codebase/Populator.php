@@ -15,7 +15,10 @@ use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateDefaults;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
+use Psalm\Internal\TypeVisitor\ContainsTemplateExpressionVisitor;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\IssueBuffer;
@@ -44,14 +47,13 @@ use function array_flip;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
+use function array_pop;
 use function array_search;
-use function array_shift;
 use function array_splice;
-use function array_values;
 use function count;
+use function explode;
 use function in_array;
 use function key;
-use function krsort;
 use function reset;
 use function strpos;
 use function strtolower;
@@ -96,7 +98,7 @@ final class Populator
             $this->populateClassLikeStorage($class_storage);
         }
 
-        $this->populateTransitiveMixins();
+        $this->registerMixinDependencies();
 
         // a class populated before its parents were scanned is populated again, and bound again
         $this->iteration_purity_bound = [];
@@ -546,9 +548,8 @@ final class Populator
 
         $dependent_classlikes[$fq_classlike_name_lc] = true;
 
-        // a storage populated again still holds the `@method`s and mixins it inherited the last time
+        // a storage populated again still holds the `@method`s it inherited the last time
         self::removeInheritedPseudoMethods($storage);
-        self::removeInheritedMixins($storage);
 
         $trait_storages = [];
 
@@ -726,6 +727,8 @@ final class Populator
                 $property->internal = [...$storage->internal, ...$property->internal];
             }
         }
+
+        $this->inheritPropertyTypes($storage);
 
         $this->populateOverriddenMethods($storage, $storage_provider);
 
@@ -1116,26 +1119,6 @@ final class Populator
             $storage->preserve_constructor_signature = true;
         }
 
-        $own_named_mixins = [];
-
-        foreach ($storage->namedMixins as $mixin) {
-            $own_named_mixins[strtolower($this->classlikes->getUnAliasedName($mixin->value))] = true;
-        }
-
-        $inherited_named_mixins = [];
-
-        foreach ($parent_storage->namedMixins as $mixin) {
-            if (!isset($own_named_mixins[strtolower($this->classlikes->getUnAliasedName($mixin->value))])) {
-                $inherited_named_mixins[] = $mixin;
-                $storage->inheritedNamedMixinDeclaringClasses[strtolower($mixin->value)]
-                    = $parent_storage->getNamedMixinDeclaringClass($mixin);
-            }
-        }
-
-        $storage->namedMixins = [...$inherited_named_mixins, ...$storage->namedMixins];
-        $storage->templatedMixins = [...$parent_storage->templatedMixins, ...$storage->templatedMixins];
-        $storage->mixin_declaring_fqcln ??= $parent_storage->mixin_declaring_fqcln;
-
         $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
         $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
 
@@ -1225,121 +1208,64 @@ final class Populator
         }
     }
 
-    private static function removeInheritedMixins(ClassLikeStorage $storage): void
-    {
-        $fq_class_name_lc = strtolower($storage->name);
-
-        foreach ($storage->namedMixins as $i => $mixin) {
-            if (isset($storage->inheritedNamedMixinDeclaringClasses[strtolower($mixin->value)])) {
-                unset($storage->namedMixins[$i]);
-            }
-        }
-
-        foreach ($storage->templatedMixins as $i => $mixin) {
-            if (strtolower($mixin->defining_class) !== $fq_class_name_lc) {
-                unset($storage->templatedMixins[$i]);
-            }
-        }
-
-        $storage->namedMixins = array_values($storage->namedMixins);
-        $storage->templatedMixins = array_values($storage->templatedMixins);
-        $storage->inheritedNamedMixinDeclaringClasses = [];
-
-        if ($storage->mixin_declaring_fqcln !== $storage->name) {
-            $storage->mixin_declaring_fqcln = null;
-        }
-    }
-
     /**
-     * Second populate pass: resolve transitive `@mixin` chains.
-     *
-     * `namedMixins` holds the mixins a class declares and inherits from its parents, and the analyzers look
-     * members up a single hop deep. This records every named mixin reachable through a mixin's own `@mixin`
-     * chain (depth >= 2) in `transitiveNamedMixins`, so a member of a mixin-of-a-mixin resolves on the host.
-     *
-     * It runs once every class is populated, so each mixin target's `namedMixins` already contains those
-     * inherited from its parent classes. `namedMixins` itself is never modified, which keeps the result
-     * independent of population order.
+     * Second populate pass, once every class is populated: the file of a class inherits from each named mixin class
+     * its `@mixin` lookup (see MixinLookup) can reach, so that a change there invalidates it. A `@mixin T` is skipped,
+     * as the class it names depends on the receiver. They are not its dependent_classlikes, which would make it a
+     * descendant of them.
      */
-    private function populateTransitiveMixins(): void
+    private function registerMixinDependencies(): void
     {
         foreach ($this->classlike_storage_provider->getNew() as $storage) {
-            if ($storage->namedMixins) {
-                $storage->transitiveNamedMixins = $this->resolveTransitiveMixins($storage);
-            }
-        }
-    }
-
-    /**
-     * Breadth-first walk of a host's `@mixin` chain, returning the mixins not already in its `namedMixins`,
-     * deepest hop first and in declaration order within a hop.
-     *
-     * Only named (non-generic) mixins are followed: a generic hop such as `@mixin Collection<T>` needs its
-     * template arguments bound per hop, so it is neither collected nor descended into. A mutual `@mixin`
-     * (A mixes B, B mixes A) terminates via the visited set.
-     *
-     * @return list<TNamedObject>
-     */
-    private function resolveTransitiveMixins(ClassLikeStorage $storage): array
-    {
-        $storage_name_lc = strtolower($storage->name);
-
-        $direct = [];
-        $queue = [];
-        foreach ($storage->namedMixins as $mixin) {
-            $direct[strtolower($this->classlikes->getUnAliasedName($mixin->value))] = true;
-            $queue[] = [$mixin, 1];
-        }
-
-        $visited = [$storage_name_lc => true];
-        $by_depth = [];
-
-        while ($queue) {
-            [$mixin, $depth] = array_shift($queue);
-
-            if ($mixin instanceof TGenericObject) {
+            if (!$storage->location) {
                 continue;
             }
 
-            $mixin_name_lc = strtolower($this->classlikes->getUnAliasedName($mixin->value));
+            $visited = [strtolower($storage->name) => true];
+            $pending = [$storage];
 
-            if (isset($visited[$mixin_name_lc])) {
-                continue;
-            }
+            while ($pending) {
+                $current_storage = array_pop($pending);
 
-            $visited[$mixin_name_lc] = true;
-
-            try {
-                $mixin_storage = $this->classlike_storage_provider->get($mixin_name_lc);
-            } catch (InvalidArgumentException) {
-                // A missing mixin target is reported as UndefinedDocblockClass where it is declared. Unlike a
-                // missing parent it is not recorded as an invalid dependency, which would turn every call on
-                // the host into MixedMethodCall.
-                continue;
-            }
-
-            // A change anywhere in the chain must invalidate the host.
-            $mixin_storage->dependent_classlikes[$storage_name_lc] = true;
-
-            if ($storage->location) {
-                $this->file_reference_provider->addFileInheritanceToClass(
-                    $storage->location->file_path,
-                    $mixin_name_lc,
+                $scopes = MixinLookup::getScopes(
+                    $this->classlike_storage_provider,
+                    $this->classlikes,
+                    $current_storage,
                 );
-            }
 
-            if (!isset($direct[$mixin_name_lc])) {
-                $by_depth[$depth][] = $mixin;
-            }
+                foreach ($scopes as $scope) {
+                    foreach ($scope->getMixins() as $mixin) {
+                        if (!$mixin instanceof TNamedObject) {
+                            continue;
+                        }
 
-            foreach ($mixin_storage->namedMixins as $deeper_mixin) {
-                $queue[] = [$deeper_mixin, $depth + 1];
+                        $mixin_name_lc = strtolower($this->classlikes->getUnAliasedName($mixin->value));
+
+                        if (isset($visited[$mixin_name_lc])) {
+                            continue;
+                        }
+
+                        $visited[$mixin_name_lc] = true;
+
+                        try {
+                            $mixin_storage = $this->classlike_storage_provider->get($mixin_name_lc);
+                        } catch (InvalidArgumentException) {
+                            // A missing mixin target is reported as UndefinedDocblockClass where it is declared.
+                            // Unlike a missing parent it is not recorded as an invalid dependency, which would turn
+                            // every call on the class into MixedMethodCall.
+                            continue;
+                        }
+
+                        $this->file_reference_provider->addFileInheritanceToClass(
+                            $storage->location->file_path,
+                            $mixin_name_lc,
+                        );
+
+                        $pending[] = $mixin_storage;
+                    }
+                }
             }
         }
-
-        krsort($by_depth);
-
-        return array_merge(...$by_depth);
     }
 
     private function populateInterfaceData(
@@ -1967,6 +1893,125 @@ final class Populator
             }
 
             $storage->inheritable_property_ids[$property_name] = $inheritable_property_id;
+        }
+    }
+
+    /**
+     * A property redeclared without a docblock type has the docblock type of the property it overrides, where the
+     * native types are the same
+     */
+    private function inheritPropertyTypes(ClassLikeStorage $storage): void
+    {
+        $promoted_params = [];
+
+        foreach ($storage->methods['__construct']->params ?? [] as $param) {
+            if ($param->promoted_property) {
+                $promoted_params[$param->name] = $param;
+            }
+        }
+
+        $parent_storage = $storage->parent_class !== null
+            && $this->classlike_storage_provider->has($storage->parent_class)
+                ? $this->classlike_storage_provider->get($storage->parent_class)
+                : null;
+        $template_result = null;
+
+        foreach ($storage->properties as $property_name => $property_storage) {
+            if ($property_storage->has_docblock_type) {
+                continue;
+            }
+
+            $promoted_param = $promoted_params[$property_name] ?? null;
+
+            if ($property_storage->inherited_type) {
+                // populated again
+                $property_storage->type = $property_storage->own_type;
+                $property_storage->own_type = null;
+                $property_storage->inherited_type = false;
+
+                if ($promoted_param) {
+                    $promoted_param->type = $property_storage->type;
+                    $promoted_param->type_location = $property_storage->type_location;
+                }
+            }
+
+            $documenting_class = $parent_storage?->declaring_property_ids[$property_name] ?? null;
+
+            if ($parent_storage === null
+                || $documenting_class === null
+                || !$this->classlike_storage_provider->has($documenting_class)
+            ) {
+                continue;
+            }
+
+            $documenting_property_storage = $this->classlike_storage_provider->get($documenting_class)
+                ->properties[$property_name] ?? null;
+
+            if ($documenting_property_storage === null
+                || $documenting_property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                || $documenting_property_storage->type === null
+                || !($documenting_property_storage->has_docblock_type || $documenting_property_storage->inherited_type)
+                || $property_storage->is_static !== $documenting_property_storage->is_static
+                || $property_storage->native_readonly !== $documenting_property_storage->native_readonly
+                || !($property_storage->signature_type === null
+                    ? $documenting_property_storage->signature_type === null
+                    : $documenting_property_storage->signature_type !== null
+                        && $property_storage->signature_type->equals($documenting_property_storage->signature_type))
+            ) {
+                continue;
+            }
+
+            // `self` and `parent` are those of the class the docblock is written for (a trait's user for a trait)
+            $appearing_property_id = $parent_storage->appearing_property_ids[$property_name] ?? $documenting_class;
+            [$self_class] = explode('::$', $appearing_property_id);
+            $type = $documenting_property_storage->type->replaceClassLike('self', $self_class);
+
+            $self_class_parent = $this->classlike_storage_provider->has($self_class)
+                ? $this->classlike_storage_provider->get($self_class)->parent_class
+                : null;
+
+            if ($self_class_parent !== null) {
+                $type = $type->replaceClassLike('parent', $self_class_parent);
+            }
+
+            if ($storage->template_extended_params !== null) {
+                // localizing a type computed from templates takes a Codebase, which population has not
+                $template_expression_finder = new ContainsTemplateExpressionVisitor();
+                $template_expression_finder->traverse($type);
+
+                if ($template_expression_finder->matches()) {
+                    continue;
+                }
+
+                if ($template_result === null) {
+                    $lower_bounds = [];
+
+                    foreach ($storage->template_extended_params as $template_class => $type_map) {
+                        foreach ($type_map as $template_name => $extended_type) {
+                            $lower_bounds[$template_name][$template_class] = $extended_type;
+                        }
+                    }
+
+                    $template_result = new TemplateResult([], $lower_bounds);
+                }
+
+                $type = TemplateInferredTypeReplacer::replace($type, $template_result, null);
+
+                // a template replaced by its bound, or by `mixed` when the bound is missing, is still a docblock type
+                if ($documenting_property_storage->type->from_docblock) {
+                    $type = $type->setFromDocblock();
+                }
+            }
+
+            $property_storage->own_type = $property_storage->type;
+            $property_storage->type = $type;
+            $property_storage->inherited_type = true;
+
+            if ($promoted_param) {
+                $promoted_param->type = $type;
+                // the default is checked against the type
+                $promoted_param->type_location ??= $promoted_param->location;
+            }
         }
     }
 }
