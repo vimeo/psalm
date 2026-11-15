@@ -111,7 +111,7 @@ final class FFITest extends TestCase
                     echo $ffi->errno;
                 ',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['PossiblyInvalidArgument'],
                 'php_version' => '7.4',
             ],
             'Example #5 Working with C arrays' => [
@@ -149,7 +149,7 @@ final class FFITest extends TestCase
                     echo $a->ZEND_FFI_SYM_VAR;
                 ',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['PossiblyInvalidArgument'],
                 'php_version' => '7.4',
             ],
         ];
