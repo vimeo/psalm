@@ -844,6 +844,71 @@ final class ArrayKeyExistsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'arrayKeyExistsLeavesAnOffsetThatCanOnlyBeNullAsItIs' => [
+                'code' => '<?php
+                    /** @param list<string> $rows */
+                    function f(array $rows): void {
+                        $u = ["x" => null];
+                        foreach ($rows as $_) {
+                            /** @psalm-suppress PossiblyNullArgument */
+                            if (array_key_exists("a", $u["x"])) {
+                                echo "y";
+                            } else {
+                                $u["x"] = ["a" => 1];
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayKeyExistsKeepsTheTemplateOfTheArrayAnOffsetIsIn' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    /**
+                     * @template T of array<string, array<string, int>>
+                     * @param T $t
+                     */
+                    function f(array $t): void {
+                        if (array_key_exists("k", $t["a"])) {
+                            takesInt($t["a"]["k"]);
+                        }
+
+                        if (isset($t["a"]["k"])) {
+                            takesInt($t["a"]["k"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayKeyExistsLeavesAnOffsetOfAnArrayAccessAsItIs' => [
+                'code' => '<?php
+                    /** @param ArrayAccess<string, array<string, int>> $o */
+                    function f(ArrayAccess $o): void {
+                        if (array_key_exists("k", $o["a"])) {
+                            $w = $o["a"];
+                            /** @psalm-check-type-exact $w = array<string, int>|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayKeyExistsRemovesAStringFromAnOffsetBeforePhp8' => [
+                'code' => '<?php
+                    /** @param array<string, array<string, int>|string> $o */
+                    function f(array $o): void {
+                        /** @psalm-suppress PossiblyInvalidArgument */
+                        if (array_key_exists("k", $o["a"])) {
+                            /** @psalm-check-type-exact $o = array{a: array{k: int, ...<string, int>}, ...<string, array<string, int>|string>} */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             'arrayKeyExistsKeepsTheTypeOfANestedArrayFilledInALoop' => [
                 'code' => '<?php
                     /** @param list<list<string>> $rows */

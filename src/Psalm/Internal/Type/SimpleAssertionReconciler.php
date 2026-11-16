@@ -2731,11 +2731,13 @@ final class SimpleAssertionReconciler extends Reconciler
 
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
-        if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
-            return new Union([
-                new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]),
-                new TNamedObject('ArrayAccess'),
-            ]);
+        $string_array_access = new Union([
+            new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]),
+            new TNamedObject('ArrayAccess'),
+        ]);
+
+        if ($existing_var_type->hasMixed()) {
+            return $string_array_access;
         }
 
         $array_types = [];
@@ -2752,7 +2754,8 @@ final class SimpleAssertionReconciler extends Reconciler
                     $array_types[] = $type;
                 }
             } elseif ($type instanceof TTemplateParam) {
-                $array_types[] = $type;
+                // a template keeps its name, with a bound of any type taken as one with array access
+                $array_types[] = $type->as->hasMixed() ? $type->replaceAs($string_array_access) : $type;
             }
         }
 

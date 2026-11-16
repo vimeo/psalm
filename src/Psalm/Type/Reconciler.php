@@ -816,28 +816,38 @@ class Reconciler
             // makes the loop below add the isset ones on the keys the array is nested in
             $array_type = self::getPathType($array_key, $existing_types);
 
-            // an array that can only be empty is left as it is where the condition can't be true
-            if ($array_type !== null && self::isAlwaysEmptyArray($array_type)) {
+            // the offset of an object is left to it, and a value that can't be a non-empty array is left as it is where
+            // the condition can't be true
+            if ($array_type === null || self::cannotBeNonEmptyArray($array_type)) {
                 continue;
             }
 
             $array_assertions = [[new NonEmpty()]];
 
             // asserting a type would replace the arrays a value already is, or widen one that can't be (never)
-
-            if ($array_type === null || $array_type->hasMixed()) {
+            if ($array_type->hasMixed()) {
                 $array_assertions[] = $analysis_php_version_id >= 8_00_00
                     ? [new IsType(new TArray([Type::getArrayKey(), Type::getMixed()]))]
                     : [
                         new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])),
                         new IsType(new TNamedObject('ArrayAccess')),
                     ];
-            } elseif ($analysis_php_version_id >= 8_00_00) {
+            } else {
                 foreach ($array_type->getAtomicTypes() as $atomic_type) {
-                    if (!$atomic_type instanceof TArray && !$atomic_type instanceof TKeyedArray) {
-                        $array_assertions[] = [new IsType(new TArray([Type::getArrayKey(), Type::getMixed()]))];
-                        break;
+                    if ($atomic_type instanceof TArray
+                        || $atomic_type instanceof TKeyedArray
+                        || $atomic_type instanceof TNull
+                        || $atomic_type instanceof TFalse
+                        || $atomic_type instanceof TTemplateParam
+                        || ($analysis_php_version_id < 8_00_00 && $atomic_type->isObjectType())
+                    ) {
+                        continue;
                     }
+
+                    $array_assertions[] = $analysis_php_version_id >= 8_00_00
+                        ? [new IsType(new TArray([Type::getArrayKey(), Type::getMixed()]))]
+                        : [new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])), new IsType(new TObject())];
+                    break;
                 }
             }
 
@@ -967,7 +977,8 @@ class Reconciler
     }
 
     /**
-     * The type of a variable or of an offset of one that the known types give, null where it isn't known
+     * The type of a variable or of an offset of one that the known types give: mixed where nothing is known of it,
+     * null for an offset of something other than an array (an ArrayAccess), whose value isn't known either
      *
      * @param array<string, Union> $existing_types
      * @psalm-external-mutation-free
@@ -982,7 +993,7 @@ class Reconciler
         $key_part_count = count($key_parts);
 
         if ($key_part_count < 4 || $key_parts[$key_part_count - 3] !== '[') {
-            return null;
+            return Type::getMixed();
         }
 
         $parent_type = self::getPathType(implode('', array_slice($key_parts, 0, -3)), $existing_types);
@@ -1004,9 +1015,16 @@ class Reconciler
         }
 
         $value_types = [];
+        $atomic_types = $parent_type->getAtomicTypes();
 
-        foreach ($parent_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TArray) {
+        while ($atomic_types) {
+            $atomic_type = array_shift($atomic_types);
+
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_types = [...$atomic_types, ...array_values($atomic_type->as->getAtomicTypes())];
+            } elseif ($atomic_type instanceof TMixed) {
+                $value_types[] = Type::getMixed();
+            } elseif ($atomic_type instanceof TArray) {
                 $value_types[] = $atomic_type->type_params[1];
             } elseif ($atomic_type instanceof TKeyedArray) {
                 if ($offset !== null && isset($atomic_type->properties[$offset])) {
@@ -1029,10 +1047,14 @@ class Reconciler
     /**
      * @psalm-pure
      */
-    private static function isAlwaysEmptyArray(Union $type): bool
+    private static function cannotBeNonEmptyArray(Union $type): bool
     {
         foreach ($type->getAtomicTypes() as $atomic_type) {
-            if (!$atomic_type instanceof TArray || !$atomic_type->type_params[1]->isNever()) {
+            if (!$atomic_type instanceof TNull
+                && !$atomic_type instanceof TFalse
+                && !$atomic_type instanceof TNever
+                && (!$atomic_type instanceof TArray || !$atomic_type->type_params[1]->isNever())
+            ) {
                 return false;
             }
         }
