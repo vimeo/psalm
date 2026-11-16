@@ -1261,7 +1261,24 @@ final class ReferenceTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['UnsupportedPropertyReferenceUsage'],
+                'ignored_issues' => ['PossiblyInvalidPropertyAssignmentValue'],
+            ],
+            'referenceToOffsetOfNullPropertyMakesItAnArray' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var array<string, int|null>|null */
+                        public ?array $p = null;
+                        /** @var array<string, int|null>|null */
+                        public static ?array $s = null;
+
+                        public function m(): int {
+                            $r = &$this->p["x"];
+                            $r = 1;
+                            $t = &self::$s["x"];
+                            $t = 1;
+                            return count($this->p) + count(self::$s);
+                        }
+                    }',
             ],
             'referenceToDefinedKeyKeepsTheShape' => [
                 'code' => '<?php
@@ -1309,6 +1326,25 @@ final class ReferenceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'referenceToOffsetOfMagicPropertyKeepsItsNull' => [
+                'code' => '<?php
+                    /**
+                     * @property ?array<string, int> $magic
+                     */
+                    final class M {
+                        /** @return mixed */
+                        public function __get(string $name) {
+                            return null;
+                        }
+
+                        public function f(): int {
+                            $r = &$this->magic["x"];
+                            return count($this->magic);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+                'error_levels' => ['UnsupportedPropertyReferenceUsage'],
+            ],
             'referenceThatWasOneBeforeTheIfIsReboundAndWrittenToAfterIt' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $data */
