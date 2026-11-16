@@ -71,6 +71,8 @@ final class NegatedAssertionReconciler extends Reconciler
             $statements_analyzer->getCodebase(),
         );
 
+        $original_var_type = $existing_var_type;
+
         $is_equality = $assertion->hasEquality();
 
         $assertion_type = $assertion->getAtomicType();
@@ -226,10 +228,14 @@ final class NegatedAssertionReconciler extends Reconciler
                 ? $existing_var_type->getAtomicTypes()[$assertion_type->getKey()] ?? null
                 : null;
 
+            // `static` is the class called, maybe a child: only an object of that same late static class is one
+            $late_static_assertion = $assertion_type instanceof TNamedObject && $assertion_type->is_static;
+
             $is_direct_hit = $assertion_type
                 && (!$same_key_type
                     || $same_key_type::class === $assertion_type::class
                     || AtomicTypeComparator::isContainedBy($codebase, $same_key_type, $assertion_type))
+                && (!$late_static_assertion || self::isLateStatic($same_key_type))
                 && $existing_var_type->removeType($assertion_type->getKey());
 
             // go deeper than the direct hit, eliminating subtypes
@@ -266,7 +272,9 @@ final class NegatedAssertionReconciler extends Reconciler
                             }
                         }
 
-                        if (!$existing_var_type_part->isObjectType()) {
+                        if (!$existing_var_type_part->isObjectType()
+                            || ($late_static_assertion && !self::isLateStatic($existing_var_type_part))
+                        ) {
                             continue;
                         }
 
@@ -342,6 +350,12 @@ final class NegatedAssertionReconciler extends Reconciler
         }
 
         if ($existing_var_type->isUnionEmpty()) {
+            // code analysed for another class than its own (a trait, a constructor inherited by the analysed class)
+            // can have branches that only that class never reaches
+            if ($key === '$this' && self::isAnalysedForAnotherClass($statements_analyzer, $original_var_type)) {
+                return $original_var_type;
+            }
+
             if ($key !== '$this'
                 || !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
             ) {
@@ -566,5 +580,31 @@ final class NegatedAssertionReconciler extends Reconciler
         }
 
         return $existing_var_type;
+    }
+
+    private static function isLateStatic(?Atomic $type): bool
+    {
+        return $type instanceof TNamedObject && $type->is_static;
+    }
+
+    private static function isAnalysedForAnotherClass(
+        StatementsAnalyzer $statements_analyzer,
+        Union $this_type,
+    ): bool {
+        if ($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer) {
+            return true;
+        }
+
+        $code_class = $statements_analyzer->getFQCLN();
+
+        foreach ($this_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject
+                && ($code_class === null || strtolower($atomic_type->value) !== strtolower($code_class))
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
