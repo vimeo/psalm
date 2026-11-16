@@ -33,6 +33,7 @@ use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -361,6 +362,8 @@ final class MethodCallPurityAnalyzer
         ?TemplateResult $template_result = null,
         array $class_template_params = [],
     ): void {
+        $result->analysed_receiver_types++;
+
         // a plugin may know what this call of the method requires, e.g. from its arguments
         $provided_capabilities = self::getProvidedCapabilities(
             $statements_analyzer,
@@ -616,7 +619,10 @@ final class MethodCallPurityAnalyzer
                     : [],
             );
 
-            foreach ($method_storage->this_property_mutations as $name => $writes_property) {
+            // nothing is known of the properties of a receiver without a var id
+            $mutations = $lhs_var_id !== null ? $method_storage->this_property_mutations : [];
+
+            foreach ($mutations as $name => $writes_property) {
                 $mutation_var_id = $lhs_var_id . '->' . $name;
 
                 // the call is analysed once for each type of a receiver of several
@@ -704,7 +710,30 @@ final class MethodCallPurityAnalyzer
         }
 
         $result->property_types_after_call[$property_id] = $type;
+        $result->property_writer_counts[$property_id] = ($result->property_writer_counts[$property_id] ?? 0) + 1;
         $context->vars_in_scope[$property_id] = $type;
+    }
+
+    /**
+     * Of a receiver of several types, a property the method of some of them does not write keeps what it held
+     */
+    public static function keepPropertiesNotWrittenForEveryReceiverType(
+        Context $context,
+        AtomicMethodCallAnalysisResult $result,
+    ): void {
+        foreach ($result->property_types_after_call as $property_id => $type_after_call) {
+            if ($result->property_writer_counts[$property_id] >= $result->analysed_receiver_types) {
+                continue;
+            }
+
+            $type_before_call = $result->property_types_before_call[$property_id] ?? null;
+
+            if ($type_before_call === null) {
+                unset($context->vars_in_scope[$property_id]);
+            } else {
+                $context->vars_in_scope[$property_id] = Type::combineUnionTypes($type_after_call, $type_before_call);
+            }
+        }
     }
 
     /**
@@ -724,7 +753,9 @@ final class MethodCallPurityAnalyzer
         $kept_types = [];
 
         foreach ($declared_type->getAtomicTypes() as $declared_atomic) {
-            if (($may_become_array && ($declared_atomic instanceof TArray || $declared_atomic instanceof TKeyedArray))
+            if (($may_become_array && ($declared_atomic instanceof TArray
+                    || $declared_atomic instanceof TKeyedArray
+                    || $declared_atomic instanceof TIterable))
                 || UnionTypeComparator::canExpressionTypesBeIdentical(
                     $codebase,
                     $type_before,

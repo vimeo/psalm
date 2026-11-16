@@ -84,4 +84,14 @@ final class AtomicMethodCallAnalysisResult
      * @var array<string, Union>
      */
     public array $property_types_after_call = [];
+
+    /**
+     * For how many types of the receiver the call writes each property
+     *
+     * @var array<string, int>
+     */
+    public array $property_writer_counts = [];
+
+    /** For how many types of the receiver the purity of the call was analysed */
+    public int $analysed_receiver_types = 0;
 }

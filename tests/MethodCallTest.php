@@ -923,6 +923,15 @@ final class MethodCallTest extends TestCase
                         /** @var array<string, int>|int */
                         public $intMap = 0;
 
+                        /** @var iterable<string, int>|null */
+                        public $iterableMap = null;
+
+                        public function addToIterableMap(): void {
+                            if ($this->iterableMap === null) {
+                                $this->iterableMap["a"] = 2;
+                            }
+                        }
+
                         public function addToIntMap(): void {
                             if (is_array($this->intMap)) {
                                 $this->intMap["a"] = 2;
@@ -949,13 +958,18 @@ final class MethodCallTest extends TestCase
 
                     $foo->intMap = ["a" => 1];
                     $foo->addToIntMap();
-                    $e = $foo->intMap;',
+                    $e = $foo->intMap;
+
+                    $foo->iterableMap = null;
+                    $foo->addToIterableMap();
+                    $f = $foo->iterableMap;',
                 'assertions' => [
                     '$a===' => 'array<string, int>',
                     '$b===' => 'array<string, int>',
                     '$c===' => 'array<string, int>|bool',
                     '$d===' => 'array<string, int>',
                     '$e===' => 'array<string, int>',
+                    '$f===' => 'iterable<string, int>|null',
                 ],
             ],
             'propertyOfAReceiverOfSeveralTypesMayHoldWhatTheCallLeavesItForAnyOfThem' => [
@@ -1000,6 +1014,64 @@ final class MethodCallTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'propertyKeepsWhatItHeldForAReceiverTypeWhoseMethodDoesNotWriteIt' => [
+                'code' => '<?php
+                    final class A {
+                        public int|string $p = 0;
+                        public int $other = 0;
+
+                        public function reset(): void { $this->other = 0; }
+                    }
+
+                    final class B {
+                        public int $p = 0;
+
+                        public function reset(): void { $this->p = 0; }
+                    }
+
+                    function ab(A|B $x): void {
+                        if (is_string($x->p)) {
+                            $x->reset();
+                            $a = $x->p;
+                            /** @psalm-check-type-exact $a = int|string */
+                        }
+                    }
+
+                    function ba(B|A $x): void {
+                        if (is_string($x->p)) {
+                            $x->reset();
+                            $b = $x->p;
+                            /** @psalm-check-type-exact $b = int|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyItemsOfAnotherObjectAreKeptAfterAMethodWritingThemOnAFreshReceiver' => [
+                'code' => '<?php
+                    final class W {
+                        /** @var array<string, int> */
+                        public array $items = [];
+
+                        public function add(): void { $this->items["k"] = 1; }
+                    }
+
+                    final class Z {
+                        /** @var array<string, int> */
+                        public array $items = [];
+                    }
+
+                    function makeW(): W { return new W(); }
+
+                    function f(Z $z): void {
+                        if (isset($z->items["k"]) && $z->items["k"] === 5) {
+                            makeW()->add();
+                            $a = $z->items["k"];
+                            /** @psalm-check-type-exact $a = 5 */
+                        }
+                    }',
             ],
             'offsetDependingOnAPropertyIsForgottenAfterAMethodWritingIt' => [
                 'code' => '<?php
