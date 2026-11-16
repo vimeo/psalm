@@ -482,6 +482,49 @@ final class MethodSignatureTest extends TestCase
         );
     }
 
+    public function testOverrideOfAMethodDocumentedWithAToStringObjectIsComparedWithItsNativeStringParam(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Foo {
+                    public function __toString(): string { return "foo"; }
+                }
+
+                interface I {
+                    /** @param Foo $x */
+                    public function m($x): void;
+                }
+
+                class A implements I {
+                    public function m(string $x): void {}
+                }
+
+                final class B extends A {
+                    /** @param non-empty-string $x */
+                    public function m($x): void {}
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        // the docblock of I does not document the native string param of A: an object is not a string
+        self::assertSame(
+            [
+                "Argument 1 of A::m has wrong type 'string', expecting 'Foo' as defined by I::m",
+                "Argument 1 of B::m has the more specific type 'non-empty-string', expecting 'Foo' as defined by I::m",
+                "Argument 1 of B::m has the more specific type 'non-empty-string', expecting 'string' as defined by"
+                    . ' A::m',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     /**
      * @param list<string> $expected_issues
      */
@@ -2039,6 +2082,56 @@ final class MethodSignatureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'toStringObjectReturnForUnionWithItsClass' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        /** @return string|Foo */
+                        public function m();
+                    }
+
+                    final class C implements I {
+                        /** @return Foo */
+                        public function m() { return new Foo(); }
+                    }',
+            ],
+            'toStringObjectReturnForStringable' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        public function m(): Stringable;
+                    }
+
+                    final class C implements I {
+                        /** @return Foo */
+                        public function m(): Stringable { return new Foo(); }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'toStringObjectParamForStringParam' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        /** @param string $x */
+                        public function m($x): void;
+                    }
+
+                    final class C implements I {
+                        /** @param string|Foo $x */
+                        public function m($x): void {}
+                    }',
+            ],
         ];
     }
 
@@ -3227,6 +3320,132 @@ final class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMustProvideReturnType',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'toStringObjectDocblockReturnForStringDocblockReturn' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        /** @return string */
+                        public function m();
+                    }
+
+                    final class C implements I {
+                        /** @return Foo */
+                        public function m() { return new Foo(); }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'toStringObjectNativeReturnForStringDocblockReturn' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        /** @return string */
+                        public function m();
+                    }
+
+                    final class C implements I {
+                        public function m(): Foo { return new Foo(); }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'toStringObjectOrStringReturnForStringReturn' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        /** @return string */
+                        public function m();
+                    }
+
+                    final class C implements I {
+                        /** @return Foo|string */
+                        public function m() { return new Foo(); }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'stringableReturnForStringReturn' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return string */
+                        public function m();
+                    }
+
+                    final class C implements I {
+                        public function m(): Stringable { return new Exception(); }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'toStringObjectSignatureReturnForStringSignatureReturn' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        public function m(): string;
+                    }
+
+                    final class C implements I {
+                        public function m(): Foo { return new Foo(); }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'stringDocblockParamForToStringObjectDocblockParam' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        /** @param Foo $x */
+                        public function m($x): void;
+                    }
+
+                    final class C implements I {
+                        /** @param string $x */
+                        public function m($x): void {}
+                    }',
+                'error_message' => 'ImplementedParamTypeMismatch',
+            ],
+            'stringParamForStringOrStringableParam' => [
+                'code' => '<?php
+                    interface I {
+                        /** @param string|Stringable $x */
+                        public function m($x): void;
+                    }
+
+                    final class C implements I {
+                        /** @param string $x */
+                        public function m($x): void {}
+                    }',
+                'error_message' => 'MoreSpecificImplementedParamType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'stringSignatureParamForToStringObjectSignatureParam' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        public function m(Foo $x): void;
+                    }
+
+                    final class C implements I {
+                        public function m(string $x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
             ],
         ];
     }

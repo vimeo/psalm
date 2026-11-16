@@ -949,7 +949,7 @@ final class MethodComparator
             || !$documenting_param->has_docblock_type
             || $documenting_param->type->hasTemplate()
             || ($guide_param->type !== null
-                && !UnionTypeComparator::isContainedBy($codebase, $documenting_param->type, $guide_param->type))
+                && !self::isContainedWithoutStringCast($codebase, $documenting_param->type, $guide_param->type))
         ) {
             return $guide_param;
         }
@@ -1044,7 +1044,7 @@ final class MethodComparator
 
         $is_contained_by = $codebase->analysis_php_version_id >= 7_04_00
             && $guide_param_signature_type
-            ? UnionTypeComparator::isContainedBy(
+            ? self::isContainedWithoutStringCast(
                 $codebase,
                 $guide_param_signature_type,
                 $implementer_param_signature_type,
@@ -1220,7 +1220,7 @@ final class MethodComparator
             !$guide_classlike_storage->user_defined,
             !$guide_classlike_storage->user_defined,
             $union_comparison_results,
-        )) {
+        ) || $union_comparison_results->to_string_cast) {
             // is the declared return type more specific than the inferred one?
             if ($union_comparison_results->type_coerced) {
                 if ($guide_classlike_storage->user_defined) {
@@ -1390,7 +1390,7 @@ final class MethodComparator
 
         $is_contained_by = $codebase->analysis_php_version_id >= 7_04_00
             && $implementer_signature_return_type
-            ? UnionTypeComparator::isContainedBy(
+            ? self::isContainedWithoutStringCast(
                 $codebase,
                 $implementer_signature_return_type,
                 $guide_signature_return_type,
@@ -1579,7 +1579,7 @@ final class MethodComparator
             false,
             false,
             $union_comparison_results,
-        )) {
+        ) || $union_comparison_results->to_string_cast) {
             // the types overlap where the intersection can't be built (callable-array, a constant wildcard);
             // an object castable to string does not overlap a string
             if ($inherits_return_type
@@ -1627,6 +1627,18 @@ final class MethodComparator
                 );
             }
         }
+    }
+
+    /**
+     * An object with `__toString()` is not a string: it only passes as one where PHP casts it, which a return
+     * value or an argument of an overriding method does not get under strict_types
+     */
+    private static function isContainedWithoutStringCast(Codebase $codebase, Union $input, Union $container): bool
+    {
+        $comparison_result = new TypeComparisonResult();
+
+        return UnionTypeComparator::isContainedBy($codebase, $input, $container, false, false, $comparison_result)
+            && !$comparison_result->to_string_cast;
     }
 
     /**
