@@ -27,6 +27,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\Comparator\GenericTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -370,34 +371,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        // the inherited mixins are checked where they are declared
-        $mixins = $storage->getOwnMixins();
-
-        if ($mixins) {
-            $union = new Union($mixins);
-
-            $static_self = new TNamedObject($storage->name, true);
-
-            $union = TypeExpander::expandUnion(
-                $codebase,
-                $union,
-                $storage->name,
-                $static_self,
-                null,
-            );
-
-            /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
-            $union->check(
-                $this,
-                new CodeLocation(
-                    $this,
-                    $class->name ?: $class,
-                    null,
-                    true,
-                ),
-                $this->getSuppressedIssues(),
-            );
-        }
+        self::checkMixins(
+            $this,
+            $storage,
+            new CodeLocation($this, $class->name ?: $class, null, true),
+            $this->getSuppressedIssues(),
+        );
 
         if ($storage->template_extended_params) {
             foreach ($storage->template_extended_params as $type_map) {
@@ -776,6 +755,22 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                                 $property_storage->location,
                             ),
                         );
+                    } elseif ($guide_property_storage->readonly_public_set
+                        && $property_storage->native_readonly
+                        && !$property_storage->readonly_public_set
+                        // where Populator cleared it, the redeclaration may still be public(set)
+                        && !$property_class_storage->isMutationFree()
+                        && !$property_class_storage->taint_specialize
+                        && $property_storage->location
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new OverriddenPropertyAccess(
+                                'Property ' . $fq_class_name . '::$' . $property_name
+                                    . ' is readonly, so implicitly protected(set), a more restrictive set visibility'
+                                    . ' than ' . $guide_class_name . '::$' . $property_name . ' (public(set))',
+                                $property_storage->location,
+                            ),
+                        );
                     }
 
                     if ($guide_property_storage->is_final
@@ -824,8 +819,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         );
                     }
 
-                    if ($property_storage->type === null) {
-                        // Property type not set, no need to check for docblock invariance
+                    // without a docblock type of its own, the property has the one it overrides
+                    if ($property_storage->type === null || $property_storage->inherited_type) {
                         continue;
                     }
 
@@ -941,7 +936,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                                 $storage->declaring_method_ids['__construct']->fq_class_name,
                             ) === strtolower($fq_class_name)))
                     && !$property_storage->has_default
-                    && !($property_type->isNullable() && $property_type->from_docblock)
+                    && !($property_storage->signature_type === null
+                        && $property_type->isNullable()
+                        && $property_type->from_docblock)
                 ) {
                     $property_type = $property_type->setProperties([
                         'initialized' => false,
@@ -1016,8 +1013,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
+            // an inherited docblock type is checked where it is written, and the native type here
             $has_docblock_over_signature = $property_storage->signature_type
-                && $property_storage->type?->getId() !== $property_storage->signature_type->getId();
+                && ($property_storage->inherited_type
+                    || $property_storage->type?->getId() !== $property_storage->signature_type->getId());
 
             if ($property_type_location && (!$fleshed_out_type->isMixed() || $has_docblock_over_signature)) {
                 $stmt = array_filter(
@@ -1042,14 +1041,16 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
-                /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
-                $fleshed_out_type->check(
-                    $statements_source,
-                    $property_type_location,
-                    $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
-                    [],
-                    false,
-                );
+                if (!$property_storage->inherited_type) {
+                    /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
+                    $fleshed_out_type->check(
+                        $statements_source,
+                        $property_type_location,
+                        $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
+                        [],
+                        false,
+                    );
+                }
 
                 if ($property_storage->signature_type) {
                     $union_comparison_result = new TypeComparisonResult();
@@ -1063,7 +1064,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_fq_class_name,
                     );
 
-                    if (!UnionTypeComparator::isContainedBy(
+                    if (!$property_storage->inherited_type && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $fleshed_out_type,
                         $signature_type,
@@ -1074,9 +1075,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     ) {
                         IssueBuffer::maybeAdd(
                             new MismatchingDocblockPropertyType(
-                                'Parameter '
+                                'Property '
                                     . $property_class_name . '::$' . $property_name
-                                    . ' has wrong type \'' . $fleshed_out_type .
+                                    . ' has wrong type \'' . $fleshed_out_type->getId() .
                                     '\', should be \'' . $signature_type->getId() . '\'',
                                 $property_type_location,
                             ),
@@ -1261,7 +1262,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 continue;
             }
 
-            if ($property->type && $property->type->from_docblock && $property->type->isNullable()) {
+            // an untyped property is null until it is assigned
+            if ($property->signature_type === null
+                && $property->type
+                && $property->type->from_docblock
+                && $property->type->isNullable()
+            ) {
                 continue;
             }
 
@@ -1561,11 +1567,14 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
-            $codebase->analyzer->setAnalyzedMethod(
-                $included_file_path,
-                $fq_class_name_lc . '::__construct',
-                true,
-            );
+            // recorded issues may be discarded (a loop keeps only those of its last pass): check again next time
+            if (!IssueBuffer::isRecording()) {
+                $codebase->analyzer->setAnalyzedMethod(
+                    $included_file_path,
+                    $fq_class_name_lc . '::__construct',
+                    true,
+                );
+            }
 
             return;
         }
@@ -2763,7 +2772,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             } elseif ($case_value === null && $storage->enum_type !== null) {
                 IssueBuffer::maybeAdd(
                     new InvalidEnumCaseValue(
-                        'Case of a backed enum should have a value',
+                        $case_storage->value instanceof UnresolvedConstantComponent
+                            ? 'Case of a backed enum should have either string or int value'
+                            : 'Case of a backed enum should have a value',
                         $case_storage->stmt_location,
                         $storage->name,
                     ),

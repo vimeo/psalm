@@ -16,24 +16,30 @@ use Psalm\Type\Union;
 final class InArray extends Assertion
 {
     use UnserializeMemoryUsageSuppressionTrait;
-    public function __construct(public readonly Union $type)
+    /**
+     * @param ?string $haystack the array the value is looked up in
+     */
+    public function __construct(public readonly Union $type, public readonly ?string $haystack = null)
     {
     }
 
     #[Override]
     public function getNegation(): Assertion
     {
-        return new NotInArray($this->type);
+        return new NotInArray($this->type, $this->haystack);
     }
 
     public function __toString(): string
     {
-        return 'in-array-' . $this->type->getId();
+        return 'in-array-' . $this->type->getId()
+            . ($this->haystack === null ? '' : '@' . $this->haystack);
     }
 
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
-        return $assertion instanceof NotInArray && $this->type->getId() === $assertion->type->getId();
+        return $assertion instanceof NotInArray
+            && $this->type->getId() === $assertion->type->getId()
+            && $this->haystack === $assertion->haystack;
     }
 }

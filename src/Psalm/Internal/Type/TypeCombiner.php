@@ -204,9 +204,6 @@ final class TypeCombiner
 
             $combination->array_type_params = [];
 
-            /**
-             * @psalm-suppress PossiblyNullArrayAccess
-             */
             unset(
                 $combination->value_types['array'],
                 $combination->named_object_types['Traversable'],
@@ -618,7 +615,6 @@ final class TypeCombiner
                 $combination->builtin_type_params['iterable'] = [Type::getMixed(), Type::getMixed()];
             }
 
-            /** @psalm-suppress PossiblyNullArrayAccess */
             unset(
                 $combination->named_object_types['Traversable'],
                 $combination->builtin_type_params['Traversable'],
@@ -1582,11 +1578,10 @@ final class TypeCombiner
         }
 
         if ($type instanceof TLiteralInt) {
-            if ($combination->ints !== null && count($combination->ints) < $literal_limit) {
-                $combination->ints[$type_key] = $type;
-            } else {
-                $combination->ints[$type_key] = $type;
+            $is_below_limit = $combination->ints !== null && count($combination->ints) < $literal_limit;
+            $combination->ints[$type_key] = $type;
 
+            if (!$is_below_limit) {
                 $all_nonnegative = !array_any(
                     $combination->ints,
                     static fn($int): bool => $int->value < 0,
@@ -1776,17 +1771,6 @@ final class TypeCombiner
                 unset($objectlike_entry);
             }
 
-            if ($combination->objectlike_value_type
-                && $combination->objectlike_value_type->isMixed()
-                && $combination->array_type_params
-                && !$combination->array_type_params[1]->isNever()
-            ) {
-                $combination->objectlike_entries = array_filter(
-                    $combination->objectlike_entries,
-                    static fn(Union $type): bool => !$type->possibly_undefined,
-                );
-            }
-
             if ($combination->objectlike_entries) {
                 $fallback_key_type = null;
                 if ($combination->objectlike_key_type) {
@@ -1806,12 +1790,7 @@ final class TypeCombiner
                     $fallback_value_type = $combination->array_type_params[1];
                 }
 
-                $sealed = $combination->objectlike_sealed && (
-                    !$combination->array_type_params
-                    || (isset($combination->array_type_params[1])
-                        && $combination->array_type_params[1]->isNever()
-                    )
-                );
+                $sealed = $combination->objectlike_sealed;
 
                 if ($combination->all_arrays_callable) {
                     $objectlike = TKeyedArray::makeCallable(

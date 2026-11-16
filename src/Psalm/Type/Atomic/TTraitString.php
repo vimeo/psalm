@@ -15,10 +15,36 @@ use Override;
 final class TTraitString extends TString
 {
     /**
+     * @param bool $is_loaded whether the trait is known to be loaded already (`trait_exists($t, false)`), so that a
+     *                        failed check says nothing about the string
+     */
+    public function __construct(
+        bool $from_docblock = false,
+        public bool $is_loaded = false,
+    ) {
+        parent::__construct($from_docblock);
+    }
+
+    /**
      * @psalm-pure
      */
     #[Override]
     public function getKey(bool $include_extra = true): string
+    {
+        return 'trait-string';
+    }
+
+    #[Override]
+    public function getId(bool $exact = true, bool $nested = false): string
+    {
+        return ($this->is_loaded ? 'loaded-' : '') . 'trait-string';
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public function getAssertionString(): string
     {
         return 'trait-string';
     }

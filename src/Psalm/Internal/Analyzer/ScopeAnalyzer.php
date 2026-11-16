@@ -12,6 +12,7 @@ use function array_any;
 use function array_diff;
 use function array_filter;
 use function array_intersect;
+use function array_key_last;
 use function array_unique;
 use function array_values;
 use function count;
@@ -236,7 +237,7 @@ final class ScopeAnalyzer
                     }
 
                     $case_does_end = !array_diff(
-                        $control_actions,
+                        $case_actions,
                         [self::ACTION_END, self::ACTION_RETURN],
                     );
 
@@ -316,11 +317,10 @@ final class ScopeAnalyzer
                 ) {
                     $is_infinite_loop = true;
                     if ($stmt->cond) {
-                        foreach ($stmt->cond as $cond) {
-                            $stmt_expr_type = $nodes->getType($cond);
-                            if (!$stmt_expr_type || !$stmt_expr_type->isAlwaysTruthy()) {
-                                $is_infinite_loop = false;
-                            }
+                        // only the last of the comma separated conditions decides whether the loop goes on
+                        $stmt_expr_type = $nodes->getType($stmt->cond[array_key_last($stmt->cond)]);
+                        if (!$stmt_expr_type || !$stmt_expr_type->isAlwaysTruthy()) {
+                            $is_infinite_loop = false;
                         }
                     }
 
