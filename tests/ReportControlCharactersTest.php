@@ -17,6 +17,7 @@ use Psalm\Report\EmacsReport;
 use Psalm\Report\GithubActionsReport;
 use Psalm\Report\JsonReport;
 use Psalm\Report\PhpStormReport;
+use Psalm\Report\PylintReport;
 use Psalm\Report\ReportOptions;
 use Psalm\Report\TableReport;
 use Psalm\Report\TextReport;
@@ -26,9 +27,13 @@ use function preg_match;
 
 final class ReportControlCharactersTest extends TestCase
 {
-    private const DANGEROUS = "\e[2K\r\x7F\xC2\x9B\xE2\x80\xAEgnirts\xE2\x80\xAC\x00";
+    private const DANGEROUS = "\e[2K\r\x7F\xC2\x9B\xE2\x80\xAEgnirts\xE2\x80\xAC\x00\xD8\x9C\xE2\x81\xA6x\xE2\x81\xA9";
 
-    private const FORBIDDEN = '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]|\xC2[\x80-\x9F]|\xE2\x80[\x8E\x8F\xAA-\xAE]/';
+    private const DANGEROUS_ESCAPED = '\u{001B}[2K\u{000D}\u{007F}\u{009B}\u{202E}gnirts\u{202C}\u{0000}'
+        . '\u{061C}\u{2066}x\u{2069}';
+
+    private const FORBIDDEN = '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]|\r(?!\n)|\xC2[\x80-\x9F]|\xD8\x9C'
+        . '|\xE2\x80[\x8E\x8F\xAA-\xAE]|\xE2\x81[\xA6-\xA9]/';
 
     /**
      * @return iterable<string, array{Closure(list<IssueData>, ReportOptions): Report}>
@@ -41,6 +46,7 @@ final class ReportControlCharactersTest extends TestCase
         yield 'text' => [/** @param array<int, IssueData> $i */ static fn(array $i, ReportOptions $o): Report => new TextReport($i, [], $o)];
         yield 'emacs' => [/** @param array<int, IssueData> $i */ static fn(array $i, ReportOptions $o): Report => new EmacsReport($i, [], $o)];
         yield 'github' => [/** @param array<int, IssueData> $i */ static fn(array $i, ReportOptions $o): Report => new GithubActionsReport($i, [], $o)];
+        yield 'pylint' => [/** @param array<int, IssueData> $i */ static fn(array $i, ReportOptions $o): Report => new PylintReport($i, [], $o)];
         yield 'phpstorm' => [/** @param array<int, IssueData> $i */ static fn(array $i, ReportOptions $o): Report => new PhpStormReport($i, [], $o)];
         yield 'table' => [/** @param array<int, IssueData> $i */ static fn(array $i, ReportOptions $o): Report => new TableReport($i, [], $o)];
         yield 'by-issue-level' => [
@@ -61,7 +67,7 @@ final class ReportControlCharactersTest extends TestCase
         $output = $create_report([$this->issue()], $options)->create();
 
         self::assertSame(0, preg_match(self::FORBIDDEN, $output));
-        self::assertStringContainsString('\u{001B}[2K\u{000D}\u{007F}\u{009B}\u{202E}gnirts\u{202C}\u{0000}', $output);
+        self::assertStringContainsString(self::DANGEROUS_ESCAPED, $output);
     }
 
     /**
@@ -102,6 +108,11 @@ final class ReportControlCharactersTest extends TestCase
             /** @param array<int, IssueData> $i */ static fn(array $i, ReportOptions $o): Report => new GithubActionsReport($i, [], $o),
             false,
             "::error file=src/file.php,line=3,col=5,title=SomeIssue::src/file.php:3:5: SomeIssue: a message$link\n",
+        ];
+        yield 'pylint' => [
+            /** @param array<int, IssueData> $i */ static fn(array $i, ReportOptions $o): Report => new PylintReport($i, [], $o),
+            false,
+            "src/file.php:3: [E0001] SomeIssue: a message (column 5)\n",
         ];
     }
 
@@ -220,7 +231,7 @@ final class ReportControlCharactersTest extends TestCase
         $options->use_color = false;
         $options->show_snippet = true;
 
-        $escaped = '\u{001B}[2K\u{000D}\u{007F}\u{009B}\u{202E}gnirts\u{202C}\u{0000}';
+        $escaped = self::DANGEROUS_ESCAPED;
 
         self::assertSame(
             "SECURITY: TaintedHtml - src/file.php:3:5 - a message (see https://psalm.dev/012)\n"
