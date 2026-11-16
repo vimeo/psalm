@@ -518,6 +518,36 @@ final class IntRangeTest extends TestCase
                     '$i===' => 'int<0, 10>',
                 ],
             ],
+            'loopLeftByABreakKeepsWhatItsConditionWrote' => [
+                'code' => '<?php
+                    $a = 3;
+                    while ($a-- > 0) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    $b = 3;
+                    do {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    } while ($b-- > 0);
+
+                    $c = 3;
+                    while ($c--) {
+                        if (rand(0, 1)) {
+                            $c = 7;
+                            break;
+                        }
+                        $c = 1;
+                    }',
+                'assertions' => [
+                    '$a===' => 'int<-1, 3>',
+                    '$b===' => 'int<-1, 3>',
+                    '$c===' => 'int<min, 7>',
+                ],
+            ],
             'loopNeverEnteredKeepsTheValueBeforeIt' => [
                 'code' => '<?php
                     /** @return int<-5, 5> */

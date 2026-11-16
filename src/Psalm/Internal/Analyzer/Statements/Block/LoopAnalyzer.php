@@ -199,6 +199,7 @@ final class LoopAnalyzer
                         $loop_parent_context,
                         $is_do,
                         $vars_after_condition,
+                        written_var_ids: $condition_written_var_ids,
                     );
 
                     self::applyVarsAfterCondition($inner_do_context, $vars_after_condition, $condition_offset > 0);
@@ -527,6 +528,7 @@ final class LoopAnalyzer
                             $loop_parent_context,
                             $is_do,
                             $vars_after_condition,
+                            written_var_ids: $condition_written_var_ids,
                         );
 
                         self::applyVarsAfterCondition(
@@ -702,6 +704,8 @@ final class LoopAnalyzer
             }
         }
 
+        $loop_scope->condition_written_vars = $condition_written_var_ids;
+
         if ($pre_conditions && $pre_condition_clauses && !$does_sometimes_break) {
             // if the loop contains an assertion and there are no break statements, we can negate that assertion
             // and apply it to the current context
@@ -733,7 +737,6 @@ final class LoopAnalyzer
 
             $negated_pre_condition_types = Algebra::getTruthsFromFormula($negated_pre_condition_clauses);
             $loop_scope->exit_truths = $negated_pre_condition_types;
-            $loop_scope->condition_written_vars = $condition_written_var_ids;
 
             if ($negated_pre_condition_types) {
                 if ($is_do) {
@@ -929,6 +932,8 @@ final class LoopAnalyzer
         }
 
         if ($can_leave_loop) {
+            self::addVarsWrittenByTheExitingCondition($context, $loop_scope);
+
             // the condition is evaluated before the loop is left, whatever happens in the body: all the
             // comma separated expressions of a for, but only the first operand of the && of a while
             $evaluated_conditions = $stmt instanceof PhpParser\Node\Stmt\For_
@@ -969,6 +974,23 @@ final class LoopAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * A loop that a break leaves too is left where its condition is false with what evaluating the condition wrote
+     * (`$t--`), which neither what the body ends with nor what the breaks leave holds
+     */
+    public static function addVarsWrittenByTheExitingCondition(Context $context, LoopScope $loop_scope): void
+    {
+        if (!in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)) {
+            return;
+        }
+
+        foreach ($loop_scope->condition_written_vars as $var_id => $type) {
+            if (isset($context->vars_in_scope[$var_id])) {
+                $context->vars_in_scope[$var_id] = Type::combineUnionTypes($context->vars_in_scope[$var_id], $type);
+            }
+        }
     }
 
     /**

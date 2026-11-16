@@ -151,13 +151,18 @@ final class DoAnalyzer
         }
 
         $cond_type = $statements_analyzer->node_data->getType($stmt->cond);
+        $is_only_left_by_break = $cond_type && $cond_type->isAlwaysTruthy();
 
         LoopAnalyzer::setLoopVars(
             $inner_loop_context,
             $context,
             $loop_scope,
-            is_only_left_by_break: $cond_type && $cond_type->isAlwaysTruthy(),
+            is_only_left_by_break: $is_only_left_by_break,
         );
+
+        if (!$is_only_left_by_break) {
+            LoopAnalyzer::addVarsWrittenByTheExitingCondition($context, $loop_scope);
+        }
 
         // the body of a do-while runs once, unless it leaves the loop
         if (!in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
