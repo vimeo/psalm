@@ -1494,6 +1494,87 @@ final class SwitchTypeTest extends TestCase
                         return -1;
                     }',
             ],
+            'issetOfVarFromLaterCaseEndingInConditionalThrow' => [
+                'code' => '<?php
+                    function f(string $s, bool $flag): void {
+                        switch ($s) {
+                            case "D":
+                                echo "d";
+                                break;
+                            case "A":
+                                $rec = 1;
+                                if ($flag) {
+                                    throw new RuntimeException("x");
+                                }
+                                break;
+                        }
+                        if (isset($rec)) {
+                            echo $rec === 1 ? "one" : "other";
+                        }
+                    }',
+            ],
+            'issetOfVarPossiblyAssignedInLaterCaseEndingInConditionalThrow' => [
+                'code' => '<?php
+                    function f(string $s, bool $flag, bool $x): void {
+                        switch ($s) {
+                            case "D":
+                                break;
+                            case "A":
+                                if ($x) {
+                                    $rec = 1;
+                                }
+                                if ($flag) {
+                                    throw new RuntimeException("x");
+                                }
+                                break;
+                        }
+                        if (isset($rec)) {
+                            echo "set";
+                        }
+                    }',
+            ],
+            'issetOfVarsFromTwoCasesEndingInConditionalThrow' => [
+                'code' => '<?php
+                    function f(string $s, bool $flag): void {
+                        switch ($s) {
+                            case "A":
+                                $a = 1;
+                                if ($flag) {
+                                    throw new RuntimeException("x");
+                                }
+                                break;
+                            case "B":
+                                $b = 1;
+                                if ($flag) {
+                                    throw new RuntimeException("x");
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                        if (isset($a) || isset($b)) {
+                            echo "set";
+                        }
+                    }',
+            ],
+            'issetOfVarFromCaseAfterDefaultEndingInConditionalThrow' => [
+                'code' => '<?php
+                    function f(string $s, bool $flag): void {
+                        switch ($s) {
+                            default:
+                                break;
+                            case "A":
+                                $rec = 1;
+                                if ($flag) {
+                                    throw new RuntimeException("x");
+                                }
+                                break;
+                        }
+                        if (isset($rec)) {
+                            echo "set";
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1504,6 +1585,40 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'varFromLaterCaseEndingInConditionalThrowIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(string $s, bool $flag): int {
+                        switch ($s) {
+                            case "D":
+                                break;
+                            case "A":
+                                $rec = 1;
+                                if ($flag) {
+                                    throw new RuntimeException("x");
+                                }
+                                break;
+                        }
+                        return $rec;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varAssignedOnlyBeforeTheThrowOfLaterCaseIsUndefined' => [
+                'code' => '<?php
+                    function f(string $s, bool $flag): int {
+                        switch ($s) {
+                            case "D":
+                                break;
+                            case "A":
+                                if ($flag) {
+                                    $thrown = 1;
+                                    throw new RuntimeException((string) $thrown);
+                                }
+                                break;
+                        }
+                        return $thrown;
+                    }',
+                'error_message' => 'UndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:32 - Cannot find',
+            ],
             'oneBreakOfACaseThatEndsInAThrowLacksTheVar' => [
                 'code' => <<<'PHP'
                     <?php
