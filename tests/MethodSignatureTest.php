@@ -729,6 +729,61 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticTypeArgumentMatchesInheritedReturnType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Getter {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /** @implements Getter<static> */
+                    class Node implements Getter {
+                        public function get(): static {
+                            return $this;
+                        }
+                    }
+
+                    final class Leaf extends Node {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticTypeArgumentMatchesDocumentedReturnType' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, static> */
+                    abstract class Bag implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool { return true; }
+                        /** @return static */
+                        public function offsetGet(mixed $offset): static { return $this; }
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    final class SubBag extends Bag {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticTypeArgumentMatchesDocumentedParamType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    /** @implements Setter<static> */
+                    class Node implements Setter {
+                        /** @param static $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    final class Leaf extends Node {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'parametersDocumentedByDifferentAncestorsAreInheritedEach' => [
                 'code' => '<?php
                     interface Source {
@@ -1994,6 +2049,26 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticTypeArgumentStillChecksDocumentedReturnType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Getter {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /** @implements Getter<static> */
+                    class Node implements Getter {
+                        /** @return int */
+                        public function get(): mixed {
+                            return 1;
+                        }
+                    }',
+                'error_message' => "ImplementedReturnTypeMismatch - src" . DIRECTORY_SEPARATOR
+                    . "somefile.php:10:37 - The inherited return type 'Node&static' for Getter::get",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'unrelatedInterfacesDocumentingAParameterDifferentlyGiveAnUndocumentedOverrideNoType' => [
                 'code' => '<?php
                     interface A {
