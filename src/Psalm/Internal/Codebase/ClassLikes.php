@@ -57,6 +57,7 @@ use UnexpectedValueException;
 use function array_filter;
 use function array_merge;
 use function array_pop;
+use function array_values;
 use function count;
 use function end;
 use function explode;
@@ -73,6 +74,7 @@ use function str_contains;
 use function str_starts_with;
 use function strlen;
 use function strrpos;
+use function strstr;
 use function strtolower;
 use function substr;
 use function token_get_all;
@@ -2785,9 +2787,47 @@ final class ClassLikes
             return false;
         }
 
-        $this->unshipped_code ??= UnshippedCode::load($this->config->base_dir);
+        // code of the global namespace can't be internal
+        return !$this->getUnshippedCode()->contains($classlike_storage->name, $classlike_storage->location->file_path);
+    }
 
-        return !$this->unshipped_code->contains($classlike_storage->name, $classlike_storage->location->file_path);
+    private function getUnshippedCode(): UnshippedCode
+    {
+        return $this->unshipped_code ??= UnshippedCode::load($this->config->base_dir);
+    }
+
+    /**
+     * Users of a project can't use the code it doesn't ship, so it is internal to the project's test code and tools.
+     */
+    public function markUnshippedCodeInternal(): void
+    {
+        $unshipped_classes = [];
+        $namespaces = [];
+        foreach ($this->classlike_storage_provider->getAll() as $storage) {
+            $file_path = $storage->location?->file_path;
+            if ($storage->populated
+                || $storage->internal
+                || $file_path === null
+                || !$this->config->isInProjectDirs($file_path)
+                || !$this->getUnshippedCode()->contains($storage->name, $file_path)
+            ) {
+                continue;
+            }
+
+            $namespace = strstr($storage->name, '\\', true);
+            if ($namespace === false || $namespace === '') {
+                continue;
+            }
+
+            $namespaces[$namespace] = $namespace;
+            $unshipped_classes[] = $storage;
+        }
+
+        // unshipped code may use the unshipped code of every other namespace
+        $namespaces = array_values($namespaces);
+        foreach ($unshipped_classes as $storage) {
+            $storage->internal = $namespaces;
+        }
     }
 
     /**

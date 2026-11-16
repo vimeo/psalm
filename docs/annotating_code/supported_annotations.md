@@ -427,6 +427,27 @@ namespace Y {
 }
 ```
 
+The code a project doesn't ship is internal without the annotation: classes that only `composer.json`'s
+`autoload-dev` loads, files that `.gitattributes` leaves out of the package with `export-ignore`, and, with
+[psalm/plugin-phpunit](https://github.com/psalm/psalm-plugin-phpunit), the test suites of `phpunit.xml` and the test
+cases. It is internal to the root namespaces of all that code, so test code may use the test code of another namespace.
+Code in the global namespace can't be internal.
+
+```php
+<?php
+namespace Lib\Tests { // autoload-dev: "Lib\\Tests\\": "tests/"
+    final class Helper {}
+}
+
+namespace Lib {
+    new Tests\Helper(); // this is fine
+}
+
+namespace Other {
+    new \Lib\Tests\Helper(); // InternalClass
+}
+```
+
 ### `@psalm-readonly` and `@readonly`
 
 Used to annotate a property that can only be written to in its defining class's constructor.

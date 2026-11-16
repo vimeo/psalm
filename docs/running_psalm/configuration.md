@@ -336,7 +336,7 @@ class Client {                           // ClassMustBeFinal, but no UnusedClass
 final class Helper {}                    // UnusedClass
 ```
 
-Code that the library doesn't ship to its users counts as internal without the annotation: classes that only `composer.json`'s `autoload-dev` loads, and files that `.gitattributes` leaves out of the package with `export-ignore`. So do the test suites of `phpunit.xml` and the test cases with [psalm/plugin-phpunit](https://github.com/psalm/psalm-plugin-phpunit).
+The code the library doesn't ship, such as its tests, [is internal](../annotating_code/supported_annotations.md#psalm-internal) without the annotation.
 
 **This breaks unused-code detection for internal code that isn't marked `@internal`**: Psalm treats it as public API, so it is never reported as unused, and neither is any code that only it uses. Mark every class and member that isn't meant for users of the library with `@internal` (or `@psalm-internal`) before enabling this.
 
