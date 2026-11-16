@@ -29,6 +29,89 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'assignmentBeforeABreakInTheElseIsReadAfterTheIf' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function f(array $list, string $needle): string {
+                        if (count($list) === 1) {
+                            $found = $list[0];
+                        } else {
+                            foreach ($list as $item) {
+                                if ($item === $needle) {
+                                    $found = $item;
+                                    break;
+                                }
+                            }
+                        }
+
+                        return is_string($found ?? null) ? "found" : "";
+                    }',
+            ],
+            'assignmentBeforeABreakInTheIfIsReadAfterTheElse' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function f(array $list, string $needle, bool $b): string {
+                        if ($b) {
+                            foreach ($list as $item) {
+                                if ($item === $needle) {
+                                    $found = $item;
+                                    break;
+                                }
+                            }
+                        } else {
+                            $found = "a";
+                        }
+
+                        return is_string($found ?? null) ? "found" : "";
+                    }',
+            ],
+            'assignmentsBeforeBreaksInTheElseAreReadAfterTheIf' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function f(array $list, string $needle, bool $b): string {
+                        if ($b) {
+                            $found = "a";
+                        } else {
+                            foreach ($list as $item) {
+                                if ($item === $needle) {
+                                    $found = $item;
+                                    break;
+                                }
+
+                                if ($item === "") {
+                                    $found = "empty";
+                                    break;
+                                }
+                            }
+                        }
+
+                        return is_string($found ?? null) ? "found" : "";
+                    }',
+            ],
+            'assignmentInACatchInTheElseifIsReadAfterTheIf' => [
+                'code' => '<?php
+                    function load(): void {
+                        if (rand(0, 1) === 1) {
+                            throw new RuntimeException("x");
+                        }
+                    }
+
+                    function f(bool $a, bool $b): ?bool {
+                        if ($a) {
+                            if ($b) {
+                                $searched = false;
+                            }
+                        } elseif ($b) {
+                            try {
+                                load();
+                            } catch (Exception $e) {
+                                $searched = false;
+                            }
+                        }
+
+                        return is_bool($searched ?? null) ? true : null;
+                    }',
+            ],
             'arrowFunctionParamNamedLikeAPossiblyUndefinedVariableDoesNotUseIt' => [
                 'code' => '<?php
                     /** @param list<string> $names */
@@ -3313,6 +3396,26 @@ final class UnusedVariableTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'assignmentBeforeABreakInTheElseNeverReadIsUnused' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function f(array $list, string $needle, bool $b): string {
+                        if ($b) {
+                            $found = "a";
+                            echo $found;
+                        } else {
+                            foreach ($list as $item) {
+                                if ($item === $needle) {
+                                    $found = $item;
+                                    break;
+                                }
+                            }
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:37',
+            ],
             'valueOverwrittenInTheCatchOfANestedTryAndNeverReadIsUnused' => [
                 'code' => '<?php
                     function f(): void {

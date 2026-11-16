@@ -516,6 +516,14 @@ final class IfAnalyzer
                 : $type;
         }
 
+        foreach ($if_context->vars_possibly_in_scope as $var_id => $_) {
+            if (!isset($if_context->vars_in_scope[$var_id])
+                && !isset($outer_context->vars_possibly_in_scope[$var_id])
+            ) {
+                $if_scope->untyped_new_vars[$var_id] = true;
+            }
+        }
+
         if ($if_scope->new_vars === null) {
             if ($update_new_vars) {
                 $if_scope->new_vars = array_diff_key($if_context->vars_in_scope, $outer_context->vars_in_scope);

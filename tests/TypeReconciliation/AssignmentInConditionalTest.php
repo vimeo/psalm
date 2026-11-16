@@ -72,6 +72,52 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedBeforeABreakInTheElseIsNotTypedByTheIf' => [
+                'code' => '<?php
+                    /** @return list<string> */
+                    function getList(): array {
+                        return [];
+                    }
+
+                    if (rand(0, 1)) {
+                        $found = 1;
+                    } else {
+                        foreach (getList() as $item) {
+                            $found = $item;
+                            break;
+                        }
+                    }
+
+                    $b = $found ?? null;',
+                'assertions' => [
+                    '$b===' => 'mixed|null',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'variableAssignedInACatchInTheElseIsNotTypedByTheIf' => [
+                'code' => '<?php
+                    function load(): void {
+                        if (rand(0, 1) === 1) {
+                            throw new RuntimeException("x");
+                        }
+                    }
+
+                    if (rand(0, 1)) {
+                        $searched = 1;
+                    } else {
+                        try {
+                            load();
+                        } catch (Exception $e) {
+                            $searched = "";
+                        }
+                    }
+
+                    $b = $searched ?? null;',
+                'assertions' => [
+                    '$b===' => 'mixed|null',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'variableDefinedInSomeBranchesKeepsItsTypeWhenPossiblyUndefined' => [
                 'code' => '<?php
                     if (rand(0, 1)) {

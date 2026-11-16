@@ -6280,6 +6280,26 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'taintOfTheBranchTypingAVariableAnotherBranchAssignsBeforeABreakIsKept' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param list<string> $list */
+                    function f(array $list, string $needle, bool $b): void {
+                        if ($b) {
+                            $found = (string) $_GET["x"];
+                        } else {
+                            foreach ($list as $item) {
+                                if ($item === $needle) {
+                                    $found = $item;
+                                    break;
+                                }
+                            }
+                        }
+
+                        /** @psalm-suppress MixedArgument */
+                        echo $found ?? "";
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'ternaryBranchWritingTheNarrowedTypeKeepsItsTaint' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-assert-if-true non-falsy-string $s */

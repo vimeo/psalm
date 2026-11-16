@@ -37,6 +37,14 @@ final class IfScope
     public array $partial_new_vars = [];
 
     /**
+     * Variables a branch reaching the end possibly defines without a type (e.g. in a loop left by a break, or in a
+     * catch): the type the other branches give them is not all of it
+     *
+     * @var array<string, true>
+     */
+    public array $untyped_new_vars = [];
+
+    /**
      * @var array<string, bool>
      */
     public array $new_vars_possibly_in_scope = [];
