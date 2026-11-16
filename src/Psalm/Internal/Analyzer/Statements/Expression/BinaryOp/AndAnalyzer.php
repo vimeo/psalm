@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
+use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -184,9 +185,11 @@ final class AndAnalyzer
             ...GuardedClasses::unknownWhenResult($stmt->left, true, $codebase),
         ];
 
-        $partitioned_clauses = Context::removeReconciledClauses(
+        $partitioned_clauses = AlgebraAnalyzer::removeReconciledClausesOfOneVariable(
             [...$left_context->clauses, ...$left_clauses],
             $changed_var_ids,
+            $right_context->vars_in_scope,
+            $statements_analyzer,
         );
 
         $right_context->clauses = $partitioned_clauses[0];
@@ -278,7 +281,12 @@ final class AndAnalyzer
                 static fn(Clause $c) => $c->hash,
                 [
                     ...$partitioned_clauses[1],
-                    ...Context::removeReconciledClauses($simplified_clauses, $changed_var_ids)[1],
+                    ...AlgebraAnalyzer::removeReconciledClausesOfOneVariable(
+                        $simplified_clauses,
+                        $changed_var_ids,
+                        $right_context->vars_in_scope,
+                        $statements_analyzer,
+                    )[1],
                 ],
             );
 

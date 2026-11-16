@@ -119,6 +119,11 @@ final class IfScope
      */
     public array $final_actions = [];
 
+    /**
+     * Whether there is no else and the conditions matched every value of a variable
+     */
+    public bool $implicit_else_is_impossible = false;
+
     public ?Context $post_leaving_if_context = null;
 
     /**
@@ -129,10 +134,18 @@ final class IfScope
     public ?array $null_array_offsets_read = null;
 
     /**
+     * The contexts of the branches that reach the end of the if
+     *
+     * @var list<Context>
+     */
+    public array $end_contexts = [];
+
+    /**
      * @psalm-external-mutation-free
      */
     public function addBranchReachingTheEnd(Context $branch_context): void
     {
+        $this->end_contexts[] = $branch_context;
         $this->null_array_offsets_read = $this->null_array_offsets_read === null
             ? $branch_context->null_array_offsets_read
             : array_intersect_key($this->null_array_offsets_read, $branch_context->null_array_offsets_read);

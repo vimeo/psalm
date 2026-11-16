@@ -195,7 +195,7 @@ final class TypeCombinationTest extends TestCase
     {
         return [
             'unsealedArrayKeyDeclaredInOneAndMissingInTheOtherTakesTheFallback' => [
-                'array{age?: int|mixed, name?: mixed|string, ...<array-key, mixed>}',
+                'non-empty-array<array-key, mixed>',
                 [
                     'array{age: int, ...<array-key, mixed>}',
                     'array{name: string, ...<array-key, mixed>}',
@@ -327,11 +327,127 @@ final class TypeCombinationTest extends TestCase
                     'array{id: string, name?: string, ...<array-key, mixed>}',
                 ],
             ],
-            'keyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItButItsFallbackMayHoldIt' => [
-                'array{id: string, name?: int|string, ...<string, int|string>}',
+            'keyOfAnUnsealedShapeIsTheFallbackWhenAnotherShapeLacksItAndItsFallbackHoldsItsType' => [
+                'array{id: string, ...<string, int|string>}',
                 [
                     'array{id: string, name: string, ...<string, string>}',
                     'array{id: string, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackHoldsAnotherType' => [
+                'array{id: string, name?: int|string, ...<string, int>}',
+                [
+                    'array{id: string, name: string, ...<string, int>}',
+                    'array{id: string, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackCannotHoldIt' => [
+                'array{5?: int, id: string, ...<string, int>}',
+                [
+                    'array{id: string, 5: int, ...<string, int>}',
+                    'array{id: string, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsTheFallbackWhenAnotherShapeLacksItAndAThirdDeclaresIt' => [
+                'array{id: string, ...<string, int>}',
+                [
+                    'array{id: string, name: int, ...<string, int>}',
+                    'array{id: string, ...<string, int>}',
+                    'array{id: string, name: 5, ...<string, int>}',
+                ],
+            ],
+            'arrayKeyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackHoldsAnotherArray' => [
+                'array{id: string, name?: array{0?: string, x?: 1, ...<int<0, max>, string>}, ...<string, list<string>>}',
+                [
+                    'array{id: string, name: array{x: 1}, ...<string, list<string>>}',
+                    'array{id: string, ...<string, list<string>>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenTheShapeLackingItHasANarrowerFallback' => [
+                'array{id: string, name?: int, ...<string, int|string>}',
+                [
+                    'array{id: string, ...<string, int>}',
+                    'array{id: string, name: int, ...<string, string>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenTheShapeLackingItComesLastWithANarrowerFallback' => [
+                'array{id: string, name?: int, ...<string, int|string>}',
+                [
+                    'array{id: string, name: int, ...<string, string>}',
+                    'array{id: string, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenTheShapeLackingItHasANarrowerFallbackThanMixed' => [
+                'array{id: string, name?: int, ...<string, int|mixed>}',
+                [
+                    'array{id: string, ...<string, int>}',
+                    'array{id: string, name: int, ...<string, mixed>}',
+                ],
+            ],
+            'arrayKeyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackHoldsOtherElements' => [
+                'array{id: string, k?: array<string, int|string>, ...<string, array<string, int>>}',
+                [
+                    'array{id: string, k: array<string, string>, ...<string, array<string, int>>}',
+                    'array{id: string, ...<string, array<string, int>>}',
+                ],
+            ],
+            'emptyKeyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackKeyIsNonEmpty' => [
+                'array{\'\'?: int, id: string, ...<non-empty-string, int>}',
+                [
+                    'array{\'\': int, id: string, ...<non-empty-string, int>}',
+                    'array{id: string, ...<non-empty-string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsTheFallbackWhenAnotherShapeLacksItAndItsFallbackKeyIsNonEmpty' => [
+                'array{id: string, ...<non-empty-string, int>}',
+                [
+                    'array{id: string, name: int, ...<non-empty-string, int>}',
+                    'array{id: string, ...<non-empty-string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackKeyIsARefinedString' => [
+                'array{id: string, name?: int, ...<numeric-string, int>}',
+                [
+                    'array{id: string, name: int, ...<numeric-string, int>}',
+                    'array{id: string, ...<numeric-string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenASealedShapeLacksIt' => [
+                'array{id: string, name?: int, ...<string, int>}',
+                [
+                    'array{id: string, name: int, ...<string, int>}',
+                    'array{id: string}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenASealedShapeLacksItBeforeUnsealedOnes' => [
+                'array{id: string, name?: int, ...<string, int>}',
+                [
+                    'array{id: string}',
+                    'array{id: string, ...<string, int>}',
+                    'array{id: string, name: int, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenASealedShapeLacksItBetweenUnsealedOnes' => [
+                'array{id: string, name?: int, ...<string, int>}',
+                [
+                    'array{id: string, ...<string, int>}',
+                    'array{id: string}',
+                    'array{id: string, name: int, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackHasOtherKeys' => [
+                'array{id: string, name?: int, ...<int|string, int>}',
+                [
+                    'array{id: string, name: int, ...<string, int>}',
+                    'array{id: string, ...<int, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnEmptyArrayLacksIt' => [
+                'array{id?: string, name?: int, ...<string, int>}',
+                [
+                    'array{id: string, name: int, ...<string, int>}',
+                    'array{id: string, ...<string, int>}',
+                    'array<never, never>',
                 ],
             ],
             'keyOfASealedShapeIsOptionalWhenAnotherShapeDeclaresItOptional' => [

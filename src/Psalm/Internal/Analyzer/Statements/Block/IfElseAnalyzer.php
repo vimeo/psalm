@@ -324,6 +324,8 @@ final class IfElseAnalyzer
             $changed_var_ids,
         );
 
+        $references_rebound_before = $context->references_rebound_in_blocks;
+
         // check the if
         if (IfAnalyzer::analyze(
             $statements_analyzer,
@@ -395,6 +397,10 @@ final class IfElseAnalyzer
         ) === false) {
             return false;
         }
+
+        $context->references_rebound_in_blocks = $references_rebound_before;
+
+        $statements_analyzer->node_data->setImplicitElseImpossible($stmt, $if_scope->implicit_else_is_impossible);
 
         if (count($if_scope->if_actions) && !in_array(ScopeAnalyzer::ACTION_NONE, $if_scope->if_actions, true)
             && !$stmt->elseifs
@@ -548,6 +554,24 @@ final class IfElseAnalyzer
 
                         $context->vars_in_scope[$var_id] = $updated_type;
                     }
+                }
+            }
+        }
+
+        // Context::update() left the type the if ends with for an offset or a property it narrowed: nothing is
+        // known of it once another branch reaching the end has forgotten it
+        foreach ($if_scope->updated_vars as $var_id => $_) {
+            if (!isset($context->vars_in_scope[$var_id])
+                || !isset($if_context->vars_in_scope[$var_id])
+                || (!str_contains($var_id, '[') && !str_contains($var_id, '->'))
+            ) {
+                continue;
+            }
+
+            foreach ($if_scope->end_contexts as $end_context) {
+                if (!isset($end_context->vars_in_scope[$var_id])) {
+                    unset($context->vars_in_scope[$var_id]);
+                    break;
                 }
             }
         }

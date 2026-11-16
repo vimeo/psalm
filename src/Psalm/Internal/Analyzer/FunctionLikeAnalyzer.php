@@ -980,6 +980,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if (!$function_param->type
                 && $function_param->location
             ) {
+                if ($this instanceof ClosureAnalyzer && $this->getPropertyHookId() !== null) {
+                    // the property says what an untyped `$value` is
+                    continue;
+                }
+
                 if ($this->function instanceof Closure
                     || $this->function instanceof ArrowFunction
                 ) {
@@ -1024,6 +1029,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $closure_yield_types,
                 true,
             );
+
+            if (!$storage->return_type) {
+                $closure_return_types = ReturnTypeAnalyzer::addImplicitNullReturn(
+                    $closure_return_types,
+                    $closure_yield_types !== [],
+                    $function_stmts,
+                    $type_provider,
+                    $context->has_returned,
+                );
+            }
 
             $closure_return_type = $closure_return_types
                 ? Type::combineUnionTypeArray(
@@ -1343,7 +1358,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        $t = $storage instanceof MethodStorage ? Attribute::TARGET_METHOD : Attribute::TARGET_FUNCTION;
+        $t = $storage instanceof MethodStorage
+            || ($this instanceof ClosureAnalyzer && $this->getPropertyHookId() !== null)
+            ? Attribute::TARGET_METHOD
+            : Attribute::TARGET_FUNCTION;
         AttributesAnalyzer::analyze(
             $this,
             $context,
@@ -1397,6 +1415,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 );
 
                 if ($this instanceof ClosureAnalyzer) {
+                    // a hook cannot leave its parameter out
+                    if ($this->getPropertyHookId() !== null) {
+                        continue;
+                    }
+
                     IssueBuffer::maybeAdd(
                         new UnusedClosureParam(
                             $unused_param_message,
@@ -1482,11 +1505,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * The by-reference parameter $var_id stops referencing the variable passed to it (unset(), =&, global,
      * static, ...): that variable keeps what the parameter holds now. Also the case for a variable bound to
-     * a global.
+     * a global. What it was bound to no longer limits what it may hold.
      */
     public static function unbindByRefParam(Codebase $codebase, Context $context, string $var_id): void
     {
-        unset($context->bound_globals[$var_id]);
+        unset(
+            $context->bound_globals[$var_id],
+            $context->byref_constraints[$var_id],
+            $context->references_rebound_in_blocks[$var_id],
+        );
 
         if (isset($context->by_ref_param_out_nodes[$var_id])) {
             self::taintByRefParamOut($codebase, $context, $var_id);
@@ -2444,7 +2471,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             throw new UnexpectedValueException('This is weird');
         }
 
-        return $this->getClosureId();
+        return $this->getPropertyHookId() ?? $this->getClosureId();
     }
 
     /**

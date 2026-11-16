@@ -28,6 +28,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAss
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\StaticPropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -62,6 +63,7 @@ use Psalm\Issue\MixedAssignment;
 use Psalm\Issue\NoValue;
 use Psalm\Issue\NullReference;
 use Psalm\Issue\PossiblyInvalidArrayAccess;
+use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
 use Psalm\Issue\PossiblyNullArrayAccess;
 use Psalm\Issue\PossiblyUndefinedArrayOffset;
 use Psalm\Issue\PossiblyUndefinedIntArrayOffset;
@@ -94,6 +96,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -108,6 +111,7 @@ use function array_map;
 use function array_values;
 use function assert;
 use function count;
+use function implode;
 use function is_int;
 use function is_string;
 use function reset;
@@ -757,11 +761,15 @@ final class AssignmentAnalyzer
                     $assign_value_type->ignore_falsable_issues,
                 )
                 ) {
+                    $referenced_properties = $context->byref_constraints[$var_id]->referenced_properties;
+
                     IssueBuffer::maybeAdd(
                         new ReferenceConstraintViolation(
                             'Variable ' . $var_id . ' is limited to values of type '
-                                . $context->byref_constraints[$var_id]->type
-                                . ' because it is passed by reference, '
+                                . $outer_constraint_type->getId()
+                                . ($referenced_properties !== []
+                                    ? ' because it is a reference to ' . implode(' or ', $referenced_properties) . ', '
+                                    : ' because it is passed by reference, ')
                                 . $assign_value_type->getId() . ' type found',
                             new CodeLocation($statements_analyzer->getSource(), $assign_var),
                         ),
@@ -1345,8 +1353,26 @@ final class AssignmentAnalyzer
             || $stmt->var instanceof PropertyFetch
             || $stmt->var instanceof PhpParser\Node\Expr\StaticPropertyFetch
             || $stmt->var instanceof ArrayDimFetch;
+
+        // the fetch below remembers the item it reads whether it is set or not: only one known before may be set
+        $pre_rhs_var_id = $stmt->expr instanceof ArrayDimFetch
+            ? ExpressionIdentifier::getExtendedVarId(
+                $stmt->expr,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            )
+            : null;
+        $rhs_was_set = $pre_rhs_var_id !== null && isset($context->vars_in_scope[$pre_rhs_var_id]);
+
+        $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+        $context->inside_by_ref_offset = $stmt->expr instanceof ArrayDimFetch;
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context, false, null, null, null, true);
+        $context->inside_by_ref_offset = $was_inside_by_ref_offset;
         $context->inside_general_use = $was_inside_general_use;
+
+        if ($stmt->expr instanceof ArrayDimFetch) {
+            self::makeReferencedArrayNonNull($statements_analyzer, $stmt->expr, $context);
+        }
 
         $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
@@ -1475,6 +1501,7 @@ final class AssignmentAnalyzer
         }
 
         $rhs_type = $context->vars_in_scope[$rhs_var_id];
+        $rhs_possibly_undefined = $rhs_type->possibly_undefined || $rhs_type->possibly_undefined_from_try;
 
         // binding a reference to a variable or an offset that is not set creates it as null (a superglobal read
         // is taken as defined, but $http_response_header: see VariableFetchAnalyzer::getReadSuperGlobalType())
@@ -1535,24 +1562,92 @@ final class AssignmentAnalyzer
             // TODO handle differently so it's detected as unused if the array is unused?
             $context->references_to_external_scope[$lhs_var_id] = true;
         }
-        if (str_contains($rhs_var_id, '->')) {
-            IssueBuffer::maybeAdd(
-                new UnsupportedPropertyReferenceUsage(
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-            // Reference to object property, we always consider object properties to be an external scope for references
-            // TODO handle differently so it's detected as unused if the object is unused?
-            $context->references_to_external_scope[$lhs_var_id] = true;
+        $property_fetch = $stmt->expr;
+        while ($property_fetch instanceof ArrayDimFetch) {
+            $property_fetch = $property_fetch->var;
         }
-        if (str_contains($rhs_var_id, '::')) {
-            IssueBuffer::maybeAdd(
-                new UnsupportedPropertyReferenceUsage(
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
+
+        if ($property_fetch instanceof PropertyFetch
+            || $property_fetch instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
+            if ($property_fetch instanceof PropertyFetch) {
+                // Reference to object property, we always consider object properties to be an external scope for
+                // references
+                // TODO handle differently so it's detected as unused if the object is unused?
+                $context->references_to_external_scope[$lhs_var_id] = true;
+            }
+
+            $property_ids = [];
+            // only a write to a variable checks its reference constraint
+            $referenced_type = $stmt->var instanceof PhpParser\Node\Expr\Variable
+                ? self::getReferencedPropertyType(
+                    $statements_analyzer,
+                    $stmt->expr,
+                    $context,
+                    $property_ids,
+                )
+                : null;
+
+            if ($referenced_type === null) {
+                IssueBuffer::maybeAdd(
+                    new UnsupportedPropertyReferenceUsage(
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            } else {
+                $codebase = $statements_analyzer->getCodebase();
+
+                if ($stmt->expr instanceof ArrayDimFetch) {
+                    self::makeReferencedArrayNonNull($statements_analyzer, $stmt->expr, $context, true);
+                }
+
+                // binding the reference needs to be able to write the property
+                foreach ($property_ids as $property_id) {
+                    if ($codebase->properties->getStorage($property_id)->hasAsymmetricVisibility()) {
+                        ClassLikeAnalyzer::checkPropertyVisibility(
+                            $property_id,
+                            $context,
+                            $statements_analyzer,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
+                            $statements_analyzer->getSuppressedIssues(),
+                            true,
+                            true,
+                        );
+                    }
+                }
+
+                // what is written through the reference is written to the property
+                if (!$referenced_type->hasMixed()) {
+                    $context->byref_constraints[$lhs_var_id] = new ReferenceConstraint(
+                        $referenced_type,
+                        false,
+                        [$rhs_var_id],
+                    );
+                }
+
+                // binding creates the item as null when it is not set (the reference's type only gets null above,
+                // for an item known to be possibly unset, as a read of the item does)
+                if ($stmt->expr instanceof ArrayDimFetch
+                    && ($rhs_possibly_undefined
+                        || (!$rhs_was_set && !self::isOffsetSet($statements_analyzer, $stmt->expr)))
+                ) {
+                    if (!$referenced_type->isNullable() && !$referenced_type->hasMixed()) {
+                        IssueBuffer::maybeAdd(
+                            new PossiblyInvalidPropertyAssignmentValue(
+                                'Binding a reference to ' . $rhs_var_id . ' creates it as null when it is not set,'
+                                    . ' but it is declared as ' . $referenced_type->getId(),
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $property_ids[0] ?? $rhs_var_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
+                }
+            }
+        } elseif (isset($context->byref_constraints[$rhs_var_id])) {
+            // bound to what the other variable is bound to
+            $context->byref_constraints[$lhs_var_id] = $context->byref_constraints[$rhs_var_id];
         }
 
         $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
@@ -1582,6 +1677,319 @@ final class AssignmentAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * The declared type of the property, or of the item of an array a property holds, that $expr fetches: what a
+     * reference to it may hold. Null when such a reference can't be analyzed (a readonly, hooked, undeclared or magic
+     * property, properties of different types of the possible objects, an item of something else than an array).
+     *
+     * @param list<string> $property_ids
+     * @param-out list<string> $property_ids
+     */
+    private static function getReferencedPropertyType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $expr,
+        Context $context,
+        array &$property_ids,
+    ): ?Union {
+        $codebase = $statements_analyzer->getCodebase();
+
+        if ($expr instanceof ArrayDimFetch) {
+            $array_type = self::getReferencedPropertyType($statements_analyzer, $expr->var, $context, $property_ids);
+
+            if ($array_type === null) {
+                return null;
+            }
+
+            $key_type = $expr->dim ? $statements_analyzer->node_data->getType($expr->dim) : null;
+            $key = null;
+
+            if ($key_type?->isSingleIntLiteral()) {
+                $key = $key_type->getSingleIntLiteral()->value;
+            } elseif ($key_type?->isSingleStringLiteral()) {
+                $key = $key_type->getSingleStringLiteral()->value;
+            }
+
+            $item_types = [];
+
+            foreach ($array_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TMixed) {
+                    return Type::getMixed();
+                }
+
+                if ($atomic_type instanceof TNull) {
+                    // binding the reference turns null into an array
+                    continue;
+                }
+
+                if ($atomic_type instanceof TKeyedArray) {
+                    $item_types[] = $key !== null && isset($atomic_type->properties[$key])
+                        ? $atomic_type->properties[$key]->setPossiblyUndefined(false)
+                        : $atomic_type->getGenericValueType();
+                } elseif ($atomic_type instanceof TArray) {
+                    $item_types[] = $atomic_type->type_params[1];
+                } else {
+                    return null;
+                }
+            }
+
+            return $item_types ? Type::combineUnionTypeArray($item_types, $codebase) : null;
+        }
+
+        if ($expr instanceof PropertyFetch) {
+            $object_type = $statements_analyzer->node_data->getType($expr->var);
+
+            if (!$expr->name instanceof PhpParser\Node\Identifier || $object_type === null) {
+                return null;
+            }
+
+            $property_name = $expr->name->name;
+            $property_type = null;
+
+            foreach ($object_type->getAtomicTypes() as $atomic_type) {
+                if (!$atomic_type instanceof TNamedObject
+                    || !$codebase->classlike_storage_provider->has($atomic_type->value)
+                ) {
+                    return null;
+                }
+
+                $receiver = $atomic_type instanceof TGenericObject ? $atomic_type : null;
+                $template_types = $codebase->classlike_storage_provider->get($atomic_type->value)->template_types;
+
+                // an object of a templated class without its type arguments has their bounds, but `$this` has the
+                // templates themselves
+                if ($receiver === null
+                    && $template_types !== null
+                    && $template_types !== []
+                    && !($expr->var instanceof PhpParser\Node\Expr\Variable && $expr->var->name === 'this')
+                ) {
+                    $receiver = new TGenericObject(
+                        $atomic_type->value,
+                        array_values(array_map(
+                            static fn(array $bounds): Union => reset($bounds),
+                            $template_types,
+                        )),
+                    );
+                }
+
+                $object_property_type = self::getReferencedDeclaredPropertyType(
+                    $codebase,
+                    $atomic_type->value,
+                    $property_name,
+                    $receiver,
+                    $property_ids,
+                );
+
+                // a write must fit the property of every possible object
+                if ($object_property_type === null
+                    || ($property_type !== null && $object_property_type->getId() !== $property_type->getId())
+                ) {
+                    return null;
+                }
+
+                $property_type = $object_property_type;
+            }
+
+            return $property_type;
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            && $expr->name instanceof PhpParser\Node\VarLikeIdentifier
+        ) {
+            $static_property_id = ExpressionIdentifier::getVarId(
+                $expr,
+                $context->self ?? $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($static_property_id === null) {
+                return null;
+            }
+
+            $fq_class_name = substr($static_property_id, 0, (int) strpos($static_property_id, '::$'));
+
+            // `static::$p` is declared for the class the code is in
+            if (strtolower($fq_class_name) === 'static') {
+                $fq_class_name = $context->self ?? $statements_analyzer->getFQCLN();
+            }
+
+            if ($fq_class_name === null || !$codebase->classlike_storage_provider->has($fq_class_name)) {
+                return null;
+            }
+
+            return self::getReferencedDeclaredPropertyType(
+                $codebase,
+                $fq_class_name,
+                $expr->name->name,
+                null,
+                $property_ids,
+            );
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<string> $property_ids
+     * @param-out list<string> $property_ids
+     */
+    private static function getReferencedDeclaredPropertyType(
+        Codebase $codebase,
+        string $fq_class_name,
+        string $property_name,
+        ?TGenericObject $receiver,
+        array &$property_ids,
+    ): ?Union {
+        $declaring_class = $codebase->properties->getDeclaringClassForProperty(
+            $fq_class_name . '::$' . $property_name,
+            true,
+        );
+
+        if ($declaring_class === null) {
+            return null;
+        }
+
+        $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_class);
+        $property_storage = $declaring_class_storage->properties[$property_name] ?? null;
+
+        // a hook doesn't give a reference to the property
+        if ($property_storage === null
+            || $property_storage->readonly
+            || $property_storage->hook_get !== null
+            || $property_storage->hook_set !== null
+        ) {
+            return null;
+        }
+
+        $property_ids[] = $declaring_class . '::$' . $property_name;
+
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+        $property_type = InstancePropertyAssignmentAnalyzer::getExpandedPropertyType(
+            $codebase,
+            $fq_class_name,
+            $property_name,
+            $class_storage,
+        );
+
+        if ($property_type === null) {
+            return Type::getMixed();
+        }
+
+        return $receiver !== null
+            ? AtomicPropertyFetchAnalyzer::localizePropertyType(
+                $codebase,
+                $property_type,
+                $receiver,
+                $class_storage,
+                $declaring_class_storage,
+            )
+            : $property_type;
+    }
+
+    /**
+     * Whether the type of the array $expr fetches an item of says the item is set
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isOffsetSet(StatementsAnalyzer $statements_analyzer, ArrayDimFetch $expr): bool
+    {
+        $array_type = $statements_analyzer->node_data->getType($expr->var);
+        $key_type = $expr->dim ? $statements_analyzer->node_data->getType($expr->dim) : null;
+
+        if ($array_type === null || $key_type === null) {
+            return false;
+        }
+
+        if ($key_type->isSingleIntLiteral()) {
+            $key = $key_type->getSingleIntLiteral()->value;
+        } elseif ($key_type->isSingleStringLiteral()) {
+            $key = $key_type->getSingleStringLiteral()->value;
+        } else {
+            return false;
+        }
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TKeyedArray
+                || !isset($atomic_type->properties[$key])
+                || $atomic_type->properties[$key]->possibly_undefined
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * PHP turns the null a local variable or a property holds into an array when an offset of it is bound by
+     * reference. What is written through the reference can't be followed, so the item itself is left as it is.
+     *
+     * @param bool $property_root whether the root is a property a reference can be bound to (not a magic, readonly or
+     *                            hooked one), checked once the binding is analysed; a local variable otherwise
+     */
+    private static function makeReferencedArrayNonNull(
+        StatementsAnalyzer $statements_analyzer,
+        ArrayDimFetch $stmt,
+        Context $context,
+        bool $property_root = false,
+    ): void {
+        $root = $stmt->var;
+
+        while ($root instanceof ArrayDimFetch) {
+            $root = $root->var;
+        }
+
+        if (!$property_root && $root instanceof PhpParser\Node\Expr\Variable) {
+            if (!is_string($root->name) || $root->name === 'this') {
+                return;
+            }
+
+            $root_id = '$' . $root->name;
+            $root_type = $context->vars_in_scope[$root_id] ?? null;
+        } elseif ($property_root
+            && ($root instanceof PropertyFetch || $root instanceof PhpParser\Node\Expr\StaticPropertyFetch)
+        ) {
+            $root_id = ExpressionIdentifier::getExtendedVarId(
+                $root,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($root_id === null) {
+                return;
+            }
+
+            $root_type = $context->vars_in_scope[$root_id] ?? $statements_analyzer->node_data->getType($root);
+        } else {
+            return;
+        }
+
+        if ($root_type === null || !$root_type->isNullable()) {
+            return;
+        }
+
+        foreach ($root_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TArray
+                && !$atomic_type instanceof TKeyedArray
+                && !$atomic_type instanceof TNull
+            ) {
+                return;
+            }
+        }
+
+        $array_type = $root_type->getBuilder();
+        $array_type->removeType('null');
+
+        if ($array_type->isUnionEmpty()) {
+            $array_type->addType(new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]));
+        }
+
+        $array_type = $array_type->freeze();
+
+        $context->vars_in_scope[$root_id] = $array_type;
+        $context->removeVarFromConflictingClauses($root_id, $array_type, $statements_analyzer);
     }
 
     public static function assignByRefParam(

@@ -11,6 +11,9 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function sort;
+use function str_ends_with;
+
 use const DIRECTORY_SEPARATOR;
 
 final class ConditionalTest extends TestCase
@@ -144,6 +147,45 @@ final class ConditionalTest extends TestCase
 
                     echo $value;
                 }'),
+        );
+    }
+
+    public function testRepeatedNullsafeFetchIdenticalToABoolLiteralIsStillRedundant(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            final class Item {
+                public bool $flag = true;
+            }
+
+            function andRepeat(?Item $item): string {
+                if ($item?->flag === true && $item?->flag === true) {
+                    return "y";
+                }
+
+                return "n";
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+
+        $redundant_conditions = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'RedundantCondition' && str_ends_with($issue->message, 'has already been asserted')) {
+                $redundant_conditions[] = $issue->line_from . ': ' . $issue->message;
+            }
+        }
+
+        sort($redundant_conditions);
+
+        self::assertSame(
+            [
+                '7: $item is not null has already been asserted',
+                '7: $item->flag has already been asserted',
+            ],
+            $redundant_conditions,
         );
     }
 
@@ -1000,6 +1042,124 @@ final class ConditionalTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.2',
+            ],
+            'nullsafeFetchIdenticalToABoolLiteralAssertsTheReceiverOnce' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Item {
+                        public bool $flag = true;
+                        public ?bool $maybe = null;
+                        public function isFlag(): bool { return $this->flag; }
+                    }
+
+                    function ternary(?Item $item): string {
+                        return $item?->flag === true ? 'y' : 'n';
+                    }
+
+                    function ifStatement(?Item $item): string {
+                        if ($item?->flag === true) {
+                            /** @psalm-check-type-exact $item = Item */
+                            return 'y';
+                        }
+
+                        /** @psalm-check-type-exact $item = Item|null */
+                        return 'n';
+                    }
+
+                    function reversed(?Item $item): string {
+                        if (true === $item?->flag) {
+                            return $item->isFlag() ? 'y' : 'n';
+                        }
+
+                        return 'n';
+                    }
+
+                    function nullableProperty(?Item $item): string {
+                        if ($item?->maybe === true) {
+                            return $item->isFlag() ? 'y' : 'n';
+                        }
+
+                        return 'n';
+                    }
+
+                    function looselyEqual(?Item $item): string {
+                        if ($item?->flag == true) {
+                            return $item->isFlag() ? 'y' : 'n';
+                        }
+
+                        return 'n';
+                    }
+
+                    function negated(?Item $item): string {
+                        if ($item?->flag !== true) {
+                            /** @psalm-check-type-exact $item = Item|null */
+                            return 'n';
+                        }
+
+                        return 'y';
+                    }
+
+                    function method(?Item $item): string {
+                        if ($item?->isFlag() === true) {
+                            return $item->isFlag() ? 'y' : 'n';
+                        }
+
+                        return 'n';
+                    }
+
+                    function conjunction(?Item $item, bool $other): string {
+                        if ($other && $item?->flag === true) {
+                            return $item->isFlag() ? 'y' : 'n';
+                        }
+
+                        return 'n';
+                    }
+
+                    function disjunction(?Item $item, bool $other): string {
+                        if ($other || $item?->flag === true) {
+                            return 'y';
+                        }
+
+                        return 'n';
+                    }
+
+                    function loop(?Item $item): void {
+                        while ($item?->flag === true) {
+                            $item = null;
+                        }
+                    }
+
+                    function literal(?Item $item): string {
+                        if ($item?->maybe === false) {
+                            return $item->isFlag() ? 'y' : 'n';
+                        }
+
+                        return 'n';
+                    }
+
+                    function elseifOther(?Item $item, bool $b): string {
+                        if ($item?->flag === true) {
+                            return 'a';
+                        } elseif ($b) {
+                            return 'b';
+                        }
+
+                        return 'n';
+                    }
+
+                    function elseifSame(?Item $item): string {
+                        if ($item?->maybe === false) {
+                            return 'a';
+                        } elseif ($item?->flag === true) {
+                            return 'b';
+                        }
+
+                        return 'n';
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'negatedInstanceofRemovesTheClassFromTheBoundOfATemplateParam' => [
                 'code' => '<?php
@@ -4645,7 +4805,7 @@ final class ConditionalTest extends TestCase
                     }
                     ',
             ],
-            'SKIPPED-ctypeDigitNarrowsIntToARange' => [
+            'SKIPPED-ctypeDigitNarrowsIntToARange' => [ // #13913
                 'code' => '<?php
                     $int = rand(-1000, 1000);
 
@@ -4654,7 +4814,7 @@ final class ConditionalTest extends TestCase
                     }
                     ',
                 'assertions' => [
-                    '$int' => 'int<48, 57>|int<256, 1000>',
+                    '$int' => 'int<48, 1000>',
                 ],
             ],
             'ctypeLowerMakesStringLowercase' => [
@@ -4737,7 +4897,7 @@ final class ConditionalTest extends TestCase
                     }
                     PHP,
             ],
-            'SKIPPED-ctypeLowerNarrowsIntToARange' => [
+            'SKIPPED-ctypeLowerNarrowsIntToARange' => [ // #13913
                 'code' => '<?php
                     $int = rand(-1000, 1000);
 

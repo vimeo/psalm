@@ -797,6 +797,7 @@ final class PreloaderList {
         \Psalm\Internal\Codebase\TaintFlowGraph::class,
         \Psalm\Internal\Codebase\TaintFlowResolution::class,
         \Psalm\Internal\Codebase\TaintStore::class,
+        \Psalm\Internal\Codebase\UnshippedCode::class,
         \Psalm\Internal\Codebase\VariableUseGraph::class,
         \Psalm\Internal\Composer::class,
         \Psalm\Internal\DataFlow\DataFlowNode::class,

@@ -43,9 +43,7 @@ use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
-use function array_fill_keys;
 use function array_intersect_key;
-use function array_keys;
 use function array_merge;
 use function count;
 use function in_array;
@@ -145,67 +143,13 @@ final class SwitchCaseAnalyzer
                 && is_string($switch_condition->name)
                 && isset($context->vars_in_scope['$' . $switch_condition->name])
             ) {
-                $switch_var_type = $context->vars_in_scope['$' . $switch_condition->name];
+                $dependent_type_condition = self::getDependentTypeCondition(
+                    $context->vars_in_scope['$' . $switch_condition->name],
+                    $stmt->cond->getAttributes(),
+                );
 
-                $type_statements = [];
-
-                foreach ($switch_var_type->getAtomicTypes() as $type) {
-                    if ($type instanceof TDependentGetClass) {
-                        $type_statements[] = new VirtualFuncCall(
-                            new VirtualName(['get_class']),
-                            [
-                                new VirtualArg(
-                                    new VirtualVariable(
-                                        substr($type->typeof, 1),
-                                        $stmt->cond->getAttributes(),
-                                    ),
-                                    false,
-                                    false,
-                                    $stmt->cond->getAttributes(),
-                                ),
-                            ],
-                            $stmt->cond->getAttributes(),
-                        );
-                    } elseif ($type instanceof TDependentGetType) {
-                        $type_statements[] = new VirtualFuncCall(
-                            new VirtualName(['gettype']),
-                            [
-                                new VirtualArg(
-                                    new VirtualVariable(
-                                        substr($type->typeof, 1),
-                                        $stmt->cond->getAttributes(),
-                                    ),
-                                    false,
-                                    false,
-                                    $stmt->cond->getAttributes(),
-                                ),
-                            ],
-                            $stmt->cond->getAttributes(),
-                        );
-                    } elseif ($type instanceof TDependentGetDebugType) {
-                        $type_statements[] = new VirtualFuncCall(
-                            new VirtualName(['get_debug_type']),
-                            [
-                                new VirtualArg(
-                                    new VirtualVariable(
-                                        substr($type->typeof, 1),
-                                        $stmt->cond->getAttributes(),
-                                    ),
-                                    false,
-                                    false,
-                                    $stmt->cond->getAttributes(),
-                                ),
-                            ],
-                            $stmt->cond->getAttributes(),
-                        );
-                    } else {
-                        $type_statements = null;
-                        break;
-                    }
-                }
-
-                if ($type_statements && count($type_statements) === 1) {
-                    $switch_condition = $type_statements[0];
+                if ($dependent_type_condition) {
+                    $switch_condition = $dependent_type_condition;
 
                     if ($fake_switch_condition) {
                         $statements_analyzer->node_data->setType(
@@ -488,6 +432,7 @@ final class SwitchCaseAnalyzer
                 $statements_analyzer,
                 $switch_var_id,
                 $case,
+                $case_stmts,
                 $context,
                 $case_context,
                 $original_context,
@@ -523,12 +468,15 @@ final class SwitchCaseAnalyzer
                 }
             }
 
+            if ($ends_unless_breaking) {
+                $switch_scope->new_vars_possibly_in_scope = [
+                    ...array_diff_key($case_scope->vars_possibly_in_scope_at_breaks, $context->vars_possibly_in_scope),
+                    ...$switch_scope->new_vars_possibly_in_scope,
+                ];
+            }
+
             if ($ends_unless_breaking && $switch_scope->new_vars_in_scope === null) {
                 $switch_scope->new_vars_in_scope = array_diff_key($case_scope->break_vars, $context->vars_in_scope);
-                $switch_scope->new_vars_possibly_in_scope = array_fill_keys(
-                    array_keys(array_diff_key($case_scope->break_vars, $context->vars_possibly_in_scope)),
-                    true,
-                );
             } elseif ($switch_scope->new_vars_in_scope !== null) {
                 foreach ($switch_scope->new_vars_in_scope as $var_id => $type) {
                     if (isset($case_scope->break_vars[$var_id])) {
@@ -574,6 +522,44 @@ final class SwitchCaseAnalyzer
     }
 
     /**
+     * The `get_class($x)`, `gettype($x)` or `get_debug_type($x)` call a switch over a value of that single dependent
+     * type compares its cases with
+     *
+     * @param array<string, mixed> $attributes
+     */
+    private static function getDependentTypeCondition(Type\Union $switch_var_type, array $attributes): ?VirtualFuncCall
+    {
+        $type_statements = [];
+
+        foreach ($switch_var_type->getAtomicTypes() as $type) {
+            if ($type instanceof TDependentGetClass) {
+                $function_name = 'get_class';
+            } elseif ($type instanceof TDependentGetType) {
+                $function_name = 'gettype';
+            } elseif ($type instanceof TDependentGetDebugType) {
+                $function_name = 'get_debug_type';
+            } else {
+                return null;
+            }
+
+            $type_statements[] = new VirtualFuncCall(
+                new VirtualName([$function_name]),
+                [
+                    new VirtualArg(
+                        new VirtualVariable(substr($type->typeof, 1), $attributes),
+                        false,
+                        false,
+                        $attributes,
+                    ),
+                ],
+                $attributes,
+            );
+        }
+
+        return count($type_statements) === 1 ? $type_statements[0] : null;
+    }
+
+    /**
      * @return null|false
      */
     /**
@@ -603,16 +589,26 @@ final class SwitchCaseAnalyzer
         return $case_equality_expr;
     }
 
+    /**
+     * @param array<PhpParser\Node\Stmt> $case_stmts
+     */
     private static function handleNonReturningCase(
         StatementsAnalyzer $statements_analyzer,
         ?string $switch_var_id,
         PhpParser\Node\Stmt\Case_ $case,
+        array $case_stmts,
         Context $context,
         Context $case_context,
         Context $original_context,
         string $case_exit_type,
         SwitchScope $switch_scope,
     ): ?bool {
+        $context->mergeConstraintsOfReferencesReboundIn(
+            $case_context,
+            $case_stmts,
+            $statements_analyzer->getCodebase(),
+        );
+
         if (!$case->cond
             && $switch_var_id
             && isset($case_context->vars_in_scope[$switch_var_id])
