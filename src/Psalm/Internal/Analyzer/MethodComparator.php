@@ -1522,12 +1522,17 @@ final class MethodComparator
             $guide_method_storage_return_type = Type::getNull();
         }
 
+        $guide_in_implementer_result = new TypeComparisonResult();
+
         if ($inherits_return_type
-            && (UnionTypeComparator::isContainedBy(
+            && ((UnionTypeComparator::isContainedBy(
                 $codebase,
                 $guide_method_storage_return_type,
                 $implementer_method_storage_return_type,
-            ) || Type::intersectUnionTypes(
+                false,
+                false,
+                $guide_in_implementer_result,
+            ) && !$guide_in_implementer_result->to_string_cast) || Type::intersectUnionTypes(
                 $implementer_method_storage_return_type,
                 $guide_method_storage_return_type,
                 $codebase,

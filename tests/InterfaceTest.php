@@ -2653,6 +2653,24 @@ final class InterfaceTest extends TestCase
                     }',
                 'error_message' => 'The inherited return type \'int\' for I::check is different to the implemented return type for C::check \'bool',
             ],
+            'nativeReturnTypeOnlyCastToInheritedDocblock' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return Stringable */
+                        public function render();
+                    }
+
+                    class C implements I
+                    {
+                        public function render(): string
+                        {
+                            return "x";
+                        }
+                    }',
+                'error_message' => 'The inherited return type \'Stringable\' for I::render is different to the implemented return type for C::render \'string',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'traitNativeReturnTypeDisjointFromInheritedDocblock' => [
                 'code' => '<?php
                     interface I {
