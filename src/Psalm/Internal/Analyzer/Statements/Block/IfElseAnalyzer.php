@@ -396,6 +396,8 @@ final class IfElseAnalyzer
             return false;
         }
 
+        $statements_analyzer->node_data->setImplicitElseImpossible($stmt, $if_scope->implicit_else_is_impossible);
+
         if (count($if_scope->if_actions) && !in_array(ScopeAnalyzer::ACTION_NONE, $if_scope->if_actions, true)
             && !$stmt->elseifs
         ) {

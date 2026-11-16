@@ -481,6 +481,19 @@ final class ForTest extends TestCase
                     '$i===' => 'int<0, max>',
                 ],
             ],
+            'forVarAssignedBeforeContinueAndAtTheEndOfTheBody' => [
+                'code' => '<?php
+                    for ($i = 0; $i < 10; $i++) {
+                        if (rand(0, 1)) {
+                            $z = 1;
+                            continue;
+                        }
+                        $z = 2;
+                    }',
+                'assertions' => [
+                    '$z===' => '1|2',
+                ],
+            ],
         ];
     }
 
@@ -593,6 +606,35 @@ final class ForTest extends TestCase
 
                     echo $i * $j;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'forPossiblyNotEnteredVarAssignedBeforeContinue' => [
+                'code' => '<?php
+                    function f(int $n): int {
+                        for ($i = 0; $i < $n; $i++) {
+                            if (rand(0, 1)) {
+                                $z = 1;
+                                continue;
+                            }
+                            $z = 2;
+                        }
+
+                        return $z;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'forVarNotAssignedBeforeContinue' => [
+                'code' => '<?php
+                    function f(): int {
+                        for ($i = 0; $i < 10; $i++) {
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $z = 2;
+                        }
+
+                        return $z;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }

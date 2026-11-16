@@ -162,7 +162,11 @@ final class ExpressionIdentifier
         ?string $this_class_name,
         ?FileSource $source = null,
     ): ?string {
-        if ($stmt instanceof PhpParser\Node\Expr\Assign) {
+        // the value of `++$a` and `--$a` is the value `$a` has afterwards
+        if ($stmt instanceof PhpParser\Node\Expr\Assign
+            || $stmt instanceof PhpParser\Node\Expr\PreInc
+            || $stmt instanceof PhpParser\Node\Expr\PreDec
+        ) {
             return self::getExtendedVarId($stmt->var, $this_class_name, $source);
         }
 

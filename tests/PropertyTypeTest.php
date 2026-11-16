@@ -92,7 +92,7 @@ final class PropertyTypeTest extends TestCase
 
     public function testForgetPropertyAssignmentsInBranch(): void
     {
-        $this->markTestSkipped('Never actually worked, todo fix');
+        $this->markTestSkipped('Never actually worked: https://github.com/vimeo/psalm/issues/13923');
         /*Config::getInstance()->remember_property_assignments_after_call = false;
 
         $this->addFile(
@@ -2757,7 +2757,7 @@ final class PropertyTypeTest extends TestCase
                         public function bar() : int;
                     }',
             ],
-            'SKIPPED-abstractConstructorWithInstanceofClass' => [
+            'abstractConstructorWithInstanceofClass' => [
                 'code' => '<?php
                     abstract class A {
                         /** @var int */
@@ -4059,7 +4059,9 @@ final class PropertyTypeTest extends TestCase
                         public string $combinedCode {
                             get => sprintf("%s_%s", $this->languageCode, $this->countryCode);
                             set (string $value) {
-                                [$this->languageCode, $this->countryCode] = explode("_", $value, 2);
+                                $parts = explode("_", $value, 2);
+                                $this->languageCode = $parts[0];
+                                $this->countryCode = $parts[1] ?? "";
                             }
                         }
 
