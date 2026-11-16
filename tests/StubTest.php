@@ -2574,7 +2574,7 @@ final class StubTest extends DeferredAnalyzerTestCase
         );
 
         $this->addStubFile(
-            (string) getcwd() . '/vendor/stub_inherited_templates.phpstub',
+            'stub_inherited_templates.phpstub',
             '<?php
                 namespace StubInheritedTemplates;
 
@@ -2745,7 +2745,7 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
 
         $this->addStubFile(
-            (string) getcwd() . '/vendor/session_handler_method_template.phpstub',
+            'session_handler_method_template.phpstub',
             '<?php
                 interface SessionHandlerInterface
                 {
@@ -2791,7 +2791,7 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
 
         $this->addStubFile(
-            (string) getcwd() . '/vendor/array_access_method_template.phpstub',
+            'array_access_method_template.phpstub',
             '<?php
                 /**
                  * @template TKey
