@@ -1345,8 +1345,36 @@ final class AssignmentAnalyzer
             || $stmt->var instanceof PropertyFetch
             || $stmt->var instanceof PhpParser\Node\Expr\StaticPropertyFetch
             || $stmt->var instanceof ArrayDimFetch;
+        $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+        $context->inside_by_ref_offset = $stmt->expr instanceof ArrayDimFetch;
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context, false, null, null, null, true);
+        $context->inside_by_ref_offset = $was_inside_by_ref_offset;
         $context->inside_general_use = $was_inside_general_use;
+
+        if ($stmt->expr instanceof ArrayDimFetch
+            && ($item_type = $statements_analyzer->node_data->getType($stmt->expr)) !== null
+            && self::isArrayChainOfVariable($statements_analyzer, $stmt->expr)
+        ) {
+            // PHP creates the offset bound, and a null array holding it, as an assignment to the offset would
+            $node_data = $statements_analyzer->node_data;
+            $operands = ArrayAssignmentAnalyzer::getOperands($stmt->expr);
+            $node_data->markEvaluated($operands);
+
+            try {
+                ArrayAssignmentAnalyzer::analyze(
+                    $statements_analyzer,
+                    $stmt->expr,
+                    $context,
+                    null,
+                    $item_type->setByRef(false),
+                    true,
+                );
+            } finally {
+                $node_data->unmarkEvaluated($operands);
+            }
+
+            $node_data->setType($stmt->expr, $item_type);
+        }
 
         $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
@@ -1582,6 +1610,40 @@ final class AssignmentAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * Whether the offset is fetched from a local variable through arrays or nulls only: what is fetched from
+     * anything else is not written by binding a reference to it, or is already reported
+     */
+    private static function isArrayChainOfVariable(
+        StatementsAnalyzer $statements_analyzer,
+        ArrayDimFetch $stmt,
+    ): bool {
+        $node = $stmt;
+
+        while ($node instanceof ArrayDimFetch) {
+            $container_type = $statements_analyzer->node_data->getType($node->var);
+
+            if ($container_type === null) {
+                return false;
+            }
+
+            foreach ($container_type->getAtomicTypes() as $atomic_type) {
+                if (!$atomic_type instanceof TArray
+                    && !$atomic_type instanceof TKeyedArray
+                    && !$atomic_type instanceof TNull
+                ) {
+                    return false;
+                }
+            }
+
+            $node = $node->var;
+        }
+
+        return $node instanceof PhpParser\Node\Expr\Variable
+            && is_string($node->name)
+            && $node->name !== 'this';
     }
 
     public static function assignByRefParam(

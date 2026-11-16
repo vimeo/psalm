@@ -1135,6 +1135,122 @@ final class ReferenceTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['PossiblyUndefinedArrayOffset', 'MixedArrayAccess', 'PossiblyNullArrayAccess'],
             ],
+            'referenceToOffsetOfPossiblyNullArrayCreatesTheArray' => [
+                'code' => '<?php
+                    function f(?array $a): array {
+                        $r = &$a["k"];
+                        $r = 1;
+                        return $a;
+                    }',
+            ],
+            'referenceToOffsetOfPossiblyNullArrayInATree' => [
+                'code' => '<?php
+                    /** @param array<string, array<string, int>|null> $tree */
+                    function f(array $tree, string $a, string $b): void {
+                        $elem = &$tree[$a];
+                        $leaf = &$elem[$b];
+                        $leaf = 1;
+                    }',
+            ],
+            'referenceToOffsetOfPossiblyNullTypedArray' => [
+                'code' => '<?php
+                    /** @return array<string, int>|null */
+                    function get(): ?array {
+                        return rand(0, 1) ? ["a" => 1] : null;
+                    }
+
+                    $a = get();
+                    $r = &$a["k"];',
+                'assertions' => [
+                    '$a===' => 'array{k: int|null, ...<string, int>}',
+                ],
+            ],
+            'referenceToOffsetOfNullCreatesTheArray' => [
+                'code' => '<?php
+                    $a = null;
+                    $r = &$a["k"];',
+                'assertions' => [
+                    '$a===' => 'array{k: null}',
+                ],
+            ],
+            'referenceToOffsetOfEmptyArrayCreatesIt' => [
+                'code' => '<?php
+                    $a = [];
+                    $r = &$a["k"];',
+                'assertions' => [
+                    '$a===' => 'array{k: null}',
+                ],
+            ],
+            'referenceToMissingKeyOfShapeCreatesIt' => [
+                'code' => '<?php
+                    $a = ["x" => 1];
+                    $r = &$a["y"];',
+                'assertions' => [
+                    '$a===' => 'array{x: 1, y: null}',
+                ],
+            ],
+            'referenceToOptionalKeyMakesItDefined' => [
+                'code' => '<?php
+                    /** @return array{x?: int} */
+                    function get(): array {
+                        return rand(0, 1) ? ["x" => 1] : [];
+                    }
+
+                    $a = get();
+                    $r = &$a["x"];',
+                'assertions' => [
+                    '$a===' => 'array{x: int|null}',
+                ],
+            ],
+            'referenceToNestedOffsetOfPossiblyNullItem' => [
+                'code' => '<?php
+                    /** @return array{k?: array{l: int}|null} */
+                    function get(): array {
+                        return [];
+                    }
+
+                    $a = get();
+                    $r = &$a["k"]["l"];',
+                'assertions' => [
+                    '$a===' => 'array{k: array{l: int|null}}',
+                ],
+            ],
+            'referenceToDefinedKeyKeepsTheShape' => [
+                'code' => '<?php
+                    $a = ["x" => 1];
+                    $r = &$a["x"];',
+                'assertions' => [
+                    '$a===' => 'array{x: 1}',
+                ],
+            ],
+            'referenceToListItemKeepsTheList' => [
+                'code' => '<?php
+                    /** @return list<int> */
+                    function get(): array {
+                        return [];
+                    }
+
+                    $l = get();
+                    $r = &$l[0];',
+                'assertions' => [
+                    '$l===' => 'non-empty-list<int>',
+                ],
+            ],
+            'referenceToOffsetOfPossiblyNullArrayInABranch' => [
+                'code' => '<?php
+                    /** @return array<string, int>|null */
+                    function get(): ?array {
+                        return null;
+                    }
+
+                    $a = get();
+                    if (rand(0, 1)) {
+                        $r = &$a["k"];
+                    }',
+                'assertions' => [
+                    '$a===' => 'array<string, int|null>|null',
+                ],
+            ],
         ];
     }
 
@@ -1649,6 +1765,63 @@ final class ReferenceTest extends TestCase
                     static fn(IssueData $issue): bool => $issue->type === 'NullArrayAccess',
                 ),
             )),
+        );
+    }
+
+    public function testIssueInTheKeyOfAnOffsetBoundByReferenceIsReportedOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param array<string, int> $a */
+                function f(array $a): void {
+                    $n = null;
+                    $r = &$a[$n["x"]];
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [[5, 30]],
+            array_values(array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->column_from],
+                array_filter(
+                    IssueBuffer::getIssuesDataForFile($file_path),
+                    static fn(IssueData $issue): bool => $issue->type === 'NullArrayAccess',
+                ),
+            )),
+        );
+    }
+
+    public function testReferenceToOffsetOfScalarIsReportedOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function f(int $i, string $s): void {
+                    $r = &$i["k"];
+                    $q = &$s["k"];
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                [3, 'InvalidArrayAccess'],
+                [4, 'InvalidArrayOffset'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->type],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
         );
     }
 }
