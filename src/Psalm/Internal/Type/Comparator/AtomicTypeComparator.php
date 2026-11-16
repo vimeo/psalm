@@ -1197,8 +1197,8 @@ final class AtomicTypeComparator
         }
 
         // e.g. callable and string can both be a callable-string
-        $type1_parts = AtomicParts::split($type1_part, $codebase);
-        $type2_parts = $type1_parts === null ? AtomicParts::split($type2_part, $codebase) : null;
+        $type1_parts = AtomicParts::split($type1_part, $type2_part, $codebase);
+        $type2_parts = $type1_parts === null ? AtomicParts::split($type2_part, $type1_part, $codebase) : null;
 
         if ($type1_parts === null && $type2_parts === null) {
             return false;

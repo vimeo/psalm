@@ -1940,7 +1940,7 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TObject) {
                 $iterable_types[] = new TNamedObject('Traversable');
                 $redundant = false;
-            } elseif (($parts = AtomicParts::split($type, $codebase)) !== null) {
+            } elseif (($parts = AtomicParts::split($type, new TIterable(), $codebase)) !== null) {
                 // e.g. the iterable callables are the callable-arrays and the Traversable objects
                 $parts_failed_reconciliation = Reconciler::RECONCILIATION_OK;
                 $iterable_parts = self::reconcileIterable(
@@ -2939,7 +2939,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 $redundant = false;
 
                 $callable_types[] = $type;
-            } elseif (($parts = AtomicParts::split($type, $codebase)) !== null) {
+            } elseif (($parts = AtomicParts::split($type, new TCallable(), $codebase)) !== null) {
                 // e.g. the callable scalars are the callable-strings
                 $parts_failed_reconciliation = Reconciler::RECONCILIATION_OK;
                 $callable_parts = self::reconcileCallable(

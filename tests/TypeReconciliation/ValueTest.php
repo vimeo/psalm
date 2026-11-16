@@ -1112,6 +1112,29 @@ final class ValueTest extends TestCase
                     '$a===' => '5',
                 ],
             ],
+            'iterableMayBeAList' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param iterable<T|null> $value
+                     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
+                     */
+                    function allNotNull(iterable $value): iterable {
+                        throw new RuntimeException();
+                    }
+
+                    /** @return iterable<int|null> */
+                    function g(): iterable {
+                        return [1, 2];
+                    }
+
+                    $x = allNotNull(g());
+                    PHP,
+                'assertions' => [
+                    '$x===' => 'iterable<array-key|mixed, int>|list<int>',
+                ],
+            ],
             'callableIdenticalToStringIsCallableString' => [
                 'code' => <<<'PHP'
                     <?php

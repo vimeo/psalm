@@ -33,14 +33,17 @@ use Psalm\Type\Atomic\TString;
 final class AtomicParts
 {
     /**
-     * @return non-empty-list<Atomic>|null null for a type that is not made of several kinds
+     * The parts of a type to intersect with another type
+     *
+     * @return non-empty-list<Atomic>|null null for a type that is not made of several kinds, or for an iterable and
+     *     a class, whose Traversable half the comparators already find
      */
-    public static function split(Atomic $type, Codebase $codebase): ?array
+    public static function split(Atomic $type, Atomic $other, Codebase $codebase): ?array
     {
         $from_docblock = $type->from_docblock;
 
         if ($type instanceof TIterable) {
-            return self::splitIterable($type, $codebase);
+            return $other instanceof TNamedObject ? null : self::splitIterable($type, $codebase);
         }
 
         return match ($type::class) {

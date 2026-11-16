@@ -1006,8 +1006,8 @@ abstract class Type
             return [$intersection_atomic];
         }
 
-        $type_1_parts = AtomicParts::split($type_1_atomic, $codebase);
-        $type_2_parts = $type_1_parts === null ? AtomicParts::split($type_2_atomic, $codebase) : null;
+        $type_1_parts = AtomicParts::split($type_1_atomic, $type_2_atomic, $codebase);
+        $type_2_parts = $type_1_parts === null ? AtomicParts::split($type_2_atomic, $type_1_atomic, $codebase) : null;
 
         if ($type_1_parts === null && $type_2_parts === null) {
             return [];
