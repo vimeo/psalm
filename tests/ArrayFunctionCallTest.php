@@ -1583,19 +1583,6 @@ final class ArrayFunctionCallTest extends TestCase
                     '$b' => 'int',
                 ],
             ],
-            'SKIPPED-arrayPopNonEmptyAfterMixedArrayAddition' => [
-                'code' => '<?php
-                    /** @var array */
-                    $a = ["a" => 5, "b" => 6, "c" => 7];
-                    $a[] = "hello";
-                    $b = array_pop($a);',
-                'assertions' => [
-                    '$b' => 'mixed|string',
-                ],
-                'ignored_issues' => [
-                    'MixedAssignment',
-                ],
-            ],
             'uasort' => [
                 'code' => '<?php
                     function foo (int $a, int $b): int {
@@ -3047,6 +3034,16 @@ final class ArrayFunctionCallTest extends TestCase
                     '$d' => 'list<int>',
                 ],
             ],
+            'arraySpliceStringKeyedRefWithoutReplacementCanBeLeftEmpty' => [
+                'code' => '<?php
+                    /** @var non-empty-array<string, int> $d */
+                    $d = ["a" => 1];
+                    $o = 0;
+                    array_splice($d, $o, 1);',
+                'assertions' => [
+                    '$d===' => 'array<string, int>',
+                ],
+            ],
             'arraySpliceEmptyRefWithoutReplacement' => [
                 'code' => '<?php
                     $a = array( "hello" );
@@ -3327,7 +3324,7 @@ final class ArrayFunctionCallTest extends TestCase
                         return array_map("intval", $strings);
                     }',
             ],
-            'SKIPPED-arrayMapZip' => [
+            'SKIPPED-arrayMapZip' => [ // #13932
                 'code' => '<?php
                     /**
                      * @return array<int, array{string,?string}>

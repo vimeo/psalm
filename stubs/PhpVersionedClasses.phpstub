@@ -200,7 +200,8 @@ namespace {
     /**
      * TPurity is what running the fiber's callback may do: starting or resuming the fiber runs it
      * until it suspends or returns, so it costs what the callback costs and nothing else. Like the
-     * position of a generator, where a fiber is suspended is engine state, not an effect.
+     * position of a generator, where a fiber is suspended is engine state, not an effect: what its
+     * getters return is forgotten when it is started or resumed.
      *
      * @psalm-purity-template TPurity(impure)
      *

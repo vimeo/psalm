@@ -302,7 +302,11 @@ final class OrAnalyzer
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
 
         $context->phantom_classes = array_merge($context->phantom_classes, $right_context->phantom_classes);
-        $context->removeClausesOfVarsChangedIn($right_context);
+
+        // what a right side that never returns changes is never seen after the expression
+        if (!$right_context->has_returned) {
+            $context->removeClausesOfVarsChangedIn($right_context);
+        }
 
         $right_referenced_var_ids = $right_context->cond_referenced_var_ids;
         $right_context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $right_referenced_var_ids);

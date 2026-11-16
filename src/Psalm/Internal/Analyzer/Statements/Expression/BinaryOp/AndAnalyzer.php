@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
+use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -16,7 +17,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Node\Stmt\VirtualExpression;
 use Psalm\Node\Stmt\VirtualIf;
-use Psalm\Type;
 use Psalm\Type\Reconciler;
 
 use function array_diff;
@@ -185,14 +185,17 @@ final class AndAnalyzer
             ...GuardedClasses::unknownWhenResult($stmt->left, true, $codebase),
         ];
 
-        $partitioned_clauses = Context::removeReconciledClauses(
+        $partitioned_clauses = AlgebraAnalyzer::removeReconciledClausesOfOneVariable(
             [...$left_context->clauses, ...$left_clauses],
             $changed_var_ids,
+            $right_context->vars_in_scope,
+            $statements_analyzer,
         );
 
         $right_context->clauses = $partitioned_clauses[0];
 
         $pre_right_assigned_var_ids = $right_context->assigned_var_ids;
+        $pre_right_remove_vars = $right_context->parent_remove_vars;
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $right_context) === false) {
             return false;
@@ -209,7 +212,11 @@ final class AndAnalyzer
 
         $context->intersectNullArrayOffsets($right_context);
         $context->removeClausesOfVarsChangedIn($left_context);
-        $context->removeClausesOfVarsChangedIn($right_context);
+
+        // what a right side that never returns changes is never seen after the expression
+        if (!$right_context->has_returned) {
+            $context->removeClausesOfVarsChangedIn($right_context);
+        }
 
         $context->cond_referenced_var_ids = array_merge(
             $right_context->cond_referenced_var_ids,
@@ -274,7 +281,12 @@ final class AndAnalyzer
                 static fn(Clause $c) => $c->hash,
                 [
                     ...$partitioned_clauses[1],
-                    ...Context::removeReconciledClauses($simplified_clauses, $changed_var_ids)[1],
+                    ...AlgebraAnalyzer::removeReconciledClausesOfOneVariable(
+                        $simplified_clauses,
+                        $changed_var_ids,
+                        $right_context->vars_in_scope,
+                        $statements_analyzer,
+                    )[1],
                 ],
             );
 
@@ -327,17 +339,7 @@ final class AndAnalyzer
             $context->vars_in_scope = $left_context->vars_in_scope;
 
             // the right operand is skipped when the left one is false
-            foreach ($right_context->assigned_var_ids as $var_id => $assigned_offset) {
-                if ((!isset($left_context->assigned_var_ids[$var_id])
-                        || $left_context->assigned_var_ids[$var_id] !== $assigned_offset)
-                    && isset($context->vars_in_scope[$var_id], $right_context->vars_in_scope[$var_id])
-                ) {
-                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                        $context->vars_in_scope[$var_id],
-                        $right_context->vars_in_scope[$var_id],
-                    );
-                }
-            }
+            $context->mergeChangesOfPossiblySkippedBranch($right_context, $pre_right_remove_vars, $codebase);
         }
 
         return true;

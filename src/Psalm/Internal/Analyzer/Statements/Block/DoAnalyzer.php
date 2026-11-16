@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\LoopScope;
+use Psalm\IssueBuffer;
 use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
@@ -150,13 +151,18 @@ final class DoAnalyzer
         }
 
         $cond_type = $statements_analyzer->node_data->getType($stmt->cond);
+        $is_only_left_by_break = $cond_type && $cond_type->isAlwaysTruthy();
 
         LoopAnalyzer::setLoopVars(
             $inner_loop_context,
             $context,
             $loop_scope,
-            is_only_left_by_break: $cond_type && $cond_type->isAlwaysTruthy(),
+            is_only_left_by_break: $is_only_left_by_break,
         );
+
+        if (!$is_only_left_by_break) {
+            LoopAnalyzer::addVarsWrittenByTheExitingCondition($context, $loop_scope);
+        }
 
         // the body of a do-while runs once, unless it leaves the loop
         if (!in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
@@ -209,7 +215,13 @@ final class DoAnalyzer
 
         $do_context->loop_scope = $loop_scope;
 
+        // only the types after the body are wanted here: the loop analysis reports what is wrong in it
+        IssueBuffer::startRecording();
+
         $statements_analyzer->analyze($stmt->stmts, $do_context);
+
+        IssueBuffer::clearRecordingLevel();
+        IssueBuffer::stopRecording();
 
         if (!isset($suppressed_issues['RedundantCondition'])) {
             $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
