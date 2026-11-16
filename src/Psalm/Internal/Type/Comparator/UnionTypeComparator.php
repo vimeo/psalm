@@ -17,6 +17,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
@@ -24,9 +25,12 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -863,6 +867,17 @@ final class UnionTypeComparator
     ): array {
         $atomic_types = [];
         foreach ($union_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateKeyOf || $atomic_type instanceof TTemplateValueOf) {
+                $bound = $atomic_type instanceof TTemplateKeyOf
+                    ? TKeyOf::getArrayKeyType($atomic_type->as)
+                    : TValueOf::getValueType($atomic_type->as, $codebase);
+
+                if ($bound !== null) {
+                    array_push($atomic_types, ...self::getTypeParts($codebase, $bound));
+                    continue;
+                }
+            }
+
             if (!$atomic_type instanceof TTypeAlias && !$atomic_type instanceof TClassConstant) {
                 $atomic_types[] = $atomic_type;
                 continue;
