@@ -213,7 +213,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
             ? $lhs_var_id . '->' . strtolower($stmt->name->name) . '()'
             : null;
 
-        // the call returns what it returned before, even if it may change what it returns next
+        // a memoized call returns what the same call returned before, even if it may change what it returns next
         $memoized_type = $method_var_id !== null ? $context->vars_in_scope[$method_var_id] ?? null : null;
 
         $possible_new_class_types = [];
