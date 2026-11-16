@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -12,6 +15,33 @@ final class ReferenceConstraintTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testReferenceToPropertyForgottenAfterCallHoldsItsDeclaredType(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullableReturnStatement');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class A {
+                    public ?int $n = null;
+                }
+
+                function writeAnything(): void {}
+
+                function f(A $a): int {
+                    $a->n = 5;
+                    $n = &$a->n;
+                    writeAnything();
+                    return $n;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 
     /**
      * @psalm-pure
@@ -356,6 +386,112 @@ final class ReferenceConstraintTest extends TestCase
                     '$parent' => 'App\\A',
                 ],
             ],
+            'referenceToPropertyAcceptsItsDeclaredType' => [
+                'code' => '<?php
+                    final class A {
+                        public int $i = 0;
+                        public ?int $n = 0;
+                        /** @var array{a: int} */
+                        public array $shape = ["a" => 1];
+                        /** @var array<string, int|null> */
+                        public array $map = [];
+                        public $untyped;
+                        public static int $s = 0;
+                    }
+
+                    $a = new A();
+                    $i = &$a->i;
+                    $i = 5;
+                    $n = &$a->n;
+                    $n = null;
+                    $shape_item = &$a->shape["a"];
+                    $shape_item = 2;
+                    $map_item = &$a->map["x"];
+                    $map_item = 3;
+                    $untyped = &$a->untyped;
+                    $untyped = "anything";
+                    $s = &A::$s;
+                    $s = 6;',
+                'assertions' => [
+                    '$i===' => '5',
+                    '$shape_item===' => '2',
+                ],
+                'ignored_issues' => ['MissingPropertyType'],
+            ],
+            'referenceToPropertyReboundIsNoLongerConstrained' => [
+                'code' => '<?php
+                    final class A {
+                        public int $i = 0;
+                    }
+
+                    function rebind(A $a): void {
+                        $x = &$a->i;
+                        $x = 1;
+                        $local = "";
+                        $x = &$local;
+                        $x = "a";
+                    }
+
+                    function unsetReference(A $a): void {
+                        $x = &$a->i;
+                        $x = 1;
+                        unset($x);
+                        $x = "a";
+                        echo $x;
+                    }',
+            ],
+            'variablePassedByReferenceReboundIsNoLongerConstrained' => [
+                'code' => '<?php
+                    function setInt(int &$i): void {
+                        $i = 1;
+                    }
+
+                    function rebind(): void {
+                        $x = 0;
+                        setInt($x);
+                        $local = "";
+                        $x = &$local;
+                        $x = "a";
+                        echo $x;
+                    }',
+            ],
+            'staticVariableKeepsItsConstraint' => [
+                'code' => '<?php
+                    function counter(): int {
+                        /** @var int */
+                        static $count = 0;
+                        $count++;
+                        return $count;
+                    }',
+            ],
+            'referenceToPropertyHoldsItsDeclaredTypeAfterACallWritesIt' => [
+                'code' => '<?php
+                    final class A {
+                        public ?int $n = null;
+                        public static ?int $s = null;
+
+                        public function resetN(): void {
+                            $this->n = null;
+                        }
+
+                        public static function resetS(): void {
+                            self::$s = null;
+                        }
+                    }
+
+                    $a = new A();
+                    $a->n = 5;
+                    $n = &$a->n;
+                    $a->resetN();
+
+                    A::$s = 5;
+                    $s = &A::$s;
+                    A::resetS();',
+                'assertions' => [
+                    '$n' => 'int|null',
+                    '$s' => 'int|null',
+                ],
+            ],
         ];
     }
 
@@ -468,7 +604,7 @@ final class ReferenceConstraintTest extends TestCase
                     }',
                 'error_message' => 'InvalidPassByReference',
             ],
-            'SKIPPED-referenceToTypedArrayConstrainsAssignment' => [ // #13919
+            'referenceToTypedArrayConstrainsAssignment' => [
                 'code' => '<?php
                     class Foo
                     {
@@ -485,7 +621,7 @@ final class ReferenceConstraintTest extends TestCase
                 ',
                 'error_message' => 'ReferenceConstraintViolation',
             ],
-            'SKIPPED-referenceToTypedArrayConstrainsAssignmentWithNullReferenceInitialization' => [ // #13919
+            'referenceToTypedArrayConstrainsAssignmentWithNullReferenceInitialization' => [
                 'code' => '<?php
                     class Foo
                     {
@@ -499,6 +635,57 @@ final class ReferenceConstraintTest extends TestCase
                     }
                 ',
                 'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+            ],
+            'referenceToPropertyConstrainsAssignment' => [
+                'code' => '<?php
+                    final class A {
+                        public int $i = 0;
+                    }
+
+                    function f(A $a): void {
+                        $x = &$a->i;
+                        $x = "";
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
+            'referenceToStaticPropertyConstrainsAssignment' => [
+                'code' => '<?php
+                    final class A {
+                        public static int $i = 0;
+
+                        public static function f(): void {
+                            $x = &static::$i;
+                            $x = "";
+                        }
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
+            'referenceToShapeItemConstrainsAssignment' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var array{a: int, b: string} */
+                        public array $shape = ["a" => 1, "b" => ""];
+                    }
+
+                    function f(A $a): void {
+                        $x = &$a->shape["a"];
+                        $x = "";
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
+            'referenceToPossiblyUnsetPropertyItemMayBeNull' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var array<string, int> */
+                        public array $map = [];
+                    }
+
+                    /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
+                    function f(A $a): int {
+                        $x = &$a->map["k"];
+                        return $x;
+                    }',
+                'error_message' => 'NullableReturnStatement',
             ],
         ];
     }

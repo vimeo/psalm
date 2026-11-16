@@ -8,7 +8,7 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
-final class UnsupportedPropertyReferenceUsage extends TestCase
+final class UnsupportedPropertyReferenceUsageTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
@@ -23,8 +23,13 @@ final class UnsupportedPropertyReferenceUsage extends TestCase
             'can be suppressed' => [
                 'code' => <<<'PHP'
                     <?php
-                    class A {
-                        public int $b = 0;
+                    /**
+                     * @property int $b
+                     */
+                    final class A {
+                        public function __get(string $name): int {
+                            return 0;
+                        }
                     }
                     $a = new A();
                     /** @psalm-suppress UnsupportedPropertyReferenceUsage */
@@ -41,26 +46,35 @@ final class UnsupportedPropertyReferenceUsage extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'instance property' => [
+            'magic property' => [
                 'code' => <<<'PHP'
                     <?php
-                    class A {
-                        public int $b = 0;
+                    /**
+                     * @property int $b
+                     */
+                    final class A {
+                        public function __get(string $name): int {
+                            return 0;
+                        }
                     }
                     $a = new A();
-                    $b = &$a->b;
-                    $b = ''; // Fatal error
+                    $b = &$a->b; // Notice: Indirect modification of overloaded property
                     PHP,
                 'error_message' => 'UnsupportedPropertyReferenceUsage',
             ],
-            'static property' => [
+            'item of an ArrayAccess property' => [
                 'code' => <<<'PHP'
                     <?php
-                    class A {
-                        public static int $b = 0;
+                    final class A {
+                        /** @var ArrayObject<int, int> */
+                        public ArrayObject $b;
+
+                        public function __construct() {
+                            $this->b = new ArrayObject();
+                        }
                     }
-                    $b = &A::$b;
-                    $b = ''; // Fatal error
+                    $a = new A();
+                    $b = &$a->b[0];
                     PHP,
                 'error_message' => 'UnsupportedPropertyReferenceUsage',
             ],

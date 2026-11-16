@@ -21,6 +21,7 @@ use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type;
 use Psalm\Type\Atomic\DependentType;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TNull;
@@ -1438,7 +1439,7 @@ final class Context
                 );
             }
 
-            $this->remove($var_id);
+            $this->forgetPropertyBoundByReference($var_id, true);
             $this->removeVarFromConflictingClauses($var_id);
             $this->possibly_assigned_var_ids[$var_id] = true;
 
@@ -1573,7 +1574,7 @@ final class Context
         }
 
         foreach ($vars_to_remove as $var_id) {
-            $this->remove($var_id, false);
+            $this->forgetPropertyBoundByReference($var_id, false);
             // forgotten, not unset: Context::update() tells the two apart
             $this->vars_possibly_in_scope[$var_id] = true;
             $this->parent_remove_vars[$var_id] = ++self::$clause_removal_count;
@@ -1602,6 +1603,24 @@ final class Context
         }
 
         $this->clauses = $clauses_to_keep;
+    }
+
+    /**
+     * Forgets a property (or an item of it) a call may have written: the variables bound to it by reference may now
+     * hold whatever it is declared to hold
+     */
+    private function forgetPropertyBoundByReference(string $var_id, bool $remove_descendents): void
+    {
+        $reference_ids = array_keys($this->references_in_scope, $var_id, true);
+
+        $this->remove($var_id, $remove_descendents);
+
+        foreach ($reference_ids as $reference_id) {
+            if (isset($this->vars_in_scope[$reference_id])) {
+                $this->vars_in_scope[$reference_id] = ($this->byref_constraints[$reference_id]->type
+                    ?? Type::getMixed())->setParentNodes($this->vars_in_scope[$reference_id]->parent_nodes);
+            }
+        }
     }
 
     /**
