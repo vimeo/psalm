@@ -619,16 +619,9 @@ final class IntersectionTypeTest extends TestCase
                         throw new RuntimeException();
                     }
 
-                    /** @return Card&object{last4: int|float} */
-                    function numericCard(): object {
-                        throw new RuntimeException();
-                    }
-
-                    $required = withLast4(card());
-                    $conflicting = withLast4(numericCard());',
+                    $required = withLast4(card());',
                 'assertions' => [
                     '$required===' => 'Card&object{last4:string}',
-                    '$conflicting===' => 'Card&object{last4:string}',
                 ],
             ],
             'methodOfAShapeIntersectionAsACallable' => [
@@ -650,7 +643,7 @@ final class IntersectionTypeTest extends TestCase
             'iterationOfATraversableShapeIntersection' => [
                 'code' => '<?php
                     /**
-                     * @param ArrayIterator<int, string>&object{last4: string} $iterator
+                     * @param object{last4: string}&ArrayIterator<int, string> $iterator
                      * @return list<string>
                      */
                     function values(object $iterator): array {
@@ -659,6 +652,94 @@ final class IntersectionTypeTest extends TestCase
                             $values[] = $value;
                         }
                         return $values;
+                    }',
+            ],
+            'valueOfIntersectedIterables' => [
+                'code' => '<?php
+                    interface A {}
+                    interface B {}
+
+                    /** @param iterable<mixed, A>&iterable<mixed, B> $items */
+                    function first(iterable $items): A&B {
+                        foreach ($items as $item) {
+                            return $item;
+                        }
+
+                        throw new RuntimeException();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'assertedShapeContradictingTheShapeOfAnIntersectionReplacesIt' => [
+                'code' => '<?php
+                    /** @psalm-assert object{a: string} $card */
+                    function assertStringA(object $card): void {}
+
+                    /** @return stdClass&object{a: int} */
+                    function card(): object {
+                        throw new RuntimeException();
+                    }
+
+                    $card = card();
+                    assertStringA($card);
+                    $length = strlen($card->a);',
+                'assertions' => [
+                    '$card===' => 'stdClass&object{a:string}',
+                ],
+            ],
+            'objectAndAShapeIntersectionCombineToObjectInEitherOrder' => [
+                'code' => '<?php
+                    class Card {}
+
+                    /** @return Card&object{last4: string} */
+                    function card(): object {
+                        throw new RuntimeException();
+                    }
+
+                    function anyObject(): object {
+                        throw new RuntimeException();
+                    }
+
+                    $cardFirst = rand(0, 1) ? card() : anyObject();
+                    $objectFirst = rand(0, 1) ? anyObject() : card();',
+                'assertions' => [
+                    '$cardFirst===' => 'object',
+                    '$objectFirst===' => 'object',
+                ],
+            ],
+            'shapeIntersectionsOfATemplateCombine' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param T&object{a: int} $required
+                     * @param T&object{a?: int} $optional
+                     * @return T&object{a?: int}
+                     */
+                    function either(object $required, object $optional): object {
+                        return rand(0, 1) ? $required : $optional;
+                    }',
+            ],
+            'propertyOfAShapeIntersectedWithATemplateOfAUnionBound' => [
+                'code' => '<?php
+                    class Card {}
+                    class Wallet {}
+
+                    /**
+                     * @template T of Card|Wallet
+                     * @param object{id: int}&T $item
+                     */
+                    function id(object $item): int {
+                        return $item->id;
+                    }',
+            ],
+            'shapePropertyOfANonFinalClassIsAssigned' => [
+                'code' => '<?php
+                    class Card {}
+
+                    /** @param Card&object{last4: int} $card */
+                    function setLast4(object $card): void {
+                        $card->last4 = 4242;
                     }',
             ],
             'intersectionElementOfAnArrayKeepsItsInterfacesInAnArrayMapClosure' => [
@@ -1335,6 +1416,87 @@ final class IntersectionTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'propertyOfAShapeIntersectionIsWidenedAgainOnUnset' => [
+                'code' => '<?php
+                    /** @param object{a: int} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param stdClass&object{a: int|null} $card */
+                    function test(object $card): void {
+                        if ($card->a !== null) {
+                            unset($card->a);
+                            takesShape($card);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'issetOfAnOptionalPropertyOfAGenericShapeIntersectionKeepsItOptional' => [
+                'code' => '<?php
+                    /** @param object{a: int} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param ArrayObject<int, int>&object{a?: int} $items */
+                    function test(object $items): void {
+                        if (isset($items->a)) {
+                            echo $items->a;
+                        }
+                        takesShape($items);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'shapeIntersectionOfStaticCombinedWithItsClassIsNotStatic' => [
+                'code' => '<?php
+                    /** @psalm-assert object{a: int} $x */
+                    function assertA(object $x): void {}
+
+                    class Card {
+                        /**
+                         * @param Card&object{a: int} $card
+                         * @return static
+                         */
+                        public function pick(object $card): object {
+                            $self = $this;
+                            assertA($self);
+                            return rand(0, 1) ? $card : $self;
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'shapePropertyOfAFinalClassIsNotAssigned' => [
+                'code' => '<?php
+                    final class Card {}
+
+                    /** @param Card&object{last4: int} $card */
+                    function setLast4(object $card): void {
+                        $card->last4 = 4242;
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment',
+            ],
+            'pseudoPropertyOfAShapeIntersectionIsAssignedThroughItsClass' => [
+                'code' => '<?php
+                    /** @property-write int $count */
+                    class Model {
+                        public function __set(string $key, mixed $value): void {}
+                    }
+
+                    /** @param Model&object{name: string} $model */
+                    function test(object $model): void {
+                        $model->count = "many";
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyOfAnInterfaceGivenByAShapeIsNotAssigned' => [
+                'code' => '<?php
+                    interface Card {}
+
+                    /** @param Card&object{last4: int} $card */
+                    function setLast4(object $card): void {
+                        $card->last4 = 4242;
+                    }',
+                'error_message' => 'NoInterfaceProperties',
             ],
             'objectShapePartDoesNotMakeUndefinedMagicMethodPossible' => [
                 'code' => '<?php

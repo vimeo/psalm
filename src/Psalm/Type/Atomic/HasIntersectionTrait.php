@@ -64,7 +64,8 @@ trait HasIntersectionTrait
     {
         $existing_type = $this->extra_types[$type->getKey()] ?? null;
 
-        // every shape has the key `object`: a shape added to another merges with it
+        // every shape has the key `object`: a shape added to another merges with it, and its property types win
+        // where neither is narrower, as an assertion does
         if ($existing_type instanceof TObjectWithProperties && $type instanceof TObjectWithProperties) {
             $type = ObjectShapeIntersection::mergeShapes($existing_type, $type);
         }

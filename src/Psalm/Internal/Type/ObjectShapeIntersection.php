@@ -188,7 +188,8 @@ final class ObjectShapeIntersection
     /**
      * A property both shapes declare gets one of the two types, either of which is true of an object of both
      * shapes: the narrower one where the atomic types of one are among those of the other (`int` of `int|string`),
-     * else the type of the first shape, as computing the actual intersection of the types takes a codebase
+     * else the type of the second shape, as an assertion replaces the type it contradicts (computing the actual
+     * intersection of the types takes a codebase)
      *
      * @psalm-pure
      */
@@ -206,7 +207,7 @@ final class ObjectShapeIntersection
 
             $existing_type = $properties[$name];
 
-            if (array_diff_key($type->getAtomicTypes(), $existing_type->getAtomicTypes()) !== []) {
+            if (array_diff_key($existing_type->getAtomicTypes(), $type->getAtomicTypes()) === []) {
                 $type = $existing_type;
             }
 

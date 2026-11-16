@@ -264,6 +264,20 @@ final class TypeCombinationTest extends TestCase
                     'object{a: string, b: int}&Iterator&Countable',
                 ],
             ],
+            'objectShapesOfTheSameGenericIntersectionAreMerged' => [
+                'ArrayObject<int, int>&object{a?:int}',
+                [
+                    'ArrayObject<int, int>&object{a: int}',
+                    'ArrayObject<int, int>&object{a?: int}',
+                ],
+            ],
+            'objectShapeOfAGenericIntersectionIsNotSpreadToAnotherClass' => [
+                'ArrayIterator<int, int>|ArrayObject<int, int>&object{a:int}',
+                [
+                    'ArrayObject<int, int>&object{a: int}',
+                    'ArrayIterator<int, int>',
+                ],
+            ],
             'objectAbsorbsObjectShapes' => [
                 'object',
                 [
