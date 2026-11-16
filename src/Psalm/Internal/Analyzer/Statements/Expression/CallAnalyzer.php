@@ -340,6 +340,7 @@ abstract class CallAnalyzer
             $args,
             $context,
             $code_location,
+            $documenting_method_id,
         );
 
         $fq_class_name = $method_id->fq_class_name;
@@ -354,25 +355,10 @@ abstract class CallAnalyzer
         if (isset($class_storage->declaring_method_ids[$method_name])) {
             $declaring_method_id = $class_storage->declaring_method_ids[$method_name];
 
-            $declaring_fq_class_name = $declaring_method_id->fq_class_name;
-
-            if ($declaring_fq_class_name !== $fq_class_name) {
-                $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_fq_class_name);
-            } else {
-                $declaring_class_storage = $class_storage;
-            }
-
             $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
-            // the class using a trait holds the docblock its method inherits
-            $documenting_class_storage = $declaring_class_storage->is_trait ? $class_storage : $declaring_class_storage;
-
-            if ($declaring_class_storage->user_defined
-                && !$method_storage->has_docblock_param_types
-                && isset($documenting_class_storage->documenting_method_ids[$method_name])
-            ) {
-                $documenting_method_id = $documenting_class_storage->documenting_method_ids[$method_name];
-
+            // params typed by another method's docblock refer to its templates
+            if ($documenting_method_id !== null) {
                 $documenting_method_storage = $codebase->methods->getStorage($documenting_method_id);
 
                 if ($documenting_method_storage->template_types) {

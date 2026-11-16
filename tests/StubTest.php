@@ -2543,4 +2543,300 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->assertFalse($stub_defined->user_defined);
         $this->assertTrue($stub_defined->stubbed);
     }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, string}>
+     */
+    public static function providerStubbedClassInheritingMethodTemplates(): iterable
+    {
+        yield 'emptyStub' => ['(new EmptyStub())->wrap([1])', 'array<int, 1>'];
+        yield 'staticMethod' => ['StaticStub::wrap([1])', 'array<int, 1>'];
+        yield 'abstractParentClass' => ['(new ParentClassStub())->wrap([1])', 'array<int, 1>'];
+        yield 'classOnlyInStub' => ['(new StubOnly())->wrap([1])', 'array<int, 1>'];
+        yield 'methodRedeclaredWithItsOwnTemplates' => ['(new OwnTemplatesStub())->wrap([1])', 'list<1>'];
+        yield 'traitMethod' => ['(new TraitStub())->wrap([1])', 'array<int, 1>'];
+    }
+
+    #[DataProvider('providerStubbedClassInheritingMethodTemplates')]
+    public function testMethodOfAStubbedClassBindsTheTemplatesOfTheDocblockItInherits(string $call, string $type): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm errorLevel="1">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $this->addStubFile(
+            (string) getcwd() . '/vendor/stub_inherited_templates.phpstub',
+            '<?php
+                namespace StubInheritedTemplates;
+
+                class EmptyStub implements Wrapper {}
+
+                class StaticStub implements StaticWrapper {}
+
+                class ParentClassStub extends AbstractWrapper {}
+
+                class StubOnly implements Wrapper
+                {
+                    public function wrap(array $items): array {}
+                }
+
+                class OwnTemplatesStub implements Wrapper
+                {
+                    /**
+                     * @template U
+                     * @param list<U> $items
+                     * @return list<U>
+                     */
+                    public function wrap(array $items): array {}
+                }
+
+                class TraitStub implements Wrapper {}',
+        );
+
+        // a stub extending a class of a real file rescans that file, which loses the docblocks other stubs give
+        // its classes
+        $this->addFile(
+            (string) getcwd() . '/vendor/stub_inherited_templates_parent.php',
+            '<?php
+                namespace StubInheritedTemplates;
+
+                abstract class AbstractWrapper
+                {
+                    /**
+                     * @template T
+                     * @param list<T> $items
+                     * @return array<int, T>
+                     */
+                    abstract public function wrap(array $items): array;
+                }
+
+                class ParentClassStub extends AbstractWrapper
+                {
+                    public function wrap(array $items): array
+                    {
+                        return $items;
+                    }
+                }',
+        );
+
+        // stubs only override classes declared outside the project directories
+        $this->addFile(
+            (string) getcwd() . '/vendor/stub_inherited_templates.php',
+            '<?php
+                namespace StubInheritedTemplates;
+
+                interface Wrapper
+                {
+                    /**
+                     * @template T
+                     * @param list<T> $items
+                     * @return array<int, T>
+                     */
+                    public function wrap(array $items): array;
+                }
+
+                interface StaticWrapper
+                {
+                    /**
+                     * @template T
+                     * @param list<T> $items
+                     * @return array<int, T>
+                     */
+                    public static function wrap(array $items): array;
+                }
+
+                trait WrapTrait
+                {
+                    public function wrap(array $items): array
+                    {
+                        return $items;
+                    }
+                }
+
+                class EmptyStub implements Wrapper
+                {
+                    public function wrap(array $items): array
+                    {
+                        return $items;
+                    }
+                }
+
+                class StaticStub implements StaticWrapper
+                {
+                    public static function wrap(array $items): array
+                    {
+                        return $items;
+                    }
+                }
+
+                class OwnTemplatesStub implements Wrapper
+                {
+                    public function wrap(array $items): array
+                    {
+                        return $items;
+                    }
+                }
+
+                class TraitStub implements Wrapper
+                {
+                    use WrapTrait;
+                }',
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace StubInheritedTemplates;
+
+                $result = ' . $call . ';',
+        );
+
+        $context = new Context();
+        $this->analyzeFile($file_path, $context);
+        $this->assertContextVars(['$result===' => $type], $context);
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, string, string}>
+     */
+    public static function providerStubbedBuiltinClassInheritingMethodTemplates(): iterable
+    {
+        yield 'methodWithoutDocblock' => [
+            'public function read($id) {}',
+            '(new SessionHandler())->read("abc")',
+            'false|string',
+        ];
+        // the params come from the callmap, the return type from the documenting method
+        yield 'firstClassCallableOfACallMapMethod' => [
+            'public function close(): bool {}',
+            '(new SessionHandler())->read(...)',
+            'Closure[impure](string):(false|string)',
+        ];
+    }
+
+    #[DataProvider('providerStubbedBuiltinClassInheritingMethodTemplates')]
+    public function testStubbedBuiltinClassBindsTheTemplatesOfTheDocblockItsMethodInherits(
+        string $class_body,
+        string $call,
+        string $type,
+    ): void {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm errorLevel="1">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $this->addStubFile(
+            (string) getcwd() . '/vendor/session_handler_method_template.phpstub',
+            '<?php
+                interface SessionHandlerInterface
+                {
+                    /**
+                     * @template T of string
+                     * @param T $id
+                     * @return T|false
+                     */
+                    public function read($id);
+                }
+
+                class SessionHandler implements SessionHandlerInterface
+                {
+                    ' . $class_body . '
+                }',
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                $result = ' . $call . ';',
+        );
+
+        $context = new Context();
+        $this->analyzeFile($file_path, $context);
+        $this->assertContextVars(['$result===' => $type], $context);
+    }
+
+    public function testBuiltinMethodWithCallMapParamsKeepsItsStorageUnderATemplatedStubDocblock(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm errorLevel="1">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $this->addStubFile(
+            (string) getcwd() . '/vendor/array_access_method_template.phpstub',
+            '<?php
+                /**
+                 * @template TKey
+                 * @template TValue
+                 */
+                interface ArrayAccess
+                {
+                    /**
+                     * @template TOffset of string
+                     * @param TOffset $offset
+                     * @return bool
+                     * @no-named-arguments
+                     */
+                    public function offsetExists($offset);
+
+                    /**
+                     * @param TKey $offset
+                     * @return TValue|null
+                     */
+                    public function offsetGet($offset);
+
+                    /**
+                     * @param TKey|null $offset
+                     * @param TValue $value
+                     */
+                    public function offsetSet($offset, $value): void;
+
+                    /**
+                     * @param TKey $offset
+                     */
+                    public function offsetUnset($offset): void;
+                }',
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                function f(Phar $p): bool {
+                    return $p->offsetExists(localName: "x");
+                }',
+        );
+
+        // the callmap gives the params of Phar::offsetExists(), so the call takes none of the templates or the
+        // @no-named-arguments of the stubbed docblock
+        $this->analyzeFile($file_path, new Context());
+    }
 }

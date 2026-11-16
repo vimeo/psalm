@@ -276,6 +276,8 @@ final class Methods
 
     /**
      * @param  list<PhpParser\Node\Arg> $args
+     * @param-out ?MethodIdentifier $documenting_method_id the method documenting the whole signature (see Populator),
+     *     whose templates a call binds
      * @return list<FunctionLikeParameter>
      */
     public function getMethodParams(
@@ -284,12 +286,16 @@ final class Methods
         ?array $args = null,
         ?Context $context = null,
         ?CodeLocation $code_location = null,
+        ?MethodIdentifier &$documenting_method_id = null,
     ): array {
+        $documenting_method_id = null;
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
 
+        $provider_params = null;
+
         if ($this->params_provider->has($fq_class_name)) {
-            $method_params = $this->params_provider->getMethodParams(
+            $provider_params = $this->params_provider->getMethodParams(
                 $fq_class_name,
                 $method_name,
                 $args,
@@ -298,8 +304,11 @@ final class Methods
                 $code_location,
             );
 
-            if ($method_params !== null) {
-                return $method_params;
+            // a provider may describe a class Psalm has no storage for
+            if ($provider_params !== null
+                && !$this->classlike_storage_provider->has($this->classlikes->getUnAliasedName($fq_class_name))
+            ) {
+                return $provider_params;
             }
         }
 
@@ -307,79 +316,101 @@ final class Methods
 
         $callmap_id = $declaring_method_id ?? $method_id;
 
+        $is_from_callmap = false;
+
         // functions
         if (InternalCallMapHandler::inCallMap((string) $callmap_id)) {
-            $class_storage = $this->classlike_storage_provider->get($callmap_id->fq_class_name);
+            $callmap_class_storage = $this->classlike_storage_provider->get($callmap_id->fq_class_name);
 
             $declaring_method_name = $declaring_method_id->method_name ?? $method_name;
 
-            if (!$class_storage->stubbed || empty($class_storage->methods[$declaring_method_name]->stubbed)) {
-                $function_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $callmap_id);
-
-                if ($function_callables === null) {
-                    throw new UnexpectedValueException(
-                        'Not expecting $function_callables to be null for ' . $callmap_id,
-                    );
-                }
-
-                if (!$source || $args === null || count($function_callables) === 1) {
-                    assert($function_callables[0]->params !== null);
-
-                    return $function_callables[0]->params;
-                }
-
-                if ($context && $source instanceof StatementsAnalyzer) {
-                    $was_inside_call = $context->inside_call;
-
-                    $context->inside_call = true;
-
-                    foreach ($args as $arg) {
-                        ExpressionAnalyzer::analyze(
-                            $source,
-                            $arg->value,
-                            $context,
-                        );
-                    }
-
-                    $context->inside_call = $was_inside_call;
-                }
-
-                $matching_callable = InternalCallMapHandler::getMatchingCallableFromCallMapOptions(
-                    $source->getCodebase(),
-                    $function_callables,
-                    $args,
-                    $source->getNodeTypeProvider(),
-                    (string) $callmap_id,
-                );
-
-                assert($matching_callable->params !== null);
-
-                return $matching_callable->params;
-            }
+            $is_from_callmap = !$callmap_class_storage->stubbed
+                || empty($callmap_class_storage->methods[$declaring_method_name]->stubbed);
         }
 
-        if ($declaring_method_id) {
-            $storage = $this->getStorage($declaring_method_id, true);
+        $storage = null;
+        $appearing_method_id = null;
+        $class_storage = null;
 
-            $params = $storage->params;
+        if ($declaring_method_id && !$is_from_callmap) {
+            $storage = $this->getStorage($declaring_method_id, true);
 
             // a trait method appears in the class using it, which holds the docblock it inherits
             $appearing_method_id = $this->classlike_storage_provider->get($declaring_method_id->fq_class_name)->is_trait
                 ? $this->getAppearingMethodId($method_id)
                 : $this->getAppearingMethodId($declaring_method_id);
 
-            if (!$appearing_method_id) {
+            if ($appearing_method_id) {
+                $class_storage = $this->classlike_storage_provider->get($appearing_method_id->fq_class_name);
+
+                // the method that documents the whole signature of the others, as the Populator chose it
+                $documenting_method_id = !$storage->has_docblock_param_types
+                    ? $class_storage->documenting_method_ids[$appearing_method_id->method_name] ?? null
+                    : null;
+            }
+        }
+
+        // the provider's params may keep the documenting method's templates
+        if ($provider_params !== null) {
+            return $provider_params;
+        }
+
+        if ($is_from_callmap) {
+            $function_callables = InternalCallMapHandler::getCallablesFromCallMap((string) $callmap_id);
+
+            if ($function_callables === null) {
+                throw new UnexpectedValueException(
+                    'Not expecting $function_callables to be null for ' . $callmap_id,
+                );
+            }
+
+            if (!$source || $args === null || count($function_callables) === 1) {
+                assert($function_callables[0]->params !== null);
+
+                return $function_callables[0]->params;
+            }
+
+            if ($context && $source instanceof StatementsAnalyzer) {
+                $was_inside_call = $context->inside_call;
+
+                $context->inside_call = true;
+
+                foreach ($args as $arg) {
+                    ExpressionAnalyzer::analyze(
+                        $source,
+                        $arg->value,
+                        $context,
+                    );
+                }
+
+                $context->inside_call = $was_inside_call;
+            }
+
+            $matching_callable = InternalCallMapHandler::getMatchingCallableFromCallMapOptions(
+                $source->getCodebase(),
+                $function_callables,
+                $args,
+                $source->getNodeTypeProvider(),
+                (string) $callmap_id,
+            );
+
+            assert($matching_callable->params !== null);
+
+            return $matching_callable->params;
+        }
+
+        if ($storage) {
+            $params = $storage->params;
+
+            if (!$appearing_method_id
+                || !$class_storage
+                || !isset($class_storage->overridden_method_ids[$appearing_method_id->method_name])
+            ) {
                 return $params;
             }
 
             $appearing_fq_class_name = $appearing_method_id->fq_class_name;
             $appearing_method_name = $appearing_method_id->method_name;
-
-            $class_storage = $this->classlike_storage_provider->get($appearing_fq_class_name);
-
-            if (!isset($class_storage->overridden_method_ids[$appearing_method_name])) {
-                return $params;
-            }
 
             // a docblock documenting only some of the parameters leaves the other ones to the overridden methods, the
             // nearest one that documents each of them
@@ -387,11 +418,6 @@ final class Methods
                 $class_storage,
                 $appearing_method_name,
             );
-
-            // the method that documents the whole signature of the others, as the Populator chose it
-            $documenting_method_id = !$storage->has_docblock_param_types
-                ? $class_storage->documenting_method_ids[$appearing_method_name] ?? null
-                : null;
 
             foreach ($params as $i => $param) {
                 if ($param->has_docblock_type) {
