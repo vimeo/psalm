@@ -618,6 +618,7 @@ final class AtomicTypeComparator
 
             // a match through a __toString() cast only counts if no alternative matches without one
             $matched_with_to_string_cast = false;
+            $tried_to_string_cast = false;
 
             foreach ($atomic_types as $container_as_type_part) {
                 if ($atomic_comparison_result) {
@@ -638,9 +639,11 @@ final class AtomicTypeComparator
 
                     $matched_with_to_string_cast = true;
                 }
+
+                $tried_to_string_cast = $tried_to_string_cast || $atomic_comparison_result?->to_string_cast;
             }
 
-            if ($matched_with_to_string_cast && $atomic_comparison_result) {
+            if ($tried_to_string_cast && $atomic_comparison_result) {
                 $atomic_comparison_result->to_string_cast = true;
             }
 

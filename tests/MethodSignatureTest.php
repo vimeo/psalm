@@ -3501,6 +3501,24 @@ final class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'ImplementedParamTypeMismatch',
             ],
+            'nonEmptyStringFirstConditionalParamForToStringObjectParam' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    class P {
+                        /** @param Foo $x */
+                        public function m($x): void {}
+                    }
+
+                    /** @template T of bool */
+                    final class C extends P {
+                        /** @param (T is true ? non-empty-string : int) $x */
+                        public function m($x): void {}
+                    }',
+                'error_message' => 'ImplementedParamTypeMismatch',
+            ],
             'stringSignatureParamForToStringObjectSignatureParam' => [
                 'code' => '<?php
                     final class Foo {
