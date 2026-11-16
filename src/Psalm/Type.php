@@ -31,6 +31,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -55,8 +56,11 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
@@ -980,6 +984,76 @@ abstract class Type
         return $array_atomic->setTypeParams([$key_intersection, $value_intersection]);
     }
 
+    /**
+     * e.g. string and value-of<T> (T of array) are value-of<T>, T narrowed to array<array-key, string>
+     */
+    private static function intersectTemplateKeyOrValueOf(
+        Codebase $codebase,
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+        bool $allow_interface_equality,
+        bool $allow_float_int_equality,
+    ): TTemplateKeyOf|TTemplateValueOf|null {
+        if (($type_1_atomic instanceof TTemplateKeyOf || $type_1_atomic instanceof TTemplateValueOf)
+            && !$type_2_atomic instanceof TTemplateKeyOf
+            && !$type_2_atomic instanceof TTemplateValueOf
+        ) {
+            $template_of = $type_1_atomic;
+            $other_atomic = $type_2_atomic;
+        } elseif (($type_2_atomic instanceof TTemplateKeyOf || $type_2_atomic instanceof TTemplateValueOf)
+            && !$type_1_atomic instanceof TTemplateKeyOf
+            && !$type_1_atomic instanceof TTemplateValueOf
+        ) {
+            $template_of = $type_2_atomic;
+            $other_atomic = $type_1_atomic;
+        } else {
+            return null;
+        }
+
+        $template = $template_of->as->isSingle() ? $template_of->as->getSingleAtomic() : null;
+
+        if (!$template instanceof TTemplateParam) {
+            return null;
+        }
+
+        $key_type = TKeyOf::getArrayKeyType($template->as);
+        $value_type = TValueOf::getValueType($template->as, $codebase);
+
+        if ($key_type === null || $value_type === null) {
+            return null;
+        }
+
+        $narrowed_type = self::intersectUnionTypes(
+            $template_of instanceof TTemplateKeyOf ? $key_type : $value_type,
+            new Union([$other_atomic]),
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+
+        if ($narrowed_type === null || $narrowed_type->isNever()) {
+            return null;
+        }
+
+        $narrowed_template = new Union([$template->replaceAs(new Union([new TArray(
+            $template_of instanceof TTemplateKeyOf ? [$narrowed_type, $value_type] : [$key_type, $narrowed_type],
+        )]))]);
+
+        return $template_of instanceof TTemplateKeyOf
+            ? new TTemplateKeyOf(
+                $template_of->param_name,
+                $template_of->defining_class,
+                $narrowed_template,
+                $template_of->from_docblock,
+            )
+            : new TTemplateValueOf(
+                $template_of->param_name,
+                $template_of->defining_class,
+                $narrowed_template,
+                $template_of->from_docblock,
+            );
+    }
+
     private static function intersectAtomicTypes(
         Atomic $type_1_atomic,
         Atomic $type_2_atomic,
@@ -1103,6 +1177,15 @@ abstract class Type
                     $allow_float_int_equality,
                 )) !== null) {
                     $intersection_atomic = $array_iterable_intersection;
+                    $intersection_performed = true;
+                } elseif (($template_key_or_value_intersection = self::intersectTemplateKeyOrValueOf(
+                    $codebase,
+                    $type_1_atomic,
+                    $type_2_atomic,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                )) !== null) {
+                    $intersection_atomic = $template_key_or_value_intersection;
                     $intersection_performed = true;
                 } elseif (($type_1_atomic instanceof TNonspecificLiteralString
                         && $type_2_atomic instanceof TNonEmptyString)

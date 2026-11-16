@@ -44,7 +44,7 @@ final class ValueOfTemplateTest extends TestCase
                     '$a' => 'list<mixed>',
                 ],
             ],
-            'SKIPPED-acceptsIfInArrayFn' => [ // #13931
+            'acceptsIfInArrayFn' => [
                 'code' => '<?php
                     /**
                      * @template T of array
@@ -52,12 +52,47 @@ final class ValueOfTemplateTest extends TestCase
                      * @return value-of<T>|null
                      */
                     function getValue(string $value, $array) {
-                        if (in_array($value, $array)) {
+                        if (in_array($value, $array, true)) {
                             return $value;
                         }
                         return null;
                     }
                 ',
+            ],
+            'inArrayOnTemplateKeepsValueType' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     * @return value-of<T>|null
+                     */
+                    function getValue(string $value, $array) {
+                        if (in_array($value, $array, true)) {
+                            echo strlen($value);
+                            return $value;
+                        }
+                        echo strlen($value);
+                        return null;
+                    }
+                ',
+            ],
+            'inArrayOnTemplateNarrowsMixed' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $array
+                     * @return value-of<T>|null
+                     */
+                    function getValue(mixed $value, $array) {
+                        if (in_array($value, $array, true)) {
+                            return $value;
+                        }
+                        return null;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'valueOfUnreplacedTemplateParam' => [
                 'code' => '<?php
@@ -103,6 +138,22 @@ final class ValueOfTemplateTest extends TestCase
                      */
                     function getValue($array) {
                         return "foo";
+                    }
+                ',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'looseInArrayOnTemplateDoesNotNarrow' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     * @return value-of<T>|null
+                     */
+                    function getValue(string $value, $array) {
+                        if (in_array($value, $array)) {
+                            return $value;
+                        }
+                        return null;
                     }
                 ',
                 'error_message' => 'InvalidReturnStatement',
