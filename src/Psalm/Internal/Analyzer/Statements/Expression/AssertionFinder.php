@@ -4452,7 +4452,7 @@ final class AssertionFinder
         ?string $this_class_name,
         FileSource $source,
     ): ?array {
-        if (!$conditional instanceof BinaryOp) {
+        if (!$conditional instanceof BinaryOp || !$source instanceof StatementsAnalyzer) {
             return null;
         }
 
@@ -4470,8 +4470,8 @@ final class AssertionFinder
             return null;
         }
 
-        $left_argument = self::getStringLengthArgument($conditional->left);
-        $right_argument = self::getStringLengthArgument($conditional->right);
+        $left_argument = self::getStringLengthArgument($conditional->left, $source);
+        $right_argument = self::getStringLengthArgument($conditional->right, $source);
         if ($left_argument && $conditional->right instanceof PhpParser\Node\Scalar\Int_) {
             $length_argument = $left_argument;
             $compared_length = $conditional->right->value;
@@ -4500,9 +4500,7 @@ final class AssertionFinder
         }
 
         // in the non-strict mode the length of null and false is 0 too: only a string is empty exactly when it is
-        $argument_type = $source instanceof StatementsAnalyzer
-            ? $source->node_data->getType($length_argument)
-            : null;
+        $argument_type = $source->node_data->getType($length_argument);
 
         if ($argument_type === null || !$argument_type->isString(true)) {
             return null;
@@ -4511,14 +4509,30 @@ final class AssertionFinder
         return [$var_name, $operator, $compared_length];
     }
 
-    private static function getStringLengthArgument(PhpParser\Node\Expr $expr): ?PhpParser\Node\Expr
-    {
+    private static function getStringLengthArgument(
+        PhpParser\Node\Expr $expr,
+        StatementsAnalyzer $source,
+    ): ?PhpParser\Node\Expr {
         if (!$expr instanceof PhpParser\Node\Expr\FuncCall
             || !$expr->name instanceof PhpParser\Node\Name
-            || !in_array(strtolower($expr->name->getFirst()), ['strlen', 'mb_strlen'])
+            || !in_array($expr->name->toLowerString(), ['strlen', 'mb_strlen'], true)
             || $expr->isFirstClassCallable()
         ) {
             return null;
+        }
+
+        // a function of the namespace, or one imported under that name, is called instead of the built-in one
+        if (!$expr->name instanceof PhpParser\Node\Name\FullyQualified) {
+            $function_id = strtolower($source->getCodebase()->functions->getFullyQualifiedFunctionNameFromString(
+                $expr->name->toString(),
+                $source,
+            ));
+
+            if ($function_id !== $expr->name->toLowerString()
+                && $source->getCodebase()->functions->functionExists($source, $function_id)
+            ) {
+                return null;
+            }
         }
 
         $first_argument = $expr->getArgs()[0] ?? null;

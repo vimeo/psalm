@@ -587,6 +587,22 @@ final class EmptyTest extends TestCase
                         return strlen($str) === 3 || $str === "ab" ? $str : "string";
                     }',
             ],
+            'strlenAndMbStrlenComparisonsArentRedundant' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function nonEmptyString(string $str): string {
+                        return strlen($str) === 4 && mb_strlen($str, "UTF-8") === 2 ? $str : "string";
+                    }',
+            ],
+            'strlenOfAFullyQualifiedBuiltinInANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /** @return non-empty-string */
+                    function nonEmptyString(string $str): string {
+                        return \strlen($str) === 3 || strlen($str) > 4 ? $str : "string";
+                    }',
+            ],
             'strlenComparisonBranches' => [
                 'code' => '<?php
                     /** @var string $str */
@@ -920,6 +936,34 @@ final class EmptyTest extends TestCase
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return strlen($str) === 3 ? "string" : $str;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'preventStrlenOfANamespaceFunction' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    function strlen(string $str): int {
+                        return 3;
+                    }
+
+                    /** @return non-empty-string */
+                    function nonEmptyString(string $str): string {
+                        return strlen($str) > 0 ? $str : "string";
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'preventStrlenWithEqualThreeOfANamespaceFunction' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    function strlen(string $str): int {
+                        return 3;
+                    }
+
+                    /** @return non-empty-string */
+                    function nonEmptyString(string $str): string {
+                        return strlen($str) === 3 ? $str : "string";
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],

@@ -624,13 +624,16 @@ final class FormulaGenerator
             $clauses = [new Clause($possibilities, $conditional_object_id, $creating_object_id)];
 
             // `strlen($s) === 3` holds only where `$s` isn't empty, a clause of its own so that its negation says
-            // nothing about `$s`
+            // nothing about `$s`, and a generated one as two such comparisons aren't redundant
             if ($non_empty_string_comparison !== null && $non_empty_string_comparison[1]) {
                 $is_non_empty_string = new IsNotIdentical($empty_string);
                 $clauses[] = new Clause(
                     [$non_empty_string_comparison[0] => [(string) $is_non_empty_string => $is_non_empty_string]],
                     $conditional_object_id,
                     $creating_object_id,
+                    false,
+                    true,
+                    true,
                 );
             }
         }
