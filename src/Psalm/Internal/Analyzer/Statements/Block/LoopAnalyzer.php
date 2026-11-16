@@ -986,8 +986,8 @@ final class LoopAnalyzer
      * Narrows the variables of the context to what the condition being false says of them where the loop is left
      *
      * @param array<string, list<list<Assertion>>> $exit_truths
-     * @param array<string, Union> $condition_written_vars what the variables the condition writes hold where the loop is
-     *                                                    left, rather than what the exit context says
+     * @param array<string, Union> $condition_written_vars what the variables the condition writes hold where the loop
+     *                                                    is left, rather than what the exit context says
      */
     private static function applyExitTruths(
         StatementsAnalyzer $statements_analyzer,
