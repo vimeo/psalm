@@ -3920,6 +3920,35 @@ final class ReturnTypeTest extends TestCase
                 'error_message' => 'InvalidReturnType',
                 'error_levels' => ['UnusedVariable'],
             ],
+            'codeAfterExhaustiveTypeChecksIsAnalyzed' => [
+                'code' => '<?php
+                    function f(int|string $x): int {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                        return undefined_function();
+                    }',
+                'error_message' => 'UndefinedFunction',
+                'error_levels' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'functionEndingAfterExhaustiveDocblockTypeChecksNeedsAReturn' => [
+                'code' => '<?php
+                    /** @param int|string $x */
+                    function f($x): int {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => ['RedundantConditionGivenDocblockType'],
+            ],
         ];
     }
 }

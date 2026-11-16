@@ -66,8 +66,6 @@ final class ElseAnalyzer
 
         $original_context = clone $else_context;
 
-        $is_impossible = false;
-
         if ($else_types) {
             $changed_var_ids = [];
 
@@ -98,9 +96,8 @@ final class ElseAnalyzer
                 },
             );
 
-            // without an else, the code after the if is not reached this way when the conditions already matched
-            // every value of a variable (an offset or a property that may be unset, or is not set, is left as never
-            // where it is not set, which is no proof)
+            // a native type left without any value proves the conditions matched every value (an offset or a
+            // property that may be unset, or is not set, is left as never where it is not set, which is no proof)
             if (!$else) {
                 foreach ($changed_var_ids as $changed_var_id => $_) {
                     $original_type = $original_context->vars_in_scope[$changed_var_id] ?? null;
@@ -108,11 +105,12 @@ final class ElseAnalyzer
                     if (($else_context->vars_in_scope[$changed_var_id] ?? null)?->isNever()
                         && $original_type !== null
                         && !$original_type->isNever()
+                        && !$original_type->from_docblock
                         && !$original_type->possibly_undefined
                         && $original_type->initialized
                         && !self::assertsUnset($else_types[$changed_var_id] ?? [])
                     ) {
-                        $is_impossible = true;
+                        $if_scope->implicit_else_is_impossible = true;
                         break;
                     }
                 }
@@ -195,7 +193,7 @@ final class ElseAnalyzer
                 $statements_analyzer->node_data,
                 [],
             )
-            : [$is_impossible ? ScopeAnalyzer::ACTION_END : ScopeAnalyzer::ACTION_NONE];
+            : [ScopeAnalyzer::ACTION_NONE];
         // has a return/throw at end
         $has_ending_statements = $final_actions === [ScopeAnalyzer::ACTION_END];
         $has_leaving_statements = $has_ending_statements

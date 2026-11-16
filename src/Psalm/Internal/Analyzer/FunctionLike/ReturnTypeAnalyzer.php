@@ -106,11 +106,11 @@ final class ReturnTypeAnalyzer
         if (!$return_type_parts
             || $has_yield
             || $did_explicitly_return
-            || ScopeAnalyzer::getControlActions(
-                $function_stmts,
-                $type_provider,
-                [],
-            ) === [ScopeAnalyzer::ACTION_END]
+            || !in_array(
+                ScopeAnalyzer::ACTION_NONE,
+                ScopeAnalyzer::getControlActions($function_stmts, $type_provider, [], true, true),
+                true,
+            )
         ) {
             return $return_type_parts;
         }
@@ -209,8 +209,6 @@ final class ReturnTypeAnalyzer
             true,
         );
 
-        $end_is_unreachable = $did_explicitly_return;
-
         if (!$inferred_return_type_parts) {
             $did_explicitly_return = true;
         }
@@ -230,11 +228,12 @@ final class ReturnTypeAnalyzer
             $type_provider,
             [],
             false,
+            true,
         );
 
         $function_always_exits = $control_actions === [ScopeAnalyzer::ACTION_END];
 
-        $function_returns_implicitly = !$end_is_unreachable && array_diff(
+        $function_returns_implicitly = (bool) array_diff(
             $control_actions,
             [ScopeAnalyzer::ACTION_END, ScopeAnalyzer::ACTION_RETURN],
         );

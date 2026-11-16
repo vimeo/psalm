@@ -119,6 +119,11 @@ final class IfScope
      */
     public array $final_actions = [];
 
+    /**
+     * Whether there is no else and the conditions matched every value of a variable
+     */
+    public bool $implicit_else_is_impossible = false;
+
     public ?Context $post_leaving_if_context = null;
 
     /**
