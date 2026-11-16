@@ -1714,6 +1714,23 @@ final class SwitchTypeTest extends TestCase
                         }
                     }',
             ],
+            'breakKeepsWhatTheVarWasCheckedForWhenTheCaseChangesItBeforeReturning' => [
+                'code' => '<?php
+                    function f(?int $a, string $s, bool $c): void {
+                        $b = $a !== null;
+                        switch ($s) {
+                            case "A":
+                                if ($c) {
+                                    break;
+                                }
+                                $a = null;
+                                return;
+                        }
+                        if ($b) {
+                            echo $a + 1;
+                        }
+                    }',
+            ],
         ];
     }
 
