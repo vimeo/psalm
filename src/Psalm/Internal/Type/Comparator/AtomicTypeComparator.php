@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
-use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -709,11 +708,6 @@ final class AtomicTypeComparator
                     $container_param_offset = $i - (2 - count($container_type_part->type_params));
 
                     $container_param = $container_type_part->type_params[$container_param_offset];
-
-                    if ($i === 0 && $container_param_offset === 0) {
-                        // the keys of an array are cast by PHP, e.g. a numeric-string key may be an int
-                        $container_param = ArrayAnalyzer::castArrayKeyType($container_param);
-                    }
 
                     if ($i === 0
                         && $input_param->hasMixed()

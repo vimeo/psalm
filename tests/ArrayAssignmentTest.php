@@ -695,8 +695,21 @@ final class ArrayAssignmentTest extends TestCase
                     '$docblock_keys===' => 'list<int|numeric-string>',
                 ],
             ],
-            'numericStringKeysOfTemplatesAreCastOnceInferred' => [
+            'numericStringKeysOfTemplatesCanBeInts' => [
                 'code' => '<?php
+                    /**
+                     * @template T of numeric-string
+                     * @param array<T, string> $a
+                     * @param T $t
+                     */
+                    function keys(array $a, string $t): void {
+                        foreach ($a as $k => $_) {
+                            /** @psalm-check-type-exact $k = T|int */
+                        }
+                        $b = [$t => 1];
+                        /** @psalm-check-type-exact $b = non-empty-array<T|int, 1> */
+                    }
+
                     /**
                      * @template T of numeric-string
                      * @param T $key
@@ -722,16 +735,10 @@ final class ArrayAssignmentTest extends TestCase
                         return "12";
                     }
 
-                    $decimal = wrap("12");
-                    $non_decimal = wrap("1.5");
                     $any = wrap(numeric());
-                    $static_non_decimal = Box::wrap("1.5");
                     $static_any = Box::wrap(numeric());',
                 'assertions' => [
-                    '$decimal===' => 'non-empty-array<12, int>',
-                    '$non_decimal===' => "non-empty-array<'1.5', int>",
                     '$any===' => 'non-empty-array<int|numeric-string, int>',
-                    '$static_non_decimal===' => "non-empty-array<'1.5', int>",
                     '$static_any===' => 'non-empty-array<int|numeric-string, int>',
                 ],
             ],
@@ -745,25 +752,6 @@ final class ArrayAssignmentTest extends TestCase
                     function f(string $n, array $ints, array $numerics): void {
                         $from_int_keys = $ints[$n] ?? null;
                         $by_int = $numerics[5] ?? null;
-                    }',
-            ],
-            'arraysWithCastKeysAreIterablesOfTheUncastKeys' => [
-                'code' => '<?php
-                    /** @param iterable<numeric-string, int> $i */
-                    function takesNumericKeys(iterable $i): void {}
-
-                    /** @param iterable<decimal-int-string, int> $i */
-                    function takesDecimalKeys(iterable $i): void {}
-
-                    /**
-                     * @param numeric-string $n
-                     * @param array<numeric-string, int> $numerics
-                     * @param array<decimal-int-string, int> $decimals
-                     */
-                    function f(string $n, array $numerics, array $decimals): void {
-                        takesNumericKeys($numerics);
-                        takesNumericKeys([$n => 1]);
-                        takesDecimalKeys($decimals);
                     }',
             ],
             'floatKeysAssignedAreInts' => [
@@ -3369,6 +3357,34 @@ final class ArrayAssignmentTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'numericStringTemplateKeyIsNotAlwaysAString' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    function takesString(string $s): void {}
+
+                    /**
+                     * @template T of numeric-string
+                     * @param array<T, int> $a
+                     */
+                    function f(array $a): void {
+                        foreach ($a as $k => $_) {
+                            takesString($k);
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'numericStringKeyedArrayIsNotAnIterableOfNumericStrings' => [
+                'code' => '<?php
+                    /** @param iterable<numeric-string, int> $i */
+                    function takesNumericKeys(iterable $i): void {}
+
+                    /** @param array<numeric-string, int> $a */
+                    function f(array $a): void {
+                        takesNumericKeys($a);
+                    }',
+                'error_message' => 'InvalidArgument',
             ],
             'numericStringDocblockKeyIsNotAlwaysAString' => [
                 'code' => '<?php
