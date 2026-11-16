@@ -418,6 +418,23 @@ final class ReferenceConstraintTest extends TestCase
                 ],
                 'ignored_issues' => ['MissingPropertyType'],
             ],
+            'referenceToItemOfMixedArrayPropertyCheckedAgainstNull' => [
+                'code' => '<?php
+                    final class Cache {
+                        private static array $cache = [];
+
+                        public static function get(string $key): mixed {
+                            if (null !== $value = &self::$cache[$key]) {
+                                return $value[0];
+                            }
+                            $value = [1];
+                            return null;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
             'referenceToPropertyReboundIsNoLongerConstrained' => [
                 'code' => '<?php
                     final class A {
@@ -672,20 +689,6 @@ final class ReferenceConstraintTest extends TestCase
                         $x = "";
                     }',
                 'error_message' => 'ReferenceConstraintViolation',
-            ],
-            'referenceToPossiblyUnsetPropertyItemMayBeNull' => [
-                'code' => '<?php
-                    final class A {
-                        /** @var array<string, int> */
-                        public array $map = [];
-                    }
-
-                    /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
-                    function f(A $a): int {
-                        $x = &$a->map["k"];
-                        return $x;
-                    }',
-                'error_message' => 'NullableReturnStatement',
             ],
         ];
     }

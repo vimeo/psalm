@@ -1584,17 +1584,12 @@ final class AssignmentAnalyzer
                     $context->byref_constraints[$lhs_var_id] = new ReferenceConstraint($referenced_type);
                 }
 
+                // binding creates the item as null when it is not set (the reference's type only gets null above, for an
+                // item known to be possibly unset, as a read of the item does)
                 if ($stmt->expr instanceof ArrayDimFetch
                     && ($rhs_possibly_undefined
                         || (!$rhs_was_set && !self::isOffsetSet($statements_analyzer, $stmt->expr)))
                 ) {
-                    if (!$context->vars_in_scope[$rhs_var_id]->isNullable()) {
-                        $context->vars_in_scope[$rhs_var_id] = $context->vars_in_scope[$rhs_var_id]
-                            ->getBuilder()
-                            ->addType(new TNull())
-                            ->freeze();
-                    }
-
                     if (!$referenced_type->isNullable() && !$referenced_type->hasMixed()) {
                         IssueBuffer::maybeAdd(
                             new PossiblyInvalidPropertyAssignmentValue(
