@@ -372,7 +372,8 @@ final class ElseIfAnalyzer
         $elseif_context->possibly_assigned_var_ids =
             $pre_stmts_possibly_assigned_var_ids + $new_stmts_possibly_assigned_var_ids;
 
-        $outer_context->mergeConstraintsOfReferencesReboundIn($elseif_context, $elseif->stmts, $codebase);
+        $outer_context->references_rebound_in_blocks
+            += $outer_context->mergeConstraintsOfReferencesReboundIn($elseif_context, $elseif->stmts, $codebase);
 
         foreach ($elseif_context->byref_constraints as $var_id => $byref_constraint) {
             if (isset($outer_context->references_rebound_in_blocks[$var_id])) {

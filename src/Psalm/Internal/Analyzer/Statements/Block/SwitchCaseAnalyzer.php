@@ -483,6 +483,7 @@ final class SwitchCaseAnalyzer
 
         if ($case_exit_type !== 'return_throw' && !$ends_unless_breaking) {
             $context->removeClausesOfVarsChangedIn($case_context);
+            $context->mergeConstraintsOfReferencesReboundIn($case_context, $case_stmts, $codebase);
 
             if (self::handleNonReturningCase(
                 $statements_analyzer,

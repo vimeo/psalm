@@ -1261,7 +1261,24 @@ final class ReferenceTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['UnsupportedPropertyReferenceUsage', 'PossiblyInvalidPropertyAssignmentValue'],
+                'ignored_issues' => ['PossiblyInvalidPropertyAssignmentValue'],
+            ],
+            'referenceToOffsetOfNullPropertyMakesItAnArray' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var array<string, int|null>|null */
+                        public ?array $p = null;
+                        /** @var array<string, int|null>|null */
+                        public static ?array $s = null;
+
+                        public function m(): int {
+                            $r = &$this->p["x"];
+                            $r = 1;
+                            $t = &self::$s["x"];
+                            $t = 1;
+                            return count($this->p) + count(self::$s);
+                        }
+                    }',
             ],
             'referenceToDefinedKeyKeepsTheShape' => [
                 'code' => '<?php

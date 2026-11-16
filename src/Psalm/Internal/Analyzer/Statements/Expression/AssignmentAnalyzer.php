@@ -111,6 +111,7 @@ use function array_map;
 use function array_values;
 use function assert;
 use function count;
+use function implode;
 use function is_int;
 use function is_string;
 use function reset;
@@ -760,13 +761,14 @@ final class AssignmentAnalyzer
                     $assign_value_type->ignore_falsable_issues,
                 )
                 ) {
+                    $referenced_properties = $context->byref_constraints[$var_id]->referenced_properties;
+
                     IssueBuffer::maybeAdd(
                         new ReferenceConstraintViolation(
                             'Variable ' . $var_id . ' is limited to values of type '
                                 . $outer_constraint_type->getId()
-                                . (($referenced_property = $context->byref_constraints[$var_id]->referenced_property)
-                                    !== null
-                                    ? ' because it is a reference to ' . $referenced_property . ', '
+                                . ($referenced_properties !== []
+                                    ? ' because it is a reference to ' . implode(' or ', $referenced_properties) . ', '
                                     : ' because it is passed by reference, ')
                                 . $assign_value_type->getId() . ' type found',
                             new CodeLocation($statements_analyzer->getSource(), $assign_var),
@@ -1616,7 +1618,7 @@ final class AssignmentAnalyzer
                     $context->byref_constraints[$lhs_var_id] = new ReferenceConstraint(
                         $referenced_type,
                         false,
-                        $rhs_var_id,
+                        [$rhs_var_id],
                     );
                 }
 
@@ -1917,8 +1919,8 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * PHP turns the null a local variable holds into an array when an offset of it is bound by reference. What is
-     * written through the reference can't be followed, so the item itself is left as it is.
+     * PHP turns the null a local variable or a property holds into an array when an offset of it is bound by
+     * reference. What is written through the reference can't be followed, so the item itself is left as it is.
      */
     private static function makeReferencedArrayNonNull(
         StatementsAnalyzer $statements_analyzer,
@@ -1931,15 +1933,28 @@ final class AssignmentAnalyzer
             $root = $root->var;
         }
 
-        if (!$root instanceof PhpParser\Node\Expr\Variable
-            || !is_string($root->name)
-            || $root->name === 'this'
-        ) {
+        if ($root instanceof PhpParser\Node\Expr\Variable) {
+            if (!is_string($root->name) || $root->name === 'this') {
+                return;
+            }
+
+            $root_id = '$' . $root->name;
+            $root_type = $context->vars_in_scope[$root_id] ?? null;
+        } elseif ($root instanceof PropertyFetch || $root instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+            $root_id = ExpressionIdentifier::getExtendedVarId(
+                $root,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($root_id === null) {
+                return;
+            }
+
+            $root_type = $context->vars_in_scope[$root_id] ?? $statements_analyzer->node_data->getType($root);
+        } else {
             return;
         }
-
-        $root_id = '$' . $root->name;
-        $root_type = $context->vars_in_scope[$root_id] ?? null;
 
         if ($root_type === null || !$root_type->isNullable()) {
             return;

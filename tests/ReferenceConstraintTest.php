@@ -458,6 +458,38 @@ final class ReferenceConstraintTest extends TestCase
                         }
                     }',
             ],
+            'referenceToPropertyReboundInEverySwitchCaseIsNoLongerConstrainedAfterIt' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var array<string, mixed> */
+                        public array $data = [];
+
+                        public function set(int $k, string $value): void {
+                            $ref = &$this->data;
+                            switch ($k) {
+                                case 1:
+                                    $ref = &$ref["a"];
+                                    break;
+                                default:
+                                    $ref = &$ref["b"];
+                            }
+                            $ref = $value;
+                        }
+                    }',
+            ],
+            'referenceToPropertyReboundInATernaryIsNoLongerConstrainedAfterIt' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var array<string, mixed> */
+                        public array $data = [];
+
+                        public function set(bool $b, string $value): void {
+                            $ref = &$this->data;
+                            $b ? ($ref = &$ref["a"]) : ($ref = &$ref["b"]);
+                            $ref = $value;
+                        }
+                    }',
+            ],
             'referenceToPropertyReboundToAnotherPropertyInABranch' => [
                 'code' => '<?php
                     final class A {
@@ -879,6 +911,47 @@ final class ReferenceConstraintTest extends TestCase
                         $x = 1.5;
                     }',
                 'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:25 - Variable $x is limited to values of type int|string because it is a reference to $a->i or $a->s',
+            ],
+            'constraintFromALaterBranchAfterAReferenceWasRebound' => [
+                'code' => '<?php
+                    final class A {
+                        public int $i = 0;
+                    }
+
+                    function takesInt(int &$i): void {}
+
+                    function f(A $a, bool $b, bool $c): void {
+                        $x = &$a->i;
+                        $s = 0;
+                        if ($b) {
+                            $x = &$s;
+                        }
+                        if ($c) {
+                            takesInt($x);
+                        }
+                        $x = [];
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
+            'referenceToPropertyReboundToTheSamePropertyInNestedBranchesNamesItOnce' => [
+                'code' => '<?php
+                    final class A {
+                        public int $i = 0;
+                        public string $s = "";
+                    }
+
+                    function f(A $a, bool $b, bool $c): void {
+                        $x = &$a->i;
+                        if ($b) {
+                            if ($c) {
+                                $x = &$a->i;
+                            } else {
+                                $x = &$a->s;
+                            }
+                        }
+                        $x = 1.5;
+                    }',
+                'error_message' => 'because it is a reference to $a->i or $a->s, float',
             ],
             'arrayItemBoundToPropertyStaysUnsupported' => [
                 'code' => '<?php

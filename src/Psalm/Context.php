@@ -37,6 +37,7 @@ use function array_keys;
 use function array_map;
 use function array_search;
 use function array_shift;
+use function array_unique;
 use function array_values;
 use function assert;
 use function count;
@@ -395,8 +396,8 @@ final class Context
     public array $byref_constraints = [];
 
     /**
-     * Variables a block that may not run rebinds: their constraints are merged by
-     * mergeConstraintsOfReferencesReboundIn(), not by the merge of the constraints the block adds
+     * Variables a branch of the if/else being analysed rebinds: their constraints are merged by
+     * mergeConstraintsOfReferencesReboundIn(), not by the merge of the constraints the branches add
      *
      * @var array<string, true>
      */
@@ -662,12 +663,15 @@ final class Context
      * constrained both before and after the block, to what either allows
      *
      * @param array<PhpParser\Node> $block_nodes
+     * @return array<string, true> the variables the block rebinds
      */
     public function mergeConstraintsOfReferencesReboundIn(
         Context $block_context,
         array $block_nodes,
         Codebase $codebase,
-    ): void {
+    ): array {
+        $rebound_var_ids = [];
+
         foreach ($this->byref_constraints + $block_context->byref_constraints as $var_id => $_) {
             $constraint = $this->byref_constraints[$var_id] ?? null;
             $block_constraint = $block_context->byref_constraints[$var_id] ?? null;
@@ -676,24 +680,26 @@ final class Context
                 continue;
             }
 
-            $this->references_rebound_in_blocks[$var_id] = true;
+            $rebound_var_ids[$var_id] = true;
 
             if ($constraint?->type && $block_constraint?->type) {
                 $this->byref_constraints[$var_id] = new ReferenceConstraint(
                     Type::combineUnionTypes($constraint->type, $block_constraint->type, $codebase),
                     false,
-                    match (true) {
-                        $constraint->referenced_property === $block_constraint->referenced_property
-                            => $constraint->referenced_property,
-                        $constraint->referenced_property !== null && $block_constraint->referenced_property !== null
-                            => $constraint->referenced_property . ' or ' . $block_constraint->referenced_property,
-                        default => null,
-                    },
+                    // a reference to a property, or to one of them, only if it is one on both paths
+                    $constraint->referenced_properties && $block_constraint->referenced_properties
+                        ? array_values(array_unique([
+                            ...$constraint->referenced_properties,
+                            ...$block_constraint->referenced_properties,
+                        ]))
+                        : [],
                 );
             } else {
                 unset($this->byref_constraints[$var_id]);
             }
         }
+
+        return $rebound_var_ids;
     }
 
     /**
