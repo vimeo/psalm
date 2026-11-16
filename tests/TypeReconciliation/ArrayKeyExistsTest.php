@@ -688,6 +688,97 @@ final class ArrayKeyExistsTest extends TestCase
                         }
                     }',
             ],
+            'arrayKeyExistsRemovesNullFromANullableArray' => [
+                'code' => '<?php
+                    /** @return array<string, list<string>>|null */
+                    function config(): ?array {
+                        return random_int(0, 1) === 1 ? ["SN" => ["a"]] : null;
+                    }
+
+                    function hasSn(string $sn): bool {
+                        $cfg = config();
+                        /** @psalm-suppress PossiblyNullArgument */
+                        if (array_key_exists("SN", $cfg)) {
+                            /** @psalm-check-type-exact $cfg = array{SN: list<string>, ...<string, list<string>>} */;
+                            return in_array($sn, $cfg["SN"], true);
+                        }
+
+                        return false;
+                    }',
+            ],
+            'arrayKeyExistsRemovesFalseAndNullFromTheArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array{SN?: int}|false|null $cfg
+                     * @psalm-suppress PossiblyNullArgument
+                     * @psalm-suppress PossiblyFalseArgument
+                     */
+                    function f($cfg): void {
+                        if (key_exists("SN", $cfg)) {
+                            /** @psalm-check-type-exact $cfg = array{SN: int} */;
+                        }
+                    }',
+            ],
+            'arrayKeyExistsOfAVariableKeyMakesTheArrayNonEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int>|null $cfg
+                     * @psalm-suppress PossiblyNullArgument
+                     */
+                    function f(?array $cfg, string $key): void {
+                        if (array_key_exists($key, $cfg)) {
+                            /** @psalm-check-type-exact $cfg = non-empty-array<string, int> */;
+                        }
+                    }
+
+                    /** @param array<string, int> $cfg */
+                    function g(array $cfg, string $key): void {
+                        if (array_key_exists($key, $cfg)) {
+                            /** @psalm-check-type-exact $cfg = non-empty-array<string, int> */;
+                        }
+                    }',
+            ],
+            'arrayKeyExistsRemovesNullFromANestedArrayAndAPropertyArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a?: array<string, int>|null} $x
+                     * @psalm-suppress PossiblyUndefinedArrayOffset
+                     * @psalm-suppress PossiblyNullArgument
+                     */
+                    function f(array $x): void {
+                        if (array_key_exists("SN", $x["a"])) {
+                            /** @psalm-check-type-exact $x = array{a: array{SN: int, ...<string, int>}} */;
+                        }
+                    }
+
+                    final class C {
+                        /** @var array<string, int>|null */
+                        public ?array $p = null;
+
+                        /** @psalm-suppress PossiblyNullArgument */
+                        public function m(): void {
+                            if (array_key_exists("SN", $this->p)) {
+                                /** @psalm-check-type-exact $this->p = array{SN: int, ...<string, int>} */;
+                            }
+                        }
+                    }',
+            ],
+            'arrayKeyExistsKeepsNullWhereItIsFalseOrOred' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int>|null $cfg
+                     * @psalm-suppress PossiblyNullArgument
+                     */
+                    function f(?array $cfg): void {
+                        if (!array_key_exists("SN", $cfg)) {
+                            /** @psalm-check-type-exact $cfg = array<string, int>|null */;
+                        }
+
+                        if (array_key_exists("SN", $cfg) || rand(0, 1)) {
+                            /** @psalm-check-type-exact $cfg = array<string, int>|null */;
+                        }
+                    }',
+            ],
         ];
     }
 

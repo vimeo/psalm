@@ -91,6 +91,7 @@ use function key;
 use function ksort;
 use function preg_match;
 use function preg_quote;
+use function reset;
 use function str_contains;
 use function str_ends_with;
 use function str_split;
@@ -779,6 +780,37 @@ class Reconciler
      */
     private static function addNestedAssertions(array $new_types, array $existing_types): array
     {
+        foreach ($new_types as $nk => $type) {
+            if (!strpos($nk, '[')) {
+                continue;
+            }
+
+            $key_exists = false;
+
+            foreach ($type as $assertions) {
+                if (count($assertions) === 1 && reset($assertions) instanceof ArrayKeyExists) {
+                    $key_exists = true;
+                }
+            }
+
+            $key_parts = self::breakUpPathIntoParts($nk);
+            $key_part_count = count($key_parts);
+
+            if (!$key_exists || $key_part_count < 4 || $key_parts[$key_part_count - 3] !== '[') {
+                continue;
+            }
+
+            $array_key = implode('', array_slice($key_parts, 0, -3));
+
+            if (isset($existing_types[$array_key]) && $existing_types[$array_key]->isAlwaysTruthy()) {
+                continue;
+            }
+
+            // array_key_exists() is only true for a non-empty array (or an object before PHP 8). The assertion goes
+            // first for the ones on the keys the array is nested in to be added below
+            $new_types[$array_key] = array_merge([[new NonEmpty()]], $new_types[$array_key] ?? []);
+        }
+
         foreach ($new_types as $nk => $type) {
             if (strpos($nk, '[') || strpos($nk, '->')) {
                 $type = array_values($type);
