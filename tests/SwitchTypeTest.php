@@ -1557,6 +1557,54 @@ final class SwitchTypeTest extends TestCase
                         }
                     }',
             ],
+            'issetOfVarFromNestedSwitchInLaterCaseEndingInConditionalThrow' => [
+                'code' => '<?php
+                    function f(string $s, string $u, bool $flag): void {
+                        switch ($s) {
+                            case "D":
+                                break;
+                            case "A":
+                                switch ($u) {
+                                    case "x":
+                                        break;
+                                    case "y":
+                                        $rec = 1;
+                                        break;
+                                }
+                                if ($flag) {
+                                    throw new RuntimeException("x");
+                                }
+                                break;
+                        }
+                        if (isset($rec)) {
+                            echo "set";
+                        }
+                    }',
+            ],
+            'issetOfVarFromNestedSwitchCaseEndingInConditionalThrow' => [
+                'code' => '<?php
+                    function f(string $s, string $u, bool $flag): void {
+                        switch ($s) {
+                            case "D":
+                                break;
+                            case "A":
+                                switch ($u) {
+                                    case "y":
+                                        $rec = 1;
+                                        if ($flag) {
+                                            throw new RuntimeException("x");
+                                        }
+                                        break;
+                                    case "x":
+                                        break;
+                                }
+                                break;
+                        }
+                        if (isset($rec)) {
+                            echo "set";
+                        }
+                    }',
+            ],
             'issetOfVarFromCaseAfterDefaultEndingInConditionalThrow' => [
                 'code' => '<?php
                     function f(string $s, bool $flag): void {

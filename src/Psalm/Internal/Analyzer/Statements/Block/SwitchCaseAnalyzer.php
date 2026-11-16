@@ -43,9 +43,7 @@ use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
-use function array_fill_keys;
 use function array_intersect_key;
-use function array_keys;
 use function array_merge;
 use function count;
 use function in_array;
@@ -525,10 +523,7 @@ final class SwitchCaseAnalyzer
 
             if ($ends_unless_breaking) {
                 $switch_scope->new_vars_possibly_in_scope = [
-                    ...array_fill_keys(
-                        array_keys(array_diff_key($case_scope->break_vars, $context->vars_possibly_in_scope)),
-                        true,
-                    ),
+                    ...array_diff_key($case_scope->vars_possibly_in_scope_at_breaks, $context->vars_possibly_in_scope),
                     ...$switch_scope->new_vars_possibly_in_scope,
                 ];
             }
