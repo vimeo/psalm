@@ -643,6 +643,36 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'foreachOverTraversableInterfaceOfSelf' => [
+                'code' => '<?php
+                    /** @extends Traversable<self, self> */
+                    interface Tr extends Traversable {
+                        public function value(): int;
+                    }
+
+                    function f(Tr $t): int {
+                        foreach ($t as $k => $v) {
+                            return $k->value() + $v->value();
+                        }
+                        return 0;
+                    }',
+            ],
+            'foreachOverTraversableInterfaceOfStatic' => [
+                'code' => '<?php
+                    /** @extends Traversable<int, static> */
+                    interface Tr extends Traversable {}
+
+                    interface SubTr extends Tr {
+                        public function value(): int;
+                    }
+
+                    function f(SubTr $t): int {
+                        foreach ($t as $v) {
+                            return $v->value();
+                        }
+                        return 0;
+                    }',
+            ],
             'foreachOverListKeepsTheEmptyStringOfAnEmptyOrNumericString' => [
                 'code' => '<?php
                     /** @var list<array{foo: ""|numeric-string}> $rows */

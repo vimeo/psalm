@@ -496,7 +496,6 @@
       <code><![CDATA[$switch_var_id]]></code>
       <code><![CDATA[$switch_var_id]]></code>
       <code><![CDATA[$switch_var_id]]></code>
-      <code><![CDATA[$type_statements]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/DeclareAnalyzer.php">
