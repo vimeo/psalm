@@ -108,6 +108,106 @@ final class IssetTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'nullsafePropertyCoalescedWithAFalsyValueKeepsTheReceiverNullableWhereItIsFalsy' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public bool $p = true;
+                    }
+
+                    function f(?A $a): void {
+                        if ($a?->p ?? false) {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+
+                        if (!($a?->p ?? false)) {
+                            /** @psalm-check-type-exact $a = A|null */
+                        } else {
+                            /** @psalm-check-type-exact $a = A */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nullsafeCallCoalescedWithAnEmptyStringOrAZeroKeepsTheReceiverNullableWhereItIsFalsy' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public function name(): string {
+                            return 'a';
+                        }
+
+                        public function ratio(): float {
+                            return 0.5;
+                        }
+
+                        /** @return list<int> */
+                        public function items(): array {
+                            return [1];
+                        }
+                    }
+
+                    function emptyString(?A $a): void {
+                        if ($a?->name() ?? '') {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+                    }
+
+                    function zeroString(?A $a): void {
+                        if ($a?->name() ?? '0') {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+                    }
+
+                    function zeroFloat(?A $a): void {
+                        if ($a?->ratio() ?? 0.0) {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+                    }
+
+                    function emptyArray(?A $a): void {
+                        if ($a?->items() ?? []) {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nullsafeCallCoalescedWithATruthyStringKeepsTheReceiverNullable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public function name(): string {
+                            return 'a';
+                        }
+                    }
+
+                    function f(?A $a): void {
+                        if ($a?->name() ?? 'x') {
+                            /** @psalm-check-type-exact $a = A|null */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainType'],
+                'php_version' => '8.1',
+            ],
             'variableAssignedByAnArgumentOfTheLeftCallOfACoalesceIsSetOnTheRight' => [
                 'code' => <<<'PHP'
                     <?php

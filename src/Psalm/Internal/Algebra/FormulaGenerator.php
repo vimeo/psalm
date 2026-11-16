@@ -518,7 +518,8 @@ final class FormulaGenerator
 
         // `$a?->b() ?? false` is truthy exactly when `$a?->b()` is, and falsy where it is falsy or null
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
-            && $conditional->left instanceof PhpParser\Node\Expr\NullsafeMethodCall
+            && ($conditional->left instanceof PhpParser\Node\Expr\NullsafeMethodCall
+                || $conditional->left instanceof PhpParser\Node\Expr\NullsafePropertyFetch)
             && self::isFalsyLiteral($conditional->right)
         ) {
             return self::getFormula(
@@ -1216,6 +1217,9 @@ final class FormulaGenerator
     {
         return ($expr instanceof PhpParser\Node\Expr\ConstFetch
                 && in_array(strtolower($expr->name->getFirst()), ['false', 'null'], true))
-            || ($expr instanceof PhpParser\Node\Scalar\Int_ && $expr->value === 0);
+            || ($expr instanceof PhpParser\Node\Scalar\Int_ && $expr->value === 0)
+            || ($expr instanceof PhpParser\Node\Scalar\Float_ && $expr->value === 0.0)
+            || ($expr instanceof PhpParser\Node\Scalar\String_ && in_array($expr->value, ['', '0'], true))
+            || ($expr instanceof PhpParser\Node\Expr\Array_ && $expr->items === []);
     }
 }
