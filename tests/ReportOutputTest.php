@@ -794,6 +794,66 @@ final class ReportOutputTest extends TestCase
         $this->assertSame($snippet, $xml->getElementsByTagName('snippet')->item(0)?->textContent);
     }
 
+    public function testXmlReportsReplaceCharactersXmlForbids(): void
+    {
+        // ESC, NUL, U+FFFE and an invalid UTF-8 byte can't appear in XML 1.0; DEL can
+        $file_name = "some\x1Bfile.php";
+        $issues_data = [
+            $file_name => [
+                new IssueData(
+                    IssueData::SEVERITY_ERROR,
+                    1,
+                    1,
+                    'InvalidDocblock',
+                    "Invalid type 'Foo\x1B' \xEF\xBF\xBE x\x7F",
+                    $file_name,
+                    $file_name,
+                    "echo \"a\x00b\xFFc\";",
+                    "a\x00b",
+                    0,
+                    20,
+                    0,
+                    20,
+                    1,
+                    21,
+                ),
+            ],
+        ];
+
+        $checkstyle = new DOMDocument();
+        $this->assertTrue($checkstyle->loadXML(IssueBuffer::getOutput(
+            $issues_data,
+            ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.checkstyle.xml'])[0],
+        )));
+        $this->assertSame(
+            "some\u{FFFD}file.php",
+            $checkstyle->getElementsByTagName('file')->item(0)?->getAttribute('name'),
+        );
+        $this->assertSame(
+            "InvalidDocblock: Invalid type 'Foo\u{FFFD}' \u{FFFD} x\x7F",
+            $checkstyle->getElementsByTagName('error')->item(0)?->getAttribute('message'),
+        );
+
+        $junit = new DOMDocument();
+        $this->assertTrue($junit->loadXML(IssueBuffer::getOutput(
+            $issues_data,
+            ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.junit.xml'])[0],
+        )));
+        $this->assertSame(
+            "some\u{FFFD}file.php",
+            $junit->getElementsByTagName('testsuite')->item(0)?->getAttribute('name'),
+        );
+        $this->assertSame(
+            "some\u{FFFD}file.php:1",
+            $junit->getElementsByTagName('testcase')->item(0)?->getAttribute('name'),
+        );
+        $failure = $junit->getElementsByTagName('failure')->item(0)?->textContent;
+        $this->assertNotNull($failure);
+        $this->assertStringContainsString("message: Invalid type 'Foo\u{FFFD}' \u{FFFD} x\x7F\n", $failure);
+        $this->assertStringContainsString("snippet: echo \"a\u{FFFD}b\u{FFFD}c\";\n", $failure);
+        $this->assertStringContainsString("selected_text: a\u{FFFD}b\n", $failure);
+    }
+
     public function testGithubActionsOutput(): void
     {
         $this->analyzeFileForReport();
