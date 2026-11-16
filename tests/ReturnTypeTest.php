@@ -3885,6 +3885,30 @@ final class ReturnTypeTest extends TestCase
                 'error_levels' => ['RedundantCondition', 'MixedAssignment'],
                 'php_version' => '8.0',
             ],
+            'functionEndingAfterAnIssetOfAnOptionalPropertyNeedsAReturn' => [
+                'code' => '<?php
+                    /** @param object{bar?: string} $foo */
+                    function f(object $foo): string {
+                        if (isset($foo->bar)) {
+                            return $foo->bar;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'methodEndingAfterAnIssetOfAnUninitializedPropertyNeedsAReturn' => [
+                'code' => '<?php
+                    final class A {
+                        public string $p;
+
+                        public function get(): string {
+                            if (isset($this->p)) {
+                                return $this->p;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => ['MissingConstructor', 'RedundantPropertyInitializationCheck'],
+            ],
             'functionEndingAfterADestructuredEmptyArrayNeedsAReturn' => [
                 'code' => '<?php
                     function f(): int {
