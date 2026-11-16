@@ -1740,6 +1740,25 @@ final class SwitchTypeTest extends TestCase
                     }',
                 'error_message' => 'UndefinedVariable',
             ],
+            'varFromCaseThatThrowsOrBreaksTwoIsUndefinedAfterNestedSwitch' => [
+                'code' => '<?php
+                    function f(string $s, string $u, bool $c): void {
+                        switch ($s) {
+                            case "A":
+                                switch ($u) {
+                                    case "x":
+                                        $q = 1;
+                                        if ($c) {
+                                            throw new RuntimeException();
+                                        }
+                                        break 2;
+                                }
+                                echo $q;
+                                break;
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
             'varFromBreakTwoOutOfLoopIsUndefinedAfterTheSwitch' => [
                 'code' => '<?php
                     /** @param list<int> $l */
