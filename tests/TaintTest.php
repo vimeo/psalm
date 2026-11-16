@@ -35,6 +35,7 @@ use function array_filter;
 use function array_flip;
 use function array_map;
 use function array_values;
+use function basename;
 use function implode;
 use function in_array;
 use function ini_get;
@@ -670,44 +671,44 @@ final class TaintTest extends TestCase
 
         self::assertEqualsCanonicalizing(
             [
-                ['src/somefile.php', 10, 'TaintedHtml'],
-                ['src/somefile.php', 10, 'TaintedTextWithQuotes'],
-                ['src/somefile.php', 11, 'TaintedHtml'],
-                ['src/somefile.php', 11, 'TaintedTextWithQuotes'],
-                ['src/somefile.php', 13, 'TaintedHtml'],
-                ['src/somefile.php', 13, 'TaintedTextWithQuotes'],
-                ['src/somefile.php', 16, 'TaintedHtml'],
-                ['src/somefile.php', 16, 'TaintedTextWithQuotes'],
-                ['src/somefile.php', 17, 'TaintedHtml'],
-                ['src/somefile.php', 17, 'TaintedTextWithQuotes'],
-                ['src/somefile.php', 18, 'TaintedHtml'],
-                ['src/somefile.php', 18, 'TaintedTextWithQuotes'],
-                ['src/somefile.php', 19, 'TaintedHtml'],
-                ['src/somefile.php', 19, 'TaintedTextWithQuotes'],
-                ['src/somefile.php', 20, 'TaintedHtml'],
-                ['src/somefile.php', 20, 'TaintedTextWithQuotes'],
-                ['src/somefile.php', 21, 'TaintedHtml'],
-                ['src/somefile.php', 21, 'TaintedTextWithQuotes'],
-                ['src/somefile.php', 23, 'TaintedTextWithQuotes'],
-                ['src/somefile.php', 25, 'TaintedTextWithQuotes'],
-                ['src/somefile.php', 26, 'TaintedTextWithQuotes'],
-                ['src/somefile.php', 27, 'TaintedTextWithQuotes'],
-                ['src/somefile.php', 28, 'TaintedTextWithQuotes'],
-                ['src/somefile.php', 29, 'TaintedTextWithQuotes'],
-                ['src/global.php', 5, 'TaintedHtml'],
-                ['src/global.php', 5, 'TaintedTextWithQuotes'],
-                ['src/global.php', 6, 'TaintedHtml'],
-                ['src/global.php', 6, 'TaintedTextWithQuotes'],
-                ['src/global.php', 7, 'TaintedHtml'],
-                ['src/global.php', 7, 'TaintedTextWithQuotes'],
-                ['src/global.php', 8, 'TaintedTextWithQuotes'],
-                ['src/somefile.php', 34, 'TaintedHtml'],
-                ['src/somefile.php', 34, 'TaintedTextWithQuotes'],
-                ['src/somefile.php', 35, 'TaintedHtml'],
-                ['src/somefile.php', 35, 'TaintedTextWithQuotes'],
+                ['somefile.php', 10, 'TaintedHtml'],
+                ['somefile.php', 10, 'TaintedTextWithQuotes'],
+                ['somefile.php', 11, 'TaintedHtml'],
+                ['somefile.php', 11, 'TaintedTextWithQuotes'],
+                ['somefile.php', 13, 'TaintedHtml'],
+                ['somefile.php', 13, 'TaintedTextWithQuotes'],
+                ['somefile.php', 16, 'TaintedHtml'],
+                ['somefile.php', 16, 'TaintedTextWithQuotes'],
+                ['somefile.php', 17, 'TaintedHtml'],
+                ['somefile.php', 17, 'TaintedTextWithQuotes'],
+                ['somefile.php', 18, 'TaintedHtml'],
+                ['somefile.php', 18, 'TaintedTextWithQuotes'],
+                ['somefile.php', 19, 'TaintedHtml'],
+                ['somefile.php', 19, 'TaintedTextWithQuotes'],
+                ['somefile.php', 20, 'TaintedHtml'],
+                ['somefile.php', 20, 'TaintedTextWithQuotes'],
+                ['somefile.php', 21, 'TaintedHtml'],
+                ['somefile.php', 21, 'TaintedTextWithQuotes'],
+                ['somefile.php', 23, 'TaintedTextWithQuotes'],
+                ['somefile.php', 25, 'TaintedTextWithQuotes'],
+                ['somefile.php', 26, 'TaintedTextWithQuotes'],
+                ['somefile.php', 27, 'TaintedTextWithQuotes'],
+                ['somefile.php', 28, 'TaintedTextWithQuotes'],
+                ['somefile.php', 29, 'TaintedTextWithQuotes'],
+                ['global.php', 5, 'TaintedHtml'],
+                ['global.php', 5, 'TaintedTextWithQuotes'],
+                ['global.php', 6, 'TaintedHtml'],
+                ['global.php', 6, 'TaintedTextWithQuotes'],
+                ['global.php', 7, 'TaintedHtml'],
+                ['global.php', 7, 'TaintedTextWithQuotes'],
+                ['global.php', 8, 'TaintedTextWithQuotes'],
+                ['somefile.php', 34, 'TaintedHtml'],
+                ['somefile.php', 34, 'TaintedTextWithQuotes'],
+                ['somefile.php', 35, 'TaintedHtml'],
+                ['somefile.php', 35, 'TaintedTextWithQuotes'],
             ],
             array_map(
-                static fn(IssueData $issue): array => [$issue->file_name, $issue->line_from, $issue->type],
+                static fn(IssueData $issue): array => [basename($issue->file_name), $issue->line_from, $issue->type],
                 $issues,
             ),
         );
@@ -719,6 +720,7 @@ final class TaintTest extends TestCase
      * constant is trusted then, nor a name a class_alias() of a class it doesn't know gives.
      *
      * @return iterable<string, array{string, list<array{int, string}>}>
+     * @psalm-pure
      */
     public static function providerUntrustedClassConstantFlags(): iterable
     {
