@@ -41,6 +41,7 @@ use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TDependentGetDebugType;
 use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 
 use function array_diff_key;
 use function array_fill_keys;
@@ -145,64 +146,10 @@ final class SwitchCaseAnalyzer
                 && is_string($switch_condition->name)
                 && isset($context->vars_in_scope['$' . $switch_condition->name])
             ) {
-                $switch_var_type = $context->vars_in_scope['$' . $switch_condition->name];
-
-                $type_statements = [];
-
-                foreach ($switch_var_type->getAtomicTypes() as $type) {
-                    if ($type instanceof TDependentGetClass) {
-                        $type_statements[] = new VirtualFuncCall(
-                            new VirtualName(['get_class']),
-                            [
-                                new VirtualArg(
-                                    new VirtualVariable(
-                                        substr($type->typeof, 1),
-                                        $stmt->cond->getAttributes(),
-                                    ),
-                                    false,
-                                    false,
-                                    $stmt->cond->getAttributes(),
-                                ),
-                            ],
-                            $stmt->cond->getAttributes(),
-                        );
-                    } elseif ($type instanceof TDependentGetType) {
-                        $type_statements[] = new VirtualFuncCall(
-                            new VirtualName(['gettype']),
-                            [
-                                new VirtualArg(
-                                    new VirtualVariable(
-                                        substr($type->typeof, 1),
-                                        $stmt->cond->getAttributes(),
-                                    ),
-                                    false,
-                                    false,
-                                    $stmt->cond->getAttributes(),
-                                ),
-                            ],
-                            $stmt->cond->getAttributes(),
-                        );
-                    } elseif ($type instanceof TDependentGetDebugType) {
-                        $type_statements[] = new VirtualFuncCall(
-                            new VirtualName(['get_debug_type']),
-                            [
-                                new VirtualArg(
-                                    new VirtualVariable(
-                                        substr($type->typeof, 1),
-                                        $stmt->cond->getAttributes(),
-                                    ),
-                                    false,
-                                    false,
-                                    $stmt->cond->getAttributes(),
-                                ),
-                            ],
-                            $stmt->cond->getAttributes(),
-                        );
-                    } else {
-                        $type_statements = null;
-                        break;
-                    }
-                }
+                $type_statements = self::getDependentTypeCalls(
+                    $context->vars_in_scope['$' . $switch_condition->name],
+                    $stmt->cond->getAttributes(),
+                );
 
                 if ($type_statements && count($type_statements) === 1) {
                     $switch_condition = $type_statements[0];
@@ -576,6 +523,45 @@ final class SwitchCaseAnalyzer
     /**
      * @return null|false
      */
+    /**
+     * The `get_class()`, `gettype()` or `get_debug_type()` calls a switch condition typed by them stands for, or null
+     * when one of its types is not such a dependent type
+     *
+     * @param array<string, mixed> $attributes
+     * @return list<VirtualFuncCall>|null
+     */
+    private static function getDependentTypeCalls(Union $switch_var_type, array $attributes): ?array
+    {
+        $type_statements = [];
+
+        foreach ($switch_var_type->getAtomicTypes() as $type) {
+            if ($type instanceof TDependentGetClass) {
+                $function = 'get_class';
+            } elseif ($type instanceof TDependentGetType) {
+                $function = 'gettype';
+            } elseif ($type instanceof TDependentGetDebugType) {
+                $function = 'get_debug_type';
+            } else {
+                return null;
+            }
+
+            $type_statements[] = new VirtualFuncCall(
+                new VirtualName([$function]),
+                [
+                    new VirtualArg(
+                        new VirtualVariable(substr($type->typeof, 1), $attributes),
+                        false,
+                        false,
+                        $attributes,
+                    ),
+                ],
+                $attributes,
+            );
+        }
+
+        return $type_statements;
+    }
+
     /**
      * The comparison of a case with the switch condition: `===` when both have the same scalar type, `==` otherwise.
      */
