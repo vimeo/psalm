@@ -15,7 +15,10 @@ use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateDefaults;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
+use Psalm\Internal\TypeVisitor\ContainsTemplateExpressionVisitor;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\IssueBuffer;
@@ -48,6 +51,7 @@ use function array_pop;
 use function array_search;
 use function array_splice;
 use function count;
+use function explode;
 use function in_array;
 use function key;
 use function reset;
@@ -89,6 +93,9 @@ final class Populator
     public function populateCodebase(): void
     {
         $this->progress->debug('ClassLikeStorage is populating' . "\n");
+
+        // before the members of the classes inherit their internal namespaces
+        $this->classlikes->markUnshippedCodeInternal();
 
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
             $this->populateClassLikeStorage($class_storage);
@@ -684,6 +691,7 @@ final class Populator
             foreach ($storage->properties as $property) {
                 if (!$property->is_static) {
                     $property->readonly = true;
+                    $property->readonly_public_set = false;
                     $property->allow_private_mutation = false;
                 }
             }
@@ -701,6 +709,7 @@ final class Populator
                 foreach ($storage->properties as $property) {
                     if (!$property->is_static) {
                         $property->readonly = true;
+                        $property->readonly_public_set = false;
                     }
                 }
             }
@@ -723,6 +732,8 @@ final class Populator
                 $property->internal = [...$storage->internal, ...$property->internal];
             }
         }
+
+        $this->inheritPropertyTypes($storage);
 
         $this->populateOverriddenMethods($storage, $storage_provider);
 
@@ -914,17 +925,17 @@ final class Populator
                         }
                     }
 
-                    if (!$is_own_method) {
-                        continue;
-                    }
-
-                    // tell the declaring class it's overridden downstream
+                    // tell the declaring class it's overridden downstream, by a method of this class or of a trait
                     $declaring_method_storage->overridden_downstream = true;
                     $declaring_method_storage->overridden_somewhere = true;
 
                     if ($declaring_method_storage->mutation_free_assumed) {
                         $declaring_method_storage->capabilities = Capabilities::ALL;
                         $declaring_method_storage->mutation_free_assumed = false;
+                    }
+
+                    if (!$is_own_method) {
+                        continue;
                     }
 
                     if ($declaring_method_storage->throws
@@ -1887,6 +1898,125 @@ final class Populator
             }
 
             $storage->inheritable_property_ids[$property_name] = $inheritable_property_id;
+        }
+    }
+
+    /**
+     * A property redeclared without a docblock type has the docblock type of the property it overrides, where the
+     * native types are the same
+     */
+    private function inheritPropertyTypes(ClassLikeStorage $storage): void
+    {
+        $promoted_params = [];
+
+        foreach ($storage->methods['__construct']->params ?? [] as $param) {
+            if ($param->promoted_property) {
+                $promoted_params[$param->name] = $param;
+            }
+        }
+
+        $parent_storage = $storage->parent_class !== null
+            && $this->classlike_storage_provider->has($storage->parent_class)
+                ? $this->classlike_storage_provider->get($storage->parent_class)
+                : null;
+        $template_result = null;
+
+        foreach ($storage->properties as $property_name => $property_storage) {
+            if ($property_storage->has_docblock_type) {
+                continue;
+            }
+
+            $promoted_param = $promoted_params[$property_name] ?? null;
+
+            if ($property_storage->inherited_type) {
+                // populated again
+                $property_storage->type = $property_storage->own_type;
+                $property_storage->own_type = null;
+                $property_storage->inherited_type = false;
+
+                if ($promoted_param) {
+                    $promoted_param->type = $property_storage->type;
+                    $promoted_param->type_location = $property_storage->type_location;
+                }
+            }
+
+            $documenting_class = $parent_storage?->declaring_property_ids[$property_name] ?? null;
+
+            if ($parent_storage === null
+                || $documenting_class === null
+                || !$this->classlike_storage_provider->has($documenting_class)
+            ) {
+                continue;
+            }
+
+            $documenting_property_storage = $this->classlike_storage_provider->get($documenting_class)
+                ->properties[$property_name] ?? null;
+
+            if ($documenting_property_storage === null
+                || $documenting_property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                || $documenting_property_storage->type === null
+                || !($documenting_property_storage->has_docblock_type || $documenting_property_storage->inherited_type)
+                || $property_storage->is_static !== $documenting_property_storage->is_static
+                || $property_storage->native_readonly !== $documenting_property_storage->native_readonly
+                || !($property_storage->signature_type === null
+                    ? $documenting_property_storage->signature_type === null
+                    : $documenting_property_storage->signature_type !== null
+                        && $property_storage->signature_type->equals($documenting_property_storage->signature_type))
+            ) {
+                continue;
+            }
+
+            // `self` and `parent` are those of the class the docblock is written for (a trait's user for a trait)
+            $appearing_property_id = $parent_storage->appearing_property_ids[$property_name] ?? $documenting_class;
+            [$self_class] = explode('::$', $appearing_property_id);
+            $type = $documenting_property_storage->type->replaceClassLike('self', $self_class);
+
+            $self_class_parent = $this->classlike_storage_provider->has($self_class)
+                ? $this->classlike_storage_provider->get($self_class)->parent_class
+                : null;
+
+            if ($self_class_parent !== null) {
+                $type = $type->replaceClassLike('parent', $self_class_parent);
+            }
+
+            if ($storage->template_extended_params !== null) {
+                // localizing a type computed from templates takes a Codebase, which population has not
+                $template_expression_finder = new ContainsTemplateExpressionVisitor();
+                $template_expression_finder->traverse($type);
+
+                if ($template_expression_finder->matches()) {
+                    continue;
+                }
+
+                if ($template_result === null) {
+                    $lower_bounds = [];
+
+                    foreach ($storage->template_extended_params as $template_class => $type_map) {
+                        foreach ($type_map as $template_name => $extended_type) {
+                            $lower_bounds[$template_name][$template_class] = $extended_type;
+                        }
+                    }
+
+                    $template_result = new TemplateResult([], $lower_bounds);
+                }
+
+                $type = TemplateInferredTypeReplacer::replace($type, $template_result, null);
+
+                // a template replaced by its bound, or by `mixed` when the bound is missing, is still a docblock type
+                if ($documenting_property_storage->type->from_docblock) {
+                    $type = $type->setFromDocblock();
+                }
+            }
+
+            $property_storage->own_type = $property_storage->type;
+            $property_storage->type = $type;
+            $property_storage->inherited_type = true;
+
+            if ($promoted_param) {
+                $promoted_param->type = $type;
+                // the default is checked against the type
+                $promoted_param->type_location ??= $promoted_param->location;
+            }
         }
     }
 }

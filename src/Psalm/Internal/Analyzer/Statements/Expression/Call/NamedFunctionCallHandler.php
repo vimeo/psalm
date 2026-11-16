@@ -118,68 +118,12 @@ final class NamedFunctionCallHandler
             return;
         }
 
-        if ($function_id === 'class_exists') {
-            if ($first_arg) {
-                if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    if (!$codebase->classlikes->classExists($first_arg->value->value, null, $context)) {
-                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
-                    }
-                } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
-                    && $first_arg->value->class instanceof PhpParser\Node\Name
-                    && $first_arg->value->name instanceof PhpParser\Node\Identifier
-                    && $first_arg->value->name->name === 'class'
-                ) {
-                    $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
-
-                    if (!$codebase->classlikes->classExists($resolved_name, null, $context)) {
-                        $context->phantom_classes[strtolower($resolved_name)] = true;
-                    }
-                }
-            }
-
-            return;
-        }
-
-        if ($function_id === 'interface_exists') {
-            if ($first_arg) {
-                if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    if (!$codebase->classlikes->interfaceExists($first_arg->value->value, null, $context)) {
-                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
-                    }
-                } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
-                    && $first_arg->value->class instanceof PhpParser\Node\Name
-                    && $first_arg->value->name instanceof PhpParser\Node\Identifier
-                    && $first_arg->value->name->name === 'class'
-                ) {
-                    $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
-
-                    if (!$codebase->classlikes->interfaceExists($resolved_name, null, $context)) {
-                        $context->phantom_classes[strtolower($resolved_name)] = true;
-                    }
-                }
-            }
-
-            return;
-        }
-
-        if ($function_id === 'enum_exists') {
-            if ($first_arg) {
-                if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    if (!$codebase->classlikes->enumExists($first_arg->value->value, null, $context)) {
-                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
-                    }
-                } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
-                    && $first_arg->value->class instanceof PhpParser\Node\Name
-                    && $first_arg->value->name instanceof PhpParser\Node\Identifier
-                    && $first_arg->value->name->name === 'class'
-                ) {
-                    $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
-
-                    if (!$codebase->classlikes->enumExists($resolved_name, null, $context)) {
-                        $context->phantom_classes[strtolower($resolved_name)] = true;
-                    }
-                }
-            }
+        if ($function_id === 'class_alias'
+            || $function_id === 'class_exists'
+            || $function_id === 'interface_exists'
+            || $function_id === 'enum_exists'
+        ) {
+            self::handleClassLikeDeclarationCheck($codebase, $stmt, $function_id, $context);
 
             return;
         }
@@ -296,103 +240,7 @@ final class NamedFunctionCallHandler
         }
 
         if ($function_id === 'extract') {
-            $flag_value = false;
-            if (!isset($stmt->args[1])) {
-                $flag_value = EXTR_OVERWRITE;
-            } elseif (isset($stmt->args[1]->value)
-                && $stmt->args[1]->value instanceof PhpParser\Node\Expr
-                && ($flags_type = $statements_analyzer->node_data->getType($stmt->args[1]->value))
-                && $flags_type->hasLiteralInt() && count($flags_type->getAtomicTypes()) === 1) {
-                $flag_type_value = $flags_type->getSingleIntLiteral()->value;
-                if ($flag_type_value === EXTR_SKIP) {
-                    $flag_value = EXTR_SKIP;
-                } elseif ($flag_type_value === EXTR_OVERWRITE) {
-                    $flag_value = EXTR_OVERWRITE;
-                }
-                // @todo add support for other flags
-            }
-
-            $is_unsealed = true;
-            $validated_var_ids = [];
-            if ($flag_value !== false && isset($stmt->args[0]->value)
-                && $stmt->args[0]->value instanceof PhpParser\Node\Expr
-                && ($array_type_union = $statements_analyzer->node_data->getType($stmt->args[0]->value))
-                && $array_type_union->isSingle()
-            ) {
-                foreach ($array_type_union->getAtomicTypes() as $array_type) {
-                    if ($array_type instanceof TKeyedArray) {
-                        foreach ($array_type->properties as $key => $type) {
-                            // variables must start with letters or underscore
-                            if ($key === '' || is_numeric($key) || preg_match('/^[A-Za-z_]/', $key) !== 1) {
-                                continue;
-                            }
-
-                            $var_id = '$' . $key;
-                            $validated_var_ids[] = $var_id;
-
-                            if (isset($context->vars_in_scope[$var_id]) && $flag_value === EXTR_SKIP) {
-                                continue;
-                            }
-
-                            if (!isset($context->vars_in_scope[$var_id]) && $type->possibly_undefined === true) {
-                                $context->possibly_assigned_var_ids[$var_id] = true;
-                            } elseif (isset($context->vars_in_scope[$var_id])
-                                && $type->possibly_undefined === true
-                                && $flag_value === EXTR_OVERWRITE) {
-                                $type = Type::combineUnionTypes(
-                                    $context->vars_in_scope[$var_id],
-                                    $type,
-                                    $codebase,
-                                    false,
-                                    true,
-                                    500,
-                                    false,
-                                );
-                            }
-
-                            $context->vars_in_scope[$var_id] = $type;
-                            $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
-                        }
-
-                        if (!isset($array_type->fallback_params)) {
-                            $is_unsealed = false;
-                        }
-                    }
-                }
-            }
-
-            if ($flag_value === EXTR_OVERWRITE && $is_unsealed === false) {
-                return;
-            }
-
-            if ($flag_value === EXTR_SKIP && $is_unsealed === false) {
-                return;
-            }
-
-            $context->check_variables = false;
-
-            if ($flag_value === EXTR_SKIP) {
-                return;
-            }
-
-            foreach ($context->vars_in_scope as $var_id => $_) {
-                if ($var_id === '$this' || strpos($var_id, '[') || strpos($var_id, '>')) {
-                    continue;
-                }
-
-                if (in_array($var_id, $validated_var_ids, true)) {
-                    continue;
-                }
-
-                $mixed_type = new Union([new TMixed()], [
-                    'parent_nodes' => $context->vars_in_scope[$var_id]->parent_nodes,
-                ]);
-
-                $context->vars_in_scope[$var_id] = $mixed_type;
-                $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
-                $context->possibly_assigned_var_ids[$var_id] = true;
-            }
-
+            self::handleExtract($statements_analyzer, $codebase, $stmt, $context);
             return;
         }
 
@@ -711,6 +559,129 @@ final class NamedFunctionCallHandler
         }
     }
 
+    private static function handleExtract(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        Context $context,
+    ): void {
+        $flag_value = false;
+        if (!isset($stmt->args[1])) {
+            $flag_value = EXTR_OVERWRITE;
+        } elseif (isset($stmt->args[1]->value)
+            && $stmt->args[1]->value instanceof PhpParser\Node\Expr
+            && ($flags_type = $statements_analyzer->node_data->getType($stmt->args[1]->value))
+            && $flags_type->hasLiteralInt() && count($flags_type->getAtomicTypes()) === 1) {
+            $flag_type_value = $flags_type->getSingleIntLiteral()->value;
+            if ($flag_type_value === EXTR_SKIP) {
+                $flag_value = EXTR_SKIP;
+            } elseif ($flag_type_value === EXTR_OVERWRITE) {
+                $flag_value = EXTR_OVERWRITE;
+            }
+            // @todo add support for other flags
+        }
+
+        $is_unsealed = true;
+        $validated_var_ids = [];
+        if ($flag_value !== false && isset($stmt->args[0]->value)
+            && $stmt->args[0]->value instanceof PhpParser\Node\Expr
+            && ($array_type_union = $statements_analyzer->node_data->getType($stmt->args[0]->value))
+            && $array_type_union->isSingle()
+        ) {
+            foreach ($array_type_union->getAtomicTypes() as $array_type) {
+                if ($array_type instanceof TKeyedArray) {
+                    foreach ($array_type->properties as $key => $type) {
+                        // variables must start with letters or underscore
+                        if ($key === '' || is_numeric($key) || preg_match('/^[A-Za-z_]/', $key) !== 1) {
+                            continue;
+                        }
+
+                        $var_id = '$' . $key;
+                        $validated_var_ids[] = $var_id;
+
+                        if (isset($context->vars_in_scope[$var_id]) && $flag_value === EXTR_SKIP) {
+                            $existing_type = $context->vars_in_scope[$var_id];
+
+                            if (!$existing_type->possibly_undefined) {
+                                continue;
+                            }
+
+                            // it is skipped where it is set, extracted where it is not
+                            $type = Type::combineUnionTypes(
+                                $existing_type->setPossiblyUndefined(false, false),
+                                $type,
+                                $codebase,
+                            );
+                        } elseif (!isset($context->vars_in_scope[$var_id]) && $type->possibly_undefined === true) {
+                            $context->possibly_assigned_var_ids[$var_id] = true;
+                        } elseif (isset($context->vars_in_scope[$var_id])
+                            && $type->possibly_undefined === true
+                            && $flag_value === EXTR_OVERWRITE) {
+                            $type = Type::combineUnionTypes(
+                                $context->vars_in_scope[$var_id],
+                                $type,
+                                $codebase,
+                                false,
+                                true,
+                                500,
+                                false,
+                            );
+                        }
+
+                        if (isset($context->vars_in_scope[$var_id])) {
+                            $context->removeDescendents(
+                                $var_id,
+                                $context->vars_in_scope[$var_id],
+                                $type,
+                                $statements_analyzer,
+                            );
+                        }
+
+                        $context->vars_in_scope[$var_id] = $type;
+                        $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
+                    }
+
+                    if (!isset($array_type->fallback_params)) {
+                        $is_unsealed = false;
+                    }
+                }
+            }
+        }
+
+        if ($flag_value === EXTR_OVERWRITE && $is_unsealed === false) {
+            return;
+        }
+
+        if ($flag_value === EXTR_SKIP && $is_unsealed === false) {
+            return;
+        }
+
+        $context->check_variables = false;
+
+        if ($flag_value === EXTR_SKIP) {
+            return;
+        }
+
+        foreach ($context->vars_in_scope as $var_id => $_) {
+            if ($var_id === '$this' || strpos($var_id, '[') || strpos($var_id, '>')) {
+                continue;
+            }
+
+            if (in_array($var_id, $validated_var_ids, true)) {
+                continue;
+            }
+
+            $mixed_type = new Union([new TMixed()], [
+                'parent_nodes' => $context->vars_in_scope[$var_id]->parent_nodes,
+            ]);
+
+            $context->removeDescendents($var_id, $context->vars_in_scope[$var_id], $mixed_type);
+            $context->vars_in_scope[$var_id] = $mixed_type;
+            $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
+            $context->possibly_assigned_var_ids[$var_id] = true;
+        }
+    }
+
     private static function handleDependentTypeFunction(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
@@ -818,5 +789,74 @@ final class NamedFunctionCallHandler
                 ]),
             );
         }
+    }
+
+    /**
+     * A class_alias() declares its alias, a class_exists(), interface_exists() or enum_exists() of a missing class
+     * makes it a phantom class
+     *
+     * @param 'class_alias'|'class_exists'|'interface_exists'|'enum_exists' $function_id
+     */
+    private static function handleClassLikeDeclarationCheck(
+        Codebase $codebase,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        string $function_id,
+        Context $context,
+    ): void {
+        $class_name = self::getClassNameOfArgument($stmt->getArgs()[0] ?? null);
+
+        if ($class_name === null) {
+            return;
+        }
+
+        if ($function_id === 'class_alias') {
+            // the alias is declared from here on, whatever was checked about it before, unless the class it aliases
+            // may not exist: then class_alias() fails
+            $alias_arg = $stmt->getArgs()[1] ?? null;
+
+            if (($codebase->classlikes->classOrInterfaceOrEnumExists($class_name, null, $context)
+                    || $codebase->classlikes->traitExists($class_name, null, $context))
+                && $alias_arg
+                && $alias_arg->value instanceof PhpParser\Node\Scalar\String_
+            ) {
+                $context->phantom_classes[strtolower(ltrim($alias_arg->value->value, '\\'))] = true;
+            }
+
+            return;
+        }
+
+        $exists = match ($function_id) {
+            'class_exists' => $codebase->classlikes->classExists($class_name, null, $context),
+            'interface_exists' => $codebase->classlikes->interfaceExists($class_name, null, $context),
+            'enum_exists' => $codebase->classlikes->enumExists($class_name, null, $context),
+        };
+
+        if (!$exists) {
+            $context->addPhantomClass(strtolower($class_name));
+        }
+    }
+
+    /**
+     * The class an argument names: a string literal, or `Foo::class`
+     */
+    private static function getClassNameOfArgument(?PhpParser\Node\Arg $arg): ?string
+    {
+        if ($arg === null) {
+            return null;
+        }
+
+        if ($arg->value instanceof PhpParser\Node\Scalar\String_) {
+            return ltrim($arg->value->value, '\\');
+        }
+
+        if ($arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
+            && $arg->value->class instanceof PhpParser\Node\Name
+            && $arg->value->name instanceof PhpParser\Node\Identifier
+            && $arg->value->name->name === 'class'
+        ) {
+            return (string) $arg->value->class->getAttribute('resolvedName');
+        }
+
+        return null;
     }
 }
