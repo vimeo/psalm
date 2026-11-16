@@ -5979,6 +5979,42 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'mixedVarUnsetInIfAndAssignedInANestedBlockIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(mixed $u): void {
+                        if (is_array($u)) {
+                            unset($u);
+
+                            if (rand(0, 1)) {
+                                $u = 1;
+                            }
+                        }
+
+                        echo $u;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => ['MixedArgument'],
+                'php_version' => '8.0',
+            ],
+            'mixedVarUnsetInElseifAndAssignedInANestedBlockIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(mixed $u): void {
+                        if (rand(0, 1)) {
+                            echo 0;
+                        } elseif (is_array($u)) {
+                            unset($u);
+
+                            if (rand(0, 1)) {
+                                $u = 1;
+                            }
+                        }
+
+                        echo $u;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => ['MixedArgument'],
+                'php_version' => '8.0',
+            ],
             'looseNullInequalityOfNonFalsyStringIsRedundant' => [
                 'code' => '<?php
                     /** @param non-falsy-string $s */

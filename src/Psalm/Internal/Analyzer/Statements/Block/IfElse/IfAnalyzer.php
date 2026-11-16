@@ -581,6 +581,7 @@ final class IfAnalyzer
                 && $outer_context->vars_in_scope[$var_id]->hasMixed()
                 && !isset($assigned_in_conditional_var_ids[$var_id])
                 && !isset($if_context->fully_assigned_var_ids[$var_id])
+                && (!$type->possibly_undefined || $outer_context->vars_in_scope[$var_id]->possibly_undefined)
                 && UnionTypeComparator::isContainedBy($codebase, $type, $outer_context->vars_in_scope[$var_id])
             ) {
                 // a mixed var that this branch only narrowed, or wrote at some of its offsets, is still just mixed:
