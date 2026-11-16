@@ -234,6 +234,146 @@ final class MethodCallTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testMethodAssertionOnMethodCallingTheAssertingMethodMemoize(): void
+    {
+        $this->project_analyzer->getConfig()->memoize_method_calls = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Foo { public function bar(): void {} }
+
+                final class Box {
+                    private ?Foo $foo = null;
+
+                    /** @psalm-assert-if-true Foo $this->get() */
+                    public function has(): bool { return $this->foo !== null; }
+
+                    public function get(): ?Foo { return $this->has() ? $this->foo : null; }
+                }
+
+                $box = new Box();
+                if ($box->has()) {
+                    $box->get()->bar();
+                    $box->get()->bar();
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testMethodAssertionOnIteratorCurrentCallingValidMemoize(): void
+    {
+        $this->project_analyzer->getConfig()->memoize_method_calls = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Foo { public function bar(): void {} }
+
+                /** @implements Iterator<int, Foo> */
+                class FooIterator implements Iterator {
+                    /** @var list<Foo> */
+                    private array $items;
+                    private int $position = 0;
+
+                    public function __construct(Foo ...$items) {
+                        $this->items = array_values($items);
+                    }
+
+                    public function current(): ?Foo {
+                        return $this->valid() ? $this->items[$this->position] : null;
+                    }
+
+                    public function next(): void {
+                        $this->position++;
+                    }
+
+                    public function key(): int {
+                        return $this->position;
+                    }
+
+                    /**
+                     * @psalm-assert-if-true Foo $this->current()
+                     * @psalm-assert-if-false null $this->current()
+                     */
+                    public function valid(): bool {
+                        return $this->position < count($this->items);
+                    }
+
+                    public function rewind(): void {
+                        $this->position = 0;
+                    }
+                }
+
+                $iterator = new FooIterator(new Foo(), new Foo());
+
+                if ($iterator->valid()) {
+                    $iterator->current()->bar();
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testMemoizedResultForgottenBeforeTheCallMemoize(): void
+    {
+        $this->project_analyzer->getConfig()->memoize_method_calls = true;
+
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Foo { public function bar(): void {} }
+
+                final class Box {
+                    private ?Foo $foo = null;
+                    private ?Foo $other = null;
+
+                    /** @psalm-assert-if-true Foo $this->get() */
+                    public function has(): bool { return $this->foo !== null; }
+
+                    public function get(): ?Foo { return $this->has() ? $this->foo : null; }
+
+                    /** @psalm-assert-if-true Foo $this->other() */
+                    public function hasOther(): bool { return $this->other !== null; }
+
+                    public function other(): ?Foo { return $this->hasOther() ? $this->other : null; }
+
+                    public function reset(): void { $this->foo = null; }
+                }
+
+                function resetThenGet(Box $box): void {
+                    if ($box->has()) {
+                        $box->reset();
+                        $box->get()->bar();
+                    }
+                }
+
+                function getThenOther(Box $box): void {
+                    if ($box->has() && $box->hasOther()) {
+                        $box->get()->bar();
+                        $box->other()->bar();
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            [
+                'PossiblyNullReference 24:38',
+                'PossiblyNullReference 31:40',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     /**
      * @psalm-pure
      */
@@ -2487,6 +2627,25 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'methodAssertionOnMethodCallingTheAssertingMethodNotMemoized' => [
+                'code' => '<?php
+                    final class Foo { public function bar(): void {} }
+
+                    final class Box {
+                        private ?Foo $foo = null;
+
+                        /** @psalm-assert-if-true Foo $this->get() */
+                        public function has(): bool { return $this->foo !== null; }
+
+                        public function get(): ?Foo { return $this->has() ? $this->foo : null; }
+                    }
+
+                    $box = new Box();
+                    if ($box->has()) {
+                        $box->get()->bar();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
             'nullsafeMethodCallLooselyNotEqualToNullElseBranchKeepsPossiblyNullReceiver' => [
                 'code' => '<?php
                     final class B {

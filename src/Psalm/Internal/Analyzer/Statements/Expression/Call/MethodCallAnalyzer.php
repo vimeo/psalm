@@ -206,6 +206,16 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         $result = new AtomicMethodCallAnalysisResult();
 
+        $method_var_id = !$stmt->isFirstClassCallable()
+            && !$stmt->getArgs()
+            && $lhs_var_id
+            && $stmt->name instanceof PhpParser\Node\Identifier
+            ? $lhs_var_id . '->' . strtolower($stmt->name->name) . '()'
+            : null;
+
+        // the call returns what it returned before, even if it may change what it returns next
+        $memoized_type = $method_var_id !== null ? $context->vars_in_scope[$method_var_id] ?? null : null;
+
         $possible_new_class_types = [];
         foreach ($lhs_types as $lhs_type_part) {
             AtomicMethodCallAnalyzer::analyze(
@@ -230,20 +240,19 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];
             }
         }
-        if (!$stmt->isFirstClassCallable()
-            && !$stmt->getArgs()
-            && $lhs_var_id && $stmt->name instanceof PhpParser\Node\Identifier
-        ) {
+        if ($method_var_id !== null) {
             // the initialization and mutation passes skip the purity analysis that decides it,
             // so they rely on what the normal pass of this call found
             $was_memoizable = ($context->collect_initializations || $context->collect_mutations)
                 && $stmt->getAttribute('memoizable', false);
 
             if ($codebase->config->memoize_method_calls || $result->can_memoize || $was_memoizable) {
-                $method_var_id = $lhs_var_id . '->' . strtolower($stmt->name->name) . '()';
-
                 if (isset($context->vars_in_scope[$method_var_id])) {
                     $result->return_type = $context->vars_in_scope[$method_var_id];
+                } elseif ($memoized_type !== null) {
+                    // forgotten by the call itself
+                    $result->return_type = $memoized_type;
+                    $context->vars_in_scope[$method_var_id] = $memoized_type;
                 } elseif ($result->return_type !== null) {
                     // forgotten by calls that may mutate the receiver, unless the class is immutable
                     $context->vars_in_scope[$method_var_id] = $result->return_type->setProperties([
