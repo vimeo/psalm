@@ -16,6 +16,7 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use const DIRECTORY_SEPARATOR;
+use const PHP_VERSION_ID;
 
 final class PropertyTypeTest extends TestCase
 {
@@ -723,6 +724,32 @@ final class PropertyTypeTest extends TestCase
                 }
             }
         '];
+    }
+
+    public function testPropertyOfABuiltinClassKnownOnlyThroughReflectionHasItsNativeType(): void
+    {
+        if (PHP_VERSION_ID < 8_04_00) {
+            $this->markTestSkipped('Dom\DocumentType is defined from PHP 8.4.');
+        }
+
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function doctype(): Dom\DocumentType {
+                    throw new RuntimeException();
+                }
+
+                $entities = doctype()->entities;
+                $entityCount = $entities->length;',
+        );
+
+        $context = new Context();
+        $this->analyzeFile('somefile.php', $context);
+
+        self::assertSame('Dom\DtdNamedNodeMap', $context->vars_in_scope['$entities']->getId(true));
+        self::assertSame('int', $context->vars_in_scope['$entityCount']->getId(true));
     }
 
     /**
