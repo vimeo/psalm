@@ -4085,6 +4085,112 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'nullsafeFetchOnAnUnreadNonNullPropertyReceiverIsNotNullable' => [
+                'code' => '<?php
+                    final class Item { public bool $flag = true; }
+                    final class Holder { public function __construct(public Item $item) {} }
+
+                    /** @var Holder $h */
+                    $h = null;
+                    $_r = $h->item?->flag;',
+                'assertions' => ['$_r===' => 'bool'],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
+            'nullsafeMethodCallOnAnUnreadNonNullPropertyReceiverIsNotNullable' => [
+                'code' => '<?php
+                    final class Item { public function get(): bool { return true; } }
+                    final class Holder { public function __construct(public Item $item) {} }
+
+                    /** @var Holder $h */
+                    $h = null;
+                    $_r = $h->item?->get();',
+                'assertions' => ['$_r===' => 'bool'],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
+            'nullsafeFetchOnAnUnreadNonNullPropertyChainIsNotNullable' => [
+                'code' => '<?php
+                    final class Item { public bool $flag = true; }
+                    final class B { public function __construct(public Item $item) {} }
+                    final class A { public function __construct(public B $b) {} }
+
+                    /** @var A $a */
+                    $a = null;
+                    $_r = $a->b->item?->flag;',
+                'assertions' => ['$_r===' => 'bool'],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
+            'nullsafeFetchOnAnUnreadNullablePropertyReceiverStaysNullable' => [
+                'code' => '<?php
+                    final class Item { public bool $flag = true; }
+                    final class Holder { public function __construct(public ?Item $item) {} }
+
+                    /** @var Holder $h */
+                    $h = null;
+                    $_r = $h->item?->flag;',
+                'assertions' => ['$_r===' => 'bool|null'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeCallOnAnUnreadPropertyOfANullableHolderStaysNullable' => [
+                'code' => '<?php
+                    final class Item { public function get(): bool { return true; } }
+                    final class Holder { public function __construct(public Item $item) {} }
+
+                    /** @var ?Holder $h */
+                    $h = null;
+                    $_h = $h;
+                    $_r = $h->item?->get();',
+                'assertions' => ['$_h===' => 'Holder|null', '$_r===' => 'bool|null'],
+                'ignored_issues' => ['PossiblyNullPropertyFetch'],
+                'php_version' => '8.0',
+            ],
+            'nullsafeDoubleChainOnAnUnreadNonNullPropertyReceiverIsNotNullable' => [
+                'code' => '<?php
+                    final class Sub { public bool $flag = true; }
+                    final class Item { public function __construct(public Sub $sub) {} }
+                    final class Holder { public function __construct(public Item $item) {} }
+
+                    /** @var Holder $h */
+                    $h = null;
+                    $_r = $h->item?->sub?->flag;',
+                'assertions' => ['$_r===' => 'bool'],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
+            'nullsafeDoubleChainWithANullableInnerPropertyStaysNullable' => [
+                'code' => '<?php
+                    final class Sub { public bool $flag = true; }
+                    final class Item { public function __construct(public ?Sub $sub) {} }
+                    final class Holder { public function __construct(public Item $item) {} }
+
+                    /** @var Holder $h */
+                    $h = null;
+                    $_r = $h->item?->sub?->flag;',
+                'assertions' => ['$_r===' => 'bool|null'],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
+            'nullsafeFetchOnAMagicPropertyReceiverIsNotNullable' => [
+                'code' => '<?php
+                    final class Item { public bool $flag = true; }
+
+                    /** @property Item $item */
+                    final class Holder {
+                        public function __get(string $name): mixed {
+                            return new Item();
+                        }
+                    }
+
+                    /** @var Holder $h */
+                    $h = null;
+                    $_r = $h->item?->flag;',
+                'assertions' => ['$_r===' => 'bool'],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull', 'DocblockTypeContradiction'],
+                'php_version' => '8.0',
+            ],
             'nullsafeFetchOfANonNullablePropertyChecksTheReceiver' => [
                 'code' => '<?php
                     final class T {}
@@ -4553,6 +4659,18 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nullsafeOnAnUnreadNonNullPropertyReceiverIsARedundantCondition' => [
+                'code' => '<?php
+                    final class Item { public bool $flag = true; }
+                    final class Holder { public function __construct(public Item $item) {} }
+
+                    /** @var Holder $h */
+                    $h = null;
+                    $_r = $h->item?->flag;',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:27 - Type Item for $h->item is never null',
+                'error_levels' => ['TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
             'declaredPropertyOfAStdClassSubclassRejectsAWrongValue' => [
                 'code' => '<?php
                     final class Item extends stdClass {
