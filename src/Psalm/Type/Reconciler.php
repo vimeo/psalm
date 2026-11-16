@@ -781,7 +781,7 @@ class Reconciler
     private static function addNestedAssertions(array $new_types, array $existing_types): array
     {
         foreach ($new_types as $nk => $type) {
-            if (!strpos($nk, '[')) {
+            if (!str_contains($nk, '[')) {
                 continue;
             }
 
