@@ -25,10 +25,12 @@ use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
+use Psalm\Tests\Config\Plugin\ReportabilityExpandingHook;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\Progress\EchoProgress;
 use Psalm\Tests\TestConfig;
+use Psalm\Type\Union;
 
 use function array_map;
 use function get_class;
@@ -791,5 +793,225 @@ final class Bat
                 $this->project_analyzer->getCodebase(),
             ),
         );
+    }
+
+    public function testCheckRecordsParamTypesOnlyOfMethodsTheReaderCanUse(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerForParamTypeInference();
+        $fixable_before = IssueBuffer::getFixableIssues()['MissingParamType'] ?? 0;
+
+        $this->project_analyzer->check('tests/fixtures/DummyProject');
+
+        $possible_param_types = $this->project_analyzer->getCodebase()->analyzer->possible_method_param_types;
+        $this->assertSame(
+            "'hello'",
+            $possible_param_types['vimeo\test\dummyproject\inferencetarget::project'][0]->getId(),
+        );
+        $this->assertArrayNotHasKey('vimeo\test\vendor\vendortarget::vendor', $possible_param_types);
+        $this->assertArrayNotHasKey('vimeo\test\dummyproject\inferencetrait::fromtrait', $possible_param_types);
+        $this->assertSame($fixable_before + 1, IssueBuffer::getFixableIssues()['MissingParamType'] ?? 0);
+    }
+
+    /**
+     * A plugin hook can make a file of the project directories reportable (an include that the project files don't
+     * list: LateTarget.inc) before or while the analysis runs, in the main process or in a worker. Which arguments
+     * are recorded must not depend on it, so that the outcome is the one of a run that knew the file from the start:
+     * mixedThenInt is never inferred, however its calls are spread over the expansion.
+     *
+     * @param 'none'|'addFilesToAnalyze'|'addFilesToShowResults'|'addReportableFiles' $api
+     */
+    #[DataProvider('providerReportabilityExpansions')]
+    public function testRecordedParamTypesDoNotDependOnWhenAFileBecomesReportable(
+        string $api,
+        bool $during_analysis,
+    ): void {
+        [$possible_param_types, $fixed] = $this->checkLateTarget($api, $during_analysis);
+
+        $this->assertTrue($possible_param_types['vimeo\test\dummyproject\latetarget::mixedthenint'][0]->hasMixed());
+        $this->assertSame('1|2', $possible_param_types['vimeo\test\dummyproject\latetarget::intbeforeandafter'][0]->getId());
+        $this->assertSame('3', $possible_param_types['vimeo\test\dummyproject\latetarget::onlyafter'][0]->getId());
+        // without an expansion the include stays unreportable: its types are recorded and the reader skips them
+        $this->assertSame($api === 'none' ? 0 : 2, $fixed);
+    }
+
+    /**
+     * @return iterable<string, array{'none'|'addFilesToAnalyze'|'addFilesToShowResults'|'addReportableFiles', bool}>
+     * @psalm-pure
+     */
+    public static function providerReportabilityExpansions(): iterable
+    {
+        yield 'no expansion' => ['none', true];
+
+        foreach (['addFilesToAnalyze', 'addFilesToShowResults', 'addReportableFiles'] as $api) {
+            yield $api . ' during the analysis' => [$api, true];
+            yield $api . ' before the analysis' => [$api, false];
+        }
+    }
+
+    /**
+     * Checks the project, in which LateCallerA.php calls the methods of LateTarget.inc before and LateCallerB.php after
+     * the hook makes LateTarget.inc reportable. The include is in a project directory but not among the project files.
+     *
+     * @param 'none'|'addFilesToAnalyze'|'addFilesToShowResults'|'addReportableFiles' $api
+     * @param bool $during_analysis false: the hook runs once the codebase is populated, before any call is analyzed
+     * @return array{array<string, array<int, Union>>, int} the usage-inferred param types, the issues to fix
+     */
+    private function checkLateTarget(string $api, bool $during_analysis): array
+    {
+        $project_dir = (string) getcwd() . '/tests/fixtures/DummyProject';
+        $late_file = $project_dir . '/LateTarget.inc';
+        $first_caller = $project_dir . '/LateCallerA.php';
+        $this->file_provider->registerFile(
+            $first_caller,
+            '<?php
+
+namespace Vimeo\Test\DummyProject;
+
+function callBeforeTheExpansion(LateTarget $target, mixed $m): void
+{
+    $target->mixedThenInt($m);
+    $target->intBeforeAndAfter(1);
+}
+',
+        );
+        $this->file_provider->registerFile(
+            $project_dir . '/LateCallerB.php',
+            '<?php
+
+namespace Vimeo\Test\DummyProject;
+
+function callAfterTheExpansion(LateTarget $target): void
+{
+    $target->mixedThenInt(5);
+    $target->intBeforeAndAfter(2);
+    $target->onlyAfter(3);
+}
+',
+        );
+        $this->project_analyzer = $this->createParamTypeInferenceProjectAnalyzer();
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->scanner->addFilesToDeepScan([$late_file => $late_file]);
+        $this->project_analyzer->getConfig()->eventDispatcher->registerClass(ReportabilityExpandingHook::class);
+        $fixable_before = IssueBuffer::getFixableIssues()['MissingParamType'] ?? 0;
+
+        ReportabilityExpandingHook::$enabled = true;
+        ReportabilityExpandingHook::$api = $api;
+        ReportabilityExpandingHook::$after_file = $during_analysis ? $first_caller : '';
+        ReportabilityExpandingHook::$file_to_report = $late_file;
+
+        try {
+            $this->project_analyzer->check('tests/fixtures/DummyProject');
+        } finally {
+            ReportabilityExpandingHook::reset();
+        }
+
+        return [
+            $codebase->analyzer->possible_method_param_types,
+            (IssueBuffer::getFixableIssues()['MissingParamType'] ?? 0) - $fixable_before,
+        ];
+    }
+
+    public function testCheckPathsRecordsParamTypesOnlyOfMethodsTheReaderCanUse(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerForParamTypeInference();
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->infer_types_from_usage = true;
+
+        $this->project_analyzer->checkPaths([(string) getcwd() . '/tests/fixtures/DummyProject']);
+
+        $possible_param_types = $codebase->analyzer->possible_method_param_types;
+        $this->assertSame(
+            "'hello'",
+            $possible_param_types['vimeo\test\dummyproject\inferencetarget::project'][0]->getId(),
+        );
+        $this->assertArrayNotHasKey('vimeo\test\vendor\vendortarget::vendor', $possible_param_types);
+    }
+
+    public function testCheckAltersParamTypesOnlyOfMethodsWhoseIssuesCanBeReported(): void
+    {
+        // the dry run prints the files it would change: only the project's
+        $this->expectOutputRegex('~^(?!.*VendorTarget).*DummyProject/InferenceTarget\.php~s');
+        $this->project_analyzer = $this->getProjectAnalyzerForParamTypeInference();
+        $this->project_analyzer->setIssuesToFix(['MissingParamType' => true]);
+        $this->project_analyzer->alterCodeAfterCompletion(false, true);
+        $vendor_file = (string) getcwd() . '/tests/fixtures/ExtraFiles/dependency/VendorTarget.php';
+        $vendor_contents = $this->file_provider->getContents($vendor_file);
+
+        $this->project_analyzer->check('tests/fixtures/DummyProject');
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $this->assertStringContainsString(
+            'public function project(string $a): void',
+            $codebase->getFileContents((string) getcwd() . '/tests/fixtures/DummyProject/InferenceTarget.php'),
+        );
+        $this->assertSame($vendor_contents, $codebase->getFileContents($vendor_file));
+    }
+
+    private function getProjectAnalyzerForParamTypeInference(): ProjectAnalyzer
+    {
+        $this->file_provider->registerFile(
+            (string) getcwd() . '/tests/fixtures/DummyProject/InferenceTarget.php',
+            '<?php
+
+namespace Vimeo\Test\DummyProject;
+
+use Vimeo\Test\Vendor\VendorTarget;
+
+trait InferenceTrait
+{
+    public function fromTrait($a): void {}
+}
+
+final class InferenceTarget extends VendorTarget
+{
+    use InferenceTrait;
+
+    public function project($a): void {}
+}
+
+function callInferenceTargets(InferenceTarget $target, VendorTarget $vendor_target): void
+{
+    $target->project("hello");
+    $target->fromTrait("hello");
+    $target->vendor("hello");
+    $vendor_target->vendor("hello");
+}
+',
+        );
+        $this->file_provider->registerFile(
+            (string) getcwd() . '/tests/fixtures/ExtraFiles/dependency/VendorTarget.php',
+            '<?php
+
+namespace Vimeo\Test\Vendor;
+
+class VendorTarget
+{
+    public function vendor($a): void {}
+}
+',
+        );
+
+        return $this->createParamTypeInferenceProjectAnalyzer();
+    }
+
+    private function createParamTypeInferenceProjectAnalyzer(): ProjectAnalyzer
+    {
+        $project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string)getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="tests/fixtures/DummyProject" />
+                    </projectFiles>
+                    <extraFiles>
+                        <directory name="tests/fixtures/ExtraFiles/dependency" />
+                    </extraFiles>
+                </psalm>',
+            ),
+        );
+        $project_analyzer->setPhpVersion('8.1', 'tests');
+
+        return $project_analyzer;
     }
 }

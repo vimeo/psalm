@@ -913,13 +913,12 @@ final class ArgumentAnalyzer
                 $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
                 if ($declaring_method_id) {
-                    $id_lc = strtolower((string) $declaring_method_id);
-                    $codebase->analyzer->possible_method_param_types[$id_lc][$argument_offset]
-                        = Type::combineUnionTypes(
-                            $codebase->analyzer->possible_method_param_types[$id_lc][$argument_offset] ?? null,
-                            $input_type,
-                            $codebase,
-                        );
+                    $codebase->analyzer->addPossibleMethodParamType(
+                        $codebase,
+                        $declaring_method_id,
+                        $argument_offset,
+                        $input_type,
+                    );
                 }
             }
 
