@@ -2048,7 +2048,7 @@ final class BinaryOperationTest extends TestCase
                         }
                     }',
                 'assertions' => [
-                    '$a===' => 'non-empty-string',
+                    '$a===' => "'z'",
                 ],
             ],
             'nullCoalescingAssignment' => [
@@ -2915,15 +2915,10 @@ final class BinaryOperationTest extends TestCase
                     $f = strlen($s) > -1 ? $s : "x";
                     $g = strlen(trim($s)) > 0 ? $s : "x";
                     $h = count([$s]) > 0 ? $s : "x";
-                    $i = strlen($s) > 4 ? $s : "x";
                     $j = strlen($s) > 4 ? "x" : $s;
-                    $k = strlen($s) === 3 ? $s : "x";
                     $l = strlen($s) === 3 ? "x" : $s;
                     $m = 3 == strlen($s) ? "x" : $s;
                     $o = strlen($s) >= 2 ? "x" : $s;
-                    $p = strlen($s) != 1 ? "x" : $s;
-                    $q = strlen($s) < 3 ? "x" : $s;
-                    $r = strlen($s) <= 1 ? "x" : $s;
                     $t = strlen($s) == 1 ? "x" : $s;',
                 'assertions' => [
                     '$a===' => 'string',
@@ -2934,16 +2929,29 @@ final class BinaryOperationTest extends TestCase
                     '$f===' => 'string',
                     '$g===' => 'string',
                     '$h===' => 'string',
-                    '$i===' => 'string',
                     '$j===' => 'string',
-                    '$k===' => 'string',
                     '$l===' => 'string',
                     '$m===' => 'string',
                     '$o===' => 'string',
-                    '$p===' => 'string',
-                    '$q===' => 'string',
-                    '$r===' => 'string',
                     '$t===' => 'string',
+                ],
+            ],
+            'stringLengthComparisonsThatImplyANonEmptyStringInOneBranch' => [
+                'code' => '<?php
+                    /** @var string $s */
+                    $s = getenv("X");
+
+                    $i = strlen($s) > 4 ? $s : "x";
+                    $k = strlen($s) === 3 ? $s : "x";
+                    $p = strlen($s) != 1 ? "x" : $s;
+                    $q = strlen($s) < 3 ? "x" : $s;
+                    $r = strlen($s) <= 1 ? "x" : $s;',
+                'assertions' => [
+                    '$i===' => 'non-empty-string',
+                    '$k===' => 'non-empty-string',
+                    '$p===' => 'non-empty-string',
+                    '$q===' => 'non-empty-string',
+                    '$r===' => 'non-empty-string',
                 ],
             ],
             'stringLengthOfZeroKeepsTheNullAndFalseOfALooseArgument' => [

@@ -690,6 +690,118 @@ final class ArrayAssignmentTest extends TestCase
                         /** @psalm-check-type-exact $yielded = decimal-int-string */
                     }',
             ],
+            'numericStringKeysCanBeInts' => [
+                'code' => '<?php
+                    /** @return numeric-string */
+                    function numeric(): string {
+                        return "12";
+                    }
+
+                    /** @return lowercase-string&numeric-string */
+                    function lowercaseNumeric(): string {
+                        return "12";
+                    }
+
+                    /** @return array<numeric-string, int> */
+                    function byNumeric(): array {
+                        return [];
+                    }
+
+                    $n = numeric();
+                    $literal = [$n => 1];
+                    $assigned = [];
+                    $assigned[$n] = 1;
+                    $nested = [];
+                    $nested[$n]["y"] = 1;
+                    $mixed_keys = [$n => 1, "5" => 2];
+                    $lowercase = [lowercaseNumeric() => 1];
+                    $flipped = array_flip([$n]);
+                    $docblock_keys = array_keys(byNumeric());',
+                'assertions' => [
+                    '$literal===' => 'non-empty-array<int|numeric-string, 1>',
+                    '$assigned===' => 'non-empty-array<int|numeric-string, 1>',
+                    '$nested===' => 'non-empty-array<int|numeric-string, array{y: 1}>',
+                    '$mixed_keys===' => 'array{5: 2, ...<int|numeric-string, 1>}',
+                    '$lowercase===' => 'non-empty-array<int|lowercase-string&numeric-string, 1>',
+                    '$flipped===' => 'non-empty-array<int|numeric-string, 0>',
+                    '$docblock_keys===' => 'list<int|numeric-string>',
+                ],
+            ],
+            'numericStringKeysOfTemplatesCanBeInts' => [
+                'code' => '<?php
+                    /**
+                     * @template T of numeric-string
+                     * @param array<T, string> $a
+                     * @param T $t
+                     */
+                    function keys(array $a, string $t): void {
+                        foreach ($a as $k => $_) {
+                            /** @psalm-check-type-exact $k = T|int */
+                        }
+                        $b = [$t => 1];
+                        /** @psalm-check-type-exact $b = non-empty-array<T|int, 1> */
+                    }
+
+                    /**
+                     * @template T of numeric-string
+                     * @param T $key
+                     * @return non-empty-array<T, int>
+                     */
+                    function wrap(string $key): array {
+                        return [$key => 1];
+                    }
+
+                    final class Box {
+                        /**
+                         * @template T of numeric-string
+                         * @param T $key
+                         * @return non-empty-array<T, int>
+                         */
+                        public static function wrap(string $key): array {
+                            return [$key => 1];
+                        }
+                    }
+
+                    /** @return numeric-string */
+                    function numeric(): string {
+                        return "12";
+                    }
+
+                    $any = wrap(numeric());
+                    $static_any = Box::wrap(numeric());',
+                'assertions' => [
+                    '$any===' => 'non-empty-array<int|numeric-string, int>',
+                    '$static_any===' => 'non-empty-array<int|numeric-string, int>',
+                ],
+            ],
+            'numericStringOffsetsCanFetchIntKeys' => [
+                'code' => '<?php
+                    /**
+                     * @param numeric-string $n
+                     * @param array<int, string> $ints
+                     * @param array<numeric-string, string> $numerics
+                     */
+                    function f(string $n, array $ints, array $numerics): void {
+                        $from_int_keys = $ints[$n] ?? null;
+                        $by_int = $numerics[5] ?? null;
+                    }',
+            ],
+            'floatKeysAssignedAreInts' => [
+                'code' => '<?php
+                    function f(float $f): void {
+                        $a = [];
+                        $a[$f] = 1;
+                        /** @psalm-check-type-exact $a = non-empty-array<int, 1> */
+                        $b = ["x" => 1];
+                        $b[$f] = 2;
+                        /** @psalm-check-type-exact $b = non-empty-array<"x"|int, 1|2> */
+                        $c = [];
+                        $c[$f]["y"] = 1;
+                        /** @psalm-check-type-exact $c = non-empty-array<int, array{y: 1}> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidArrayOffset'],
+            ],
             'assignUnionOfLiterals' => [
                 'code' => '<?php
                     $result = [];
@@ -3296,6 +3408,60 @@ final class ArrayAssignmentTest extends TestCase
                     f("012");',
                 'error_message' => 'InvalidArgument',
             ],
+            'numericStringKeyIsNotAlwaysAString' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    function takesString(string $s): void {}
+
+                    /** @param numeric-string $n */
+                    function f(string $n): void {
+                        $a = [$n => 1];
+                        foreach ($a as $k => $_) {
+                            takesString($k);
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'numericStringTemplateKeyIsNotAlwaysAString' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    function takesString(string $s): void {}
+
+                    /**
+                     * @template T of numeric-string
+                     * @param array<T, int> $a
+                     */
+                    function f(array $a): void {
+                        foreach ($a as $k => $_) {
+                            takesString($k);
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'numericStringKeyedArrayIsNotAnIterableOfNumericStrings' => [
+                'code' => '<?php
+                    /** @param iterable<numeric-string, int> $i */
+                    function takesNumericKeys(iterable $i): void {}
+
+                    /** @param array<numeric-string, int> $a */
+                    function f(array $a): void {
+                        takesNumericKeys($a);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'numericStringDocblockKeyIsNotAlwaysAString' => [
+                'code' => '<?php
+                    /** @param array<numeric-string, int> $a */
+                    function f(array $a): string {
+                        foreach ($a as $k => $_) {
+                            return $k;
+                        }
+                        return "";
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'unknownKeyAssignmentForgetsTheSameOffsetUnderAnyParent' => [
                 'code' => '<?php
                     /** @param array<string, array<string, int|string>> $a */
@@ -3628,8 +3794,7 @@ final class ArrayAssignmentTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
-            // Skipped because the ref-type of array_pop was fixed (list->list)
-            'SKIPPED-assignToListWithAlteredForeachKeyVar' => [
+            'SKIPPED-assignToListWithAlteredForeachKeyVar' => [ // #13920
                 'code' => '<?php
                     /**
                      * @param list<string> $list

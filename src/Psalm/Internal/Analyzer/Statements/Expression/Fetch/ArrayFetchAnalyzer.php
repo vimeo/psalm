@@ -108,7 +108,6 @@ use function array_values;
 use function count;
 use function implode;
 use function in_array;
-use function is_finite;
 use function is_int;
 use function spl_object_id;
 use function str_starts_with;
@@ -278,7 +277,7 @@ final class ArrayFetchAnalyzer
 
         $can_store_result = false;
         $chain_state = NullsafeChainState::None;
-        $own_nullable = false;
+        $own_type = null;
 
         if ($stmt_var_type) {
             if ($stmt_var_type->isNull()) {
@@ -308,7 +307,7 @@ final class ArrayFetchAnalyzer
 
             $chain_state = $stmt_var_type->isNullable() ? NullsafeChainState::of($stmt->var) : NullsafeChainState::None;
 
-            if ($chain_state === NullsafeChainState::ShortCircuit) {
+            if ($chain_state->isNullOnlyByShortCircuit()) {
                 // the null of a `?->` short-circuit is not an array to fetch from, it is added to the result below
                 $non_null_var_type = $stmt_var_type->getBuilder();
                 $non_null_var_type->removeType('null');
@@ -326,7 +325,7 @@ final class ArrayFetchAnalyzer
                 null,
             );
 
-            $own_nullable = $stmt_type->isNullable() || $stmt_type->possibly_undefined;
+            $own_type = $stmt_type;
 
             if ($stmt->dim && $stmt_var_type->hasArray()) {
                 $array_type = $stmt_var_type->getArray();
@@ -436,7 +435,7 @@ final class ArrayFetchAnalyzer
         }
 
         if ($chain_state !== NullsafeChainState::None) {
-            $chain_state->afterLink($own_nullable)->markOn($stmt);
+            $chain_state->afterLink($own_type, $own_type && $own_type->possibly_undefined)->markOn($stmt);
             $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
         }
 
@@ -1468,9 +1467,10 @@ final class ArrayFetchAnalyzer
 
         foreach ($offset_type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TLiteralFloat) {
-                $atomic_type = is_finite($atomic_type->value)
-                    ? new TLiteralInt((int) $atomic_type->value, $atomic_type->from_docblock)
-                    : new TInt($atomic_type->from_docblock);
+                $int = LiteralCast::toInt($atomic_type->value);
+                $atomic_type = $int === null
+                    ? new TInt($atomic_type->from_docblock)
+                    : new TLiteralInt($int, $atomic_type->from_docblock);
                 $changed = true;
             } elseif ($atomic_type instanceof TFloat) {
                 $atomic_type = new TInt($atomic_type->from_docblock);
@@ -2208,7 +2208,9 @@ final class ArrayFetchAnalyzer
 
                     $new_key_type = Type::combineUnionTypes(
                         $generic_key_type,
-                        $offset_type->hasMixed() ? Type::getArrayKey() : $offset_type->freeze(),
+                        $offset_type->hasMixed()
+                            ? Type::getArrayKey()
+                            : self::castOffsetTypeOfAWrite($offset_type->freeze()),
                     );
 
                     if (!$stmt->dim) {

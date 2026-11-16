@@ -2885,7 +2885,7 @@ final class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
-            'SKIPPED-noCrashOnInvalidClassTemplateAsType' => [
+            'SKIPPED-noCrashOnInvalidClassTemplateAsType' => [ // #13928
                 'code' => '<?php
                     /**
                      * @template T as ' . '
@@ -2893,7 +2893,7 @@ final class AnnotationTest extends TestCase
                     class A {}',
                 'error_message' => 'InvalidDocblock',
             ],
-            'SKIPPED-noCrashOnInvalidFunctionTemplateAsType' => [
+            'SKIPPED-noCrashOnInvalidFunctionTemplateAsType' => [ // #13928
                 'code' => '<?php
                     /**
                      * @template T as ' . '
