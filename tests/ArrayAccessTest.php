@@ -1387,6 +1387,123 @@ final class ArrayAccessTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment'],
             ],
+            'offsetNarrowedInIfAndForgottenInElseifIsNotNarrowedAfterTheIf' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $o */
+                    function f(array $o, bool $b): string {
+                        if ($o["m"]) {
+                            echo "m";
+                        }
+                        if ("single_text" === $o["w"]) {
+                            if (null !== $o["r"]) {
+                                echo "r";
+                            }
+                        } elseif ($b) {
+                            if (isset($o["i"])) {
+                                foreach ($o["h"] as $_) {
+                                    echo "h";
+                                }
+                            }
+                            if ($o["m"]) {
+                                echo "m";
+                            }
+                        } else {
+                            if ($o["m"]) {
+                                echo "m";
+                            }
+                        }
+                        return "text" === $o["w"] ? "a" : "b";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'offsetNarrowedInIfAndForgottenInElseIsNotNarrowedAfterTheIfInLoop' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $o */
+                    function f(array $o): void {
+                        $i = 0;
+                        while ($i < 3) {
+                            $i++;
+                            if ($o["m"]) {
+                                echo "m";
+                            }
+                            if ("single_text" === $o["w"]) {
+                                if (null !== $o["r"]) {
+                                    echo "r";
+                                }
+                            } else {
+                                if (isset($o["i"])) {
+                                    foreach ($o["h"] as $_) {
+                                        echo "h";
+                                    }
+                                }
+                                if ($o["m"]) {
+                                    echo "m";
+                                }
+                            }
+                            echo "text" === $o["w"] ? "a" : "b";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'propertyOffsetNarrowedInIfAndForgottenInElseIsNotNarrowedAfterTheIf' => [
+                'code' => '<?php
+                    final class Q {
+                        /** @var array<string, mixed> */
+                        private array $o = [];
+
+                        public function f(): string {
+                            if ($this->o["m"]) {
+                                echo "m";
+                            }
+                            if ("single_text" === $this->o["w"]) {
+                                if (null !== $this->o["r"]) {
+                                    echo "r";
+                                }
+                            } else {
+                                if (isset($this->o["i"])) {
+                                    foreach ($this->o["h"] as $_) {
+                                        echo "h";
+                                    }
+                                }
+                                if ($this->o["m"]) {
+                                    echo "m";
+                                }
+                            }
+                            return "text" === $this->o["w"] ? "a" : "b";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'offsetAssignedInElseKeepsItsTypeAfterTheIf' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $o */
+                    function f(array $o): string {
+                        if ($o["m"]) {
+                            echo "m";
+                        }
+                        if (is_string($o["w"])) {
+                            if (null !== $o["r"]) {
+                                echo "r";
+                            }
+                        } else {
+                            $o["w"] = "x";
+                            if (isset($o["i"])) {
+                                foreach ($o["h"] as $_) {
+                                    echo "h";
+                                }
+                            }
+                            if ($o["m"]) {
+                                echo "m";
+                            }
+                        }
+                        return $o["w"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'offsetOfUnsealedArrayNarrowedInIfWithoutElseIsNotOptional' => [
                 'code' => '<?php
                     function f(array $a): string {
