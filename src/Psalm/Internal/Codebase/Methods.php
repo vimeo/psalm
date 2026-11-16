@@ -9,6 +9,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
@@ -566,6 +567,30 @@ final class Methods
     }
 
     /**
+     * With the visibility a `use` adaptation gives to a trait method
+     *
+     * @psalm-mutation-free
+     */
+    public function isMethodPublic(MethodIdentifier $method_id): bool
+    {
+        $declaring_method_id = $this->getDeclaringMethodId($method_id);
+
+        if (!$declaring_method_id) {
+            return false;
+        }
+
+        $appearing_method_id = $this->getAppearingMethodId($method_id);
+
+        $visibility = ($appearing_method_id
+                ? $this->classlike_storage_provider->get($appearing_method_id->fq_class_name)
+                    ->trait_visibility_map[$appearing_method_id->method_name] ?? null
+                : null)
+            ?? $this->getStorage($declaring_method_id)->visibility;
+
+        return $visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+    }
+
+    /**
      * @param  list<PhpParser\Node\Arg>|null $args
      */
     public function getMethodReturnType(
@@ -587,11 +612,15 @@ final class Methods
 
         $original_class_storage = $this->classlike_storage_provider->get($original_fq_class_name);
 
-        if (isset($original_class_storage->pseudo_methods[$original_method_name])) {
+        $declaring_method_id = $this->getDeclaringMethodId($method_id);
+
+        // a call reaches a method that isn't public only from where it's visible: the `@method` describes the calls
+        // that go through `__call()` instead
+        if (isset($original_class_storage->pseudo_methods[$original_method_name])
+            && (!$declaring_method_id || $this->isMethodPublic($method_id))
+        ) {
             return $original_class_storage->pseudo_methods[$original_method_name]->return_type;
         }
-
-        $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
         if (!$declaring_method_id) {
             return null;
