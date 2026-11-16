@@ -552,6 +552,23 @@ final class IfElseAnalyzer
             }
         }
 
+        // a branch left its type for an offset or a property it narrowed (Context::update()), which is not what a
+        // branch that forgot it leaves
+        foreach ($if_scope->updated_vars as $var_id => $_) {
+            if (!isset($context->vars_in_scope[$var_id])
+                || (!str_contains($var_id, '[') && !str_contains($var_id, '->'))
+            ) {
+                continue;
+            }
+
+            foreach ($if_scope->end_contexts as $end_context) {
+                if (!$end_context->hasVariable($var_id)) {
+                    unset($context->vars_in_scope[$var_id]);
+                    break;
+                }
+            }
+        }
+
         if (!in_array(ScopeAnalyzer::ACTION_NONE, $if_scope->final_actions, true)) {
             $context->has_returned = true;
         }

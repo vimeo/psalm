@@ -1361,6 +1361,32 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetNarrowedInIfAndForgottenInElseIsNotNarrowedAfterTheIf' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $options */
+                    function f(array $options): string {
+                        if ($options["with_minutes"]) {
+                            echo "m";
+                        }
+                        if ("single_text" === $options["widget"]) {
+                            if (null !== $options["reference_date"]) {
+                                echo "r";
+                            }
+                        } else {
+                            if (isset($options["invalid_message_parameters"])) {
+                                foreach ($options["hours"] as $_) {
+                                    echo "h";
+                                }
+                            }
+                            if ($options["with_minutes"]) {
+                                echo "m";
+                            }
+                        }
+                        return "text" === $options["widget"] ? "a" : "b";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'offsetOfUnsealedArrayNarrowedInIfWithoutElseIsNotOptional' => [
                 'code' => '<?php
                     function f(array $a): string {
