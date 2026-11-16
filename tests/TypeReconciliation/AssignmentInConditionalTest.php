@@ -1062,6 +1062,88 @@ final class AssignmentInConditionalTest extends TestCase
                     '$y===' => 'int<0, 1>',
                 ],
             ],
+            'variableAssignedInCallArgumentOfSecondAndOperandIsSetInThird' => [
+                'code' => '<?php
+                    function isYmlFile(?string $relativePath): bool {
+                        return is_string($relativePath)
+                            && file_exists($absolute = "/home/user123/" . $relativePath)
+                            && pathinfo($absolute, PATHINFO_EXTENSION) === "yml";
+                    }',
+            ],
+            'variableAssignedByReferenceInSecondAndOperandIsSetInThird' => [
+                'code' => '<?php
+                    function f(bool $b, string $s): bool {
+                        return $b && preg_match("/a/", $s, $m) && $m[0] === "a";
+                    }',
+            ],
+            'variableAssignedInFirstAndOperandIsSetInThird' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, string $s): bool {
+                        return check($x = $s) && $b && $x === "a";
+                    }',
+            ],
+            'variableAssignedInAndOperandIsSetInEveryLaterOne' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, bool $c, string $s): bool {
+                        return $b && check($x = $s) && $c && $x === "a";
+                    }',
+            ],
+            'variableReassignedInSecondAndOperandHasItsNewTypeInThird' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b): bool {
+                        $x = null;
+                        return $b && check($x = "a") && strlen($x) > 0;
+                    }',
+            ],
+            'variableAssignedInParenthesizedAndOperandIsSetInNextOne' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, bool $c, string $s): bool {
+                        return $b && ($c && check($x = $s)) && $x === "a";
+                    }
+
+                    function g(bool $b, bool $c, string $s): bool {
+                        return ($b && check($x = $s) && $c) && $x === "a";
+                    }',
+            ],
+            'variableAssignedInLogicalAndOperandIsSetInNextOne' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, string $s): bool {
+                        return ($b and check($x = $s)) and $x === "a";
+                    }',
+            ],
+            'variableAssignedInAndOperandIsNarrowedByItsAssertionInNextOne' => [
+                'code' => '<?php
+                    function f(bool $b, int|string $s): bool {
+                        return $b && is_string($x = $s) && strlen($x) > 0;
+                    }
+
+                    function g(int|string $s, bool $b): bool {
+                        return is_string($x = $s) && $b && strlen($x) > 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1343,6 +1425,50 @@ final class AssignmentInConditionalTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'variableAssignedInSecondAndOperandKeepsItsTypeInThird' => [
+                'code' => '<?php
+                    function check(int $i): bool {
+                        return $i > 0;
+                    }
+
+                    function takesString(string $s): bool {
+                        return $s === "";
+                    }
+
+                    function f(bool $b): bool {
+                        return $b && check($x = 1) && takesString($x);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'variableAssignedInSkippedOperandOfOrIsPossiblyUndefinedInNextAndOperand' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, string $s): bool {
+                        return ($b || check($x = $s)) && $x === "a";
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInAndNestedInArgumentIsNotSetInNextAndOperand' => [
+                'code' => '<?php
+                    function check(bool $b): bool {
+                        return $b;
+                    }
+
+                    function f(bool $b, string $s): bool {
+                        return check($b && ($x = $s) === "b") && $x === "a";
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
+            'variableAssignedInNegatedAndIsNotSetInNextAndOperand' => [
+                'code' => '<?php
+                    function f(bool $b, bool $c, string $s): bool {
+                        return $b && !($c && ($x = $s) === "b") && $x === "a";
+                    }',
+                'error_message' => 'UndefinedVariable',
             ],
         ];
     }
