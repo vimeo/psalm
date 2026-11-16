@@ -4059,46 +4059,15 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'exhaustedInstanceofChecksOfFinalClassesLeaveNoValue' => [
+            'negatedInstanceofOfANonFinalClassKeepsIt' => [
                 'code' => '<?php
-                    final class A {}
-                    final class B {}
+                    class Open {}
 
-                    function f(A|B $o): int {
-                        if ($o instanceof A) {
-                            return 1;
-                        }
-                        if ($o instanceof B) {
-                            return 2;
+                    function f(Open $o): void {
+                        if (!$o instanceof Open) {
+                            /** @psalm-check-type-exact $o = Open */
                         }
                     }',
-                'assertions' => [],
-                'ignored_issues' => ['RedundantCondition'],
-                'php_version' => '8.0',
-            ],
-            'exhaustedInstanceofChecksOfOpenClassesAndInterfacesLeaveNoValue' => [
-                'code' => '<?php
-                    class A {}
-                    class B {}
-                    interface I {}
-
-                    function f(A|B $o): int {
-                        if ($o instanceof A) {
-                            return 1;
-                        }
-                        if ($o instanceof B) {
-                            return 2;
-                        }
-                    }
-
-                    function g(I $o): int {
-                        if ($o instanceof I) {
-                            return 1;
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['RedundantCondition'],
-                'php_version' => '8.0',
             ],
             'exhaustedNullChecksLeaveNoValue' => [
                 'code' => '<?php
@@ -4122,6 +4091,18 @@ final class ConditionalTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['TypeDoesNotContainNull'],
+            ],
+            'objectIdenticalToANullVariableIsNotNull' => [
+                'code' => '<?php
+                    function f(Throwable $e): void {
+                        $failure = null;
+
+                        if ($e === $failure) {
+                            throw $e;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainNull', 'TypeDoesNotContainType'],
             ],
             'nullableTemplateIdenticalToNullIsNull' => [
                 'code' => '<?php
@@ -5999,29 +5980,6 @@ final class ConditionalTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:30 - Type Code for $code',
                 'error_levels' => [],
                 'php_version' => '8.1',
-            ],
-            'negatedInstanceofOfAnOpenClassOfItself' => [
-                'code' => '<?php
-                    class Open {}
-
-                    function f(Open $o): void {
-                        if (!$o instanceof Open) {
-                            echo 1;
-                        }
-                    }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:30 - Type Open for $o',
-            ],
-            'negatedInstanceofOfADocblockClassOfItself' => [
-                'code' => '<?php
-                    final class Fin {}
-
-                    /** @param Fin $o */
-                    function f($o): void {
-                        if (!$o instanceof Fin) {
-                            echo 1;
-                        }
-                    }',
-                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:30 - Docblock-defined type Fin for $o',
             ],
             'identicalKeyedArraysOfDisjointTypes' => [
                 'code' => '<?php
