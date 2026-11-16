@@ -729,6 +729,37 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'parametersDocumentedByDifferentAncestorsAreInheritedEach' => [
+                'code' => '<?php
+                    interface Source {
+                        /**
+                         * @param list<string> $names
+                         */
+                        public function merge(array $names, array $counts): int;
+                    }
+
+                    abstract class Middle implements Source {
+                        /**
+                         * @param array<string, int> $counts
+                         */
+                        #[Override]
+                        public function merge(array $names, array $counts): int {
+                            return 0;
+                        }
+                    }
+
+                    final class Leaf extends Middle {
+                        #[Override]
+                        public function merge($names, $counts): int {
+                            /** @psalm-check-type-exact $names = list<string> */
+                            /** @psalm-check-type-exact $counts = array<string, int> */
+                            return count($names) + count($counts);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MoreSpecificImplementedParamType'],
+                'php_version' => '8.3',
+            ],
             'overrideOfAMethodDocumentedByTheInterfaceItImplements' => [
                 'code' => '<?php
                     interface I {
@@ -773,6 +804,126 @@ final class MethodSignatureTest extends TestCase
                          */
                         public function foo(Closure $d, array &$a): void {}
                     }',
+            ],
+            'overrideDocumentingSomeParamsKeepsItsOwnType' => [
+                'code' => '<?php
+                    class Repository {
+                        /**
+                         * @param string|null $key
+                         * @param bool $strict
+                         */
+                        public function flag($key = null, $strict = false): bool {
+                            return $strict || $key !== null;
+                        }
+                    }
+
+                    final class CachedRepository extends Repository {
+                        /**
+                         * @param bool|int $strict
+                         */
+                        #[\Override]
+                        public function flag($key = null, $strict = false): bool {
+                            /** @psalm-check-type-exact $key = string|null */;
+                            /** @psalm-check-type-exact $strict = bool|int */;
+
+                            return false;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideDocumentingSomeParamsInheritsTheOthersFromTheParent' => [
+                'code' => '<?php
+                    class Repository {
+                        /**
+                         * @param string|null $key
+                         * @param bool $default
+                         * @param bool $strict
+                         */
+                        public function flag($key = null, $default = false, $strict = false): bool {
+                            return $default || $strict || $key !== null;
+                        }
+                    }
+
+                    final class CachedRepository extends Repository {
+                        /**
+                         * @inheritDoc
+                         * @param bool $strict
+                         */
+                        #[\Override]
+                        public function flag($key = null, $default = false, $strict = false): bool {
+                            /** @psalm-check-type-exact $key = string|null */;
+                            /** @psalm-check-type-exact $default = bool */;
+                            /** @psalm-check-type-exact $strict = bool */;
+
+                            return false;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeThatTheNativeTypeDoesNotContainIsNotApplied' => [
+                'code' => '<?php
+                    class P {
+                        /** @param string $x */
+                        public function g($x, int $y): void {}
+                    }
+
+                    final class Q extends P {
+                        /** @param positive-int $y */
+                        #[\Override]
+                        public function g(int $x, int $y): void {
+                            /** @psalm-check-type-exact $x = int */;
+                            /** @psalm-check-type-exact $y = positive-int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ImplementedParamTypeMismatch', 'MoreSpecificImplementedParamType'],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeThatTheNativeTypeDoesNotContainIsNotInTheFirstClassCallable' => [
+                'code' => '<?php
+                    class P {
+                        /** @param string $x */
+                        public function g($x, int $y): void {}
+                    }
+
+                    final class Q extends P {
+                        /** @param positive-int $y */
+                        #[\Override]
+                        public function g(int $x, int $y): void {}
+                    }
+
+                    $c = (new Q)->g(...);
+                    /** @psalm-check-type-exact $c = Closure(int, positive-int):void */;',
+                'assertions' => [],
+                'ignored_issues' => ['ImplementedParamTypeMismatch', 'MoreSpecificImplementedParamType'],
+                'php_version' => '8.3',
+            ],
+            'unrelatedInterfacesDocumentingAParameterAlikeGiveTheOverrideTheirType' => [
+                'code' => '<?php
+                    interface A {
+                        /** @param int $x */
+                        public function f($x): void;
+                    }
+
+                    interface B {
+                        /** @param int $x */
+                        public function f($x): void;
+                    }
+
+                    final class C implements A, B {
+                        /** @return void */
+                        #[\Override]
+                        public function f($x): void {
+                            /** @psalm-check-type-exact $x = int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
             ],
             'variadicParameterTakesTheOmittedParameters' => [
                 'code' => '<?php
@@ -1843,6 +1994,47 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unrelatedInterfacesDocumentingAParameterDifferentlyGiveAnUndocumentedOverrideNoType' => [
+                'code' => '<?php
+                    interface A {
+                        /** @param int $x */
+                        public function f($x): void;
+                    }
+
+                    interface B {
+                        /** @param string $x */
+                        public function f($x): void;
+                    }
+
+                    final class C implements A, B {
+                        #[\Override]
+                        public function f($x): void {}
+                    }',
+                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:43',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'unrelatedInterfacesDocumentingAParameterDifferentlyGiveAnOverrideDocumentingItsReturnNoType' => [
+                'code' => '<?php
+                    interface A {
+                        /** @param int $x */
+                        public function f($x): void;
+                    }
+
+                    interface B {
+                        /** @param string $x */
+                        public function f($x): void;
+                    }
+
+                    final class C implements A, B {
+                        /** @return void */
+                        #[\Override]
+                        public function f($x): void {}
+                    }',
+                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:43',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'overrideOfAMethodDocumentedByTheInterfaceWithAMoreSpecificParam' => [
                 'code' => '<?php
                     interface I {
@@ -2452,8 +2644,7 @@ final class MethodSignatureTest extends TestCase
                 'error_message' => 'InvalidReturnType',
                 'error_levels' => ['InvalidParent'],
             ],
-            // not sure how to handle it
-            'SKIPPED-returnsParentWithNoParentAndInvalidParentSuppressedMismatchingReturn' => [
+            'returnsParentWithNoParentAndInvalidParentSuppressedMismatchingReturn' => [
                 'code' => '<?php
                     class Foo {
                         public function f(): parent {
@@ -2461,7 +2652,7 @@ final class MethodSignatureTest extends TestCase
                         }
                     }
                 ',
-                'error_message' => 'InvalidReturnType',
+                'error_message' => 'FalsableReturnStatement',
                 'error_levels' => ['InvalidParent'],
             ],
             'regularMethodMismatchFromParentUse' => [
@@ -2666,7 +2857,7 @@ final class MethodSignatureTest extends TestCase
                 ',
                 'error_message' => 'MethodSignatureMismatch',
             ],
-            'SKIPPED-noMixedTypehintInDescendant' => [
+            'SKIPPED-noMixedTypehintInDescendant' => [ // #13926
                 'code' => '<?php
                     class a {
                         public function test(): mixed {

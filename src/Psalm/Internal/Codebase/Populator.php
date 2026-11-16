@@ -94,6 +94,9 @@ final class Populator
     {
         $this->progress->debug('ClassLikeStorage is populating' . "\n");
 
+        // before the members of the classes inherit their internal namespaces
+        $this->classlikes->markUnshippedCodeInternal();
+
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
             $this->populateClassLikeStorage($class_storage);
         }
@@ -688,6 +691,7 @@ final class Populator
             foreach ($storage->properties as $property) {
                 if (!$property->is_static) {
                     $property->readonly = true;
+                    $property->readonly_public_set = false;
                     $property->allow_private_mutation = false;
                 }
             }
@@ -705,6 +709,7 @@ final class Populator
                 foreach ($storage->properties as $property) {
                     if (!$property->is_static) {
                         $property->readonly = true;
+                        $property->readonly_public_set = false;
                     }
                 }
             }
@@ -920,17 +925,17 @@ final class Populator
                         }
                     }
 
-                    if (!$is_own_method) {
-                        continue;
-                    }
-
-                    // tell the declaring class it's overridden downstream
+                    // tell the declaring class it's overridden downstream, by a method of this class or of a trait
                     $declaring_method_storage->overridden_downstream = true;
                     $declaring_method_storage->overridden_somewhere = true;
 
                     if ($declaring_method_storage->mutation_free_assumed) {
                         $declaring_method_storage->capabilities = Capabilities::ALL;
                         $declaring_method_storage->mutation_free_assumed = false;
+                    }
+
+                    if (!$is_own_method) {
+                        continue;
                     }
 
                     if ($declaring_method_storage->throws

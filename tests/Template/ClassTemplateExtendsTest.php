@@ -290,7 +290,7 @@ final class ClassTemplateExtendsTest extends TestCase
                         return new Table([1]);
                     }',
             ],
-            'SKIPPED-interface' => [
+            'interface' => [
                 'code' => '<?php
                     /**
                      * Singleton interface

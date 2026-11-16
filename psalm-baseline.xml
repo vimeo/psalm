@@ -30,7 +30,6 @@
   </file>
   <file src="src/Psalm/CodeLocation.php">
     <ImpureFunctionCall>
-      <code><![CDATA[__unserialize]]></code>
       <code><![CDATA[calculateRealLocation]]></code>
     </ImpureFunctionCall>
     <RiskyTruthyFalsyComparison>
@@ -1095,7 +1094,6 @@
       <code><![CDATA[$calling_class_storage->template_extended_params]]></code>
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$declaring_class_storage->template_types]]></code>
       <code><![CDATA[$documenting_method_storage->template_types]]></code>
     </RiskyTruthyFalsyComparison>
@@ -1562,9 +1560,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[end($path_types)]]></code>
     </RiskyTruthyFalsyComparison>
-    <UnnecessaryVarAnnotation>
-      <code><![CDATA[DataFlowNode]]></code>
-    </UnnecessaryVarAnnotation>
   </file>
   <file src="src/Psalm/Internal/Codebase/VariableUseGraph.php">
     <ImmutableDependency>
@@ -1797,18 +1792,6 @@
       <code><![CDATA[$method_id_parts[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
   </file>
-  <file src="src/Psalm/Internal/PhpVisitor/AssignmentMapVisitor.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$arg_var_id]]></code>
-      <code><![CDATA[$arg_var_id]]></code>
-      <code><![CDATA[$left_var_id]]></code>
-      <code><![CDATA[$left_var_id]]></code>
-      <code><![CDATA[$right_var_id]]></code>
-      <code><![CDATA[$right_var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="src/Psalm/Internal/PhpVisitor/PartialParserVisitor.php">
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$cs[0]]]></code>
@@ -1999,7 +1982,6 @@
       <code><![CDATA[self::$storage]]></code>
       <code><![CDATA[self::$storage]]></code>
       <code><![CDATA[self::$storage]]></code>
-      <code><![CDATA[self::$storage]]></code>
     </ImpureStaticProperty>
   </file>
   <file src="src/Psalm/Internal/Provider/DynamicFunctionStorageProvider.php">
@@ -2112,7 +2094,6 @@
       <code><![CDATA[self::$new_storage]]></code>
       <code><![CDATA[self::$new_storage]]></code>
       <code><![CDATA[self::$new_storage]]></code>
-      <code><![CDATA[self::$storage]]></code>
       <code><![CDATA[self::$storage]]></code>
       <code><![CDATA[self::$storage]]></code>
       <code><![CDATA[self::$storage]]></code>
@@ -2466,8 +2447,6 @@
   </file>
   <file src="src/Psalm/Internal/Type/TypeCombiner.php">
     <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$combination->array_type_params[1]]]></code>
-      <code><![CDATA[$combination->array_type_params[1]]]></code>
       <code><![CDATA[$combination->array_type_params[1]]]></code>
       <code><![CDATA[$combination->array_type_params[1]]]></code>
       <code><![CDATA[$combination->array_type_params[1]]]></code>
@@ -2978,11 +2957,6 @@
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
     </ImmutableDependency>
-  </file>
-  <file src="src/Psalm/Storage/Assertion/NotInArray.php">
-    <ImplicitToStringCast>
-      <code><![CDATA[$this->type]]></code>
-    </ImplicitToStringCast>
   </file>
   <file src="src/Psalm/Storage/ClassConstantStorage.php">
     <MutableDependency>

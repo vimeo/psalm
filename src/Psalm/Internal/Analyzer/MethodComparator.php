@@ -189,9 +189,11 @@ final class MethodComparator
                 && isset($codebase->classlike_storage_provider->get($implementer_called_class_name)
                     ->documenting_method_ids[strtolower($guide_method_storage->cased_name ?? '')]));
 
+        // an inherited docblock refines a native return type, but cannot replace one it does not overlap
+        // (see Methods::getMethodReturnType())
         if ($guide_method_storage->return_type
             && $implementer_method_storage->return_type
-            && !$inherits_return_type
+            && (!$inherits_return_type || $implementer_method_storage->signature_return_type)
             && ($guide_method_storage->signature_return_type !== $guide_method_storage->return_type
                 || $implementer_method_storage->signature_return_type !== $implementer_method_storage->return_type)
             && $implementer_classlike_storage->user_defined
@@ -209,6 +211,7 @@ final class MethodComparator
                 $implementer_declaring_method_id,
                 $code_location,
                 $suppressed_issues,
+                $inherits_return_type,
             );
         }
 
@@ -1327,21 +1330,40 @@ final class MethodComparator
             && $implementer_classlike_storage->final
             && !$implementer_classlike_storage->final_from_docblock;
 
+        // what a trait method refers to as self or static is the class it ends up in
+        $implementing_class_name = $implementer_classlike_storage->is_trait
+            ? $implementer_called_class_name
+            : $implementer_classlike_storage->name;
+
+        $class_using_trait = self::getClassUsingTrait(
+            $codebase,
+            $implementer_classlike_storage,
+            $guide_classlike_storage,
+        );
+
+        // `parent` of a non-abstract trait method is the parent of the class using the trait
+        $guide_parent_class = $guide_classlike_storage->parent_class;
+
+        if ($guide_classlike_storage->is_trait) {
+            $guide_parent_class = $implementer_classlike_storage->parent_class;
+
+            if (!$guide_method_storage->abstract && $class_using_trait !== null) {
+                $guide_parent_class = $codebase->classlike_storage_provider->get($class_using_trait)->parent_class;
+            }
+        }
+
         $guide_signature_return_type = TypeExpander::expandUnion(
             $codebase,
             $guide_signature_return_type,
             $guide_classlike_storage->is_trait && $guide_method_storage->abstract
-                ? $implementer_classlike_storage->name
-                : self::getClassUsingTrait($codebase, $implementer_classlike_storage, $guide_classlike_storage)
-                    ?? $guide_classlike_storage->name,
-            ($guide_classlike_storage->is_trait && $guide_method_storage->abstract)
+                ? $implementing_class_name
+                : $class_using_trait ?? $guide_classlike_storage->name,
+            $guide_classlike_storage->is_trait
                 || $guide_classlike_storage->final
                 || $resolve_static_to_final_class
-                ? $implementer_classlike_storage->name
+                ? $implementing_class_name
                 : $guide_classlike_storage->name,
-            $guide_classlike_storage->is_trait && $guide_method_storage->abstract
-                ? $implementer_classlike_storage->parent_class
-                : $guide_classlike_storage->parent_class,
+            $guide_parent_class,
             true,
             true,
             $resolve_static_to_final_class,
@@ -1351,9 +1373,7 @@ final class MethodComparator
             ? TypeExpander::expandUnion(
                 $codebase,
                 $implementer_method_storage->signature_return_type,
-                $implementer_classlike_storage->is_trait
-                    ? $implementer_called_class_name
-                    : $implementer_classlike_storage->name,
+                $implementing_class_name,
                 // an inherited method returns `static` of the class it is called on
                 new TNamedObject($implementer_called_class_name),
                 $implementer_classlike_storage->parent_class,
@@ -1420,6 +1440,7 @@ final class MethodComparator
         ?MethodIdentifier $implementer_declaring_method_id,
         CodeLocation $code_location,
         array $suppressed_issues,
+        bool $inherits_return_type,
     ): void {
         $implementer_method_storage_return_type = TypeExpander::expandUnion(
             $codebase,
@@ -1501,6 +1522,25 @@ final class MethodComparator
             $guide_method_storage_return_type = Type::getNull();
         }
 
+        $guide_in_implementer_result = new TypeComparisonResult();
+
+        if ($inherits_return_type
+            && ((UnionTypeComparator::isContainedBy(
+                $codebase,
+                $guide_method_storage_return_type,
+                $implementer_method_storage_return_type,
+                false,
+                false,
+                $guide_in_implementer_result,
+            ) && !$guide_in_implementer_result->to_string_cast) || Type::intersectUnionTypes(
+                $implementer_method_storage_return_type,
+                $guide_method_storage_return_type,
+                $codebase,
+            ))
+        ) {
+            return;
+        }
+
         $union_comparison_results = new TypeComparisonResult();
 
         if (!UnionTypeComparator::isContainedBy(
@@ -1511,6 +1551,15 @@ final class MethodComparator
             false,
             $union_comparison_results,
         )) {
+            // the types overlap where the intersection can't be built (callable-array, a constant wildcard);
+            // an object castable to string does not overlap a string
+            if ($inherits_return_type
+                && $union_comparison_results->type_coerced
+                && !$union_comparison_results->to_string_cast
+            ) {
+                return;
+            }
+
             // is the declared return type more specific than the inferred one?
             if ($union_comparison_results->type_coerced) {
                 IssueBuffer::maybeAdd(

@@ -80,7 +80,22 @@ final class AlgebraTest extends TestCase
     {
         $assertions = ['$s' => [[new IsIdentical(TLiteralString::make("é/\"\\\n"))]]];
         $assertion = $negated ? new NotNestedAssertions($assertions) : new NestedAssertions($assertions);
-        self::assertSame(($negated ? '!@' : '@') . json_encode($assertions, JSON_THROW_ON_ERROR), (string) $assertion);
+        self::assertSame(
+            ($negated ? '!@' : '@') . json_encode(['$s' => [["=string(é/\"\\\n)"]]], JSON_THROW_ON_ERROR),
+            (string) $assertion,
+        );
+    }
+
+    #[DataProvider('providerNestedAssertionNegations')]
+    public function testNestedAssertionsOfDifferentClassesWithTheSamePropertiesDiffer(bool $negated): void
+    {
+        $is_int = ['$x' => [[new IsType(new TInt())]]];
+        $is_not_int = ['$x' => [[new IsNotType(new TInt())]]];
+
+        self::assertNotSame(
+            (string) ($negated ? new NotNestedAssertions($is_int) : new NestedAssertions($is_int)),
+            (string) ($negated ? new NotNestedAssertions($is_not_int) : new NestedAssertions($is_not_int)),
+        );
     }
 
     /**
@@ -155,8 +170,38 @@ final class AlgebraTest extends TestCase
 
         $negated_formula = Algebra::negateFormula($formula);
 
+        $this->assertCount(2, $negated_formula);
+        $this->assertSame('($a is not int) || ($b is not int)', (string)$negated_formula[0]);
+        $this->assertTrue($negated_formula[1]->wedge);
+
+        $negated_formula = Algebra::negateFormula($formula, true);
+
         $this->assertCount(1, $negated_formula);
         $this->assertSame('$a is not int', (string)$negated_formula[0]);
+    }
+
+    public function testNegateFormulaWithNonLiteralEquality(): void
+    {
+        $a1 = new IsIdentical(new TString());
+        $formula = [
+            new Clause(['$a' => [(string)$a1 => $a1], '$b' => ['!falsy' => new Truthy()]], 1, 1),
+        ];
+
+        $negated_formula = Algebra::negateFormula($formula);
+
+        $this->assertCount(2, $negated_formula);
+        $this->assertSame('!$b', (string)$negated_formula[0]);
+        $this->assertTrue($negated_formula[1]->wedge);
+
+        $this->assertSame([true], array_map(
+            static fn(Clause $clause): bool => $clause->wedge,
+            Algebra::negateFormula($negated_formula),
+        ));
+
+        $this->assertSame([true], array_map(
+            static fn(Clause $clause): bool => $clause->wedge,
+            Algebra::negateFormula($formula, true),
+        ));
     }
 
     public function testCombinatorialExpansion(): void

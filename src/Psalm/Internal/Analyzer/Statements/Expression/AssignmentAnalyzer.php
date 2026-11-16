@@ -13,6 +13,7 @@ use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Algebra;
@@ -371,7 +372,7 @@ final class AssignmentAnalyzer
             $base_assign_value = $base_assign_value->expr;
         }
 
-        if ($base_assign_value !== $assign_value) {
+        if ($base_assign_value !== null && $base_assign_value !== $assign_value) {
             ExpressionAnalyzer::analyze($statements_analyzer, $base_assign_value, $context);
 
             $assign_value_type = $statements_analyzer->node_data->getType($base_assign_value) ?? $assign_value_type;
@@ -655,6 +656,15 @@ final class AssignmentAnalyzer
                 $statements_analyzer,
             );
         } else {
+            // a property never fetched may still be in clauses, from the assertion of a call
+            if ($extended_var_id !== null) {
+                $context->removeVarFromConflictingClauses(
+                    $extended_var_id,
+                    $assign_value_type,
+                    $statements_analyzer,
+                );
+            }
+
             $root_var_id = ExpressionIdentifier::getRootVarId(
                 $assign_var,
                 $statements_analyzer->getFQCLN(),
@@ -1335,8 +1345,15 @@ final class AssignmentAnalyzer
             || $stmt->var instanceof PropertyFetch
             || $stmt->var instanceof PhpParser\Node\Expr\StaticPropertyFetch
             || $stmt->var instanceof ArrayDimFetch;
+        $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+        $context->inside_by_ref_offset = $stmt->expr instanceof ArrayDimFetch;
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context, false, null, null, null, true);
+        $context->inside_by_ref_offset = $was_inside_by_ref_offset;
         $context->inside_general_use = $was_inside_general_use;
+
+        if ($stmt->expr instanceof ArrayDimFetch) {
+            self::makeReferencedArrayNonNull($statements_analyzer, $stmt->expr, $context);
+        }
 
         $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
@@ -1405,6 +1422,7 @@ final class AssignmentAnalyzer
                 $return_type,
             );
             FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $lhs_var_id);
+            $context->forgetReferencesPossiblyBound($lhs_var_id);
 
             if (isset($context->references_in_scope[$lhs_var_id])) {
                 $context->decrementReferenceCount($lhs_var_id);
@@ -1463,7 +1481,22 @@ final class AssignmentAnalyzer
                 ?? Type::getMixed();
         }
 
+        $rhs_type = $context->vars_in_scope[$rhs_var_id];
+
+        // binding a reference to a variable or an offset that is not set creates it as null (a superglobal read
+        // is taken as defined, but $http_response_header: see VariableFetchAnalyzer::getReadSuperGlobalType())
+        if ($rhs_type->possibly_undefined || $rhs_type->possibly_undefined_from_try) {
+            $rhs_type = $rhs_type->setPossiblyUndefined(false, false);
+
+            $context->vars_in_scope[$rhs_var_id] = $rhs_type->isNullable()
+                || $rhs_type->hasMixed()
+                || (VariableFetchAnalyzer::isSuperGlobal($rhs_var_id) && $rhs_var_id !== '$http_response_header')
+                ? $rhs_type
+                : $rhs_type->getBuilder()->addType(new TNull())->freeze();
+        }
+
         FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $lhs_var_id);
+        $context->forgetReferencesPossiblyBound($lhs_var_id);
 
         if ($rhs_var_id === '$GLOBALS[\'' . substr($lhs_var_id, 1) . '\']') {
             $context->bound_globals[$lhs_var_id] = VariableFetchAnalyzer::getGlobalType(
@@ -1558,6 +1591,57 @@ final class AssignmentAnalyzer
         return true;
     }
 
+    /**
+     * PHP turns the null a local variable holds into an array when an offset of it is bound by reference. What is
+     * written through the reference can't be followed, so the item itself is left as it is.
+     */
+    private static function makeReferencedArrayNonNull(
+        StatementsAnalyzer $statements_analyzer,
+        ArrayDimFetch $stmt,
+        Context $context,
+    ): void {
+        $root = $stmt->var;
+
+        while ($root instanceof ArrayDimFetch) {
+            $root = $root->var;
+        }
+
+        if (!$root instanceof PhpParser\Node\Expr\Variable
+            || !is_string($root->name)
+            || $root->name === 'this'
+        ) {
+            return;
+        }
+
+        $root_id = '$' . $root->name;
+        $root_type = $context->vars_in_scope[$root_id] ?? null;
+
+        if ($root_type === null || !$root_type->isNullable()) {
+            return;
+        }
+
+        foreach ($root_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TArray
+                && !$atomic_type instanceof TKeyedArray
+                && !$atomic_type instanceof TNull
+            ) {
+                return;
+            }
+        }
+
+        $array_type = $root_type->getBuilder();
+        $array_type->removeType('null');
+
+        if ($array_type->isUnionEmpty()) {
+            $array_type->addType(new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]));
+        }
+
+        $array_type = $array_type->freeze();
+
+        $context->vars_in_scope[$root_id] = $array_type;
+        $context->removeVarFromConflictingClauses($root_id, $array_type, $statements_analyzer);
+    }
+
     public static function assignByRefParam(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
@@ -1568,6 +1652,9 @@ final class AssignmentAnalyzer
         bool $prevent_null = false,
         bool $out_type_holds_value = false,
     ): void {
+        // a condition holding the call is then known to assign the argument (see FormulaGenerator::getAssignedVarIds())
+        $statements_analyzer->node_data->markWrittenByReference($stmt);
+
         if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch
             && ($prop_name = InstancePropertyFetchAnalyzer::getPropertyName($statements_analyzer, $stmt)) !== null
         ) {
@@ -1578,7 +1665,22 @@ final class AssignmentAnalyzer
                 null,
                 $by_ref_out_type,
                 $context,
+                modifies_value: true,
             );
+
+            $property_var_id = ExpressionIdentifier::getExtendedVarId(
+                $stmt,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($property_var_id !== null) {
+                $context->removeVarFromConflictingClauses(
+                    $property_var_id,
+                    $by_ref_out_type,
+                    $statements_analyzer,
+                );
+            }
 
             return;
         }
@@ -1769,6 +1871,7 @@ final class AssignmentAnalyzer
                 if (!$context->inside_conditional) {
                     $context->possibly_assigned_var_ids[$var_id] = true;
                     $context->vars_in_scope[$var_id] = $by_ref_out_type;
+                    $context->writeToReferencesPossiblyBound($var_id, $by_ref_out_type, $codebase);
 
                     if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))
                         || $stmt_type->isNever()
@@ -1783,6 +1886,7 @@ final class AssignmentAnalyzer
             $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
 
             $context->vars_in_scope[$var_id] = $by_ref_out_type;
+            $context->writeToReferencesPossiblyBound($var_id, $by_ref_out_type, $codebase);
 
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
@@ -2488,6 +2592,7 @@ final class AssignmentAnalyzer
 
                 $context->vars_in_scope[$var_id] = $assign_value_type;
                 $context->vars_possibly_in_scope[$var_id] = true;
+                $context->writeToReferencesPossiblyBound($var_id, $assign_value_type, $codebase);
 
                 $location = new CodeLocation($statements_analyzer, $assign_var);
 
@@ -2569,35 +2674,46 @@ final class AssignmentAnalyzer
                     );
                 }
 
+                $assigned_condition = $assign_value instanceof PhpParser\Node\Expr\BooleanNot
+                    ? $assign_value->expr
+                    : $assign_value;
+
                 if ($assign_value_type->getId() === 'bool'
-                    && ($assign_value instanceof PhpParser\Node\Expr\BinaryOp
-                        || $assign_value instanceof PhpParser\Node\Expr\Instanceof_
-                        || ($assign_value instanceof PhpParser\Node\Expr\BooleanNot
-                            && ($assign_value->expr instanceof PhpParser\Node\Expr\BinaryOp
-                                || $assign_value->expr instanceof PhpParser\Node\Expr\Instanceof_)))
+                    && $assign_value !== null
+                    && ($assigned_condition instanceof PhpParser\Node\Expr\BinaryOp
+                        || $assigned_condition instanceof PhpParser\Node\Expr\Instanceof_
+                        || $assigned_condition instanceof PhpParser\Node\Expr\FuncCall
+                        || $assigned_condition instanceof PhpParser\Node\Expr\MethodCall
+                        || $assigned_condition instanceof PhpParser\Node\Expr\StaticCall
+                        || $assigned_condition instanceof PhpParser\Node\Expr\Isset_
+                        || $assigned_condition instanceof PhpParser\Node\Expr\Empty_)
                 ) {
                     $var_object_id = spl_object_id($assign_var);
                     $cond_object_id = spl_object_id($assign_value);
 
-                    $right_clauses = FormulaGenerator::getFormula(
-                        $cond_object_id,
-                        $cond_object_id,
-                        $assign_value,
-                        $context->self,
-                        $statements_analyzer,
-                        $codebase,
-                    );
+                    try {
+                        $right_clauses = FormulaGenerator::getFormula(
+                            $cond_object_id,
+                            $cond_object_id,
+                            $assign_value,
+                            $context->self,
+                            $statements_analyzer,
+                            $codebase,
+                        );
 
-                    $right_clauses = Context::filterClauses(
-                        $var_id,
-                        $right_clauses,
-                    );
+                        $right_clauses = Context::filterClauses(
+                            $var_id,
+                            $right_clauses,
+                        );
 
-                    $assignment_clauses = Algebra::combineOredClauses(
-                        [new Clause([$var_id => ['falsy' => new Falsy()]], $var_object_id, $var_object_id)],
-                        $right_clauses,
-                        $cond_object_id,
-                    );
+                        $assignment_clauses = Algebra::combineOredClauses(
+                            [new Clause([$var_id => ['falsy' => new Falsy()]], $var_object_id, $var_object_id)],
+                            $right_clauses,
+                            $cond_object_id,
+                        );
+                    } catch (ComplicatedExpressionException) {
+                        $assignment_clauses = [];
+                    }
 
                     $context->clauses = [...$context->clauses, ...$assignment_clauses];
                 }

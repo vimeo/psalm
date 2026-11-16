@@ -540,7 +540,7 @@ final class AssignmentInConditionalTest extends TestCase
                     /**
                      * @psalm-suppress MixedReturnStatement
                      */
-                    function foo(string $file_name) : int {
+                    function foo(string $file_name) : int|float|string {
                         while ($data = getData()) {
                             if (is_numeric($data[0])) {
                                 for ($i = 1; $i < count($data); $i++) {
@@ -555,6 +555,9 @@ final class AssignmentInConditionalTest extends TestCase
                     function getData() : ?array {
                         return rand(0, 1) ? ["a", "b", "c"] : null;
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'assertVarRedefinedInIfWithExtraIf' => [
                 'code' => '<?php
@@ -575,7 +578,7 @@ final class AssignmentInConditionalTest extends TestCase
                         return $value;
                     }',
             ],
-            'SKIPPED-assertVarRedefinedInOpWithAnd' => [
+            'SKIPPED-assertVarRedefinedInOpWithAnd' => [ // #13921
                 'code' => '<?php
                     class O {
                         public function foo() : bool { return true; }
@@ -1019,6 +1022,46 @@ final class AssignmentInConditionalTest extends TestCase
                         return isset($a["k"]) && ($a = other()) !== null ? count($a) : 0;
                     }',
             ],
+            'elseifConditionAssigningAMixedVariableInALoopDefinesItInTheElse' => [
+                'code' => '<?php
+                    /**
+                     * @param list<bool> $l
+                     * @param mixed $inc
+                     */
+                    function f(array $l, $inc): void {
+                        foreach ($l as $a) {
+                            if ($a) {
+                                $x = 1;
+                            } elseif (is_array($x = $inc)) {
+                                $x = 2;
+                            }
+                            echo is_int($x) ? "int" : "";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'elseifConditionAssigningAVariableWithTheTypeItHadDefinesItInTheElse' => [
+                'code' => '<?php
+                    function check(int $i): bool {
+                        return $i > 0;
+                    }
+
+                    if (rand(0, 1)) {
+                        $x = rand(0, 1);
+                    }
+
+                    if (rand(0, 1)) {
+                        $x = rand(0, 1);
+                    } elseif (check($x = rand(0, 1))) {
+                        $x = rand(0, 1);
+                    }
+
+                    $y = $x;',
+                'assertions' => [
+                    '$y===' => 'int<0, 1>',
+                ],
+            ],
         ];
     }
 
@@ -1029,6 +1072,27 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'elseifConditionAssignmentIsNotMadeInTheBranchesBeforeIt' => [
+                'code' => '<?php
+                    function check(int $i): bool {
+                        return $i > 0;
+                    }
+
+                    function f(bool $a, bool $b): void {
+                        if (rand(0, 1)) {
+                            $x = rand(0, 1);
+                        }
+
+                        if ($a) {
+                            $x = rand(0, 1);
+                        } elseif ($b) {
+                        } elseif (check($x = rand(0, 1))) {
+                        }
+
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:30',
+            ],
             'variableOnlyAnIssetInABranchMentionsIsUndefined' => [
                 'code' => '<?php
                     if (rand(0, 1)) {
