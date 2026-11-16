@@ -1759,6 +1759,63 @@ final class SwitchTypeTest extends TestCase
                     }',
                 'error_message' => 'UndefinedVariable',
             ],
+            'breakTwoOutOfNestedSwitchForgetsWhatTheVarWasCheckedFor' => [
+                'code' => '<?php
+                    function f(?int $a, string $s, string $u): void {
+                        $b = $a !== null;
+                        switch ($s) {
+                            case "A":
+                                switch ($u) {
+                                    default:
+                                        $a = null;
+                                        break 2;
+                                }
+                        }
+                        if ($b) {
+                            echo $a + 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+            ],
+            'breakTwoOutOfLoopInCaseForgetsWhatTheVarWasCheckedFor' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(?int $a, string $s, string $u, array $l): void {
+                        $b = $a !== null;
+                        switch ($s) {
+                            case "A":
+                                foreach ($l as $_) {
+                                    switch ($u) {
+                                        default:
+                                            $a = null;
+                                            break 2;
+                                    }
+                                }
+                        }
+                        if ($b) {
+                            echo $a + 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+            ],
+            'breakBeforeReturnForgetsWhatTheVarWasCheckedFor' => [
+                'code' => '<?php
+                    function f(?int $a, string $s, bool $c): void {
+                        $b = $a !== null;
+                        switch ($s) {
+                            case "A":
+                                if ($c) {
+                                    $a = null;
+                                    break;
+                                }
+                                return;
+                        }
+                        if ($b) {
+                            echo $a + 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+            ],
             'varFromBreakTwoOutOfLoopIsUndefinedAfterTheSwitch' => [
                 'code' => '<?php
                     /** @param list<int> $l */

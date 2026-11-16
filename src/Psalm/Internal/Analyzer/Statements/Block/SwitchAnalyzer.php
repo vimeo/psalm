@@ -19,6 +19,7 @@ use SplFixedArray;
 use function array_intersect_key;
 use function array_merge;
 use function count;
+use function end;
 use function in_array;
 
 /**
@@ -251,7 +252,11 @@ final class SwitchAnalyzer
         //a switch can't return in all options without a default
         $context->has_returned = $all_options_returned && $has_default;
 
-        if ($context->has_returned && $context->case_scope && in_array('leave', $case_exit_types->toArray(), true)) {
+        if ($context->has_returned
+            && $context->case_scope
+            && end($context->break_types) === 'switch'
+            && in_array('leave', $case_exit_types->toArray(), true)
+        ) {
             $context->case_scope->has_nested_switch_leaving_it = true;
         }
     }

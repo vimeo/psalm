@@ -485,9 +485,11 @@ final class SwitchCaseAnalyzer
                         $case_actions,
                     ))));
 
-        if ($case_exit_type !== 'return_throw' && !$ends_unless_breaking) {
+        if ($case_exit_type !== 'return_throw') {
             $context->removeClausesOfVarsChangedIn($case_context);
+        }
 
+        if ($case_exit_type !== 'return_throw' && !$ends_unless_breaking) {
             if (self::handleNonReturningCase(
                 $statements_analyzer,
                 $switch_var_id,
