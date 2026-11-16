@@ -60,8 +60,27 @@ final class DoAnalyzer
             }
         }
 
+        if (LoopAnalyzer::analyze(
+            $statements_analyzer,
+            $stmt->stmts,
+            WhileAnalyzer::getAndExpressions($stmt->cond),
+            [],
+            $loop_scope,
+            $inner_loop_context,
+            true,
+            true,
+        ) === false) {
+            return false;
+        }
+
+        // because it's a do {} while, inner loop vars belong to the main context
+        if (!$inner_loop_context) {
+            throw new UnexpectedValueException('There should be an inner loop context');
+        }
+
         $cond_id = spl_object_id($stmt->cond);
 
+        // what the condition asserts can depend on the types of its operands (`$i-- > 0`), known once it is analysed
         $while_clauses = FormulaGenerator::getFormula(
             $cond_id,
             $cond_id,
@@ -69,6 +88,7 @@ final class DoAnalyzer
             $context->self,
             $statements_analyzer,
             $codebase,
+            cache: false,
         );
 
         // a clause on an offset or property of a mixed variable says nothing, but its negation is not true either
@@ -93,24 +113,6 @@ final class DoAnalyzer
 
         if (!$while_clauses) {
             $while_clauses = [new Clause([], $cond_id, $cond_id, true)];
-        }
-
-        if (LoopAnalyzer::analyze(
-            $statements_analyzer,
-            $stmt->stmts,
-            WhileAnalyzer::getAndExpressions($stmt->cond),
-            [],
-            $loop_scope,
-            $inner_loop_context,
-            true,
-            true,
-        ) === false) {
-            return false;
-        }
-
-        // because it's a do {} while, inner loop vars belong to the main context
-        if (!$inner_loop_context) {
-            throw new UnexpectedValueException('There should be an inner loop context');
         }
 
         try {
