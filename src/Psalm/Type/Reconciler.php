@@ -818,11 +818,10 @@ class Reconciler
             if ($analysis_php_version_id >= 8_00_00) {
                 $array_assertions[] = [new IsType(new TArray([Type::getArrayKey(), Type::getMixed()]))];
             } elseif (!isset($existing_types[$array_key])) {
-                // an offset of unknown type is taken as one with array access, as isset() does
+                // an offset of unknown type is taken as an array or an ArrayAccess
                 $array_assertions[] = [
-                    str_contains($key_parts[$key_part_count - 2], '\'')
-                        ? new HasStringArrayAccess()
-                        : new HasIntOrStringArrayAccess(),
+                    new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])),
+                    new IsType(new TNamedObject('ArrayAccess')),
                 ];
             }
 

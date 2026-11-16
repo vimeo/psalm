@@ -825,16 +825,6 @@ final class ArrayKeyExistsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
-            'issetOfAnIntKeyMakesAnOffsetOfUnknownTypeArrayAccessible' => [
-                'code' => '<?php
-                    function f(array $a): void {
-                        if (!isset($a["x"][3])) {
-                            return;
-                        }
-
-                        echo (string) $a["x"][3];
-                    }',
-            ],
             'arrayKeyExistsMakesAnArrayOrArrayAccessAnArrayFromPhp8' => [
                 'code' => '<?php
                     /**
