@@ -844,6 +844,59 @@ final class ArrayKeyExistsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'arrayKeyExistsKeepsTheTypeOfANestedArrayFilledInALoop' => [
+                'code' => '<?php
+                    /** @param list<list<string>> $rows */
+                    function f(array $rows): void {
+                        $unmerged = [];
+                        foreach ($rows as $i => $row) {
+                            foreach ($row as $j => $_) {
+                                if (!array_key_exists($i, $unmerged) || !array_key_exists($j, $unmerged[$i])) {
+                                    $unmerged[$i][$j] = ["a"];
+                                }
+                                $unmerged[$i][$j][] = "b";
+                            }
+                        }
+                        /** @psalm-check-type-exact $unmerged = array<int<0, max>, array<int<0, max>, list{0: "a"|"b", 1?: "b", ...<"b">}>> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayKeyExistsKeepsTheTypeOfANestedArrayFilledInALoopBeforePhp8' => [
+                'code' => '<?php
+                    /** @param list<list<string>> $rows */
+                    function f(array $rows): void {
+                        $unmerged = [];
+                        foreach ($rows as $i => $row) {
+                            foreach ($row as $j => $_) {
+                                if (!array_key_exists($i, $unmerged) || !array_key_exists($j, $unmerged[$i])) {
+                                    $unmerged[$i][$j] = ["a"];
+                                }
+                                $unmerged[$i][$j][] = "b";
+                            }
+                        }
+                        /** @psalm-check-type-exact $unmerged = array<int<0, max>, array<int<0, max>, list{0: "a"|"b", 1?: "b", ...<"b">}>> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'arrayKeyExistsKeepsTheKnownTypeOfANestedArrayBeforePhp8' => [
+                'code' => '<?php
+                    /** @param array<int, array<int, list<string>>> $a */
+                    function f(array $a, int $i, int $j): void {
+                        if (!array_key_exists($i, $a) || !array_key_exists($j, $a[$i])) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $a = non-empty-array<int, array<int, list<string>>> */;
+                        $a[$i][$j][] = "x";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             'arrayKeyExistsMakesAnArrayOrArrayAccessAnArrayFromPhp8' => [
                 'code' => '<?php
                     /**

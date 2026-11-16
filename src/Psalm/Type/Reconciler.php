@@ -80,6 +80,7 @@ use function array_key_first;
 use function array_keys;
 use function array_merge;
 use function array_pop;
+use function array_push;
 use function array_shift;
 use function array_slice;
 use function array_values;
@@ -813,16 +814,31 @@ class Reconciler
 
             // array_key_exists() is only true for a non-empty array, or before PHP 8 an object too. The first assertion
             // makes the loop below add the isset ones on the keys the array is nested in
+            $array_type = self::getPathType($array_key, $existing_types);
+
+            // an array that can only be empty is left as it is where the condition can't be true
+            if ($array_type !== null && self::isAlwaysEmptyArray($array_type)) {
+                continue;
+            }
+
             $array_assertions = [[new NonEmpty()]];
 
-            if ($analysis_php_version_id >= 8_00_00) {
-                $array_assertions[] = [new IsType(new TArray([Type::getArrayKey(), Type::getMixed()]))];
-            } elseif (!isset($existing_types[$array_key])) {
-                // an offset of unknown type is taken as an array or an ArrayAccess
-                $array_assertions[] = [
-                    new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])),
-                    new IsType(new TNamedObject('ArrayAccess')),
-                ];
+            // asserting a type would replace the arrays a value already is, or widen one that can't be (never)
+
+            if ($array_type === null || $array_type->hasMixed()) {
+                $array_assertions[] = $analysis_php_version_id >= 8_00_00
+                    ? [new IsType(new TArray([Type::getArrayKey(), Type::getMixed()]))]
+                    : [
+                        new IsType(new TArray([Type::getArrayKey(), Type::getMixed()])),
+                        new IsType(new TNamedObject('ArrayAccess')),
+                    ];
+            } elseif ($analysis_php_version_id >= 8_00_00) {
+                foreach ($array_type->getAtomicTypes() as $atomic_type) {
+                    if (!$atomic_type instanceof TArray && !$atomic_type instanceof TKeyedArray) {
+                        $array_assertions[] = [new IsType(new TArray([Type::getArrayKey(), Type::getMixed()]))];
+                        break;
+                    }
+                }
             }
 
             $new_types[$array_key] = array_merge($array_assertions, $new_types[$array_key] ?? []);
@@ -948,6 +964,80 @@ class Reconciler
         }
 
         return $new_types;
+    }
+
+    /**
+     * The type of a variable or of an offset of one that the known types give, null where it isn't known
+     *
+     * @param array<string, Union> $existing_types
+     * @psalm-external-mutation-free
+     */
+    private static function getPathType(string $path, array $existing_types): ?Union
+    {
+        if (isset($existing_types[$path])) {
+            return $existing_types[$path];
+        }
+
+        $key_parts = self::breakUpPathIntoParts($path);
+        $key_part_count = count($key_parts);
+
+        if ($key_part_count < 4 || $key_parts[$key_part_count - 3] !== '[') {
+            return null;
+        }
+
+        $parent_type = self::getPathType(implode('', array_slice($key_parts, 0, -3)), $existing_types);
+
+        if ($parent_type === null) {
+            return null;
+        }
+
+        $offset = $key_parts[$key_part_count - 2];
+
+        if ($offset[0] === '\'' || $offset[0] === '"') {
+            $offset = ExpressionIdentifier::unquoteOffset($offset);
+            $int_offset = ArrayAnalyzer::getLiteralArrayKeyInt($offset);
+            $offset = $int_offset === false ? $offset : $int_offset;
+        } elseif (is_numeric($offset)) {
+            $offset = (int) $offset;
+        } else {
+            $offset = null;
+        }
+
+        $value_types = [];
+
+        foreach ($parent_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TArray) {
+                $value_types[] = $atomic_type->type_params[1];
+            } elseif ($atomic_type instanceof TKeyedArray) {
+                if ($offset !== null && isset($atomic_type->properties[$offset])) {
+                    $value_types[] = $atomic_type->properties[$offset];
+                } elseif ($offset === null) {
+                    array_push($value_types, ...array_values($atomic_type->properties));
+                }
+
+                if ($atomic_type->fallback_params !== null) {
+                    $value_types[] = $atomic_type->fallback_params[1];
+                }
+            } elseif (!$atomic_type instanceof TNull && !$atomic_type instanceof TFalse) {
+                return null;
+            }
+        }
+
+        return $value_types ? Type::combineUnionTypeArray($value_types, null) : Type::getNever();
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isAlwaysEmptyArray(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TArray || !$atomic_type->type_params[1]->isNever()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
