@@ -44,7 +44,7 @@ final class ValueOfTemplateTest extends TestCase
                     '$a' => 'list<mixed>',
                 ],
             ],
-            'SKIPPED-acceptsIfInArrayFn' => [
+            'SKIPPED-acceptsIfInArrayFn' => [ // #13931
                 'code' => '<?php
                     /**
                      * @template T of array

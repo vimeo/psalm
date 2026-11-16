@@ -47,6 +47,14 @@ use function strtolower;
  */
 final class MethodCallPurityAnalyzer
 {
+    private const ENGINE_STATE_MOVERS = [
+        'fiber::start' => true,
+        'fiber::resume' => true,
+        'fiber::throw' => true,
+        'generator::send' => true,
+        'generator::throw' => true,
+    ];
+
     /** Set on a method call that gives back the caller's own `$this` */
     private const RETURNS_THIS = 'returns_this';
 
@@ -607,6 +615,8 @@ final class MethodCallPurityAnalyzer
             foreach ($method_storage->this_property_mutations as $name => $_) {
                 $mutation_var_id = $lhs_var_id . '->' . $name;
 
+                $context->forgetNullArrayOffsets($mutation_var_id);
+
                 $this_property_didnt_exist = $lhs_var_id === '$this'
                     && isset($context->vars_in_scope[$mutation_var_id])
                     && !isset($class_storage->declaring_property_ids[$name]);
@@ -624,6 +634,10 @@ final class MethodCallPurityAnalyzer
                     $context->vars_in_scope[$mutation_var_id] = $new_type;
                     $context->possibly_assigned_var_ids[$mutation_var_id] = true;
                 }
+
+                if ($lhs_var_id !== null) {
+                    $context->removeVarFromConflictingClauses($mutation_var_id);
+                }
             }
         } else {
             if (!$config->remember_property_assignments_after_call) {
@@ -631,7 +645,9 @@ final class MethodCallPurityAnalyzer
                 $context->removeMutableObjectVars(false, $method_capabilities);
             }
 
-            if (($callee_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
+            if ((($callee_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
+                    // a body writing nothing but its local variables, unless an override may run instead
+                    && !($method_storage->writes_only_this_properties && !$method_storage->overridden_downstream))
                 || self::isCalledForItsTemplatesEffects($method_storage)
             ) {
                 // the method may write properties, but not which ones (a stub, a body writing `$this`
@@ -639,6 +655,12 @@ final class MethodCallPurityAnalyzer
                 // of an iterator): what its receiver's methods returned before may have changed, even
                 // when the receiver is fresh and the caller is not charged
                 $context->removeMutableObjectVars(true);
+            }
+        }
+
+        if ($context->inside_conditional && $lhs_var_id !== null) {
+            foreach ($method_storage->this_property_mutations ?? [] as $name => $_) {
+                $context->assigned_var_ids[$lhs_var_id . '->' . $name] ??= 0;
             }
         }
     }
@@ -844,7 +866,8 @@ final class MethodCallPurityAnalyzer
     /**
      * A void method whose purity comes from purity templates (`Iterator::next()`) is called for the
      * effects of what they are bound to, or of its own engine state (the cursor of an iterator):
-     * its call is not unused even when they turn out to be none.
+     * its call is not unused even when they turn out to be none. So are the builtin methods that run
+     * a fiber or a generator on and return what it hands back (`Fiber::resume()`, `Generator::send()`).
      *
      * @psalm-mutation-free
      */
@@ -852,6 +875,9 @@ final class MethodCallPurityAnalyzer
     {
         return $method_storage->purity_from_templates !== []
             && ($method_storage->return_type?->isVoid() === true
-                || $method_storage->signature_return_type?->isVoid() === true);
+                || $method_storage->signature_return_type?->isVoid() === true
+                || isset(self::ENGINE_STATE_MOVERS[
+                    strtolower($method_storage->defining_fqcln . '::' . (string) $method_storage->cased_name)
+                ]));
     }
 }

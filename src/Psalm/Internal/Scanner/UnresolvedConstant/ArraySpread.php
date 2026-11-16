@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Scanner\UnresolvedConstant;
 
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 /**
  * @internal
@@ -12,6 +13,8 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  */
 final class ArraySpread extends UnresolvedConstantComponent
 {
+    use UnserializeMemoryUsageSuppressionTrait;
+
     /**
      * @psalm-mutation-free
      */

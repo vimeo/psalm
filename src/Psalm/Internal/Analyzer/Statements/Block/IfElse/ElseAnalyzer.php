@@ -8,12 +8,16 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
+use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ConflictingReferenceConstraint;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\ArrayKeyDoesNotExist;
+use Psalm\Storage\Assertion\IsNotIsset;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
@@ -49,6 +53,7 @@ final class ElseAnalyzer
             $if_scope->new_vars = [];
             $if_scope->redefined_vars = [];
             $if_scope->reasonable_clauses = [];
+            $if_scope->addBranchReachingTheEnd($else_context);
 
             return null;
         }
@@ -91,7 +96,32 @@ final class ElseAnalyzer
                 },
             );
 
-            $else_context->clauses = Context::removeReconciledClauses($else_context->clauses, $changed_var_ids)[0];
+            // a native type left without any value proves the conditions matched every value (an offset or a
+            // property that may be unset, or is not set, is left as never where it is not set, which is no proof)
+            if (!$else) {
+                foreach ($changed_var_ids as $changed_var_id => $_) {
+                    $original_type = $original_context->vars_in_scope[$changed_var_id] ?? null;
+
+                    if (($else_context->vars_in_scope[$changed_var_id] ?? null)?->isNever()
+                        && $original_type !== null
+                        && !$original_type->isNever()
+                        && !$original_type->from_docblock
+                        && !$original_type->possibly_undefined
+                        && $original_type->initialized
+                        && !self::assertsUnset($else_types[$changed_var_id] ?? [])
+                    ) {
+                        $if_scope->implicit_else_is_impossible = true;
+                        break;
+                    }
+                }
+            }
+
+            $else_context->clauses = AlgebraAnalyzer::removeReconciledClauses(
+                $else_context->clauses,
+                $changed_var_ids,
+                $else_context->vars_in_scope,
+                $statements_analyzer,
+            )[0];
 
             foreach ($changed_var_ids as $changed_var_id => $_) {
                 foreach ($else_context->vars_in_scope as $var_id => $_) {
@@ -123,9 +153,7 @@ final class ElseAnalyzer
             }
         }
 
-        foreach ($else_context->parent_remove_vars as $var_id => $_) {
-            $outer_context->removeVarFromConflictingClauses($var_id);
-        }
+        $outer_context->removeClausesOfVarsChangedIn($else_context, $statements_analyzer);
 
         /** @var array<string, int> */
         $new_assigned_var_ids = $else_context->assigned_var_ids;
@@ -178,15 +206,28 @@ final class ElseAnalyzer
 
         // if it doesn't end in a return
         if (!$has_leaving_statements) {
+            // updateIfScope() gets the context from before the else, not the one the code after the if continues in
+            $outer_context->detachReferencesReboundIn($else_context, $statements_analyzer, $else->stmts ?? []);
+
+            // what the conditions of the elseifs assigned is assigned in the else too, even with an unchanged type
+            foreach ($if_scope->elseif_cond_assigned_var_ids as $var_id => $_) {
+                if (isset($outer_context->vars_in_scope[$var_id])) {
+                    $original_context->vars_in_scope[$var_id] = $outer_context->vars_in_scope[$var_id];
+                } else {
+                    unset($original_context->vars_in_scope[$var_id]);
+                }
+            }
+
             IfAnalyzer::updateIfScope(
-                $codebase,
+                $statements_analyzer,
                 $if_scope,
                 $else_context,
                 $original_context,
-                $new_assigned_var_ids,
+                $new_assigned_var_ids + $if_scope->elseif_cond_assigned_var_ids,
                 $new_possibly_assigned_var_ids,
                 $if_scope->if_cond_changed_var_ids,
                 true,
+                $if_scope->elseif_cond_assigned_var_ids,
             );
 
             $if_scope->reasonable_clauses = [];
@@ -249,5 +290,22 @@ final class ElseAnalyzer
         );
 
         return null;
+    }
+
+    /**
+     * @param list<list<Assertion>> $assertions
+     * @psalm-pure
+     */
+    private static function assertsUnset(array $assertions): bool
+    {
+        foreach ($assertions as $or_assertions) {
+            foreach ($or_assertions as $assertion) {
+                if ($assertion instanceof IsNotIsset || $assertion instanceof ArrayKeyDoesNotExist) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

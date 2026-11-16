@@ -591,6 +591,41 @@ final class NewAnalyzer extends CallAnalyzer
         CliOutput::checkInstantiation($statements_analyzer, $context, $storage, $stmt);
     }
 
+    private static function applyConstructorAssertions(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\New_ $stmt,
+        Context $context,
+        MethodIdentifier $method_id,
+        TemplateResult $template_result,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
+        $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+        if (!$method_storage->assertions || !$stmt->class instanceof PhpParser\Node\Name) {
+            return;
+        }
+
+        $args = $stmt->getArgs();
+
+        self::applyAssertionsToContext(
+            $stmt->class,
+            null,
+            self::resolveStaticPropertyAssertionClasses(
+                self::getAssertionsOnArgs($method_storage->assertions, $method_storage, $args),
+                $codebase,
+                $context,
+                ($codebase->methods->getAppearingMethodId($method_id) ?? $declaring_method_id)->fq_class_name,
+                // `new static` keeps the caller's, any other `new` instantiates the class it names
+                strtolower($stmt->class->getFirst()) === 'static' ? 'static' : $method_id->fq_class_name,
+            ),
+            $args,
+            $template_result,
+            $context,
+            $statements_analyzer,
+        );
+    }
+
     private static function analyzeNamedConstructor(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -714,17 +749,13 @@ final class NewAnalyzer extends CallAnalyzer
                     $can_extend,
                 );
 
-                if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
-                    self::applyAssertionsToContext(
-                        $stmt->class,
-                        null,
-                        self::getAssertionsOnArgs($method_storage->assertions, $method_storage, $stmt->getArgs()),
-                        $stmt->getArgs(),
-                        $template_result,
-                        $context,
-                        $statements_analyzer,
-                    );
-                }
+                self::applyConstructorAssertions(
+                    $statements_analyzer,
+                    $stmt,
+                    $context,
+                    $method_id,
+                    $template_result,
+                );
 
                 if ($method_storage->if_true_assertions) {
                     $statements_analyzer->node_data->setIfTrueAssertions(
@@ -1333,6 +1364,7 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         $has_single_class = $stmt_class_type->isSingleStringLiteral();
+        $class_string_class = null;
 
         if ($has_single_class) {
             // A class string is always fully qualified, so "\Foo" and "Foo" name the same class
@@ -1379,7 +1411,10 @@ final class NewAnalyzer extends CallAnalyzer
                 }
             }
 
-            if (self::checkMethodArgs(
+            // the arguments of a resolved class are analysed against its constructor below
+            $class_string_class = self::getClassOfClassString($codebase, $context, $stmt_class_type);
+
+            if ($class_string_class === null && self::checkMethodArgs(
                 null,
                 $stmt->getArgs(),
                 new TemplateResult([], []),
@@ -1401,6 +1436,12 @@ final class NewAnalyzer extends CallAnalyzer
             $can_extend,
         );
 
+        if ($class_string_class !== null) {
+            $fq_class_name = $class_string_class;
+
+            return;
+        }
+
         if (!$has_single_class) {
             if ($new_type) {
                 $statements_analyzer->node_data->setType($stmt, $new_type);
@@ -1418,6 +1459,88 @@ final class NewAnalyzer extends CallAnalyzer
             return;
         }
     }
+
+    /**
+     * The class of a class-string<A> whose constructor is the one of A, because child classes can't change it.
+     * A class-string<T> keeps the previous handling.
+     */
+    private static function getClassOfClassString(
+        Codebase $codebase,
+        Context $context,
+        Union $stmt_class_type,
+    ): ?string {
+        if (!$stmt_class_type->isSingle()) {
+            return null;
+        }
+
+        $class_string = $stmt_class_type->getSingleAtomic();
+
+        if (!$class_string instanceof TClassString
+            || $class_string instanceof TTemplateParamClass
+            || !$class_string->as_type
+            || $class_string->as_type->is_static
+            || $class_string->as_type->extra_types
+            || !$codebase->classlikes->classExists($class_string->as_type->value, null, $context)
+        ) {
+            return null;
+        }
+
+        $storage = $codebase->classlike_storage_provider->get($class_string->as_type->value);
+
+        // the template arguments of the constructor call would replace the ones of the class-string
+        return $storage->preserve_constructor_signature && $storage->template_types === null
+            ? $class_string->as_type->value
+            : null;
+    }
+
+    /**
+     * `new $object` is as unsafe as `new static` when a child class may change the constructor
+     */
+    private static function checkNewOfAnObject(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        PhpParser\Node\Expr\New_ $stmt,
+        TNamedObject $lhs_type_part,
+        bool &$unsafe_instantiation_reported,
+    ): void {
+        if ($lhs_type_part instanceof TAnonymousClassInstance
+            || $statements_analyzer->node_data->getType($stmt)
+            || !$codebase->classlikes->classExists($lhs_type_part->value, null, $context)
+        ) {
+            return;
+        }
+
+        $object_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+
+        // a final class has no child that could change the constructor, and the object of an internal
+        // class is mostly one just created (`$o = new stdClass; new $o`)
+        if ($unsafe_instantiation_reported
+            || !$object_storage->user_defined
+            || $object_storage->final
+            || self::childConstructorsAcceptArgs(
+                $statements_analyzer,
+                $codebase,
+                $context,
+                $object_storage,
+                $stmt->getArgs(),
+            )
+        ) {
+            return;
+        }
+
+        $unsafe_instantiation_reported = true;
+
+        IssueBuffer::maybeAdd(
+            new UnsafeInstantiation(
+                'Cannot safely instantiate class ' . $lhs_type_part->value
+                . ' with "new $object" as its constructor might change in child classes',
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+    }
+
     private static function getNewType(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -1426,6 +1549,7 @@ final class NewAnalyzer extends CallAnalyzer
         Union $stmt_class_type,
         Config $config,
         bool &$can_extend,
+        bool &$unsafe_instantiation_reported = false,
     ): ?Union {
         $new_types = [];
 
@@ -1439,6 +1563,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $lhs_type_part->as,
                     $config,
                     $can_extend,
+                    $unsafe_instantiation_reported,
                 );
                 if ($as) {
                     $new_types []= new Union([$lhs_type_part->replaceAs($as)]);
@@ -1475,13 +1600,15 @@ final class NewAnalyzer extends CallAnalyzer
                             $lhs_type_part->as_type->value,
                         );
 
-                        if (!self::childConstructorsAcceptArgs(
+                        if (!$unsafe_instantiation_reported && !self::childConstructorsAcceptArgs(
                             $statements_analyzer,
                             $codebase,
                             $context,
                             $as_storage,
                             $stmt->getArgs(),
                         )) {
+                            $unsafe_instantiation_reported = true;
+
                             IssueBuffer::maybeAdd(
                                 new UnsafeInstantiation(
                                     'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
@@ -1538,13 +1665,15 @@ final class NewAnalyzer extends CallAnalyzer
                                 $lhs_type_part->as_type->value,
                             );
 
-                            if (!self::childConstructorsAcceptArgs(
+                            if (!$unsafe_instantiation_reported && !self::childConstructorsAcceptArgs(
                                 $statements_analyzer,
                                 $codebase,
                                 $context,
                                 $as_storage,
                                 $stmt->getArgs(),
                             )) {
+                                $unsafe_instantiation_reported = true;
+
                                 IssueBuffer::maybeAdd(
                                     new UnsafeInstantiation(
                                         'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
@@ -1635,6 +1764,15 @@ final class NewAnalyzer extends CallAnalyzer
             ) {
                 // do nothing
             } elseif ($lhs_type_part instanceof TNamedObject) {
+                self::checkNewOfAnObject(
+                    $statements_analyzer,
+                    $codebase,
+                    $context,
+                    $stmt,
+                    $lhs_type_part,
+                    $unsafe_instantiation_reported,
+                );
+
                 $new_types []= new Union([$lhs_type_part]);
                 continue;
             } else {
@@ -1820,7 +1958,7 @@ final class NewAnalyzer extends CallAnalyzer
     /**
      * Returns the set of class templates with no public channel that can constrain
      * them: a template named anywhere in a public non-constructor method parameter
-     * or a public non-readonly property type is one that later code can still
+     * or a public writable property type is one that later code can still
      * constrain, anything else can only have been fixed at the construction site and
      * so is pinned eagerly rather than minted as a type variable.
      *
@@ -1879,10 +2017,11 @@ final class NewAnalyzer extends CallAnalyzer
                 break;
             }
 
-            // A `readonly` property cannot be assigned after construction, so it
-            // is not a channel through which the template can be constrained.
+            // A `readonly` property cannot be assigned after construction unless it is
+            // `public(set)` and not promoted, so it is not a channel through which the template can be constrained.
             if ($property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                || $property_storage->readonly
+                || ($property_storage->readonly
+                    && (!$property_storage->readonly_public_set || $property_storage->is_promoted))
             ) {
                 continue;
             }
