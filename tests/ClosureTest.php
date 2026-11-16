@@ -332,6 +332,77 @@ final class ClosureTest extends TestCase
                 ],
                 'ignored_issues' => ['MissingClosureReturnType'],
             ],
+            'closureEndingAfterExhaustiveTypeChecksDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function(int|string $x) {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '1|2',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType', 'RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'closureEndingAfterAnExhaustiveElseifChainDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function(int|string $x) {
+                        if (is_int($x)) {
+                            return 1;
+                        } elseif (is_string($x)) {
+                            return 2;
+                        }
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '1|2',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType', 'RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'closureEndingAfterALoopOfExhaustiveTypeChecksStillReturnsNull' => [
+                'code' => '<?php
+                    $f = function(int|string $x, array $a) {
+                        foreach ($a as $_) {
+                            if (is_int($x)) {
+                                continue;
+                            }
+                            if (is_string($x)) {
+                                continue;
+                            }
+                        }
+                        if (rand(0, 1)) {
+                            return 1;
+                        }
+                    };
+                    $r = $f(1, []);',
+                'assertions' => [
+                    '$r===' => '1|null',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType', 'RedundantCondition', 'MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'closureEndingAfterAnImpossibleBranchThatDoesNotLeaveStillReturnsNull' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        if (is_string($x)) {
+                            echo "never";
+                        }
+                        if (rand(0, 1)) {
+                            return 1;
+                        }
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '1|null',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType', 'TypeDoesNotContainType'],
+            ],
             'closureEndingWithAForeachOverANonEmptyArrayDoesNotReturnNull' => [
                 'code' => '<?php
                     $f = function() {
