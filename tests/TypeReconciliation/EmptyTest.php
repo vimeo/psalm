@@ -594,6 +594,17 @@ final class EmptyTest extends TestCase
                         return strlen($str) === 4 && mb_strlen($str, "UTF-8") === 2 ? $str : "string";
                     }',
             ],
+            'strlenComparisonOfANonEmptyStringIsNotRedundant' => [
+                'code' => '<?php
+                    function f(string $s, bool $b): void {
+                        $u = $b ? "abc" : "de";
+                        if ($s !== "" && strlen($s) === 3) {}
+                        if (strlen($u) === 3) {}
+                        if (strlen($u) < 3) {}
+                        $lit = "abc";
+                        if (strlen($lit) === 4) {}
+                    }',
+            ],
             'strlenOfAFullyQualifiedBuiltinInANamespace' => [
                 'code' => '<?php
                     namespace Foo;

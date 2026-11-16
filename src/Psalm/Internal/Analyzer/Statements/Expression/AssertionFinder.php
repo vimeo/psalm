@@ -4431,7 +4431,12 @@ final class AssertionFinder
             return null;
         }
 
-        [$var_name, $operator, $compared_length] = $comparison;
+        [$var_name, $operator, $compared_length, $argument_type] = $comparison;
+
+        // the comparison would only be reported as redundant for a string that can't be empty anyway
+        if ($argument_type->isNonEmptyString(true)) {
+            return null;
+        }
 
         return match (true) {
             $operator === '==' && $compared_length > 0,
@@ -4445,7 +4450,7 @@ final class AssertionFinder
     }
 
     /**
-     * @return array{string, '=='|'!='|'>'|'>='|'<'|'<=', int}|null
+     * @return array{string, '=='|'!='|'>'|'>='|'<'|'<=', int, Union}|null
      */
     private static function getStringLengthComparison(
         PhpParser\Node\Expr $conditional,
@@ -4506,7 +4511,7 @@ final class AssertionFinder
             return null;
         }
 
-        return [$var_name, $operator, $compared_length];
+        return [$var_name, $operator, $compared_length, $argument_type];
     }
 
     private static function getStringLengthArgument(
