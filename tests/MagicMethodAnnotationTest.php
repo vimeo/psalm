@@ -390,6 +390,59 @@ final class MagicMethodAnnotationTest extends TestCase
         $this->assertSame('string', (string) $context->vars_in_scope['$foo']);
     }
 
+    public function testPseudoMethodAPluginAddsWithoutDeclaringIdYieldsToProtectedMethodWhereItIsVisible(): void
+    {
+        $hook = new class implements AfterClassLikeVisitInterface {
+            /**
+             * @return void
+             * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
+             */
+            #[Override]
+            public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event)
+            {
+                $storage = $event->getStorage();
+
+                if ($storage->name === 'Base') {
+                    $method_storage = new MethodStorage();
+                    $method_storage->cased_name = 'product';
+                    $method_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+                    $method_storage->return_type = Type::getInt();
+                    $storage->pseudo_methods['product'] = $method_storage;
+                }
+            }
+        };
+        $codebase = $this->project_analyzer->getCodebase();
+        (new PluginRegistrationSocket($codebase->config, $codebase))->registerHooksFromClass($hook::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Base {
+                    public function __call(string $name, array $args): int {
+                        return 1;
+                    }
+
+                    protected function product(): string {
+                        return "Screen";
+                    }
+                }
+
+                final class Child extends Base {
+                    public function test(): string {
+                        return $this->product();
+                    }
+                }
+
+                $a = (new Child)->product();',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+
+        $this->assertSame('int', (string) $context->vars_in_scope['$a']);
+    }
+
     /**
      * @psalm-pure
      */
