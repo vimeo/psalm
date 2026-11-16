@@ -174,6 +174,8 @@ final class ClassLikes
      */
     private array $trait_nodes = [];
 
+    private ?UnshippedCode $unshipped_code = null;
+
     public function __construct(
         private readonly Config $config,
         private readonly ClassLikeStorageProvider $classlike_storage_provider,
@@ -2770,19 +2772,26 @@ final class ClassLikes
         return true;
     }
 
-    /**
-     * @psalm-capabilities read-props
-     */
     private function isPublicApi(ClassLikeStorage $classlike_storage): bool
     {
-        return $classlike_storage->public_api
-            || ($this->config->mark_all_non_internal_code_as_api && !$classlike_storage->internal);
+        if ($classlike_storage->public_api) {
+            return true;
+        }
+
+        if (!$this->config->mark_all_non_internal_code_as_api
+            || $classlike_storage->internal
+            || !$classlike_storage->location
+        ) {
+            return false;
+        }
+
+        $this->unshipped_code ??= UnshippedCode::load($this->config->base_dir);
+
+        return !$this->unshipped_code->contains($classlike_storage->name, $classlike_storage->location->file_path);
     }
 
     /**
      * @param list<non-empty-string> $member_internal
-     *
-     * @psalm-capabilities read-props
      */
     private function isPublicApiMember(
         ClassLikeStorage $classlike_storage,

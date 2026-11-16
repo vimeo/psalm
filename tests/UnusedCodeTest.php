@@ -203,6 +203,40 @@ final class UnusedCodeTest extends TestCase
         );
     }
 
+    public function testMarkAllNonInternalCodeAsApiSkipsCodeTheLibraryDoesNotShip(): void
+    {
+        $config = $this->project_analyzer->getConfig();
+        $config->throw_exception = false;
+        $config->mark_all_non_internal_code_as_api = true;
+        // Psalm's composer.json autoloads Psalm\Tests\ from tests/ for development only
+        $test_file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $src_file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $test_file_path,
+            '<?php
+                namespace Psalm\Tests;
+
+                final class Helper {}',
+        );
+        $this->addFile(
+            $src_file_path,
+            '<?php
+                namespace Lib;
+
+                final class Client {}',
+        );
+        $this->analyzeFile($test_file_path, new Context(), false);
+        $this->analyzeFile($src_file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            ['UnusedClass'],
+            array_column(IssueBuffer::getIssuesDataForFile($test_file_path), 'type'),
+        );
+        $this->assertSame([], IssueBuffer::getIssuesDataForFile($src_file_path));
+    }
+
     public function testSeesClassesUsedAfterUnevaluatedCodeIssue(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
