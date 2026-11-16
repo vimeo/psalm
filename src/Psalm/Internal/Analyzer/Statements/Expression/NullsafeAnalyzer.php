@@ -76,10 +76,9 @@ final class NullsafeAnalyzer
             )
             : null;
 
-        // a chain of variables and properties is analysed as it stands, so that what is known of it applies
         $var_type = $receiver_id !== null ? $context->vars_in_scope[$receiver_id] ?? null : null;
 
-        // a receiver the context does not know yet (a property not read before) has to be analysed to get its type
+        // a receiver the context has no type for (a call, or a property not read yet) is analysed to get its type
         if ($var_type === null && !$stmt->var instanceof PhpParser\Node\Expr\Variable) {
             $was_inside_general_use = $context->inside_general_use;
 
@@ -91,6 +90,7 @@ final class NullsafeAnalyzer
         }
 
         if ($receiver_id !== null) {
+            // a chain of variables and properties is analysed as it stands, so that what is known of it applies
             $tmp_var = $stmt->var;
         } elseif (!$stmt->var instanceof PhpParser\Node\Expr\Variable) {
             $tmp_name = '__tmp_nullsafe__' . (int) $stmt->var->getAttribute('startFilePos');
