@@ -690,11 +690,21 @@ final class TypeCombiner
             || $type instanceof TIterable
             || $type instanceof TObjectWithProperties
         ) {
-            if ($type->extra_types) {
-                $combination->extra_types = array_merge(
-                    $combination->extra_types,
-                    $type->extra_types,
-                );
+            foreach ($type->extra_types as $key => $extra_type) {
+                $existing_extra_type = $combination->extra_types[$key] ?? null;
+
+                // a shape of one member and a shape of another are known to share the properties both declare
+                if ($existing_extra_type instanceof TObjectWithProperties
+                    && $extra_type instanceof TObjectWithProperties
+                ) {
+                    $combined_shape = self::combineObjects($existing_extra_type, $extra_type, $codebase);
+
+                    if ($combined_shape instanceof TObjectWithProperties) {
+                        $extra_type = $combined_shape;
+                    }
+                }
+
+                $combination->extra_types[$key] = $extra_type;
             }
         }
 

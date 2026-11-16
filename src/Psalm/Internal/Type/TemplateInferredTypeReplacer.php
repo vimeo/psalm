@@ -327,13 +327,22 @@ final class TemplateInferredTypeReplacer
                         || $atomic_template_type instanceof TIterable
                         || $atomic_template_type instanceof TObjectWithProperties
                     ) {
-                        // the shape the template is declared with wins over the one of what it's inferred to: in
-                        // `T&object{a: string}`, `a` is a string whatever `T` has
+                        // the shape the template is declared with wins over the one of what it's inferred to where
+                        // that isn't narrower: in `T&object{a: string}`, `a` is a string whatever `T` has
                         $declared_shape = ObjectShapeIntersection::getShape($atomic_type);
 
+                        if ($declared_shape && $codebase) {
+                            $declared_shape = self::keepNarrowerProperties(
+                                $codebase,
+                                $declared_shape,
+                                ObjectShapeIntersection::getShape($atomic_template_type),
+                            );
+                        }
+
+                        // the declared shape comes last to win, in place of where it's declared
                         $types []= ObjectShapeIntersection::intersect([
                             $atomic_template_type->setIntersectionTypes([]),
-                            ...array_values($atomic_type->extra_types),
+                            ...array_values(ObjectShapeIntersection::withoutShape($atomic_type)->extra_types),
                             ...array_values($atomic_template_type->extra_types),
                             ...($declared_shape ? [$declared_shape] : []),
                         ]);
@@ -751,6 +760,39 @@ final class TemplateInferredTypeReplacer
             new Union($overlapping_atomic_types),
             false,
         );
+    }
+
+    /**
+     * The declared shape, with the type of the inferred shape for a property where the declared type absorbs it
+     * (`non-empty-string` for `string`)
+     *
+     * @psalm-external-mutation-free
+     */
+    private static function keepNarrowerProperties(
+        Codebase $codebase,
+        TObjectWithProperties $declared_shape,
+        ?TObjectWithProperties $inferred_shape,
+    ): TObjectWithProperties {
+        if ($inferred_shape === null) {
+            return $declared_shape;
+        }
+
+        $properties = $declared_shape->properties;
+
+        foreach ($properties as $name => $declared_type) {
+            $inferred_type = $inferred_shape->properties[$name] ?? null;
+
+            if ($inferred_type !== null
+                && Type::combineUnionTypes($inferred_type, $declared_type, $codebase)->getId()
+                    === $declared_type->getId()
+            ) {
+                $properties[$name] = $inferred_type->setPossiblyUndefined(
+                    $declared_type->possibly_undefined && $inferred_type->possibly_undefined,
+                );
+            }
+        }
+
+        return $declared_shape->setProperties($properties);
     }
 
     /**

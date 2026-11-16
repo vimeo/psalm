@@ -285,6 +285,20 @@ final class TypeCombinationTest extends TestCase
                     'Traversable<int, string>&object{a: int}',
                 ],
             ],
+            'optionalPropertyOfObjectShapesOfTheSameTraversableIntersection' => [
+                'Traversable<int, int>&object{a?:int}',
+                [
+                    'Traversable<int, int>&object{a?: int}',
+                    'Traversable<int, int>&object{a: int}',
+                ],
+            ],
+            'optionalPropertyOfObjectShapesOfTheSameTraversableIntersectionLast' => [
+                'Traversable<int, int>&object{a?:int}',
+                [
+                    'Traversable<int, int>&object{a: int}',
+                    'Traversable<int, int>&object{a?: int}',
+                ],
+            ],
             'objectShapeOfAGenericIntersectionIsNotSpreadToAnotherClass' => [
                 'ArrayIterator<int, int>|ArrayObject<int, int>&object{a:int}',
                 [

@@ -477,7 +477,7 @@ final class IntersectionTypeTest extends TestCase
                     $branded = withBrand(card());
                     $narrowed = withStringLast4(cardWithAnyLast4());',
                 'assertions' => [
-                    '$branded===' => 'Card&object{brand:string, last4:string}',
+                    '$branded===' => 'Card&object{last4:string, brand:string}',
                     '$narrowed===' => 'Card&object{last4:string}',
                 ],
             ],
@@ -624,11 +624,18 @@ final class IntersectionTypeTest extends TestCase
                         throw new RuntimeException();
                     }
 
+                    /** @return Card&object{last4: non-empty-string} */
+                    function nonEmptyCard(): object {
+                        throw new RuntimeException();
+                    }
+
                     $required = withLast4(card());
-                    $declaredWins = withLast4(numericCard());',
+                    $declaredWins = withLast4(numericCard());
+                    $narrowerKept = withLast4(nonEmptyCard());',
                 'assertions' => [
                     '$required===' => 'Card&object{last4:string}',
                     '$declaredWins===' => 'Card&object{last4:string}',
+                    '$narrowerKept===' => 'Card&object{last4:non-empty-string}',
                 ],
             ],
             'methodOfAShapeIntersectionAsACallable' => [
@@ -1477,6 +1484,20 @@ final class IntersectionTypeTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'issetOfAnOptionalPropertyOfATraversableShapeIntersectionKeepsItOptional' => [
+                'code' => '<?php
+                    /** @param object{a: int} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param Traversable<int, int>&object{a?: int} $items */
+                    function test(object $items): void {
+                        if (isset($items->a)) {
+                            echo $items->a;
+                        }
+                        takesShape($items);
+                    }',
+                'error_message' => 'InvalidArgument',
             ],
             'shapeIntersectionOfStaticCombinedWithItsClassIsNotStatic' => [
                 'code' => '<?php
