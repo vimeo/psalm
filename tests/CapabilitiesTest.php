@@ -5354,6 +5354,37 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
+            'impureToStringInLooseInArrayOfScalars' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<scalar> $values
+                     */
+                    function has(Name $name, array $values): bool {
+                        return in_array($name, $values);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInLooseInArrayOfTemplatedStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @template T of string
+                     * @param array<T> $values
+                     */
+                    function has(Name $name, array $values): bool {
+                        return in_array($name, $values);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
             'impureToStringInBuiltinStringArgument' => [
                 'code' => '<?php
                     final class Name {

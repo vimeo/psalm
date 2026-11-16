@@ -2104,10 +2104,12 @@ final class ArgumentAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
+        $string_param = $function_param->type && $function_param->type->isString();
+
+        if (!$input_type->isString() && ($string_param || ($converts_to_string && $input_type->hasObjectType()))) {
             // the argument check reports a bad argument itself, but the implicit __toString call is signalled
             // whether or not a data-flow graph is built
-            $input_type = CastAnalyzer::castStringAttempt(
+            $string_type = CastAnalyzer::castStringAttempt(
                 $statements_analyzer,
                 $context,
                 $input_type,
@@ -2115,20 +2117,16 @@ final class ArgumentAnalyzer
                 false,
                 false,
             );
-        } elseif ($converts_to_string && $input_type->hasObjectType()) {
-            $to_string_parent_nodes = CastAnalyzer::castStringAttempt(
-                $statements_analyzer,
-                $context,
-                $input_type,
-                $expr,
-                false,
-                false,
-            )->parent_nodes;
 
-            // only objects are converted: what else the value may be keeps its own flow
-            $input_type = $input_type->setParentNodes($input_type->isObjectType()
-                ? $to_string_parent_nodes
-                : [...$input_type->parent_nodes, ...$to_string_parent_nodes]);
+            // a string parameter takes the whole value as a string; any other only converts its objects, and what
+            // else the value may be keeps its own flow
+            if ($string_param) {
+                $input_type = $string_type;
+            } else {
+                $input_type = $input_type->setParentNodes($input_type->isObjectType()
+                    ? $string_type->parent_nodes
+                    : [...$input_type->parent_nodes, ...$string_type->parent_nodes]);
+            }
         }
 
         if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {

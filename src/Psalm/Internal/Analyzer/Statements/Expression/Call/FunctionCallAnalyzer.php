@@ -65,19 +65,27 @@ use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
+use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Reconciler;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
@@ -1990,10 +1998,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $atomic_type = $atomic_type->getGenericArrayType();
                 }
 
-                if (!$atomic_type instanceof TArray
-                    || $atomic_type->type_params[1]->hasString()
-                    || $atomic_type->type_params[1]->hasMixed()
-                ) {
+                if (!$atomic_type instanceof TArray || self::mayBeString($atomic_type->type_params[1])) {
                     $compared_to_strings = true;
                 }
             }
@@ -2011,6 +2016,42 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             false,
             false,
         );
+    }
+
+    /**
+     * Whether a value of $type may be a string, unless it is known to be something else
+     *
+     * @psalm-pure
+     */
+    private static function mayBeString(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam) {
+                if (self::mayBeString($atomic_type->as)) {
+                    return true;
+                }
+
+                continue;
+            }
+
+            if (!$atomic_type->isObjectType()
+                && !$atomic_type instanceof TInt
+                && !$atomic_type instanceof TFloat
+                && !$atomic_type instanceof TBool
+                && !$atomic_type instanceof TNull
+                && !$atomic_type instanceof TArray
+                && !$atomic_type instanceof TKeyedArray
+                && !$atomic_type instanceof TIterable
+                && !$atomic_type instanceof TResource
+                && !$atomic_type instanceof TClosedResource
+                && !$atomic_type instanceof TNever
+                && !$atomic_type instanceof TVoid
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
