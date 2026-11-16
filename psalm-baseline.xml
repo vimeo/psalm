@@ -760,9 +760,6 @@
       <code><![CDATA[$var_id]]></code>
       <code><![CDATA[$var_id]]></code>
     </RiskyTruthyFalsyComparison>
-    <UnsupportedPropertyReferenceUsage>
-      <code><![CDATA[$context->vars_in_scope[$lhs_var_id] = &$context->vars_in_scope[$rhs_var_id]]]></code>
-    </UnsupportedPropertyReferenceUsage>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/BinaryOp/AndAnalyzer.php">
     <RiskyTruthyFalsyComparison>

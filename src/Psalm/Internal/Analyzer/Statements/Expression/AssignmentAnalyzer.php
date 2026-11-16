@@ -1727,7 +1727,7 @@ final class AssignmentAnalyzer
                 $property_types[] = $property_type;
             }
 
-            return $property_types ? Type::combineUnionTypeArray($property_types, $codebase) : null;
+            return Type::combineUnionTypeArray($property_types, $codebase);
         }
 
         if ($expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
@@ -1803,6 +1803,8 @@ final class AssignmentAnalyzer
 
     /**
      * Whether the type of the array $expr fetches an item of says the item is set
+     *
+     * @psalm-capabilities read-props
      */
     private static function isOffsetSet(StatementsAnalyzer $statements_analyzer, ArrayDimFetch $expr): bool
     {
