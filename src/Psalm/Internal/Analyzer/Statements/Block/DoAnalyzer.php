@@ -25,6 +25,7 @@ use function array_diff;
 use function array_filter;
 use function array_keys;
 use function array_map;
+use function array_slice;
 use function array_values;
 use function count;
 use function in_array;
@@ -331,24 +332,17 @@ final class DoAnalyzer
     /**
      * @param array<PhpParser\Node\Stmt> $stmts the body
      * @return list<array{int, int}> the bounds of the code of the body the first iteration may not run, or not with
-     *                               its types: what follows a statement that may leave it, the branches and operands
-     *                               evaluated on a condition, the bodies of the closures capturing by reference
+     *                               its types: what follows a statement that may go to the next iteration, the
+     *                               branches and operands evaluated on a condition, the bodies of the closures
+     *                               capturing by reference
      */
     private static function getUnsureBounds(array $stmts): array
     {
         $bounds = [];
-        $node_finder = new PhpParser\NodeFinder();
-        $stmts = array_values($stmts);
 
-        foreach ($stmts as $i => $stmt) {
-            if ($i + 1 < count($stmts) && self::mayLeave([$stmt])) {
-                $bounds[] = self::getBounds([$stmts[$i + 1], $stmts[count($stmts) - 1]]);
+        self::addSkippableStatementBounds(array_values($stmts), 0, $bounds);
 
-                break;
-            }
-        }
-
-        foreach ($node_finder->find($stmts, static fn(PhpParser\Node $_): bool => true) as $node) {
+        foreach ((new PhpParser\NodeFinder())->find($stmts, static fn(PhpParser\Node $_): bool => true) as $node) {
             $unsure_nodes = match (true) {
                 $node instanceof PhpParser\Node\Stmt\If_ => [$node->stmts, ...$node->elseifs, $node->else],
                 $node instanceof PhpParser\Node\Expr\Ternary => [$node->if, $node->else],
@@ -358,8 +352,26 @@ final class DoAnalyzer
                 $node instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr,
                 $node instanceof PhpParser\Node\Expr\BinaryOp\Coalesce => [$node->right],
                 $node instanceof PhpParser\Node\Expr\AssignOp\Coalesce => [$node->expr],
-                $node instanceof PhpParser\Node\Expr\Match_ => $node->arms,
-                $node instanceof PhpParser\Node\Stmt\Switch_ => $node->cases,
+                // the condition of the first arm or case is always evaluated
+                $node instanceof PhpParser\Node\Expr\Match_ => [
+                    ...array_map(
+                        static fn(PhpParser\Node\MatchArm $arm): PhpParser\Node\Expr => $arm->body,
+                        $node->arms,
+                    ),
+                    ...array_map(
+                        static fn(PhpParser\Node\MatchArm $arm): ?array => $arm->conds,
+                        array_slice($node->arms, 1),
+                    ),
+                ],
+                $node instanceof PhpParser\Node\Stmt\Switch_ => [
+                    ...array_map(static fn(PhpParser\Node\Stmt\Case_ $case): array => $case->stmts, $node->cases),
+                    ...array_map(
+                        static fn(PhpParser\Node\Stmt\Case_ $case): ?PhpParser\Node\Expr => $case->cond,
+                        array_slice($node->cases, 1),
+                    ),
+                ],
+                $node instanceof PhpParser\Node\Expr\NullsafeMethodCall => [$node->args],
+                $node instanceof PhpParser\Node\Expr\NullsafePropertyFetch => [$node->name],
                 $node instanceof PhpParser\Node\Stmt\For_ => [$node->stmts, $node->loop],
                 $node instanceof PhpParser\Node\Stmt\Foreach_,
                 $node instanceof PhpParser\Node\Stmt\While_ => [$node->stmts],
@@ -385,59 +397,78 @@ final class DoAnalyzer
     }
 
     /**
-     * Whether the iteration may end in the nodes, outside the functions and classes they declare
+     * Adds the bounds of the statements that follow one that may go to the next iteration, in the list and the lists
+     * nested in it: the first iteration may skip them. After a `break`, a `return` or a `throw`, there is no next
+     * iteration, so what follows runs first in the first one.
      *
-     * @param array<PhpParser\Node> $nodes
+     * @param list<PhpParser\Node\Stmt> $stmts
+     * @param int $depth the loops and switches between the statements and the loop
+     * @param list<array{int, int}> $bounds
      */
-    private static function mayLeave(array $nodes): bool
+    private static function addSkippableStatementBounds(array $stmts, int $depth, array &$bounds): void
     {
-        return self::hasExitToTheLoop($nodes, 0) || self::mayLeaveTheFunction($nodes);
+        foreach ($stmts as $i => $stmt) {
+            self::addSkippableStatementBoundsIn($stmt, $depth, $bounds);
+
+            if ($i + 1 < count($stmts) && self::hasExitToTheLoop([$stmt], $depth, to_the_next_iteration: true)) {
+                $bounds[] = self::getBounds([$stmts[$i + 1], $stmts[count($stmts) - 1]]);
+
+                return;
+            }
+        }
     }
 
     /**
-     * @param array<PhpParser\Node> $nodes
+     * @param int $depth the loops and switches between the node and the loop
+     * @param list<array{int, int}> $bounds
      */
-    private static function mayLeaveTheFunction(array $nodes): bool
+    private static function addSkippableStatementBoundsIn(PhpParser\Node $node, int $depth, array &$bounds): void
     {
-        foreach ($nodes as $node) {
-            if ($node instanceof PhpParser\Node\Stmt\Return_
-                || $node instanceof PhpParser\Node\Stmt\Goto_
-                || $node instanceof PhpParser\Node\Expr\Throw_
-                || $node instanceof PhpParser\Node\Expr\Exit_
-            ) {
-                return true;
-            }
+        if ($node instanceof PhpParser\Node\FunctionLike || $node instanceof PhpParser\Node\Stmt\ClassLike) {
+            return;
+        }
 
-            if ($node instanceof PhpParser\Node\FunctionLike || $node instanceof PhpParser\Node\Stmt\ClassLike) {
+        $nested_depth = self::isLoopOrSwitch($node) ? $depth + 1 : $depth;
+
+        foreach ($node->getSubNodeNames() as $name) {
+            /** @var mixed $child */
+            $child = $node->{$name};
+
+            if ($child instanceof PhpParser\Node) {
+                self::addSkippableStatementBoundsIn($child, $nested_depth, $bounds);
+
                 continue;
             }
 
-            foreach ($node->getSubNodeNames() as $name) {
-                /** @var mixed $child */
-                $child = $node->{$name};
+            if (!is_array($child)) {
+                continue;
+            }
 
-                if ($child instanceof PhpParser\Node) {
-                    $child = [$child];
-                }
+            $stmts = [];
 
-                if (is_array($child)) {
-                    $children = [];
-
-                    /** @var mixed $item */
-                    foreach ($child as $item) {
-                        if ($item instanceof PhpParser\Node) {
-                            $children[] = $item;
-                        }
-                    }
-
-                    if (self::mayLeaveTheFunction($children)) {
-                        return true;
-                    }
+            /** @var mixed $item */
+            foreach ($child as $item) {
+                if ($item instanceof PhpParser\Node\Stmt) {
+                    $stmts[] = $item;
+                } elseif ($item instanceof PhpParser\Node) {
+                    self::addSkippableStatementBoundsIn($item, $nested_depth, $bounds);
                 }
             }
-        }
 
-        return false;
+            self::addSkippableStatementBounds($stmts, $nested_depth, $bounds);
+        }
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isLoopOrSwitch(PhpParser\Node $node): bool
+    {
+        return $node instanceof PhpParser\Node\Stmt\For_
+            || $node instanceof PhpParser\Node\Stmt\Foreach_
+            || $node instanceof PhpParser\Node\Stmt\While_
+            || $node instanceof PhpParser\Node\Stmt\Do_
+            || $node instanceof PhpParser\Node\Stmt\Switch_;
     }
 
     /**
@@ -458,31 +489,30 @@ final class DoAnalyzer
      *
      * @param array<PhpParser\Node> $nodes
      * @param int $depth the loops and switches between the statements and the loop
+     * @param bool $to_the_next_iteration only a `continue` to the loop, or a `goto`, which may jump there
      */
-    private static function hasExitToTheLoop(array $nodes, int $depth): bool
+    private static function hasExitToTheLoop(array $nodes, int $depth, bool $to_the_next_iteration = false): bool
     {
         foreach ($nodes as $node) {
             if ($node instanceof PhpParser\Node\Stmt\Break_ || $node instanceof PhpParser\Node\Stmt\Continue_) {
                 $levels = $node->num instanceof PhpParser\Node\Scalar\Int_ ? $node->num->value : 1;
 
-                if ($levels > $depth) {
+                if ($levels > $depth && (!$to_the_next_iteration || $node instanceof PhpParser\Node\Stmt\Continue_)) {
                     return true;
                 }
 
                 continue;
             }
 
+            if ($to_the_next_iteration && $node instanceof PhpParser\Node\Stmt\Goto_) {
+                return true;
+            }
+
             if ($node instanceof PhpParser\Node\FunctionLike || $node instanceof PhpParser\Node\Stmt\ClassLike) {
                 continue;
             }
 
-            $nested_depth = $node instanceof PhpParser\Node\Stmt\For_
-                || $node instanceof PhpParser\Node\Stmt\Foreach_
-                || $node instanceof PhpParser\Node\Stmt\While_
-                || $node instanceof PhpParser\Node\Stmt\Do_
-                || $node instanceof PhpParser\Node\Stmt\Switch_
-                ? $depth + 1
-                : $depth;
+            $nested_depth = self::isLoopOrSwitch($node) ? $depth + 1 : $depth;
 
             foreach ($node->getSubNodeNames() as $name) {
                 /** @var mixed $child */
@@ -502,7 +532,7 @@ final class DoAnalyzer
                         }
                     }
 
-                    if (self::hasExitToTheLoop($children, $nested_depth)) {
+                    if (self::hasExitToTheLoop($children, $nested_depth, $to_the_next_iteration)) {
                         return true;
                     }
                 }

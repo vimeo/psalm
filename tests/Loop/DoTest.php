@@ -1062,6 +1062,59 @@ final class DoTest extends TestCase
                 $x = 'a';
             } while (rand(0, 1));
         }
+
+        function afterAContinueInATry(): void {
+            $first = true;
+            $last = null;
+            do {
+                try {
+                    if ($first) {
+                        $first = false;
+                        $last = new Row();
+                        continue;
+                    }
+                    echo $last->id;
+                    $last = new Row();
+                } finally {
+                    echo 1;
+                }
+            } while (rand(0, 1));
+        }
+
+        function inTheArgumentOfANullsafeCall(): void {
+            $o = null;
+            $x = new stdClass();
+            do {
+                $o?->format((string) $x);
+                $x = 'a';
+                $o = new DateTime();
+            } while (rand(0, 1));
+        }
+
+        function afterAThrowOrABreak(bool $ok): void {
+            $x = new stdClass();
+            do {
+                if (!$ok) {
+                    throw new Exception();
+                }
+                if (rand(0, 1)) {
+                    break;
+                }
+                echo (string) $x;
+                $x = 'a';
+            } while (rand(0, 1));
+        }
+
+        function inTheFirstConditionOfAMatch(): void {
+            $x = new stdClass();
+            do {
+                echo match (true) {
+                    (string) $x === 'a' => 1,
+                    default => 2,
+                };
+                $x = 'a';
+            } while (rand(0, 1));
+        }
         PHP;
 
     public function testDoWhileFirstIterationIssuesAreDefinite(): void
@@ -1069,6 +1122,7 @@ final class DoTest extends TestCase
         $this->testConfig->throw_exception = false;
         $file_path = self::$src_dir_path . 'somefile.php';
 
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
         $this->addFile($file_path, self::FIRST_ITERATION_CODE);
         $this->analyzeFile($file_path, new Context());
 
@@ -1099,6 +1153,10 @@ final class DoTest extends TestCase
                 [140, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
                 [155, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
                 [172, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [187, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
+                [199, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
+                [214, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [223, 'InvalidCast', 'stdClass cannot be cast to string'],
             ],
             self::getIssues($file_path),
         );
@@ -1114,6 +1172,7 @@ final class DoTest extends TestCase
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
         $this->addFile($file_path, self::FIRST_ITERATION_CODE);
         $this->analyzeFile($file_path, new Context());
 
@@ -1143,6 +1202,9 @@ final class DoTest extends TestCase
                 [140, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
                 [155, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
                 [172, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [187, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
+                [214, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [223, 'InvalidCast', 'stdClass cannot be cast to string'],
             ],
             self::getIssues($file_path),
         );
