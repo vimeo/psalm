@@ -56,6 +56,7 @@ use function array_diff_key;
 use function array_values;
 use function count;
 use function floor;
+use function is_array;
 use function is_int;
 use function is_numeric;
 use function max;
@@ -1205,9 +1206,10 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
-     * What a loop can change: any variable, and an item or property of one the loop assigns or passes to a call
+     * What a loop can change: any variable, an item or property of one the loop assigns or passes to a call, and
+     * what is computed from them (`$a ?? 0`, `max($a, 0)`)
      */
-    private static function isChangeableByLoop(PhpParser\Node\Expr $expr, ?Context $context): bool
+    private static function isChangeableByLoop(PhpParser\Node $expr, ?Context $context): bool
     {
         if ($expr instanceof PhpParser\Node\Expr\Variable) {
             return true;
@@ -1217,6 +1219,18 @@ final class ArithmeticOpAnalyzer
             && !$expr instanceof PhpParser\Node\Expr\PropertyFetch
             && !$expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
         ) {
+            foreach ($expr->getSubNodeNames() as $sub_node_name) {
+                /** @var mixed $sub_nodes */
+                $sub_nodes = $expr->$sub_node_name;
+
+                /** @var mixed $sub_node */
+                foreach (is_array($sub_nodes) ? $sub_nodes : [$sub_nodes] as $sub_node) {
+                    if ($sub_node instanceof PhpParser\Node && self::isChangeableByLoop($sub_node, $context)) {
+                        return true;
+                    }
+                }
+            }
+
             return false;
         }
 
