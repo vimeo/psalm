@@ -1,28 +1,24 @@
 # UnsupportedPropertyReferenceUsage
 
-Psalm cannot guarantee the soundness of code that uses references to properties.
+Psalm cannot guarantee the soundness of code that uses references to magic or readonly properties, or to items of
+objects held by properties. References to other properties are checked against the declared type
+(`ReferenceConstraintViolation`).
 
 ### Examples of Uncaught Errors
 
-* Instance property assigned wrong type:
+* Magic property:
 ```php
 <?php
-class A {
-    public int $b = 0;
+/**
+ * @property int $b
+ */
+final class A {
+    public function __get(string $name): int {
+        return 0;
+    }
 }
 $a = new A();
-$b = &$a->b;
-$b = ''; // Fatal error
-```
-
-* Static property assigned wrong type:
-```php
-<?php
-class A {
-    public static int $b = 0;
-}
-$b = &A::$b;
-$b = ''; // Fatal error
+$b = &$a->b; // Notice: Indirect modification of overloaded property
 ```
 
 * Readonly property reassigned:
