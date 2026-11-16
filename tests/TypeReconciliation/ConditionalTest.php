@@ -5114,6 +5114,57 @@ final class ConditionalTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedAssignment'],
             ],
+            'mixedPropertyWrittenAtANestedOffsetAfterIssetInAndConditionStaysMixed' => [
+                'code' => '<?php
+                    final class K {
+                        /** @var mixed */
+                        public $p;
+                    }
+
+                    $k = new K();
+
+                    if (isset($k->p["pk"]) && rand(0, 1)) {
+                        $k->p["pk"][rand(0, 5)] = 1;
+                    }
+
+                    $after = $k->p;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedArrayAssignment', 'MixedAssignment'],
+            ],
+            'partlyMixedVarWrittenAtAnOffsetInIfKeepsItsOtherPart' => [
+                'code' => '<?php
+                    /** @var int|mixed $u */
+                    $u = $_GET["u"];
+
+                    if (is_array($u)) {
+                        $u["a"] = 1;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'int|mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarAssignedInABlockNestedInTheBranchIsMixed' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (is_array($u)) {
+                        if (rand(0, 1)) {
+                            $u = 5;
+                        }
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'mixedVarWrittenAtAnOffsetThenAssignedStaysUnioned' => [
                 'code' => '<?php
                     /** @var mixed $u */
