@@ -12,6 +12,7 @@ use Psalm\FileSource;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Provider\NodeDataProvider;
@@ -1125,14 +1126,16 @@ final class FormulaGenerator
         $attributes = $conditional->getAttributes();
         $receiver_comparison = self::createComparison($conditional, $receiver, $null_operand, $nullsafe_is_left);
 
-        // a property that can't be null (or loosely equal to null) says nothing: it is the receiver that was checked
+        $strict = $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical;
+
+        // a property that can't be null (or loosely equal to null) says nothing: it is the receiver that was checked.
+        // A fetch that is null only by short-circuiting has a property that is never null itself
         $property_type = AssertionFinder::getNullsafePropertyType($nullsafe_fetch, $source);
 
-        if ($property_type !== null
-            && ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-                || $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
-                    ? !$property_type->isNullable()
-                    : $property_type->isAlwaysTruthy())
+        if (($property_type !== null
+                && ($strict ? !$property_type->isNullable() : $property_type->isAlwaysTruthy()))
+            || ($strict && NullsafeChainState::of($nullsafe_fetch) === NullsafeChainState::ShortCircuit)
         ) {
             return $receiver_comparison;
         }
