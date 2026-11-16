@@ -843,7 +843,14 @@ abstract class Type
                 $combined_type = null;
                 foreach ($type_1->getAtomicTypes() as $type_1_atomic) {
                     foreach ($type_2->getAtomicTypes() as $type_2_atomic) {
-                        $intersection_atomic = self::intersectAtomicTypes(
+                        $intersection_atomic = self::intersectTemplateKeyOrValueOf(
+                            $type_1_atomic,
+                            $type_2_atomic,
+                            $codebase,
+                            $intersection_performed,
+                            $allow_interface_equality,
+                            $allow_float_int_equality,
+                        ) ?? self::intersectAtomicTypes(
                             $type_1_atomic,
                             $type_2_atomic,
                             $codebase,
@@ -988,9 +995,10 @@ abstract class Type
      * e.g. string and value-of<T> (T of array) are value-of<T>, T narrowed to array<array-key, string>
      */
     private static function intersectTemplateKeyOrValueOf(
-        Codebase $codebase,
         Atomic $type_1_atomic,
         Atomic $type_2_atomic,
+        Codebase $codebase,
+        bool &$intersection_performed,
         bool $allow_interface_equality,
         bool $allow_float_int_equality,
     ): TTemplateKeyOf|TTemplateValueOf|null {
@@ -1038,6 +1046,8 @@ abstract class Type
         $narrowed_template = new Union([$template->replaceAs(new Union([new TArray(
             $template_of instanceof TTemplateKeyOf ? [$narrowed_type, $value_type] : [$key_type, $narrowed_type],
         )]))]);
+
+        $intersection_performed = true;
 
         return $template_of instanceof TTemplateKeyOf
             ? new TTemplateKeyOf(
@@ -1177,15 +1187,6 @@ abstract class Type
                     $allow_float_int_equality,
                 )) !== null) {
                     $intersection_atomic = $array_iterable_intersection;
-                    $intersection_performed = true;
-                } elseif (($template_key_or_value_intersection = self::intersectTemplateKeyOrValueOf(
-                    $codebase,
-                    $type_1_atomic,
-                    $type_2_atomic,
-                    $allow_interface_equality,
-                    $allow_float_int_equality,
-                )) !== null) {
-                    $intersection_atomic = $template_key_or_value_intersection;
                     $intersection_performed = true;
                 } elseif (($type_1_atomic instanceof TNonspecificLiteralString
                         && $type_2_atomic instanceof TNonEmptyString)
