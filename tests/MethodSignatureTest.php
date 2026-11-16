@@ -2648,11 +2648,11 @@ final class MethodSignatureTest extends TestCase
                 'code' => '<?php
                     class Foo {
                         public function f(): parent {
-                            return 5;
+                            return false;
                         }
                     }
                 ',
-                'error_message' => 'InvalidReturnStatement',
+                'error_message' => 'FalsableReturnStatement',
                 'error_levels' => ['InvalidParent'],
             ],
             'regularMethodMismatchFromParentUse' => [

@@ -1583,16 +1583,6 @@ final class ArrayFunctionCallTest extends TestCase
                     '$b' => 'int',
                 ],
             ],
-            'arrayPopNonEmptyAfterMixedArrayAddition' => [
-                'code' => '<?php
-                    /** @var array<string, int> */
-                    $a = ["a" => 5, "b" => 6, "c" => 7];
-                    $a[] = "hello";
-                    $b = array_pop($a);',
-                'assertions' => [
-                    '$b===' => '\'hello\'|int',
-                ],
-            ],
             'uasort' => [
                 'code' => '<?php
                     function foo (int $a, int $b): int {

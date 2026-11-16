@@ -92,7 +92,7 @@ final class PropertyTypeTest extends TestCase
 
     public function testForgetPropertyAssignmentsInBranch(): void
     {
-        $this->markTestSkipped('https://github.com/vimeo/psalm/issues/13923');
+        $this->markTestSkipped('Never actually worked: https://github.com/vimeo/psalm/issues/13923');
         /*Config::getInstance()->remember_property_assignments_after_call = false;
 
         $this->addFile(
