@@ -30,6 +30,7 @@ use Psalm\Progress\Phase;
 use Psalm\Progress\Progress;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -395,7 +396,7 @@ final class Analyzer
                     } else {
                         foreach ($possible_param_types as $offset => $possible_param_type) {
                             $this->possible_method_param_types[$declaring_method_id][$offset]
-                                = Type::combineUnionTypes(
+                                = self::combinePossibleParamTypes(
                                     $this->possible_method_param_types[$declaring_method_id][$offset] ?? null,
                                     $possible_param_type,
                                     $codebase,
@@ -1402,11 +1403,45 @@ final class Analyzer
             return;
         }
 
-        $this->possible_method_param_types[$method_id_lc][$offset] = Type::combineUnionTypes(
+        $this->possible_method_param_types[$method_id_lc][$offset] = self::combinePossibleParamTypes(
             $this->possible_method_param_types[$method_id_lc][$offset] ?? null,
             $type,
             $codebase,
         );
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function combinePossibleParamTypes(?Union $possible_type, Union $type, Codebase $codebase): Union
+    {
+        if ($possible_type !== null && self::holdsAbsorbingMixed($possible_type)) {
+            return $possible_type;
+        }
+
+        if (self::holdsAbsorbingMixed($type)) {
+            return Type::getMixed();
+        }
+
+        return Type::combineUnionTypes($possible_type, $type, $codebase);
+    }
+
+    /**
+     * A plain mixed stays through every later combination (TypeCombiner::scrapeTypeProperties()), so
+     * ClassLikes::findPossibleMethodParamTypes() skips the param whatever else is passed to it. Other mixed types are
+     * not proven to: a mixed from a loop isset is dropped next to other types, and a union that failed reconciliation
+     * is dropped when combined with one that did not.
+     *
+     * @psalm-pure
+     */
+    private static function holdsAbsorbingMixed(Union $type): bool
+    {
+        $mixed = $type->getAtomicTypes()['mixed'] ?? null;
+
+        return $mixed !== null
+            && $mixed::class === TMixed::class
+            && !$mixed->from_loop_isset
+            && !$type->failed_reconciliation;
     }
 
     /**

@@ -134,6 +134,33 @@ final class ParamTypeManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingParamType'],
                 'safe_types' => true,
             ],
+            'noParamTypeWhenAMixedArgumentIsPassedBetweenOthers' => [
+                'input' => '<?php
+                    class C {
+                        public function fooFoo($a): void {}
+                    }
+
+                    /** @var mixed */
+                    $m = null;
+
+                    (new C)->fooFoo("hello");
+                    (new C)->fooFoo($m);
+                    (new C)->fooFoo(5);',
+                'output' => '<?php
+                    class C {
+                        public function fooFoo($a): void {}
+                    }
+
+                    /** @var mixed */
+                    $m = null;
+
+                    (new C)->fooFoo("hello");
+                    (new C)->fooFoo($m);
+                    (new C)->fooFoo(5);',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingParamType'],
+                'safe_types' => true,
+            ],
             'noStringParamTypeWithVariableCall' => [
                 'input' => '<?php
                     class C {
