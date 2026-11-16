@@ -869,14 +869,25 @@ final class MethodCallTest extends TestCase
                         public ?array $map = null;
 
                         public function add(): void { $this->map["a"] = 2; }
+
+                        public function remove(): void {
+                            if ($this->map !== null) {
+                                unset($this->map["a"]);
+                            }
+                        }
                     }
 
                     $foo = new Foo();
                     $foo->map = ["a" => 1];
                     $foo->add();
-                    $a = $foo->map;',
+                    $a = $foo->map;
+
+                    $foo->map = null;
+                    $foo->remove();
+                    $b = $foo->map;',
                 'assertions' => [
                     '$a===' => 'array<string, int>',
+                    '$b===' => 'array<string, int>|null',
                 ],
             ],
             'propertyIsNotAssignedByAConstructorUnsettingAnItemOfIt' => [

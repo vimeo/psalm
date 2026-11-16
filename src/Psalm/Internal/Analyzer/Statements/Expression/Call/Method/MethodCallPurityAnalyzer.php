@@ -615,11 +615,10 @@ final class MethodCallPurityAnalyzer
             foreach ($method_storage->this_property_mutations as $name => $writes_property) {
                 $mutation_var_id = $lhs_var_id . '->' . $name;
 
+                $existing_type = $context->vars_in_scope[$mutation_var_id] ?? null;
+
                 $context->forgetNullArrayOffsets($mutation_var_id);
-                $context->removeDescendents(
-                    $mutation_var_id,
-                    $context->vars_in_scope[$mutation_var_id] ?? Type::getMixed(),
-                );
+                $context->removeDescendents($mutation_var_id, $existing_type ?? Type::getMixed());
 
                 $this_property_didnt_exist = $lhs_var_id === '$this'
                     && isset($context->vars_in_scope[$mutation_var_id])
@@ -635,11 +634,15 @@ final class MethodCallPurityAnalyzer
                         $class_storage,
                     ) ?? Type::getMixed();
 
-                    // writing an item of null or false makes it an array
-                    if (!$writes_property && ($new_type->isNullable() || $new_type->isFalsable())) {
+                    // writing items never makes the property null
+                    if (!$writes_property
+                        && $existing_type !== null
+                        && !$existing_type->isNullable()
+                        && !$existing_type->hasMixed()
+                        && $new_type->isNullable()
+                    ) {
                         $builder = $new_type->getBuilder();
                         $builder->removeType('null');
-                        $builder->removeType('false');
 
                         if (!$builder->isUnionEmpty()) {
                             $new_type = $builder->freeze();
