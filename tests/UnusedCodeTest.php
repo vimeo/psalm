@@ -185,6 +185,7 @@ final class UnusedCodeTest extends TestCase
                 ['UnusedMethod', 16],
                 ['PossiblyUnusedMethod', 18],
                 ['PossiblyUnusedProperty', 8],
+                ['ClassMustBeFinal', 4],
                 ['PossiblyUnusedMethod', 22],
                 ['PossiblyUnusedMethod', 35],
                 ['UnusedClass', 39],
@@ -192,6 +193,7 @@ final class UnusedCodeTest extends TestCase
                 ['UnusedClass', 45],
                 ['ClassMustBeFinal', 45],
                 ['PossiblyUnusedMethod', 49],
+                ['ClassMustBeFinal', 52],
                 ['PossiblyUnusedMethod', 58],
             ],
             array_map(

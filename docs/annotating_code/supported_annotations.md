@@ -853,7 +853,8 @@ project is treated as public surface automatically, since it can be instantiated
 and invoked through that external type: its overriding methods are considered
 used without an explicit `@api`.
 
-A library can mark all of its code that isn't `@internal` as `@api` with
+A library can make unused-code detection treat all of its code that isn't
+`@internal` as `@api` with
 [`markAllNonInternalCodeAsApi`](../running_psalm/configuration.md#markallnoninternalcodeasapi),
 at the cost of unused-code detection for internal code that lacks `@internal`.
 

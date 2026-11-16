@@ -945,7 +945,7 @@ final class ClassLikes
                         }
                         $this->checkMethodParamReferences($classlike_storage);
                     }
-                    if (!$this->isPublicApi($classlike_storage)
+                    if (!$classlike_storage->public_api
                         && !$classlike_storage->has_children
                         && !$classlike_storage->abstract
                         && !$classlike_storage->final
