@@ -31,6 +31,7 @@ abstract class FileManipulationTestCase extends TestCase
     /**
      * @dataProvider providerValidCodeParse
      * @param string[] $issues_to_fix
+     * @param (callable(TestConfig): void)|null $configure
      */
     public function testValidCode(
         string $input_code,
@@ -39,6 +40,7 @@ abstract class FileManipulationTestCase extends TestCase
         array $issues_to_fix,
         bool $safe_types,
         bool $allow_backwards_incompatible_changes = true,
+        ?callable $configure = null,
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -46,6 +48,9 @@ abstract class FileManipulationTestCase extends TestCase
         }
 
         $config = new TestConfig();
+        if ($configure !== null) {
+            $configure($config);
+        }
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
@@ -98,7 +103,15 @@ abstract class FileManipulationTestCase extends TestCase
     }
 
     /**
-     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:array<string>,safe_types:bool,allow_backwards_incompatible_changes?:bool}>
+     * @return array<string,array{
+     *     input: string,
+     *     output: string,
+     *     php_version: string,
+     *     issues_to_fix: array<string>,
+     *     safe_types: bool,
+     *     allow_backwards_incompatible_changes?: bool,
+     *     configure?: callable(TestConfig): void,
+     * }>
      */
     abstract public function providerValidCodeParse(): array;
 }
