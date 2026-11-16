@@ -1367,7 +1367,7 @@ final class ArrayAccessTest extends TestCase
                     $test = $_GET["x"];
                     $a = $test["a"] ?? "a";',
                 'assertions' => [
-                    '$a===' => 'null|string',
+                    '$a===' => 'string',
                 ],
             ],
             'issetOnArrayOrArrayAccessNarrowsTheArray' => [
