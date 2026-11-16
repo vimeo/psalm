@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\AtomicParts;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\Capabilities;
@@ -1168,7 +1169,7 @@ final class AtomicTypeComparator
         $first_comparison_result = new TypeComparisonResult();
         $second_comparison_result = new TypeComparisonResult();
 
-        return (self::isContainedBy(
+        if ((self::isContainedBy(
             $codebase,
             $type1_part,
             $type2_part,
@@ -1191,7 +1192,27 @@ final class AtomicTypeComparator
         ) || ($type1_part instanceof TKeyedArray
             && $type2_part instanceof TKeyedArray
             && self::canKeyedArraysBeIdentical($codebase, $type1_part, $type2_part)
-        );
+        )) {
+            return true;
+        }
+
+        // e.g. callable and string can both be a callable-string
+        $type1_parts = AtomicParts::split($type1_part, $codebase);
+        $type2_parts = $type1_parts === null ? AtomicParts::split($type2_part, $codebase) : null;
+
+        if ($type1_parts === null && $type2_parts === null) {
+            return false;
+        }
+
+        foreach ($type1_parts ?? [$type1_part] as $type1_part_part) {
+            foreach ($type2_parts ?? [$type2_part] as $type2_part_part) {
+                if (self::canBeIdentical($codebase, $type1_part_part, $type2_part_part, $allow_interface_equality)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

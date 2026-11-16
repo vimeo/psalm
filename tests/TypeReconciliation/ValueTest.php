@@ -1112,6 +1112,132 @@ final class ValueTest extends TestCase
                     '$a===' => '5',
                 ],
             ],
+            'callableIdenticalToStringIsCallableString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(callable $c, string $s): void {
+                        if ($c === $s) { // 'strlen'
+                            /** @psalm-check-type-exact $c = callable-string */
+                            /** @psalm-check-type-exact $s = callable-string */
+                        }
+                    }
+                    PHP,
+            ],
+            'callableIdenticalToArrayIsCallableArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(callable $c, array $a): void {
+                        if ($c === $a) { // [new ArrayObject(), 'count']
+                            /** @psalm-check-type-exact $c = callable-array{0: class-string|object, 1: non-empty-string} */
+                        }
+                    }
+                    PHP,
+            ],
+            'callableIdenticalToObjectIsCallableObject' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(callable $c, object $o): void {
+                        if ($c === $o) { // fn() => 1
+                            /** @psalm-check-type-exact $c = callable-object */
+                            /** @psalm-check-type-exact $o = callable-object */
+                        }
+                    }
+                    PHP,
+            ],
+            'numericIdenticalToStringIsNumericString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param numeric $n */
+                    function f($n, string $s): void {
+                        if ($n === $s) { // '1'
+                            /** @psalm-check-type-exact $n = numeric-string */
+                            /** @psalm-check-type-exact $s = numeric-string */
+                        }
+                    }
+                    PHP,
+            ],
+            'iterableIdenticalToObjectIsTraversable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable<int> $it */
+                    function f(iterable $it, object $o): void {
+                        if ($it === $o) { // new ArrayIterator([1])
+                            /** @psalm-check-type-exact $it = Traversable<array-key, int> */
+                            /** @psalm-check-type-exact $o = Traversable<mixed, int> */
+                        }
+                    }
+                    PHP,
+            ],
+            'iterableIdenticalToCallableIsCallableArrayOrTraversable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(iterable $it, callable $c): void {
+                        if ($it === $c) { // [new ArrayObject(), 'count'], or an invokable Traversable
+                            /** @psalm-check-type-exact $c = Traversable|callable-array{0: class-string|object, 1: non-empty-string} */
+                        }
+                    }
+                    PHP,
+            ],
+            'iterableAndScalarMayBeCallable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param scalar $sc
+                     * @param array-key $k
+                     */
+                    function f(iterable $it, $sc, $k): void {
+                        if (is_callable($it)) {} // [new ArrayObject(), 'count']
+                        if (is_callable($sc)) { // 'strlen'
+                            /** @psalm-check-type-exact $sc = callable-string */
+                        }
+                        if (is_callable($k)) { // 'strlen'
+                            /** @psalm-check-type-exact $k = callable-string */
+                        }
+                    }
+                    PHP,
+            ],
+            'scalarIdenticalToCallableIsCallableString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param scalar $sc
+                     * @param array-key $k
+                     */
+                    function f($sc, $k, callable $c): void {
+                        if ($sc === $c) { // 'strlen'
+                            /** @psalm-check-type-exact $sc = callable-string */
+                        }
+                        if ($k === $c) { // 'strlen'
+                            /** @psalm-check-type-exact $k = callable-string */
+                        }
+                    }
+                    PHP,
+            ],
+            'callableInArrayOfStringsIsCallableString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $names */
+                    function f(callable $c, array $names): void {
+                        if (in_array($c, $names, true)) { // 'strlen'
+                            /** @psalm-check-type-exact $c = callable-string */
+                        }
+                    }
+                    PHP,
+            ],
+            'unionsWithOverlappingCompoundTypesAreIntersected' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param callable|int $c
+                     * @param string|array $s
+                     */
+                    function f($c, $s): void {
+                        if ($c === $s) { // 'strlen' or [new ArrayObject(), 'count']
+                            /** @psalm-check-type-exact $c = callable-array{0: class-string|object, 1: non-empty-string}|callable-string */
+                        }
+                    }
+                    PHP,
+            ],
         ];
     }
 
@@ -1345,6 +1471,38 @@ final class ValueTest extends TestCase
                         sayHello($name);
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'callableNeverIdenticalToNumericString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param numeric-string $s */
+                    function f(callable $c, $s): void {
+                        if ($c === $s) {}
+                    }
+                    PHP,
+                'error_message' => 'does not contain',
+            ],
+            'numericNeverIdenticalToCallableString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param numeric $n
+                     * @param callable-string $s
+                     */
+                    function f($n, $s): void {
+                        if ($n === $s) {}
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'iterableNeverIdenticalToString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(iterable $it, string $s): void {
+                        if ($it === $s) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }

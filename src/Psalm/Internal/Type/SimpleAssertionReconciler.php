@@ -1940,6 +1940,26 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TObject) {
                 $iterable_types[] = new TNamedObject('Traversable');
                 $redundant = false;
+            } elseif (($parts = AtomicParts::split($type, $codebase)) !== null) {
+                // e.g. the iterable callables are the callable-arrays and the Traversable objects
+                $parts_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+                $iterable_parts = self::reconcileIterable(
+                    $assertion,
+                    $codebase,
+                    new Union($parts),
+                    null,
+                    $negated,
+                    null,
+                    $suppressed_issues,
+                    $parts_failed_reconciliation,
+                    $is_equality,
+                );
+
+                if (!$iterable_parts->isNever()) {
+                    $iterable_types = [...$iterable_types, ...array_values($iterable_parts->getAtomicTypes())];
+                }
+
+                $redundant = false;
             } else {
                 $redundant = false;
             }
@@ -2919,6 +2939,26 @@ final class SimpleAssertionReconciler extends Reconciler
                 $redundant = false;
 
                 $callable_types[] = $type;
+            } elseif (($parts = AtomicParts::split($type, $codebase)) !== null) {
+                // e.g. the callable scalars are the callable-strings
+                $parts_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+                $callable_parts = self::reconcileCallable(
+                    $assertion,
+                    $codebase,
+                    new Union($parts),
+                    null,
+                    $negated,
+                    null,
+                    $suppressed_issues,
+                    $parts_failed_reconciliation,
+                    $is_equality,
+                );
+
+                if (!$callable_parts->isNever()) {
+                    $callable_types = [...$callable_types, ...array_values($callable_parts->getAtomicTypes())];
+                }
+
+                $redundant = false;
             } elseif ($candidate_callable = CallableTypeComparator::getCallableFromAtomic(
                 $codebase,
                 $type,

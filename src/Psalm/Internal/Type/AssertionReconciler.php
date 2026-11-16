@@ -770,6 +770,16 @@ final class AssertionReconciler extends Reconciler
 
                 if ($matching_atomic_type) {
                     $matching_atomic_types[] = $matching_atomic_type;
+                } else {
+                    $matching_atomic_types = [
+                        ...$matching_atomic_types,
+                        ...self::filterAtomicPartsWithAnother(
+                            $existing_type_part,
+                            $new_type_part,
+                            $codebase,
+                            $any_scalar_type_match_found,
+                        ),
+                    ];
                 }
             }
             unset($existing_type_part);
@@ -781,6 +791,53 @@ final class AssertionReconciler extends Reconciler
         }
 
         return null;
+    }
+
+    /**
+     * The matching types of the parts of two types neither of which contains the other: e.g. callable filtered with
+     * string is a callable-string
+     *
+     * @return list<Atomic>
+     */
+    private static function filterAtomicPartsWithAnother(
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+        Codebase $codebase,
+        bool &$any_scalar_type_match_found,
+    ): array {
+        $type_1_parts = AtomicParts::split($type_1_atomic, $codebase);
+        $type_2_parts = $type_1_parts === null ? AtomicParts::split($type_2_atomic, $codebase) : null;
+
+        if ($type_1_parts === null && $type_2_parts === null) {
+            return [];
+        }
+
+        $matching_atomic_types = [];
+
+        foreach ($type_1_parts ?? [$type_1_atomic] as $type_1_part) {
+            foreach ($type_2_parts ?? [$type_2_atomic] as $type_2_part) {
+                $matching_atomic_type = self::filterAtomicWithAnother(
+                    $type_1_part,
+                    $type_2_part,
+                    $codebase,
+                    $any_scalar_type_match_found,
+                );
+
+                $matching_atomic_types = [
+                    ...$matching_atomic_types,
+                    ...($matching_atomic_type !== null
+                        ? [$matching_atomic_type]
+                        : self::filterAtomicPartsWithAnother(
+                            $type_1_part,
+                            $type_2_part,
+                            $codebase,
+                            $any_scalar_type_match_found,
+                        )),
+                ];
+            }
+        }
+
+        return $matching_atomic_types;
     }
 
     /**
