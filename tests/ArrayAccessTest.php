@@ -2238,14 +2238,14 @@ final class ArrayAccessTest extends TestCase
 
                     if ($foo !== null) {}',
             ],
-            'SKIPPED-accessKnownArrayWithPositiveInt' => [
+            'accessKnownArrayWithPositiveInt' => [
                 'code' => '<?php
                     /** @param list<int> $arr */
                     function foo(array $arr) : void {
                         $o = [4, 15, 18, 21, 51];
                         $i = 0;
                         foreach ($arr as $a) {
-                            if ($o[$i] === $a) {}
+                            if ($i < 5 && $o[$i] === $a) {}
                             $i++;
                         }
                     }',

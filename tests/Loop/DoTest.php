@@ -164,7 +164,7 @@ final class DoTest extends TestCase
                     '$a' => 'bool',
                 ],
             ],
-            'SKIPPED-doWhileVarWithPossibleBreakThatSetsToTrue' => [
+            'SKIPPED-doWhileVarWithPossibleBreakThatSetsToTrue' => [ // #13757
                 'code' => '<?php
                     $a = false;
                     $b = false;
@@ -1012,7 +1012,7 @@ final class DoTest extends TestCase
                     echo $a;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
-            'SKIPPED-doWhileVarWithPossibleContinueWithoutDefining' => [
+            'doWhileVarWithPossibleContinueWithoutDefining' => [
                 'code' => '<?php
                     do {
                         if (rand(0, 1)) {
