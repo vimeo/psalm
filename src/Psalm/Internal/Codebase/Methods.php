@@ -850,7 +850,11 @@ final class Methods
                     StaticArgumentsProjector::projectType(
                         $codebase,
                         $overridden_storage->return_type,
-                        $overridden_method_id->fq_class_name,
+                        StaticArgumentsProjector::getDeclaringClass(
+                            $codebase,
+                            $overridden_method_id,
+                            $overridden_method_id->fq_class_name,
+                        ),
                         $appearing_fq_class_name,
                     ),
                     $overridden_method_id->fq_class_name,

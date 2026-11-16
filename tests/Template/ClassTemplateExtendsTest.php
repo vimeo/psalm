@@ -2857,6 +2857,106 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'returnStaticArgumentsProjectedFromATraitThroughExtends' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    trait Maker {
+                        /** @return static<A, int> */
+                        public function m() {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template X
+                     * @template Y
+                     */
+                    class D {
+                        /** @use Maker<Y, X> */
+                        use Maker;
+                    }
+
+                    /**
+                     * @template U
+                     * @template V
+                     * @extends D<V, U>
+                     */
+                    class C extends D {}
+
+                    /** @var C<string, bool> $c */
+                    $c = new C();
+                    $r = $c->m();',
+                'assertions' => [
+                    '$r===' => 'C<string, int>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'returnStaticArgumentsProjectedFromATraitUsedByTheCalledClass' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    trait Maker {
+                        /** @return static<A, int> */
+                        public function m() {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template X
+                     * @template Y
+                     */
+                    class D {
+                        /** @use Maker<Y, X> */
+                        use Maker;
+                    }
+
+                    /** @var D<string, bool> $d */
+                    $d = new D();
+                    $r = $d->m();',
+                'assertions' => [
+                    '$r===' => 'D<int, bool>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'returnStaticArgumentsNotMappedThroughAnIntersectionExtendsArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    class Base {
+                        /** @return static<DateTime, int> */
+                        public function m() {
+                            throw new \Exception();
+                        }
+                    }
+
+                    interface I {}
+
+                    /**
+                     * @template X
+                     * @template Y
+                     * @extends Base<Y&I, X>
+                     */
+                    class CI extends Base {}
+
+                    /** @var CI<bool, stdClass> $c */
+                    $c = new CI();
+                    $r = $c->m();',
+                'assertions' => [
+                    '$r===' => 'CI<int, stdClass>&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticClassCreationIndirect' => [
                 'code' => '<?php
                     /**

@@ -264,7 +264,7 @@ final class MethodCallReturnTypeFetcher
                     $return_type_candidate = StaticArgumentsProjector::projectType(
                         $codebase,
                         $return_type_candidate,
-                        $self_fq_class_name,
+                        StaticArgumentsProjector::getDeclaringClass($codebase, $method_id, $self_fq_class_name),
                         $static_type->value,
                         $static_type->type_params,
                     );

@@ -6,6 +6,7 @@ namespace Psalm\Internal\TypeVisitor;
 
 use Override;
 use Psalm\Codebase;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Storage\ClassLikeStorage;
@@ -102,6 +103,38 @@ final class StaticArgumentsProjector extends MutableTypeVisitor
     }
 
     /**
+     * A template an argument of `@extends` is exactly, not within an intersection or a union.
+     *
+     * @psalm-pure
+     */
+    private static function getBareTemplate(?Union $type): ?TTemplateParam
+    {
+        $atomic = $type?->isSingle() ? $type->getSingleAtomic() : null;
+
+        return $atomic instanceof TTemplateParam && !$atomic->extra_types ? $atomic : null;
+    }
+
+    /**
+     * The class the return type of a method is declared in: the templates of a trait the class uses are those its
+     * `static<...>` arguments refer to.
+     *
+     * @psalm-capabilities read-props
+     */
+    public static function getDeclaringClass(
+        Codebase $codebase,
+        MethodIdentifier $method_id,
+        string $self_class,
+    ): string {
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+        return $declaring_method_id !== null
+            && $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name === $self_class
+            && $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name)->is_trait
+                ? $declaring_method_id->fq_class_name
+                : $self_class;
+    }
+
+    /**
      * @param list<Union> $type_params
      * @return list<Union>
      */
@@ -119,20 +152,17 @@ final class StaticArgumentsProjector extends MutableTypeVisitor
         $sources = [];
 
         foreach (array_keys($this->declaring_storage->template_types ?? []) as $i => $declared_name) {
-            $extended_param = $this->extended_params[$declared_name] ?? null;
-            $atomic = $extended_param?->isSingle() ? $extended_param->getSingleAtomic() : null;
+            $atomic = self::getBareTemplate($this->extended_params[$declared_name] ?? null);
 
             // `@extends` of an intermediate class leaves its own templates in the mapping
-            while ($atomic instanceof TTemplateParam && $atomic->defining_class !== $this->called_storage->name) {
-                $extended_param = $this->called_storage
-                    ->template_extended_params[$atomic->defining_class][$atomic->param_name] ?? null;
-                $atomic = $extended_param?->isSingle() ? $extended_param->getSingleAtomic() : null;
+            while ($atomic !== null && $atomic->defining_class !== $this->called_storage->name) {
+                $atomic = self::getBareTemplate(
+                    $this->called_storage->template_extended_params[$atomic->defining_class][$atomic->param_name]
+                        ?? null,
+                );
             }
 
-            if ($atomic instanceof TTemplateParam
-                && $atomic->defining_class === $this->called_storage->name
-                && isset($type_args[$i])
-            ) {
+            if ($atomic !== null && isset($type_args[$i])) {
                 $sources[$atomic->param_name][] = $type_args[$i];
             }
         }
