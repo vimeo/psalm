@@ -21,6 +21,7 @@ use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type;
 use Psalm\Type\Atomic\DependentType;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TNull;
@@ -36,6 +37,7 @@ use function array_keys;
 use function array_map;
 use function array_search;
 use function array_shift;
+use function array_unique;
 use function array_values;
 use function assert;
 use function count;
@@ -394,6 +396,14 @@ final class Context
     public array $byref_constraints = [];
 
     /**
+     * Variables a branch of the if/else being analysed rebinds: their constraints are merged by
+     * mergeConstraintsOfReferencesReboundIn(), not by the merge of the constraints the branches add
+     *
+     * @var array<string, true>
+     */
+    public array $references_rebound_in_blocks = [];
+
+    /**
      * A list of vars that have been assigned to
      *
      * @var array<string, int>
@@ -646,6 +656,50 @@ final class Context
         }
         $this->references_possibly_from_confusing_scope +=
             $confusing_scope_context->references_possibly_from_confusing_scope;
+    }
+
+    /**
+     * A variable a block that may not run binds by reference elsewhere (or releases) keeps a constraint only when it is
+     * constrained both before and after the block, to what either allows
+     *
+     * @param array<PhpParser\Node> $block_nodes
+     * @return array<string, true> the variables the block rebinds
+     */
+    public function mergeConstraintsOfReferencesReboundIn(
+        Context $block_context,
+        array $block_nodes,
+        Codebase $codebase,
+    ): array {
+        $rebound_var_ids = [];
+
+        foreach ($this->byref_constraints + $block_context->byref_constraints as $var_id => $_) {
+            $constraint = $this->byref_constraints[$var_id] ?? null;
+            $block_constraint = $block_context->byref_constraints[$var_id] ?? null;
+
+            if ($constraint === $block_constraint || self::findReferenceRebinding($block_nodes, $var_id) === null) {
+                continue;
+            }
+
+            $rebound_var_ids[$var_id] = true;
+
+            if ($constraint?->type && $block_constraint?->type) {
+                $this->byref_constraints[$var_id] = new ReferenceConstraint(
+                    Type::combineUnionTypes($constraint->type, $block_constraint->type, $codebase),
+                    false,
+                    // a reference to a property, or to one of them, only if it is one on both paths
+                    $constraint->referenced_properties && $block_constraint->referenced_properties
+                        ? array_values(array_unique([
+                            ...$constraint->referenced_properties,
+                            ...$block_constraint->referenced_properties,
+                        ]))
+                        : [],
+                );
+            } else {
+                unset($this->byref_constraints[$var_id]);
+            }
+        }
+
+        return $rebound_var_ids;
     }
 
     /**
@@ -1438,7 +1492,7 @@ final class Context
                 );
             }
 
-            $this->remove($var_id);
+            $this->forgetPropertyBoundByReference($var_id, true);
             $this->removeVarFromConflictingClauses($var_id);
             $this->possibly_assigned_var_ids[$var_id] = true;
 
@@ -1573,7 +1627,7 @@ final class Context
         }
 
         foreach ($vars_to_remove as $var_id) {
-            $this->remove($var_id, false);
+            $this->forgetPropertyBoundByReference($var_id, false);
             // forgotten, not unset: Context::update() tells the two apart
             $this->vars_possibly_in_scope[$var_id] = true;
             $this->parent_remove_vars[$var_id] = ++self::$clause_removal_count;
@@ -1602,6 +1656,36 @@ final class Context
         }
 
         $this->clauses = $clauses_to_keep;
+    }
+
+    /**
+     * Forgets a property (or an item of it) a call may have written. One bound to variables by reference stays bound
+     * to them, and now holds whatever it is declared to hold
+     */
+    private function forgetPropertyBoundByReference(string $var_id, bool $remove_descendents): void
+    {
+        $reference_id = array_search($var_id, $this->references_in_scope, true);
+
+        if ($reference_id === false || !isset($this->vars_in_scope[$var_id])) {
+            $this->remove($var_id, $remove_descendents);
+
+            return;
+        }
+
+        $existing_type = $this->vars_in_scope[$var_id];
+
+        $this->forgetNarrowedShapeProperty($var_id);
+
+        if ($remove_descendents) {
+            $this->removeDescendents($var_id, $existing_type);
+        }
+
+        unset($this->null_array_offsets_read[$var_id]);
+        $this->forgetNullArrayOffsets($var_id);
+
+        // written through the binding: the variables bound to it get the type too
+        $this->vars_in_scope[$var_id] = ($this->byref_constraints[$reference_id]->type ?? Type::getMixed())
+            ->setParentNodes($existing_type->parent_nodes);
     }
 
     /**
