@@ -3584,6 +3584,28 @@ final class ArrayAccessTest extends TestCase
                     }',
                 'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
+            'offsetCheckedBeforeOnlyOneBreakOfADo' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $a */
+                    function f(array $a, string $k): int {
+                        do {
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                            if (!isset($a[$k]) || !is_int($a[$k])) {
+                                return 0;
+                            }
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        } while (rand(0, 1));
+                        if (isset($a[$k])) {
+                            return $a[$k];
+                        }
+                        return 0;
+                    }',
+                'error_message' => 'MixedReturnStatement',
+            ],
             'variableDefinedBeforeOneBreakOfAFor' => [
                 'code' => '<?php
                     function f(): int {
