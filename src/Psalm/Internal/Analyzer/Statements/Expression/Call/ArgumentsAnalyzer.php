@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTy
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
@@ -2109,10 +2110,13 @@ final class ArgumentsAnalyzer
                 $statements_analyzer->registerPossiblyUndefinedVariable($var_id, $arg->value);
             }
 
-            // a reference can't create a static property, so one that isn't known yet is fetched, and checked
+            // a reference can't create a static property, so one that isn't known yet is fetched, and checked, as
+            // is a superglobal, which is set
             if ($context->hasVariable($var_id)
                 ? $context->vars_in_scope[$var_id]->isNull()
                 : !$arg->value instanceof PhpParser\Node\Expr\StaticPropertyFetch
+                    && !($arg->value instanceof PhpParser\Node\Expr\Variable
+                        && VariableFetchAnalyzer::isReadAsSetSuperGlobal($var_id))
             ) {
                 if (!isset($context->vars_in_scope[$var_id])
                     && $arg->value instanceof PhpParser\Node\Expr\Variable
@@ -2279,9 +2283,14 @@ final class ArgumentsAnalyzer
         $context->inside_by_ref_offset = $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
             && self::phpTakesArgumentByReference($method_id, $argument_offset);
 
+        $read_as_set_superglobal = $var_id !== null
+            && $arg->value instanceof PhpParser\Node\Expr\Variable
+            && VariableFetchAnalyzer::isReadAsSetSuperGlobal($var_id);
+
         try {
-            // passing a variable by reference defines it, as null when it was not set
+            // passing a variable by reference defines it, as null when it was not set (a superglobal is read as set)
             if ($var_id !== null
+                && !$read_as_set_superglobal
                 && $arg->value instanceof PhpParser\Node\Expr\Variable
                 && isset($context->vars_in_scope[$var_id])
                 && $context->vars_in_scope[$var_id]->possibly_undefined
@@ -2293,7 +2302,7 @@ final class ArgumentsAnalyzer
                     : $var_type->getBuilder()->addType(new TNull())->freeze();
             }
 
-            if (($var_id && isset($context->vars_in_scope[$var_id]))
+            if (($var_id && (isset($context->vars_in_scope[$var_id]) || $read_as_set_superglobal))
                 || ($method_id
                     && in_array(
                         $method_id,
