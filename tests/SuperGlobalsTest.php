@@ -90,6 +90,40 @@ final class SuperGlobalsTest extends TestCase
                 '$time===' => 'int<1, max>|null',
             ],
         ];
+
+        yield 'globalSuperGlobalKeepsItsType' => [
+            'code' => '<?php
+                function printers(): string {
+                    global $_SESSION;
+
+                    $session = $_SESSION;
+                    /** @psalm-check-type-exact $session = array<non-empty-string, mixed> */;
+
+                    return var_export($_SESSION["printers"], true);
+                }
+            ',
+        ];
+
+        yield 'globalSuperGlobalReadInTheFileScopeKeepsItsType' => [
+            'code' => '<?php
+                echo count($_SESSION);
+
+                function printers(): string {
+                    global $_SESSION;
+
+                    return var_export($_SESSION["printers"], true);
+                }
+            ',
+        ];
+
+        yield 'globalHttpResponseHeaderIsNullWhenUnset' => [
+            'code' => '<?php
+                function headers(): void {
+                    global $http_response_header;
+                    /** @psalm-check-type-exact $http_response_header = non-empty-list<non-falsy-string>|null */;
+                }
+            ',
+        ];
     }
 
     /**
