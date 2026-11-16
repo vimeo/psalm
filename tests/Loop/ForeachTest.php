@@ -269,6 +269,157 @@ final class ForeachTest extends TestCase
                         return $counts;
                     }',
             ],
+            'foreachCounterIncrementedFromACoalesceIsNotAUnionOfLiterals' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): ?int {
+                        $c = null;
+                        foreach ($words as $_) {
+                            $c = ($c ?? 0) + 1;
+                        }
+                        /** @psalm-check-type-exact $c = int<1, max>|null */;
+                        return $c;
+                    }',
+            ],
+            'foreachCounterIncrementedFromACoalesceOnTheRightIsNotAUnionOfLiterals' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): ?int {
+                        $c = null;
+                        foreach ($words as $_) {
+                            $c = 1 + ($c ?? 0);
+                        }
+                        /** @psalm-check-type-exact $c = int<1, max>|null */;
+                        return $c;
+                    }',
+            ],
+            'foreachCountersInArrayValuesIncrementedFromACoalesceAreNotUnionsOfLiterals' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $words
+                     * @return array<string, int>
+                     */
+                    function f(array $words): array {
+                        $counts = [];
+                        foreach ($words as $word) {
+                            $counts[$word] = ($counts[$word] ?? 0) + 1;
+                        }
+                        /** @psalm-check-type-exact $counts = array<string, int<1, max>> */;
+                        return $counts;
+                    }',
+            ],
+            'foreachCounterIncrementedFromATernaryIsNotAUnionOfLiterals' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): ?int {
+                        $c = null;
+                        foreach ($words as $_) {
+                            $c = ($c === null ? 0 : $c) + 1;
+                        }
+                        /** @psalm-check-type-exact $c = int<1, max>|null */;
+                        return $c;
+                    }',
+            ],
+            'foreachCounterIncrementedFromAMatchIsNotAUnionOfLiterals' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): ?int {
+                        $c = null;
+                        foreach ($words as $_) {
+                            $c = (match (true) {
+                                $c === null => 0,
+                                default => $c,
+                            }) + 1;
+                        }
+                        /** @psalm-check-type-exact $c = int<1, max>|null */;
+                        return $c;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'foreachCounterIncrementedFromACallIsNotAUnionOfLiterals' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): int {
+                        $c = 0;
+                        foreach ($words as $_) {
+                            $c = max($c, 0) + 1;
+                        }
+                        /** @psalm-check-type-exact $c = int<0, max> */;
+                        return $c;
+                    }',
+            ],
+            'foreachCounterInAPropertyIncrementedFromACoalesceIsNotAUnionOfLiterals' => [
+                'code' => '<?php
+                    final class A {
+                        public ?int $c = null;
+
+                        /** @param list<string> $words */
+                        public function f(array $words): void {
+                            $this->c = null;
+                            foreach ($words as $_) {
+                                $this->c = ($this->c ?? 0) + 1;
+                            }
+                            /** @psalm-check-type-exact $this->c = int<1, max>|null */;
+                        }
+                    }',
+            ],
+            'foreachLiteralsNotComputedFromWhatTheLoopChangesAreStillAdded' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): void {
+                        $fixed = ["a" => 1];
+                        foreach ($words as $word) {
+                            $a = (rand(0, 1) ? 2 : 3) + 1;
+                            /** @psalm-check-type-exact $a = 3|4 */;
+                            $b = ($fixed[$word] ?? 5) + 1;
+                            /** @psalm-check-type-exact $b = 2|6 */;
+                        }
+                    }',
+            ],
+            'foreachLiteralsSelectedByWhatTheLoopChangesAreStillAdded' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): void {
+                        $flag = false;
+                        foreach ($words as $word) {
+                            $a = ($flag ? 2 : 3) + 1;
+                            /** @psalm-check-type-exact $a = 3|4 */;
+                            $b = match (true) {
+                                $flag => 1,
+                                default => 2,
+                            } + 1;
+                            /** @psalm-check-type-exact $b = 2|3 */;
+                            $flag = $word === "x";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'foreachLiteralsComputedFromAVariableTheLoopDoesNotAssignAreStillAdded' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words, bool $flag): void {
+                        foreach ($words as $_) {
+                            $a = (int) $flag + 1;
+                            /** @psalm-check-type-exact $a = 1|2 */;
+                        }
+                    }',
+            ],
+            'foreachPowerOfAnExponentTheLoopChangesIsAFloatForANegativeLiteral' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): void {
+                        $exponent = null;
+                        foreach ($words as $_) {
+                            $a = 2 ** ($exponent ?? -1);
+                            /** @psalm-check-type-exact $a = float|int<1, max> */;
+                            $exponent = 1;
+                        }
+                    }',
+            ],
             'mixedIteratedByForeachIsNonEmptyInTheBodyAndMixedAfterIt' => [
                 'code' => '<?php
                     function getMixed(): mixed {
@@ -2648,6 +2799,20 @@ final class ForeachTest extends TestCase
                 'error_message' => 'RedundantConditionGivenDocblockType',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'foreachLiteralSelectedByAComparisonOfItselfStaysAUnionOfLiterals' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $words */
+                    function f(array $words): int {
+                        $a = 0;
+                        foreach ($words as $_) {
+                            $a = ($a > 5 ? 1 : 2) + 1;
+                        }
+                        return $a;
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:15',
             ],
             'foreachReadBeforeAReferenceAssignment' => [
                 'code' => <<<'PHP'
