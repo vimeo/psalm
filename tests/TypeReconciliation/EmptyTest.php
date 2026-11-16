@@ -510,26 +510,96 @@ final class EmptyTest extends TestCase
                         return 0 !== strlen($str) ? $str : "string";
                     }',
             ],
-            'SKIPPED-strlenWithEqualOne' => [ // #13912
+            'strlenWithEqualOne' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return strlen($str) === 1 ? $str : "string";
                     }',
             ],
-            'SKIPPED-strlenRighthandWithEqualOne' => [ // #13912
+            'strlenRighthandWithEqualOne' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return 1 === strlen($str) ? $str : "string";
                     }',
             ],
-            'SKIPPED-mb_strlen' => [ // #13912
+            'mb_strlen' => [
                 'code' => '<?php
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return mb_strlen($str) === 1 ? $str : "string";
                     }',
+            ],
+            'strlenWithLooseEqualThree' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function nonEmptyString(string $str): string {
+                        return strlen($str) == 3 ? $str : "string";
+                    }',
+            ],
+            'strlenWithGreaterTwo' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function nonEmptyString(string $str): string {
+                        return strlen($str) > 2 ? $str : "string";
+                    }',
+            ],
+            'strlenRighthandWithGreaterEqualsTwo' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function nonEmptyString(string $str): string {
+                        return 2 <= strlen($str) ? $str : "string";
+                    }',
+            ],
+            'strlenWithLessThreeInFalseBranch' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function nonEmptyString(string $str): string {
+                        return strlen($str) < 3 ? "string" : $str;
+                    }',
+            ],
+            'strlenRighthandWithGreaterEqualsTwoInFalseBranch' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function nonEmptyString(string $str): string {
+                        return 2 >= strlen($str) ? "string" : $str;
+                    }',
+            ],
+            'strlenWithNotIdenticalThreeInFalseBranch' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function nonEmptyString(string $str): string {
+                        return strlen($str) !== 3 ? "string" : $str;
+                    }',
+            ],
+            'strlenWithNegatedEqualThreeInFalseBranch' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function nonEmptyString(string $str): string {
+                        return !(strlen($str) === 3) ? "string" : $str;
+                    }',
+            ],
+            'strlenWithEqualThreeOrLiteral' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function nonEmptyString(string $str): string {
+                        return strlen($str) === 3 || $str === "ab" ? $str : "string";
+                    }',
+            ],
+            'strlenComparisonBranches' => [
+                'code' => '<?php
+                    /** @var string $str */
+                    $equal_true = strlen($str) === 3 ? $str : "a";
+                    $equal_false = strlen($str) === 3 ? "a" : $str;
+                    $less_true = strlen($str) < 3 ? $str : "a";
+                    $less_false = strlen($str) < 3 ? "a" : $str;',
+                'assertions' => [
+                    '$equal_true===' => 'non-empty-string',
+                    '$equal_false===' => 'string',
+                    '$less_true===' => 'string',
+                    '$less_false===' => 'non-empty-string',
+                ],
             ],
             'SKIPPED-countWithLiteralIntVariable' => [ // #8163
                 'code' => '<?php
@@ -610,7 +680,7 @@ final class EmptyTest extends TestCase
                     }
                     PHP,
                 'assertions' => [
-                    '$x===' => 'string', // can be improved
+                    '$x===' => 'non-empty-string',
                 ],
             ],
             'issue-9349' => [
@@ -842,6 +912,22 @@ final class EmptyTest extends TestCase
                     /** @return non-empty-string */
                     function nonEmptyString(string $str): string {
                         return strlen("a" . $str . "b") > 2 ? $str : "string";
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'preventStrlenWithEqualThreeInFalseBranch' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function nonEmptyString(string $str): string {
+                        return strlen($str) === 3 ? "string" : $str;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'preventStrlenWithLessThreeInTrueBranch' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function nonEmptyString(string $str): string {
+                        return strlen($str) < 3 ? $str : "string";
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],

@@ -24,10 +24,13 @@ use Psalm\Node\Expr\BinaryOp\VirtualNotIdentical;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Node\Expr\VirtualPropertyFetch;
 use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Assertion\IsIdentical;
+use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNull;
@@ -604,13 +607,32 @@ final class FormulaGenerator
         $truthy = new Truthy();
 
         if (!$clauses) {
-            $clauses = [
-                new Clause(
-                    [$conditional_ref => [(string) $truthy => $truthy]],
+            $possibilities = [$conditional_ref => [(string) $truthy => $truthy]];
+            $non_empty_string_comparison = AssertionFinder::getOneWayNonEmptyStringLengthComparison(
+                $conditional,
+                $this_class_name,
+                $source,
+            );
+            $empty_string = TLiteralString::make('');
+
+            // `strlen($s) < 3` holds where `$s` is empty, so it's false only where `$s` isn't
+            if ($non_empty_string_comparison !== null && !$non_empty_string_comparison[1]) {
+                $is_empty_string = new IsIdentical($empty_string);
+                $possibilities[$non_empty_string_comparison[0]] = [(string) $is_empty_string => $is_empty_string];
+            }
+
+            $clauses = [new Clause($possibilities, $conditional_object_id, $creating_object_id)];
+
+            // `strlen($s) === 3` holds only where `$s` isn't empty, a clause of its own so that its negation says
+            // nothing about `$s`
+            if ($non_empty_string_comparison !== null && $non_empty_string_comparison[1]) {
+                $is_non_empty_string = new IsNotIdentical($empty_string);
+                $clauses[] = new Clause(
+                    [$non_empty_string_comparison[0] => [(string) $is_non_empty_string => $is_non_empty_string]],
                     $conditional_object_id,
                     $creating_object_id,
-                ),
-            ];
+                );
+            }
         }
 
         // `$x === $a?->p` with an `$x` that can't be null holds only if `$a` isn't null, a clause of its own so that
