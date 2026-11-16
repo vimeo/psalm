@@ -586,10 +586,54 @@ final class IntRangeTest extends TestCase
                     $s = null;
                     if (($k = 10) < ++$k) {
                         $s = $k;
+                    }
+
+                    final class S {
+                        public static int $x = 0;
+                        public int $p = 0;
+                    }
+
+                    $o = new S();
+                    $o->p = rand(0, 20);
+                    $u = null;
+                    if ($o->p < ($o->p = 10)) {
+                        $u = $o->p;
+                    }
+
+                    S::$x = rand(0, 20);
+                    $v = null;
+                    if (S::$x < (S::$x = 10)) {
+                        $v = S::$x;
                     }',
                 'assertions' => [
                     '$r===' => '10|null',
                     '$s===' => '11|null',
+                    '$u===' => '10|null',
+                    '$v===' => '10|null',
+                ],
+            ],
+            'loopConditionWriteAfterAShortCircuitKeepsTheValueBefore' => [
+                'code' => '<?php
+                    $n = rand(0, 5);
+                    $flag = false;
+                    while (!$flag && $n-- > 0) {
+                        $flag = rand(0, 1) === 1;
+                    }
+
+                    $b = 5;
+                    $c = rand(0, 1);
+                    while ($c === 1 && $b-- > 0) {
+                        $c = rand(0, 1);
+                    }
+
+                    $done = false;
+                    for ($m = 3; !$done && $m-- > 0;) {
+                        $done = rand(0, 1) === 1;
+                    }',
+                'assertions' => [
+                    '$n===' => 'int<-1, 5>',
+                    '$b===' => 'int<-1, 5>',
+                    '$m===' => 'int<-1, 3>',
                 ],
             ],
             'loopNeverEnteredKeepsTheValueBeforeIt' => [

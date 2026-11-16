@@ -12,6 +12,7 @@ use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -717,6 +718,16 @@ final class LoopAnalyzer
 
         $loop_scope->condition_written_vars = $condition_written_var_ids;
 
+        // all the comma separated conditions of a for are evaluated, but only the first operand of the && of a while
+        foreach ($only_last_condition_decides ? $pre_conditions : array_slice($pre_conditions, 0, 1) as $evaluated) {
+            self::addAlwaysWrittenVarIds(
+                $evaluated,
+                $loop_context->self,
+                $statements_analyzer,
+                $loop_scope->condition_always_written_var_ids,
+            );
+        }
+
         if ($pre_conditions && $pre_condition_clauses && !$does_sometimes_break) {
             // if the loop contains an assertion and there are no break statements, we can negate that assertion
             // and apply it to the current context
@@ -749,19 +760,18 @@ final class LoopAnalyzer
             $negated_pre_condition_types = Algebra::getTruthsFromFormula($negated_pre_condition_clauses);
             $loop_scope->exit_truths = $negated_pre_condition_types;
 
-            if ($negated_pre_condition_types) {
-                // a do-while is left after its body, where its condition is not yet assumed; a while or for loop is
-                // also left before its body ever runs: the parent context holds the types of both ways out, but what
-                // the condition writes holds what evaluating it left on either
-                self::applyExitTruths(
-                    $statements_analyzer,
-                    $negated_pre_condition_types,
-                    $is_do ? ($inner_do_context ?? $continue_context) : $loop_parent_context,
-                    $is_do ? [] : $condition_written_var_ids,
-                    $loop_parent_context,
-                    new CodeLocation($statements_analyzer->getSource(), $pre_conditions[0]),
-                );
-            }
+            // a do-while is left after its body, where its condition is not yet assumed; a while or for loop is also
+            // left before its body ever runs: the parent context holds the types of both ways out, but what the
+            // condition writes holds what evaluating it left on either
+            self::applyExitTruths(
+                $statements_analyzer,
+                $negated_pre_condition_types,
+                $is_do ? ($inner_do_context ?? $continue_context) : $loop_parent_context,
+                $is_do ? [] : $condition_written_var_ids,
+                $loop_scope->condition_always_written_var_ids,
+                $loop_parent_context,
+                new CodeLocation($statements_analyzer->getSource(), $pre_conditions[0]),
+            );
         }
 
         if ($always_enters_loop) {
@@ -907,13 +917,14 @@ final class LoopAnalyzer
         if ($always_enters_loop && $can_leave_loop) {
             self::setLoopVars($inner_loop_context, $context, $loop_scope, is_only_left_by_break: $while_true);
 
-            if (!$while_true && $loop_scope->exit_truths) {
+            if (!$while_true && !in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)) {
                 // the loop is left after an iteration, once the condition evaluated again is false
                 self::applyExitTruths(
                     $statements_analyzer,
                     $loop_scope->exit_truths,
                     $context,
                     $loop_scope->condition_written_vars,
+                    $loop_scope->condition_always_written_var_ids,
                     $context,
                     null,
                 );
@@ -994,6 +1005,7 @@ final class LoopAnalyzer
         array $exit_truths,
         Context $exit_context,
         array $condition_written_vars,
+        array $always_written_var_ids,
         Context $context,
         ?CodeLocation $code_location,
     ): void {
@@ -1027,10 +1039,91 @@ final class LoopAnalyzer
             if (isset($vars_in_scope_reconciled[$var_id])
                 && isset($context->vars_in_scope[$var_id])
             ) {
-                $context->vars_in_scope[$var_id] = $vars_in_scope_reconciled[$var_id];
+                // a write the condition can skip (`$a && $n-- > 0`) leaves the value the variable had before
+                $context->vars_in_scope[$var_id] = isset($overridden_var_ids[$var_id])
+                    && !isset($always_written_var_ids[$var_id])
+                    ? Type::combineUnionTypes($context->vars_in_scope[$var_id], $vars_in_scope_reconciled[$var_id])
+                    : $vars_in_scope_reconciled[$var_id];
             }
 
             $context->removeVarFromConflictingClauses($var_id);
+        }
+    }
+
+    /**
+     * The variables the expression writes whenever it is evaluated: not in the right operand of a short-circuiting
+     * operator
+     *
+     * @param array<string, true> $var_ids
+     */
+    private static function addAlwaysWrittenVarIds(
+        PhpParser\Node\Expr $expr,
+        ?string $this_class_name,
+        StatementsAnalyzer $statements_analyzer,
+        array &$var_ids,
+    ): void {
+        if ($expr instanceof PhpParser\Node\Expr\Assign
+            || ($expr instanceof PhpParser\Node\Expr\AssignOp
+                && !$expr instanceof PhpParser\Node\Expr\AssignOp\Coalesce)
+        ) {
+            self::addAlwaysWrittenVarIds($expr->expr, $this_class_name, $statements_analyzer, $var_ids);
+        } elseif ($expr instanceof PhpParser\Node\Expr\BooleanNot
+            || $expr instanceof PhpParser\Node\Expr\Cast
+            || $expr instanceof PhpParser\Node\Expr\UnaryMinus
+            || $expr instanceof PhpParser\Node\Expr\UnaryPlus
+        ) {
+            self::addAlwaysWrittenVarIds($expr->expr, $this_class_name, $statements_analyzer, $var_ids);
+
+            return;
+        } elseif ($expr instanceof PhpParser\Node\Expr\BinaryOp) {
+            self::addAlwaysWrittenVarIds($expr->left, $this_class_name, $statements_analyzer, $var_ids);
+
+            if (!$expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                && !$expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                && !$expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+                && !$expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+                && !$expr instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+            ) {
+                self::addAlwaysWrittenVarIds($expr->right, $this_class_name, $statements_analyzer, $var_ids);
+            }
+
+            return;
+        } elseif (($expr instanceof PhpParser\Node\Expr\FuncCall
+                || $expr instanceof PhpParser\Node\Expr\MethodCall
+                || $expr instanceof PhpParser\Node\Expr\StaticCall
+                || $expr instanceof PhpParser\Node\Expr\New_)
+            && !$expr->isFirstClassCallable()
+        ) {
+            // the arguments of a call are evaluated, and those passed by reference written
+            foreach ($expr->getArgs() as $arg) {
+                self::addAlwaysWrittenVarIds($arg->value, $this_class_name, $statements_analyzer, $var_ids);
+
+                if ($statements_analyzer->node_data->isWrittenByReference($arg->value)) {
+                    $var_id = ExpressionIdentifier::getExtendedVarId(
+                        $arg->value,
+                        $this_class_name,
+                        $statements_analyzer,
+                    );
+
+                    if ($var_id !== null) {
+                        $var_ids[$var_id] = true;
+                    }
+                }
+            }
+
+            return;
+        } elseif (!$expr instanceof PhpParser\Node\Expr\PreInc
+            && !$expr instanceof PhpParser\Node\Expr\PreDec
+            && !$expr instanceof PhpParser\Node\Expr\PostInc
+            && !$expr instanceof PhpParser\Node\Expr\PostDec
+        ) {
+            return;
+        }
+
+        $var_id = ExpressionIdentifier::getExtendedVarId($expr->var, $this_class_name, $statements_analyzer);
+
+        if ($var_id !== null) {
+            $var_ids[$var_id] = true;
         }
     }
 

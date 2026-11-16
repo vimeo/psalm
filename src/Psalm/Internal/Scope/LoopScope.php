@@ -33,6 +33,13 @@ final class LoopScope
     public array $condition_written_vars = [];
 
     /**
+     * The variables evaluating the condition always writes, whichever way it is left
+     *
+     * @var array<string, true>
+     */
+    public array $condition_always_written_var_ids = [];
+
+    /**
      * The variables the loop (and the loops around it) may assign, written to, or pass to a call, as the root of
      * what is changed: `$a` for `$a['x']++` and `$a->p = 1`
      *

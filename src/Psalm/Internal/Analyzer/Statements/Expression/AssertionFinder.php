@@ -123,7 +123,6 @@ use function is_numeric;
 use function is_string;
 use function ltrim;
 use function preg_match;
-use function preg_replace;
 use function sprintf;
 use function str_ends_with;
 use function str_starts_with;
@@ -3995,15 +3994,29 @@ final class AssertionFinder
 
         $var_id = ExpressionIdentifier::getExtendedVarId($operand, $this_class_name, $source);
 
-        if ($var_id === null
-            || ($later_operand !== null
-                && isset(FormulaGenerator::getAssignedVarIds(
-                    $later_operand,
-                    $this_class_name,
-                    $source instanceof StatementsAnalyzer ? $source->node_data : null,
-                )[(string) preg_replace('/(\[|->|::).*$/s', '', $var_id)]))
-        ) {
+        if ($var_id === null) {
             return null;
+        }
+
+        if ($later_operand !== null) {
+            $written_var_ids = FormulaGenerator::getAssignedVarIds(
+                $later_operand,
+                $this_class_name,
+                $source instanceof StatementsAnalyzer ? $source->node_data : null,
+            );
+
+            while ($operand instanceof PhpParser\Node\Expr\Assign
+                || $operand instanceof PhpParser\Node\Expr\PreInc
+                || $operand instanceof PhpParser\Node\Expr\PreDec
+            ) {
+                $operand = $operand->var;
+            }
+
+            $root_var_id = ExpressionIdentifier::getRootVarId($operand, $this_class_name, $source);
+
+            if ($root_var_id === null ? $written_var_ids !== [] : isset($written_var_ids[$root_var_id])) {
+                return null;
+            }
         }
 
         $compared_value += $shift;
