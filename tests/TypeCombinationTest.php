@@ -328,6 +328,34 @@ final class TypeCombinationTest extends TestCase
                     'array{id: string, name: 5, ...<string, int>}',
                 ],
             ],
+            'arrayKeyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackHoldsAnotherArray' => [
+                'array{id: string, name?: array{0?: string, x?: 1, ...<int<0, max>, string>}, ...<string, list<string>>}',
+                [
+                    'array{id: string, name: array{x: 1}, ...<string, list<string>>}',
+                    'array{id: string, ...<string, list<string>>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenTheShapeLackingItHasANarrowerFallback' => [
+                'array{id: string, name?: int, ...<string, int|string>}',
+                [
+                    'array{id: string, ...<string, int>}',
+                    'array{id: string, name: int, ...<string, string>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenTheShapeLackingItComesLastWithANarrowerFallback' => [
+                'array{id: string, name?: int, ...<string, int|string>}',
+                [
+                    'array{id: string, name: int, ...<string, string>}',
+                    'array{id: string, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenTheShapeLackingItHasANarrowerFallbackThanMixed' => [
+                'array{id: string, name?: int, ...<string, int|mixed>}',
+                [
+                    'array{id: string, ...<string, int>}',
+                    'array{id: string, name: int, ...<string, mixed>}',
+                ],
+            ],
             'keyOfAnUnsealedShapeIsOptionalWhenASealedShapeLacksIt' => [
                 'array{id: string, name?: int, ...<string, int>}',
                 [

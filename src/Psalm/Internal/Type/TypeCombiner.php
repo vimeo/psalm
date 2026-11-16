@@ -61,7 +61,6 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_any;
-use function array_diff_key;
 use function array_filter;
 use function array_intersect_assoc;
 use function array_intersect_key;
@@ -885,7 +884,7 @@ final class TypeCombiner
                     }
                     $combination->objectlike_entries[$k] =  Type::combineUnionTypes(
                         $combination->objectlike_entries[$k],
-                        $combination->objectlike_value_type,
+                        $type->fallback_params[1] ?? $combination->objectlike_value_type,
                         $codebase,
                         $overwrite_empty_array,
                     );
@@ -1792,14 +1791,15 @@ final class TypeCombiner
                 && !$combination->all_arrays_lists
                 && !$combination->all_arrays_callable
             ) {
-                // a key that every array lacking it may hold in its fallback, with no other type, is the fallback
-                $fallback_atomic_types = $combination->objectlike_value_type->getAtomicTypes();
+                // a key that every array lacking it may hold in its fallback, with the fallback's type, is the fallback
+                $fallback_value_type = $combination->objectlike_value_type;
                 foreach ($combination->objectlike_missing_keys as $k => $_) {
                     $objectlike_entry = $combination->objectlike_entries[$k];
                     if ($objectlike_entry->possibly_undefined
                         && $combination->fallbackKeyContains($k)
-                        && (isset($fallback_atomic_types['mixed'])
-                            || !array_diff_key($objectlike_entry->getAtomicTypes(), $fallback_atomic_types))
+                        && ($objectlike_entry->hasMixed()
+                            ? $fallback_value_type->hasMixed()
+                            : $objectlike_entry->getId() === $fallback_value_type->getId())
                     ) {
                         unset(
                             $combination->objectlike_entries[$k],

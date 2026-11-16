@@ -1399,7 +1399,18 @@ final class ArrayAccessTest extends TestCase
                         }
                     }',
             ],
-            'offsetOfUnsealedArrayNarrowedBelowItsFallbackInIfWithoutElseIsNotOptional' => [
+            'offsetOfGenericArrayAssignedItsValueTypeInIfWithoutElseIsNotOptional' => [
+                'code' => '<?php
+                    /** @param array<string, int> $a */
+                    function f(array $a, bool $b): int {
+                        $a["c"] = 1;
+                        if ($b) {
+                            $a["k"] = 5;
+                        }
+                        return $a["k"];
+                    }',
+            ],
+            'offsetOfUnsealedArrayComparedInIfWithoutElseStaysDefined' => [
                 'code' => '<?php
                     /** @param array{c: null, ...<string, int>} $a */
                     function f(array $a): int {
