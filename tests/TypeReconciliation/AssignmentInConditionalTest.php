@@ -1498,6 +1498,49 @@ final class AssignmentInConditionalTest extends TestCase
                     }',
                 'error_message' => 'PossiblyUndefinedVariable',
             ],
+            'variableAssignedInAndOperandHasTheTypeAByRefArgumentOfALaterOneGivesIt' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    /** @param-out null $r */
+                    function nullRef(mixed &$r): bool {
+                        $r = null;
+                        return true;
+                    }
+
+                    function takesInt(int $i): bool {
+                        return $i > 0;
+                    }
+
+                    function f(): bool {
+                        return check($x = "a") && nullRef($x) && takesInt($x);
+                    }',
+                'error_message' => 'NullArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyAssignedInAndOperandHasTheTypeAMethodCallOfALaterOneGivesIt' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    final class A {
+                        public ?string $p = null;
+
+                        public function reset(): bool {
+                            $this->p = null;
+                            return true;
+                        }
+
+                        public function f(bool $a, string $s): bool {
+                            return $a && check($this->p = $s) && $this->reset() && strlen($this->p) > 0;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
             'arrayKeyAssignedInAndOperandIsForgottenWhenALaterOneReassignsTheArray' => [
                 'code' => '<?php
                     function check(mixed $s): bool {

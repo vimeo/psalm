@@ -401,8 +401,8 @@ final class Context
     public array $assigned_var_ids = [];
 
     /**
-     * The variables the last `&&` analysed outside an if condition assigns, as they are before its assertions
-     * apply: an enclosing `&&` only gets what holds after the expression, which doesn't have them
+     * The variables the last `&&` analysed outside an if condition assigns, as its right operand leaves them: an
+     * enclosing `&&` only gets what holds after the expression, which doesn't have them
      *
      * @internal
      * @var array<string, Union>

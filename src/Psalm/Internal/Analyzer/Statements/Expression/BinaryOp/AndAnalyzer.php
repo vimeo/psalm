@@ -366,27 +366,18 @@ final class AndAnalyzer
             // the right operand is skipped when the left one is false
             $context->mergeChangesOfPossiblySkippedBranch($right_context, $pre_right_remove_vars, $codebase);
 
-            // an enclosing `&&` gives its right operand what both sides assign
-            $vars_assigned_in_and = $vars_assigned_in_left;
-
-            foreach ($left_context->vars_in_scope as $var_id => $type) {
-                if (isset($left_context->assigned_var_ids[$var_id])) {
-                    $vars_assigned_in_and[$var_id] = $type;
-                }
-            }
+            // an enclosing `&&` gives its right operand what both sides assign, as the right side leaves it (which
+            // may change it without assigning it, or forget it, like the keys of an array it reassigned)
+            $vars_assigned_in_and = [];
 
             foreach ($right_context->vars_in_scope as $var_id => $type) {
-                if (isset($right_context->assigned_var_ids[$var_id])
-                    && ($pre_right_assigned_var_ids[$var_id] ?? null) !== $right_context->assigned_var_ids[$var_id]
+                if (isset($vars_assigned_in_left[$var_id])
+                    || isset($left_context->assigned_var_ids[$var_id])
+                    || (isset($right_context->assigned_var_ids[$var_id])
+                        && ($pre_right_assigned_var_ids[$var_id] ?? null)
+                            !== $right_context->assigned_var_ids[$var_id])
                 ) {
                     $vars_assigned_in_and[$var_id] = $type;
-                }
-            }
-
-            // but not what the right side forgot, like the keys of an array it reassigned
-            foreach ($vars_assigned_in_and as $var_id => $_) {
-                if (!isset($right_context->vars_in_scope[$var_id])) {
-                    unset($vars_assigned_in_and[$var_id]);
                 }
             }
 
