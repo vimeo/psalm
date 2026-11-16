@@ -57,11 +57,8 @@ final class TernaryAnalyzer
         $pre_condition_remove_vars = $context->parent_remove_vars;
 
         try {
-            $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
-
             // the else of an `||` is analysed again from where the condition started, not from where it ended
-            $pre_condition_context = $reassigned_var_ids
-                || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            $pre_condition_context = $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
                 || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
                     ? clone $context
                     : null;
@@ -83,6 +80,12 @@ final class TernaryAnalyzer
         } catch (ScopeAnalysisException) {
             return false;
         }
+
+        $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides(
+            $stmt->cond,
+            $context->self,
+            $statements_analyzer->node_data,
+        );
 
         $cond_object_id = spl_object_id($stmt->cond);
 
@@ -266,7 +269,12 @@ final class TernaryAnalyzer
                 new CodeLocation($statements_analyzer->getSource(), $stmt->else),
             );
 
-            $t_else_context->clauses = Context::removeReconciledClauses($t_else_context->clauses, $changed_var_ids)[0];
+            $t_else_context->clauses = AlgebraAnalyzer::removeReconciledClauses(
+                $t_else_context->clauses,
+                $changed_var_ids,
+                $t_else_context->vars_in_scope,
+                $statements_analyzer,
+            )[0];
         }
 
         $else_start_vars = $t_else_context->vars_in_scope;

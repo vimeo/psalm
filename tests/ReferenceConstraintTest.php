@@ -468,7 +468,7 @@ final class ReferenceConstraintTest extends TestCase
                     }',
                 'error_message' => 'InvalidPassByReference',
             ],
-            'SKIPPED-referenceToTypedArrayConstrainsAssignment' => [
+            'SKIPPED-referenceToTypedArrayConstrainsAssignment' => [ // #13919
                 'code' => '<?php
                     class Foo
                     {
@@ -485,7 +485,7 @@ final class ReferenceConstraintTest extends TestCase
                 ',
                 'error_message' => 'ReferenceConstraintViolation',
             ],
-            'SKIPPED-referenceToTypedArrayConstrainsAssignmentWithNullReferenceInitialization' => [
+            'SKIPPED-referenceToTypedArrayConstrainsAssignmentWithNullReferenceInitialization' => [ // #13919
                 'code' => '<?php
                     class Foo
                     {

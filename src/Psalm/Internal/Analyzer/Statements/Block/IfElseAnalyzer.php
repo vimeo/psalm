@@ -107,11 +107,8 @@ final class IfElseAnalyzer
         $pre_cond_clauses = $context->clauses;
         $pre_cond_remove_vars = $context->parent_remove_vars;
 
-        $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
-
         // the else of an `||` is analysed again from where the condition started, not from where it ended
-        $pre_condition_context = $reassigned_var_ids
-            || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+        $pre_condition_context = $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
                 ? clone $context
                 : null;
@@ -135,6 +132,12 @@ final class IfElseAnalyzer
         } catch (ScopeAnalysisException) {
             return false;
         }
+
+        $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides(
+            $stmt->cond,
+            $context->self,
+            $statements_analyzer->node_data,
+        );
 
         if ($if_scope->post_leaving_if_context) {
             self::applyCalleeEffectsOfCondition(
@@ -393,6 +396,8 @@ final class IfElseAnalyzer
             return false;
         }
 
+        $statements_analyzer->node_data->setImplicitElseImpossible($stmt, $if_scope->implicit_else_is_impossible);
+
         if (count($if_scope->if_actions) && !in_array(ScopeAnalyzer::ACTION_NONE, $if_scope->if_actions, true)
             && !$stmt->elseifs
         ) {
@@ -545,6 +550,24 @@ final class IfElseAnalyzer
 
                         $context->vars_in_scope[$var_id] = $updated_type;
                     }
+                }
+            }
+        }
+
+        // Context::update() left the type the if ends with for an offset or a property it narrowed: nothing is
+        // known of it once another branch reaching the end has forgotten it
+        foreach ($if_scope->updated_vars as $var_id => $_) {
+            if (!isset($context->vars_in_scope[$var_id])
+                || !isset($if_context->vars_in_scope[$var_id])
+                || (!str_contains($var_id, '[') && !str_contains($var_id, '->'))
+            ) {
+                continue;
+            }
+
+            foreach ($if_scope->end_contexts as $end_context) {
+                if (!isset($end_context->vars_in_scope[$var_id])) {
+                    unset($context->vars_in_scope[$var_id]);
+                    break;
                 }
             }
         }
