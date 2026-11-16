@@ -1924,7 +1924,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                             $atomic_type->max_bound,
                         );
                     }
-                    $existing_var_type->addType(new TIntRange(
+                    $existing_var_type->addType(SimpleAssertionReconciler::getNarrowedIntRange(
                         $atomic_type->min_bound,
                         $max_bound,
                     ));
@@ -2045,7 +2045,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     } else {
                         $min_bound = max($min_bound, $assertion_value);
                     }
-                    $existing_var_type->addType(new TIntRange(
+                    $existing_var_type->addType(SimpleAssertionReconciler::getNarrowedIntRange(
                         $min_bound,
                         $atomic_type->max_bound,
                     ));

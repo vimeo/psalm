@@ -106,11 +106,11 @@ final class ReturnTypeAnalyzer
         if (!$return_type_parts
             || $has_yield
             || $did_explicitly_return
-            || ScopeAnalyzer::getControlActions(
-                $function_stmts,
-                $type_provider,
-                [],
-            ) === [ScopeAnalyzer::ACTION_END]
+            || !in_array(
+                ScopeAnalyzer::ACTION_NONE,
+                ScopeAnalyzer::getControlActions($function_stmts, $type_provider, [], true, true),
+                true,
+            )
         ) {
             return $return_type_parts;
         }
@@ -228,6 +228,7 @@ final class ReturnTypeAnalyzer
             $type_provider,
             [],
             false,
+            true,
         );
 
         $function_always_exits = $control_actions === [ScopeAnalyzer::ACTION_END];

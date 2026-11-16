@@ -15,6 +15,9 @@ use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ConflictingReferenceConstraint;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\ArrayKeyDoesNotExist;
+use Psalm\Storage\Assertion\IsNotIsset;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
@@ -92,6 +95,26 @@ final class ElseAnalyzer
                     default => null,
                 },
             );
+
+            // a native type left without any value proves the conditions matched every value (an offset or a
+            // property that may be unset, or is not set, is left as never where it is not set, which is no proof)
+            if (!$else) {
+                foreach ($changed_var_ids as $changed_var_id => $_) {
+                    $original_type = $original_context->vars_in_scope[$changed_var_id] ?? null;
+
+                    if (($else_context->vars_in_scope[$changed_var_id] ?? null)?->isNever()
+                        && $original_type !== null
+                        && !$original_type->isNever()
+                        && !$original_type->from_docblock
+                        && !$original_type->possibly_undefined
+                        && $original_type->initialized
+                        && !self::assertsUnset($else_types[$changed_var_id] ?? [])
+                    ) {
+                        $if_scope->implicit_else_is_impossible = true;
+                        break;
+                    }
+                }
+            }
 
             $else_context->clauses = AlgebraAnalyzer::removeReconciledClauses(
                 $else_context->clauses,
@@ -267,5 +290,22 @@ final class ElseAnalyzer
         );
 
         return null;
+    }
+
+    /**
+     * @param list<list<Assertion>> $assertions
+     * @psalm-pure
+     */
+    private static function assertsUnset(array $assertions): bool
+    {
+        foreach ($assertions as $or_assertions) {
+            foreach ($or_assertions as $assertion) {
+                if ($assertion instanceof IsNotIsset || $assertion instanceof ArrayKeyDoesNotExist) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

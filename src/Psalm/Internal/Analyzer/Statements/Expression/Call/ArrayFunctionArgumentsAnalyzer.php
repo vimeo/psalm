@@ -409,9 +409,11 @@ final class ArrayFunctionArgumentsAnalyzer
                 } else {
                     $array_type = Type::getListAtomic($array_type->type_params[1]);
                 }
+            } elseif ($array_type instanceof TNonEmptyArray && !isset($args[3])) {
+                // removing elements can leave none
+                $array_type = new TArray($array_type->type_params);
             }
         }
-
         $offset_arg = $args[1]->value;
 
         if (ExpressionAnalyzer::analyze(

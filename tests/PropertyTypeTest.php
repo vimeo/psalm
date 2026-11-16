@@ -92,7 +92,7 @@ final class PropertyTypeTest extends TestCase
 
     public function testForgetPropertyAssignmentsInBranch(): void
     {
-        $this->markTestSkipped('Never actually worked, todo fix');
+        $this->markTestSkipped('Never actually worked: https://github.com/vimeo/psalm/issues/13923');
         /*Config::getInstance()->remember_property_assignments_after_call = false;
 
         $this->addFile(
@@ -2757,7 +2757,7 @@ final class PropertyTypeTest extends TestCase
                         public function bar() : int;
                     }',
             ],
-            'SKIPPED-abstractConstructorWithInstanceofClass' => [
+            'abstractConstructorWithInstanceofClass' => [
                 'code' => '<?php
                     abstract class A {
                         /** @var int */

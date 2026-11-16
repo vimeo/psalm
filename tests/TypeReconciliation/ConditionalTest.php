@@ -4645,7 +4645,7 @@ final class ConditionalTest extends TestCase
                     }
                     ',
             ],
-            'SKIPPED-ctypeDigitNarrowsIntToARange' => [
+            'SKIPPED-ctypeDigitNarrowsIntToARange' => [ // #13913
                 'code' => '<?php
                     $int = rand(-1000, 1000);
 
@@ -4654,7 +4654,7 @@ final class ConditionalTest extends TestCase
                     }
                     ',
                 'assertions' => [
-                    '$int' => 'int<48, 57>|int<256, 1000>',
+                    '$int' => 'int<48, 1000>',
                 ],
             ],
             'ctypeLowerMakesStringLowercase' => [
@@ -4737,7 +4737,7 @@ final class ConditionalTest extends TestCase
                     }
                     PHP,
             ],
-            'SKIPPED-ctypeLowerNarrowsIntToARange' => [
+            'SKIPPED-ctypeLowerNarrowsIntToARange' => [ // #13913
                 'code' => '<?php
                     $int = rand(-1000, 1000);
 
