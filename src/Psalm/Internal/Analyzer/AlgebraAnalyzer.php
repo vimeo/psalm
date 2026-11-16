@@ -80,9 +80,41 @@ final class AlgebraAnalyzer
     }
 
     /**
+     * Context::removeReconciledClauses() that keeps the clauses linking several variables the new types do not express
+     *
+     * @param list<Clause> $clauses
+     * @param array<string, bool> $changed_var_ids
+     * @param array<string, Union> $vars_in_scope
+     * @return array{list<Clause>, list<Clause>}
+     */
+    public static function removeReconciledClausesOfOneVariable(
+        array $clauses,
+        array $changed_var_ids,
+        array $vars_in_scope,
+        StatementsAnalyzer $statements_analyzer,
+    ): array {
+        [$included_clauses, $rejected_clauses] = Context::removeReconciledClauses($clauses, $changed_var_ids);
+
+        $expressed_clauses = [];
+
+        foreach ($rejected_clauses as $clause) {
+            if (count($clause->possibilities) === 1
+                || self::isExpressedByTypes($clause, $vars_in_scope, $statements_analyzer)
+            ) {
+                $expressed_clauses[] = $clause;
+            } else {
+                $included_clauses[] = $clause;
+            }
+        }
+
+        return [$included_clauses, $expressed_clauses];
+    }
+
+    /**
      * Whether the types make the clause certain. A lone assertion is only checked when it is `Truthy`/`Falsy`: types
      * can't express that an int or a float is not zero. A clause linking several variables
-     * (`!$is_array || is_array($x)`) is certain when the types make one of its assertions certain
+     * (`!$is_array || is_array($x)`) is only known not to be when each of its assertions holds for some of the values
+     * of its variable's type, and not for others
      *
      * @param array<string, Union> $vars_in_scope
      */
@@ -112,7 +144,8 @@ final class AlgebraAnalyzer
     }
 
     /**
-     * Whether the type of the variable may make the assertion certain: only false when it is known not to
+     * Whether the assertion may hold for every value of the variable's type, or for none: only false when it is known
+     * to hold for some of them and not for others
      *
      * @param array<string, Union> $vars_in_scope
      */

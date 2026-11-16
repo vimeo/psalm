@@ -4140,6 +4140,18 @@ final class TypeAlgebraTest extends TestCase
                         return 0;
                     }',
             ],
+            'flagOnAnArrayOffsetNarrowsItInAnIfOnTheOffsetAndAnotherCondition' => [
+                'code' => '<?php
+                    function f(array $element, string $key, bool $c): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (array_key_exists("#value", $element) && $c) {
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+            ],
             'flagOnAVariableTheIfMakesCertainIsNotReported' => [
                 'code' => '<?php
                     function f(mixed $x, bool $y): void {
@@ -5764,6 +5776,20 @@ final class TypeAlgebraTest extends TestCase
                         return false;
                     }',
                 'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:55',
+            ],
+            'flagOnAnArrayOffsetIsForgottenWhenTheRightOfAnAndReassignsTheArray' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (array_key_exists("#value", $element) && ($element = ["#value" => "a"])) {
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:55',
+                'error_levels' => ['InvalidLiteralArgument'],
             ],
             'flagOnAnArrayOffsetMakesItsTestRedundantInAnIfOnTheOffset' => [
                 'code' => '<?php
