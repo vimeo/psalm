@@ -29,6 +29,16 @@ final class ReferenceTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayCreatedByAnItemPassedByReferenceInAnIfIsReadInACoalesce' => [
+                'code' => '<?php
+                    function f(string $s): string {
+                        if (rand(0, 1)) {
+                            /** @psalm-suppress UndefinedVariable, MixedArrayAccess */
+                            preg_match("/(.*)/", $s, $out["m"]);
+                        }
+                        return $out["m"][1] ?? "";
+                    }',
+            ],
             'arrayItemPassedByReferenceHoldsWhatTheCallLeavesInIt' => [
                 'code' => '<?php
                     function read_value(string &$value): void {
@@ -296,7 +306,7 @@ final class ReferenceTest extends TestCase
                         settype($b[0], "string");
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingOverrideAttribute', 'MissingTemplateParam'],
+                'ignored_issues' => ['MissingTemplateParam'],
                 'php_version' => '8.0',
             ],
             'itemOfAUnionOfArrayAccessesPassedByReference' => [
@@ -635,6 +645,376 @@ final class ReferenceTest extends TestCase
                     }
                 ',
             ],
+            'referenceReboundToANestedItemInALoopDoesNotWriteToTheArrayItWasBoundTo' => [
+                'code' => '<?php
+                    /**
+                     * @param array<mixed> $data
+                     * @param array<mixed> $path
+                     * @psalm-suppress MixedAssignment, MixedArgument, PossiblyInvalidArgument, MixedArrayOffset
+                     */
+                    function setPath(array &$data, array $path, string $value): void {
+                        $cursor = &$data;
+                        $last = array_key_last($path);
+                        foreach ($path as $k => $key) {
+                            if ($last === $k) {
+                                if (array_key_exists($key, $cursor) && !is_string($cursor[$key])) {
+                                    throw new RuntimeException("not a string");
+                                } else {
+                                    $cursor[$key] = $value;
+                                }
+                            } else {
+                                if (!array_key_exists($key, $cursor)) {
+                                    $cursor[$key] = [];
+                                } elseif (!is_array($cursor[$key])) {
+                                    throw new RuntimeException("not an array");
+                                }
+                            }
+                            $cursor = &$cursor[$key];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'variableAReferenceIsBoundToKeepsItsTypeWhenTheVariableIsReboundInALoop' => [
+                'code' => '<?php
+                    /** @param mixed $value */
+                    function accessible($value): bool {
+                        return is_array($value) || $value instanceof ArrayAccess;
+                    }
+
+                    /**
+                     * @param array<array-key, mixed> $array
+                     * @param list<string> $keys
+                     */
+                    function forget(array &$array, array $keys): void {
+                        $original = &$array;
+
+                        foreach ($keys as $key) {
+                            $array = &$original;
+                            /** @psalm-check-type-exact $array = array<array-key, mixed> */
+
+                            $parts = explode(".", $key);
+
+                            while (count($parts) > 1) {
+                                $part = array_shift($parts);
+
+                                if (isset($array[$part]) && accessible($array[$part])) {
+                                    $array = &$array[$part];
+                                } else {
+                                    continue 2;
+                                }
+                            }
+
+                            /** @psalm-check-type-exact $original = array<array-key, mixed> */
+                            unset($array[(string) array_shift($parts)]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
+            'referenceThatWasOneBeforeTheLoopIsReboundAndUsedInTheLoop' => [
+                'code' => '<?php
+                    /** @param list<string> $chunks */
+                    function encode(array $chunks, int $max): string {
+                        $lines = [];
+                        $lNo = 0;
+                        $lines[$lNo] = "";
+                        $currentLine = &$lines[$lNo++];
+                        $lineLen = 0;
+                        foreach ($chunks as $enc) {
+                            if ($lineLen + strlen($enc) >= $max) {
+                                $lines[$lNo] = "";
+                                $currentLine = &$lines[$lNo++];
+                                $lineLen = 0;
+                            }
+                            $currentLine .= $enc;
+                            $lineLen += strlen($enc);
+                        }
+                        return implode("=\r\n", $lines);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnsupportedReferenceUsage'],
+                'php_version' => '8.0',
+            ],
+            'referenceThatWasOneBeforeTheLoopIsReboundInAnIfAndAssignedInTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function sumWithRef(array $items): int {
+                        $total = 0;
+                        $sub = 0;
+                        $acc = &$total;
+                        foreach ($items as $i) {
+                            if ($i < 0) {
+                                $acc = &$sub;
+                            }
+                            $acc = $acc + $i;
+                        }
+                        return $total + $sub;
+                    }',
+            ],
+            'referenceThatWasOneBeforeTheIfIsReboundToTheSameTargetInBothBranches' => [
+                'code' => '<?php
+                    /** @param array<string, int> $a */
+                    function both(array &$a, bool $c): void {
+                        $r = &$a["x"];
+                        if ($c) {
+                            $r = &$a["y"];
+                        } else {
+                            $r = &$a["y"];
+                        }
+                        $r = 5;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'referenceReboundToAnItemInATryDoesNotWriteToTheArrayItWasBoundTo' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, string $value): void {
+                        $cursor = &$data;
+
+                        try {
+                            $cursor = &$cursor[$key];
+                            $cursor = $value;
+                        } catch (Exception $e) {
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'referenceReboundToAnItemInATernaryDoesNotWriteToTheArrayItWasBoundTo' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, string $value, bool $nested): void {
+                        $cursor = &$data;
+                        $nested ? [$cursor = &$cursor[$key], $cursor = $value] : null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'referenceThatWasOneBeforeTheIfIsReboundAndWrittenToAfterItWithACompatibleType' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, bool $nested): void {
+                        $cursor = &$data;
+
+                        if ($nested) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = ["x" => 1];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'referenceReboundAfterTheIfThatReboundItIsNoLongerBoundToTheVariableBefore' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, string $value, bool $nested): void {
+                        $cursor = &$data;
+
+                        if ($nested) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $other = [];
+                        $cursor = &$other;
+                        $cursor = $value;
+                        echo $other;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'referenceReboundToAnItemInAnIfDoesNotWriteToTheArrayItWasBoundTo' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, string $value, bool $nested): void {
+                        $cursor = &$data;
+
+                        if ($nested) {
+                            $cursor = &$cursor[$key];
+                            $cursor = $value;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'referenceReboundToAnItemInAnElseDoesNotWriteToTheArrayItWasBoundTo' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, string $value, bool $flat): void {
+                        $cursor = &$data;
+
+                        if ($flat) {
+                            echo 1;
+                        } else {
+                            $cursor = &$cursor[$key];
+                            $cursor = $value;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'referenceToAnItemStaysBoundAfterAnIfAssertingOnTheArray' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? ["x" => 1] : null;
+                    $r = &$a["x"];
+
+                    if ($a !== null) {
+                        echo 1;
+                    }
+
+                    $r = "s";',
+                'assertions' => [
+                    '$a[\'x\']===' => '\'s\'',
+                ],
+                'ignored_issues' => ['PossiblyNullArrayAccess'],
+            ],
+            'referenceToAnItemStaysBoundAfterAnElseifAssertingOnTheArray' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? ["x" => 1] : null;
+                    $r = &$a["x"];
+
+                    if (rand(0, 1)) {
+                        echo 1;
+                    } elseif ($a !== null) {
+                        echo 2;
+                    }
+
+                    $r = "s";',
+                'assertions' => [
+                    '$a[\'x\']===' => '\'s\'',
+                ],
+                'ignored_issues' => ['PossiblyNullArrayAccess'],
+            ],
+            'referenceToAnItemStaysBoundAfterAnElseAssertingOnTheArray' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? ["x" => 1] : null;
+                    $r = &$a["x"];
+
+                    if ($a === null) {
+                        echo 1;
+                    } else {
+                        echo 2;
+                    }
+
+                    $r = "s";',
+                'assertions' => [
+                    '$a[\'x\']===' => '\'s\'',
+                ],
+                'ignored_issues' => ['PossiblyNullArrayAccess'],
+            ],
+            'dynamicArrayOffsetReferenceCanBeConditionallySet' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, string> $form */
+                    function hasReference(array &$form, string $identifier): bool {
+                        if (isset($form[$identifier])) {
+                            $field = &$form[$identifier];
+                        } elseif (isset($form[$identifier . '_wrapper'])) {
+                            $field = &$form[$identifier . '_wrapper'];
+                        }
+
+                        if (isset($field)) {
+                            return true;
+                        }
+
+                        return false;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['UnsupportedReferenceUsage'],
+            ],
+            'returnedReferenceAssignmentFromInstanceMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class InstanceReferenceStore {
+                        public string $value = '';
+
+                        /** @psalm-suppress MissingReturnType */
+                        public function &getReference() {
+                            return $this->value;
+                        }
+                    }
+
+                    function assignThroughInstanceReference(InstanceReferenceStore $store, string $value): void {
+                        $reference = &$store->getReference();
+                        $reference = $value;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'UnsupportedPropertyReferenceUsage'],
+            ],
+            'returnedReferenceAssignmentFromStaticMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class StaticReferenceStore {
+                        public static string $value = '';
+
+                        /** @psalm-suppress MissingReturnType */
+                        public static function &getReference() {
+                            return self::$value;
+                        }
+                    }
+
+                    function assignThroughStaticReference(string $value): void {
+                        $reference = &StaticReferenceStore::getReference();
+                        $reference = $value;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'returnedReferenceAssignmentRespectsNamedVarAnnotation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function &getUnionReference(): int|string {
+                        /** @var string $value */
+                        static $value = 'text';
+                        return $value;
+                    }
+
+                    function useNarrowedReturnedReference(): void {
+                        /** @var string $reference */
+                        $reference = &getUnionReference();
+                        /** @psalm-check-type-exact $reference = string */
+                        echo strlen($reference);
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'returnedReferenceAssignmentInvalidatesCachedOffsets' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class ReferenceArray {
+                        /** @var array{key: string} */
+                        public static array $values = ['key' => 'text'];
+                    }
+
+                    /** @return array{key: string} */
+                    function &arrayReference(): array {
+                        return ReferenceArray::$values;
+                    }
+
+                    function getReferenceValue(): string {
+                        $values = ['key' => 42];
+                        $previousValue = $values['key'];
+                        $values = &arrayReference();
+                        return $values['key'];
+                    }
+                    PHP,
+            ],
             'dontCrashOnReferenceToMixedVariableArrayOffset' => [
                 'code' => '<?php
                     function func(&$a): void
@@ -703,6 +1083,58 @@ final class ReferenceTest extends TestCase
                     '$reference2===' => 'array{id: 2}',
                 ],
             ],
+            'parameterBoundToASuperglobalInABranchIsDefined' => [
+                'code' => '<?php
+                    function f(?array $session = null): void {
+                        if (null === $session) {
+                            $session = &$_SESSION;
+                        }
+                        $session["a"] = 1;
+                    }',
+            ],
+            'referenceToAPossiblyUndefinedVariableDefinesBothAsNull' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        $a = 1;
+                    }
+                    $b = &$a;
+                    $c = $a;
+                    $d = $b;',
+                'assertions' => [
+                    '$c===' => '1|null',
+                    '$d===' => '1|null',
+                ],
+            ],
+            'referenceToAVariableDefinedInATryDefinesIt' => [
+                'code' => '<?php
+                    function f(): string {
+                        try {
+                            $a = (string) rand(0, 1);
+                        } catch (Exception $e) {
+                        }
+                        $b = &$a;
+                        return (string) $a;
+                    }',
+            ],
+            'referenceReboundBeforeABreakInALoopIsDefined' => [
+                'code' => '<?php
+                    /** @param list<string> $parts */
+                    function f(array &$tree, array $parts): void {
+                        $elem = &$tree;
+                        foreach ($parts as $part) {
+                            if (isset($elem[$part])) {
+                                $elem = &$elem["x"];
+                                break;
+                            }
+                            $elem = &$elem[$part];
+                        }
+                        if (is_string($elem)) {
+                            echo $elem;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedArrayOffset', 'MixedArrayAccess', 'PossiblyNullArrayAccess'],
+            ],
         ];
     }
 
@@ -713,6 +1145,148 @@ final class ReferenceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'referenceThatWasOneBeforeTheIfIsReboundAndWrittenToAfterIt' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, string $value, bool $nested): void {
+                        $cursor = &$data;
+
+                        if ($nested) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = $value;
+                    }',
+                'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:41 - '
+                    . 'Variable $data is limited to values of type array<string, mixed> because it is passed by '
+                    . 'reference, array<string, mixed>|string type found',
+            ],
+            'referenceThatWasOneBeforeTheElseIsReboundAndWrittenToAfterIt' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, string $value, bool $flat): void {
+                        $cursor = &$data;
+
+                        if ($flat) {
+                            echo 1;
+                        } else {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = $value;
+                    }',
+                'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:41 - '
+                    . 'Variable $data is limited to values of type array<string, mixed> because it is passed by '
+                    . 'reference, array<string, mixed>|string type found',
+            ],
+            'referenceThatWasOneBeforeTheLoopIsReboundAndWrittenToAfterIt' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $data
+                     * @param list<string> $path
+                     */
+                    function set(array &$data, array $path, string $value): void {
+                        $cursor = &$data;
+
+                        foreach ($path as $key) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = $value;
+                    }',
+                'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:41 - '
+                    . 'Variable $data is limited to values of type array<string, mixed> because it is passed by '
+                    . 'reference, array<string, mixed>|string type found',
+                'error_levels' => ['MixedArrayAccess'],
+            ],
+            'referenceThatWasOneBeforeATernaryIsReboundAndWrittenToAfterIt' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, string $value, bool $nested): void {
+                        $cursor = &$data;
+                        $nested ? $cursor = &$cursor[$key] : null;
+                        $cursor = $value;
+                    }',
+                'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:41 - '
+                    . 'Variable $data is limited to values of type array<string, mixed> because it is passed by '
+                    . 'reference, array<string, mixed>|string type found',
+            ],
+            'referenceThatWasOneBeforeTheIfIsReboundAndPassedByReferenceAfterIt' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $x
+                     * @param-out string $x
+                     */
+                    function setStr(&$x): void {
+                        $x = "a";
+                    }
+
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, bool $nested): void {
+                        $cursor = &$data;
+
+                        if ($nested) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        setStr($cursor);
+                    }',
+                'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:41 - '
+                    . 'Variable $data is limited to values of type array<string, mixed> because it is passed by '
+                    . 'reference, array<string, mixed>|string type found',
+            ],
+            'referenceThatWasOneBeforeTheIfIsReboundAndPassedByReferenceInAConditionAfterIt' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $x
+                     * @param-out string $x
+                     */
+                    function trySetStr(&$x): bool {
+                        $x = "a";
+                        return true;
+                    }
+
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, bool $nested): void {
+                        $cursor = &$data;
+
+                        if ($nested) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        if (trySetStr($cursor)) {
+                            echo "set";
+                        }
+                    }',
+                'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:41 - '
+                    . 'Variable $data is limited to values of type array<string, mixed> because it is passed by '
+                    . 'reference, array<string, mixed>|string type found',
+            ],
+            'referenceThatWasOneBeforeTheIfIsReboundAndHasAnOffsetWrittenAfterIt' => [
+                'code' => '<?php
+                    /** @param array<string, string> $data */
+                    function set(array &$data, bool $nested): void {
+                        $other = [];
+                        $cursor = &$data;
+
+                        if ($nested) {
+                            $cursor = &$other;
+                        }
+
+                        $cursor["k"] = 5;
+                    }',
+                'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:41 - '
+                    . 'Variable $data is limited to values of type array<string, string> because it is passed by '
+                    . 'reference, array<string, 5|string> type found',
+            ],
+            'referenceToTheResponseHeaderVariableIsNullWhenItIsNotSet' => [
+                'code' => '<?php
+                    function f(): array {
+                        $h = &$http_response_header;
+                        return $h;
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
             'issueInTheKeyOfAnArrayItemPassedByReference' => [
                 'code' => '<?php
                     /**
@@ -823,12 +1397,12 @@ final class ReferenceTest extends TestCase
             ],
             'arrayCreatedByAnItemPassedByReferenceInAnIfIsPossiblyUndefined' => [
                 'code' => '<?php
-                    function f(string $s): string {
+                    function f(string $s): void {
                         if (rand(0, 1)) {
                             /** @psalm-suppress UndefinedVariable, MixedArrayAccess */
                             preg_match("/(.*)/", $s, $out["m"]);
                         }
-                        return $out["m"][1] ?? "";
+                        echo $out["m"][1];
                     }',
                 'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7',
             ],

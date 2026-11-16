@@ -8,6 +8,7 @@ use Attribute;
 use Override;
 use PhpParser\Node\Stmt\Trait_;
 use Psalm\Aliases;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Type;
 
@@ -96,6 +97,13 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
         self::reportDocblockIssues(
             $statements_analyzer,
             $storage,
+            $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues(),
+        );
+
+        self::checkMixins(
+            $statements_analyzer,
+            $storage,
+            new CodeLocation($statements_analyzer, $stmt->name, null, true),
             $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues(),
         );
     }

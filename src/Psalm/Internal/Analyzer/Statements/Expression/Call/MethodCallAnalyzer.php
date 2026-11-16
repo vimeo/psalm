@@ -284,7 +284,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
             if ($result->has_valid_method_call_type || $result->has_mixed_method_call) {
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidMethodCall(
-                        'Cannot call method on possible ' . $invalid_class_type . ' variable ' . $lhs_var_id,
+                        'Cannot call method on possible ' . $invalid_class_type . ' variable '
+                            . ExpressionIdentifier::getNameForMessage($lhs_var_id, $stmt->var),
                         new CodeLocation($source, $stmt->name),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -292,7 +293,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new InvalidMethodCall(
-                        'Cannot call method on ' . $invalid_class_type . ' variable ' . $lhs_var_id,
+                        'Cannot call method on ' . $invalid_class_type . ' variable '
+                            . ExpressionIdentifier::getNameForMessage($lhs_var_id, $stmt->var),
                         new CodeLocation($source, $stmt->name),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -402,21 +404,16 @@ final class MethodCallAnalyzer extends CallAnalyzer
             }
         }
 
+        if ($result->returns_by_ref) {
+            $stmt_type = ($stmt_type ?? Type::getMixed())->setByRef(true);
+        }
+
         if ($stmt_type) {
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             if ($stmt_type->isNever()) {
                 $context->has_returned = true;
             }
-        }
-
-        if ($result->returns_by_ref) {
-            if (!$stmt_type) {
-                $stmt_type = Type::getMixed();
-                $statements_analyzer->node_data->setType($stmt, $stmt_type);
-            }
-
-            $stmt_type = $stmt_type->setByRef($result->returns_by_ref);
         }
 
         if ($codebase->store_node_types
@@ -482,7 +479,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 throw new AssertionError("We must have some types here!");
             }
 
-            $context->removeVarFromConflictingClauses($lhs_var_id, null, $statements_analyzer);
+            // narrowed, not written: the enclosing scopes keep their clauses about it
+            $context->clauses = Context::filterClauses($lhs_var_id, $context->clauses, null, $statements_analyzer);
 
             $class_type = $class_type->getBuilder()->setTypes($types);
             $class_type->from_docblock = false;

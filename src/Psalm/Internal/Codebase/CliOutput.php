@@ -21,8 +21,10 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\CliOnlyCall;
@@ -87,8 +89,8 @@ final class CliOutput
     /**
      * Whether the code being analyzed only runs from the command line: that of a function-like with `@psalm-cli-only`
      * or requiring an instance of a class with `@psalm-cli-only-instances`, of a method of a class with the former, of
-     * an instance method of a class with the latter, the code a PHP_SAPI or php_sapi_name() check guards, or a closure
-     * in them
+     * an instance method of a class with the latter, the top-level code of a file a plugin marked (or included from
+     * such code), the code a PHP_SAPI or php_sapi_name() check guards, or a closure in them
      */
     public static function isInCliOnlyCode(StatementsAnalyzer $statements_analyzer, Context $context): bool
     {
@@ -110,6 +112,10 @@ final class CliOutput
             if ($source instanceof StatementsAnalyzer) {
                 $source = $source->getSource();
             }
+        }
+
+        if ($source instanceof FileAnalyzer || $source instanceof NamespaceAnalyzer) {
+            return $statements_analyzer->getFileAnalyzer()->cli_only;
         }
 
         if (!$source instanceof FunctionLikeAnalyzer) {

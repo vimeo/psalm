@@ -39,6 +39,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGlobalConstant;
+use Psalm\Type\Atomic\TIntMask;
 use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TNamedObject;
@@ -70,6 +71,19 @@ use function strtolower;
 final class TypeChecker extends TypeVisitor
 {
     private bool $has_errors = false;
+
+    /**
+     * Whether the result of the check holds wherever the type is: not when a phantom class (a class_exists() check
+     * around the code) let a class pass
+     */
+    private bool $context_free = true;
+
+    /**
+     * The types this checker marked as checked, for check() to unmark when the result can't be kept
+     *
+     * @var list<Atomic|Union|MutableUnion>
+     */
+    private array $checked_types = [];
 
     /**
      * Whether the node being visited is in an invariant type param of a generic object, where entering a
@@ -136,8 +150,7 @@ final class TypeChecker extends TypeVisitor
                 $this->prevent_template_covariance = $outer_prevents_covariance;
                 $this->in_invariant_position = $outer_in_invariant_position;
 
-                /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
-                $type->checked = true;
+                $this->markChecked($type);
 
                 return self::DONT_TRAVERSE_CHILDREN;
             }
@@ -145,6 +158,8 @@ final class TypeChecker extends TypeVisitor
             $this->checkScalarClassConstant($type);
         } elseif ($type instanceof TGlobalConstant) {
             $this->checkGlobalConstant($type);
+        } elseif ($type instanceof TIntMask) {
+            $this->checkIntMaskConstants($type);
         } elseif ($type instanceof TTemplateParam) {
             $this->checkTemplateParam($type);
         } elseif ($type instanceof TResource) {
@@ -155,8 +170,7 @@ final class TypeChecker extends TypeVisitor
             $this->checkKeyOrValueOfAlias($type);
         }
 
-        /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
-        $type->checked = true;
+        $this->markChecked($type);
 
         return null;
     }
@@ -194,9 +208,36 @@ final class TypeChecker extends TypeVisitor
         return $result;
     }
 
-    public function hasErrors(): bool
+    /**
+     * Checks the type, and marks it and the types in it as checked only if that raised no issue (a suppressed one
+     * included) and holds wherever the type is, so that checking it again elsewhere reports the same issues
+     *
+     * @return bool whether the type has no errors
+     * @psalm-external-mutation-free
+     */
+    public function check(Union|MutableUnion $type): bool
     {
-        return $this->has_errors;
+        $issue_count = IssueBuffer::getAcceptedIssueCount();
+
+        $this->traverse($type);
+
+        if ($this->context_free && IssueBuffer::getAcceptedIssueCount() === $issue_count) {
+            return true;
+        }
+
+        foreach ($this->checked_types as $checked_type) {
+            /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment `checked` only memoises the check */
+            $checked_type->checked = false;
+        }
+
+        return !$this->has_errors;
+    }
+
+    private function markChecked(Atomic|Union|MutableUnion $type): void
+    {
+        /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
+        $type->checked = true;
+        $this->checked_types[] = $type;
     }
 
     /**
@@ -249,6 +290,8 @@ final class TypeChecker extends TypeVisitor
                 $this->has_errors = true;
                 return null;
             }
+        } else {
+            $this->context_free = false;
         }
 
         $fq_class_name_lc = strtolower($atomic->value);
@@ -530,6 +573,46 @@ final class TypeChecker extends TypeVisitor
         );
 
         $this->has_errors = true;
+    }
+
+    /**
+     * A constant of an `int-mask<...>` that is resolved with the codebase (see TypeParser) must be an int, as one
+     * that is resolved when the type is parsed
+     */
+    private function checkIntMaskConstants(TIntMask $atomic): void
+    {
+        $codebase = $this->source->getCodebase();
+
+        foreach ($atomic->values as $value) {
+            if (!$value instanceof TGlobalConstant) {
+                continue;
+            }
+
+            $const_types = ConstFetchAnalyzer::getGlobalConstTypesByWildcard($codebase, $value->const_name);
+
+            if ($const_types === [] && $value->fallback_const_name !== null) {
+                $const_types = ConstFetchAnalyzer::getGlobalConstTypesByWildcard(
+                    $codebase,
+                    $value->fallback_const_name,
+                );
+            }
+
+            foreach ($const_types as $const_type) {
+                if (!$const_type->isInt()) {
+                    $this->has_errors = true;
+
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            'int-mask types must all be integer values',
+                            $this->code_location,
+                        ),
+                        $this->suppressed_issues,
+                    );
+
+                    return;
+                }
+            }
+        }
     }
 
     private function checkGlobalConstant(TGlobalConstant $atomic): void

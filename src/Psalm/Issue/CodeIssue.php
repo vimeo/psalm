@@ -6,6 +6,7 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 use function array_pop;
 use function explode;
@@ -15,6 +16,8 @@ use function explode;
  */
 abstract class CodeIssue
 {
+    use UnserializeMemoryUsageSuppressionTrait;
+
     /** @var int */
     public const ERROR_LEVEL = -1;
     /** @var int<0, max> */
@@ -23,6 +26,13 @@ abstract class CodeIssue
     public const DOCUMENTATION_URL = null;
 
     public ?string $dupe_key = null;
+
+    /**
+     * The issues of one group are reported once, see IssueBuffer::setIssueGroup()
+     *
+     * @internal
+     */
+    public ?string $group_key = null;
 
     /**
      * @psalm-mutation-free
@@ -114,6 +124,7 @@ abstract class CodeIssue
             $this->dupe_key,
             static::DOCUMENTATION_URL,
             $this instanceof SecurityIssue,
+            $this->group_key,
         );
     }
 }

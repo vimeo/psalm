@@ -11,6 +11,8 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ArrayAssignmentTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -126,6 +128,207 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOfANestedOffsetUnderAKeyWithAQuoteNarrowsTheParent' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{"it's"?: array{z?: int}} $a */
+                    function f(array $a): void {
+                        if (isset($a["it's"]["z"])) {
+                            /** @psalm-check-type-exact $a = array{'it\'s': array{z: int}} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'notIdenticalToNullOfANestedOffsetUnderAKeyWithAQuoteNarrowsTheParent' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{"it's": array{z: int|null}} $a */
+                    function f(array $a): void {
+                        if ($a["it's"]["z"] !== null) {
+                            /** @psalm-check-type-exact $a = array{'it\'s': array{z: int}} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayKeyWithQuotesIsNotNestedOffset' => [
+                'code' => '<?php
+                    $foo = [];
+                    $foo["bar"] = ["baz" => 1];
+                    $foo["bar\']\'[baz"] = "s";
+                    $foo["bar\'][\'baz"] = "s";
+                    $v = $foo["bar"]["baz"];',
+                'assertions' => [
+                    '$v' => 'int',
+                ],
+            ],
+            'arrayKeyExistsWithABackslashInTheKeyNarrows' => [
+                'code' => '<?php
+                    final class C {
+                        const K = "a\\\\b";
+                    }
+
+                    function literal(): int {
+                        $a = rand(0, 1) ? ["a\\\\b" => 1] : [];
+                        if (array_key_exists("a\\\\b", $a)) {
+                            return $a["a\\\\b"];
+                        }
+
+                        return 0;
+                    }
+
+                    function classConstant(): int {
+                        $a = rand(0, 1) ? ["a\\\\b" => 1] : [];
+                        if (array_key_exists(C::K, $a)) {
+                            return $a["a\\\\b"];
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'arrayKeyWithBackslashAndQuoteNarrowing' => [
+                'code' => '<?php
+                    /** @param array<string, int|string> $a */
+                    function f(array $a): int {
+                        if (is_int($a["it\'s"]) && is_int($a["a\\\\b"]) && isset($a["x\\\'y"])) {
+                            return $a["it\'s"] + $a["a\\\\b"];
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'arrayKeyAssignedInALoopFromAnInvalidOffsetIsArrayKey' => [
+                'code' => '<?php
+                    /** @var list<array|int|string> $items */
+                    $items = [];
+                    $new = [];
+                    foreach ($items as $element) {
+                        $new[$element] = 1;
+                    }',
+                'assertions' => [
+                    '$new' => 'array<array-key, int>',
+                ],
+                'ignored_issues' => ['PossiblyInvalidArrayOffset'],
+            ],
+            'templateOffsetBoundByArrayKeyAssignedToAnArray' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @param array<string, int> $arr
+                     * @param K $key
+                     */
+                    function foo(array $arr, $key): void {
+                        $arr[$key] = 1;
+                        echo count($arr);
+                    }',
+            ],
+            'intOrStringOffsetAssignedToAnArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int> $arr
+                     * @param int|string $key
+                     */
+                    function foo(array $arr, $key): void {
+                        $arr[$key] = 1;
+                        echo count($arr);
+                    }',
+            ],
+            'appendToANestedElementOfASealedKeyedArray' => [
+                'code' => '<?php
+                    $conditions = ["A" => "B"];
+                    $conditions[]["C"] = [];
+
+                    $pair = ["A" => "B", "C" => "D"];
+                    $pair[]["E"] = 1;
+
+                    echo count($conditions) + count($pair);',
+                'assertions' => [
+                    '$conditions===' => "array{0?: array{C: array<never, never>}, A?: 'B', ...<int<0, max>, array{C: array<never, never>}>}",
+                    '$pair===' => "array{0?: array{E: 1}, A?: 'B', C?: 'D', ...<int<0, max>, array{E: 1}>}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nestedAppendToASealedListFillsTheAppendedItem' => [
+                'code' => '<?php
+                    $l = [1];
+                    $l[]["C"] = [];
+
+                    $m = [1, 2];
+                    $m[][] = "x";',
+                'assertions' => [
+                    '$l===' => 'list{1, array{C: array<never, never>}}',
+                    '$m===' => "list{1, 2, non-empty-list<'x'>}",
+                ],
+            ],
+            'appendedElementsOfAnEmptyArrayHoldOnlyTheirOwnKeys' => [
+                'code' => '<?php
+                    $m = [];
+                    $m[]["C"] = 1;
+                    $m[]["C"] = 2;',
+                'assertions' => [
+                    '$m===' => 'list{array{C: 1}, ...<array{C: 1|2}>}',
+                ],
+            ],
+            'keyOfAnArrayItemIsEvaluatedBeforeTheValue' => [
+                'code' => '<?php
+                    $i = 0;
+                    $a = [];
+                    $a[$i++] = $i;
+
+                    $b = [];
+                    $b[$k = "x"][$k . "y"] = $k;',
+                'assertions' => [
+                    '$a===' => 'array{0: 1}',
+                    '$b===' => "array{x: array{xy: 'x'}}",
+                ],
+            ],
+            'keysOfAnArrayItemAreEvaluatedInOrder' => [
+                'code' => '<?php
+                    $i = 0;
+                    $a = [];
+                    $a[$i + 0][$i++] = 42;
+
+                    $j = 0;
+                    $b = [];
+                    $b[$j][$j++] = 42;',
+                'assertions' => [
+                    '$a===' => 'array{0: array{0: 42}}',
+                    // a variable key is only read when the item is written
+                    '$b===' => 'array{1: array{0: 42}}',
+                ],
+            ],
+            'varAnnotationAppliesToTheKeysOfAnArrayItem' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $i
+                     * @param mixed $v
+                     * @return array<int>
+                     */
+                    function f($i, $v): array {
+                        $a = [];
+                        /** @var int $i */
+                        $a[$i++] = 0;
+                        /** @var int */
+                        $a[$i++] = $v;
+
+                        return $a;
+                    }',
+            ],
+            'variableAssignedInTheKeyOfAnArrayItemIsDefinedInTheValue' => [
+                'code' => '<?php
+                    function roots(object $node): array {
+                        $roots = [];
+                        $roots[spl_object_id($root = $node)] = $root;
+
+                        return $roots;
+                    }',
+            ],
             'assignToTheItemOfAnArrayAFunctionReturnsByReference' => [
                 'code' => '<?php
                     function &ensureArray(array &$what): array {
@@ -2886,6 +3089,63 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'possiblyInvalidArrayOffsetWhenAssigningInALoop' => [
+                'code' => '<?php
+                    /**
+                     * @param array<array|int|string> $arg
+                     */
+                    function foo($arg): array {
+                        $new = [];
+                        foreach ($arg as $element) {
+                            $new[$element] = rand(0, 10);
+                        }
+
+                        return $new;
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29',
+            ],
+            'possiblyInvalidArrayOffsetWhenAssigningToAnEmptyArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array|int|string $key
+                     */
+                    function foo($key): array {
+                        $new = [];
+                        $new[$key] = 1;
+
+                        return $new;
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - '
+                    . 'Cannot access value on variable $new[$key] using a array<array-key, mixed>|int|string offset',
+            ],
+            'possiblyInvalidArrayOffsetWhenAssigningToANonEmptyArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int> $arr
+                     * @param array|int|string $key
+                     */
+                    function foo(array $arr, $key): array {
+                        $arr[$key] = 1;
+
+                        return $arr;
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - '
+                    . 'Cannot access value on variable $arr[$key] using a array<array-key, mixed>|int|string offset',
+            ],
+            'invalidArrayOffsetWhenAssigningToANonEmptyArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int> $arr
+                     * @param array $key
+                     */
+                    function foo(array $arr, array $key): array {
+                        $arr[$key] = 1;
+
+                        return $arr;
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - '
+                    . 'Cannot access value on variable $arr[$key] using a array<array-key, mixed> offset',
+            ],
             'assignToTheItemOfAnArrayAFunctionReturnsByValue' => [
                 'code' => '<?php
                     function getArray(array $what): array {
@@ -3033,7 +3293,6 @@ final class ArrayAssignmentTest extends TestCase
 
                     barBar([1, "2"]);',
                 'error_message' => 'MixedArgumentTypeCoercion',
-                'error_levels' => ['MixedAssignment'],
             ],
             'arrayPropertyAssignment' => [
                 'code' => '<?php

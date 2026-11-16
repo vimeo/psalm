@@ -196,6 +196,10 @@ final class FunctionLikeNodeScanner
             ) {
                 $var_assertions = [];
 
+                // from where a condition assigns a parameter, what is said of it is no longer about the argument; what
+                // is said of a property of $this still holds for the caller
+                $assigned_var_ids = [];
+
                 foreach ($stmt->stmts as $function_stmt) {
                     if ($function_stmt instanceof PhpParser\Node\Stmt\If_) {
                         $final_actions = ScopeAnalyzer::getControlActions(
@@ -221,8 +225,21 @@ final class FunctionLikeNodeScanner
                             null,
                         );
 
+                        $assigned_var_ids += FormulaGenerator::getAssignedVarIds(
+                            $function_stmt->cond,
+                            $this->classlike_storage->name ?? null,
+                            null,
+                        );
+
                         try {
-                            $negated_formula = Algebra::negateFormula($if_clauses);
+                            $negated_formula = FormulaGenerator::getNegatedFormula(
+                                $if_clauses,
+                                $function_stmt->cond,
+                                $cond_id,
+                                $this->classlike_storage->name ?? null,
+                                $this->file_scanner,
+                                null,
+                            );
                         } catch (ComplicatedExpressionException) {
                             $var_assertions = [];
                             break;
@@ -236,6 +253,10 @@ final class FunctionLikeNodeScanner
                         }
 
                         foreach ($rules as $var_id => $rule) {
+                            if (isset($existing_params[$var_id], $assigned_var_ids[$var_id])) {
+                                continue;
+                            }
+
                             foreach ($rule as $rule_part) {
                                 if (count($rule_part) > 1) {
                                     $var_assertions = [];
@@ -345,6 +366,7 @@ final class FunctionLikeNodeScanner
                 $this->classlike_storage,
                 $this->aliases,
                 $this->codebase->analysis_php_version_id,
+                $stmt instanceof PhpParser\Node\Expr\Closure || $stmt instanceof PhpParser\Node\Expr\ArrowFunction,
             );
 
             $storage->return_type_location = new CodeLocation(
@@ -520,7 +542,15 @@ final class FunctionLikeNodeScanner
                     continue;
                 }
 
-                if (isset($classlike_storage->properties[$param_storage->name]) && $param_storage->location) {
+                $existing_property = $classlike_storage->properties[$param_storage->name] ?? null;
+
+                // only a property declared in the same file clashes; stubs refine properties from reflection and
+                // other stubs
+                if ($existing_property
+                    && $existing_property->location
+                    && $existing_property->location->file_path === $this->file_path
+                    && $param_storage->location
+                ) {
                     IssueBuffer::maybeAdd(
                         new ParseError(
                             'Promoted property ' . $param_storage->name . ' clashes with an existing property',
@@ -600,13 +630,13 @@ final class FunctionLikeNodeScanner
                 $property_storage->signature_type = $param_storage->signature_type;
                 $property_storage->signature_type_location = $param_storage->signature_type_location;
                 $property_storage->type_location = $param_storage->type_location;
+                $property_storage->has_docblock_type = $param_storage->has_docblock_type || $var_comment_type !== null;
                 $property_storage->location = $param_storage->location;
                 $property_storage->stmt_location = new CodeLocation($this->file_scanner, $param);
                 $property_storage->has_default = (bool)$param->default;
-                $param_type_readonly = (bool)($param->flags & Modifiers::READONLY);
-                $property_storage->readonly = $param_type_readonly
-                    || $classlike_storage->readonly
-                    || $var_comment_readonly;
+                $property_storage->native_readonly = ($param->flags & Modifiers::READONLY) !== 0
+                    || $classlike_storage->readonly;
+                $property_storage->readonly = $property_storage->native_readonly || $var_comment_readonly;
                 $property_storage->allow_private_mutation = $var_comment_allow_private_mutation;
                 $property_storage->suppressed_issues = $var_comment_suppressed_issues;
                 $param_storage->promoted_property = true;
@@ -994,6 +1024,7 @@ final class FunctionLikeNodeScanner
                 $this->classlike_storage,
                 $this->aliases,
                 $this->codebase->analysis_php_version_id,
+                $stmt instanceof PhpParser\Node\Expr\Closure || $stmt instanceof PhpParser\Node\Expr\ArrowFunction,
             );
 
             if ($param_type->isMixed()) {

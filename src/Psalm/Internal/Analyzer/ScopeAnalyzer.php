@@ -12,6 +12,7 @@ use function array_any;
 use function array_diff;
 use function array_filter;
 use function array_intersect;
+use function array_key_last;
 use function array_unique;
 use function array_values;
 use function count;
@@ -185,17 +186,36 @@ final class ScopeAnalyzer
                 $has_default_terminator = false;
 
                 $all_case_actions = [];
+                $case_action_map = [];
+                $escaping_case_actions = [];
 
-                // iterate backwards in a case statement
-                for ($d = count($stmt->cases) - 1; $d >= 0; --$d) {
-                    $case = $stmt->cases[$d];
-
+                // Each case can be entered independently. Collect actions that escape the switch
+                // before the reverse pass, which may stop at an ordinary break or fallthrough.
+                foreach ($stmt->cases as $case_index => $case) {
                     $case_actions = self::getControlActions(
                         $case->stmts,
                         $nodes,
                         [...$break_types, 'switch'],
                         $return_is_exit,
                     );
+                    $case_action_map[$case_index] = $case_actions;
+                    $escaping_case_actions = array_values(array_unique([
+                        ...$escaping_case_actions,
+                        ...array_intersect($case_actions, [
+                            self::ACTION_LEAVE_LOOP,
+                            self::ACTION_BREAK,
+                            self::ACTION_CONTINUE,
+                            self::ACTION_END,
+                            self::ACTION_RETURN,
+                        ]),
+                    ]));
+                }
+
+                // iterate backwards in a case statement
+                for ($d = count($stmt->cases) - 1; $d >= 0; --$d) {
+                    $case = $stmt->cases[$d];
+
+                    $case_actions = $case_action_map[$d];
 
                     if (array_intersect([
                         self::ACTION_LEAVE_SWITCH,
@@ -203,6 +223,12 @@ final class ScopeAnalyzer
                         self::ACTION_CONTINUE,
                     ], $case_actions)
                     ) {
+                        // Other cases may exit an enclosing loop or return.
+                        $control_actions = array_values(array_unique([
+                            ...$control_actions,
+                            ...array_diff([...$all_case_actions, ...$escaping_case_actions], [self::ACTION_NONE]),
+                        ]));
+
                         continue 2;
                     }
 
@@ -211,7 +237,7 @@ final class ScopeAnalyzer
                     }
 
                     $case_does_end = !array_diff(
-                        $control_actions,
+                        $case_actions,
                         [self::ACTION_END, self::ACTION_RETURN],
                     );
 
@@ -219,9 +245,16 @@ final class ScopeAnalyzer
                         $has_ended = true;
                     }
 
-                    $all_case_actions = [...$all_case_actions, ...$case_actions];
+                    $all_case_actions = array_values(array_unique([
+                        ...$all_case_actions,
+                        ...$case_actions,
+                    ]));
 
                     if (!$case_does_end && !$has_ended) {
+                        $control_actions = array_values(array_unique([
+                            ...$control_actions,
+                            ...array_diff([...$all_case_actions, ...$escaping_case_actions], [self::ACTION_NONE]),
+                        ]));
                         continue 2;
                     }
 
@@ -230,16 +263,16 @@ final class ScopeAnalyzer
                     }
                 }
 
-                $all_case_actions = array_filter(
-                    $all_case_actions,
+                $all_case_actions = array_values(array_unique(array_filter(
+                    [...$all_case_actions, ...$escaping_case_actions],
                     static fn(string $action): bool => $action !== self::ACTION_NONE,
-                );
+                )));
 
                 if ($has_default_terminator || $stmt->getAttribute('allMatched', false)) {
                     return array_values(array_unique([...$control_actions, ...$all_case_actions]));
                 }
 
-                $control_actions = [...$control_actions, ...$all_case_actions];
+                $control_actions = array_values(array_unique([...$control_actions, ...$all_case_actions]));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Do_
@@ -284,11 +317,10 @@ final class ScopeAnalyzer
                 ) {
                     $is_infinite_loop = true;
                     if ($stmt->cond) {
-                        foreach ($stmt->cond as $cond) {
-                            $stmt_expr_type = $nodes->getType($cond);
-                            if (!$stmt_expr_type || !$stmt_expr_type->isAlwaysTruthy()) {
-                                $is_infinite_loop = false;
-                            }
+                        // only the last of the comma separated conditions decides whether the loop goes on
+                        $stmt_expr_type = $nodes->getType($stmt->cond[array_key_last($stmt->cond)]);
+                        if (!$stmt_expr_type || !$stmt_expr_type->isAlwaysTruthy()) {
+                            $is_infinite_loop = false;
                         }
                     }
 

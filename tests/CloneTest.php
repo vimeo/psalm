@@ -240,7 +240,7 @@ final class CloneTest extends TestCase
                 'code' => '<?php
                     $f = clone(...);',
                 'assertions' => [],
-                'ignored_issues' => ['UnusedVariable'],
+                'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
             'cloneCalledThroughVariableFunctionNotIntercepted' => [
