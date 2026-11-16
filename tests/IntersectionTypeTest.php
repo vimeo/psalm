@@ -619,9 +619,16 @@ final class IntersectionTypeTest extends TestCase
                         throw new RuntimeException();
                     }
 
-                    $required = withLast4(card());',
+                    /** @return Card&object{last4: int|float} */
+                    function numericCard(): object {
+                        throw new RuntimeException();
+                    }
+
+                    $required = withLast4(card());
+                    $declaredWins = withLast4(numericCard());',
                 'assertions' => [
                     '$required===' => 'Card&object{last4:string}',
+                    '$declaredWins===' => 'Card&object{last4:string}',
                 ],
             ],
             'methodOfAShapeIntersectionAsACallable' => [
@@ -646,7 +653,19 @@ final class IntersectionTypeTest extends TestCase
                      * @param object{last4: string}&ArrayIterator<int, string> $iterator
                      * @return list<string>
                      */
-                    function values(object $iterator): array {
+                    function shapeFirst(object $iterator): array {
+                        $values = [];
+                        foreach ($iterator as $value) {
+                            $values[] = $value;
+                        }
+                        return $values;
+                    }
+
+                    /**
+                     * @param ArrayIterator<int, string>&object{last4: string} $iterator
+                     * @return list<string>
+                     */
+                    function classFirst(object $iterator): array {
                         $values = [];
                         foreach ($iterator as $value) {
                             $values[] = $value;
@@ -1445,20 +1464,35 @@ final class IntersectionTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument',
             ],
+            'valueOfAUnionOfTraversableShapeIntersectionsIsOfEither' => [
+                'code' => '<?php
+                    /**
+                     * @param Traversable<int, int>&object{a: int} $ints
+                     * @param Traversable<int, string>&object{a: int} $strings
+                     */
+                    function first(object $ints, object $strings): int {
+                        foreach (rand(0, 1) ? $ints : $strings as $value) {
+                            return $value;
+                        }
+                        return 0;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
             'shapeIntersectionOfStaticCombinedWithItsClassIsNotStatic' => [
                 'code' => '<?php
                     /** @psalm-assert object{a: int} $x */
                     function assertA(object $x): void {}
 
                     class Card {
-                        /**
-                         * @param Card&object{a: int} $card
-                         * @return static
-                         */
-                        public function pick(object $card): object {
-                            $self = $this;
+                        public function self(): static {
+                            return $this;
+                        }
+
+                        public function pick(Card $card): static {
+                            $self = $this->self();
                             assertA($self);
-                            return rand(0, 1) ? $card : $self;
+                            assertA($card);
+                            return rand(0, 1) ? $self : $card;
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',

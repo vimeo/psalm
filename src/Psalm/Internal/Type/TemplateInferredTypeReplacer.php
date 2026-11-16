@@ -327,10 +327,15 @@ final class TemplateInferredTypeReplacer
                         || $atomic_template_type instanceof TIterable
                         || $atomic_template_type instanceof TObjectWithProperties
                     ) {
+                        // the shape the template is declared with wins over the one of what it's inferred to: in
+                        // `T&object{a: string}`, `a` is a string whatever `T` has
+                        $declared_shape = ObjectShapeIntersection::getShape($atomic_type);
+
                         $types []= ObjectShapeIntersection::intersect([
                             $atomic_template_type->setIntersectionTypes([]),
                             ...array_values($atomic_type->extra_types),
                             ...array_values($atomic_template_type->extra_types),
+                            ...($declared_shape ? [$declared_shape] : []),
                         ]);
                     } elseif ($atomic_template_type instanceof TObject) {
                         $first_atomic_type = array_shift($atomic_type->extra_types);

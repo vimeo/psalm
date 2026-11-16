@@ -672,11 +672,12 @@ final class TypeCombiner
         }
 
         // `Foo&object{a: int}|Foo&object{a?: int}` is `Foo&object{a?: int}`: intersections that differ in their shape
-        // only combine their shapes, as leading shapes do, and the shape isn't spread to other classes
+        // only combine their shapes, as leading shapes do, and the shape isn't spread to other classes. Traversable
+        // and Generator, keyed by their name to combine their type params, are left to that.
         if (($type::class === TNamedObject::class
                 || $type instanceof TGenericObject
                 || $type instanceof TTemplateParam)
-            && $type_key !== 'iterable'
+            && $type_key === $type->getKey()
             && ($shape = ObjectShapeIntersection::getShape($type)) !== null
         ) {
             self::combineShapeIntersection($type, $shape, $combination, $codebase);
