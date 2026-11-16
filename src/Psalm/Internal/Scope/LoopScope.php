@@ -159,17 +159,20 @@ final class LoopScope
             return $vars_in_scope;
         }
 
+        // the variables of a context may be PHP references to each other: a new array is not written through them
+        $merged_vars = [];
+
         foreach ($vars_at_jumps as $var_id => $type) {
-            $vars_at_jumps[$var_id] = isset($vars_in_scope[$var_id])
+            $merged_vars[$var_id] = isset($vars_in_scope[$var_id])
                 ? Type::combineUnionTypes($type, $vars_in_scope[$var_id])
                 : $type->setPossiblyUndefined(true);
         }
 
         foreach ($vars_in_scope as $var_id => $type) {
-            $vars_at_jumps[$var_id] ??= $type->setPossiblyUndefined(true);
+            $merged_vars[$var_id] ??= $type->setPossiblyUndefined(true);
         }
 
-        return $vars_at_jumps;
+        return $merged_vars;
     }
 
     /**
