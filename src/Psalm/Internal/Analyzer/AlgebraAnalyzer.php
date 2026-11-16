@@ -6,20 +6,30 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Clause;
+use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\InArray;
 use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\NotInArray;
+use Psalm\Storage\Assertion\Truthy;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 
+use function array_any;
 use function array_filter;
 use function array_key_first;
 use function array_keys;
@@ -39,6 +49,92 @@ use function strpbrk;
  */
 final class AlgebraAnalyzer
 {
+    /**
+     * Context::removeReconciledClauses() for the variables a condition's reconciliation changed, keeping the clauses
+     * the new types do not express: `$x` truthy makes an `int|null` an `int`, which can still be falsy
+     *
+     * @param list<Clause> $clauses
+     * @param array<string, bool> $changed_var_ids
+     * @param array<string, Union> $vars_in_scope
+     * @return array{list<Clause>, list<Clause>}
+     */
+    public static function removeReconciledClauses(
+        array $clauses,
+        array $changed_var_ids,
+        array $vars_in_scope,
+        StatementsAnalyzer $statements_analyzer,
+    ): array {
+        [$included_clauses, $rejected_clauses] = Context::removeReconciledClauses($clauses, $changed_var_ids);
+
+        $expressed_clauses = [];
+
+        foreach ($rejected_clauses as $clause) {
+            if (self::isExpressedByTypes($clause, $vars_in_scope, $statements_analyzer)) {
+                $expressed_clauses[] = $clause;
+            } else {
+                $included_clauses[] = $clause;
+            }
+        }
+
+        return [$included_clauses, $expressed_clauses];
+    }
+
+    /**
+     * Whether the types make the clause certain. Only a lone `Truthy`/`Falsy` clause is checked: types can't express
+     * that an int or a float is not zero, and the negations of other assertions are not all exact
+     *
+     * @param array<string, Union> $vars_in_scope
+     */
+    private static function isExpressedByTypes(
+        Clause $clause,
+        array $vars_in_scope,
+        StatementsAnalyzer $statements_analyzer,
+    ): bool {
+        $assertion = self::getSingleAssertion($clause);
+
+        if ($assertion === null || !($assertion[1] instanceof Truthy || $assertion[1] instanceof Falsy)) {
+            return true;
+        }
+
+        [$var_id, $possibility] = $assertion;
+
+        $type = $vars_in_scope[$var_id] ?? null;
+
+        // reconciling a type variable records bounds on it
+        if ($type === null
+            || array_any(
+                $type->getAtomicTypes(),
+                static fn(Atomic $atomic): bool => $atomic instanceof TTypeVariable,
+            )
+        ) {
+            return true;
+        }
+
+        $failed_reconciliation = Reconciler::RECONCILIATION_OK;
+
+        $negated_type = AssertionReconciler::reconcile(
+            $possibility->getNegation(),
+            $type,
+            $var_id,
+            $statements_analyzer,
+            false,
+            $statements_analyzer->getTemplateTypeMap() ?? [],
+            null,
+            [],
+            $failed_reconciliation,
+        );
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        // the negation is only known to be possible when it narrows the type: the reconciler may return the asserted
+        // type or an empty union instead of never when it is impossible, or the type unchanged when it can't tell
+        return $failed_reconciliation === Reconciler::RECONCILIATION_EMPTY
+            || $negated_type->isUnionEmpty()
+            || $negated_type->isNever()
+            || !UnionTypeComparator::isContainedBy($codebase, $negated_type, $type)
+            || UnionTypeComparator::isContainedBy($codebase, $type, $negated_type);
+    }
+
     /**
      * The variable of a clause that is only `isset($var)`, when it is a plain local one: `isset($a['k'])` and
      * `isset($o->p)` can be true while the value is null (`ArrayAccess::offsetExists()`, `__isset()`)
@@ -266,7 +362,11 @@ final class AlgebraAnalyzer
 
         foreach ($operand_formulas as [$operand, $negated_operand_formula]) {
             // an operand reads the variables it and the operands before it assign as assigned, not as established
-            $assigned_var_ids += FormulaGenerator::getAssignedVarIds($operand, $statements_analyzer->getFQCLN());
+            $assigned_var_ids += FormulaGenerator::getAssignedVarIds(
+                $operand,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer->node_data,
+            );
 
             $operand_formula_1 = $assigned_var_ids === [] ? $formula_1 : array_values(array_filter(
                 $formula_1,

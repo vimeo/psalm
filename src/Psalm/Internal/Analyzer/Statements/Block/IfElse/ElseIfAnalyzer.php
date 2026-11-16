@@ -21,7 +21,6 @@ use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ConflictingReferenceConstraint;
 use Psalm\IssueBuffer;
-use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type\Reconciler;
 
 use function array_any;
@@ -47,9 +46,6 @@ use function spl_object_id;
 final class ElseIfAnalyzer
 {
     /**
-     * The negation of the clauses of the condition: made from the negated condition where the clauses leave out what
-     * the left side of an `&&` tested of a variable that its right side assigns (see FormulaGenerator)
-     *
      * @param list<Clause> $elseif_clauses
      * @return list<Clause>
      */
@@ -60,21 +56,70 @@ final class ElseIfAnalyzer
         Context $else_context,
         array $elseif_clauses,
     ): array {
-        if (!FormulaGenerator::leavesOutClausesOfAssignedVars($elseif->cond, $else_context->self)) {
-            return Algebra::negateFormula($elseif_clauses);
-        }
-
-        $elseif_cond_id = spl_object_id($elseif->cond);
-
-        return FormulaGenerator::getFormula(
-            $elseif_cond_id,
-            $elseif_cond_id,
-            new VirtualBooleanNot($elseif->cond),
+        return FormulaGenerator::getNegatedFormula(
+            $elseif_clauses,
+            $elseif->cond,
+            spl_object_id($elseif->cond),
             $else_context->self,
             $statements_analyzer,
             $codebase,
-            false,
         );
+    }
+
+    /**
+     * The clauses of the condition, where a clause about an offset or a property of a mixed variable is unknown
+     *
+     * @return list<Clause>
+     */
+    private static function getClauses(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Stmt\ElseIf_ $elseif,
+        Context $elseif_context,
+        Context $else_context,
+    ): array {
+        $elseif_cond_id = spl_object_id($elseif->cond);
+
+        $mixed_var_ids = [];
+
+        foreach ($elseif_context->vars_in_scope as $var_id => $type) {
+            if ($type->hasMixed()) {
+                $mixed_var_ids[] = $var_id;
+            }
+        }
+
+        $elseif_clauses = FormulaGenerator::getFormula(
+            $elseif_cond_id,
+            $elseif_cond_id,
+            $elseif->cond,
+            $else_context->self,
+            $statements_analyzer,
+            $codebase,
+        );
+
+        if (count($elseif_clauses) > 200) {
+            $elseif_clauses = [];
+        }
+
+        $elseif_clauses_handled = [];
+
+        foreach ($elseif_clauses as $clause) {
+            $keys = array_keys($clause->possibilities);
+            $mixed_var_ids = array_diff($mixed_var_ids, $keys);
+
+            foreach ($keys as $key) {
+                foreach ($mixed_var_ids as $mixed_var_id) {
+                    if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
+                        $clause = new Clause([], $elseif_cond_id, $elseif_cond_id, true);
+                        break 2;
+                    }
+                }
+            }
+
+            $elseif_clauses_handled[] = $clause;
+        }
+
+        return $elseif_clauses_handled;
     }
 
     /**
@@ -118,6 +163,18 @@ final class ElseIfAnalyzer
                 $else_context->vars_possibly_in_scope[$var_id] = true;
                 $if_scope->elseif_cond_assigned_var_ids[$var_id] = $offset;
             }
+
+            // what the earlier conditions being false said of it is about its previous value
+            $else_context->clauses = Context::filterClauses($var_id, $else_context->clauses);
+            $if_scope->negated_clauses = Context::filterClauses($var_id, $if_scope->negated_clauses);
+
+            foreach ($if_scope->negated_types as $negated_var_id => $_) {
+                if ($negated_var_id === $var_id
+                    || preg_match('/^' . preg_quote($var_id, '/') . '[\[\-]/', $negated_var_id)
+                ) {
+                    unset($if_scope->negated_types[$negated_var_id]);
+                }
+            }
         }
 
         // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
@@ -134,48 +191,9 @@ final class ElseIfAnalyzer
             );
         }
 
-        $mixed_var_ids = [];
-
-        foreach ($elseif_context->vars_in_scope as $var_id => $type) {
-            if ($type->hasMixed()) {
-                $mixed_var_ids[] = $var_id;
-            }
-        }
-
         $elseif_cond_id = spl_object_id($elseif->cond);
 
-        $elseif_clauses = FormulaGenerator::getFormula(
-            $elseif_cond_id,
-            $elseif_cond_id,
-            $elseif->cond,
-            $else_context->self,
-            $statements_analyzer,
-            $codebase,
-        );
-
-        if (count($elseif_clauses) > 200) {
-            $elseif_clauses = [];
-        }
-
-        $elseif_clauses_handled = [];
-
-        foreach ($elseif_clauses as $clause) {
-            $keys = array_keys($clause->possibilities);
-            $mixed_var_ids = array_diff($mixed_var_ids, $keys);
-
-            foreach ($keys as $key) {
-                foreach ($mixed_var_ids as $mixed_var_id) {
-                    if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                        $clause = new Clause([], $elseif_cond_id, $elseif_cond_id, true);
-                        break 2;
-                    }
-                }
-            }
-
-            $elseif_clauses_handled[] = $clause;
-        }
-
-        $elseif_clauses = $elseif_clauses_handled;
+        $elseif_clauses = self::getClauses($statements_analyzer, $codebase, $elseif, $elseif_context, $else_context);
 
         $entry_clauses = [];
 
@@ -309,9 +327,11 @@ final class ElseIfAnalyzer
             );
 
             if ($newly_reconciled_var_ids) {
-                $elseif_context->clauses = Context::removeReconciledClauses(
+                $elseif_context->clauses = AlgebraAnalyzer::removeReconciledClauses(
                     $elseif_context->clauses,
                     $newly_reconciled_var_ids,
+                    $elseif_context->vars_in_scope,
+                    $statements_analyzer,
                 )[0];
 
                 foreach ($newly_reconciled_var_ids as $changed_var_id => $_) {
@@ -341,9 +361,7 @@ final class ElseIfAnalyzer
             return false;
         }
 
-        foreach ($elseif_context->parent_remove_vars as $var_id => $_) {
-            $outer_context->removeVarFromConflictingClauses($var_id);
-        }
+        $outer_context->removeClausesOfVarsChangedIn($elseif_context, $statements_analyzer);
 
         /** @var array<string, int> */
         $new_stmts_assigned_var_ids = $elseif_context->assigned_var_ids;
@@ -405,12 +423,20 @@ final class ElseIfAnalyzer
                 branch_nodes: [$elseif->cond, ...$elseif->stmts],
             );
 
+            // the clauses of the condition about what the elseif body assigned don't hold after it
+            $elseif_exit_clauses = Context::filterClausesOfAssignedVars(
+                $elseif_clauses,
+                $new_stmts_assigned_var_ids,
+                $elseif_context,
+                $statements_analyzer,
+            );
+
             $reasonable_clause_count = count($if_scope->reasonable_clauses);
 
-            if ($reasonable_clause_count && $reasonable_clause_count < 20_000 && $elseif_clauses) {
+            if ($reasonable_clause_count && $reasonable_clause_count < 20_000 && $elseif_exit_clauses) {
                 $if_scope->reasonable_clauses = Algebra::combineOredClauses(
                     $if_scope->reasonable_clauses,
-                    $elseif_clauses,
+                    $elseif_exit_clauses,
                     $elseif_cond_id,
                 );
             } else {
