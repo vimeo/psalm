@@ -3652,6 +3652,41 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'socketAddrinfoLookupTakesAnErrorCodeOnPhp86' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $error_code = null;
+                    $info = socket_addrinfo_lookup('localhost', null, [], $error_code);
+                    PHP,
+                'assertions' => [
+                    '$error_code===' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'socketCmsgSpaceReturnsIntOnPhp86' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $space = socket_cmsg_space(1, 1);
+                    PHP,
+                'assertions' => [
+                    '$space===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'ldapFreeResultReturnsTrueOnPhp86' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var mixed $result */
+                    $freed = ldap_free_result($result);
+                    PHP,
+                'assertions' => [
+                    '$freed===' => 'true',
+                ],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.6',
+            ],
         ];
     }
 
