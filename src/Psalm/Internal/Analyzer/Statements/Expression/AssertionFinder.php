@@ -116,7 +116,6 @@ use function array_map;
 use function array_push;
 use function assert;
 use function count;
-use function ctype_digit;
 use function explode;
 use function in_array;
 use function is_int;
@@ -1408,51 +1407,42 @@ final class AssertionFinder
     }
 
     /**
-     * `0['key']` stands for `$array['key']` of the array passed as the first argument
+     * `0:context['key']` stands for `$context['key']` of the array passed as the parameter `$context` at position 0
      *
-     * @return array{int, string}|null the argument offset and the rest of the id (`['key']`)
+     * @return array{int, string, string}|null the parameter's position and name, and the rest of the id (`['key']`)
      * @psalm-pure
      */
     public static function splitArgumentOffsetVarId(string $var_id): ?array
     {
-        $bracket_offset = strpos($var_id, '[');
-
-        if ($bracket_offset === false || $bracket_offset === 0) {
+        if (preg_match('/^(\d+):(\w+)(\[.+)$/', $var_id, $matches) !== 1
+            || !isset($matches[1], $matches[2], $matches[3])
+        ) {
             return null;
         }
 
-        $arg_offset = substr($var_id, 0, $bracket_offset);
-
-        if (!ctype_digit($arg_offset)) {
-            return null;
-        }
-
-        return [(int) $arg_offset, substr($var_id, $bracket_offset)];
+        return [(int) $matches[1], $matches[2], $matches[3]];
     }
 
     /**
-     * @param array<PhpParser\Node\Arg|PhpParser\Node\VariadicPlaceholder> $args
+     * @param list<PhpParser\Node\Arg> $args
      */
     public static function getArgumentOffsetVarId(string $var_id, array $args, FileSource $source): ?string
     {
         $parts = self::splitArgumentOffsetVarId($var_id);
 
-        // the position of a parameter says nothing of the argument once an argument is named or unpacked
-        foreach ($args as $call_arg) {
-            if ($call_arg instanceof PhpParser\Node\Arg && ($call_arg->name !== null || $call_arg->unpack)) {
-                return null;
-            }
+        if ($parts === null) {
+            return null;
         }
 
-        $arg = $parts === null ? null : ($args[$parts[0]] ?? null);
+        $arg = self::getArgumentOfParameter($args, $parts[0], $parts[1]);
 
-        if ($parts === null || !$arg instanceof PhpParser\Node\Arg) {
+        if ($arg === null) {
             return null;
         }
 
         $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg->value, null, $source);
 
-        return $arg_var_id === null ? null : $arg_var_id . $parts[1];
+        return $arg_var_id === null ? null : $arg_var_id . $parts[2];
     }
 
     /**

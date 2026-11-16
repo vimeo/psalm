@@ -103,6 +103,49 @@ final class AssertAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testAssertIfTrueAndIfFalseOnAnOffsetWhoseKeyContainsTheParameterName(): void
+    {
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Obj {}
+
+                /** @psalm-assert-if-true Obj $data["data"] */
+                function has(array $data): bool {
+                    return isset($data["data"]) && $data["data"] instanceof Obj;
+                }
+
+                /** @psalm-assert-if-false Obj $context["context"] */
+                function lacks(array $context): bool {
+                    return !isset($context["context"]) || !$context["context"] instanceof Obj;
+                }
+
+                /** @psalm-assert Obj $a["a"] */
+                function assertA(array $a): void {
+                    if (!isset($a["a"]) || !$a["a"] instanceof Obj) {
+                        throw new InvalidArgumentException("a");
+                    }
+                }
+
+                function f(array $d, array $c, array $e): void {
+                    if (has($d)) {
+                        echo get_class($d["data"]);
+                    }
+
+                    if (!lacks($c)) {
+                        echo get_class($c["context"]);
+                    }
+
+                    assertA($e);
+                    echo get_class($e["a"]);
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testArrayKeyExistsAssertionOfNamedArguments(): void
     {
         Config::getInstance()->ensure_array_string_offsets_exist = true;
@@ -4498,6 +4541,47 @@ final class AssertAnnotationTest extends TestCase
                         if (!lacksObj($context)) {
                             $third = $context["obj"];
                             /** @psalm-check-type-exact $third = Obj */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'UnusedVariable'],
+            ],
+            'assertAnOffsetOfAnArgumentGivenByNameOrAfterAPositionalOne' => [
+                'code' => '<?php
+                    final class Obj {}
+
+                    /**
+                     * @psalm-assert Obj $context["obj"]
+                     */
+                    function assertCtx(array $context, int $flag = 0): void {
+                        if (!isset($context["obj"]) || !$context["obj"] instanceof Obj) {
+                            throw new InvalidArgumentException("Object is not set");
+                        }
+                    }
+
+                    /**
+                     * @psalm-assert-if-true Obj $context["obj"]
+                     */
+                    function hasCtx(array $context, int $flag = 0): bool {
+                        return isset($context["obj"]) && $context["obj"] instanceof Obj;
+                    }
+
+                    function f3(array $a): void {
+                        assertCtx($a, flag: 1);
+                        $v3 = $a["obj"];
+                        /** @psalm-check-type-exact $v3 = Obj */;
+                    }
+
+                    function f4(array $a): void {
+                        assertCtx(context: $a);
+                        $v4 = $a["obj"];
+                        /** @psalm-check-type-exact $v4 = Obj */;
+                    }
+
+                    function f5(array $a): void {
+                        if (hasCtx(flag: 1, context: $a)) {
+                            $v5 = $a["obj"];
+                            /** @psalm-check-type-exact $v5 = Obj */;
                         }
                     }',
                 'assertions' => [],
