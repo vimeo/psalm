@@ -2160,7 +2160,9 @@ final class ArrayFetchAnalyzer
 
                     $new_key_type = Type::combineUnionTypes(
                         $generic_key_type,
-                        $offset_type->hasMixed() ? Type::getArrayKey() : $offset_type->freeze(),
+                        $offset_type->hasMixed()
+                            ? Type::getArrayKey()
+                            : self::castInvalidOffsetTypes($offset_type->freeze()),
                     );
 
                     if (!$stmt->dim) {
@@ -2695,12 +2697,38 @@ final class ArrayFetchAnalyzer
     }
 
     /**
-     * An offset type with what can't be an array key, and PHP doesn't cast to one, replaced by array-key
+     * An offset type with floats replaced by the ints PHP casts them to, and what can't be an array key, and PHP
+     * doesn't cast to one, replaced by array-key
      *
      * @psalm-capabilities read-props|write-this-props
      */
     public static function castInvalidOffsetTypes(Union $offset_type): Union
     {
+        if ($offset_type->hasFloat()) {
+            $atomic_types = [];
+
+            foreach ($offset_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TFloat) {
+                    $int = $atomic_type instanceof TLiteralFloat ? LiteralCast::toInt($atomic_type->value) : null;
+                    $atomic_type = $int === null ? new TInt : new TLiteralInt($int);
+                }
+
+                $atomic_types[$atomic_type->getKey()] = $atomic_type;
+            }
+
+            if (isset($atomic_types['int'])) {
+                foreach ($atomic_types as $key => $atomic_type) {
+                    if ($atomic_type instanceof TLiteralInt) {
+                        unset($atomic_types[$key]);
+                    }
+                }
+            }
+
+            if ($atomic_types !== []) {
+                $offset_type = $offset_type->setTypes($atomic_types);
+            }
+        }
+
         $uncastable = self::getUncastableOffsetTypes($offset_type);
 
         if (!$uncastable) {

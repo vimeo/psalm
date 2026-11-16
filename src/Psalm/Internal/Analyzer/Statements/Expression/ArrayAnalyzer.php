@@ -40,6 +40,7 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -273,7 +274,7 @@ final class ArrayAnalyzer
         // an int contains every literal int
         $has_int = false;
         foreach ($input_types as $atomic_type) {
-            if ($atomic_type instanceof TDecimalIntString
+            if ($atomic_type instanceof TNumericString
                 || ($atomic_type instanceof TInt && $atomic_type->getKey() === 'int')
             ) {
                 $has_int = true;
@@ -286,6 +287,10 @@ final class ArrayAnalyzer
             if ($atomic_type instanceof TDecimalIntString) {
                 $atomic_type = new TInt($atomic_type->from_docblock);
                 $changed = true;
+            } elseif ($atomic_type instanceof TNumericString) {
+                // e.g. '12' is cast to an int, but '1.5', '012' or ' 12' stay strings
+                $atomic_types['int'] ??= new TInt($atomic_type->from_docblock);
+                $changed = true;
             } elseif (self::isIntArrayKeyString($atomic_type)) {
                 $atomic_type = $has_int ? new TInt($atomic_type->from_docblock) : new TLiteralInt(
                     (int) $atomic_type->value,
@@ -295,6 +300,14 @@ final class ArrayAnalyzer
             }
 
             $atomic_types[$atomic_type->getKey()] ??= $atomic_type;
+        }
+
+        if ($changed && isset($atomic_types['int'])) {
+            foreach ($atomic_types as $key => $atomic_type) {
+                if ($atomic_type instanceof TInt && $key !== 'int') {
+                    unset($atomic_types[$key]);
+                }
+            }
         }
 
         return $changed && $atomic_types !== [] ? $key_type->setTypes($atomic_types) : $key_type;
@@ -326,6 +339,9 @@ final class ArrayAnalyzer
         foreach ($template->as->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TDecimalIntString || self::isIntArrayKeyString($atomic_type)) {
                 $cast_types[] = $atomic_type;
+            } elseif ($atomic_type instanceof TNumericString) {
+                $cast_types[] = new TDecimalIntString($atomic_type->from_docblock);
+                $kept_types[] = $atomic_type;
             } elseif ($atomic_type instanceof TTemplateParam) {
                 [$nested_cast_types, $nested_template] = self::splitTemplateArrayKey($atomic_type);
                 $cast_types = [...$cast_types, ...$nested_cast_types];
