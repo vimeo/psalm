@@ -56,6 +56,9 @@ final class MethodStorage extends FunctionLikeStorage
     public int $containing_class_capabilities = Capabilities::ALL;
 
     /**
+     * The properties of `$this` the body writes: true when it assigns the property itself, false when it only
+     * writes items of it
+     *
      * @var ?array<string, bool>
      */
     public ?array $this_property_mutations = null;

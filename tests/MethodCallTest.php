@@ -768,6 +768,152 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'propertyItemIsForgottenAfterAMethodWritingItOnThis' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @var array<string, int> */
+                        public array $map = [];
+
+                        public function g(): void {
+                            $this->map["a"] = 1;
+                            $this->reset();
+
+                            if ($this->map["a"] === 1) {}
+                        }
+
+                        public function reset(): void {
+                            $this->map["a"] = 2;
+                        }
+                    }',
+            ],
+            'propertyItemsAreForgottenAfterAMethodWritingThem' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @var array<string, int> */
+                        public array $map = [];
+                        /** @var array<string, array<string, int>> */
+                        public array $nested = [];
+                        /** @var list<int> */
+                        public array $list = [];
+
+                        public function assignProperty(): void { $this->map = ["a" => 2]; }
+                        public function assignItem(): void { $this->map["a"] = 2; }
+                        public function assignNestedItem(): void { $this->nested["a"]["b"] = 2; }
+                        public function addToItem(): void { $this->map["a"] += 1; }
+                        public function incrementItem(): void { $this->map["a"]++; }
+                        public function destructureIntoItem(): void { [$this->map["a"]] = [2]; }
+                        public function destructureIntoProperty(): void { [$this->map] = [["a" => 2]]; }
+                        public function iterateIntoItem(): void { foreach ([2] as $this->map["a"]) {} }
+                        public function unsetItem(): void { unset($this->map["a"]); }
+                        public function append(): void { $this->list[] = 2; }
+                    }
+
+                    $foo = new Foo();
+
+                    $foo->map["a"] = 1;
+                    $foo->assignProperty();
+                    $a = $foo->map["a"];
+
+                    $foo->map["a"] = 1;
+                    $foo->assignItem();
+                    $b = $foo->map["a"];
+
+                    $foo->nested["a"]["b"] = 1;
+                    $foo->assignNestedItem();
+                    $c = $foo->nested["a"]["b"];
+
+                    $foo->map["a"] = 1;
+                    $foo->addToItem();
+                    $d = $foo->map["a"];
+
+                    $foo->map["a"] = 1;
+                    $foo->incrementItem();
+                    $e = $foo->map["a"];
+
+                    $foo->map["a"] = 1;
+                    $foo->destructureIntoItem();
+                    $f = $foo->map["a"];
+
+                    $foo->map["a"] = 1;
+                    $foo->destructureIntoProperty();
+                    $g = $foo->map["a"];
+
+                    $foo->map["a"] = 1;
+                    $foo->iterateIntoItem();
+                    $h = $foo->map["a"];
+
+                    $foo->map["a"] = 1;
+                    $foo->unsetItem();
+                    $i = $foo->map;
+
+                    $foo->list = [1];
+                    $foo->append();
+                    $j = $foo->list;',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                    '$d===' => 'int',
+                    '$e===' => 'int',
+                    '$f===' => 'int',
+                    '$g===' => 'int',
+                    '$h===' => 'int',
+                    '$i===' => 'array<string, int>',
+                    '$j===' => 'list<int>',
+                ],
+            ],
+            'nullablePropertyStaysNonNullAfterAMethodWritingAnItemOfIt' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @var array<string, int>|null */
+                        public ?array $map = null;
+
+                        public function add(): void { $this->map["a"] = 2; }
+                    }
+
+                    $foo = new Foo();
+                    $foo->map = ["a" => 1];
+                    $foo->add();
+                    $a = $foo->map;',
+                'assertions' => [
+                    '$a===' => 'array<string, int>',
+                ],
+            ],
+            'propertyIsNotAssignedByAConstructorUnsettingAnItemOfIt' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @var array<string, int> */
+                        public array $map;
+
+                        public function __construct() { unset($this->map["a"]); }
+                    }
+
+                    function f(Foo $foo): array {
+                        if (!isset($foo->map)) {
+                            return [];
+                        }
+
+                        return $foo->map;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PropertyNotSetInConstructor'],
+            ],
+            'staticPropertyItemIsForgottenAfterAMethodUnsettingIt' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @var array<string, int> */
+                        public static array $map = [];
+
+                        public static function unsetItem(): void { unset(self::$map["a"]); }
+                    }
+
+                    Foo::$map = ["a" => 1];
+                    Foo::unsetItem();
+                    $a = Foo::$map;',
+                'assertions' => [
+                    '$a===' => 'array<string, int>',
+                ],
+            ],
             'methodCallOnATemplateBoundedByAnotherTemplate' => [
                 'code' => '<?php
                     interface Document {

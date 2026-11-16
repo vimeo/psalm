@@ -428,7 +428,7 @@ final class InstancePropertyFetchAnalyzer
         }
 
         foreach ($class_storages as $class_storage) {
-            if (isset($class_storage->methods['__construct']->this_property_mutations[$property_name])) {
+            if ($class_storage->methods['__construct']->this_property_mutations[$property_name] ?? false) {
                 return false;
             }
         }

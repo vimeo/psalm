@@ -454,13 +454,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         if ($node instanceof PhpParser\Node\Expr\Assign
             || $node instanceof PhpParser\Node\Expr\AssignOp
             || $node instanceof PhpParser\Node\Expr\AssignRef
-        ) {
-            if (!$this->recordThisPropertyMutation($node->var)) {
-                $this->recordStaticPropertyMutation($node->var);
-            }
-        }
-
-        if ($node instanceof PhpParser\Node\Expr\PreInc
+            || $node instanceof PhpParser\Node\Expr\PreInc
             || $node instanceof PhpParser\Node\Expr\PreDec
             || $node instanceof PhpParser\Node\Expr\PostInc
             || $node instanceof PhpParser\Node\Expr\PostDec
@@ -471,10 +465,22 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
         if ($node instanceof PhpParser\Node\Stmt\Foreach_) {
             if ($node->keyVar !== null) {
+                $this->recordThisPropertyMutation($node->keyVar);
                 $this->recordStaticPropertyMutation($node->keyVar);
             }
 
+            $this->recordThisPropertyMutation($node->valueVar);
             $this->recordStaticPropertyMutation($node->valueVar);
+        }
+
+        if ($node instanceof PhpParser\Node\Stmt\Unset_) {
+            foreach ($node->vars as $var) {
+                // unsetting a whole property leaves it uninitialized: it is not assigned
+                if ($var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                    $this->recordThisPropertyMutation($var);
+                    $this->recordStaticPropertyMutation($var);
+                }
+            }
         }
 
         $this->recordExternalEffects($node);
@@ -547,25 +553,45 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         }
     }
 
-    /** Record direct writes to `$this->property`, including ++ and --. */
-    private function recordThisPropertyMutation(PhpParser\Node\Expr $target): bool
+    /**
+     * Records that the method being scanned writes `$this->property` (true) or only items of it (false, unless it
+     * also writes the property itself)
+     */
+    private function recordThisPropertyMutation(PhpParser\Node\Expr $target): void
     {
-        if (!$target instanceof PhpParser\Node\Expr\PropertyFetch
-            || !$target->var instanceof PhpParser\Node\Expr\Variable
-            || $target->var->name !== 'this'
-            || !$target->name instanceof PhpParser\Node\Identifier
-        ) {
-            return false;
+        if (!$this->functionlike_node_scanners) {
+            return;
         }
 
-        if ($this->functionlike_node_scanners) {
-            $scanner = end($this->functionlike_node_scanners);
-            if ($scanner->storage instanceof MethodStorage) {
-                $scanner->storage->this_property_mutations[$target->name->name] = true;
+        if ($target instanceof PhpParser\Node\Expr\List_ || $target instanceof PhpParser\Node\Expr\Array_) {
+            foreach ($target->items as $item) {
+                if ($item !== null) {
+                    $this->recordThisPropertyMutation($item->value);
+                }
             }
+
+            return;
         }
 
-        return true;
+        $writes_property = true;
+
+        while ($target instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $target = $target->var;
+            $writes_property = false;
+        }
+
+        $storage = end($this->functionlike_node_scanners)->storage;
+
+        if ($target instanceof PhpParser\Node\Expr\PropertyFetch
+            && $target->var instanceof PhpParser\Node\Expr\Variable
+            && $target->var->name === 'this'
+            && $target->name instanceof PhpParser\Node\Identifier
+            && $storage instanceof MethodStorage
+        ) {
+            $name = $target->name->name;
+            $storage->this_property_mutations[$name] = $writes_property
+                || ($storage->this_property_mutations[$name] ?? false);
+        }
     }
 
     /**
