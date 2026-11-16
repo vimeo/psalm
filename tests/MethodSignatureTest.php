@@ -2098,6 +2098,23 @@ final class MethodSignatureTest extends TestCase
                         public function m() { return new Foo(); }
                     }',
             ],
+            'toStringObjectParamForConditionalWithItsClass' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    class P {
+                        /** @param Foo $x */
+                        public function m($x): void {}
+                    }
+
+                    /** @template T of bool */
+                    final class C extends P {
+                        /** @param (T is true ? string|Foo : Foo) $x */
+                        public function m($x): void {}
+                    }',
+            ],
             'toStringObjectReturnForStringable' => [
                 'code' => '<?php
                     final class Foo {
@@ -3462,6 +3479,24 @@ final class MethodSignatureTest extends TestCase
 
                     final class C implements I {
                         /** @param non-empty-string $x */
+                        public function m($x): void {}
+                    }',
+                'error_message' => 'ImplementedParamTypeMismatch',
+            ],
+            'conditionalStringParamForToStringObjectParam' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    class P {
+                        /** @param Foo $x */
+                        public function m($x): void {}
+                    }
+
+                    /** @template T of bool */
+                    final class C extends P {
+                        /** @param (T is true ? string : non-empty-string) $x */
                         public function m($x): void {}
                     }',
                 'error_message' => 'ImplementedParamTypeMismatch',
