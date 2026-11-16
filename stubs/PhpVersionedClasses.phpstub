@@ -232,19 +232,36 @@ namespace {
          */
         public function throw(Throwable $exception): mixed {}
 
-        /** @psalm-pure */
+        /**
+         * What starting or resuming the fiber changes, like the position of a generator: not remembered across those calls
+         *
+         * @psalm-pure
+         * @psalm-purity-from-template TPurity
+         */
         public function getReturn(): mixed {}
 
-        /** @psalm-pure */
+        /**
+         * @psalm-pure
+         * @psalm-purity-from-template TPurity
+         */
         public function isStarted(): bool {}
 
-        /** @psalm-pure */
+        /**
+         * @psalm-pure
+         * @psalm-purity-from-template TPurity
+         */
         public function isSuspended(): bool {}
 
-        /** @psalm-pure */
+        /**
+         * @psalm-pure
+         * @psalm-purity-from-template TPurity
+         */
         public function isRunning(): bool {}
 
-        /** @psalm-pure */
+        /**
+         * @psalm-pure
+         * @psalm-purity-from-template TPurity
+         */
         public function isTerminated(): bool {}
 
         /**

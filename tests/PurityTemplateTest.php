@@ -1531,6 +1531,37 @@ final class PurityTemplateTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.1',
             ],
+            'fiberStateIsNotRememberedAcrossResume' => [
+                'code' => '<?php
+                    function once(Fiber $fiber): void {
+                        if (!$fiber->isTerminated()) {
+                            $fiber->resume();
+                            if (!$fiber->isTerminated()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function run(Fiber $fiber): void {
+                        while (!$fiber->isTerminated()) {
+                            $fiber->resume();
+                            if (!$fiber->isTerminated() && rand(0, 1)) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param Fiber[pure] $f
+                     */
+                    function isDone(Fiber $f): bool {
+                        return $f->isTerminated();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'classPurityTemplateInTypeTemplateBound' => [
                 'code' => '<?php
                     /**
