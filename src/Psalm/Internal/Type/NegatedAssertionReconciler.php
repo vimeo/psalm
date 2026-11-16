@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
-use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
@@ -214,14 +213,6 @@ final class NegatedAssertionReconciler extends Reconciler
             && $assertion_type->is_loaded
         ) {
             // do nothing
-        } elseif ($existing_var_type->isSingle()
-            && $existing_var_type->hasNamedObjectType()
-            && $assertion_type instanceof TNamedObject
-            && isset($existing_var_type->getAtomicTypes()[$assertion_type->getKey()])
-            && !self::isEnum($codebase, $assertion_type->value)
-        ) {
-            // checking if two types share a common parent is not enough to guarantee children are instanceof each other
-            // fall through
         } elseif ($existing_var_type->isArray()
             && ($assertion->getAtomicType() instanceof TArray
                 || $assertion->getAtomicType() instanceof TKeyedArray)
@@ -575,16 +566,5 @@ final class NegatedAssertionReconciler extends Reconciler
         }
 
         return $existing_var_type;
-    }
-
-    /**
-     * An enum has no child that an instanceof check of itself could leave out
-     *
-     * @psalm-capabilities read-props
-     */
-    private static function isEnum(Codebase $codebase, string $fq_class_name): bool
-    {
-        return $codebase->classlike_storage_provider->has($fq_class_name)
-            && $codebase->classlike_storage_provider->get($fq_class_name)->is_enum;
     }
 }
