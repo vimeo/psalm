@@ -883,6 +883,20 @@ final class ArrayKeyExistsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'issetMakesATemplateOfAnyTypeArrayAccessible' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $t
+                     */
+                    function f($t): void {
+                        if (isset($t["a"])) {
+                            echo (string) $t["a"];
+                        }
+
+                        echo (string) ($t["z"] ?? 1);
+                    }',
+            ],
             'arrayKeyExistsLeavesAnOffsetOfAnArrayAccessAsItIs' => [
                 'code' => '<?php
                     /** @param ArrayAccess<string, array<string, int>> $o */
