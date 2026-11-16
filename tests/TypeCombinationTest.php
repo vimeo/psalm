@@ -356,6 +356,34 @@ final class TypeCombinationTest extends TestCase
                     'array{id: string, name: int, ...<string, mixed>}',
                 ],
             ],
+            'arrayKeyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackHoldsOtherElements' => [
+                'array{id: string, k?: array<string, int|string>, ...<string, array<string, int>>}',
+                [
+                    'array{id: string, k: array<string, string>, ...<string, array<string, int>>}',
+                    'array{id: string, ...<string, array<string, int>>}',
+                ],
+            ],
+            'emptyKeyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackKeyIsNonEmpty' => [
+                'array{\'\'?: int, id: string, ...<non-empty-string, int>}',
+                [
+                    'array{\'\': int, id: string, ...<non-empty-string, int>}',
+                    'array{id: string, ...<non-empty-string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsTheFallbackWhenAnotherShapeLacksItAndItsFallbackKeyIsNonEmpty' => [
+                'array{id: string, ...<non-empty-string, int>}',
+                [
+                    'array{id: string, name: int, ...<non-empty-string, int>}',
+                    'array{id: string, ...<non-empty-string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackKeyIsARefinedString' => [
+                'array{id: string, name?: int, ...<numeric-string, int>}',
+                [
+                    'array{id: string, name: int, ...<numeric-string, int>}',
+                    'array{id: string, ...<numeric-string, int>}',
+                ],
+            ],
             'keyOfAnUnsealedShapeIsOptionalWhenASealedShapeLacksIt' => [
                 'array{id: string, name?: int, ...<string, int>}',
                 [

@@ -1796,7 +1796,7 @@ final class TypeCombiner
                 foreach ($combination->objectlike_missing_keys as $k => $_) {
                     $objectlike_entry = $combination->objectlike_entries[$k];
                     if ($objectlike_entry->possibly_undefined
-                        && $combination->fallbackKeyContains($k)
+                        && $combination->fallbackKeyAlwaysContains($k)
                         && ($objectlike_entry->hasMixed()
                             ? $fallback_value_type->hasMixed()
                             : $objectlike_entry->getId() === $fallback_value_type->getId())
