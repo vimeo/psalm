@@ -883,6 +883,24 @@ final class ArrayKeyExistsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'arrayKeyExistsKeepsTheOffsetsOfANonEmptyArray' => [
+                'code' => '<?php
+                    function f(array &$variables, bool $b): void {
+                        $variables["image"] = ["#theme" => "image"];
+                        if ($b) {
+                            $variables["image"]["#uri"] = "x";
+                        } else {
+                            $variables["image"]["#uri"] = "y";
+                        }
+
+                        if (array_key_exists("alt", $variables)) {
+                            $variables["image"]["#alt"] = (string) $variables["alt"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'issetMakesATemplateOfAnyTypeArrayAccessible' => [
                 'code' => '<?php
                     /**

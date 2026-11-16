@@ -822,7 +822,8 @@ class Reconciler
                 continue;
             }
 
-            $array_assertions = [[new NonEmpty()]];
+            // reconciling an array that is already non-empty would forget what is known of its offsets
+            $array_assertions = $array_type->isAlwaysTruthy() ? [] : [[new NonEmpty()]];
 
             // asserting a type would replace the arrays a value already is, or widen one that can't be (never)
             if ($array_type->hasMixed()) {
@@ -851,7 +852,9 @@ class Reconciler
                 }
             }
 
-            $new_types[$array_key] = array_merge($array_assertions, $new_types[$array_key] ?? []);
+            if ($array_assertions) {
+                $new_types[$array_key] = array_merge($array_assertions, $new_types[$array_key] ?? []);
+            }
         }
 
         foreach ($new_types as $nk => $type) {
