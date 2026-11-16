@@ -1173,8 +1173,11 @@ final class LoopAnalyzer
                         || $loop_scope->vars_at_continues[$var_id]->possibly_undefined;
 
                     if (isset($loop_scope->possibly_defined_loop_vars[$var_id])) {
-                        // the type already holds what the continues left
-                        $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined($is_possibly_undefined);
+                        // the type already holds what the continues left, but a property or offset missing at a
+                        // continue is unknown there, not unset
+                        if (!$is_possibly_undefined || self::isLoopVar($var_id)) {
+                            $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined($is_possibly_undefined);
+                        }
                     } elseif (!$is_possibly_undefined && isset($context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]
                             ->setPossiblyUndefined(false);

@@ -795,6 +795,47 @@ final class DoTest extends TestCase
                         return $z;
                     }',
             ],
+            'doWhilePropertyNotAssignedBeforeOneOfTheContinuesKeepsItsType' => [
+                'code' => '<?php
+                    final class C {
+                        public ?int $p = null;
+                    }
+
+                    function f(C $c): void {
+                        do {
+                            if (rand(0, 1)) {
+                                $c->p = 1;
+                                continue;
+                            }
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $c->p = 2;
+                        } while (rand(0, 1));
+
+                        if ($c->p === null) {
+                            echo "null";
+                        }
+                    }',
+            ],
+            'doWhilePropertyAssignedBeforeContinueAndAtTheEndOfTheBody' => [
+                'code' => '<?php
+                    final class C {
+                        public ?int $p = null;
+                    }
+
+                    function f(C $c): int {
+                        do {
+                            if (rand(0, 1)) {
+                                $c->p = 1;
+                                continue;
+                            }
+                            $c->p = 2;
+                        } while (rand(0, 1));
+
+                        return $c->p;
+                    }',
+            ],
         ];
     }
 

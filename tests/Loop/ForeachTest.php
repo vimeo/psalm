@@ -2598,6 +2598,30 @@ final class ForeachTest extends TestCase
                     '$z===' => '1|2',
                 ],
             ],
+            'foreachOverNonEmptyArrayOffsetNotAssignedBeforeOneOfTheContinuesKeepsItsType' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var array<string, ?int> */
+                        public array $arr = [];
+                    }
+
+                    function f(C $c): void {
+                        foreach ([1, 2] as $_) {
+                            if (rand(0, 1)) {
+                                $c->arr["x"] = 1;
+                                continue;
+                            }
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $c->arr["x"] = 2;
+                        }
+
+                        if (isset($c->arr["x"]) && $c->arr["x"] === 3) {
+                            echo "three";
+                        }
+                    }',
+            ],
         ];
     }
 
