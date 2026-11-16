@@ -1429,7 +1429,9 @@ final class IssueBuffer
      */
     public static function getIssueLocationKey(string $issue_type, CodeIssue $e): string
     {
-        return $issue_type . ':' . $e->getFilePath() . ':' . $e->code_location->getSelectionBounds()[0];
+        [$from, $to] = $e->code_location->getSelectionBounds();
+
+        return $issue_type . ':' . $e->getFilePath() . ':' . $from . '-' . $to;
     }
 
     /**

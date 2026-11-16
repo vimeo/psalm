@@ -961,6 +961,19 @@ final class DoTest extends TestCase
                 $s = new stdClass();
             } while (rand(0, 1));
         }
+
+        final class C {
+            public ?C $n = null;
+            public int $v = 0;
+        }
+
+        function inAChainOfFetches(C $c): void {
+            $x = null;
+            do {
+                echo $x->n->n->v;
+                $x = $c;
+            } while (rand(0, 1));
+        }
         PHP;
 
     public function testDoWhileFirstIterationIssuesAreDefinite(): void
@@ -984,6 +997,13 @@ final class DoTest extends TestCase
                 [41, 'InvalidCast', 'stdClass cannot be cast to string'],
                 [50, 'PossiblyUndefinedVariable', 'Possibly undefined variable $w, first seen on line 52'],
                 [70, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [84, 'NullPropertyFetch', 'Cannot get property on null variable $x'],
+                [84, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $x->n of type C|null'],
+                [
+                    84,
+                    'PossiblyNullPropertyFetch',
+                    'Cannot get property on possibly null variable $x->n->n of type C|null',
+                ],
             ],
             self::getIssues($file_path),
         );
@@ -1015,6 +1035,13 @@ final class DoTest extends TestCase
                 [41, 'InvalidCast', 'stdClass cannot be cast to string'],
                 [50, 'PossiblyUndefinedVariable', 'Possibly undefined variable $w, first seen on line 52'],
                 [70, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [84, 'NullPropertyFetch', 'Cannot get property on null variable $x'],
+                [84, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $x->n of type C|null'],
+                [
+                    84,
+                    'PossiblyNullPropertyFetch',
+                    'Cannot get property on possibly null variable $x->n->n of type C|null',
+                ],
             ],
             self::getIssues($file_path),
         );
