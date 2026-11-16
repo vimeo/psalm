@@ -2800,7 +2800,10 @@ final class SimpleAssertionReconciler extends Reconciler
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         if ($existing_var_type->hasMixed()) {
-            return Type::getMixed();
+            return new Union([
+                new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]),
+                new TNamedObject('ArrayAccess'),
+            ]);
         }
 
         $array_types = [];

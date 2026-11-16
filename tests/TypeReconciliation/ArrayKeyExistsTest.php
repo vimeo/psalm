@@ -809,6 +809,60 @@ final class ArrayKeyExistsTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '7.4',
             ],
+            'arrayKeyExistsOfAnIntOrVariableKeyMakesAnOffsetOfUnknownTypeArrayAccessibleBeforePhp8' => [
+                'code' => '<?php
+                    /** @psalm-suppress MixedArgument */
+                    function f(array $a, string $key): void {
+                        if (!array_key_exists(3, $a["x"]) || !array_key_exists($key, $a["y"])) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $a = array{x: ArrayAccess|array{3: mixed, ...<array-key, mixed>}, y: ArrayAccess|non-empty-array<array-key, mixed>, ...<array-key, mixed>} */;
+                        echo (string) $a["x"][3];
+                        echo (string) $a["y"][$key];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'issetOfAnIntKeyMakesAnOffsetOfUnknownTypeArrayAccessible' => [
+                'code' => '<?php
+                    function f(array $a): void {
+                        if (!isset($a["x"][3])) {
+                            return;
+                        }
+
+                        echo (string) $a["x"][3];
+                    }',
+            ],
+            'arrayKeyExistsMakesAnArrayOrArrayAccessAnArrayFromPhp8' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int>|ArrayAccess<string, int> $a
+                     */
+                    function f($a): void {
+                        if (array_key_exists("k", $a)) {
+                            /** @psalm-check-type-exact $a = array{k: int, ...<string, int>} */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyInvalidArgument'],
+                'php_version' => '8.0',
+            ],
+            'arrayKeyExistsKeepsAnArrayAccessOfAKnownTypeBeforePhp8' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int>|ArrayAccess<string, int> $a
+                     */
+                    function f($a): void {
+                        if (array_key_exists("k", $a)) {
+                            /** @psalm-check-type-exact $a = ArrayAccess<string, int>|array{k: mixed, ...<string, int>} */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyInvalidArgument'],
+                'php_version' => '7.4',
+            ],
             'arrayKeyExistsRemovesNullAfterANegatedCheck' => [
                 'code' => '<?php
                     /**
