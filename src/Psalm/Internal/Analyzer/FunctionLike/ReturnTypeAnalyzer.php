@@ -90,6 +90,42 @@ final class ReturnTypeAnalyzer
     }
 
     /**
+     * Adds the null returned when the end of the body is reachable and a value is returned elsewhere.
+     *
+     * @param list<Union> $return_type_parts
+     * @param array<PhpParser\Node\Stmt> $function_stmts
+     * @return list<Union>
+     */
+    public static function addImplicitNullReturn(
+        array $return_type_parts,
+        bool $has_yield,
+        array $function_stmts,
+        NodeDataProvider $type_provider,
+        bool $did_explicitly_return,
+    ): array {
+        if (!$return_type_parts
+            || $has_yield
+            || $did_explicitly_return
+            || !in_array(
+                ScopeAnalyzer::ACTION_NONE,
+                ScopeAnalyzer::getControlActions($function_stmts, $type_provider, [], true, true),
+                true,
+            )
+        ) {
+            return $return_type_parts;
+        }
+
+        foreach ($return_type_parts as $return_type_part) {
+            if (!$return_type_part->isVoid() && !$return_type_part->isNever()) {
+                $return_type_parts[] = new Union([new TNull(true)]);
+                break;
+            }
+        }
+
+        return $return_type_parts;
+    }
+
+    /**
      * @param Closure|Function_|ClassMethod|ArrowFunction $function
      * @param PhpParser\Node\Stmt[] $function_stmts
      * @param string[]            $compatible_method_ids
@@ -177,24 +213,14 @@ final class ReturnTypeAnalyzer
             $did_explicitly_return = true;
         }
 
-        if ((!$return_type || $return_type->from_docblock)
-            && ScopeAnalyzer::getControlActions(
+        if (!$return_type || $return_type->from_docblock) {
+            $inferred_return_type_parts = self::addImplicitNullReturn(
+                $inferred_return_type_parts,
+                $inferred_yield_types !== [],
                 $function_stmts,
                 $type_provider,
-                [],
-            ) !== [ScopeAnalyzer::ACTION_END]
-            && !$inferred_yield_types
-            && count($inferred_return_type_parts)
-            && !$did_explicitly_return
-        ) {
-            // only add null if we have a return statement elsewhere and it wasn't void or never
-            foreach ($inferred_return_type_parts as $inferred_return_type_part) {
-                if (!$inferred_return_type_part->isVoid() && !$inferred_return_type_part->isNever()) {
-                    $atomic_null = new TNull(true);
-                    $inferred_return_type_parts[] = new Union([$atomic_null]);
-                    break;
-                }
-            }
+                $did_explicitly_return,
+            );
         }
 
         $control_actions = ScopeAnalyzer::getControlActions(
@@ -202,6 +228,7 @@ final class ReturnTypeAnalyzer
             $type_provider,
             [],
             false,
+            true,
         );
 
         $function_always_exits = $control_actions === [ScopeAnalyzer::ACTION_END];

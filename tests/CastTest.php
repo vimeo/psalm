@@ -302,34 +302,34 @@ final class CastTest extends TestCase
             'ignored_issues' => [],
             'php_version' => '8.6',
         ];
-        yield 'SKIPPED-castFalseOrIntToInt' => [
+        yield 'castFalseOrIntToInt' => [
             'code' => '<?php
                 /** @var false|int<10, 20> */
                 $intOrFalse = 10;
                 $int = (int) $intOrFalse;
             ',
             'assertions' => [
-                '$int===' => '0|int<10, 20>',
+                '$int===' => 'int<0, 20>',
             ],
         ];
-        yield 'SKIPPED-castTrueOrIntToInt' => [
+        yield 'castTrueOrIntToInt' => [
             'code' => '<?php
                 /** @var true|int<10, 20> */
                 $intOrTrue = 10;
                 $int = (int) $intOrTrue;
             ',
             'assertions' => [
-                '$int===' => '1|int<10, 20>',
+                '$int===' => 'int<1, 20>',
             ],
         ];
-        yield 'SKIPPED-castBoolOrIntToInt' => [
+        yield 'castBoolOrIntToInt' => [
             'code' => '<?php
                 /** @var bool|int<10, 20> */
                 $intOrBool = 10;
                 $int = (int) $intOrBool;
             ',
             'assertions' => [
-                '$int===' => '0|1|int<10, 20>',
+                '$int===' => 'int<0, 20>',
             ],
         ];
         yield 'castObjectWithPropertiesToArray' => [

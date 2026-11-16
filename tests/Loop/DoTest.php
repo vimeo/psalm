@@ -23,6 +23,64 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'doWhileNullCoalesceOfAVariableAssignedLaterInTheBody' => [
+                'code' => '<?php
+                    function f(): string {
+                        do {
+                            $s = ($s ?? "") . "x";
+                        } while (rand(0, 1));
+
+                        return $s;
+                    }',
+            ],
+            'doWhileVariableAssignedInTheBodyIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function f(): int {
+                        do {
+                            $line = rand(0, 1) ? "a" : false;
+                            $i = isset($i) ? $i + 1 : 0;
+                        } while ($line !== false && $i < 5);
+
+                        return $i;
+                    }',
+            ],
+            'doWhileIntRangeShiftedInAnArrayOffsetIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $a = ["n" => 0];
+                        do {
+                            $a["n"] += rand(1, 3);
+                        } while ($a["n"] <= 10);
+                        /** @psalm-check-type-exact $a = array{n: int<11, 13>} */;
+                        return $a["n"];
+                    }',
+            ],
+            'doWhileIntRangeShiftedByEveryIterationIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $i = 0;
+                        do {
+                            $i = $i + rand(1, 3);
+                        } while ($i <= 10);
+                        /** @psalm-check-type-exact $i = int<11, 13> */;
+                        return $i;
+                    }',
+            ],
+            'doWhileTrueVariableIsWhatTheBreaksLeave' => [
+                'code' => '<?php
+                    function f(): void {
+                        do {
+                            $x = rand(0, 1) ? "s" : null;
+                            if ($x === null) {
+                                continue;
+                            }
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        } while (true);
+                        /** @psalm-check-type-exact $x = "s" */;
+                    }',
+            ],
             'doWhileConditionOnUnsetPropertyIsNotRedundant' => [
                 'code' => '<?php
                     class Options {
@@ -106,7 +164,7 @@ final class DoTest extends TestCase
                     '$a' => 'bool',
                 ],
             ],
-            'SKIPPED-doWhileVarWithPossibleBreakThatSetsToTrue' => [
+            'SKIPPED-doWhileVarWithPossibleBreakThatSetsToTrue' => [ // #13757
                 'code' => '<?php
                     $a = false;
                     $b = false;
@@ -574,6 +632,210 @@ final class DoTest extends TestCase
                         $i++;
                     } while ($i < 10);',
             ],
+            'doWhileBodyWithoutAssignmentRunsBeforeTheCondition' => [
+                'code' => '<?php
+                    function f(?int $a): void {
+                        do {
+                            if ($a === null) {
+                                echo "null";
+                            }
+                        } while ($a !== null && rand(0, 1) > 5);
+                    }',
+            ],
+            'doWhileBodyWithoutAssignmentThenNegatedCondition' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? null : rand();
+                    do {
+                        echo (string) $a;
+                    } while ($a === null);
+                    $b = rand(0, 1) ? null : rand(0, 10);
+                    do {
+                        echo (string) $b;
+                    } while ($b !== null && $b > 5);',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int<0, 5>|null',
+                ],
+            ],
+            'doWhileConditionOnMixedOffsetSaysNothingOnceNegated' => [
+                'code' => '<?php
+                    /** @var mixed $m */
+                    $m = json_decode("[]");
+                    $a = rand(0, 1) ? null : rand();
+                    do {
+                        echo "";
+                    } while ($a !== null && $m["x"]);
+                    /** @var mixed $n */
+                    $n = json_decode("[]");
+                    $b = rand(0, 1) ? null : rand();
+                    do {
+                        $b = $b;
+                    } while ($b !== null && $n["x"]);',
+                'assertions' => [
+                    '$a===' => 'int|null',
+                    '$b===' => 'int|null',
+                ],
+                'ignored_issues' => ['MixedArrayAccess'],
+            ],
+            'doWhileBodyThatAlwaysBreaksNeverEvaluatesTheCondition' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        do {
+                            $s = null;
+                            break;
+                        } while (strlen($s) === 2);
+                    }',
+            ],
+            'doWhileWithContinueIsLeftWhenItsConditionIsFalse' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? null : rand();
+                    do {
+                        if (rand(0, 1)) {
+                            continue;
+                        }
+                        echo "";
+                    } while ($a === null);
+                    $b = null;
+                    do {
+                        if (rand(0, 1)) {
+                            $b = 5;
+                            continue;
+                        }
+                        $b = null;
+                    } while ($b === null);',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => '5',
+                ],
+            ],
+            'doWhileVarAssignedBeforeContinueIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function f(): void {
+                        do {
+                            if (rand(0, 1)) { $z = 1; continue; }
+                            $z = 2;
+                        } while (rand(0, 1));
+                        echo $z;
+                    }',
+            ],
+            'doWhileVarAssignedBeforeContinueAndAtTheEndOfTheBody' => [
+                'code' => '<?php
+                    do {
+                        if (rand(0, 1)) {
+                            $z = 1;
+                            continue;
+                        }
+                        $z = 2;
+                    } while (rand(0, 1));',
+                'assertions' => [
+                    '$z===' => '1|2',
+                ],
+            ],
+            'doWhileVarAssignedBeforeContinue2OfANestedLoop' => [
+                'code' => '<?php
+                    do {
+                        foreach ([1, 2] as $_) {
+                            if (rand(0, 1)) {
+                                $z = 1;
+                                continue 2;
+                            }
+                        }
+                        $z = 2;
+                    } while (rand(0, 1));',
+                'assertions' => [
+                    '$z===' => '1|2',
+                ],
+            ],
+            'doWhileVarAssignedBeforeContinueIsNarrowedByTheCondition' => [
+                'code' => '<?php
+                    do {
+                        if (rand(0, 1)) {
+                            $z = null;
+                            continue;
+                        }
+                        $z = 2;
+                    } while ($z === null);',
+                'assertions' => [
+                    '$z===' => '2',
+                ],
+            ],
+            'doWhileInALoopVarAssignedBeforeContinue' => [
+                'code' => '<?php
+                    function f(): int {
+                        $sum = 0;
+                        foreach ([1, 2] as $_) {
+                            do {
+                                if (rand(0, 1)) {
+                                    $z = 1;
+                                    continue;
+                                }
+                                $z = 2;
+                            } while (rand(0, 1));
+
+                            $sum += $z;
+                        }
+
+                        return $sum;
+                    }',
+            ],
+            'doWhileVarPossiblyDefinedBeforeIsAssignedBeforeContinue' => [
+                'code' => '<?php
+                    function f(): int {
+                        if (rand(0, 1)) {
+                            $z = 0;
+                        }
+                        do {
+                            if (rand(0, 1)) {
+                                $z = 1;
+                                continue;
+                            }
+                            $z = 2;
+                        } while (rand(0, 1));
+
+                        return $z;
+                    }',
+            ],
+            'doWhilePropertyNotAssignedBeforeOneOfTheContinuesKeepsItsType' => [
+                'code' => '<?php
+                    final class C {
+                        public ?int $p = null;
+                    }
+
+                    function f(C $c): void {
+                        do {
+                            if (rand(0, 1)) {
+                                $c->p = 1;
+                                continue;
+                            }
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $c->p = 2;
+                        } while (rand(0, 1));
+
+                        if ($c->p === null) {
+                            echo "null";
+                        }
+                    }',
+            ],
+            'doWhilePropertyAssignedBeforeContinueAndAtTheEndOfTheBody' => [
+                'code' => '<?php
+                    final class C {
+                        public ?int $p = null;
+                    }
+
+                    function f(C $c): int {
+                        do {
+                            if (rand(0, 1)) {
+                                $c->p = 1;
+                                continue;
+                            }
+                            $c->p = 2;
+                        } while (rand(0, 1));
+
+                        return $c->p;
+                    }',
+            ],
         ];
     }
 
@@ -584,6 +846,100 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'doWhilePropertyFetchOnAVariableNullOnlyInTheFirstIteration' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public string $p = "";
+                    }
+
+                    function f(): void {
+                        $a = null;
+                        do {
+                            echo $a->p;
+                            $a = new A();
+                        } while (rand(0, 1));
+                    }
+                    PHP,
+                'error_message' => 'PossiblyNullPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:14',
+            ],
+            'doWhileAnonymousClassPropertyNotSetInConstructor' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        do {
+                            $o = new class {
+                                public int $p;
+                                public function __construct() {}
+                            };
+                            echo $o->p;
+                        } while (rand(0, 1));
+                    }
+
+                    function g(): void {
+                        $a = null;
+                        do {
+                            echo $a?->p;
+                            $a = new A();
+                        } while (rand(0, 1));
+                    }
+
+                    final class A {
+                        public string $p = "";
+                    }
+                    PHP,
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:24',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'doWhileReadBeforeTheAssignmentInTheBody' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        do {
+                            if (rand(0, 1)) {
+                                echo $w;
+                            }
+                            $w = 1;
+                        } while (rand(0, 1));
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:18',
+            ],
+            'doWhileBodyIssueIsReported' => [
+                'code' => '<?php
+                    $i = 0;
+                    do {
+                        echo $undefined;
+                        $i++;
+                    } while ($i < 3);',
+                'error_message' => 'Cannot find referenced variable $undefined in global scope',
+            ],
+            'doWhileBodyIssueInAFunctionIsReported' => [
+                'code' => '<?php
+                    function f(): void {
+                        $i = 0;
+                        do {
+                            echo $undefined;
+                            $i++;
+                        } while ($i < 3);
+                    }',
+                'error_message' => 'Cannot find referenced variable $undefined',
+            ],
+            'doWhileReadBeforeAReferenceAssignment' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $arr): void {
+                        do {
+                            if (rand(0, 1)) {
+                                echo $r;
+                            }
+                            $r = &$arr[rand(0, 9)];
+                        } while (rand(0, 1));
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:18',
+            ],
             'doWhileBreakBeforeDefinition' => [
                 'code' => <<<'PHP'
                     <?php
@@ -656,7 +1012,7 @@ final class DoTest extends TestCase
                     echo $a;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
             ],
-            'SKIPPED-doWhileVarWithPossibleContinueWithoutDefining' => [
+            'doWhileVarWithPossibleContinueWithoutDefining' => [
                 'code' => '<?php
                     do {
                         if (rand(0, 1)) {
@@ -676,6 +1032,140 @@ final class DoTest extends TestCase
                     } while (rand(0, 1));',
                 'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Possibly undefined ' .
                     'global variable $array, first seen on line 3',
+            ],
+            'doWhileVarNotAssignedBeforeContinue' => [
+                'code' => '<?php
+                    function f(): int {
+                        do {
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $z = 2;
+                        } while (rand(0, 1));
+
+                        return $z;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'doWhileVarPossiblyAssignedBeforeContinue' => [
+                'code' => '<?php
+                    function f(): int {
+                        do {
+                            if (rand(0, 1)) {
+                                if (rand(0, 1)) {
+                                    $z = 1;
+                                }
+                                continue;
+                            }
+                            $z = 2;
+                        } while (rand(0, 1));
+
+                        return $z;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'doWhileVarNotAssignedBeforeOneOfTheContinues' => [
+                'code' => '<?php
+                    function f(): int {
+                        do {
+                            if (rand(0, 1)) {
+                                $z = 1;
+                                continue;
+                            }
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $z = 2;
+                        } while (rand(0, 1));
+
+                        return $z;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'doWhileVarUnsetByFinallyAfterContinue' => [
+                'code' => '<?php
+                    function f(): int {
+                        do {
+                            try {
+                                if (rand(0, 1)) {
+                                    $z = 1;
+                                    continue;
+                                }
+                                $z = 2;
+                            } finally {
+                                unset($z);
+                            }
+                        } while (rand(0, 1));
+
+                        return $z;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'doWhileVarNotAssignedBeforeContinue2OfANestedLoop' => [
+                'code' => '<?php
+                    function f(): int {
+                        do {
+                            foreach ([1, 2] as $_) {
+                                if (rand(0, 1)) {
+                                    continue 2;
+                                }
+                            }
+                            $z = 2;
+                        } while (rand(0, 1));
+
+                        return $z;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'doWhileInALoopVarNotAssignedBeforeContinue' => [
+                'code' => '<?php
+                    function f(): int {
+                        $sum = 0;
+                        foreach ([1, 2] as $_) {
+                            do {
+                                if (rand(0, 1)) {
+                                    continue;
+                                }
+                                $z = 2;
+                            } while (rand(0, 1));
+
+                            $sum += $z;
+                        }
+
+                        return $sum;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'doWhileVarPossiblyDefinedBeforeIsNotAssignedBeforeContinue' => [
+                'code' => '<?php
+                    function f(): int {
+                        if (rand(0, 1)) {
+                            $z = 0;
+                        }
+                        do {
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $z = 2;
+                        } while (rand(0, 1));
+
+                        return $z;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'doWhileVarOnlyAssignedBeforeContinue' => [
+                'code' => '<?php
+                    function f(): int {
+                        do {
+                            if (rand(0, 1)) {
+                                $z = 1;
+                                continue;
+                            }
+                        } while (rand(0, 1));
+
+                        return $z;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }
