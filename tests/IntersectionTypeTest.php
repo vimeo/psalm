@@ -382,6 +382,107 @@ final class IntersectionTypeTest extends TestCase
                 'ignored_issues' => ['MixedReturnTypeCoercion'],
                 'php_version' => '8.0',
             ],
+            'templateOfThePropertyOfAShapeIntersectedWithAClassIsInferred' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param object{value: T}&stdClass $o
+                     * @return T
+                     */
+                    function value(object $o): mixed {
+                        return $o->value;
+                    }
+
+                    $value = value((object) ["value" => 1]);',
+                'assertions' => [
+                    '$value===' => '1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templatedPropertyOfAShapeIntersectedWithAClassKeepsItsTemplate' => [
+                'code' => '<?php
+                    class Box {}
+
+                    /**
+                     * @template T
+                     * @param object{value: T}&Box $box
+                     * @return T
+                     */
+                    function value(object $box): mixed {
+                        return $box->value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'shapesOfATemplateAndOfItsShapeIntersectionAreMerged' => [
+                'code' => '<?php
+                    final class Card {}
+
+                    /**
+                     * @template T of object
+                     * @param T $card
+                     * @return T&Card&object{brand: string}
+                     */
+                    function withBrand(object $card): object {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T of object
+                     * @param T $card
+                     * @return T&object{last4: string}
+                     */
+                    function withStringLast4(object $card): object {
+                        throw new RuntimeException();
+                    }
+
+                    /** @return Card&object{last4: string} */
+                    function card(): object {
+                        throw new RuntimeException();
+                    }
+
+                    /** @return Card&object{last4: string|int} */
+                    function cardWithAnyLast4(): object {
+                        throw new RuntimeException();
+                    }
+
+                    $branded = withBrand(card());
+                    $narrowed = withStringLast4(cardWithAnyLast4());',
+                'assertions' => [
+                    '$branded===' => 'Card&object{brand:string, last4:string}',
+                    '$narrowed===' => 'Card&object{last4:string}',
+                ],
+            ],
+            'narrowedPropertyOfAShapeIntersectedWithAClassNarrowsTheObject' => [
+                'code' => '<?php
+                    class Card {}
+
+                    /** @param object{last4: string} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param Card&object{last4: string|int} $card */
+                    function test(object $card): void {
+                        if (is_string($card->last4)) {
+                            takesShape($card);
+                        }
+                    }',
+            ],
+            'propertyMissingFromTheShapeOfAnIntersectionIsDeclaredByItsClass' => [
+                'code' => '<?php
+                    class Card {
+                        public string $brand = "visa";
+                    }
+
+                    /** @param object{brand: string} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param Card&object{last4: string} $card */
+                    function test(object $card): void {
+                        takesShape($card);
+                    }',
+            ],
             'intersectionElementOfAnArrayKeepsItsInterfacesInAnArrayMapClosure' => [
                 'code' => '<?php
                     interface A {}
@@ -961,6 +1062,29 @@ final class IntersectionTypeTest extends TestCase
                 'error_message' => 'InvalidPropertyAssignmentValue',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'shapeIntersectionMatchedByNeitherItsShapeNorItsClassIsInvalid' => [
+                'code' => '<?php
+                    class Card {
+                        public string $brand = "visa";
+                    }
+
+                    /** @param object{brand: string, last4: string} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param Card&object{brand: mixed} $card */
+                    function test(object $card): void {
+                        takesShape($card);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'objectCastIsNotAnArgumentOfAShapeWithAnotherPropertyType' => [
+                'code' => '<?php
+                    /** @param object{a: string} $shape */
+                    function takesShape(object $shape): void {}
+
+                    takesShape((object) ["a" => 1]);',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

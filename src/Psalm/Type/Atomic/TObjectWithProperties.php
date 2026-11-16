@@ -7,6 +7,7 @@ namespace Psalm\Type\Atomic;
 use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -248,14 +249,10 @@ final class TObjectWithProperties extends TObject
     ): self {
         $properties = [];
 
-        foreach ($this->properties as $offset => $property) {
-            $input_type_param = null;
+        $input_shape = $input_type ? ObjectShapeIntersection::getShape($input_type) : null;
 
-            if ($input_type instanceof TObjectWithProperties
-                && isset($input_type->properties[$offset])
-            ) {
-                $input_type_param = $input_type->properties[$offset];
-            }
+        foreach ($this->properties as $offset => $property) {
+            $input_type_param = $input_shape->properties[$offset] ?? null;
 
             $properties[$offset] = TemplateStandinTypeReplacer::replace(
                 $property,

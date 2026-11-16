@@ -602,6 +602,16 @@ final class TemplateStandinTypeReplacer
                 continue;
             }
 
+            // `Foo&object{a: T}` takes a `Foo` intersected with anything
+            if ($base_type instanceof TNamedObject
+                && $base_type->extra_types
+                && $atomic_input_type instanceof TNamedObject
+                && strtolower($atomic_input_type->value) === strtolower($base_type->value)
+            ) {
+                $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
+                continue;
+            }
+
             if ($atomic_input_type instanceof TClosure && $base_type instanceof TClosure) {
                 $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
                 continue;
@@ -1042,9 +1052,7 @@ final class TemplateStandinTypeReplacer
                     || $t instanceof TObjectWithProperties
                 ) {
                     if ($extra_types) {
-                        $t = ObjectShapeIntersection::classFirst(
-                            $t->setIntersectionTypes([...$t->getIntersectionTypes(), ...$extra_types]),
-                        );
+                        $t = ObjectShapeIntersection::intersect([$t, ...array_values($extra_types)]);
                     }
                 } elseif ($t instanceof TObject && $extra_types) {
                     $t = reset($extra_types)->setIntersectionTypes(array_slice($extra_types, 1));

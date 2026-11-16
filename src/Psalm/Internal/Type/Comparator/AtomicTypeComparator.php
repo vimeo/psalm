@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\Capabilities;
@@ -872,50 +873,50 @@ final class AtomicTypeComparator
         if ($container_type_part instanceof TObject
             && $input_type_part instanceof TNamedObject
         ) {
-            // `Foo&object{a: int}` is the shape too
-            $input_shapes = [];
-
-            if ($container_type_part instanceof TObjectWithProperties) {
-                foreach ($input_type_part->extra_types as $extra_type) {
-                    if ($extra_type instanceof TObjectWithProperties) {
-                        $input_shapes[] = $extra_type;
-                    }
-                }
+            if (!$container_type_part instanceof TObjectWithProperties) {
+                return true;
             }
 
-            foreach ($input_shapes as $input_shape) {
-                if (self::isContainedBy(
+            // `Foo&object{a: int}` has the properties of its shape too
+            $input_shape = ObjectShapeIntersection::getShape($input_type_part);
+
+            if ($input_type_part->value === 'stdClass') {
+                return $input_shape === null || self::isContainedBy(
                     $codebase,
                     $input_shape,
                     $container_type_part,
                     $allow_interface_equality,
                     $allow_float_int_equality,
                     $atomic_comparison_result,
-                )) {
-                    return true;
-                }
+                );
             }
 
-            if ($container_type_part instanceof TObjectWithProperties
-                && $input_type_part->value === 'stdClass'
-                && $input_shapes !== []
-            ) {
-                return false;
-            }
-
-            if ($container_type_part instanceof TObjectWithProperties
-                && $input_type_part->value !== 'stdClass'
-            ) {
-                return KeyedArrayComparator::isContainedByObjectWithProperties(
+            // the class's properties can match where its shape doesn't, so the comparison of the shape mustn't
+            // leave its flags in the result before that
+            if ($input_shape !== null && self::isContainedBy(
+                $codebase,
+                $input_shape,
+                $container_type_part,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+            )) {
+                return self::isContainedBy(
                     $codebase,
-                    $input_type_part,
+                    $input_shape,
                     $container_type_part,
                     $allow_interface_equality,
+                    $allow_float_int_equality,
                     $atomic_comparison_result,
                 );
             }
 
-            return true;
+            return KeyedArrayComparator::isContainedByObjectWithProperties(
+                $codebase,
+                $input_type_part,
+                $container_type_part,
+                $allow_interface_equality,
+                $atomic_comparison_result,
+            );
         }
 
         if ($container_type_part instanceof TNamedObject

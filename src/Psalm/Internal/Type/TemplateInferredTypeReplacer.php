@@ -39,7 +39,6 @@ use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_merge;
 use function array_shift;
 use function array_values;
 use function assert;
@@ -328,12 +327,11 @@ final class TemplateInferredTypeReplacer
                         || $atomic_template_type instanceof TIterable
                         || $atomic_template_type instanceof TObjectWithProperties
                     ) {
-                        $types []= ObjectShapeIntersection::classFirst(
-                            $atomic_template_type->setIntersectionTypes(array_merge(
-                                $atomic_type->extra_types,
-                                $atomic_template_type->extra_types,
-                            )),
-                        );
+                        $types []= ObjectShapeIntersection::intersect([
+                            $atomic_template_type->setIntersectionTypes([]),
+                            ...array_values($atomic_type->extra_types),
+                            ...array_values($atomic_template_type->extra_types),
+                        ]);
                     } elseif ($atomic_template_type instanceof TObject) {
                         $first_atomic_type = array_shift($atomic_type->extra_types);
                         assert($first_atomic_type !== null);

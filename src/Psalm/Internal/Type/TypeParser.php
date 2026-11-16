@@ -1690,9 +1690,7 @@ final class TypeParser
 
         if ($keyed_intersection_types) {
             /** @var non-empty-array<string,TIterable|TNamedObject|TCallableObject|TTemplateParam|TObjectWithProperties> $keyed_intersection_types */
-            return ObjectShapeIntersection::classFirst(
-                $first_type->setIntersectionTypes($keyed_intersection_types),
-            );
+            return ObjectShapeIntersection::intersect([$first_type, ...array_values($keyed_intersection_types)]);
         }
 
         return $first_type;
