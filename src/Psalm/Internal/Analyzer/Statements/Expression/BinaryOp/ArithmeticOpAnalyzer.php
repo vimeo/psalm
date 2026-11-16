@@ -59,6 +59,7 @@ use function floor;
 use function is_array;
 use function is_int;
 use function is_numeric;
+use function is_string;
 use function max;
 use function min;
 use function preg_match;
@@ -889,6 +890,11 @@ final class ArithmeticOpAnalyzer
             if ($left_type_part instanceof TInt && $right_type_part instanceof TInt) {
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
                     $result_type = new Union([new TInt(), new TFloat()]);
+                } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Pow
+                    && $right_type_part instanceof TLiteralInt
+                    && $right_type_part->value < 0
+                ) {
+                    $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
                 } else {
                     $left_is_positive = ($left_type_part instanceof TLiteralInt && $left_type_part->value > 0)
                         || ($left_type_part instanceof TIntRange && $left_type_part->isPositive());
@@ -1206,26 +1212,46 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
-     * What a loop can change: any variable, an item or property of one the loop assigns or passes to a call, and
-     * what is computed from them (`$a ?? 0`, `max($a, 0)`)
+     * What a loop can change: an operand that is a variable, an item or property of a variable the loop assigns or
+     * passes to a call, and what is computed from those or from a variable the loop assigns (`$a ?? 0`,
+     * `max($a, 0)`). What only selects between values (the condition of `$a ? 1 : 2`) doesn't count.
      */
-    private static function isChangeableByLoop(PhpParser\Node $expr, ?Context $context): bool
+    private static function isChangeableByLoop(PhpParser\Node $expr, ?Context $context, bool $is_operand = true): bool
     {
         if ($expr instanceof PhpParser\Node\Expr\Variable) {
-            return true;
+            return $is_operand
+                || !is_string($expr->name)
+                || $context?->loop_scope === null
+                || isset($context->loop_scope->assigned_root_var_ids['$' . $expr->name]);
         }
 
         if (!$expr instanceof PhpParser\Node\Expr\ArrayDimFetch
             && !$expr instanceof PhpParser\Node\Expr\PropertyFetch
             && !$expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
         ) {
+            $selector = null;
+
+            if ($expr instanceof PhpParser\Node\Expr\Match_
+                || ($expr instanceof PhpParser\Node\Expr\Ternary && $expr->if !== null)
+            ) {
+                $selector = 'cond';
+            } elseif ($expr instanceof PhpParser\Node\MatchArm) {
+                $selector = 'conds';
+            }
+
             foreach ($expr->getSubNodeNames() as $sub_node_name) {
+                if ($sub_node_name === $selector) {
+                    continue;
+                }
+
                 /** @var mixed $sub_nodes */
                 $sub_nodes = $expr->$sub_node_name;
 
                 /** @var mixed $sub_node */
                 foreach (is_array($sub_nodes) ? $sub_nodes : [$sub_nodes] as $sub_node) {
-                    if ($sub_node instanceof PhpParser\Node && self::isChangeableByLoop($sub_node, $context)) {
+                    if ($sub_node instanceof PhpParser\Node
+                        && self::isChangeableByLoop($sub_node, $context, false)
+                    ) {
                         return true;
                     }
                 }

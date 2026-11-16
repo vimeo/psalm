@@ -346,6 +346,48 @@ final class ForeachTest extends TestCase
                         }
                     }',
             ],
+            'foreachLiteralsSelectedByWhatTheLoopChangesAreStillAdded' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): void {
+                        $flag = false;
+                        foreach ($words as $word) {
+                            $a = ($flag ? 2 : 3) + 1;
+                            /** @psalm-check-type-exact $a = 3|4 */;
+                            $b = match (true) {
+                                $flag => 1,
+                                default => 2,
+                            } + 1;
+                            /** @psalm-check-type-exact $b = 2|3 */;
+                            $flag = $word === "x";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'foreachLiteralsComputedFromAVariableTheLoopDoesNotAssignAreStillAdded' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words, bool $flag): void {
+                        foreach ($words as $_) {
+                            $a = (int) $flag + 1;
+                            /** @psalm-check-type-exact $a = 1|2 */;
+                        }
+                    }',
+            ],
+            'foreachPowerOfAnExponentTheLoopChangesIsAFloatForANegativeLiteral' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): void {
+                        $exponent = null;
+                        foreach ($words as $_) {
+                            $a = 2 ** ($exponent ?? -1);
+                            /** @psalm-check-type-exact $a = float|int<1, max> */;
+                            $exponent = 1;
+                        }
+                    }',
+            ],
             'mixedIteratedByForeachIsNonEmptyInTheBodyAndMixedAfterIt' => [
                 'code' => '<?php
                     function getMixed(): mixed {
@@ -2704,6 +2746,20 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'foreachLiteralSelectedByAComparisonOfItselfStaysAUnionOfLiterals' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $words */
+                    function f(array $words): int {
+                        $a = 0;
+                        foreach ($words as $_) {
+                            $a = ($a > 5 ? 1 : 2) + 1;
+                        }
+                        return $a;
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:15',
+            ],
             'foreachReadBeforeAReferenceAssignment' => [
                 'code' => <<<'PHP'
                     <?php
