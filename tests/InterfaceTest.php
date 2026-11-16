@@ -975,6 +975,57 @@ final class InterfaceTest extends TestCase
                         }
                     }',
             ],
+            'nativeArrayImplementsInheritedCallable' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return callable */
+                        public function get();
+                    }
+
+                    class C implements I
+                    {
+                        public function get(): array
+                        {
+                            return [$this, "run"];
+                        }
+
+                        public function run(): void {}
+                    }',
+            ],
+            'nativeIntRefinedByInheritedConstantWildcard' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class AbstractLexer {
+                        /** @return T|null */
+                        abstract protected function getType(string $value);
+                    }
+
+                    /** @template-extends AbstractLexer<DocLexer::T_*> */
+                    final class DocLexer extends AbstractLexer {
+                        public const T_NONE = 1;
+                        public const T_INTEGER = 2;
+
+                        protected function getType(string $value): int
+                        {
+                            return self::T_NONE;
+                        }
+                    }',
+            ],
+            'arrayObjectSortMethodsReturnTrue' => [
+                'code' => '<?php
+                    /** @extends ArrayObject<int, int> */
+                    class C extends ArrayObject
+                    {
+                        public function natsort(): bool
+                        {
+                            return true;
+                        }
+                    }
+
+                    $r = (new ArrayObject([2, 1]))->asort();',
+                'assertions' => ['$r===' => 'true'],
+                'ignored_issues' => ['ImmutableDependency'],
+            ],
             'implementStaticReturn' => [
                 'code' => '<?php
                     class A {}

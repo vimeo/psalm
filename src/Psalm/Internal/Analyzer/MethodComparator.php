@@ -1551,6 +1551,12 @@ final class MethodComparator
             false,
             $union_comparison_results,
         )) {
+            // they overlap even where the intersection can't be built (callable-array, a constant wildcard),
+            // and the inherited docblock refines the native type there
+            if ($inherits_return_type && $union_comparison_results->type_coerced) {
+                return;
+            }
+
             // is the declared return type more specific than the inferred one?
             if ($union_comparison_results->type_coerced) {
                 IssueBuffer::maybeAdd(
