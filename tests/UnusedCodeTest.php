@@ -3143,6 +3143,35 @@ final class UnusedCodeTest extends TestCase
 
                     echo test(true);',
             ],
+            'methodOnlyCalledFromPromotedPropertyHook' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __construct(
+                            public string $foo {
+                                set(string $value) {
+                                    $this->foo = self::sanitized($value);
+                                }
+                            }
+                        ) {}
+
+                        protected static function sanitized(string $value): string {
+                            return ucfirst(trim($value));
+                        }
+                    }
+
+                    $foo = new Foo(" foo ");
+                    echo $foo->foo;',
+            ],
+            'privateMethodOnlyCalledFromPropertyHook' => [
+                'code' => '<?php
+                    final class Foo {
+                        public string $name {
+                            get => $this->compute();
+                        }
+                        private function compute(): string { return "a"; }
+                    }
+                    echo (new Foo())->name;',
+            ],
         ];
     }
 

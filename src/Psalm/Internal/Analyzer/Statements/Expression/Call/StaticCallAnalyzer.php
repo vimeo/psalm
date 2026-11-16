@@ -25,6 +25,7 @@ use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\IssueBuffer;
@@ -53,6 +54,10 @@ final class StaticCallAnalyzer extends CallAnalyzer
     ): bool {
         NullsafeChainState::reset($stmt);
         MethodCallPurityAnalyzer::resetReturnsThis($stmt);
+
+        if (self::analyzeParentPropertyHookCall($statements_analyzer, $stmt, $context)) {
+            return true;
+        }
 
         $method_id = null;
 
@@ -372,6 +377,76 @@ final class StaticCallAnalyzer extends CallAnalyzer
         if (!$statements_analyzer->node_data->getType($stmt)) {
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
         }
+
+        return true;
+    }
+
+    /**
+     * `parent::$property::get()` and `parent::$property::set($value)`, in a hook of that property, run the hook
+     * of the parent class, or read and write the property where it has none.
+     */
+    private static function analyzeParentPropertyHookCall(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\StaticCall $stmt,
+        Context $context,
+    ): bool {
+        $property_fetch = $stmt->class;
+
+        if (!$property_fetch instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            || !$property_fetch->class instanceof PhpParser\Node\Name
+            || $property_fetch->class->toLowerString() !== 'parent'
+            || !$property_fetch->name instanceof PhpParser\Node\VarLikeIdentifier
+            || !$stmt->name instanceof PhpParser\Node\Identifier
+            || $stmt->isFirstClassCallable()
+            || !isset($context->vars_in_scope['$this'])
+        ) {
+            return false;
+        }
+
+        $parent_fq_class_name = $statements_analyzer->getParentFQCLN();
+
+        if ($parent_fq_class_name === null) {
+            return false;
+        }
+
+        $hook_name = $stmt->name->toLowerString();
+
+        if ($hook_name !== 'get' && $hook_name !== 'set') {
+            return false;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $property_id = $parent_fq_class_name . '::$' . $property_fetch->name->name;
+        $is_get = $hook_name === 'get';
+
+        if (!$codebase->properties->propertyExists($codebase, $property_id, $is_get, $statements_analyzer, $context)) {
+            return false;
+        }
+
+        foreach ($stmt->getArgs() as $arg) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
+                return false;
+            }
+        }
+
+        $property_type = $is_get
+            ? $codebase->properties->getPropertyType($property_id, false, $statements_analyzer, $context)
+            : null;
+
+        $statements_analyzer->node_data->setType(
+            $stmt,
+            $is_get
+                ? ($property_type !== null
+                    ? TypeExpander::expandUnion(
+                        $codebase,
+                        $property_type,
+                        $parent_fq_class_name,
+                        $context->self,
+                        $parent_fq_class_name,
+                    )
+                    : Type::getMixed())
+                : Type::getVoid(),
+        );
 
         return true;
     }

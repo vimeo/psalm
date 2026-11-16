@@ -70,13 +70,18 @@ use Psalm\Issue\UndefinedTrait;
 use Psalm\Issue\UnimplementedAbstractMethod;
 use Psalm\Issue\UnimplementedInterfaceMethod;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualAssign;
+use Psalm\Node\Expr\VirtualClosure;
+use Psalm\Node\Expr\VirtualPropertyFetch;
 use Psalm\Node\Expr\VirtualStaticCall;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\Stmt\VirtualClassMethod;
 use Psalm\Node\Stmt\VirtualExpression;
+use Psalm\Node\Stmt\VirtualReturn;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
+use Psalm\Node\VirtualParam;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeAnalysisEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\Capabilities;
@@ -108,6 +113,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_string;
 use function preg_match;
 use function preg_replace;
 use function reset;
@@ -124,6 +130,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     private static array $anonymous_classes_in_analysis = [];
     /** Set on the call of the constructor that stands for it when the initialization of properties is checked */
     public const FAKE_CONSTRUCTOR_CALL_ATTRIBUTE = 'fake_constructor_call';
+
+    public const PROPERTY_HOOK_ATTRIBUTE = 'psalm-property-hook';
 
     /**
      * @var array<string, Union>
@@ -614,6 +622,15 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         foreach ($class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Property) {
                 $this->analyzeProperty($this, $stmt, $class_context);
+                self::analyzePropertyHooks($this, $stmt->props[0]->name->name, $stmt->hooks, $class_context);
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
+                && $stmt->name->toLowerString() === '__construct'
+            ) {
+                foreach ($stmt->params as $param) {
+                    if ($param->var instanceof PhpParser\Node\Expr\Variable && is_string($param->var->name)) {
+                        self::analyzePropertyHooks($this, $param->var->name, $param->hooks, $class_context);
+                    }
+                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
                     $fq_trait_name = self::getFQCLNFromNameObject(
@@ -658,6 +675,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     foreach ($trait_node->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\Property) {
                             $this->analyzeProperty($trait_analyzer, $trait_stmt, $class_context);
+                            self::analyzePropertyHooks(
+                                $trait_analyzer,
+                                $trait_stmt->props[0]->name->name,
+                                $trait_stmt->hooks,
+                                $class_context,
+                            );
                         }
                     }
 
@@ -1880,6 +1903,83 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             ),
             $this->source->getSuppressedIssues() + $property_storage->suppressed_issues,
         );
+    }
+
+    /**
+     * A hook body is analysed as a closure bound to the object: `get` returns a value of the type of the
+     * property, `set` takes `$value`.
+     *
+     * @param array<PhpParser\Node\PropertyHook> $hooks
+     */
+    private static function analyzePropertyHooks(
+        SourceAnalyzer $source,
+        string $property_name,
+        array $hooks,
+        Context $class_context,
+    ): void {
+        if (!$hooks) {
+            return;
+        }
+
+        $source_storage = $source->getCodebase()->classlike_storage_provider->get((string) $source->getFQCLN());
+        $suppressed_issues = $source_storage->properties[$property_name]->suppressed_issues ?? [];
+
+        foreach ($hooks as $hook) {
+            $hook_name = $hook->name->toLowerString();
+
+            if ($hook->body === null || ($hook_name !== 'get' && $hook_name !== 'set')) {
+                continue;
+            }
+
+            $params = $hook->params;
+
+            if ($hook_name === 'set' && !$params) {
+                $params = [new VirtualParam(new VirtualVariable('value', $hook->name->getAttributes()))];
+            }
+
+            if ($hook->body instanceof PhpParser\Node\Expr) {
+                $body_attributes = $hook->body->getAttributes();
+
+                $stmts = $hook_name === 'get'
+                    ? [new VirtualReturn($hook->body, $body_attributes)]
+                    : [
+                        new VirtualExpression(
+                            new VirtualAssign(
+                                new VirtualPropertyFetch(
+                                    new VirtualVariable('this', $body_attributes),
+                                    new VirtualIdentifier($property_name, $body_attributes),
+                                    $body_attributes,
+                                ),
+                                $hook->body,
+                                $body_attributes,
+                            ),
+                            $body_attributes,
+                        ),
+                    ];
+            } else {
+                $stmts = $hook->body;
+            }
+
+            $closure = new VirtualClosure(
+                [
+                    'byRef' => $hook->byRef,
+                    'params' => $params,
+                    'stmts' => $stmts,
+                    'attrGroups' => $hook->attrGroups,
+                ],
+                $hook->getAttributes(),
+            );
+
+            $closure->setAttribute(
+                self::PROPERTY_HOOK_ATTRIBUTE,
+                $class_context->self . '::$' . $property_name . '::' . $hook_name,
+            );
+
+            $statements_analyzer = new StatementsAnalyzer($source, new NodeDataProvider(), true);
+            $statements_analyzer->addSuppressedIssues($suppressed_issues);
+
+            ClosureAnalyzer::analyzeExpression($statements_analyzer, $closure, clone $class_context);
+        }
     }
 
     private static function addOrUpdatePropertyType(

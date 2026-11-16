@@ -162,6 +162,10 @@ final class FunctionLikeNodeScanner
             $is_functionlike_override,
         );
 
+        if ($stmt instanceof PhpParser\Node\PropertyHook) {
+            $this->addPropertyTypeToHook($stmt, $storage);
+        }
+
         if ($stmt instanceof PhpParser\Node\Stmt\Function_
             || $stmt instanceof PhpParser\Node\Stmt\ClassMethod
         ) {
@@ -1108,6 +1112,44 @@ final class FunctionLikeNodeScanner
      *     bool
      * }|false
      */
+    /**
+     * A hook has no signature of its own: `get` returns a value of the type of the property, and `set` without
+     * a parameter list takes a `$value` of that type.
+     */
+    private function addPropertyTypeToHook(PhpParser\Node\PropertyHook $hook, FunctionLikeStorage $storage): void
+    {
+        /** @var mixed $property_name */
+        $property_name = $hook->getAttribute('propertyName');
+        $property_storage = is_string($property_name)
+            ? $this->classlike_storage?->properties[$property_name] ?? null
+            : null;
+
+        if ($hook->name->toLowerString() === 'get') {
+            $storage->return_type = $property_storage->type ?? Type::getMixed();
+            $storage->return_type_location = $property_storage?->type_location;
+            $storage->signature_return_type = $property_storage?->signature_type;
+            $storage->signature_return_type_location = $property_storage?->signature_type_location;
+
+            return;
+        }
+
+        $storage->return_type = Type::getVoid();
+
+        if (!$hook->params) {
+            $storage->setParams([
+                new FunctionLikeParameter(
+                    'value',
+                    false,
+                    $property_storage->type ?? Type::getMixed(),
+                    $property_storage?->signature_type,
+                    null,
+                    null,
+                    false,
+                ),
+            ]);
+        }
+    }
+
     private function createStorageForFunctionLike(
         PhpParser\Node\FunctionLike $stmt,
         bool $fake_method
@@ -1364,9 +1406,10 @@ final class FunctionLikeNodeScanner
                 }
             }
         } elseif ($stmt instanceof PhpParser\Node\PropertyHook) {
+            // a hook body is analysed as a closure bound to the object, see ClassAnalyzer::analyzePropertyHooks()
             $function_id = $cased_function_id = strtolower($this->file_path)
                 . ':' . $stmt->getLine()
-                . ':' . (int)$stmt->getAttribute('startFilePos') . ':-:hook';
+                . ':' . (int)$stmt->getAttribute('startFilePos') . ':-:closure';
 
             $storage = $this->storage = $this->file_storage->functions[$function_id] = new FunctionStorage();
         } else {
