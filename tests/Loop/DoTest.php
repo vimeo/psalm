@@ -5,9 +5,16 @@ declare(strict_types=1);
 namespace Psalm\Tests\Loop;
 
 use Override;
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
+use function sort;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -879,6 +886,156 @@ final class DoTest extends TestCase
         ];
     }
 
+    private const FIRST_ITERATION_CODE = <<<'PHP'
+        <?php
+        function castFirst(): void {
+            $x = new stdClass();
+            do {
+                echo (string) $x;
+                $x = 'a';
+            } while (rand(0, 1));
+        }
+
+        function callFirst(): void {
+            $x = 5;
+            do {
+                echo $x();
+                $x = static fn(): int => 1;
+            } while (rand(0, 1));
+        }
+
+        /** @param list<string> $l */
+        function offsetFirst(array $l): void {
+            $i = new stdClass();
+            do {
+                echo $l[$i];
+                $i = 0;
+            } while (rand(0, 1));
+        }
+
+        function inANestedDo(): void {
+            $x = new stdClass();
+            do {
+                do {
+                    echo (string) $x;
+                } while (rand(0, 1));
+                $x = 'a';
+            } while (rand(0, 1));
+        }
+
+        function inALoopBody(): void {
+            while (rand(0, 1)) {
+                $x = new stdClass();
+                do {
+                    echo (string) $x;
+                    $x = 'a';
+                } while (rand(0, 1));
+            }
+        }
+
+        function readBeforeTheAssignment(): void {
+            do {
+                if (rand(0, 1)) {
+                    echo $w;
+                }
+                $w = 1;
+            } while (rand(0, 1));
+        }
+
+        /** @param list<string> $existing */
+        function impossibleInTheFirstIteration(array $existing): string {
+            $counter = 0;
+            do {
+                $id = rand(0, 1) . ($counter === 0 ? '' : '-' . (string) $counter);
+                $counter++;
+            } while (in_array($id, $existing, true));
+            return $id;
+        }
+
+        function impossibleInTheFirstIterationAndInvalidLater(): void {
+            $s = null;
+            do {
+                if ($s !== null) {
+                    echo (string) $s;
+                }
+                $s = new stdClass();
+            } while (rand(0, 1));
+        }
+        PHP;
+
+    public function testDoWhileFirstIterationIssuesAreDefinite(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, self::FIRST_ITERATION_CODE);
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                [5, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [13, 'InvalidFunctionCall', 'Cannot treat type 5 as callable'],
+                [
+                    22,
+                    'InvalidArrayOffset',
+                    'Cannot access value on variable $l using a stdClass offset, expecting array-key',
+                ],
+                [31, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [41, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [50, 'PossiblyUndefinedVariable', 'Possibly undefined variable $w, first seen on line 52'],
+                [70, 'InvalidCast', 'stdClass cannot be cast to string'],
+            ],
+            self::getIssues($file_path),
+        );
+    }
+
+    public function testDoWhileFirstIterationIssuesAreReportedWhenPossibleIssuesAreNot(): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        foreach (['PossiblyInvalidCast', 'PossiblyInvalidFunctionCall', 'PossiblyInvalidArrayOffset'] as $issue_type) {
+            $this->testConfig->setCustomErrorLevel($issue_type, Config::REPORT_SUPPRESS);
+        }
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, self::FIRST_ITERATION_CODE);
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                [5, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [13, 'InvalidFunctionCall', 'Cannot treat type 5 as callable'],
+                [
+                    22,
+                    'InvalidArrayOffset',
+                    'Cannot access value on variable $l using a stdClass offset, expecting array-key',
+                ],
+                [31, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [41, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [50, 'PossiblyUndefinedVariable', 'Possibly undefined variable $w, first seen on line 52'],
+                [70, 'InvalidCast', 'stdClass cannot be cast to string'],
+            ],
+            self::getIssues($file_path),
+        );
+    }
+
+    /**
+     * @return list<array{int, string, string}>
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function getIssues(string $file_path): array
+    {
+        $issues = array_map(
+            static fn(IssueData $issue): array => [$issue->line_from, $issue->type, $issue->message],
+            IssueBuffer::getIssuesDataForFile($file_path),
+        );
+
+        sort($issues);
+
+        return $issues;
+    }
+
     /**
      * @psalm-pure
      */
@@ -901,7 +1058,8 @@ final class DoTest extends TestCase
                         } while (rand(0, 1));
                     }
                     PHP,
-                'error_message' => 'PossiblyNullPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:14',
+                'error_message' => 'NullPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:14 - '
+                    . 'Cannot get property on null variable $a',
             ],
             'doWhileAnonymousClassPropertyNotSetInConstructor' => [
                 'code' => <<<'PHP'

@@ -14,6 +14,9 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\LoopScope;
+use Psalm\Issue\CodeIssue;
+use Psalm\Issue\UndefinedGlobalVariable;
+use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\Type\Reconciler;
 use UnexpectedValueException;
@@ -50,7 +53,7 @@ final class DoAnalyzer
         $loop_scope = new LoopScope($do_context, $context);
         $loop_scope->protected_var_ids = $context->protected_var_ids;
 
-        self::analyzeDoNaively($statements_analyzer, $stmt, $do_context, $loop_scope);
+        $first_iteration_issues = self::analyzeDoNaively($statements_analyzer, $stmt, $do_context, $loop_scope);
 
         $mixed_var_ids = [];
 
@@ -60,7 +63,10 @@ final class DoAnalyzer
             }
         }
 
-        if (LoopAnalyzer::analyze(
+        IssueBuffer::startRecording();
+        IssueBuffer::startCollectingRaisedIssues();
+
+        $loop_result = LoopAnalyzer::analyze(
             $statements_analyzer,
             $stmt->stmts,
             WhileAnalyzer::getAndExpressions($stmt->cond),
@@ -69,7 +75,14 @@ final class DoAnalyzer
             $inner_loop_context,
             true,
             true,
-        ) === false) {
+        );
+
+        $loop_issues = IssueBuffer::clearRecordingLevel();
+        IssueBuffer::stopRecording();
+
+        self::reportIssues($first_iteration_issues, $loop_issues, IssueBuffer::stopCollectingRaisedIssues());
+
+        if ($loop_result === false) {
             return false;
         }
 
@@ -191,12 +204,15 @@ final class DoAnalyzer
         return null;
     }
 
+    /**
+     * @return array<int, CodeIssue> the issues of the first iteration
+     */
     private static function analyzeDoNaively(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Do_ $stmt,
         Context $context,
         LoopScope $loop_scope,
-    ): void {
+    ): array {
         $do_context = clone $context;
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
@@ -217,12 +233,11 @@ final class DoAnalyzer
 
         $do_context->loop_scope = $loop_scope;
 
-        // only the types after the body are wanted here: the loop analysis reports what is wrong in it
         IssueBuffer::startRecording();
 
         $statements_analyzer->analyze($stmt->stmts, $do_context);
 
-        IssueBuffer::clearRecordingLevel();
+        $issues = IssueBuffer::clearRecordingLevel();
         IssueBuffer::stopRecording();
 
         if (!isset($suppressed_issues['RedundantCondition'])) {
@@ -236,6 +251,50 @@ final class DoAnalyzer
         }
         if (!isset($suppressed_issues['NoValue'])) {
             $statements_analyzer->removeSuppressedIssues(['NoValue']);
+        }
+
+        return $issues;
+    }
+
+    /**
+     * The body runs once with the types it has before the loop: what the loop analysis finds possibly wrong with the
+     * types of all the iterations is wrong for sure when the first one has it. The other issues of the first
+     * iteration are left to the loop analysis, which also sees what this first pass assumes wrongly (a branch only
+     * impossible in the first iteration, a variable the body defines after reading it, which is possibly undefined).
+     *
+     * @param array<int, CodeIssue> $first_iteration_issues
+     * @param array<int, CodeIssue> $loop_issues
+     * @param array<string, true> $loop_raised_issue_keys the issues the loop analysis raised, reported or not
+     */
+    private static function reportIssues(
+        array $first_iteration_issues,
+        array $loop_issues,
+        array $loop_raised_issue_keys,
+    ): void {
+        $replaced_issue_keys = [];
+        $kept_issues = [];
+
+        foreach ($first_iteration_issues as $issue) {
+            if ($issue instanceof UndefinedVariable || $issue instanceof UndefinedGlobalVariable) {
+                continue;
+            }
+
+            $possible_issue_key = IssueBuffer::getIssueLocationKey('Possibly' . $issue::getIssueType(), $issue);
+
+            if (isset($loop_raised_issue_keys[$possible_issue_key])) {
+                $replaced_issue_keys[$possible_issue_key] = true;
+                $kept_issues[] = $issue;
+            }
+        }
+
+        foreach ($loop_issues as $issue) {
+            if (!isset($replaced_issue_keys[IssueBuffer::getIssueLocationKey($issue::getIssueType(), $issue)])) {
+                IssueBuffer::bubbleUp($issue);
+            }
+        }
+
+        foreach ($kept_issues as $issue) {
+            IssueBuffer::bubbleUp($issue);
         }
     }
 
