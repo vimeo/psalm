@@ -1714,6 +1714,26 @@ final class SwitchTypeTest extends TestCase
                         }
                     }',
             ],
+            'breakInLoopKeepsWhatTheVarWasCheckedForWhenTheCaseChangesItBeforeReturning' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(?int $a, string $s, bool $c, array $l): void {
+                        $b = $a !== null;
+                        foreach ($l as $_) {
+                            switch ($s) {
+                                case "A":
+                                    if ($c) {
+                                        break;
+                                    }
+                                    $a = null;
+                                    return;
+                            }
+                        }
+                        if ($b) {
+                            echo $a + 1;
+                        }
+                    }',
+            ],
             'breakKeepsWhatTheVarWasCheckedForWhenTheCaseChangesItBeforeReturning' => [
                 'code' => '<?php
                     function f(?int $a, string $s, bool $c): void {
@@ -1826,6 +1846,48 @@ final class SwitchTypeTest extends TestCase
                                     break;
                                 }
                                 return;
+                        }
+                        if ($b) {
+                            echo $a + 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+            ],
+            'breakTwoOutOfLoopAfterBreakForgetsWhatTheVarWasCheckedFor' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(?int $a, string $s, bool $c, array $l): void {
+                        $b = $a !== null;
+                        foreach ($l as $_) {
+                            switch ($s) {
+                                case "A":
+                                    if ($c) {
+                                        break;
+                                    }
+                                    $a = null;
+                                    break 2;
+                            }
+                        }
+                        if ($b) {
+                            echo $a + 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+            ],
+            'continueTwoAfterBreakForgetsWhatTheVarWasCheckedFor' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(?int $a, string $s, bool $c, array $l): void {
+                        $b = $a !== null;
+                        foreach ($l as $_) {
+                            switch ($s) {
+                                case "A":
+                                    if ($c) {
+                                        break;
+                                    }
+                                    $a = null;
+                                    continue 2;
+                            }
                         }
                         if ($b) {
                             echo $a + 1;

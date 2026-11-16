@@ -800,6 +800,9 @@ final class LoopAnalyzer
 
         $loop_parent_context->removeClausesOfVarsChangedIn($loop_context);
         $loop_parent_context->removeClausesOfVarsChangedIn($continue_context);
+        // a break or continue out of a nested scope that does not end in the loop body, such as a switch case left
+        // through its breaks, changed these
+        $loop_parent_context->removeClausesOfVarsChangedWith($loop_scope->parent_remove_vars_at_jumps);
 
         if ($inner_do_context) {
             // what the condition throws is thrown by the loop too
