@@ -28,6 +28,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAss
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\StaticPropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -95,6 +96,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -761,7 +763,7 @@ final class AssignmentAnalyzer
                     IssueBuffer::maybeAdd(
                         new ReferenceConstraintViolation(
                             'Variable ' . $var_id . ' is limited to values of type '
-                                . $context->byref_constraints[$var_id]->type
+                                . $outer_constraint_type->getId()
                                 . ' because it is passed by reference, '
                                 . $assign_value_type->getId() . ' type found',
                             new CodeLocation($statements_analyzer->getSource(), $assign_var),
@@ -1563,12 +1565,12 @@ final class AssignmentAnalyzer
                 $context->references_to_external_scope[$lhs_var_id] = true;
             }
 
-            $property_id = null;
+            $property_ids = [];
             $referenced_type = self::getReferencedPropertyType(
                 $statements_analyzer,
                 $stmt->expr,
                 $context,
-                $property_id,
+                $property_ids,
             );
 
             if ($referenced_type === null) {
@@ -1579,13 +1581,30 @@ final class AssignmentAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                 );
             } else {
-                // what is written through the reference is written to the property
-                if (!$referenced_type->hasMixed()) {
-                    $context->byref_constraints[$lhs_var_id] = new ReferenceConstraint($referenced_type);
+                $codebase = $statements_analyzer->getCodebase();
+
+                // binding the reference needs to be able to write the property
+                foreach ($property_ids as $property_id) {
+                    if ($codebase->properties->getStorage($property_id)->hasAsymmetricVisibility()) {
+                        ClassLikeAnalyzer::checkPropertyVisibility(
+                            $property_id,
+                            $context,
+                            $statements_analyzer,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt->expr),
+                            $statements_analyzer->getSuppressedIssues(),
+                            true,
+                            true,
+                        );
+                    }
                 }
 
-                // binding creates the item as null when it is not set (the reference's type only gets null above, for an
-                // item known to be possibly unset, as a read of the item does)
+                // what is written through the reference is written to the property
+                if (!$referenced_type->hasMixed()) {
+                    $context->byref_constraints[$lhs_var_id] = new ReferenceConstraint($referenced_type, false);
+                }
+
+                // binding creates the item as null when it is not set (the reference's type only gets null above,
+                // for an item known to be possibly unset, as a read of the item does)
                 if ($stmt->expr instanceof ArrayDimFetch
                     && ($rhs_possibly_undefined
                         || (!$rhs_was_set && !self::isOffsetSet($statements_analyzer, $stmt->expr)))
@@ -1596,13 +1615,16 @@ final class AssignmentAnalyzer
                                 'Binding a reference to ' . $rhs_var_id . ' creates it as null when it is not set,'
                                     . ' but it is declared as ' . $referenced_type->getId(),
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                $property_id ?? $rhs_var_id,
+                                $property_ids[0] ?? $rhs_var_id,
                             ),
                             $statements_analyzer->getSuppressedIssues(),
                         );
                     }
                 }
             }
+        } elseif (isset($context->byref_constraints[$rhs_var_id])) {
+            // bound to what the other variable is bound to
+            $context->byref_constraints[$lhs_var_id] = $context->byref_constraints[$rhs_var_id];
         }
 
         $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
@@ -1636,21 +1658,22 @@ final class AssignmentAnalyzer
 
     /**
      * The declared type of the property, or of the item of an array a property holds, that $expr fetches: what a
-     * reference to it may hold. Null when such a reference can't be analyzed (a readonly, undeclared or magic property,
-     * an item of something else than an array).
+     * reference to it may hold. Null when such a reference can't be analyzed (a readonly, hooked, undeclared or magic
+     * property, properties of different types of the possible objects, an item of something else than an array).
      *
-     * @param-out ?string $property_id
+     * @param list<string> $property_ids
+     * @param-out list<string> $property_ids
      */
     private static function getReferencedPropertyType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $expr,
         Context $context,
-        ?string &$property_id,
+        array &$property_ids,
     ): ?Union {
         $codebase = $statements_analyzer->getCodebase();
 
         if ($expr instanceof ArrayDimFetch) {
-            $array_type = self::getReferencedPropertyType($statements_analyzer, $expr->var, $context, $property_id);
+            $array_type = self::getReferencedPropertyType($statements_analyzer, $expr->var, $context, $property_ids);
 
             if ($array_type === null) {
                 return null;
@@ -1699,7 +1722,7 @@ final class AssignmentAnalyzer
             }
 
             $property_name = $expr->name->name;
-            $property_types = [];
+            $property_type = null;
 
             foreach ($object_type->getAtomicTypes() as $atomic_type) {
                 if (!$atomic_type instanceof TNamedObject
@@ -1708,21 +1731,25 @@ final class AssignmentAnalyzer
                     return null;
                 }
 
-                $property_type = self::getReferencedDeclaredPropertyType(
+                $object_property_type = self::getReferencedDeclaredPropertyType(
                     $codebase,
                     $atomic_type->value,
                     $property_name,
-                    $property_id,
+                    $atomic_type instanceof TGenericObject ? $atomic_type : null,
+                    $property_ids,
                 );
 
-                if ($property_type === null) {
+                // a write must fit the property of every possible object
+                if ($object_property_type === null
+                    || ($property_type !== null && $object_property_type->getId() !== $property_type->getId())
+                ) {
                     return null;
                 }
 
-                $property_types[] = $property_type;
+                $property_type = $object_property_type;
             }
 
-            return Type::combineUnionTypeArray($property_types, $codebase);
+            return $property_type;
         }
 
         if ($expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
@@ -1753,7 +1780,8 @@ final class AssignmentAnalyzer
                 $codebase,
                 $fq_class_name,
                 $expr->name->name,
-                $property_id,
+                null,
+                $property_ids,
             );
         }
 
@@ -1761,13 +1789,15 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * @param-out ?string $property_id
+     * @param list<string> $property_ids
+     * @param-out list<string> $property_ids
      */
     private static function getReferencedDeclaredPropertyType(
         Codebase $codebase,
         string $fq_class_name,
         string $property_name,
-        ?string &$property_id,
+        ?TGenericObject $receiver,
+        array &$property_ids,
     ): ?Union {
         $declaring_class = $codebase->properties->getDeclaringClassForProperty(
             $fq_class_name . '::$' . $property_name,
@@ -1779,21 +1809,41 @@ final class AssignmentAnalyzer
         }
 
         $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_class);
+        $property_storage = $declaring_class_storage->properties[$property_name] ?? null;
 
-        if (!isset($declaring_class_storage->properties[$property_name])
-            || $declaring_class_storage->properties[$property_name]->readonly
+        // a hook doesn't give a reference to the property
+        if ($property_storage === null
+            || $property_storage->readonly
+            || $property_storage->hook_get !== null
+            || $property_storage->hook_set !== null
         ) {
             return null;
         }
 
-        $property_id ??= $declaring_class . '::$' . $property_name;
+        $property_ids[] = $declaring_class . '::$' . $property_name;
 
-        return InstancePropertyAssignmentAnalyzer::getExpandedPropertyType(
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+        $property_type = InstancePropertyAssignmentAnalyzer::getExpandedPropertyType(
             $codebase,
             $fq_class_name,
             $property_name,
-            $codebase->classlike_storage_provider->get($fq_class_name),
-        ) ?? Type::getMixed();
+            $class_storage,
+        );
+
+        if ($property_type === null) {
+            return Type::getMixed();
+        }
+
+        return $receiver !== null
+            ? AtomicPropertyFetchAnalyzer::localizePropertyType(
+                $codebase,
+                $property_type,
+                $receiver,
+                $class_storage,
+                $declaring_class_storage,
+            )
+            : $property_type;
     }
 
     /**

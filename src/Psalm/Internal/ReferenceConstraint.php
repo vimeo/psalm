@@ -18,12 +18,15 @@ final class ReferenceConstraint
     public ?Union $type = null;
 
     /**
+     * @param bool $widen_literals false for a declared type, whose literals limit what the reference may hold
      * @psalm-capabilities read-props
      * @psalm-suppress ImpureMethodCall only mutates the builder it creates
      */
-    public function __construct(?Union $type = null)
+    public function __construct(?Union $type = null, bool $widen_literals = true)
     {
-        if ($type) {
+        if ($type && !$widen_literals) {
+            $this->type = $type;
+        } elseif ($type) {
             $type = $type->getBuilder();
 
             if ($type->getLiteralStrings()) {

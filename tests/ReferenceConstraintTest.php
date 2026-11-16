@@ -11,6 +11,8 @@ use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ReferenceConstraintTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -481,6 +483,44 @@ final class ReferenceConstraintTest extends TestCase
                         return $count;
                     }',
             ],
+            'referenceToTemplatedPropertyAcceptsTheTypeOfTheObject' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var T */
+                        public $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /** @param Box<int> $box */
+                    function f(Box $box): void {
+                        $x = &$box->value;
+                        $x = 2;
+                    }',
+            ],
+            'referenceToStaticPropertyHoldsItsDeclaredTypeAfterEachCallWritingIt' => [
+                'code' => '<?php
+                    final class A {
+                        public static ?int $n = null;
+
+                        public static function reset(): void {
+                            self::$n = null;
+                        }
+                    }
+
+                    A::$n = 5;
+                    $n = &A::$n;
+                    A::reset();
+                    $n = 1;
+                    A::reset();',
+                'assertions' => [
+                    '$n' => 'int|null',
+                ],
+            ],
             'referenceToPropertyHoldsItsDeclaredTypeAfterACallWritesIt' => [
                 'code' => '<?php
                     final class A {
@@ -676,6 +716,66 @@ final class ReferenceConstraintTest extends TestCase
                         }
                     }',
                 'error_message' => 'ReferenceConstraintViolation',
+            ],
+            'referenceBoundToAReferenceToPropertyConstrainsAssignment' => [
+                'code' => '<?php
+                    final class A {
+                        public int $i = 0;
+                    }
+
+                    function f(A $a): void {
+                        $x = &$a->i;
+                        $y = &$x;
+                        $y = "";
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
+            'referenceToPropertyKeepsLiteralsOfItsDeclaredType' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var 1|2 */
+                        public int $i = 1;
+                    }
+
+                    function f(A $a): void {
+                        $x = &$a->i;
+                        $x = 3;
+                    }',
+                'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:25 - Variable $x is limited to values of type 1|2',
+            ],
+            'referenceToTemplatedPropertyConstrainsAssignment' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var T */
+                        public $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /** @param Box<int> $box */
+                    function f(Box $box): void {
+                        $x = &$box->value;
+                        $x = "";
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
+            'referenceToPrivateSetPropertyNeedsWriteAccess' => [
+                'code' => '<?php
+                    final class A {
+                        public private(set) int $i = 0;
+                    }
+
+                    function f(A $a): void {
+                        $x = &$a->i;
+                        echo $x;
+                    }',
+                'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.4',
             ],
             'referenceToShapeItemConstrainsAssignment' => [
                 'code' => '<?php

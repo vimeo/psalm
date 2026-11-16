@@ -78,6 +78,39 @@ final class UnsupportedPropertyReferenceUsageTest extends TestCase
                     PHP,
                 'error_message' => 'UnsupportedPropertyReferenceUsage',
             ],
+            'property of objects of different types' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public int $b = 0;
+                    }
+                    final class B {
+                        public string $b = '';
+                    }
+                    function f(A|B $o): void {
+                        $b = &$o->b;
+                        $b = ''; // Fatal error when $o is an A
+                    }
+                    PHP,
+                'error_message' => 'UnsupportedPropertyReferenceUsage',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'hooked property' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public int $b {
+                            get => 1;
+                        }
+                    }
+                    $a = new A();
+                    $b = &$a->b; // Error: Indirect modification of a hooked property
+                    PHP,
+                'error_message' => 'UnsupportedPropertyReferenceUsage',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
             'readonly property' => [
                 'code' => <<<'PHP'
                     <?php

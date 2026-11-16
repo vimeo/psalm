@@ -1606,21 +1606,33 @@ final class Context
     }
 
     /**
-     * Forgets a property (or an item of it) a call may have written: the variables bound to it by reference may now
-     * hold whatever it is declared to hold
+     * Forgets a property (or an item of it) a call may have written. One bound to variables by reference stays bound
+     * to them, and now holds whatever it is declared to hold
      */
     private function forgetPropertyBoundByReference(string $var_id, bool $remove_descendents): void
     {
-        $reference_ids = array_keys($this->references_in_scope, $var_id, true);
+        $reference_id = array_search($var_id, $this->references_in_scope, true);
 
-        $this->remove($var_id, $remove_descendents);
+        if ($reference_id === false || !isset($this->vars_in_scope[$var_id])) {
+            $this->remove($var_id, $remove_descendents);
 
-        foreach ($reference_ids as $reference_id) {
-            if (isset($this->vars_in_scope[$reference_id])) {
-                $this->vars_in_scope[$reference_id] = ($this->byref_constraints[$reference_id]->type
-                    ?? Type::getMixed())->setParentNodes($this->vars_in_scope[$reference_id]->parent_nodes);
-            }
+            return;
         }
+
+        $existing_type = $this->vars_in_scope[$var_id];
+
+        $this->forgetNarrowedShapeProperty($var_id);
+
+        if ($remove_descendents) {
+            $this->removeDescendents($var_id, $existing_type);
+        }
+
+        unset($this->null_array_offsets_read[$var_id]);
+        $this->forgetNullArrayOffsets($var_id);
+
+        // written through the binding: the variables bound to it get the type too
+        $this->vars_in_scope[$var_id] = ($this->byref_constraints[$reference_id]->type ?? Type::getMixed())
+            ->setParentNodes($existing_type->parent_nodes);
     }
 
     /**
