@@ -1198,6 +1198,23 @@ final class ReferenceTest extends TestCase
                         return $groups;
                     }',
             ],
+            'referenceToOffsetOfEmptyArrayWithComputedKey' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int> $items
+                     * @return array<string, list<int>>
+                     */
+                    function group(array $items): array {
+                        $groups = [];
+                        foreach ($items as $key => $item) {
+                            $group = &$groups[strtolower($key)];
+                            $group[] = $item;
+                        }
+                        return $groups;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnsupportedReferenceUsage'],
+            ],
             'referenceToMissingKeyOfShape' => [
                 'code' => '<?php
                     $a = ["x" => 1];
