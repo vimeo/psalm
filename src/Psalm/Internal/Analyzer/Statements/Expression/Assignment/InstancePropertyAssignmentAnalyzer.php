@@ -1958,13 +1958,12 @@ final class InstancePropertyAssignmentAnalyzer
 
         $property_class_storage = $codebase->classlike_storage_provider->get($property_class_name);
 
-        $property_storage = $property_class_storage->properties[$property_name];
+        // a property of a provider has no storage
+        $property_type = $property_class_storage->properties[$property_name]->type ?? null;
 
-        if (!$property_storage->type) {
+        if (!$property_type) {
             return null;
         }
-
-        $property_type = $property_storage->type;
 
         $fleshed_out_type = !$property_type->isMixed()
             ? TypeExpander::expandUnion(
