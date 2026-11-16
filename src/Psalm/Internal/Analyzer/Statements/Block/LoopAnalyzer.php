@@ -1034,15 +1034,38 @@ final class LoopAnalyzer
             $code_location,
         );
 
+        // a write the condition can skip (`$a && $n-- > 0`) leaves the value the variable had before, which the
+        // condition being false narrows too
+        $skipped_write_var_ids = array_diff_key($overridden_var_ids, $always_written_var_ids);
+        $vars_in_scope_with_skipped_writes = [];
+
+        if ($skipped_write_var_ids) {
+            $skipped_write_changed_var_ids = [];
+
+            [$vars_in_scope_with_skipped_writes, $_] = Reconciler::reconcileKeyedTypes(
+                $exit_truths,
+                [],
+                $exit_context->vars_in_scope,
+                $exit_context->references_in_scope,
+                $skipped_write_changed_var_ids,
+                [],
+                $statements_analyzer,
+                [],
+                true,
+                null,
+            );
+        }
+
         // what the condition wrote is the value the loop is left with, whether or not its being false narrows it
         foreach ($changed_var_ids + $overridden_var_ids as $var_id => $_) {
             if (isset($vars_in_scope_reconciled[$var_id])
                 && isset($context->vars_in_scope[$var_id])
             ) {
-                // a write the condition can skip (`$a && $n-- > 0`) leaves the value the variable had before
-                $context->vars_in_scope[$var_id] = isset($overridden_var_ids[$var_id])
-                    && !isset($always_written_var_ids[$var_id])
-                    ? Type::combineUnionTypes($context->vars_in_scope[$var_id], $vars_in_scope_reconciled[$var_id])
+                $context->vars_in_scope[$var_id] = isset($skipped_write_var_ids[$var_id])
+                    ? Type::combineUnionTypes(
+                        $vars_in_scope_with_skipped_writes[$var_id] ?? $exit_context->vars_in_scope[$var_id],
+                        $vars_in_scope_reconciled[$var_id],
+                    )
                     : $vars_in_scope_reconciled[$var_id];
             }
 
