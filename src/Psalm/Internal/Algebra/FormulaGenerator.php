@@ -646,11 +646,26 @@ final class FormulaGenerator
 
         if ($nullsafe_receiver_id !== null) {
             $not_null = new IsNotType(new TNull());
-            $clauses[] = new Clause(
+            $receiver_clause = new Clause(
                 [$nullsafe_receiver_id => [(string) $not_null => $not_null]],
                 $conditional_object_id,
                 $creating_object_id,
             );
+
+            // `$a?->p === true` already asserts the receiver through the truthiness of `$a?->p`, and a repeated
+            // clause is reported as redundant
+            $found = false;
+
+            foreach ($clauses as $clause) {
+                if ($clause->hash === $receiver_clause->hash) {
+                    $found = true;
+                    break;
+                }
+            }
+
+            if (!$found) {
+                $clauses[] = $receiver_clause;
+            }
         }
 
         return $clauses;
