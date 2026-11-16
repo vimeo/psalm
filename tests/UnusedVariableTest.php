@@ -3130,7 +3130,7 @@ final class UnusedVariableTest extends TestCase
                     }
                 ',
             ],
-            'SKIPPED-referenceUsedInDestructuredForeach' => [
+            'SKIPPED-referenceUsedInDestructuredForeach' => [ // #13914
                 'code' => '<?php
                     foreach ([[1, 2], [3, 4]] as [&$a, $_]) {
                         $a += 1;
@@ -3287,6 +3287,21 @@ final class UnusedVariableTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.6',
+            ],
+            'throwAfterExhaustiveTypeChecksIsEvaluated' => [
+                'code' => '<?php
+                    function f(int|string $x): int {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                        throw new LogicException("unreachable");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.0',
             ],
         ];
     }
@@ -3779,7 +3794,7 @@ final class UnusedVariableTest extends TestCase
                     }',
                 'error_message' => 'UnusedVariable',
             ],
-            'SKIPPED-byrefInForeachLoopWithoutReference' => [
+            'SKIPPED-byrefInForeachLoopWithoutReference' => [ // #13915
                 'code' => '<?php
                     $a = [1, 2, 3];
                     foreach ($a as &$b) {
@@ -4399,9 +4414,8 @@ final class UnusedVariableTest extends TestCase
                 ',
                 'error_message' => 'UnusedVariable',
             ],
-            'SKIPPED-warnAboutVariableUsedInNestedTryNotUsedInOuterTry' => [
+            'warnAboutVariableUsedInNestedTryNotUsedInOuterTry' => [
                 'code' => '<?php
-                    $step = 0;
                     try {
                         $step = 1; // Unused
                         $step = 2;
@@ -4442,7 +4456,7 @@ final class UnusedVariableTest extends TestCase
                 ',
                 'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:21 - $b',
             ],
-            'SKIPPED-unusedReferenceToSubsequentlyUsedVariable' => [ // Not easy to do the way it's currently set up
+            'SKIPPED-unusedReferenceToSubsequentlyUsedVariable' => [ // #13916
                 'code' => '<?php
                     $a = 1;
                     $b = &$a;
@@ -4457,7 +4471,7 @@ final class UnusedVariableTest extends TestCase
                 ',
                 'error_message' => 'UnusedForeachValue',
             ],
-            'SKIPPED-unusedReferenceInDestructuredForeach' => [
+            'SKIPPED-unusedReferenceInDestructuredForeach' => [ // #13914
                 'code' => '<?php
                     foreach ([[1, 2], [3, 4]] as [&$var, $_]) {
                     }
@@ -4489,7 +4503,7 @@ final class UnusedVariableTest extends TestCase
                 ',
                 'error_message' => 'UnusedParam',
             ],
-            'SKIPPED-unusedGlobalVariable' => [
+            'SKIPPED-unusedGlobalVariable' => [ // #13917
                 'code' => '<?php
                     $a = 0;
                     function foo(): void

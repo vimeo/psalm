@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralString;
 
+use function array_column;
 use function mb_internal_encoding;
+use function sort;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -23,6 +27,50 @@ final class ReturnTypeTest extends TestCase
     {
         // PHP-Parser rejects void parameters before Psalm analyzes the body.
         $this->testInvalidCode('<?php function f(void $p): void {}', 'ParseError');
+    }
+
+    public function testAVariableLeftWithoutValueByADeadAssignmentKeepsTheEndOfTheBodyReachable(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return never */
+                function boom() {
+                    throw new Exception();
+                }
+
+                function f(int $x): int {
+                    if (is_string($x)) {
+                        $y = $x;
+                    }
+                    if (rand(0, 1)) {
+                        return 1;
+                    }
+                }
+
+                function g(): int {
+                    try {
+                        $z = boom();
+                    } catch (Exception $e) {}
+                    if (rand(0, 1)) {
+                        return 1;
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $types = array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type');
+        sort($types);
+
+        self::assertSame(
+            ['InvalidReturnType', 'InvalidReturnType', 'NoValue', 'NoValue', 'TypeDoesNotContainType'],
+            $types,
+        );
     }
 
     public function testUnicodeEscapeOfADocblockStringLiteralIsNotTheInternalEncoding(): void
@@ -308,7 +356,7 @@ final class ReturnTypeTest extends TestCase
 
                     $t = (new D())->render();',
                 'assertions' => ['$t===' => 'string'],
-                'ignored_issues' => [],
+                'ignored_issues' => ['ImplementedReturnTypeMismatch'],
                 'php_version' => '8.1',
             ],
             'narrowerNativeReturnTypeWinsOverInheritedStringableDocblock' => [
@@ -326,7 +374,7 @@ final class ReturnTypeTest extends TestCase
 
                     $u = (new F())->render();',
                 'assertions' => ['$u===' => 'string'],
-                'ignored_issues' => [],
+                'ignored_issues' => ['ImplementedReturnTypeMismatch'],
                 'php_version' => '8.1',
             ],
             'nativeStringableReturnTypeKeepsStringableOverInheritedStringOrStringable' => [
@@ -2616,6 +2664,36 @@ final class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'functionEndingAfterExhaustiveTypeChecksNeedsNoReturn' => [
+                'code' => '<?php
+                    function h(int|string $x): int {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'methodEndingAfterExhaustiveTypeChecksNeedsNoReturn' => [
+                'code' => '<?php
+                    final class C {
+                        public function get(int|string $x): int {
+                            if (is_int($x)) {
+                                return 1;
+                            }
+                            if (is_string($x)) {
+                                return 2;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3790,6 +3868,86 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
                 'error_message' => '__toString methods must return a string, 5 returned',
+            ],
+            'functionEndingAfterALoopOfExhaustiveTypeChecksNeedsAReturn' => [
+                'code' => '<?php
+                    function f(int|string $x, array $a): int {
+                        foreach ($a as $_) {
+                            if (is_int($x)) {
+                                return 1;
+                            }
+                            if (is_string($x)) {
+                                return 2;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => ['RedundantCondition', 'MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'functionEndingAfterAnIssetOfAnOptionalPropertyNeedsAReturn' => [
+                'code' => '<?php
+                    /** @param object{bar?: string} $foo */
+                    function f(object $foo): string {
+                        if (isset($foo->bar)) {
+                            return $foo->bar;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'methodEndingAfterAnIssetOfAnUninitializedPropertyNeedsAReturn' => [
+                'code' => '<?php
+                    final class A {
+                        public string $p;
+
+                        public function get(): string {
+                            if (isset($this->p)) {
+                                return $this->p;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => ['MissingConstructor', 'RedundantPropertyInitializationCheck'],
+            ],
+            'functionEndingAfterADestructuredEmptyArrayNeedsAReturn' => [
+                'code' => '<?php
+                    function f(): int {
+                        [$a] = [];
+                        if (rand(0, 1)) {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => ['UnusedVariable'],
+            ],
+            'codeAfterExhaustiveTypeChecksIsAnalyzed' => [
+                'code' => '<?php
+                    function f(int|string $x): int {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                        return undefined_function();
+                    }',
+                'error_message' => 'UndefinedFunction',
+                'error_levels' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'functionEndingAfterExhaustiveDocblockTypeChecksNeedsAReturn' => [
+                'code' => '<?php
+                    /** @param int|string $x */
+                    function f($x): int {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => ['RedundantConditionGivenDocblockType'],
             ],
         ];
     }

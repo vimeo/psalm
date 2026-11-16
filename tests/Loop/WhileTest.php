@@ -2155,6 +2155,29 @@ final class WhileTest extends TestCase
                     }
                     echo $name;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
+                // the condition is never true: it is reported too
+                'error_levels' => ['TypeDoesNotContainType'],
+            ],
+            'loopConditionOperandIsAnalysedWithTheTypesOfEachPass' => [
+                'code' => '<?php
+                    /** @param int<10, max> $i */
+                    function check(int $i): bool {
+                        return $i > 0;
+                    }
+
+                    $i = 0;
+                    $max = 10;
+                    while ($i < $max || check($i)) {
+                        $max = 0;
+                        ++$i;
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'loopConditionWithPreIncrementNeverTrueForTheInitialLiteral' => [
+                'code' => '<?php
+                    $try = 9;
+                    while (++$try < 10) {}',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'variableAssignedInALoopWhoseConditionFailsForTheInitialLiteralIsPossiblyUndefined' => [
                 'code' => '<?php
@@ -2174,6 +2197,8 @@ final class WhileTest extends TestCase
                     }
                     echo $name;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
+                // the condition is never true: it is reported too
+                'error_levels' => ['TypeDoesNotContainType'],
             ],
             'variableAssignedInALoopOverAnUnknownStartIsPossiblyUndefined' => [
                 'code' => '<?php
