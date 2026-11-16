@@ -17,6 +17,7 @@ use function array_filter;
 use function array_slice;
 use function count;
 use function end;
+use function str_ends_with;
 
 /**
  * @internal
@@ -92,12 +93,24 @@ final class BreakAnalyzer
                 foreach ($loop_scope->possibly_defined_loop_parent_vars as $var_id => $type) {
                     if ($ends_this_loop && !isset($context->vars_in_scope[$var_id])) {
                         $loop_scope->possibly_defined_loop_parent_vars[$var_id] = $type->setPossiblyUndefined(true);
+
+                        if (str_ends_with($var_id, ']')) {
+                            $loop_scope->unknown_offsets[$var_id] = true;
+                        }
                     }
                 }
 
                 foreach ($context->vars_in_scope as $var_id => $type) {
                     if (!isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])) {
                         $previous_type = $loop_scope->possibly_defined_loop_parent_vars[$var_id] ?? null;
+
+                        if (str_ends_with($var_id, ']')
+                            && ($previous_type
+                                ? $previous_type->possibly_undefined !== $type->possibly_undefined
+                                : $ends_this_loop && $loop_scope->break_count > 0)
+                        ) {
+                            $loop_scope->unknown_offsets[$var_id] = true;
+                        }
 
                         $loop_scope->possibly_defined_loop_parent_vars[$var_id] = Type::combineUnionTypes(
                             $ends_this_loop && $loop_scope->break_count > 0 && $previous_type === null

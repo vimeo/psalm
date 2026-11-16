@@ -174,7 +174,7 @@ final class ImmutableAnnotationTest extends TestCase
                 ],
                 'ignored_issues' => ['RiskyTruthyFalsyComparison', 'MissingPureAnnotation'],
             ],
-            'SKIPPED-noMissing' => [
+            'SKIPPED-noMissing' => [ // #13925
                 'code' => '<?php
                     /** @psalm-immutable */
                     abstract class test {
@@ -260,7 +260,7 @@ final class ImmutableAnnotationTest extends TestCase
                         return $c->addItem(new CartItem($name, $price));
                     }',
             ],
-            'SKIPPED-allowImpureStaticMethod' => [
+            'allowStaticFactoryMethod' => [
                 'code' => '<?php
                     /**
                      * @psalm-immutable
@@ -279,6 +279,8 @@ final class ImmutableAnnotationTest extends TestCase
                             return new self($id);
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingPureAnnotation'],
             ],
             'allowPropertySetOnNewInstance' => [
                 'code' => '<?php
