@@ -129,6 +129,196 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'closureFallingOffItsEndReturnsNull' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        if ($x > 0) {
+                            return "a";
+                        }
+                    };
+                    $r = $f(1);
+                    $m = array_map($f, [1, 2]);',
+                'assertions' => [
+                    '$r===' => '\'a\'|null',
+                    '$m===' => 'list{\'a\'|null, \'a\'|null}',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureFallingOffALoopReturnsNull' => [
+                'code' => '<?php
+                    /** @var list<int> */
+                    $a = [];
+                    $f = function() use ($a) {
+                        foreach ($a as $x) {
+                            return $x;
+                        }
+                    };
+                    $r = $f();',
+                'assertions' => [
+                    '$r===' => 'int|null',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureFallingOffASwitchWithoutDefaultReturnsNull' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        switch ($x) {
+                            case 1:
+                                return "a";
+                            case 2:
+                                return "b";
+                        }
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '\'a\'|\'b\'|null',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureWithADocblockReturnTypeFallingOffItsEndReturnsNull' => [
+                'code' => '<?php
+                    $f =
+                        /** @return string|null */
+                        function(int $x) {
+                            if ($x > 0) {
+                                return "a";
+                            }
+                        };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => 'null|string',
+                ],
+            ],
+            'closureReturningOnEveryPathDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        if ($x > 0) {
+                            return "a";
+                        } else {
+                            return "b";
+                        }
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '\'a\'|\'b\'',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureEndingWithAThrowDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        if ($x > 0) {
+                            return "a";
+                        }
+                        throw new RuntimeException();
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '\'a\'',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureEndingWithAnExitDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        if ($x > 0) {
+                            return "a";
+                        }
+                        exit(1);
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '\'a\'',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureEndingWithANeverReturningCallDoesNotReturnNull' => [
+                'code' => '<?php
+                    function fail(): never {
+                        throw new RuntimeException();
+                    }
+                    $f = function(int $x) {
+                        if ($x > 0) {
+                            return "a";
+                        }
+                        fail();
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '\'a\'',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+                'php_version' => '8.1',
+            ],
+            'closureEndingWithAnExhaustiveSwitchDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        switch ($x) {
+                            case 1:
+                                return "a";
+                            default:
+                                return "b";
+                        }
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '\'a\'|\'b\'',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureEndingWithATryReturningOnEveryPathDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        try {
+                            if ($x > 0) {
+                                return "a";
+                            }
+                            return "b";
+                        } catch (Exception $e) {
+                            return "c";
+                        }
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '\'a\'|\'b\'|\'c\'',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureWithoutReturnValueStaysVoid' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        if ($x > 0) {
+                            echo $x;
+                            return;
+                        }
+                    };',
+                'assertions' => [
+                    '$f===' => 'Closure[io](int):void',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'generatorClosureFallingOffItsEndIsUnchanged' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        if ($x > 0) {
+                            yield 1;
+                        }
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => 'Generator[pure]<int, 1, mixed, void>',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'arrowFunctionDoesNotReturnImplicitNull' => [
+                'code' => '<?php
+                    $f = fn(int $x) => $x > 0 ? "a" : "b";
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '\'a\'|\'b\'',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
             'propertyOfAVariableCapturedByReferenceMayChangeAfterTheClosureIsCreated' => [
                 'code' => '<?php
                     final class Job {
@@ -2945,6 +3135,55 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'resultOfAClosureFallingOffItsEndIsPossiblyNull' => [
+                'code' => '<?php
+                    /** @param list<string> $rows */
+                    function f(array $rows): void {
+                        $lengths = array_map(
+                            function(string $row) {
+                                if (strlen($row) <= 10) {
+                                    return $row;
+                                }
+                            },
+                            $rows,
+                        );
+                        foreach ($lengths as $s) {
+                            echo strlen($s);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+                'error_levels' => ['MissingClosureReturnType'],
+            ],
+            'functionFallingOffItsEndIsExpectedToReturnNull' => [
+                'code' => '<?php
+                    function f(int $x) {
+                        if ($x > 0) {
+                            return "a";
+                        }
+                    }',
+                'error_message' => 'MissingReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:30 - Method f does not have a return type, expecting \'a\'|null',
+            ],
+            'methodFallingOffItsEndIsExpectedToReturnNull' => [
+                'code' => '<?php
+                    final class A {
+                        public function f(int $x) {
+                            if ($x > 0) {
+                                return "a";
+                            }
+                        }
+                    }',
+                'error_message' => 'expecting \'a\'|null',
+            ],
+            'functionWithADocblockReturnTypeFallingOffItsEndReturnsNull' => [
+                'code' => '<?php
+                    /** @return string */
+                    function f(int $x) {
+                        if ($x > 0) {
+                            return "a";
+                        }
+                    }',
+                'error_message' => 'InvalidNullableReturnType',
+            ],
             'byRefCapturedTypeFromAnAssertionKeepsItsDocblockOrigin' => [
                 'code' => '<?php
                     function f(): void {
