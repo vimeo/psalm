@@ -622,15 +622,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         foreach ($class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Property) {
                 $this->analyzeProperty($this, $stmt, $class_context);
-                self::analyzePropertyHooks($this, $stmt->props[0]->name->name, $stmt->hooks, $class_context);
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
-                && $stmt->name->toLowerString() === '__construct'
-            ) {
-                foreach ($stmt->params as $param) {
-                    if ($param->var instanceof PhpParser\Node\Expr\Variable && is_string($param->var->name)) {
-                        self::analyzePropertyHooks($this, $param->var->name, $param->hooks, $class_context);
-                    }
-                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
                 foreach ($stmt->traits as $trait) {
                     $fq_trait_name = self::getFQCLNFromNameObject(
@@ -675,12 +666,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     foreach ($trait_node->stmts as $trait_stmt) {
                         if ($trait_stmt instanceof PhpParser\Node\Stmt\Property) {
                             $this->analyzeProperty($trait_analyzer, $trait_stmt, $class_context);
-                            self::analyzePropertyHooks(
-                                $trait_analyzer,
-                                $trait_stmt->props[0]->name->name,
-                                $trait_stmt->hooks,
-                                $class_context,
-                            );
                         }
                     }
 
@@ -1811,6 +1796,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         $fq_class_name = $source->getFQCLN();
         $property_name = $stmt->props[0]->name->name;
 
+        self::analyzePropertyHooks($source, $property_name, $stmt->hooks, $context);
+
         $codebase = $this->getCodebase();
 
         $property_id = $fq_class_name . '::$' . $property_name;
@@ -1903,6 +1890,22 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             ),
             $this->source->getSuppressedIssues() + $property_storage->suppressed_issues,
         );
+    }
+
+    private static function analyzePromotedPropertyHooks(
+        SourceAnalyzer $source,
+        PhpParser\Node\Stmt\ClassMethod $stmt,
+        Context $class_context,
+    ): void {
+        if ($stmt->name->toLowerString() !== '__construct') {
+            return;
+        }
+
+        foreach ($stmt->params as $param) {
+            if ($param->var instanceof PhpParser\Node\Expr\Variable && is_string($param->var->name)) {
+                self::analyzePropertyHooks($source, $param->var->name, $param->hooks, $class_context);
+            }
+        }
     }
 
     /**
@@ -2037,6 +2040,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         ?Context $global_context = null,
     ): ?MethodAnalyzer {
         $config = Config::getInstance();
+
+        self::analyzePromotedPropertyHooks($source, $stmt, $class_context);
 
         if ($stmt->stmts === null && !$stmt->isAbstract()) {
             IssueBuffer::maybeAdd(

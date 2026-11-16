@@ -1098,20 +1098,6 @@ final class FunctionLikeNodeScanner
         );
     }
 
-    //phpcs:disable -- Remove this once the phpstan phpdoc parser MR is merged
-    /**
-     * @return array{
-     *     string,
-     *     FunctionStorage|MethodStorage,
-     *     null|string,
-     *     null|string,
-     *     null|lowercase-string,
-     *     ClassLikeStorage|null,
-     *     bool,
-     *     MethodIdentifier|null,
-     *     bool
-     * }|false
-     */
     /**
      * A hook has no signature of its own: `get` returns a value of the type of the property, and `set` without
      * a parameter list takes a `$value` of that type.
@@ -1150,6 +1136,20 @@ final class FunctionLikeNodeScanner
         }
     }
 
+    //phpcs:disable -- Remove this once the phpstan phpdoc parser MR is merged
+    /**
+     * @return array{
+     *     string,
+     *     FunctionStorage|MethodStorage,
+     *     null|string,
+     *     null|string,
+     *     null|lowercase-string,
+     *     ClassLikeStorage|null,
+     *     bool,
+     *     MethodIdentifier|null,
+     *     bool
+     * }|false
+     */
     private function createStorageForFunctionLike(
         PhpParser\Node\FunctionLike $stmt,
         bool $fake_method
