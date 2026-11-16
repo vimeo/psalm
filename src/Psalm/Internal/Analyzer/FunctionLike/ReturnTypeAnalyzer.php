@@ -209,6 +209,8 @@ final class ReturnTypeAnalyzer
             true,
         );
 
+        $end_is_unreachable = $did_explicitly_return;
+
         if (!$inferred_return_type_parts) {
             $did_explicitly_return = true;
         }
@@ -232,7 +234,7 @@ final class ReturnTypeAnalyzer
 
         $function_always_exits = $control_actions === [ScopeAnalyzer::ACTION_END];
 
-        $function_returns_implicitly = (bool) array_diff(
+        $function_returns_implicitly = !$end_is_unreachable && array_diff(
             $control_actions,
             [ScopeAnalyzer::ACTION_END, ScopeAnalyzer::ACTION_RETURN],
         );

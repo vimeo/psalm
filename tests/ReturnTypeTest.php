@@ -2616,6 +2616,36 @@ final class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'functionEndingAfterExhaustiveTypeChecksNeedsNoReturn' => [
+                'code' => '<?php
+                    function h(int|string $x): int {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'methodEndingAfterExhaustiveTypeChecksNeedsNoReturn' => [
+                'code' => '<?php
+                    final class C {
+                        public function get(int|string $x): int {
+                            if (is_int($x)) {
+                                return 1;
+                            }
+                            if (is_string($x)) {
+                                return 2;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3790,6 +3820,22 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
                 'error_message' => '__toString methods must return a string, 5 returned',
+            ],
+            'functionEndingAfterALoopOfExhaustiveTypeChecksNeedsAReturn' => [
+                'code' => '<?php
+                    function f(int|string $x, array $a): int {
+                        foreach ($a as $_) {
+                            if (is_int($x)) {
+                                return 1;
+                            }
+                            if (is_string($x)) {
+                                return 2;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => ['RedundantCondition', 'MixedAssignment'],
+                'php_version' => '8.0',
             ],
         ];
     }

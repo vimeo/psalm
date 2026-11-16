@@ -4543,6 +4543,26 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => ['MissingConstructor'],
                 'php_version' => '8.0',
             ],
+            'constructorEndingAfterExhaustiveTypeChecksInitializesWhereItReturns' => [
+                'code' => '<?php
+                    final class A {
+                        public int $p;
+
+                        public function __construct(int|string $x) {
+                            if (is_int($x)) {
+                                $this->p = 1;
+                                return;
+                            }
+                            if (is_string($x)) {
+                                $this->p = 2;
+                                return;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
