@@ -1351,29 +1351,8 @@ final class AssignmentAnalyzer
         $context->inside_by_ref_offset = $was_inside_by_ref_offset;
         $context->inside_general_use = $was_inside_general_use;
 
-        if ($stmt->expr instanceof ArrayDimFetch
-            && ($item_type = $statements_analyzer->node_data->getType($stmt->expr)) !== null
-            && self::isArrayChainOfVariable($statements_analyzer, $stmt->expr)
-        ) {
-            // PHP creates the offset bound, and a null array holding it, as an assignment to the offset would
-            $node_data = $statements_analyzer->node_data;
-            $operands = ArrayAssignmentAnalyzer::getOperands($stmt->expr);
-            $node_data->markEvaluated($operands);
-
-            try {
-                ArrayAssignmentAnalyzer::analyze(
-                    $statements_analyzer,
-                    $stmt->expr,
-                    $context,
-                    null,
-                    $item_type->setByRef(false),
-                    true,
-                );
-            } finally {
-                $node_data->unmarkEvaluated($operands);
-            }
-
-            $node_data->setType($stmt->expr, $item_type);
+        if ($stmt->expr instanceof ArrayDimFetch) {
+            self::makeReferencedArrayNonNull($statements_analyzer, $stmt->expr, $context);
         }
 
         $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
@@ -1613,39 +1592,54 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * Whether the offset is fetched from a local variable through arrays or nulls only: what is fetched from
-     * anything else is not written by binding a reference to it, or is already reported
-     *
-     * @psalm-capabilities read-props
+     * PHP turns the null a local variable holds into an array when an offset of it is bound by reference. What is
+     * written through the reference can't be followed, so the item itself is left as it is.
      */
-    private static function isArrayChainOfVariable(
+    private static function makeReferencedArrayNonNull(
         StatementsAnalyzer $statements_analyzer,
         ArrayDimFetch $stmt,
-    ): bool {
-        $node = $stmt;
+        Context $context,
+    ): void {
+        $root = $stmt->var;
 
-        while ($node instanceof ArrayDimFetch) {
-            $container_type = $statements_analyzer->node_data->getType($node->var);
-
-            if ($container_type === null) {
-                return false;
-            }
-
-            foreach ($container_type->getAtomicTypes() as $atomic_type) {
-                if (!$atomic_type instanceof TArray
-                    && !$atomic_type instanceof TKeyedArray
-                    && !$atomic_type instanceof TNull
-                ) {
-                    return false;
-                }
-            }
-
-            $node = $node->var;
+        while ($root instanceof ArrayDimFetch) {
+            $root = $root->var;
         }
 
-        return $node instanceof PhpParser\Node\Expr\Variable
-            && is_string($node->name)
-            && $node->name !== 'this';
+        if (!$root instanceof PhpParser\Node\Expr\Variable
+            || !is_string($root->name)
+            || $root->name === 'this'
+        ) {
+            return;
+        }
+
+        $root_id = '$' . $root->name;
+        $root_type = $context->vars_in_scope[$root_id] ?? null;
+
+        if ($root_type === null || !$root_type->isNullable()) {
+            return;
+        }
+
+        foreach ($root_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TArray
+                && !$atomic_type instanceof TKeyedArray
+                && !$atomic_type instanceof TNull
+            ) {
+                return;
+            }
+        }
+
+        $array_type = $root_type->getBuilder();
+        $array_type->removeType('null');
+
+        if ($array_type->isUnionEmpty()) {
+            $array_type->addType(new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]));
+        }
+
+        $array_type = $array_type->freeze();
+
+        $context->vars_in_scope[$root_id] = $array_type;
+        $context->removeVarFromConflictingClauses($root_id, $array_type, $statements_analyzer);
     }
 
     public static function assignByRefParam(

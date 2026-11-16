@@ -1159,7 +1159,8 @@ final class ReferenceTest extends TestCase
                     $a = get();
                     $r = &$a["k"];',
                 'assertions' => [
-                    '$a===' => 'array{k: int|null, ...<string, int>}',
+                    '$a===' => 'array<string, int>',
+                    '$r===' => 'int|null',
                 ],
             ],
             'referenceToOffsetOfNullCreatesTheArray' => [
@@ -1167,26 +1168,45 @@ final class ReferenceTest extends TestCase
                     $a = null;
                     $r = &$a["k"];',
                 'assertions' => [
-                    '$a===' => 'array{k: null}',
+                    '$a===' => 'non-empty-array<array-key, mixed>',
                 ],
             ],
-            'referenceToOffsetOfEmptyArrayCreatesIt' => [
+            'referenceToOffsetOfPossiblyNullArrayWrittenThrough' => [
                 'code' => '<?php
-                    $a = [];
-                    $r = &$a["k"];',
-                'assertions' => [
-                    '$a===' => 'array{k: null}',
-                ],
+                    /**
+                     * @param array<string, int>|null $a
+                     * @return array<string, int>
+                     */
+                    function f(?array $a, string $k): array {
+                        $r = &$a[$k];
+                        $r = 1;
+                        return $a;
+                    }',
             ],
-            'referenceToMissingKeyOfShapeCreatesIt' => [
+            'referenceToOffsetOfEmptyArrayGroupsItems' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int> $items
+                     * @return array<string, list<int>>
+                     */
+                    function group(array $items): array {
+                        $groups = [];
+                        foreach ($items as $key => $item) {
+                            $group = &$groups[$key];
+                            $group[] = $item;
+                        }
+                        return $groups;
+                    }',
+            ],
+            'referenceToMissingKeyOfShape' => [
                 'code' => '<?php
                     $a = ["x" => 1];
                     $r = &$a["y"];',
                 'assertions' => [
-                    '$a===' => 'array{x: 1, y: null}',
+                    '$r===' => 'null',
                 ],
             ],
-            'referenceToOptionalKeyMakesItDefined' => [
+            'referenceToOptionalKeyIsCreatedAsNull' => [
                 'code' => '<?php
                     /** @return array{x?: int} */
                     function get(): array {
@@ -1196,7 +1216,7 @@ final class ReferenceTest extends TestCase
                     $a = get();
                     $r = &$a["x"];',
                 'assertions' => [
-                    '$a===' => 'array{x: int|null}',
+                    '$r===' => 'int|null',
                 ],
             ],
             'referenceToNestedOffsetOfPossiblyNullItem' => [
@@ -1209,8 +1229,22 @@ final class ReferenceTest extends TestCase
                     $a = get();
                     $r = &$a["k"]["l"];',
                 'assertions' => [
-                    '$a===' => 'array{k: array{l: int|null}}',
+                    '$r===' => 'int|null',
                 ],
+            ],
+            'referenceToOffsetOfPossiblyNullProperty' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var array<string, int>|null */
+                        public ?array $p = null;
+
+                        public function m(): void {
+                            $r = &$this->p["x"];
+                            $r = 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnsupportedPropertyReferenceUsage'],
             ],
             'referenceToDefinedKeyKeepsTheShape' => [
                 'code' => '<?php
@@ -1230,7 +1264,7 @@ final class ReferenceTest extends TestCase
                     $l = get();
                     $r = &$l[0];',
                 'assertions' => [
-                    '$l===' => 'non-empty-list<int>',
+                    '$l===' => 'list<int>',
                 ],
             ],
             'referenceToOffsetOfPossiblyNullArrayInABranch' => [
@@ -1245,7 +1279,7 @@ final class ReferenceTest extends TestCase
                         $r = &$a["k"];
                     }',
                 'assertions' => [
-                    '$a===' => 'array<string, int|null>|null',
+                    '$a===' => 'array<string, int>|null',
                 ],
             ],
         ];
@@ -1309,7 +1343,7 @@ final class ReferenceTest extends TestCase
                     }',
                 'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:41 - '
                     . 'Variable $data is limited to values of type array<string, mixed> because it is passed by '
-                    . 'reference, non-empty-array<string, mixed>|string type found',
+                    . 'reference, array<string, mixed>|string type found',
                 'error_levels' => ['MixedArrayAccess'],
             ],
             'referenceThatWasOneBeforeATernaryIsReboundAndWrittenToAfterIt' => [
