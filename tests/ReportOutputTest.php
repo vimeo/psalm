@@ -19,6 +19,7 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use UnexpectedValueException;
 
 use function file_get_contents;
+use function ini_set;
 use function json_decode;
 use function ob_end_clean;
 use function ob_start;
@@ -852,6 +853,62 @@ final class ReportOutputTest extends TestCase
         $this->assertStringContainsString("message: Invalid type 'Foo\u{FFFD}' \u{FFFD} x\x7F\n", $failure);
         $this->assertStringContainsString("snippet: echo \"a\u{FFFD}b\u{FFFD}c\";\n", $failure);
         $this->assertStringContainsString("selected_text: a\u{FFFD}b\n", $failure);
+    }
+
+    public function testXmlReportsEncodeUtf8WhateverTheDefaultCharset(): void
+    {
+        $file_name = 'пример.php';
+        $issues_data = [
+            $file_name => [
+                new IssueData(
+                    IssueData::SEVERITY_ERROR,
+                    1,
+                    1,
+                    'InvalidDocblock',
+                    'Invalid type пример',
+                    $file_name,
+                    $file_name,
+                    'пример',
+                    'пример',
+                    0,
+                    20,
+                    0,
+                    20,
+                    1,
+                    21,
+                ),
+            ],
+        ];
+
+        $default_charset = ini_set('default_charset', 'SJIS');
+        try {
+            $checkstyle_output = IssueBuffer::getOutput(
+                $issues_data,
+                ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.checkstyle.xml'])[0],
+            );
+            $junit_output = IssueBuffer::getOutput(
+                $issues_data,
+                ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.junit.xml'])[0],
+            );
+        } finally {
+            ini_set('default_charset', (string) $default_charset);
+        }
+
+        $checkstyle = new DOMDocument();
+        $this->assertTrue($checkstyle->loadXML($checkstyle_output));
+        $this->assertSame($file_name, $checkstyle->getElementsByTagName('file')->item(0)?->getAttribute('name'));
+        $this->assertSame(
+            'InvalidDocblock: Invalid type пример',
+            $checkstyle->getElementsByTagName('error')->item(0)?->getAttribute('message'),
+        );
+
+        $junit = new DOMDocument();
+        $this->assertTrue($junit->loadXML($junit_output));
+        $this->assertSame($file_name, $junit->getElementsByTagName('testsuite')->item(0)?->getAttribute('name'));
+        $this->assertStringContainsString(
+            "message: Invalid type пример\n",
+            (string) $junit->getElementsByTagName('failure')->item(0)?->textContent,
+        );
     }
 
     public function testGithubActionsOutput(): void
