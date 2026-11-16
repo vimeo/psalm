@@ -1598,6 +1598,10 @@ final class AssignmentAnalyzer
             } else {
                 $codebase = $statements_analyzer->getCodebase();
 
+                if ($stmt->expr instanceof ArrayDimFetch) {
+                    self::makeReferencedArrayNonNull($statements_analyzer, $stmt->expr, $context, true);
+                }
+
                 // binding the reference needs to be able to write the property
                 foreach ($property_ids as $property_id) {
                     if ($codebase->properties->getStorage($property_id)->hasAsymmetricVisibility()) {
@@ -1921,11 +1925,15 @@ final class AssignmentAnalyzer
     /**
      * PHP turns the null a local variable or a property holds into an array when an offset of it is bound by
      * reference. What is written through the reference can't be followed, so the item itself is left as it is.
+     *
+     * @param bool $property_root whether the root is a property a reference can be bound to (not a magic, readonly or
+     *                            hooked one), checked once the binding is analysed; a local variable otherwise
      */
     private static function makeReferencedArrayNonNull(
         StatementsAnalyzer $statements_analyzer,
         ArrayDimFetch $stmt,
         Context $context,
+        bool $property_root = false,
     ): void {
         $root = $stmt->var;
 
@@ -1933,14 +1941,16 @@ final class AssignmentAnalyzer
             $root = $root->var;
         }
 
-        if ($root instanceof PhpParser\Node\Expr\Variable) {
+        if (!$property_root && $root instanceof PhpParser\Node\Expr\Variable) {
             if (!is_string($root->name) || $root->name === 'this') {
                 return;
             }
 
             $root_id = '$' . $root->name;
             $root_type = $context->vars_in_scope[$root_id] ?? null;
-        } elseif ($root instanceof PropertyFetch || $root instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+        } elseif ($property_root
+            && ($root instanceof PropertyFetch || $root instanceof PhpParser\Node\Expr\StaticPropertyFetch)
+        ) {
             $root_id = ExpressionIdentifier::getExtendedVarId(
                 $root,
                 $statements_analyzer->getFQCLN(),

@@ -1326,6 +1326,25 @@ final class ReferenceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'referenceToOffsetOfMagicPropertyKeepsItsNull' => [
+                'code' => '<?php
+                    /**
+                     * @property ?array<string, int> $magic
+                     */
+                    final class M {
+                        /** @return mixed */
+                        public function __get(string $name) {
+                            return null;
+                        }
+
+                        public function f(): int {
+                            $r = &$this->magic["x"];
+                            return count($this->magic);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+                'error_levels' => ['UnsupportedPropertyReferenceUsage'],
+            ],
             'referenceThatWasOneBeforeTheIfIsReboundAndWrittenToAfterIt' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $data */
