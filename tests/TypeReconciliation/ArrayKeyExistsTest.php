@@ -825,6 +825,25 @@ final class ArrayKeyExistsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'issetAfterAFailedArrayKeyExistsCheckStillMakesAMixedArrayAccessible' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $config
+                     * @psalm-suppress MixedArgument
+                     */
+                    function f($config): void {
+                        if (array_key_exists("driver", $config) && $config["driver"] === null) {
+                            return;
+                        }
+
+                        if (isset($config["driver"]) && $config["driver"] === "file") {
+                            echo (string) $config["path"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'arrayKeyExistsMakesAnArrayOrArrayAccessAnArrayFromPhp8' => [
                 'code' => '<?php
                     /**

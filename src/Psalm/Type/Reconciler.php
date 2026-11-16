@@ -834,10 +834,22 @@ class Reconciler
                 if (!isset($type[0][0])) {
                     continue;
                 }
-                if ($type[0][0] instanceof IsEqualIsset
-                    || $type[0][0] instanceof IsIsset
-                    || $type[0][0] instanceof NonEmpty
-                ) {
+
+                // the offset is set where the first assertion or any other one that is not an alternative says so
+                $is_set = false;
+
+                foreach ($type as $offset => $assertions) {
+                    if (($offset === 0 || count($assertions) === 1)
+                        && ($assertions[0] instanceof IsEqualIsset
+                            || $assertions[0] instanceof IsIsset
+                            || $assertions[0] instanceof NonEmpty)
+                    ) {
+                        $is_set = true;
+                        break;
+                    }
+                }
+
+                if ($is_set) {
                     $key_parts = self::breakUpPathIntoParts($nk);
 
                     $base_key = array_shift($key_parts);
