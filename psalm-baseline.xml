@@ -728,7 +728,6 @@
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/AssignmentAnalyzer.php">
     <ImplicitToStringCast>
       <code><![CDATA[$comment_type]]></code>
-      <code><![CDATA[$context->byref_constraints[$var_id]->type]]></code>
       <code><![CDATA[$var_comment_type]]></code>
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
