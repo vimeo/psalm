@@ -43,6 +43,7 @@ use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
+use function array_intersect;
 use function array_intersect_key;
 use function array_merge;
 use function count;
@@ -87,6 +88,7 @@ final class SwitchCaseAnalyzer
         }
 
         $case_scope = $case_context->case_scope = new CaseScope($case_context);
+        $case_scope->outer_case_scope = $original_context->case_scope;
 
         $case_equality_expr = null;
 
@@ -422,12 +424,21 @@ final class SwitchCaseAnalyzer
         // but that leaves the switch through `break` statements contributes the variables of its `break`s
         $ends_unless_breaking = $case_context->has_returned
             && $case_scope->break_vars !== null
-            && $case_actions !== [ScopeAnalyzer::ACTION_LEAVE_SWITCH]
-            && ($case_exit_type !== 'break' || in_array(ScopeAnalyzer::ACTION_END, $case_actions, true));
+            && ($case_scope->has_nested_switch_leaving_it
+                || ($case_actions !== [ScopeAnalyzer::ACTION_LEAVE_SWITCH]
+                    && ($case_exit_type !== 'break' || array_intersect(
+                        [ScopeAnalyzer::ACTION_END, ScopeAnalyzer::ACTION_BREAK, ScopeAnalyzer::ACTION_CONTINUE],
+                        $case_actions,
+                    ))));
+
+        // a case left only through its breaks forgets what they changed, not what its unreachable end did
+        if ($ends_unless_breaking) {
+            $context->removeClausesOfVarsChangedWith($case_scope->parent_remove_vars_at_breaks);
+        } elseif ($case_exit_type !== 'return_throw') {
+            $context->removeClausesOfVarsChangedIn($case_context);
+        }
 
         if ($case_exit_type !== 'return_throw' && !$ends_unless_breaking) {
-            $context->removeClausesOfVarsChangedIn($case_context);
-
             if (self::handleNonReturningCase(
                 $statements_analyzer,
                 $switch_var_id,
@@ -468,12 +479,10 @@ final class SwitchCaseAnalyzer
                 }
             }
 
-            if ($ends_unless_breaking) {
-                $switch_scope->new_vars_possibly_in_scope = [
-                    ...array_diff_key($case_scope->vars_possibly_in_scope_at_breaks, $context->vars_possibly_in_scope),
-                    ...$switch_scope->new_vars_possibly_in_scope,
-                ];
-            }
+            $switch_scope->new_vars_possibly_in_scope = [
+                ...array_diff_key($case_scope->vars_possibly_in_scope_at_breaks, $context->vars_possibly_in_scope),
+                ...$switch_scope->new_vars_possibly_in_scope,
+            ];
 
             if ($ends_unless_breaking && $switch_scope->new_vars_in_scope === null) {
                 $switch_scope->new_vars_in_scope = array_diff_key($case_scope->break_vars, $context->vars_in_scope);
@@ -624,8 +633,8 @@ final class SwitchCaseAnalyzer
         }
 
         // if we're leaving this block, add vars to outer for loop scope
-        if ($case_exit_type === 'continue') {
-            if (!$context->loop_scope) {
+        if ($case_exit_type === 'continue' || $case_exit_type === 'leave') {
+            if ($case_exit_type === 'continue' && !$context->loop_scope) {
                 if (IssueBuffer::accepts(
                     new ContinueOutsideLoop(
                         'Continue called when not in loop',
@@ -634,6 +643,14 @@ final class SwitchCaseAnalyzer
                 )) {
                     return false;
                 }
+            }
+
+            // the loop may be left, or go on, with the variables the case defined
+            if ($context->loop_scope) {
+                $context->loop_scope->vars_possibly_in_scope = [
+                    ...array_diff_key($case_context->vars_possibly_in_scope, $context->vars_possibly_in_scope),
+                    ...$context->loop_scope->vars_possibly_in_scope,
+                ];
             }
         } else {
             $switch_scope->addWayOut($case_context->null_array_offsets_read);

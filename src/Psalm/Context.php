@@ -1299,6 +1299,26 @@ final class Context
     }
 
     /**
+     * Drops the clauses about the variables a nested scope changed with the stamps $parent_remove_vars, as
+     * removeClausesOfVarsChangedIn() does with those it ends with
+     *
+     * @param array<string, int> $parent_remove_vars
+     * @internal
+     */
+    public function removeClausesOfVarsChangedWith(array $parent_remove_vars): void
+    {
+        foreach ($parent_remove_vars as $var_id => $stamp) {
+            if ($stamp > ($this->parent_remove_vars[$var_id] ?? 0)) {
+                if ($this->inside_conditional) {
+                    $this->parent_remove_vars[$var_id] = $stamp;
+                } else {
+                    $this->removeVarFromConflictingClauses($var_id);
+                }
+            }
+        }
+    }
+
+    /**
      * Drops the clauses about the variables changed since $parent_remove_vars was taken from this context
      *
      * @param array<string, int> $parent_remove_vars
