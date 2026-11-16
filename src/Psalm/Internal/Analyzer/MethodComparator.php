@@ -1175,6 +1175,9 @@ final class MethodComparator
                     $implementer_classlike_storage->name,
                     $implementer_method_storage_param_type,
                     $codebase,
+                    $implementer_called_class_name,
+                    $implementer_called_class_name,
+                    $implementer_called_class_storage->parent_class,
                 );
 
                 self::transformTemplates(
@@ -1182,6 +1185,9 @@ final class MethodComparator
                     $guide_class_name,
                     $guide_method_storage_param_type,
                     $codebase,
+                    $implementer_called_class_name,
+                    $implementer_called_class_name,
+                    $implementer_called_class_storage->parent_class,
                 );
             }
         }
@@ -1199,6 +1205,9 @@ final class MethodComparator
                 $guide_class_name,
                 $guide_method_storage_param_type,
                 $codebase,
+                $implementer_classlike_storage->name,
+                $implementer_called_class_name,
+                $implementer_classlike_storage->parent_class,
             );
         }
 
@@ -1474,11 +1483,19 @@ final class MethodComparator
         $guide_class_name = $guide_classlike_storage->name;
 
         if ($implementer_classlike_storage->template_extended_params) {
+            $self_class = $implementer_classlike_storage->is_trait
+                ? $implementer_called_class_name
+                : $implementer_classlike_storage->name;
+
             self::transformTemplates(
                 $implementer_classlike_storage->template_extended_params,
                 $guide_class_name,
                 $guide_method_storage_return_type,
                 $codebase,
+                $self_class,
+                $implementer_called_class_name,
+                $implementer_classlike_storage->parent_class,
+                $implementer_classlike_storage->final,
             );
 
             if ($implementer_method_storage->defining_fqcln) {
@@ -1487,6 +1504,10 @@ final class MethodComparator
                     $implementer_method_storage->defining_fqcln,
                     $implementer_method_storage_return_type,
                     $codebase,
+                    $self_class,
+                    $implementer_called_class_name,
+                    $implementer_classlike_storage->parent_class,
+                    $implementer_classlike_storage->final,
                 );
             }
         }
@@ -1502,6 +1523,10 @@ final class MethodComparator
                     $implementer_classlike_storage->name,
                     $implementer_method_storage_return_type,
                     $codebase,
+                    $implementer_called_class_name,
+                    $implementer_called_class_name,
+                    $implementer_called_class_storage->parent_class,
+                    $implementer_called_class_storage->final,
                 );
 
                 self::transformTemplates(
@@ -1509,6 +1534,10 @@ final class MethodComparator
                     $guide_class_name,
                     $guide_method_storage_return_type,
                     $codebase,
+                    $implementer_called_class_name,
+                    $implementer_called_class_name,
+                    $implementer_called_class_storage->parent_class,
+                    $implementer_called_class_storage->final,
                 );
             }
         }
@@ -1630,13 +1659,16 @@ final class MethodComparator
 
     /**
      * @param  array<string, array<string, Union>>  $template_extended_params
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function transformTemplates(
         array $template_extended_params,
         string $base_class_name,
         Union &$templated_type,
         Codebase $codebase,
+        string $self_class,
+        string $static_class,
+        ?string $parent_class,
+        bool $final = false,
     ): void {
         if (isset($template_extended_params[$base_class_name])) {
             $map = $template_extended_params[$base_class_name];
@@ -1661,11 +1693,25 @@ final class MethodComparator
                             $new_base_class_name,
                             $mapped_type,
                             $codebase,
+                            $self_class,
+                            $static_class,
+                            $parent_class,
+                            $final,
                         );
                     }
                 }
 
-                $template_types[$key][$base_class_name] = $mapped_type;
+                // a type argument such as `@implements ArrayAccess<int, static>` belongs to the implementer
+                $template_types[$key][$base_class_name] = TypeExpander::expandUnion(
+                    $codebase,
+                    $mapped_type,
+                    $self_class,
+                    $static_class,
+                    $parent_class,
+                    true,
+                    false,
+                    $final,
+                );
             }
 
             $template_result = new TemplateResult([], $template_types);
