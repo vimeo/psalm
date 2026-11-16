@@ -237,6 +237,157 @@ final class ForeachTest extends TestCase
                         return $counts;
                     }',
             ],
+            'foreachCounterIncrementedFromACoalesceIsNotAUnionOfLiterals' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): ?int {
+                        $c = null;
+                        foreach ($words as $_) {
+                            $c = ($c ?? 0) + 1;
+                        }
+                        /** @psalm-check-type-exact $c = int<1, max>|null */;
+                        return $c;
+                    }',
+            ],
+            'foreachCounterIncrementedFromACoalesceOnTheRightIsNotAUnionOfLiterals' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): ?int {
+                        $c = null;
+                        foreach ($words as $_) {
+                            $c = 1 + ($c ?? 0);
+                        }
+                        /** @psalm-check-type-exact $c = int<1, max>|null */;
+                        return $c;
+                    }',
+            ],
+            'foreachCountersInArrayValuesIncrementedFromACoalesceAreNotUnionsOfLiterals' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $words
+                     * @return array<string, int>
+                     */
+                    function f(array $words): array {
+                        $counts = [];
+                        foreach ($words as $word) {
+                            $counts[$word] = ($counts[$word] ?? 0) + 1;
+                        }
+                        /** @psalm-check-type-exact $counts = array<string, int<1, max>> */;
+                        return $counts;
+                    }',
+            ],
+            'foreachCounterIncrementedFromATernaryIsNotAUnionOfLiterals' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): ?int {
+                        $c = null;
+                        foreach ($words as $_) {
+                            $c = ($c === null ? 0 : $c) + 1;
+                        }
+                        /** @psalm-check-type-exact $c = int<1, max>|null */;
+                        return $c;
+                    }',
+            ],
+            'foreachCounterIncrementedFromAMatchIsNotAUnionOfLiterals' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): ?int {
+                        $c = null;
+                        foreach ($words as $_) {
+                            $c = (match (true) {
+                                $c === null => 0,
+                                default => $c,
+                            }) + 1;
+                        }
+                        /** @psalm-check-type-exact $c = int<1, max>|null */;
+                        return $c;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'foreachCounterIncrementedFromACallIsNotAUnionOfLiterals' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): int {
+                        $c = 0;
+                        foreach ($words as $_) {
+                            $c = max($c, 0) + 1;
+                        }
+                        /** @psalm-check-type-exact $c = int<0, max> */;
+                        return $c;
+                    }',
+            ],
+            'foreachCounterInAPropertyIncrementedFromACoalesceIsNotAUnionOfLiterals' => [
+                'code' => '<?php
+                    final class A {
+                        public ?int $c = null;
+
+                        /** @param list<string> $words */
+                        public function f(array $words): void {
+                            $this->c = null;
+                            foreach ($words as $_) {
+                                $this->c = ($this->c ?? 0) + 1;
+                            }
+                            /** @psalm-check-type-exact $this->c = int<1, max>|null */;
+                        }
+                    }',
+            ],
+            'foreachLiteralsNotComputedFromWhatTheLoopChangesAreStillAdded' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): void {
+                        $fixed = ["a" => 1];
+                        foreach ($words as $word) {
+                            $a = (rand(0, 1) ? 2 : 3) + 1;
+                            /** @psalm-check-type-exact $a = 3|4 */;
+                            $b = ($fixed[$word] ?? 5) + 1;
+                            /** @psalm-check-type-exact $b = 2|6 */;
+                        }
+                    }',
+            ],
+            'foreachLiteralsSelectedByWhatTheLoopChangesAreStillAdded' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): void {
+                        $flag = false;
+                        foreach ($words as $word) {
+                            $a = ($flag ? 2 : 3) + 1;
+                            /** @psalm-check-type-exact $a = 3|4 */;
+                            $b = match (true) {
+                                $flag => 1,
+                                default => 2,
+                            } + 1;
+                            /** @psalm-check-type-exact $b = 2|3 */;
+                            $flag = $word === "x";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'foreachLiteralsComputedFromAVariableTheLoopDoesNotAssignAreStillAdded' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words, bool $flag): void {
+                        foreach ($words as $_) {
+                            $a = (int) $flag + 1;
+                            /** @psalm-check-type-exact $a = 1|2 */;
+                        }
+                    }',
+            ],
+            'foreachPowerOfAnExponentTheLoopChangesIsAFloatForANegativeLiteral' => [
+                'code' => '<?php
+                    /** @param list<string> $words */
+                    function f(array $words): void {
+                        $exponent = null;
+                        foreach ($words as $_) {
+                            $a = 2 ** ($exponent ?? -1);
+                            /** @psalm-check-type-exact $a = float|int<1, max> */;
+                            $exponent = 1;
+                        }
+                    }',
+            ],
             'mixedIteratedByForeachIsNonEmptyInTheBodyAndMixedAfterIt' => [
                 'code' => '<?php
                     function getMixed(): mixed {
@@ -2585,6 +2736,43 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'foreachOverNonEmptyArrayVarAssignedBeforeContinueAndAtTheEndOfTheBody' => [
+                'code' => '<?php
+                    foreach ([1, 2] as $_) {
+                        if (rand(0, 1)) {
+                            $z = 1;
+                            continue;
+                        }
+                        $z = 2;
+                    }',
+                'assertions' => [
+                    '$z===' => '1|2',
+                ],
+            ],
+            'foreachOverNonEmptyArrayOffsetNotAssignedBeforeOneOfTheContinuesKeepsItsType' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var array<string, ?int> */
+                        public array $arr = [];
+                    }
+
+                    function f(C $c): void {
+                        foreach ([1, 2] as $_) {
+                            if (rand(0, 1)) {
+                                $c->arr["x"] = 1;
+                                continue;
+                            }
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $c->arr["x"] = 2;
+                        }
+
+                        if (isset($c->arr["x"]) && $c->arr["x"] === 3) {
+                            echo "three";
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -2595,6 +2783,109 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'foreachLiteralSelectedByAComparisonOfItselfStaysAUnionOfLiterals' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $words */
+                    function f(array $words): int {
+                        $a = 0;
+                        foreach ($words as $_) {
+                            $a = ($a > 5 ? 1 : 2) + 1;
+                        }
+                        return $a;
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:15',
+            ],
+            'foreachReadBeforeAReferenceAssignment' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $arr): void {
+                        foreach ($arr as $k => $_) {
+                            if ($k) {
+                                echo $r;
+                            }
+                            $r = &$arr[$k];
+                        }
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:18',
+            ],
+            'foreachReadOfAVariableAssignedOnlyBeforeContinue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $arr): void {
+                        foreach ($arr as $v) {
+                            if (rand(0, 1)) {
+                                echo $x;
+                            }
+                            if ($v) {
+                                $x = 1;
+                                continue;
+                            }
+                            break;
+                        }
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:18',
+                'error_levels' => ['MixedAssignment'],
+            ],
+            'foreachReadBeforeTheValueOfAnInnerForeach' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $xs, array $ys): void {
+                        foreach ($xs as $_) {
+                            if (rand(0, 1)) {
+                                echo $v;
+                            }
+                            foreach ($ys as $v) {}
+                        }
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:18',
+            ],
+            'foreachReadBeforeTheKeyOfAnInnerForeachOverANonEmptyArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $xs): void {
+                        foreach ($xs as $_) {
+                            if (rand(0, 1)) {
+                                echo $k;
+                            }
+                            foreach (["a" => 1] as $k => $_v) {}
+                        }
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:18',
+            ],
+            'foreachReadBeforeAStaticDeclaration' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $xs): void {
+                        foreach ($xs as $_) {
+                            if (rand(0, 1)) {
+                                echo $s;
+                            }
+                            static $s = 1;
+                        }
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:18',
+            ],
+            'foreachReadBeforeANestedListAssignment' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $xs): void {
+                        foreach ($xs as $_) {
+                            if (rand(0, 1)) {
+                                echo $n;
+                            }
+                            [[$n]] = [[1]];
+                        }
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:18',
+            ],
             'arrayIteratedByForeachIsNotNonEmptyAfterIt' => [
                 'code' => '<?php
                     /** @param non-empty-array<int> $vals */
@@ -2722,7 +3013,7 @@ final class ForeachTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference',
             ],
-            'variableAssignedOnlyInTheRightOperandOfAnOrConditionIsUndefinedInTheLoopBody' => [
+            'variableAssignedOnlyInTheRightOperandOfAnOrConditionIsPossiblyUndefinedInTheLoopBody' => [
                 'code' => '<?php
                     function check(string $value): bool {
                         return $value === "a";
@@ -2736,7 +3027,7 @@ final class ForeachTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'UndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:38',
             ],
             'foreachKeyAndDestructuredValueNotNullAfterBreakingLoopOnNonEmptyArray' => [
                 'code' => '<?php
@@ -3035,6 +3326,20 @@ final class ForeachTest extends TestCase
 
                     echo $car;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:26',
+            ],
+            'foreachOverNonEmptyArrayVarNotAssignedBeforeContinue' => [
+                'code' => '<?php
+                    function f(): int {
+                        foreach ([1, 2] as $_) {
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $z = 2;
+                        }
+
+                        return $z;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }

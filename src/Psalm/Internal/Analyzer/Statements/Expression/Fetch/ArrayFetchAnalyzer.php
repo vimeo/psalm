@@ -277,7 +277,7 @@ final class ArrayFetchAnalyzer
 
         $can_store_result = false;
         $chain_state = NullsafeChainState::None;
-        $own_nullable = false;
+        $own_type = null;
 
         if ($stmt_var_type) {
             if ($stmt_var_type->isNull()) {
@@ -307,7 +307,7 @@ final class ArrayFetchAnalyzer
 
             $chain_state = $stmt_var_type->isNullable() ? NullsafeChainState::of($stmt->var) : NullsafeChainState::None;
 
-            if ($chain_state === NullsafeChainState::ShortCircuit) {
+            if ($chain_state->isNullOnlyByShortCircuit()) {
                 // the null of a `?->` short-circuit is not an array to fetch from, it is added to the result below
                 $non_null_var_type = $stmt_var_type->getBuilder();
                 $non_null_var_type->removeType('null');
@@ -325,7 +325,7 @@ final class ArrayFetchAnalyzer
                 null,
             );
 
-            $own_nullable = $stmt_type->isNullable() || $stmt_type->possibly_undefined;
+            $own_type = $stmt_type;
 
             if ($stmt->dim && $stmt_var_type->hasArray()) {
                 $array_type = $stmt_var_type->getArray();
@@ -435,7 +435,7 @@ final class ArrayFetchAnalyzer
         }
 
         if ($chain_state !== NullsafeChainState::None) {
-            $chain_state->afterLink($own_nullable)->markOn($stmt);
+            $chain_state->afterLink($own_type, $own_type && $own_type->possibly_undefined)->markOn($stmt);
             $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
         }
 
@@ -2180,7 +2180,9 @@ final class ArrayFetchAnalyzer
 
                     $new_key_type = Type::combineUnionTypes(
                         $generic_key_type,
-                        $offset_type->hasMixed() ? Type::getArrayKey() : $offset_type->freeze(),
+                        $offset_type->hasMixed()
+                            ? Type::getArrayKey()
+                            : self::castInvalidOffsetTypes($offset_type->freeze()),
                     );
 
                     if (!$stmt->dim) {
@@ -2715,12 +2717,40 @@ final class ArrayFetchAnalyzer
     }
 
     /**
-     * An offset type with what can't be an array key, and PHP doesn't cast to one, replaced by array-key
+     * An offset type with floats replaced by the ints PHP casts them to, and what can't be an array key, and PHP
+     * doesn't cast to one, replaced by array-key
      *
      * @psalm-capabilities read-props|write-this-props
      */
     public static function castInvalidOffsetTypes(Union $offset_type): Union
     {
+        if ($offset_type->hasFloat()) {
+            $atomic_types = [];
+
+            foreach ($offset_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TFloat) {
+                    $int = $atomic_type instanceof TLiteralFloat ? LiteralCast::toInt($atomic_type->value) : null;
+                    $atomic_type = $int === null
+                        ? new TInt($atomic_type->from_docblock)
+                        : new TLiteralInt($int, $atomic_type->from_docblock);
+                }
+
+                $atomic_types[$atomic_type->getKey()] = $atomic_type;
+            }
+
+            if (isset($atomic_types['int'])) {
+                foreach ($atomic_types as $key => $atomic_type) {
+                    if ($atomic_type instanceof TLiteralInt) {
+                        unset($atomic_types[$key]);
+                    }
+                }
+            }
+
+            if ($atomic_types !== []) {
+                $offset_type = $offset_type->setTypes($atomic_types);
+            }
+        }
+
         $uncastable = self::getUncastableOffsetTypes($offset_type);
 
         if (!$uncastable) {

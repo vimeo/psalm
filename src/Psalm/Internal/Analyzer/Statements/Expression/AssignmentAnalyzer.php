@@ -1345,8 +1345,15 @@ final class AssignmentAnalyzer
             || $stmt->var instanceof PropertyFetch
             || $stmt->var instanceof PhpParser\Node\Expr\StaticPropertyFetch
             || $stmt->var instanceof ArrayDimFetch;
+        $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+        $context->inside_by_ref_offset = $stmt->expr instanceof ArrayDimFetch;
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context, false, null, null, null, true);
+        $context->inside_by_ref_offset = $was_inside_by_ref_offset;
         $context->inside_general_use = $was_inside_general_use;
+
+        if ($stmt->expr instanceof ArrayDimFetch) {
+            self::makeReferencedArrayNonNull($statements_analyzer, $stmt->expr, $context);
+        }
 
         $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
@@ -1582,6 +1589,57 @@ final class AssignmentAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * PHP turns the null a local variable holds into an array when an offset of it is bound by reference. What is
+     * written through the reference can't be followed, so the item itself is left as it is.
+     */
+    private static function makeReferencedArrayNonNull(
+        StatementsAnalyzer $statements_analyzer,
+        ArrayDimFetch $stmt,
+        Context $context,
+    ): void {
+        $root = $stmt->var;
+
+        while ($root instanceof ArrayDimFetch) {
+            $root = $root->var;
+        }
+
+        if (!$root instanceof PhpParser\Node\Expr\Variable
+            || !is_string($root->name)
+            || $root->name === 'this'
+        ) {
+            return;
+        }
+
+        $root_id = '$' . $root->name;
+        $root_type = $context->vars_in_scope[$root_id] ?? null;
+
+        if ($root_type === null || !$root_type->isNullable()) {
+            return;
+        }
+
+        foreach ($root_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TArray
+                && !$atomic_type instanceof TKeyedArray
+                && !$atomic_type instanceof TNull
+            ) {
+                return;
+            }
+        }
+
+        $array_type = $root_type->getBuilder();
+        $array_type->removeType('null');
+
+        if ($array_type->isUnionEmpty()) {
+            $array_type->addType(new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]));
+        }
+
+        $array_type = $array_type->freeze();
+
+        $context->vars_in_scope[$root_id] = $array_type;
+        $context->removeVarFromConflictingClauses($root_id, $array_type, $statements_analyzer);
     }
 
     public static function assignByRefParam(
