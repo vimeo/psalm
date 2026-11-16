@@ -72,7 +72,6 @@ final class AndAnalyzer
 
         /** @var list<string> $left_context->reconciled_expression_clauses */
         $left_context->reconciled_expression_clauses = [];
-        $left_context->vars_assigned_in_and = [];
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $left_context) === false) {
             return false;
@@ -217,7 +216,6 @@ final class AndAnalyzer
 
         $pre_right_assigned_var_ids = $right_context->assigned_var_ids;
         $pre_right_remove_vars = $right_context->parent_remove_vars;
-        $right_context->vars_assigned_in_and = [];
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $right_context) === false) {
             return false;
@@ -279,6 +277,9 @@ final class AndAnalyzer
         }
 
         if ($context->if_body_context && !$context->inside_negation) {
+            // the body context gets them instead
+            $context->vars_assigned_in_and = [];
+
             $if_body_context = $context->if_body_context;
             $context->vars_in_scope = $right_context->vars_in_scope;
             $if_body_context->vars_in_scope = [
