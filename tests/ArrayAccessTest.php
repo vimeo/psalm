@@ -2658,6 +2658,139 @@ final class ArrayAccessTest extends TestCase
                         return $l[0];
                     }',
             ],
+            'listOffsetAfterForBreakingOnIsset' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        for ($i = 0; $i < 3; $i++) {
+                            if (isset($l[0])) {
+                                break;
+                            }
+                        }
+                        return $l[0];
+                    }',
+            ],
+            'listOffsetAfterDoBreakingOnIsset' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        do {
+                            if (isset($l[0])) {
+                                break;
+                            }
+                        } while (rand(0, 1));
+                        return $l[0];
+                    }',
+            ],
+            'listOffsetAfterForeachBreakingOnIsset' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @param non-empty-list<int> $items
+                     * @return mixed
+                     */
+                    function f(array $l, array $items) {
+                        foreach ($items as $_) {
+                            if (isset($l[0])) {
+                                break;
+                            }
+                        }
+                        return $l[0];
+                    }',
+            ],
+            'listOffsetAfterForBreakingOnNotIsset' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        for ($i = 0; $i < 3; $i++) {
+                            if (!isset($l[0])) {
+                                break;
+                            }
+                        }
+                        return $l[0];
+                    }',
+            ],
+            'listOffsetAfterForWithABreakBeforeTheIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        for ($i = 0; $i < 3; $i++) {
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                            if (isset($l[0])) {
+                                break;
+                            }
+                        }
+                        return $l[0];
+                    }',
+            ],
+            'listOffsetAfterForWithABreakThatDoesNotCheckIt' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        for ($i = 0; $i < 3; $i++) {
+                            if ($i === 1) {
+                                if (isset($l[0])) {
+                                    break;
+                                }
+                            } else {
+                                if (rand(0, 1)) {
+                                    break;
+                                }
+                            }
+                            if (isset($l[0])) {
+                                return null;
+                            }
+                        }
+                        return $l[0];
+                    }',
+            ],
+            'nestedOffsetAfterDoBreakingOnIsset' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, array<string, mixed>> $a
+                     * @return mixed
+                     */
+                    function f(array $a) {
+                        do {
+                            if (isset($a["x"]["y"])) {
+                                break;
+                            }
+                        } while (rand(0, 1));
+                        return $a["x"]["y"];
+                    }',
+            ],
+            'optionalOffsetSetOnEveryWayOutOfAFor' => [
+                'code' => '<?php
+                    /** @param array{a?: int} $a */
+                    function f(array $a): int {
+                        for ($i = 0; $i < 3; $i++) {
+                            if (!isset($a["a"])) {
+                                return 0;
+                            }
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        }
+                        return $a["a"];
+                    }',
+            ],
             'offsetCheckedAgainAfterNotEmptyCheck' => [
                 'code' => '<?php
                     /** @param array{s?: mixed} $o */
@@ -3364,6 +3497,32 @@ final class ArrayAccessTest extends TestCase
                         return $l[0];
                     }',
                 'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'optionalOffsetAfterForBreakingOnIsset' => [
+                'code' => '<?php
+                    /** @param array{a?: int} $a */
+                    function f(array $a): ?int {
+                        for ($i = 0; $i < 3; $i++) {
+                            if (isset($a["a"])) {
+                                break;
+                            }
+                        }
+                        return $a["a"];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'variableDefinedBeforeOneBreakOfAFor' => [
+                'code' => '<?php
+                    function f(): int {
+                        for ($i = 0; $i < 3; $i++) {
+                            if (rand(0, 1)) {
+                                $x = 1;
+                                break;
+                            }
+                        }
+                        return $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }
