@@ -1025,7 +1025,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 true,
             );
 
-            if (!$storage->return_type || $storage->return_type->from_docblock) {
+            if (!$storage->return_type) {
                 $closure_return_types = ReturnTypeAnalyzer::addImplicitNullReturn(
                     $closure_return_types,
                     $closure_yield_types !== [],
