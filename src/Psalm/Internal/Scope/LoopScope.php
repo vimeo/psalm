@@ -61,6 +61,13 @@ final class LoopScope
     public array $possibly_defined_loop_parent_vars = [];
 
     /**
+     * Offsets some breaks know to be set and others not (e.g. by `isset()`): the type of the array tells as much
+     *
+     * @var array<string, true>
+     */
+    public array $unknown_offsets = [];
+
+    /**
      * What the variables hold where the latest pass over the body breaks out of the loop, null before a break.
      * A variable missing at one of the breaks is possibly undefined.
      *
