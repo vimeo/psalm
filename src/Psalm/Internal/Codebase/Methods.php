@@ -602,7 +602,7 @@ final class Methods
 
     /**
      * @return lowercase-string|null
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     private static function getPseudoMethodDeclaringClass(
         ClassLikeStorage $class_storage,
