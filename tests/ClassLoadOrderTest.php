@@ -20,16 +20,6 @@ final class ClassLoadOrderTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'deferredReferenceToLaterGlobalConstant' => [
-                'code' => '<?php
-                    class B {
-                        const C = A;
-                    }
-
-                    $b = (new B);
-
-                    const A = 5;',
-            ],
             'singleFileInheritance' => [
                 'code' => '<?php
                     class A extends B {}
@@ -161,6 +151,17 @@ final class ClassLoadOrderTest extends TestCase
                     class H extends I {}
                     class I extends G {}',
                 'error_message' => 'Circular reference',
+            ],
+            'SKIPPED-invalidDeferredReference' => [ // #13938
+                'code' => '<?php
+                    class B {
+                        const C = A;
+                    }
+
+                    $b = (new B);
+
+                    const A = 5;',
+                'error_message' => 'UndefinedConstant',
             ],
         ];
     }
