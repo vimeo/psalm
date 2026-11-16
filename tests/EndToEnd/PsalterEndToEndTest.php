@@ -169,6 +169,20 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         yield 'psalm --alter' => [__DIR__ . '/../../psalm', ['--alter', ...$issues]];
         yield 'psalm-refactor' => [__DIR__ . '/../../psalm-refactor', ['--move', 'A::b', '--into', 'C', '-z']];
         yield 'psalm-language-server' => [__DIR__ . '/../../psalm-language-server', ['-z']];
+        yield 'psalm --language-server' => [__DIR__ . '/../../psalm', ['--language-server', '-z']];
+    }
+
+    public function testAValidOptionAfterLanguageServerIsAccepted(): void
+    {
+        $process = self::newProcess(
+            [PHP_BINARY, __DIR__ . '/../../psalm', '--language-server', '--version'],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringContainsString('Psalm ', $process->getOutput());
     }
 
     public function testPsalterRealRunThatChangesFilesExitsWithCode0(): void

@@ -17,7 +17,6 @@ use Psalm\Internal\LanguageServer\PathMapper;
 use Psalm\Report;
 
 use function array_key_exists;
-use function array_search;
 use function array_slice;
 use function chdir;
 use function explode;
@@ -97,13 +96,12 @@ final class LanguageServer
 
         $args = array_slice($argv, 1);
 
-        $psalm_proxy = array_search('--language-server', $args, true);
-
-        if ($psalm_proxy !== false) {
-            unset($args[$psalm_proxy]);
-        }
-
-        CliUtils::rejectUnrecognisedOptions($args, $valid_short_options, $valid_long_options);
+        CliUtils::rejectUnrecognisedOptions(
+            $args,
+            $valid_short_options,
+            $valid_long_options,
+            ['--language-server'],
+        );
 
         // get options from command line
         $options = CliUtils::getOptions($args, $valid_short_options, $valid_long_options);
