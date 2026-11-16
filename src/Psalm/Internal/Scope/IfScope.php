@@ -39,7 +39,7 @@ final class IfScope
 
     /**
      * Variables a branch reaching the end possibly defines without a type (e.g. in a loop left by a break, or in a
-     * catch): the type the other branches give them is not all of it. Their assignments in those branches
+     * catch): the type the other branches give them is not all of it. Each maps to its assignments in those branches
      *
      * @var array<string, array<string, DataFlowNode>>
      */

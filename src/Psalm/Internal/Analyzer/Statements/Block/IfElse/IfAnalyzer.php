@@ -35,6 +35,8 @@ use function array_filter;
 use function array_intersect;
 use function array_intersect_key;
 use function array_key_exists;
+use function array_key_first;
+use function array_key_last;
 use function array_keys;
 use function array_merge;
 use function array_reduce;
@@ -518,7 +520,10 @@ final class IfAnalyzer
         }
 
         $branch_range = $branch_nodes
-            ? [$branch_nodes[0]->getStartFilePos(), $branch_nodes[count($branch_nodes) - 1]->getEndFilePos()]
+            ? [
+                $branch_nodes[array_key_first($branch_nodes)]->getStartFilePos(),
+                $branch_nodes[array_key_last($branch_nodes)]->getEndFilePos(),
+            ]
             : null;
 
         foreach ($if_context->vars_possibly_in_scope as $var_id => $_) {
