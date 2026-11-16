@@ -2048,7 +2048,7 @@ final class BinaryOperationTest extends TestCase
                         }
                     }',
                 'assertions' => [
-                    '$a===' => 'non-empty-string',
+                    '$a===' => "'z'",
                 ],
             ],
             'nullCoalescingAssignment' => [

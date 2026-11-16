@@ -22,6 +22,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\FileSource;
 use Psalm\Internal\Algebra;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
@@ -129,6 +130,9 @@ use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
+
+use const PHP_INT_MAX;
+use const PHP_INT_MIN;
 
 /**
  * @internal
@@ -3960,6 +3964,66 @@ final class AssertionFinder
     }
 
     /**
+     * The variable an operand compared with an integer is: `$a++` and `$a--` compare the value `$a` had before, so
+     * when it is an integer, what `$a` holds afterwards is compared with the integer shifted by one. A variable the
+     * operand evaluated after it writes (`$a < ($a = 10)`) no longer holds the compared value.
+     */
+    private static function getComparedVarId(
+        PhpParser\Node\Expr $operand,
+        ?PhpParser\Node\Expr $later_operand,
+        ?string $this_class_name,
+        FileSource $source,
+        int &$compared_value,
+    ): ?string {
+        $shift = 0;
+
+        if ($operand instanceof PhpParser\Node\Expr\PostInc || $operand instanceof PhpParser\Node\Expr\PostDec) {
+            $shift = $operand instanceof PhpParser\Node\Expr\PostInc ? 1 : -1;
+
+            if (!$source instanceof StatementsAnalyzer
+                || !($old_type = $source->node_data->getType($operand))
+                || !$old_type->isInt()
+                || $compared_value === ($shift === 1 ? PHP_INT_MAX : PHP_INT_MIN)
+            ) {
+                return null;
+            }
+
+            $operand = $operand->var;
+        }
+
+        $var_id = ExpressionIdentifier::getExtendedVarId($operand, $this_class_name, $source);
+
+        if ($var_id === null) {
+            return null;
+        }
+
+        if ($later_operand !== null) {
+            $written_var_ids = FormulaGenerator::getAssignedVarIds(
+                $later_operand,
+                $this_class_name,
+                $source instanceof StatementsAnalyzer ? $source->node_data : null,
+            );
+
+            while ($operand instanceof PhpParser\Node\Expr\Assign
+                || $operand instanceof PhpParser\Node\Expr\PreInc
+                || $operand instanceof PhpParser\Node\Expr\PreDec
+            ) {
+                $operand = $operand->var;
+            }
+
+            $root_var_id = ExpressionIdentifier::getRootVarId($operand, $this_class_name, $source);
+
+            if ($root_var_id === null ? $written_var_ids !== [] : isset($written_var_ids[$root_var_id])) {
+                return null;
+            }
+        }
+
+        $compared_value += $shift;
+
+        return $var_id;
+    }
+
+    /**
      * The operand a value compared with an operand of this type is identical to, unless the type has a single value
      * and says it all: two comparisons with different values of the same type are not each other's negation
      *
@@ -4339,19 +4403,13 @@ final class AssertionFinder
         }
 
         if ($superior_value_position && $superior_value_comparison !== null) {
-            if ($superior_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                $var_name = ExpressionIdentifier::getExtendedVarId(
-                    $conditional->left,
-                    $this_class_name,
-                    $source,
-                );
-            } else {
-                $var_name = ExpressionIdentifier::getExtendedVarId(
-                    $conditional->right,
-                    $this_class_name,
-                    $source,
-                );
-            }
+            $var_name = self::getComparedVarId(
+                $superior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->left : $conditional->right,
+                $superior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->right : null,
+                $this_class_name,
+                $source,
+                $superior_value_comparison,
+            );
 
             if ($var_name !== null) {
                 if ($superior_value_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -4619,20 +4677,15 @@ final class AssertionFinder
         }
 
         if ($inferior_value_position) {
-            if ($inferior_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                $var_name = ExpressionIdentifier::getExtendedVarId(
-                    $conditional->left,
+            $var_name = $inferior_value_comparison !== null
+                ? self::getComparedVarId(
+                    $inferior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->left : $conditional->right,
+                    $inferior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->right : null,
                     $this_class_name,
                     $source,
-                );
-            } else {
-                $var_name = ExpressionIdentifier::getExtendedVarId(
-                    $conditional->right,
-                    $this_class_name,
-                    $source,
-                );
-            }
-
+                    $inferior_value_comparison,
+                )
+                : null;
 
             if ($var_name !== null && $inferior_value_comparison !== null) {
                 if ($inferior_value_position === self::ASSIGNMENT_TO_RIGHT) {

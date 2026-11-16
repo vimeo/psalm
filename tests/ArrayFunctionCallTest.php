@@ -3034,6 +3034,16 @@ final class ArrayFunctionCallTest extends TestCase
                     '$d' => 'list<int>',
                 ],
             ],
+            'arraySpliceStringKeyedRefWithoutReplacementCanBeLeftEmpty' => [
+                'code' => '<?php
+                    /** @var non-empty-array<string, int> $d */
+                    $d = ["a" => 1];
+                    $o = 0;
+                    array_splice($d, $o, 1);',
+                'assertions' => [
+                    '$d===' => 'array<string, int>',
+                ],
+            ],
             'arraySpliceEmptyRefWithoutReplacement' => [
                 'code' => '<?php
                     $a = array( "hello" );
