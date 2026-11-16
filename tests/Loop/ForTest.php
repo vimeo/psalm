@@ -23,6 +23,15 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'preIncrementInAConditionThatHoldsOnlyForTheFirstValueExitsWithTheNextOne' => [
+                'code' => '<?php
+                    for ($try = 8; ++$try < 10;) {
+                        echo $try;
+                    }',
+                'assertions' => [
+                    '$try===' => '10',
+                ],
+            ],
             'forIntRangeShiftedByEveryIterationIsWidened' => [
                 'code' => '<?php
                     function f(): int {

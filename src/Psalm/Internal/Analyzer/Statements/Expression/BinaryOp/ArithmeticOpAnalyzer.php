@@ -230,8 +230,16 @@ final class ArithmeticOpAnalyzer
             $has_string_increment = false;
 
             $right_type_parts = self::expandNumericTemplates($right_type);
+            $left_type_parts = self::expandNumericTemplates($left_type);
 
-            foreach (self::expandNumericTemplates($left_type) as $left_type_part) {
+            if ($context !== null
+                && $context->inside_loop
+                && ($parent instanceof VirtualPlus || $parent instanceof VirtualMinus)
+            ) {
+                $left_type_parts = self::getLiteralIntsAsRange($left_type_parts);
+            }
+
+            foreach ($left_type_parts as $left_type_part) {
                 foreach ($right_type_parts as $right_type_part) {
                     $candidate_result_type = self::analyzeOperands(
                         $statements_source,
@@ -335,6 +343,39 @@ final class ArithmeticOpAnalyzer
         }
 
         return $parts;
+    }
+
+    /**
+     * In a loop, `++`, `--`, `+=` and `-=` make a single literal an unbounded range, as the next iterations go further.
+     * Several literals are the values the passes over the loop combined: they are shifted as the range they span,
+     * which the loop analysis widens if the iterations keep shifting it.
+     *
+     * @param list<Atomic> $parts
+     * @return list<Atomic>
+     * @psalm-pure
+     */
+    private static function getLiteralIntsAsRange(array $parts): array
+    {
+        $other_parts = [];
+        $min = null;
+        $max = null;
+
+        foreach ($parts as $part) {
+            if ($part instanceof TLiteralInt && $part->value !== PHP_INT_MIN && $part->value !== PHP_INT_MAX) {
+                $min = $min === null ? $part->value : min($min, $part->value);
+                $max = $max === null ? $part->value : max($max, $part->value);
+            } else {
+                $other_parts[] = $part;
+            }
+        }
+
+        if ($min === null || $max === null || $min === $max) {
+            return $parts;
+        }
+
+        $other_parts[] = new TIntRange($min, $max);
+
+        return $other_parts;
     }
 
     /**
