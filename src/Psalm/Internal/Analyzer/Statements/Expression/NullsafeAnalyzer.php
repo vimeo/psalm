@@ -76,28 +76,31 @@ final class NullsafeAnalyzer
             )
             : null;
 
-        if ($receiver_id !== null) {
-            // a chain of variables and properties is analysed as it stands, so that what is known of it applies
-            $tmp_var = $stmt->var;
-            $var_type = $context->vars_in_scope[$receiver_id] ?? null;
-        } elseif (!$stmt->var instanceof PhpParser\Node\Expr\Variable) {
+        // a chain of variables and properties is analysed as it stands, so that what is known of it applies
+        $var_type = $receiver_id !== null ? $context->vars_in_scope[$receiver_id] ?? null : null;
+
+        // a receiver the context does not know yet (a property not read before) has to be analysed to get its type
+        if ($var_type === null && !$stmt->var instanceof PhpParser\Node\Expr\Variable) {
             $was_inside_general_use = $context->inside_general_use;
 
             $context->inside_general_use = true;
             ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context);
             $context->inside_general_use = $was_inside_general_use;
 
-            $tmp_name = '__tmp_nullsafe__' . (int) $stmt->var->getAttribute('startFilePos');
+            $var_type = $statements_analyzer->node_data->getType($stmt->var);
+        }
 
-            $condition_type = $statements_analyzer->node_data->getType($stmt->var);
-            $var_type = $condition_type;
+        if ($receiver_id !== null) {
+            $tmp_var = $stmt->var;
+        } elseif (!$stmt->var instanceof PhpParser\Node\Expr\Variable) {
+            $tmp_name = '__tmp_nullsafe__' . (int) $stmt->var->getAttribute('startFilePos');
 
             // a property, static property or array item is the one the call acts on: what the call does to the
             // object (what it stores in it, for the taint analysis) would be lost on a temporary variable
-            if ($condition_type
+            if ($var_type
                 && !self::isStoredInPlace($statements_analyzer, $stmt->var)
             ) {
-                $context->vars_in_scope['$' . $tmp_name] = $condition_type;
+                $context->vars_in_scope['$' . $tmp_name] = $var_type;
 
                 $tmp_var = new VirtualVariable($tmp_name, $stmt->var->getAttributes());
             } else {

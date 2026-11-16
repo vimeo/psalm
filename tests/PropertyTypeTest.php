@@ -4085,6 +4085,55 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'nullsafeFetchOnAnUnreadNonNullPropertyReceiverIsNotNullable' => [
+                'code' => '<?php
+                    final class Item { public bool $flag = true; }
+                    final class Holder { public function __construct(public Item $item) {} }
+
+                    /** @var Holder $h */
+                    $h = null;
+                    $_r = $h->item?->flag;',
+                'assertions' => ['$_r===' => 'bool'],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
+            'nullsafeMethodCallOnAnUnreadNonNullPropertyReceiverIsNotNullable' => [
+                'code' => '<?php
+                    final class Item { public function get(): bool { return true; } }
+                    final class Holder { public function __construct(public Item $item) {} }
+
+                    /** @var Holder $h */
+                    $h = null;
+                    $_r = $h->item?->get();',
+                'assertions' => ['$_r===' => 'bool'],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
+            'nullsafeFetchOnAnUnreadNonNullPropertyChainIsNotNullable' => [
+                'code' => '<?php
+                    final class Item { public bool $flag = true; }
+                    final class B { public function __construct(public Item $item) {} }
+                    final class A { public function __construct(public B $b) {} }
+
+                    /** @var A $a */
+                    $a = null;
+                    $_r = $a->b->item?->flag;',
+                'assertions' => ['$_r===' => 'bool'],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
+            'nullsafeFetchOnAnUnreadNullablePropertyReceiverStaysNullable' => [
+                'code' => '<?php
+                    final class Item { public bool $flag = true; }
+                    final class Holder { public function __construct(public ?Item $item) {} }
+
+                    /** @var Holder $h */
+                    $h = null;
+                    $_r = $h->item?->flag;',
+                'assertions' => ['$_r===' => 'bool|null'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafeFetchOfANonNullablePropertyChecksTheReceiver' => [
                 'code' => '<?php
                     final class T {}
