@@ -2680,6 +2680,32 @@ final class ReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'Not all code paths of f end in a return statement',
             ],
+            'foreachOverANonEmptyArrayLeftByGoto' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        foreach ([1] as $_x) {
+                            if ($b) {
+                                goto end;
+                            }
+                            return 1;
+                        }
+                        end:
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'doWhileLeftByGoto' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        do {
+                            if ($b) {
+                                goto end;
+                            }
+                            return 1;
+                        } while ($b);
+                        end:
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
             'foreachOverANonEmptyListBreakingOutOfTwoLoops' => [
                 'code' => '<?php
                     /** @param non-empty-list<int> $l */

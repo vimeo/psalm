@@ -294,14 +294,16 @@ final class ScopeAnalyzer
                 );
 
                 // a body that always runs and never reaches its end leaves nothing after the loop reachable;
-                // break and continue don't show up in the body's actions, so any of them rules this out
+                // a continue leaves no action, and break/continue N to an outer loop or a goto don't show up as
+                // this loop's, so any of them rules this out
                 if (!array_diff($loop_actions, [self::ACTION_END, self::ACTION_RETURN])
                     && ($stmt instanceof PhpParser\Node\Stmt\Do_
                         || $stmt->getAttribute('alwaysEntered', false))
                     && !(new NodeFinder())->findFirst(
                         $stmt->stmts,
                         static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Stmt\Break_
-                            || $node instanceof PhpParser\Node\Stmt\Continue_,
+                            || $node instanceof PhpParser\Node\Stmt\Continue_
+                            || $node instanceof PhpParser\Node\Stmt\Goto_,
                     )
                 ) {
                     return array_values(array_unique($control_actions));
