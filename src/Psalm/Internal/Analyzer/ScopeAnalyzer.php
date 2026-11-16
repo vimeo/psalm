@@ -36,6 +36,8 @@ final class ScopeAnalyzer
      * @param array<PhpParser\Node> $stmts
      * @param list<'loop'|'switch'> $break_types
      * @param bool $return_is_exit Exit and Throw statements are treated differently from return if this is false
+     * @param bool $skip_impossible_else treat the missing else of an if whose conditions matched every value
+     *                                   (see NodeDataProvider::isImplicitElseImpossible()) as leaving
      * @return list<self::ACTION_*>
      * @psalm-suppress ComplexMethod nothing much we can do
      */
@@ -44,6 +46,7 @@ final class ScopeAnalyzer
         ?NodeDataProvider $nodes,
         array $break_types,
         bool $return_is_exit = true,
+        bool $skip_impossible_else = false,
     ): array {
         if (empty($stmts)) {
             return [self::ACTION_NONE];
@@ -121,6 +124,7 @@ final class ScopeAnalyzer
                     $nodes,
                     $break_types,
                     $return_is_exit,
+                    $skip_impossible_else,
                 );
 
                 $all_leave = !array_any(
@@ -128,13 +132,17 @@ final class ScopeAnalyzer
                     static fn(string $action): bool => $action === self::ACTION_NONE,
                 );
 
-                $else_statement_actions = $stmt->else
-                    ? self::getControlActions(
+                $else_statement_actions = match (true) {
+                    $stmt->else !== null => self::getControlActions(
                         $stmt->else->stmts,
                         $nodes,
                         $break_types,
                         $return_is_exit,
-                    ) : [];
+                        $skip_impossible_else,
+                    ),
+                    $skip_impossible_else && $nodes?->isImplicitElseImpossible($stmt) => [self::ACTION_END],
+                    default => [],
+                };
 
                 $all_leave = $all_leave
                     && $else_statement_actions
@@ -152,6 +160,7 @@ final class ScopeAnalyzer
                             $nodes,
                             $break_types,
                             $return_is_exit,
+                            $skip_impossible_else,
                         );
 
                         $all_leave = $all_leave
@@ -198,6 +207,7 @@ final class ScopeAnalyzer
                         $nodes,
                         [...$break_types, 'switch'],
                         $return_is_exit,
+                        $skip_impossible_else,
                     );
                     $case_action_map[$case_index] = $case_actions;
                     $escaping_case_actions = array_values(array_unique([
@@ -286,6 +296,7 @@ final class ScopeAnalyzer
                     $nodes,
                     [...$break_types, 'loop'],
                     $return_is_exit,
+                    $skip_impossible_else,
                 );
 
                 $control_actions = array_filter(
@@ -366,6 +377,7 @@ final class ScopeAnalyzer
                     $nodes,
                     $break_types,
                     $return_is_exit,
+                    $skip_impossible_else,
                 );
 
                 $try_leaves = !array_any(
@@ -384,6 +396,7 @@ final class ScopeAnalyzer
                             $nodes,
                             $break_types,
                             $return_is_exit,
+                            $skip_impossible_else,
                         );
 
                         $all_leave = $all_leave
@@ -416,6 +429,7 @@ final class ScopeAnalyzer
                         $nodes,
                         $break_types,
                         $return_is_exit,
+                        $skip_impossible_else,
                     );
 
                     if (!in_array(self::ACTION_NONE, $finally_statement_actions, true)) {

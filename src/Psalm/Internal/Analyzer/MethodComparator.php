@@ -189,9 +189,11 @@ final class MethodComparator
                 && isset($codebase->classlike_storage_provider->get($implementer_called_class_name)
                     ->documenting_method_ids[strtolower($guide_method_storage->cased_name ?? '')]));
 
+        // an inherited docblock refines a native return type, but cannot replace one it does not overlap
+        // (see Methods::getMethodReturnType())
         if ($guide_method_storage->return_type
             && $implementer_method_storage->return_type
-            && !$inherits_return_type
+            && (!$inherits_return_type || $implementer_method_storage->signature_return_type)
             && ($guide_method_storage->signature_return_type !== $guide_method_storage->return_type
                 || $implementer_method_storage->signature_return_type !== $implementer_method_storage->return_type)
             && $implementer_classlike_storage->user_defined
@@ -209,6 +211,7 @@ final class MethodComparator
                 $implementer_declaring_method_id,
                 $code_location,
                 $suppressed_issues,
+                $inherits_return_type,
             );
         }
 
@@ -1437,6 +1440,7 @@ final class MethodComparator
         ?MethodIdentifier $implementer_declaring_method_id,
         CodeLocation $code_location,
         array $suppressed_issues,
+        bool $inherits_return_type,
     ): void {
         $implementer_method_storage_return_type = TypeExpander::expandUnion(
             $codebase,
@@ -1518,6 +1522,25 @@ final class MethodComparator
             $guide_method_storage_return_type = Type::getNull();
         }
 
+        $guide_in_implementer_result = new TypeComparisonResult();
+
+        if ($inherits_return_type
+            && ((UnionTypeComparator::isContainedBy(
+                $codebase,
+                $guide_method_storage_return_type,
+                $implementer_method_storage_return_type,
+                false,
+                false,
+                $guide_in_implementer_result,
+            ) && !$guide_in_implementer_result->to_string_cast) || Type::intersectUnionTypes(
+                $implementer_method_storage_return_type,
+                $guide_method_storage_return_type,
+                $codebase,
+            ))
+        ) {
+            return;
+        }
+
         $union_comparison_results = new TypeComparisonResult();
 
         if (!UnionTypeComparator::isContainedBy(
@@ -1528,6 +1551,15 @@ final class MethodComparator
             false,
             $union_comparison_results,
         )) {
+            // the types overlap where the intersection can't be built (callable-array, a constant wildcard);
+            // an object castable to string does not overlap a string
+            if ($inherits_return_type
+                && $union_comparison_results->type_coerced
+                && !$union_comparison_results->to_string_cast
+            ) {
+                return;
+            }
+
             // is the declared return type more specific than the inferred one?
             if ($union_comparison_results->type_coerced) {
                 IssueBuffer::maybeAdd(

@@ -3288,6 +3288,21 @@ final class UnusedVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
+            'throwAfterExhaustiveTypeChecksIsEvaluated' => [
+                'code' => '<?php
+                    function f(int|string $x): int {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                        throw new LogicException("unreachable");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

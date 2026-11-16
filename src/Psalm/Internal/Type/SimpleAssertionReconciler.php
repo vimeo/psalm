@@ -2047,6 +2047,18 @@ final class SimpleAssertionReconciler extends Reconciler
     }
 
     /**
+     * The range a comparison narrowed an integer range to: the value itself when a single one is left
+     *
+     * @psalm-pure
+     */
+    public static function getNarrowedIntRange(?int $min_bound, ?int $max_bound): TIntRange|TLiteralInt
+    {
+        return $min_bound !== null && $min_bound === $max_bound
+            ? new TLiteralInt($min_bound)
+            : new TIntRange($min_bound, $max_bound);
+    }
+
+    /**
      * @param string[] $suppressed_issues
      */
     private static function reconcileIsGreaterThan(
@@ -2095,7 +2107,7 @@ final class SimpleAssertionReconciler extends Reconciler
                             $min_bound,
                         );
                     }
-                    $existing_var_type->addType(new TIntRange(
+                    $existing_var_type->addType(self::getNarrowedIntRange(
                         $min_bound,
                         $atomic_type->max_bound,
                     ));
@@ -2222,7 +2234,7 @@ final class SimpleAssertionReconciler extends Reconciler
                     } else {
                         $max_bound = min($max_bound, $assertion_value);
                     }
-                    $existing_var_type->addType(new TIntRange(
+                    $existing_var_type->addType(self::getNarrowedIntRange(
                         $atomic_type->min_bound,
                         $max_bound,
                     ));
