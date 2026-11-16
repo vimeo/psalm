@@ -1452,7 +1452,42 @@ final class AssignmentInConditionalTest extends TestCase
                     }',
                 'error_message' => 'PossiblyUndefinedVariable',
             ],
-            'variableAssignedInAndNestedInArgumentIsNotSetInNextAndOperand' => [
+            'variableAssignedInSkippedOperandOfOrInMiddleAndOperandIsPossiblyUndefinedInNextOne' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, bool $d, string $s): bool {
+                        return $b && ($d || check($x = $s)) && $x === "a";
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInSkippedOperandOfOrInFirstAndOperandIsPossiblyUndefinedInThird' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, bool $d, string $s): bool {
+                        return ($d || check($x = $s)) && $b && $x === "a";
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInRightAndOperandIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, string $s): bool {
+                        $r = $b && check($x = $s);
+                        echo $x;
+                        return $r;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInAndNestedInArgumentIsPossiblyUndefinedInNextAndOperand' => [
                 'code' => '<?php
                     function check(bool $b): bool {
                         return $b;
@@ -1461,14 +1496,14 @@ final class AssignmentInConditionalTest extends TestCase
                     function f(bool $b, string $s): bool {
                         return check($b && ($x = $s) === "b") && $x === "a";
                     }',
-                'error_message' => 'UndefinedVariable',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
-            'variableAssignedInNegatedAndIsNotSetInNextAndOperand' => [
+            'variableAssignedInNegatedAndIsPossiblyUndefinedInNextAndOperand' => [
                 'code' => '<?php
                     function f(bool $b, bool $c, string $s): bool {
                         return $b && !($c && ($x = $s) === "b") && $x === "a";
                     }',
-                'error_message' => 'UndefinedVariable',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }

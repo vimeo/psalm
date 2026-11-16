@@ -108,6 +108,10 @@ final class AndAnalyzer
         }
 
         $context->vars_in_scope = [...$context->vars_in_scope, ...$vars_assigned_in_left];
+        $context->vars_possibly_in_scope = [
+            ...$context->vars_possibly_in_scope,
+            ...$left_context->vars_possibly_in_scope,
+        ];
 
         // the left side always runs, so the offsets it read are read after the expression too
         $context->null_array_offsets_read = $left_context->null_array_offsets_read;
@@ -243,6 +247,11 @@ final class AndAnalyzer
             ];
         }
 
+        $context->vars_possibly_in_scope = array_merge(
+            $right_context->vars_possibly_in_scope,
+            $left_context->vars_possibly_in_scope,
+        );
+
         if ($context->inside_conditional) {
             $context->updateChecks($right_context);
             $context->phantom_classes += $right_context->phantom_classes;
@@ -255,11 +264,6 @@ final class AndAnalyzer
                 ...array_diff_key($left_context->phantom_files, $left_context->negated_phantom_files),
                 ...array_diff_key($right_context->phantom_files, $right_context->negated_phantom_files),
             ];
-
-            $context->vars_possibly_in_scope = array_merge(
-                $right_context->vars_possibly_in_scope,
-                $left_context->vars_possibly_in_scope,
-            );
 
             $context->assigned_var_ids = array_merge(
                 $left_context->assigned_var_ids,
