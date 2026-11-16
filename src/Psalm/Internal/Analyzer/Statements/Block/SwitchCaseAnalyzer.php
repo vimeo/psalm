@@ -488,6 +488,7 @@ final class SwitchCaseAnalyzer
                 $statements_analyzer,
                 $switch_var_id,
                 $case,
+                $case_stmts,
                 $context,
                 $case_context,
                 $original_context,
@@ -603,16 +604,26 @@ final class SwitchCaseAnalyzer
         return $case_equality_expr;
     }
 
+    /**
+     * @param array<PhpParser\Node\Stmt> $case_stmts
+     */
     private static function handleNonReturningCase(
         StatementsAnalyzer $statements_analyzer,
         ?string $switch_var_id,
         PhpParser\Node\Stmt\Case_ $case,
+        array $case_stmts,
         Context $context,
         Context $case_context,
         Context $original_context,
         string $case_exit_type,
         SwitchScope $switch_scope,
     ): ?bool {
+        $context->mergeConstraintsOfReferencesReboundIn(
+            $case_context,
+            $case_stmts,
+            $statements_analyzer->getCodebase(),
+        );
+
         if (!$case->cond
             && $switch_var_id
             && isset($case_context->vars_in_scope[$switch_var_id])
