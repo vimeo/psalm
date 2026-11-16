@@ -1318,7 +1318,6 @@ final class IssueBuffer
         self::$error_count = 0;
         self::$recording_level = 0;
         self::$recorded_issues = [];
-        self::$raised_issue_keys = [];
         self::$unused_suppressions = [];
         self::$used_suppressions = [];
     }

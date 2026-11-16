@@ -66,21 +66,25 @@ final class DoAnalyzer
         IssueBuffer::startRecording();
         IssueBuffer::startCollectingRaisedIssues();
 
-        $loop_result = LoopAnalyzer::analyze(
-            $statements_analyzer,
-            $stmt->stmts,
-            WhileAnalyzer::getAndExpressions($stmt->cond),
-            [],
-            $loop_scope,
-            $inner_loop_context,
-            true,
-            true,
-        );
+        try {
+            $loop_result = LoopAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->stmts,
+                WhileAnalyzer::getAndExpressions($stmt->cond),
+                [],
+                $loop_scope,
+                $inner_loop_context,
+                true,
+                true,
+            );
+        } finally {
+            $loop_raised_issue_keys = IssueBuffer::stopCollectingRaisedIssues();
+        }
 
         $loop_issues = IssueBuffer::clearRecordingLevel();
         IssueBuffer::stopRecording();
 
-        self::reportIssues($first_iteration_issues, $loop_issues, IssueBuffer::stopCollectingRaisedIssues());
+        self::reportIssues($first_iteration_issues, $loop_issues, $loop_raised_issue_keys);
 
         if ($loop_result === false) {
             return false;
