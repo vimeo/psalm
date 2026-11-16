@@ -92,6 +92,9 @@ final class SwitchAnalyzer
                     $last_case_exit_type = 'continue';
                 } elseif (in_array(ScopeAnalyzer::ACTION_LEAVE_SWITCH, $case_actions, true)) {
                     $last_case_exit_type = 'break';
+                } elseif ($case_actions) {
+                    // `break 2` or more out of an enclosing structure: the case never reaches the end of the switch
+                    $last_case_exit_type = 'leave';
                 }
             } elseif (count($case_actions) !== 1) {
                 $last_case_exit_type = 'hybrid';
@@ -113,7 +116,7 @@ final class SwitchAnalyzer
 
             /** @var string */
             $case_exit_type = $case_exit_types[$i];
-            if ($case_exit_type !== 'return_throw') {
+            if ($case_exit_type !== 'return_throw' && $case_exit_type !== 'leave') {
                 $all_options_returned = false;
             }
 
@@ -247,5 +250,9 @@ final class SwitchAnalyzer
 
         //a switch can't return in all options without a default
         $context->has_returned = $all_options_returned && $has_default;
+
+        if ($context->has_returned && $context->case_scope && in_array('leave', $case_exit_types->toArray(), true)) {
+            $context->case_scope->has_nested_switch_leaving_it = true;
+        }
     }
 }

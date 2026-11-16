@@ -1623,6 +1623,97 @@ final class SwitchTypeTest extends TestCase
                         }
                     }',
             ],
+            'breakTwoOutOfNestedSwitchKeepsItsValueAfterTheOuterSwitch' => [
+                'code' => '<?php
+                    /** @var string */
+                    $s = (string) rand(0, 1);
+                    /** @var string */
+                    $u = (string) rand(0, 1);
+                    switch ($s) {
+                        case "A":
+                            switch ($u) {
+                                case "x":
+                                    $q = 1;
+                                    break 2;
+                            }
+                            $q = 2;
+                            break;
+                        default:
+                            $q = 3;
+                    }',
+                'assertions' => [
+                    '$q===' => '1|2|3',
+                ],
+            ],
+            'breakTwoOutOfEveryCaseOfNestedSwitch' => [
+                'code' => '<?php
+                    /** @var string */
+                    $s = (string) rand(0, 1);
+                    /** @var string */
+                    $u = (string) rand(0, 1);
+                    switch ($s) {
+                        case "A":
+                            switch ($u) {
+                                case "x":
+                                    $q = 1;
+                                    break 2;
+                                default:
+                                    $q = 2;
+                                    break 2;
+                            }
+                            break;
+                        default:
+                            $q = 3;
+                    }',
+                'assertions' => [
+                    '$q===' => '1|2|3',
+                ],
+            ],
+            'breakTwoOutOfNestedSwitchStaysInTheLoop' => [
+                'code' => '<?php
+                    /** @var string */
+                    $s = (string) rand(0, 1);
+                    /** @var string */
+                    $u = (string) rand(0, 1);
+                    $q = null;
+                    while (true) {
+                        switch ($s) {
+                            case "A":
+                                switch ($u) {
+                                    case "x":
+                                        break 2;
+                                }
+                                exit;
+                        }
+                        $q = 1;
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }',
+                'assertions' => [
+                    '$q===' => '1',
+                ],
+            ],
+            'breakOutOfNestedSwitchCaseThatEndsWithBreakTwo' => [
+                'code' => '<?php
+                    function f(string $s, string $u, bool $c): void {
+                        switch ($s) {
+                            case "A":
+                                switch ($u) {
+                                    case "x":
+                                        if ($c) {
+                                            $q = 1;
+                                            break;
+                                        }
+                                        break 2;
+                                    default:
+                                        $q = 2;
+                                }
+                                echo $q;
+                                break;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1633,6 +1724,102 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'varFromBreakTwoOutOfNestedSwitchIsUndefinedAfterIt' => [
+                'code' => '<?php
+                    function f(string $s, string $u): void {
+                        switch ($s) {
+                            case "A":
+                                switch ($u) {
+                                    case "x":
+                                        $q = 1;
+                                        break 2;
+                                }
+                                echo $q;
+                                break;
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
+            'varFromBreakTwoOutOfLoopIsUndefinedAfterTheSwitch' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(array $l, string $s): void {
+                        foreach ($l as $_) {
+                            switch ($s) {
+                                case "x":
+                                    $q = 1;
+                                    break 2;
+                            }
+                            echo $q;
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
+            'varFromBreakTwoOutOfLoopIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(array $l, string $s): void {
+                        foreach ($l as $_) {
+                            switch ($s) {
+                                case "x":
+                                    $q = 1;
+                                    break 2;
+                            }
+                        }
+                        echo $q;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varFromContinueTwoOutOfSwitchIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(array $l, string $s): void {
+                        foreach ($l as $_) {
+                            switch ($s) {
+                                case "x":
+                                    $q = 1;
+                                    continue 2;
+                            }
+                        }
+                        echo $q;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varFromCaseEndingInBreakTwoIsUndefinedAfterNestedSwitch' => [
+                'code' => '<?php
+                    function f(string $s, string $u, bool $c): void {
+                        switch ($s) {
+                            case "A":
+                                switch ($u) {
+                                    case "x":
+                                        if ($c) {
+                                            break;
+                                        }
+                                        $r = 1;
+                                        break 2;
+                                    default:
+                                }
+                                echo $r;
+                                break;
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
+            'varFromConditionalBreakIsPossiblyUndefinedAfterSwitch' => [
+                'code' => '<?php
+                    function f(string $s, bool $c): void {
+                        switch ($s) {
+                            case "A":
+                                if ($c) {
+                                    $q = 1;
+                                    break;
+                                }
+                                break;
+                        }
+                        echo $q;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'varFromLaterCaseEndingInConditionalThrowIsPossiblyUndefined' => [
                 'code' => '<?php
                     function f(string $s, bool $flag): int {

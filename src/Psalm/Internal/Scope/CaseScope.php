@@ -32,6 +32,16 @@ final class CaseScope
     public array $vars_possibly_in_scope_at_breaks = [];
 
     /**
+     * The case of the enclosing switch, which `break 2` or more can leave
+     */
+    public ?CaseScope $outer_case_scope = null;
+
+    /**
+     * Whether the case reaches a nested switch every case of which leaves it, so that only its breaks leave the switch
+     */
+    public bool $has_nested_switch_leaving_it = false;
+
+    /**
      * @psalm-external-mutation-free
      */
     public function addBreak(Context $context): void
