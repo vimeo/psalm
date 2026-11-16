@@ -779,6 +779,36 @@ final class ArrayKeyExistsTest extends TestCase
                         }
                     }',
             ],
+            'arrayKeyExistsMakesAnOffsetOfUnknownTypeAnArray' => [
+                'code' => '<?php
+                    function f(array $content): void {
+                        /** @psalm-suppress MixedArgument */
+                        if (!array_key_exists("_defaults", $content["services"])) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $content = array{services: array{_defaults: mixed, ...<array-key, mixed>}, ...<array-key, mixed>} */;
+                        $defaults = $content["services"]["_defaults"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'arrayKeyExistsMakesAnOffsetOfUnknownTypeArrayAccessibleBeforePhp8' => [
+                'code' => '<?php
+                    function f(array $content): void {
+                        /** @psalm-suppress MixedArgument */
+                        if (!array_key_exists("_defaults", $content["services"])) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $content = array{services: ArrayAccess|array{_defaults: mixed, ...<array-key, mixed>}, ...<array-key, mixed>} */;
+                        $defaults = $content["services"]["_defaults"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '7.4',
+            ],
             'arrayKeyExistsRemovesNullAfterANegatedCheck' => [
                 'code' => '<?php
                     /**

@@ -49,6 +49,7 @@ use Psalm\Storage\Assertion\IsLessThanOrEqualTo;
 use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotIsset;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
+use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\NestedAssertions;
 use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
@@ -180,7 +181,11 @@ class Reconciler
 
         $old_new_types = $new_types;
 
-        $new_types = self::addNestedAssertions($new_types, $existing_types);
+        $new_types = self::addNestedAssertions(
+            $new_types,
+            $existing_types,
+            $statements_analyzer->getCodebase()->analysis_php_version_id,
+        );
 
         // make sure array keys come after base keys
         ksort($new_types);
@@ -778,8 +783,11 @@ class Reconciler
      * @return array<string, array<array<int, Assertion>>>
      * @psalm-external-mutation-free
      */
-    private static function addNestedAssertions(array $new_types, array $existing_types): array
-    {
+    private static function addNestedAssertions(
+        array $new_types,
+        array $existing_types,
+        int $analysis_php_version_id,
+    ): array {
         foreach ($new_types as $nk => $type) {
             if (!str_contains($nk, '[')) {
                 continue;
@@ -803,13 +811,22 @@ class Reconciler
 
             $array_key = implode('', array_slice($key_parts, 0, -3));
 
-            if (isset($existing_types[$array_key]) && $existing_types[$array_key]->isAlwaysTruthy()) {
-                continue;
+            // array_key_exists() is only true for a non-empty array, or before PHP 8 an object too. The first assertion
+            // makes the loop below add the isset ones on the keys the array is nested in
+            $array_assertions = [[new NonEmpty()]];
+
+            if ($analysis_php_version_id >= 8_00_00) {
+                $array_assertions[] = [new IsType(new TArray([Type::getArrayKey(), Type::getMixed()]))];
+            } elseif (!isset($existing_types[$array_key])) {
+                // an offset of unknown type is taken as one with array access, as isset() does
+                $array_assertions[] = [
+                    str_contains($key_parts[$key_part_count - 2], '\'')
+                        ? new HasStringArrayAccess()
+                        : new HasIntOrStringArrayAccess(),
+                ];
             }
 
-            // array_key_exists() is only true for a non-empty array (or an object before PHP 8). First, so that the
-            // loop below adds the isset assertions on the keys the array is nested in
-            $new_types[$array_key] = array_merge([[new NonEmpty()]], $new_types[$array_key] ?? []);
+            $new_types[$array_key] = array_merge($array_assertions, $new_types[$array_key] ?? []);
         }
 
         foreach ($new_types as $nk => $type) {
