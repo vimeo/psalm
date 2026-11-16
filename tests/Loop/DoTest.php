@@ -1006,6 +1006,62 @@ final class DoTest extends TestCase
                 $x = 'a';
             } while (rand(0, 1));
         }
+
+        final class Row {
+            public int $id = 0;
+        }
+
+        function inABranchOnlyTakenAfterTheFirstIteration(): void {
+            $first = true;
+            $last = null;
+            do {
+                if (!$first) {
+                    echo $last->id;
+                }
+                $first = false;
+                $last = new Row();
+            } while (rand(0, 1));
+        }
+
+        function inAnOperandOnlyEvaluatedAfterTheFirstIteration(int $count): void {
+            $last = null;
+            do {
+                echo $count > 1 ? $last->id : 0;
+                $last = new Row();
+                $count++;
+            } while (rand(0, 1));
+        }
+
+        function afterAContinueInTheFirstIteration(): void {
+            $first = true;
+            $last = null;
+            do {
+                if ($first) {
+                    $first = false;
+                    $last = new Row();
+                    continue;
+                }
+                echo $last->id;
+                $last = new Row();
+            } while (rand(0, 1));
+        }
+
+        /** @param list<int> $l */
+        function afterAContinueOfANestedLoopOrAReturnOfAClosure(array $l): void {
+            $x = new stdClass();
+            do {
+                foreach ($l as $i) {
+                    if ($i) {
+                        continue;
+                    }
+                }
+                $f = static function (): int {
+                    return 1;
+                };
+                echo (string) $x;
+                $x = 'a';
+            } while (rand(0, 1));
+        }
         PHP;
 
     public function testDoWhileFirstIterationIssuesAreDefinite(): void
@@ -1039,6 +1095,10 @@ final class DoTest extends TestCase
                 [93, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
                 [103, 'InvalidCast', 'stdClass cannot be cast to string'],
                 [114, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [130, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
+                [140, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
+                [155, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
+                [172, 'InvalidCast', 'stdClass cannot be cast to string'],
             ],
             self::getIssues($file_path),
         );
@@ -1079,6 +1139,10 @@ final class DoTest extends TestCase
                 ],
                 [103, 'InvalidCast', 'stdClass cannot be cast to string'],
                 [114, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [130, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
+                [140, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
+                [155, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
+                [172, 'InvalidCast', 'stdClass cannot be cast to string'],
             ],
             self::getIssues($file_path),
         );

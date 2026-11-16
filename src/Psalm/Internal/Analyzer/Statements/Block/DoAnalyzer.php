@@ -22,6 +22,7 @@ use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
 use function array_diff;
+use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_values;
@@ -270,11 +271,11 @@ final class DoAnalyzer
 
     /**
      * The body runs once with the types it has before the loop: what the loop analysis finds possibly wrong with the
-     * types of all the iterations is wrong for sure when the first one has it. The other issues of the first
-     * iteration are left to the loop analysis, which also sees what this first pass assumes wrongly (a branch only
-     * impossible in the first iteration, a variable the body defines after reading it, which is possibly undefined),
-     * the issues of the files it includes and those of the closures capturing by reference, which can run with the
-     * types of a later iteration.
+     * types of all the iterations is wrong for sure when the first one has it, in the code the first iteration runs
+     * for sure. The other issues of the first iteration are left to the loop analysis, which also sees what this first
+     * pass assumes wrongly: the code the first iteration may skip (a branch only taken in the next ones), a variable
+     * the body defines after reading it, which is possibly undefined, the files it includes and the closures capturing
+     * by reference, which can run with the types of a later iteration.
      *
      * @param array<PhpParser\Node\Stmt> $stmts the body, in $file_path
      * @param array<int, CodeIssue> $first_iteration_issues
@@ -290,7 +291,7 @@ final class DoAnalyzer
     ): void {
         $replaced_issue_keys = [];
         $kept_issues = [];
-        $by_reference_closure_bounds = null;
+        $unsure_bounds = null;
 
         foreach ($first_iteration_issues as $issue) {
             if ($issue instanceof UndefinedVariable || $issue instanceof UndefinedGlobalVariable) {
@@ -303,11 +304,11 @@ final class DoAnalyzer
                 continue;
             }
 
-            $by_reference_closure_bounds ??= self::getByReferenceClosureBounds($stmts);
+            $unsure_bounds ??= self::getUnsureBounds($stmts);
             [$from] = $issue->code_location->getSelectionBounds();
 
-            foreach ($by_reference_closure_bounds as [$closure_from, $closure_to]) {
-                if ($from >= $closure_from && $from <= $closure_to) {
+            foreach ($unsure_bounds as [$unsure_from, $unsure_to]) {
+                if ($from >= $unsure_from && $from <= $unsure_to) {
                     continue 2;
                 }
             }
@@ -328,33 +329,127 @@ final class DoAnalyzer
     }
 
     /**
-     * @param array<PhpParser\Node\Stmt> $stmts
-     * @return list<array{int, int}> the bounds of the bodies of the closures capturing by reference
+     * @param array<PhpParser\Node\Stmt> $stmts the body
+     * @return list<array{int, int}> the bounds of the code of the body the first iteration may not run, or not with
+     *                               its types: what follows a statement that may leave it, the branches and operands
+     *                               evaluated on a condition, the bodies of the closures capturing by reference
      */
-    private static function getByReferenceClosureBounds(array $stmts): array
+    private static function getUnsureBounds(array $stmts): array
     {
         $bounds = [];
+        $node_finder = new PhpParser\NodeFinder();
+        $stmts = array_values($stmts);
 
-        foreach ((new PhpParser\NodeFinder())->findInstanceOf($stmts, PhpParser\Node\Expr\Closure::class) as $closure) {
-            $closure_stmts = array_values($closure->stmts);
+        foreach ($stmts as $i => $stmt) {
+            if ($i + 1 < count($stmts) && self::mayLeave([$stmt])) {
+                $bounds[] = self::getBounds([$stmts[$i + 1], $stmts[count($stmts) - 1]]);
 
-            if (!$closure_stmts) {
-                continue;
+                break;
             }
+        }
 
-            foreach ($closure->uses as $use) {
-                if ($use->byRef) {
-                    $bounds[] = [
-                        (int) $closure_stmts[0]->getAttribute('startFilePos'),
-                        (int) $closure_stmts[count($closure_stmts) - 1]->getAttribute('endFilePos'),
-                    ];
+        foreach ($node_finder->find($stmts, static fn(PhpParser\Node $_): bool => true) as $node) {
+            $unsure_nodes = match (true) {
+                $node instanceof PhpParser\Node\Stmt\If_ => [$node->stmts, ...$node->elseifs, $node->else],
+                $node instanceof PhpParser\Node\Expr\Ternary => [$node->if, $node->else],
+                $node instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd,
+                $node instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr,
+                $node instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd,
+                $node instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr,
+                $node instanceof PhpParser\Node\Expr\BinaryOp\Coalesce => [$node->right],
+                $node instanceof PhpParser\Node\Expr\AssignOp\Coalesce => [$node->expr],
+                $node instanceof PhpParser\Node\Expr\Match_ => $node->arms,
+                $node instanceof PhpParser\Node\Stmt\Switch_ => $node->cases,
+                $node instanceof PhpParser\Node\Stmt\For_ => [$node->stmts, $node->loop],
+                $node instanceof PhpParser\Node\Stmt\Foreach_,
+                $node instanceof PhpParser\Node\Stmt\While_ => [$node->stmts],
+                $node instanceof PhpParser\Node\Stmt\TryCatch => $node->catches,
+                $node instanceof PhpParser\Node\Expr\Closure
+                    && array_filter($node->uses, static fn(PhpParser\Node\ClosureUse $use): bool => $use->byRef)
+                    => [$node->stmts],
+                default => [],
+            };
 
-                    break;
+            foreach ($unsure_nodes as $unsure_node) {
+                if ($unsure_node instanceof PhpParser\Node) {
+                    $unsure_node = [$unsure_node];
+                }
+
+                if ($unsure_node !== null && $unsure_node !== []) {
+                    $bounds[] = self::getBounds(array_values($unsure_node));
                 }
             }
         }
 
         return $bounds;
+    }
+
+    /**
+     * Whether the iteration may end in the nodes, outside the functions and classes they declare
+     *
+     * @param array<PhpParser\Node> $nodes
+     */
+    private static function mayLeave(array $nodes): bool
+    {
+        return self::hasExitToTheLoop($nodes, 0) || self::mayLeaveTheFunction($nodes);
+    }
+
+    /**
+     * @param array<PhpParser\Node> $nodes
+     */
+    private static function mayLeaveTheFunction(array $nodes): bool
+    {
+        foreach ($nodes as $node) {
+            if ($node instanceof PhpParser\Node\Stmt\Return_
+                || $node instanceof PhpParser\Node\Stmt\Goto_
+                || $node instanceof PhpParser\Node\Expr\Throw_
+                || $node instanceof PhpParser\Node\Expr\Exit_
+            ) {
+                return true;
+            }
+
+            if ($node instanceof PhpParser\Node\FunctionLike || $node instanceof PhpParser\Node\Stmt\ClassLike) {
+                continue;
+            }
+
+            foreach ($node->getSubNodeNames() as $name) {
+                /** @var mixed $child */
+                $child = $node->{$name};
+
+                if ($child instanceof PhpParser\Node) {
+                    $child = [$child];
+                }
+
+                if (is_array($child)) {
+                    $children = [];
+
+                    /** @var mixed $item */
+                    foreach ($child as $item) {
+                        if ($item instanceof PhpParser\Node) {
+                            $children[] = $item;
+                        }
+                    }
+
+                    if (self::mayLeaveTheFunction($children)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param non-empty-list<PhpParser\Node> $nodes
+     * @return array{int, int}
+     */
+    private static function getBounds(array $nodes): array
+    {
+        return [
+            (int) $nodes[0]->getAttribute('startFilePos'),
+            (int) $nodes[count($nodes) - 1]->getAttribute('endFilePos'),
+        ];
     }
 
     /**
