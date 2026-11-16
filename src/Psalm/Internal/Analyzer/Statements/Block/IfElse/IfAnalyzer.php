@@ -580,10 +580,10 @@ final class IfAnalyzer
             } elseif (isset($outer_context->vars_in_scope[$var_id])
                 && $outer_context->vars_in_scope[$var_id]->hasMixed()
                 && !isset($assigned_var_ids[$var_id])
-                && !isset($possibly_assigned_var_ids[$var_id])
+                && !isset($if_context->fully_assigned_var_ids[$var_id])
                 && UnionTypeComparator::isContainedBy($codebase, $type, $outer_context->vars_in_scope[$var_id])
             ) {
-                // a mixed var that was only narrowed (never written) in this branch is still just mixed,
+                // a mixed var that this branch only narrowed, or wrote at some of its offsets, is still just mixed:
                 // merging the narrowed type back in would only produce a `mixed|Foo` union
                 $possibly_redefined_vars[$var_id] = $outer_context->vars_in_scope[$var_id]
                     ->addParentNodes($type->parent_nodes);
