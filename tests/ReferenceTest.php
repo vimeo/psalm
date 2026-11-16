@@ -866,10 +866,10 @@ final class ReferenceTest extends TestCase
             ],
             'referenceToAnItemStaysBoundAfterAnIfAssertingOnTheArray' => [
                 'code' => '<?php
-                    $a = rand(0, 1) ? ["x" => 1] : null;
+                    $a = rand(0, 1) ? ["x" => 1] : ["x" => 1, "y" => 2];
                     $r = &$a["x"];
 
-                    if ($a !== null) {
+                    if (isset($a["y"])) {
                         echo 1;
                     }
 
@@ -877,16 +877,15 @@ final class ReferenceTest extends TestCase
                 'assertions' => [
                     '$a[\'x\']===' => '\'s\'',
                 ],
-                'ignored_issues' => ['PossiblyNullArrayAccess'],
             ],
             'referenceToAnItemStaysBoundAfterAnElseifAssertingOnTheArray' => [
                 'code' => '<?php
-                    $a = rand(0, 1) ? ["x" => 1] : null;
+                    $a = rand(0, 1) ? ["x" => 1] : ["x" => 1, "y" => 2];
                     $r = &$a["x"];
 
                     if (rand(0, 1)) {
                         echo 1;
-                    } elseif ($a !== null) {
+                    } elseif (isset($a["y"])) {
                         echo 2;
                     }
 
@@ -894,14 +893,13 @@ final class ReferenceTest extends TestCase
                 'assertions' => [
                     '$a[\'x\']===' => '\'s\'',
                 ],
-                'ignored_issues' => ['PossiblyNullArrayAccess'],
             ],
             'referenceToAnItemStaysBoundAfterAnElseAssertingOnTheArray' => [
                 'code' => '<?php
-                    $a = rand(0, 1) ? ["x" => 1] : null;
+                    $a = rand(0, 1) ? ["x" => 1] : ["x" => 1, "y" => 2];
                     $r = &$a["x"];
 
-                    if ($a === null) {
+                    if (!isset($a["y"])) {
                         echo 1;
                     } else {
                         echo 2;
@@ -911,7 +909,6 @@ final class ReferenceTest extends TestCase
                 'assertions' => [
                     '$a[\'x\']===' => '\'s\'',
                 ],
-                'ignored_issues' => ['PossiblyNullArrayAccess'],
             ],
             'dynamicArrayOffsetReferenceCanBeConditionallySet' => [
                 'code' => <<<'PHP'
@@ -1312,7 +1309,7 @@ final class ReferenceTest extends TestCase
                     }',
                 'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:41 - '
                     . 'Variable $data is limited to values of type array<string, mixed> because it is passed by '
-                    . 'reference, array<string, mixed>|string type found',
+                    . 'reference, non-empty-array<string, mixed>|string type found',
                 'error_levels' => ['MixedArrayAccess'],
             ],
             'referenceThatWasOneBeforeATernaryIsReboundAndWrittenToAfterIt' => [

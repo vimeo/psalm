@@ -1615,6 +1615,8 @@ final class AssignmentAnalyzer
     /**
      * Whether the offset is fetched from a local variable through arrays or nulls only: what is fetched from
      * anything else is not written by binding a reference to it, or is already reported
+     *
+     * @psalm-capabilities read-props
      */
     private static function isArrayChainOfVariable(
         StatementsAnalyzer $statements_analyzer,
