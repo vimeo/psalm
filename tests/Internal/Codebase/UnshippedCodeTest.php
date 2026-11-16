@@ -45,7 +45,6 @@ final class UnshippedCodeTest extends TestCase
 
     /**
      * @return iterable<string, array{string, list<string>}>
-     *
      * @psalm-pure
      */
     public static function providerGitattributes(): iterable
