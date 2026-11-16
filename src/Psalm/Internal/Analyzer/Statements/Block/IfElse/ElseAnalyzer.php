@@ -63,6 +63,8 @@ final class ElseAnalyzer
 
         $original_context = clone $else_context;
 
+        $is_impossible = false;
+
         if ($else_types) {
             $changed_var_ids = [];
 
@@ -92,6 +94,19 @@ final class ElseAnalyzer
                     default => null,
                 },
             );
+
+            // without an else, the code after the if is not reached this way when the conditions already matched
+            // every value of a variable
+            if (!$else) {
+                foreach ($changed_var_ids as $changed_var_id => $_) {
+                    if (($else_context->vars_in_scope[$changed_var_id] ?? null)?->isNever()
+                        && !($original_context->vars_in_scope[$changed_var_id] ?? null)?->isNever()
+                    ) {
+                        $is_impossible = true;
+                        break;
+                    }
+                }
+            }
 
             $else_context->clauses = AlgebraAnalyzer::removeReconciledClauses(
                 $else_context->clauses,
@@ -170,7 +185,7 @@ final class ElseAnalyzer
                 $statements_analyzer->node_data,
                 [],
             )
-            : [ScopeAnalyzer::ACTION_NONE];
+            : [$is_impossible ? ScopeAnalyzer::ACTION_END : ScopeAnalyzer::ACTION_NONE];
         // has a return/throw at end
         $has_ending_statements = $final_actions === [ScopeAnalyzer::ACTION_END];
         $has_leaving_statements = $has_ending_statements

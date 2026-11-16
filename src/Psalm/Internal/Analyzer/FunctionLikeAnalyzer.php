@@ -788,16 +788,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer->analyze($function_stmts, $context, $global_context);
 
-        // the end of the body is unreachable when the checks before it left a variable without any possible value
-        if (!$context->has_returned) {
-            foreach ($context->vars_in_scope as $var_type) {
-                if ($var_type->isNever()) {
-                    $context->has_returned = true;
-                    break;
-                }
-            }
-        }
-
         if ($cli_instance_guard !== null) {
             CliOutput::checkInstanceGuard($statements_analyzer, $cli_instance_guard);
         }
