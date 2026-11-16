@@ -411,6 +411,15 @@ final class Context
     public array $assigned_var_ids = [];
 
     /**
+     * The variables the last `&&` analysed outside an if condition assigns, as its right operand leaves them: an
+     * enclosing `&&` only gets what holds after the expression, which doesn't have them
+     *
+     * @internal
+     * @var array<string, Union>
+     */
+    public array $vars_assigned_in_and = [];
+
+    /**
      * A list of vars that have been may have been assigned to
      *
      * @var array<string, bool>
