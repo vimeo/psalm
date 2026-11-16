@@ -471,6 +471,27 @@ namespace Y {
 }
 ```
 
+The code a project doesn't ship is internal without the annotation: classes that only `composer.json`'s
+`autoload-dev` loads, files that `.gitattributes` leaves out of the package with `export-ignore`, and, with
+[psalm/plugin-phpunit](https://github.com/psalm/psalm-plugin-phpunit), the test suites of `phpunit.xml` and the test
+cases. It is internal to the root namespaces of all that code, so test code may use the test code of another namespace.
+Code in the global namespace can't be internal.
+
+```php
+<?php
+namespace Lib\Tests { // autoload-dev: "Lib\\Tests\\": "tests/"
+    final class Helper {}
+}
+
+namespace Lib {
+    new Tests\Helper(); // this is fine
+}
+
+namespace Other {
+    new \Lib\Tests\Helper(); // InternalClass
+}
+```
+
 ### `@psalm-readonly` and `@readonly`
 
 Used to annotate a property that can only be written to in its defining class's constructor.
@@ -896,6 +917,11 @@ A class that implements an interface (or extends a class) defined outside the
 project is treated as public surface automatically, since it can be instantiated
 and invoked through that external type: its overriding methods are considered
 used without an explicit `@api`.
+
+A library can make unused-code detection treat all of its code that isn't
+`@internal` as `@api` with
+[`markAllNonInternalCodeAsApi`](../running_psalm/configuration.md#markallnoninternalcodeasapi),
+at the cost of unused-code detection for internal code that lacks `@internal`.
 
 Do not reach for `@psalm-suppress UnusedClass` (or another `Unused*`
 suppression) in place of `@api`: as noted above, a suppression only silences the

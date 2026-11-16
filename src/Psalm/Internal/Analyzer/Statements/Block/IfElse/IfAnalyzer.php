@@ -8,6 +8,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
+use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -126,7 +127,12 @@ final class IfAnalyzer
             }
 
             if ($changed_var_ids) {
-                $if_context->clauses = Context::removeReconciledClauses($if_context->clauses, $changed_var_ids)[0];
+                $if_context->clauses = AlgebraAnalyzer::removeReconciledClauses(
+                    $if_context->clauses,
+                    $changed_var_ids,
+                    $if_context->vars_in_scope,
+                    $statements_analyzer,
+                )[0];
 
                 foreach ($changed_var_ids as $changed_var_id => $_) {
                     foreach ($if_context->vars_in_scope as $var_id => $_) {

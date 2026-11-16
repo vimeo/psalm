@@ -1510,7 +1510,74 @@ final class FunctionCallTest extends TestCase
                     /** @var string $string */
                     $elements = explode(" ", $string, -5);',
                 'assertions' => [
-                    '$elements' => 'array<never, never>',
+                    '$elements===' => 'list<string>',
+                ],
+            ],
+            'explodeWithMinusOneLimit' => [
+                'code' => '<?php
+                    $elements = explode("-", "", -1);',
+                'assertions' => [
+                    '$elements===' => 'list<lowercase-string>',
+                ],
+            ],
+            'explodeWithMinusOneLimitOnString' => [
+                'code' => '<?php
+                    /** @var string $string */
+                    $elements = explode(" ", $string, -1);',
+                'assertions' => [
+                    '$elements===' => 'list<string>',
+                ],
+            ],
+            'explodeWithPossiblyNegativeLimit' => [
+                'code' => '<?php
+                    /**
+                     * @var string $string
+                     * @var int<-1, 1> $limit
+                     */
+                    $elements = explode(" ", $string, $limit);',
+                'assertions' => [
+                    '$elements===' => 'list<string>',
+                ],
+            ],
+            'explodeWithNamedNegativeLimit' => [
+                'code' => '<?php
+                    /** @var string $string */
+                    $elements = explode(limit: -1, string: $string, separator: " ");',
+                'assertions' => [
+                    '$elements===' => 'list<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'explodeWithNegativeLimitAccessFirst' => [
+                'code' => '<?php
+                    function first(string $string): string {
+                        return explode(" ", $string, -2)[0] ?? "";
+                    }',
+            ],
+            'explodeWithZeroLimit' => [
+                'code' => '<?php
+                    /** @var string $string */
+                    $elements = explode(" ", $string, 0);',
+                'assertions' => [
+                    '$elements===' => 'list{string}',
+                ],
+            ],
+            'explodeWithIntMaxLimit' => [
+                'code' => '<?php
+                    /**
+                     * @return non-empty-list<string>
+                     */
+                    function exploder(string $string): array {
+                        return explode(" ", $string, PHP_INT_MAX);
+                    }',
+            ],
+            'explodeLowercaseWithoutLimit' => [
+                'code' => '<?php
+                    /** @var lowercase-string $string */
+                    $elements = explode(" ", $string);',
+                'assertions' => [
+                    '$elements===' => 'non-empty-list<lowercase-string>',
                 ],
             ],
             'explodeWithDynamicLimit' => [
@@ -1565,7 +1632,7 @@ final class FunctionCallTest extends TestCase
                      */
                     $elements = explode($delim, $string, -5);',
                 'assertions' => [
-                    '$elements' => 'array<never, never>',
+                    '$elements===' => 'list<string>',
                 ],
             ],
             'explodeWithDynamicDelimiterAndLimit' => [
@@ -4639,6 +4706,16 @@ final class FunctionCallTest extends TestCase
                 'code' => '<?php
                     $a = var_export(["a"]);',
                 'error_message' => 'AssignmentToVoid',
+            ],
+            'explodeWithNegativeLimitIsPossiblyEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @return non-empty-list<string>
+                     */
+                    function exploder(string $s): array {
+                        return explode("-", $s, -1);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'explodeWithEmptyString' => [
                 'code' => '<?php

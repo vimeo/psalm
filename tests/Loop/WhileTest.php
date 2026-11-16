@@ -217,6 +217,60 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'whileBodyStartingWithAForeachIsAnalysedUntilTheLastAssignmentReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int> $arr */
+                    function f(array $arr): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            foreach ($arr as $_v) {}
+                            $a = $b;
+                            $b = $c;
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 0|'s' */;
+                    }
+                    PHP,
+            ],
+            'whileBodyStartingWithAStaticDeclarationIsAnalysedUntilTheLastAssignmentReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int> $arr */
+                    function f(array $arr): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            static $s = 1;
+                            $a = $b;
+                            $b = $c;
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 0|'s' */;
+                    }
+                    PHP,
+            ],
+            'whileBodyStartingWithAReferenceAssignmentIsAnalysedUntilTheLastAssignmentReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int> $arr */
+                    function f(array $arr): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            $r = &$arr[0];
+                            $a = $b;
+                            $b = $c;
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 0|'s' */;
+                    }
+                    PHP,
+            ],
             'whileTrueIntRangeShiftedByEveryIterationIsWidened' => [
                 'code' => '<?php
                     function f(): int {
@@ -1857,6 +1911,22 @@ final class WhileTest extends TestCase
                     '$a===' => '1',
                 ],
             ],
+            'whileAlwaysEnteredVarAssignedBeforeContinueAndAtTheEndOfTheBody' => [
+                'code' => '<?php
+                    function f(): int {
+                        $i = 0;
+                        while ($i < 3) {
+                            $i++;
+                            if (rand(0, 1)) {
+                                $z = 1;
+                                continue;
+                            }
+                            $z = 2;
+                        }
+
+                        return $z;
+                    }',
+            ],
         ];
     }
 
@@ -1867,6 +1937,26 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'whileAnonymousClassPropertyNotSetInConstructor' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = 0;
+                        $b = 0;
+                        while (rand(0, 1)) {
+                            $o = new class {
+                                public int $p;
+                                public function __construct() {}
+                            };
+                            echo $o->p;
+                            $a = $b;
+                            $b = 1;
+                        }
+                        echo $a;
+                    }
+                    PHP,
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:24',
+            ],
             'whileTrueWidenedIntRangeKeepsTheBoundItDoesNotShift' => [
                 'code' => '<?php
                     function f(): int {
@@ -2065,6 +2155,29 @@ final class WhileTest extends TestCase
                     }
                     echo $name;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
+                // the condition is never true: it is reported too
+                'error_levels' => ['TypeDoesNotContainType'],
+            ],
+            'loopConditionOperandIsAnalysedWithTheTypesOfEachPass' => [
+                'code' => '<?php
+                    /** @param int<10, max> $i */
+                    function check(int $i): bool {
+                        return $i > 0;
+                    }
+
+                    $i = 0;
+                    $max = 10;
+                    while ($i < $max || check($i)) {
+                        $max = 0;
+                        ++$i;
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'loopConditionWithPreIncrementNeverTrueForTheInitialLiteral' => [
+                'code' => '<?php
+                    $try = 9;
+                    while (++$try < 10) {}',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'variableAssignedInALoopWhoseConditionFailsForTheInitialLiteralIsPossiblyUndefined' => [
                 'code' => '<?php
@@ -2084,6 +2197,8 @@ final class WhileTest extends TestCase
                     }
                     echo $name;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
+                // the condition is never true: it is reported too
+                'error_levels' => ['TypeDoesNotContainType'],
             ],
             'variableAssignedInALoopOverAnUnknownStartIsPossiblyUndefined' => [
                 'code' => '<?php
