@@ -165,9 +165,6 @@ final class UnsetAnalyzer
                     );
                     $context->possibly_assigned_var_ids[$root_var_id] = true;
 
-                    // a branch that unsets an offset changes the array even where a condition narrowed it
-                    $context->possibly_assigned_var_ids[$root_var_id] = true;
-
                     $context->removeVarFromConflictingClauses(
                         $root_var_id,
                         $context->vars_in_scope[$root_var_id],
