@@ -20,7 +20,6 @@ use Psalm\Node\Stmt\VirtualIf;
 use Psalm\Type\Reconciler;
 
 use function array_diff;
-use function array_diff_assoc;
 use function array_diff_key;
 use function array_fill_keys;
 use function array_filter;
@@ -358,15 +357,17 @@ final class AndAnalyzer
             // an enclosing `&&` gives its right operand what both sides assign
             $vars_assigned_in_and = $vars_assigned_in_left;
 
-            foreach ($left_context->assigned_var_ids as $var_id => $_) {
-                if (isset($left_context->vars_in_scope[$var_id])) {
-                    $vars_assigned_in_and[$var_id] = $left_context->vars_in_scope[$var_id];
+            foreach ($left_context->vars_in_scope as $var_id => $type) {
+                if (isset($left_context->assigned_var_ids[$var_id])) {
+                    $vars_assigned_in_and[$var_id] = $type;
                 }
             }
 
-            foreach (array_diff_assoc($right_context->assigned_var_ids, $pre_right_assigned_var_ids) as $var_id => $_) {
-                if (isset($right_context->vars_in_scope[$var_id])) {
-                    $vars_assigned_in_and[$var_id] = $right_context->vars_in_scope[$var_id];
+            foreach ($right_context->vars_in_scope as $var_id => $type) {
+                if (isset($right_context->assigned_var_ids[$var_id])
+                    && ($pre_right_assigned_var_ids[$var_id] ?? null) !== $right_context->assigned_var_ids[$var_id]
+                ) {
+                    $vars_assigned_in_and[$var_id] = $type;
                 }
             }
 
