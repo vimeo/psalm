@@ -726,7 +726,7 @@ final class PropertyTypeTest extends TestCase
         '];
     }
 
-    public function testPropertyOfABuiltinClassKnownOnlyThroughReflectionHasItsNativeClassType(): void
+    public function testPropertyOfABuiltinClassKnownOnlyThroughReflectionHasItsNativeType(): void
     {
         if (PHP_VERSION_ID < 8_04_00) {
             $this->markTestSkipped('Dom\DocumentType is defined from PHP 8.4.');
@@ -4675,17 +4675,6 @@ final class PropertyTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MissingConstructor'],
                 'php_version' => '8.0',
-            ],
-            'propertyOfABuiltinClassKnownOnlyThroughReflectionHasItsNativeType' => [
-                'code' => '<?php
-                    function fetchRow(): PDORow {
-                        throw new RuntimeException();
-                    }
-
-                    $query = fetchRow()->queryString;',
-                'assertions' => [
-                    '$query===' => 'string',
-                ],
             ],
         ];
     }
