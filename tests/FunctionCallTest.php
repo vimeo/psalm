@@ -3644,6 +3644,14 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'curlMultiGetHandlesReturnsAListOfCurlHandles' => [
+                'code' => '<?php
+                    $mh = curl_multi_init();
+                    $handles = curl_multi_get_handles($mh);',
+                'assertions' => ['$handles===' => 'list<CurlHandle>'],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 

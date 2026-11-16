@@ -5047,6 +5047,11 @@ return array (
     'multi_handle' => 'CurlMultiHandle',
     '&w still_running' => 'int',
   ),
+  'curl_multi_get_handles' => 
+  array (
+    0 => 'list<CurlHandle>',
+    'multi_handle' => 'CurlMultiHandle',
+  ),
   'curl_multi_getcontent' => 
   array (
     0 => 'null|string',

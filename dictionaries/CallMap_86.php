@@ -13507,6 +13507,7 @@ return array (
   ),
   'curl_multi_get_handles' => 
   array (
+    0 => 'list<CurlHandle>',
     -1 => 'array<array-key, mixed>',
     'multi_handle' => 'CurlMultiHandle',
   ),
