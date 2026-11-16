@@ -554,8 +554,8 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
     }
 
     /**
-     * Records that the method being scanned writes `$this->property` (true) or only items of it (false, unless it
-     * also writes the property itself)
+     * Records that the method being scanned writes `$this->property` (true) or only items or properties of what it
+     * holds (false, unless it also writes the property itself)
      */
     private function recordThisPropertyMutation(PhpParser\Node\Expr $target): void
     {
@@ -575,7 +575,10 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
         $writes_property = true;
 
-        while ($target instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+        while ($target instanceof PhpParser\Node\Expr\ArrayDimFetch
+            || ($target instanceof PhpParser\Node\Expr\PropertyFetch
+                && !$target->var instanceof PhpParser\Node\Expr\Variable)
+        ) {
             $target = $target->var;
             $writes_property = false;
         }

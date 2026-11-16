@@ -890,6 +890,54 @@ final class MethodCallTest extends TestCase
                     '$b===' => 'array<string, int>|null',
                 ],
             ],
+            'falsablePropertyStaysNonFalseAfterAMethodWritingAnItemOfIt' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @var array<string, int>|false */
+                        public $map = false;
+
+                        public function add(): void {
+                            if ($this->map !== false) {
+                                $this->map["a"] = 2;
+                            }
+                        }
+                    }
+
+                    $foo = new Foo();
+                    $foo->map = ["a" => 1];
+                    $foo->add();
+                    $a = $foo->map;',
+                'assertions' => [
+                    '$a===' => 'array<string, int>',
+                ],
+            ],
+            'propertyOfAPropertyIsForgottenAfterAMethodWritingIt' => [
+                'code' => '<?php
+                    class Bar {
+                        public int $x = 0;
+                    }
+
+                    final class SubBar extends Bar {}
+
+                    final class Foo {
+                        public Bar $bar;
+
+                        public function __construct() { $this->bar = new Bar(); }
+
+                        public function setBarX(): void { $this->bar->x = 2; }
+                    }
+
+                    $foo = new Foo();
+                    $foo->bar = new SubBar();
+                    $foo->bar->x = 1;
+                    $foo->setBarX();
+                    $a = $foo->bar->x;
+                    $b = $foo->bar;',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'SubBar',
+                ],
+            ],
             'propertyIsNotAssignedByAConstructorUnsettingAnItemOfIt' => [
                 'code' => '<?php
                     final class Foo {

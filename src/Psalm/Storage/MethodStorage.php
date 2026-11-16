@@ -57,7 +57,7 @@ final class MethodStorage extends FunctionLikeStorage
 
     /**
      * The properties of `$this` the body writes: true when it assigns the property itself, false when it only
-     * writes items of it
+     * writes items or properties of what it holds
      *
      * @var ?array<string, bool>
      */

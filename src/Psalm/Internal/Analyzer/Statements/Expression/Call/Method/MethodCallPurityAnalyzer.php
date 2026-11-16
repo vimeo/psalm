@@ -624,9 +624,12 @@ final class MethodCallPurityAnalyzer
                     && isset($context->vars_in_scope[$mutation_var_id])
                     && !isset($class_storage->declaring_property_ids[$name]);
 
+                // writing items or properties of an object leaves the property holding the same object
+                $keeps_object = !$writes_property && $existing_type !== null && $existing_type->isObjectType();
+
                 if ($this_property_didnt_exist) {
                     unset($context->vars_in_scope[$mutation_var_id]);
-                } else {
+                } elseif (!$keeps_object) {
                     $new_type = AssignmentAnalyzer::getExpandedPropertyType(
                         $codebase,
                         $class_storage->name,
@@ -634,15 +637,17 @@ final class MethodCallPurityAnalyzer
                         $class_storage,
                     ) ?? Type::getMixed();
 
-                    // writing items never makes the property null
-                    if (!$writes_property
-                        && $existing_type !== null
-                        && !$existing_type->isNullable()
-                        && !$existing_type->hasMixed()
-                        && $new_type->isNullable()
-                    ) {
+                    // writing items never makes the property null or false
+                    if (!$writes_property && $existing_type !== null && !$existing_type->hasMixed()) {
                         $builder = $new_type->getBuilder();
-                        $builder->removeType('null');
+
+                        if (!$existing_type->isNullable()) {
+                            $builder->removeType('null');
+                        }
+
+                        if (!$existing_type->isFalsable()) {
+                            $builder->removeType('false');
+                        }
 
                         if (!$builder->isUnionEmpty()) {
                             $new_type = $builder->freeze();
