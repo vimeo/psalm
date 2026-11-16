@@ -127,7 +127,10 @@ final class Reflection
             $property_name = $class_property->getName();
             $storage->properties[$property_name] = new PropertyStorage();
 
-            $storage->properties[$property_name]->type = Type::getMixed();
+            $property_type = self::getPsalmTypeFromReflectionType($class_property->getType());
+            /** @psalm-suppress UnusedMethodCall */
+            $property_type->queueClassLikesForScanning($this->codebase);
+            $storage->properties[$property_name]->type = $property_type;
 
             if ($class_property->isStatic()) {
                 $storage->properties[$property_name]->is_static = true;
