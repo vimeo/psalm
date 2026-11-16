@@ -466,7 +466,7 @@ final class IntRangeTest extends TestCase
                     '$z===' => 'int<-4, 4>',
                 ],
             ],
-            'SKIPPED-intLoopPositive' => [ // #13909
+            'intLoopPositive' => [
                 'code' => '<?php
                     for($i = 0; $i < 10; $i++){
 
@@ -475,13 +475,196 @@ final class IntRangeTest extends TestCase
                     '$i===' => '10',
                 ],
             ],
-            'SKIPPED-intLoopNegative' => [ // #13909
+            'intLoopNegative' => [
                 'code' => '<?php
                     for($i = 10; $i > 1; $i--){
 
                     }',
                 'assertions' => [
                     '$i===' => '1',
+                ],
+            ],
+            'loopAlwaysEnteredIsLeftWithTheNegatedCondition' => [
+                'code' => '<?php
+                    $w = 5;
+                    while ($w > 0) {
+                        $w--;
+                    }
+
+                    $c = 0;
+                    for ($i = 0; $i < 10; $i++) {
+                        if (rand(0, 1)) {
+                            continue;
+                        }
+                        $c++;
+                    }
+
+                    $k = 0;
+                    do {} while (++$k < 10);',
+                'assertions' => [
+                    '$w===' => '0',
+                    '$i===' => '10',
+                    '$k===' => '10',
+                ],
+            ],
+            'loopLeftByABreakIsNotLeftWithTheNegatedCondition' => [
+                'code' => '<?php
+                    for ($i = 0; $i < 10; $i++) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }',
+                'assertions' => [
+                    '$i===' => 'int<0, 10>',
+                ],
+            ],
+            'loopNeverEnteredKeepsTheValueBeforeIt' => [
+                'code' => '<?php
+                    /** @return int<-5, 5> */
+                    function getInt(): int {
+                        return rand(-5, 5);
+                    }
+
+                    $x = getInt();
+                    while ($x > 0) {
+                        $x--;
+                    }',
+                'assertions' => [
+                    '$x===' => 'int<-5, 0>',
+                ],
+            ],
+            'loopConditionWithPreIncrementNarrows' => [
+                'code' => '<?php
+                    /** @param int<1, 4> $i */
+                    function takesOneToFour(int $i): void {}
+
+                    $n = 5;
+                    while (--$n > 0) {
+                        takesOneToFour($n);
+                    }',
+                'assertions' => [
+                    '$n===' => '0',
+                ],
+            ],
+            'loopConditionWithPostIncrementNarrows' => [
+                'code' => '<?php
+                    /** @param int<1, 10> $i */
+                    function takesOneToTen(int $i): void {}
+
+                    /** @param int<0, 9> $i */
+                    function takesZeroToNine(int $i): void {}
+
+                    $m = 0;
+                    while ($m++ < 10) {
+                        takesOneToTen($m);
+                    }
+
+                    $d = 10;
+                    while ($d-- > 0) {
+                        takesZeroToNine($d);
+                    }',
+                'assertions' => [
+                    '$m===' => '11',
+                    '$d===' => '-1',
+                ],
+            ],
+            'loopConditionComparedWithAVariableNarrows' => [
+                'code' => '<?php
+                    /** @param int<0, 9> $i */
+                    function takesZeroToNine(int $i): void {}
+
+                    $max = 10;
+                    for ($i = 0; $i < $max; $i++) {
+                        takesZeroToNine($i);
+                    }',
+                'assertions' => [
+                    '$i===' => '10',
+                ],
+            ],
+            'loopConditionComparedWithAVariableTheBodyChanges' => [
+                'code' => '<?php
+                    $max = 10;
+                    $i = 0;
+                    while ($i < $max) {
+                        $max = rand(0, 100);
+                        $i++;
+                    }',
+                'assertions' => [
+                    '$i===' => 'int<0, max>',
+                ],
+            ],
+            'incrementInComparisonNarrows' => [
+                'code' => '<?php
+                    /** @param int<1, max> $i */
+                    function takesPositive(int $i): void {}
+
+                    /** @param int<min, 0> $i */
+                    function takesNonPositive(int $i): void {}
+
+                    /** @param int<6, max> $i */
+                    function takesSixOrMore(int $i): void {}
+
+                    /** @param int<min, 5> $i */
+                    function takesFiveOrLess(int $i): void {}
+
+                    /** @param int<3, max> $i */
+                    function takesThreeOrMore(int $i): void {}
+
+                    function f(int $a, int $b, int $c, int $d): void {
+                        if (--$a > 0) {
+                            takesPositive($a);
+                        } else {
+                            takesNonPositive($a);
+                        }
+
+                        if (0 < ++$b) {
+                            takesPositive($b);
+                        }
+
+                        if ($c++ >= 5) {
+                            takesSixOrMore($c);
+                        } else {
+                            takesFiveOrLess($c);
+                        }
+
+                        if (3 < $d--) {
+                            takesThreeOrMore($d);
+                        }
+                    }
+
+                    final class A {
+                        public int $p = 0;
+
+                        public function inc(): void {
+                            if (++$this->p > 0) {
+                                takesPositive($this->p);
+                            }
+                        }
+                    }',
+            ],
+            'postIncrementComparedWithTheLargestInt' => [
+                'code' => '<?php
+                    function f(int $a, int $b): void {
+                        if ($a++ < 9223372036854775807) {}
+                        if ($b-- > -9223372036854775807 - 1) {}
+                    }',
+            ],
+            'rangeNarrowedToASingleValueIsThatValue' => [
+                'code' => '<?php
+                    $i = rand(1, 10);
+                    $r = null;
+                    if ($i >= 10) {
+                        $r = $i;
+                    }
+
+                    $j = rand(1, 10);
+                    $s = null;
+                    if ($j < 2) {
+                        $s = $j;
+                    }',
+                'assertions' => [
+                    '$r===' => '10|null',
+                    '$s===' => '1|null',
                 ],
             ],
             'integrateExistingArrayPositive' => [

@@ -121,6 +121,7 @@ final class LoopAnalyzer
 
                 $pre_condition_id = spl_object_id($pre_condition);
 
+                // built again once the condition is analysed (see applyPreConditionToLoopContext()), so not cached
                 $pre_condition_clauses[$i] = FormulaGenerator::getFormula(
                     $pre_condition_id,
                     $pre_condition_id,
@@ -128,6 +129,7 @@ final class LoopAnalyzer
                     $loop_context->self,
                     $statements_analyzer,
                     $codebase,
+                    cache: false,
                 );
             }
         } else {
@@ -230,6 +232,8 @@ final class LoopAnalyzer
             IssueBuffer::startRecording();
 
             if (!$is_do) {
+                // what the condition writes is recorded by the passes below, which start with the values before the
+                // loop too: in a loop, this first evaluation does not know the bounds of what it computes
                 foreach ($pre_conditions as $condition_offset => $pre_condition) {
                     self::applyPreConditionToLoopContext(
                         $statements_analyzer,
@@ -238,7 +242,6 @@ final class LoopAnalyzer
                         $loop_context,
                         $loop_parent_context,
                         $is_do,
-                        written_var_ids: $condition_written_var_ids,
                     );
                 }
             }
@@ -730,10 +733,9 @@ final class LoopAnalyzer
 
             $negated_pre_condition_types = Algebra::getTruthsFromFormula($negated_pre_condition_clauses);
             $loop_scope->exit_truths = $negated_pre_condition_types;
+            $loop_scope->condition_written_vars = $condition_written_var_ids;
 
             if ($negated_pre_condition_types) {
-                $changed_var_ids = [];
-
                 if ($is_do) {
                     // a do-while is left after its body, where its condition is not yet assumed
                     $exit_context = $inner_do_context ?? $continue_context;
@@ -751,28 +753,14 @@ final class LoopAnalyzer
                     }
                 }
 
-                [$vars_in_scope_reconciled, $_] = Reconciler::reconcileKeyedTypes(
-                    $negated_pre_condition_types,
-                    [],
-                    $exit_vars,
-                    $exit_context->references_in_scope,
-                    $changed_var_ids,
-                    [],
+                self::applyExitTruths(
                     $statements_analyzer,
-                    [],
-                    true,
+                    $negated_pre_condition_types,
+                    $exit_vars,
+                    $exit_context,
+                    $loop_parent_context,
                     new CodeLocation($statements_analyzer->getSource(), $pre_conditions[0]),
                 );
-
-                foreach ($changed_var_ids as $var_id => $_) {
-                    if (isset($vars_in_scope_reconciled[$var_id])
-                        && isset($loop_parent_context->vars_in_scope[$var_id])
-                    ) {
-                        $loop_parent_context->vars_in_scope[$var_id] = $vars_in_scope_reconciled[$var_id];
-                    }
-
-                    $loop_parent_context->removeVarFromConflictingClauses($var_id);
-                }
             }
         }
 
@@ -918,6 +906,26 @@ final class LoopAnalyzer
 
         if ($always_enters_loop && $can_leave_loop) {
             self::setLoopVars($inner_loop_context, $context, $loop_scope, is_only_left_by_break: $while_true);
+
+            if (!$while_true && $loop_scope->exit_truths) {
+                // the loop is left after an iteration, once the condition evaluated again is false
+                $exit_vars = $context->vars_in_scope;
+
+                foreach ($loop_scope->condition_written_vars as $var_id => $type) {
+                    if (isset($exit_vars[$var_id])) {
+                        $exit_vars[$var_id] = $type;
+                    }
+                }
+
+                self::applyExitTruths(
+                    $statements_analyzer,
+                    $loop_scope->exit_truths,
+                    $exit_vars,
+                    $context,
+                    $context,
+                    null,
+                );
+            }
         }
 
         if ($can_leave_loop) {
@@ -961,6 +969,46 @@ final class LoopAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Narrows the variables of the context to what the condition being false says of them where the loop is left
+     *
+     * @param array<string, list<list<Assertion>>> $exit_truths
+     * @param array<string, Union> $exit_vars the variables where the loop is left
+     */
+    private static function applyExitTruths(
+        StatementsAnalyzer $statements_analyzer,
+        array $exit_truths,
+        array $exit_vars,
+        Context $exit_context,
+        Context $context,
+        ?CodeLocation $code_location,
+    ): void {
+        $changed_var_ids = [];
+
+        [$vars_in_scope_reconciled, $_] = Reconciler::reconcileKeyedTypes(
+            $exit_truths,
+            [],
+            $exit_vars,
+            $exit_context->references_in_scope,
+            $changed_var_ids,
+            [],
+            $statements_analyzer,
+            [],
+            true,
+            $code_location,
+        );
+
+        foreach ($changed_var_ids as $var_id => $_) {
+            if (isset($vars_in_scope_reconciled[$var_id])
+                && isset($context->vars_in_scope[$var_id])
+            ) {
+                $context->vars_in_scope[$var_id] = $vars_in_scope_reconciled[$var_id];
+            }
+
+            $context->removeVarFromConflictingClauses($var_id);
+        }
     }
 
     /**
@@ -1378,7 +1426,9 @@ final class LoopAnalyzer
     }
 
     /**
-     * @param  list<Clause>  $pre_condition_clauses
+     * @param  list<Clause>  $pre_condition_clauses the formula of the condition, empty when it doesn't decide whether
+     *                                              the loop goes on: built again once the condition is analysed, since
+     *                                              what it says can depend on the types of its operands (`$i < $max`)
      * @param  array<string, Union> $vars_after_condition the variables the condition changes, for a do-while
      * @param  array<string, Union> $written_var_ids gets the variables evaluating the condition writes, with what they
      *                                               hold once it is evaluated
@@ -1387,7 +1437,7 @@ final class LoopAnalyzer
     private static function applyPreConditionToLoopContext(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $pre_condition,
-        array $pre_condition_clauses,
+        array &$pre_condition_clauses,
         Context $loop_context,
         Context $outer_context,
         bool $is_do,
@@ -1409,6 +1459,19 @@ final class LoopAnalyzer
         }
 
         $loop_context->inside_conditional = $was_inside_conditional;
+
+        if ($pre_condition_clauses !== []) {
+            // not cached: the types of the operands can change from one pass to the next
+            $pre_condition_clauses = FormulaGenerator::getFormula(
+                spl_object_id($pre_condition),
+                spl_object_id($pre_condition),
+                $pre_condition,
+                $loop_context->self,
+                $statements_analyzer,
+                $statements_analyzer->getCodebase(),
+                cache: false,
+            );
+        }
 
         // the variables as the condition leaves them, before the truths of the condition narrow them
         if ($is_do) {
