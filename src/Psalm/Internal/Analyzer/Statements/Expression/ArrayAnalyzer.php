@@ -253,8 +253,7 @@ final class ArrayAnalyzer
 
         foreach ($key_type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TTemplateParam) {
-                // each value of `T of decimal-int-string` is cast too, so such keys are ints rather than T, and
-                // those of `T of numeric-string` are T|int
+                // each value of `T of decimal-int-string` is cast too, so such keys are ints rather than T
                 [$cast_types, $template] = self::splitTemplateArrayKey($atomic_type);
 
                 if ($cast_types !== []) {
@@ -340,9 +339,6 @@ final class ArrayAnalyzer
         foreach ($template->as->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TDecimalIntString || self::isIntArrayKeyString($atomic_type)) {
                 $cast_types[] = $atomic_type;
-            } elseif ($atomic_type instanceof TNumericString) {
-                $cast_types[] = new TDecimalIntString($atomic_type->from_docblock);
-                $kept_types[] = $atomic_type;
             } elseif ($atomic_type instanceof TTemplateParam) {
                 [$nested_cast_types, $nested_template] = self::splitTemplateArrayKey($atomic_type);
                 $cast_types = [...$cast_types, ...$nested_cast_types];

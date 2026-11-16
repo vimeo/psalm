@@ -695,20 +695,45 @@ final class ArrayAssignmentTest extends TestCase
                     '$docblock_keys===' => 'list<int|numeric-string>',
                 ],
             ],
-            'numericStringKeysOfTemplatesCanBeInts' => [
+            'numericStringKeysOfTemplatesAreCastOnceInferred' => [
                 'code' => '<?php
                     /**
                      * @template T of numeric-string
-                     * @param array<T, string> $a
-                     * @param T $t
+                     * @param T $key
+                     * @return non-empty-array<T, int>
                      */
-                    function keys(array $a, string $t): void {
-                        foreach ($a as $k => $_) {
-                            /** @psalm-check-type-exact $k = T|int */
+                    function wrap(string $key): array {
+                        return [$key => 1];
+                    }
+
+                    final class Box {
+                        /**
+                         * @template T of numeric-string
+                         * @param T $key
+                         * @return non-empty-array<T, int>
+                         */
+                        public static function wrap(string $key): array {
+                            return [$key => 1];
                         }
-                        $b = [$t => 1];
-                        /** @psalm-check-type-exact $b = non-empty-array<T|int, 1> */
-                    }',
+                    }
+
+                    /** @return numeric-string */
+                    function numeric(): string {
+                        return "12";
+                    }
+
+                    $decimal = wrap("12");
+                    $non_decimal = wrap("1.5");
+                    $any = wrap(numeric());
+                    $static_non_decimal = Box::wrap("1.5");
+                    $static_any = Box::wrap(numeric());',
+                'assertions' => [
+                    '$decimal===' => 'non-empty-array<12, int>',
+                    '$non_decimal===' => "non-empty-array<'1.5', int>",
+                    '$any===' => 'non-empty-array<int|numeric-string, int>',
+                    '$static_non_decimal===' => "non-empty-array<'1.5', int>",
+                    '$static_any===' => 'non-empty-array<int|numeric-string, int>',
+                ],
             ],
             'numericStringOffsetsCanFetchIntKeys' => [
                 'code' => '<?php
