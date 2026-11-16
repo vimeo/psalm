@@ -30,6 +30,7 @@ use Psalm\Issue\InaccessibleClassConstant;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidClassConstantType;
 use Psalm\Issue\InvalidConstantAssignmentValue;
+use Psalm\Issue\InvalidOverride;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\LessSpecificClassConstantType;
 use Psalm\Issue\NonStaticSelfCall;
@@ -891,6 +892,10 @@ final class ClassConstAnalyzer
         ClassLikeStorage $class_storage,
         Codebase $codebase,
     ): void {
+        if ($codebase->analysis_php_version_id >= 8_06_00) {
+            self::checkOverrideAttributes($class_storage, $codebase);
+        }
+
         foreach ($class_storage->constants as $const_name => $const_storage) {
             [$parent_classlike_storage, $parent_const_storage] = self::getOverriddenConstant(
                 $class_storage,
@@ -976,6 +981,75 @@ final class ClassConstAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * PHP 8.6 (RFC override_constants): #[\Override] on a constant or enum case needs a public or protected constant
+     * of the same name in a parent class or an interface. A trait's own #[\Override] is not checked: the constant is
+     * checked in the class using the trait, where Populator has copied it into the constants.
+     */
+    private static function checkOverrideAttributes(ClassLikeStorage $class_storage, Codebase $codebase): void
+    {
+        $constants = [];
+        foreach ($class_storage->constants as $const_name => $const_storage) {
+            if ($const_storage->attributes) {
+                $constants[$const_name] = [$const_storage, $const_storage->attributes, $const_storage->location];
+            }
+        }
+
+        foreach ($class_storage->enum_cases as $case_name => $case_storage) {
+            if ($case_storage->attributes) {
+                $constants[$case_name] = [null, $case_storage->attributes, $case_storage->stmt_location];
+            }
+        }
+
+        foreach ($constants as $const_name => [$const_storage, $attributes, $location]) {
+            foreach ($attributes as $attribute) {
+                if ($attribute->fq_class_name !== 'Override'
+                    || $location === null
+                    || self::overridesConstant($class_storage, $const_name, $const_storage, $codebase)
+                ) {
+                    continue;
+                }
+
+                IssueBuffer::maybeAdd(
+                    new InvalidOverride(
+                        ($const_storage === null ? 'Enum case ' : 'Class constant ')
+                            . "{$class_storage->name}::{$const_name} does not match any parent constant",
+                        $attribute->name_location,
+                    ),
+                    $const_storage->suppressed_issues ?? $class_storage->suppressed_issues,
+                );
+            }
+        }
+    }
+
+    /**
+     * A constant inherited as is (the very same storage) is not redeclared here, so it has nothing to check.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function overridesConstant(
+        ClassLikeStorage $class_storage,
+        string $const_name,
+        ?ClassConstantStorage $const_storage,
+        Codebase $codebase,
+    ): bool {
+        foreach ([
+            ...$class_storage->parent_classes,
+            ...$class_storage->class_implements,
+            ...$class_storage->parent_interfaces,
+        ] as $ancestor) {
+            $inherited = $codebase->classlikes->getStorageFor($ancestor)?->constants[$const_name] ?? null;
+
+            if ($inherited !== null
+                && ($inherited === $const_storage || $inherited->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

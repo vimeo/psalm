@@ -20,12 +20,14 @@ final class EnumCaseStorage
     use UnserializeMemoryUsageSuppressionTrait;
 
     /**
+     * @param list<AttributeStorage> $attributes
      * @psalm-mutation-free
      */
     public function __construct(
         public TLiteralString|TLiteralInt|UnresolvedConstantComponent|null $value,
         public CodeLocation $stmt_location,
         public bool $deprecated = false,
+        public array $attributes = [],
     ) {
     }
 

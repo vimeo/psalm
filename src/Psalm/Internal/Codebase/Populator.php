@@ -1652,6 +1652,18 @@ final class Populator
                 $aliased_constant_name_lc = strtolower($constant_name);
                 $aliased_constant_name = $constant_name;
             }
+            // the class's own declaration wins over the constant of the trait; the constants of the parents are not
+            // in yet, and a constant of the trait that was copied earlier is declared outside the class
+            $own_location = ($storage->constants[$aliased_constant_name] ?? null)?->location;
+            if ($own_location !== null
+                && $storage->stmt_location !== null
+                && $own_location->file_path === $storage->stmt_location->file_path
+                && $own_location->raw_file_start >= $storage->stmt_location->raw_file_start
+                && $own_location->raw_file_end <= $storage->stmt_location->raw_file_end
+            ) {
+                continue;
+            }
+
             $visibility = $storage->trait_visibility_map[$aliased_constant_name_lc]
                 ?? $class_constant_storage->visibility;
             $final = $storage->trait_final_map[$aliased_constant_name_lc] ?? $class_constant_storage->final;

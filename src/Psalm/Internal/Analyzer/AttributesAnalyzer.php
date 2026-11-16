@@ -355,7 +355,18 @@ final class AttributesAnalyzer
                     return GlobalAttribute::TARGET_ALL; // Fall back to default if it's invalid
                 }
 
-                return $first_arg_type->getSingleIntLiteral()->value;
+                $flags = $first_arg_type->getSingleIntLiteral()->value;
+
+                // the stub declares the targets of the latest PHP: #[\Override] reached class constants in 8.6
+                // (RFC override_constants)
+                if ($fq_attribute_name === 'Override'
+                    && $attribute_class_storage->user_defined === false
+                    && $source->getCodebase()->analysis_php_version_id < 8_06_00
+                ) {
+                    $flags &= ~GlobalAttribute::TARGET_CLASS_CONSTANT;
+                }
+
+                return $flags;
             }
         }
 

@@ -37,6 +37,7 @@ final class ClassLikeStorageCacheProvider
             $storage_dir . 'MethodStorage.php',
             $storage_dir . 'PropertyStorage.php',
             $storage_dir . 'PropertyHookStorage.php',
+            $storage_dir . 'EnumCaseStorage.php',
         ];
 
         if ($config->eventDispatcher->hasAfterClassLikeVisitHandlers()) {

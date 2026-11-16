@@ -406,6 +406,34 @@ final class AttributeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'userDefinedOverrideAttributeOnClassConstant' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_CLASS_CONSTANT)]
+                    class Override {}
+
+                    class C {
+                        #[Override]
+                        public const int K = 1;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'getAttributesOfOverrideOnClassConstantInPhp86' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public const string BAR = "baz";
+                    }
+
+                    $r = new ReflectionClassConstant(Foo::class, "BAR");
+                    $r->getAttributes(\Override::class);
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
             'delayedTargetValidationDefersInternalAttributeTarget' => [
                 'code' => '<?php
                     #[\DelayedTargetValidation]
