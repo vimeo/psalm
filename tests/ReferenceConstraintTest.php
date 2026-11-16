@@ -420,6 +420,93 @@ final class ReferenceConstraintTest extends TestCase
                 ],
                 'ignored_issues' => ['MissingPropertyType'],
             ],
+            'referenceToPropertyReboundInALoopIsNoLongerConstrainedAfterIt' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var array<string, mixed> */
+                        public array $data = [];
+
+                        /** @param non-empty-list<string> $path */
+                        public function set(array $path, string $value): void {
+                            $ref = &$this->data;
+                            foreach ($path as $key) {
+                                if (!is_array($ref)) {
+                                    $ref = [];
+                                }
+                                $ref = &$ref[$key];
+                            }
+                            $ref = $value;
+                        }
+                    }',
+            ],
+            'referenceToPropertyReboundInEveryBranchIsNoLongerConstrainedAfterThem' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var array<string, mixed> */
+                        public array $data = [];
+
+                        public function set(bool $b, string $value): void {
+                            $ref = &$this->data;
+                            if ($b) {
+                                $ref = &$ref["a"];
+                            } elseif (rand(0, 1)) {
+                                $ref = &$ref["b"];
+                            } else {
+                                $ref = &$ref["c"];
+                            }
+                            $ref = $value;
+                        }
+                    }',
+            ],
+            'referenceToPropertyReboundToAnotherPropertyInABranch' => [
+                'code' => '<?php
+                    final class A {
+                        public int $i = 0;
+                        public string $s = "";
+                    }
+
+                    function f(A $a, bool $b): void {
+                        $x = &$a->i;
+                        if ($b) {
+                            $x = &$a->s;
+                            $x = "s";
+                        }
+                        $x = 1;
+                    }',
+            ],
+            'referenceToTemplatedPropertyOfObjectWithoutTypeArguments' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var T */
+                        public $value;
+
+                        /** @param T $value */
+                        public function __construct($value) {
+                            $this->value = $value;
+                        }
+                    }
+
+                    function f(Box $box): void {
+                        $x = &$box->value;
+                        $x = 2;
+                    }',
+            ],
+            'referenceToItemOfTypedArrayPropertyHasTheItemType' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var array<string, list<int>> */
+                        public array $map = [];
+                    }
+
+                    $a = new A();
+                    $key = str_repeat("a", rand(1, 2));
+                    $x = &$a->map[$key];',
+                'assertions' => [
+                    '$x===' => 'list<int>',
+                ],
+                'ignored_issues' => ['PossiblyInvalidPropertyAssignmentValue'],
+            ],
             'referenceToItemOfMixedArrayPropertyCheckedAgainstNull' => [
                 'code' => '<?php
                     final class Cache {
@@ -776,6 +863,36 @@ final class ReferenceConstraintTest extends TestCase
                 'error_message' => 'InaccessibleProperty',
                 'error_levels' => [],
                 'php_version' => '8.4',
+            ],
+            'referenceToPropertyPossiblyReboundToAnotherPropertyIsLimitedToBoth' => [
+                'code' => '<?php
+                    final class A {
+                        public int $i = 0;
+                        public string $s = "";
+                    }
+
+                    function f(A $a, bool $b): void {
+                        $x = &$a->i;
+                        if ($b) {
+                            $x = &$a->s;
+                        }
+                        $x = 1.5;
+                    }',
+                'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:25 - Variable $x is limited to values of type int|string because it is a reference to $a->i or $a->s',
+            ],
+            'arrayItemBoundToPropertyStaysUnsupported' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var list<int> */
+                        public array $ints = [];
+                    }
+
+                    /** @param array<array-key, mixed> $arr */
+                    function f(array $arr, A $a): void {
+                        $arr["k"] = &$a->ints;
+                        $arr["k"] = "s";
+                    }',
+                'error_message' => 'UnsupportedPropertyReferenceUsage',
             ],
             'referenceToShapeItemConstrainsAssignment' => [
                 'code' => '<?php

@@ -764,7 +764,9 @@ final class AssignmentAnalyzer
                         new ReferenceConstraintViolation(
                             'Variable ' . $var_id . ' is limited to values of type '
                                 . $outer_constraint_type->getId()
-                                . ' because it is passed by reference, '
+                                . (($referenced_property = $context->byref_constraints[$var_id]->referenced_property)
+                                    ? ' because it is a reference to ' . $referenced_property . ', '
+                                    : ' because it is passed by reference, ')
                                 . $assign_value_type->getId() . ' type found',
                             new CodeLocation($statements_analyzer->getSource(), $assign_var),
                         ),
@@ -1566,12 +1568,15 @@ final class AssignmentAnalyzer
             }
 
             $property_ids = [];
-            $referenced_type = self::getReferencedPropertyType(
-                $statements_analyzer,
-                $stmt->expr,
-                $context,
-                $property_ids,
-            );
+            // only a write to a variable checks its reference constraint
+            $referenced_type = $stmt->var instanceof PhpParser\Node\Expr\Variable
+                ? self::getReferencedPropertyType(
+                    $statements_analyzer,
+                    $stmt->expr,
+                    $context,
+                    $property_ids,
+                )
+                : null;
 
             if ($referenced_type === null) {
                 IssueBuffer::maybeAdd(
@@ -1600,7 +1605,11 @@ final class AssignmentAnalyzer
 
                 // what is written through the reference is written to the property
                 if (!$referenced_type->hasMixed()) {
-                    $context->byref_constraints[$lhs_var_id] = new ReferenceConstraint($referenced_type, false);
+                    $context->byref_constraints[$lhs_var_id] = new ReferenceConstraint(
+                        $referenced_type,
+                        false,
+                        $rhs_var_id,
+                    );
                 }
 
                 // binding creates the item as null when it is not set (the reference's type only gets null above,
@@ -1731,11 +1740,29 @@ final class AssignmentAnalyzer
                     return null;
                 }
 
+                $receiver = $atomic_type instanceof TGenericObject ? $atomic_type : null;
+                $template_types = $codebase->classlike_storage_provider->get($atomic_type->value)->template_types;
+
+                // an object of a templated class without its type arguments has their bounds, but `$this` has the
+                // templates themselves
+                if ($receiver === null
+                    && $template_types
+                    && !($expr->var instanceof PhpParser\Node\Expr\Variable && $expr->var->name === 'this')
+                ) {
+                    $receiver = new TGenericObject(
+                        $atomic_type->value,
+                        array_values(array_map(
+                            static fn(array $bounds): Union => reset($bounds),
+                            $template_types,
+                        )),
+                    );
+                }
+
                 $object_property_type = self::getReferencedDeclaredPropertyType(
                     $codebase,
                     $atomic_type->value,
                     $property_name,
-                    $atomic_type instanceof TGenericObject ? $atomic_type : null,
+                    $receiver,
                     $property_ids,
                 );
 

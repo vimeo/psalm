@@ -395,6 +395,14 @@ final class Context
     public array $byref_constraints = [];
 
     /**
+     * Variables a block that may not run rebinds: their constraints are merged by
+     * mergeConstraintsOfReferencesReboundIn(), not by the merge of the constraints the block adds
+     *
+     * @var array<string, true>
+     */
+    public array $references_rebound_in_blocks = [];
+
+    /**
      * A list of vars that have been assigned to
      *
      * @var array<string, int>
@@ -647,6 +655,45 @@ final class Context
         }
         $this->references_possibly_from_confusing_scope +=
             $confusing_scope_context->references_possibly_from_confusing_scope;
+    }
+
+    /**
+     * A variable a block that may not run binds by reference elsewhere (or releases) keeps a constraint only when it is
+     * constrained both before and after the block, to what either allows
+     *
+     * @param array<PhpParser\Node> $block_nodes
+     */
+    public function mergeConstraintsOfReferencesReboundIn(
+        Context $block_context,
+        array $block_nodes,
+        Codebase $codebase,
+    ): void {
+        foreach ($this->byref_constraints + $block_context->byref_constraints as $var_id => $_) {
+            $constraint = $this->byref_constraints[$var_id] ?? null;
+            $block_constraint = $block_context->byref_constraints[$var_id] ?? null;
+
+            if ($constraint === $block_constraint || self::findReferenceRebinding($block_nodes, $var_id) === null) {
+                continue;
+            }
+
+            $this->references_rebound_in_blocks[$var_id] = true;
+
+            if ($constraint?->type && $block_constraint?->type) {
+                $this->byref_constraints[$var_id] = new ReferenceConstraint(
+                    Type::combineUnionTypes($constraint->type, $block_constraint->type, $codebase),
+                    false,
+                    match (true) {
+                        $constraint->referenced_property === $block_constraint->referenced_property
+                            => $constraint->referenced_property,
+                        $constraint->referenced_property !== null && $block_constraint->referenced_property !== null
+                            => $constraint->referenced_property . ' or ' . $block_constraint->referenced_property,
+                        default => null,
+                    },
+                );
+            } else {
+                unset($this->byref_constraints[$var_id]);
+            }
+        }
     }
 
     /**

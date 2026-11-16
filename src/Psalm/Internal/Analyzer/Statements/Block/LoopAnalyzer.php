@@ -621,6 +621,12 @@ final class LoopAnalyzer
             $loop_parent_context->detachReferencesReboundIn($continue_context, $statements_analyzer, $loop_nodes);
         }
 
+        $loop_parent_context->mergeConstraintsOfReferencesReboundIn(
+            $continue_context,
+            $loop_nodes,
+            $statements_analyzer->getCodebase(),
+        );
+
         if ($does_sometimes_break) {
             foreach ($loop_scope->possibly_redefined_loop_parent_vars as $var => $type) {
                 $loop_parent_context->vars_in_scope[$var] = Type::combineUnionTypes(

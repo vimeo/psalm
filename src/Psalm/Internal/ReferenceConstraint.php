@@ -19,11 +19,15 @@ final class ReferenceConstraint
 
     /**
      * @param bool $widen_literals false for a declared type, whose literals limit what the reference may hold
+     * @param ?string $referenced_property the property (or item of a property) the variable is a reference to
      * @psalm-capabilities read-props
      * @psalm-suppress ImpureMethodCall only mutates the builder it creates
      */
-    public function __construct(?Union $type = null, bool $widen_literals = true)
-    {
+    public function __construct(
+        ?Union $type = null,
+        bool $widen_literals = true,
+        public ?string $referenced_property = null,
+    ) {
         if ($type && !$widen_literals) {
             $this->type = $type;
         } elseif ($type) {
