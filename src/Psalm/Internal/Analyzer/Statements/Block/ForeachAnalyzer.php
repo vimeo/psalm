@@ -1966,6 +1966,9 @@ final class ForeachAnalyzer
                 $passed_type_params,
             );
 
+            $key_type = $key_type?->replaceClassLike('static', $iterator_atomic_type->value);
+            $value_type = $value_type?->replaceClassLike('static', $iterator_atomic_type->value);
+
             return;
         }
     }
@@ -2292,7 +2295,7 @@ final class ForeachAnalyzer
             return null;
         }
 
-        return self::getExtendedType(
+        $value_type = self::getExtendedType(
             'TValue',
             'ArrayAccess',
             $storage->name,
@@ -2300,6 +2303,8 @@ final class ForeachAnalyzer
             $storage->template_types,
             $atomic_type instanceof TGenericObject ? $atomic_type->type_params : null,
         );
+
+        return $value_type?->replaceClassLike('static', $atomic_type->value);
     }
 
     /**
