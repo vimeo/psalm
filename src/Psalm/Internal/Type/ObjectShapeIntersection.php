@@ -68,10 +68,14 @@ final class ObjectShapeIntersection
         $intersection_types = [];
 
         foreach ($other_types as $other_type) {
-            $intersection_types[$other_type->getKey()] = $other_type;
-        }
+            if ($other_type->getId() === $primary->getId()) {
+                continue;
+            }
 
-        unset($intersection_types[$primary->getKey()]);
+            // `iterable<mixed, A>&iterable<mixed, B>` share their key
+            $key = $other_type instanceof TIterable ? $other_type->getId() : $other_type->getKey();
+            $intersection_types[$key] = $other_type;
+        }
 
         if ($shape !== null) {
             $intersection_types[$shape->getKey()] = $shape;
