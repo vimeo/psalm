@@ -495,7 +495,7 @@ final class ReferenceTest extends TestCase
                     '$b===' => '2',
                 ],
             ],
-            'SKIPPED-referenceToArrayItemChangesArrayType' => [
+            'SKIPPED-referenceToArrayItemChangesArrayType' => [ // #13918
                 'code' => '<?php
                     /** @var list<int> */
                     $arr = [];

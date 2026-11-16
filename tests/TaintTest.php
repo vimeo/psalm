@@ -14902,8 +14902,7 @@ final class TaintTest extends TestCase
                     echo (string) dig(["x" => $_GET["b"]], 4);',
                 'error_message' => 'TaintedHtml',
             ],
-            'SKIPPED-taintLateArrayThroughImpureFunction' => [
-                // The visited guard ignores open array assignments: a later flow with another array shape is pruned at a node shared with an earlier one
+            'taintLateArrayThroughImpureFunction' => [
                 'code' => '<?php
                     function pass(array $a): array {
                         $GLOBALS["n"] = 1;
@@ -14918,8 +14917,7 @@ final class TaintTest extends TestCase
                     echo (string) $y["v"];',
                 'error_message' => 'TaintedHtml',
             ],
-            'SKIPPED-taintLateArrayThroughStaticProperty' => [
-                // The visited guard ignores open array assignments: a later flow with another array shape is pruned at a node shared with an earlier one
+            'taintLateArrayThroughStaticProperty' => [
                 'code' => '<?php
                     final class C {
                         /** @var array<string, mixed> */
@@ -14934,8 +14932,7 @@ final class TaintTest extends TestCase
                     echo (string) C::$p["v"];',
                 'error_message' => 'TaintedHtml',
             ],
-            'SKIPPED-taintLateArrayThroughInstanceProperty' => [
-                // The visited guard ignores open array assignments: a later flow with another array shape is pruned at a node shared with an earlier one
+            'taintLateArrayThroughInstanceProperty' => [
                 'code' => '<?php
                     final class C {
                         /** @var array<string, mixed> */

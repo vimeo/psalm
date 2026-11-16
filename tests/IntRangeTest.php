@@ -466,24 +466,22 @@ final class IntRangeTest extends TestCase
                     '$z===' => 'int<-4, 4>',
                 ],
             ],
-            'SKIPPED-intLoopPositive' => [
+            'SKIPPED-intLoopPositive' => [ // #13909
                 'code' => '<?php
-                    //skipped, int range in loops not supported yet
                     for($i = 0; $i < 10; $i++){
 
                     }',
                 'assertions' => [
-                    '$i===' => 'int<0, 9>',
+                    '$i===' => '10',
                 ],
             ],
-            'SKIPPED-intLoopNegative' => [
+            'SKIPPED-intLoopNegative' => [ // #13909
                 'code' => '<?php
-                    //skipped, int range in loops not supported yet
                     for($i = 10; $i > 1; $i--){
 
                     }',
                 'assertions' => [
-                    '$i===' => 'int<2, 10>',
+                    '$i===' => '1',
                 ],
             ],
             'integrateExistingArrayPositive' => [
@@ -516,9 +514,8 @@ final class IntRangeTest extends TestCase
                     '$_arr===' => "non-empty-array<int<min, 2>, 'a'|'b'|'c'|12>",
                 ],
             ],
-            'SKIPPED-statementsInLoopAffectsEverything' => [
+            'statementsInLoopAffectsEverything' => [
                 'code' => '<?php
-                    //skipped, int range in loops not supported yet
                     $remainder = 1;
                     for ($i = 0; $i < 5; $i++) {
                         if ($remainder) {
@@ -526,7 +523,7 @@ final class IntRangeTest extends TestCase
                         }
                     }',
                 'assertions' => [
-                    '$remainder===' => 'int<min, 1>',
+                    '$remainder===' => 'int<min, 0>',
                 ],
             ],
             'IntRangeRestrictWhenUntouched' => [

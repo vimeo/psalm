@@ -2644,16 +2644,15 @@ final class MethodSignatureTest extends TestCase
                 'error_message' => 'InvalidReturnType',
                 'error_levels' => ['InvalidParent'],
             ],
-            // not sure how to handle it
-            'SKIPPED-returnsParentWithNoParentAndInvalidParentSuppressedMismatchingReturn' => [
+            'returnsParentWithNoParentAndInvalidParentSuppressedMismatchingReturn' => [
                 'code' => '<?php
                     class Foo {
                         public function f(): parent {
-                            return false;
+                            return 5;
                         }
                     }
                 ',
-                'error_message' => 'InvalidReturnType',
+                'error_message' => 'InvalidReturnStatement',
                 'error_levels' => ['InvalidParent'],
             ],
             'regularMethodMismatchFromParentUse' => [
@@ -2858,7 +2857,7 @@ final class MethodSignatureTest extends TestCase
                 ',
                 'error_message' => 'MethodSignatureMismatch',
             ],
-            'SKIPPED-noMixedTypehintInDescendant' => [
+            'SKIPPED-noMixedTypehintInDescendant' => [ // #13926
                 'code' => '<?php
                     class a {
                         public function test(): mixed {

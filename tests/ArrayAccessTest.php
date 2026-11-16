@@ -2238,18 +2238,6 @@ final class ArrayAccessTest extends TestCase
 
                     if ($foo !== null) {}',
             ],
-            'SKIPPED-accessKnownArrayWithPositiveInt' => [
-                'code' => '<?php
-                    /** @param list<int> $arr */
-                    function foo(array $arr) : void {
-                        $o = [4, 15, 18, 21, 51];
-                        $i = 0;
-                        foreach ($arr as $a) {
-                            if ($o[$i] === $a) {}
-                            $i++;
-                        }
-                    }',
-            ],
             'arrayAccessOnArraylikeObjectOrArray' => [
                 'code' => '<?php
                     /**
@@ -2736,6 +2724,19 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'accessKnownArrayWithPositiveInt' => [
+                'code' => '<?php
+                    /** @param list<int> $arr */
+                    function foo(array $arr) : void {
+                        $o = [4, 15, 18, 21, 51];
+                        $i = 0;
+                        foreach ($arr as $a) {
+                            if ($o[$i] === $a) {}
+                            $i++;
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
             'nestedUnsetBreaksTheShapeOfAByRefParam' => [
                 'code' => '<?php
                     /** @param array{b: array{c: int}} $a */

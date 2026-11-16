@@ -903,7 +903,7 @@ final class InterfaceTest extends TestCase
                      */
                     class SomeIterator extends IteratorIterator {}',
             ],
-            'SKIPPED-suppressMismatch' => [
+            'SKIPPED-suppressMismatch' => [ // #13924
                 'code' => '<?php
                     interface I {
                         /**
@@ -1163,7 +1163,7 @@ final class InterfaceTest extends TestCase
                         $i::doFoo();
                     }',
             ],
-            'SKIPPED-inheritSystemInterface' => [
+            'SKIPPED-inheritSystemInterface' => [ // #13933
                 'code' => '<?php
                     interface I extends \RecursiveIterator {}
 
