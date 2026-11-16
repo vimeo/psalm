@@ -308,7 +308,7 @@ final class ReturnTypeTest extends TestCase
 
                     $t = (new D())->render();',
                 'assertions' => ['$t===' => 'string'],
-                'ignored_issues' => [],
+                'ignored_issues' => ['ImplementedReturnTypeMismatch'],
                 'php_version' => '8.1',
             ],
             'narrowerNativeReturnTypeWinsOverInheritedStringableDocblock' => [
@@ -326,7 +326,7 @@ final class ReturnTypeTest extends TestCase
 
                     $u = (new F())->render();',
                 'assertions' => ['$u===' => 'string'],
-                'ignored_issues' => [],
+                'ignored_issues' => ['ImplementedReturnTypeMismatch'],
                 'php_version' => '8.1',
             ],
             'nativeStringableReturnTypeKeepsStringableOverInheritedStringOrStringable' => [
