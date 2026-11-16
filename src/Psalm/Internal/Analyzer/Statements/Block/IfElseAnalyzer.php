@@ -490,7 +490,7 @@ final class IfElseAnalyzer
                 // what the branches that don't type it assigned flows to the uses too
                 $type = Type::getMixed()->setParentNodes([
                     ...$type->parent_nodes,
-                    ...$statements_analyzer->getParentNodesForPossiblyUndefinedVariable($var_id),
+                    ...$if_scope->untyped_new_vars[$var_id],
                 ]);
             }
 

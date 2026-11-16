@@ -475,7 +475,7 @@ final class IfAnalyzer
      * @param  array<string, bool>   $newly_reconciled_var_ids
      * @param  array<string, int>    $assigned_in_conditional_var_ids
      * @param  array<PhpParser\Node> $branch_nodes the code of the branch: what it rebinds by reference is detached
-     *                                             in the outer context
+     *                                             in the outer context, unless $detach_references is false
      */
     public static function updateIfScope(
         StatementsAnalyzer $statements_analyzer,
@@ -488,12 +488,13 @@ final class IfAnalyzer
         bool $update_new_vars = true,
         array $assigned_in_conditional_var_ids = [],
         array $branch_nodes = [],
+        bool $detach_references = true,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         $if_scope->addBranchReachingTheEnd($if_context);
 
-        if ($branch_nodes) {
+        if ($branch_nodes && $detach_references) {
             $outer_context->detachReferencesReboundIn($if_context, $statements_analyzer, $branch_nodes);
         }
 
@@ -516,11 +517,21 @@ final class IfAnalyzer
                 : $type;
         }
 
+        $branch_range = $branch_nodes
+            ? [$branch_nodes[0]->getStartFilePos(), $branch_nodes[count($branch_nodes) - 1]->getEndFilePos()]
+            : null;
+
         foreach ($if_context->vars_possibly_in_scope as $var_id => $_) {
             if (!isset($if_context->vars_in_scope[$var_id])
                 && !isset($outer_context->vars_possibly_in_scope[$var_id])
             ) {
-                $if_scope->untyped_new_vars[$var_id] = true;
+                // the assignments of the branch, not those another branch overwrote
+                $if_scope->untyped_new_vars[$var_id] = [
+                    ...$if_scope->untyped_new_vars[$var_id] ?? [],
+                    ...$branch_range
+                        ? $statements_analyzer->getParentNodesForPossiblyUndefinedVariable($var_id, $branch_range)
+                        : [],
+                ];
             }
         }
 
