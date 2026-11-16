@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\UnusedMethodCall;
@@ -618,7 +619,7 @@ final class MethodCallPurityAnalyzer
                 $existing_type = $context->vars_in_scope[$mutation_var_id] ?? null;
 
                 $context->forgetNullArrayOffsets($mutation_var_id);
-                $context->removeDescendents($mutation_var_id, $existing_type ?? Type::getMixed());
+                $context->forgetPropertyDescendents($mutation_var_id);
 
                 $this_property_didnt_exist = $lhs_var_id === '$this'
                     && isset($context->vars_in_scope[$mutation_var_id])
@@ -637,7 +638,16 @@ final class MethodCallPurityAnalyzer
                         $class_storage,
                     ) ?? Type::getMixed();
 
-                    // writing items never makes the property null or false
+                    // of the receiver: `T` of a `Box<int>` is `int`
+                    if ($class_template_params) {
+                        $new_type = TemplateInferredTypeReplacer::replace(
+                            $new_type,
+                            new TemplateResult([], $class_template_params),
+                            $codebase,
+                        );
+                    }
+
+                    // writing items never makes the property null or a bool
                     if (!$writes_property && $existing_type !== null && !$existing_type->hasMixed()) {
                         $builder = $new_type->getBuilder();
 
@@ -645,8 +655,9 @@ final class MethodCallPurityAnalyzer
                             $builder->removeType('null');
                         }
 
-                        if (!$existing_type->isFalsable()) {
+                        if (!$existing_type->isFalsable() && !$existing_type->hasBool()) {
                             $builder->removeType('false');
+                            $builder->removeType('bool');
                         }
 
                         if (!$builder->isUnionEmpty()) {

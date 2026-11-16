@@ -896,9 +896,18 @@ final class MethodCallTest extends TestCase
                         /** @var array<string, int>|false */
                         public $map = false;
 
+                        /** @var array<string, int>|bool */
+                        public $boolMap = false;
+
                         public function add(): void {
                             if ($this->map !== false) {
                                 $this->map["a"] = 2;
+                            }
+                        }
+
+                        public function addToBoolMap(): void {
+                            if (is_array($this->boolMap)) {
+                                $this->boolMap["a"] = 2;
                             }
                         }
                     }
@@ -906,9 +915,19 @@ final class MethodCallTest extends TestCase
                     $foo = new Foo();
                     $foo->map = ["a" => 1];
                     $foo->add();
-                    $a = $foo->map;',
+                    $a = $foo->map;
+
+                    $foo->boolMap = ["a" => 1];
+                    $foo->addToBoolMap();
+                    $b = $foo->boolMap;
+
+                    $foo->boolMap = true;
+                    $foo->addToBoolMap();
+                    $c = $foo->boolMap;',
                 'assertions' => [
                     '$a===' => 'array<string, int>',
+                    '$b===' => 'array<string, int>',
+                    '$c===' => 'array<string, int>|bool',
                 ],
             ],
             'propertyOfAPropertyIsForgottenAfterAMethodWritingIt' => [
@@ -937,6 +956,51 @@ final class MethodCallTest extends TestCase
                     '$a===' => 'int',
                     '$b===' => 'SubBar',
                 ],
+            ],
+            'propertyOfAGenericReceiverKeepsItsTemplateTypesAfterAMethodWritingIt' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var array{value: T} */
+                        public array $items;
+
+                        /** @param T $v */
+                        public function __construct($v) { $this->items = ["value" => $v]; }
+
+                        /** @param T $v */
+                        public function setItem($v): void { $this->items["value"] = $v; }
+
+                        /** @param T $v */
+                        public function setProperty($v): void { $this->items = ["value" => $v]; }
+                    }
+
+                    /** @param Box<int> $box */
+                    function item(Box $box): int {
+                        $box->setItem(1);
+                        return $box->items["value"];
+                    }
+
+                    /** @param Box<int> $box */
+                    function property(Box $box): int {
+                        $box->setProperty(1);
+                        return $box->items["value"];
+                    }',
+            ],
+            'propertyItemStaysBoundByReferenceAfterAMethodWritingAnotherItem' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var array{a: int|string, b: int} */
+                        public array $map = ["a" => 0, "b" => 0];
+
+                        public function incB(): void { $this->map["b"]++; }
+                    }
+
+                    function f(Box $box): int {
+                        $x =& $box->map["a"];
+                        $box->incB();
+                        $x = 3;
+                        return $box->map["a"];
+                    }',
             ],
             'propertyIsNotAssignedByAConstructorUnsettingAnItemOfIt' => [
                 'code' => '<?php
