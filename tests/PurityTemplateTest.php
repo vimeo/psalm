@@ -1551,10 +1551,40 @@ final class PurityTemplateTest extends TestCase
                         }
                     }
 
-                    /**
-                     * @psalm-pure
-                     * @param Fiber[pure] $f
-                     */
+                    /** @param Fiber[pure] $fiber */
+                    function oncePure(Fiber $fiber): void {
+                        if (!$fiber->isTerminated()) {
+                            $fiber->resume();
+                            if (!$fiber->isTerminated()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function fresh(): void {
+                        $f = new Fiber(static function (): void {
+                            Fiber::suspend(1);
+                        });
+                        $f->start();
+                        if (!$f->isTerminated()) {
+                            $f->resume();
+                            if (!$f->isTerminated()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    /** @param Generator[pure]<int, int, mixed, void> $g */
+                    function sent(Generator $g): void {
+                        if ($g->valid()) {
+                            $g->send(1);
+                            if ($g->valid()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    /** @psalm-pure */
                     function isDone(Fiber $f): bool {
                         return $f->isTerminated();
                     }',

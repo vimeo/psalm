@@ -200,7 +200,8 @@ namespace {
     /**
      * TPurity is what running the fiber's callback may do: starting or resuming the fiber runs it
      * until it suspends or returns, so it costs what the callback costs and nothing else. Like the
-     * position of a generator, where a fiber is suspended is engine state, not an effect.
+     * position of a generator, where a fiber is suspended is engine state, not an effect: what its
+     * getters return is forgotten when it is started or resumed.
      *
      * @psalm-purity-template TPurity(impure)
      *
@@ -232,36 +233,19 @@ namespace {
          */
         public function throw(Throwable $exception): mixed {}
 
-        /**
-         * What starting or resuming the fiber changes, like the position of a generator: not remembered across those calls
-         *
-         * @psalm-pure
-         * @psalm-purity-from-template TPurity
-         */
+        /** @psalm-pure */
         public function getReturn(): mixed {}
 
-        /**
-         * @psalm-pure
-         * @psalm-purity-from-template TPurity
-         */
+        /** @psalm-pure */
         public function isStarted(): bool {}
 
-        /**
-         * @psalm-pure
-         * @psalm-purity-from-template TPurity
-         */
+        /** @psalm-pure */
         public function isSuspended(): bool {}
 
-        /**
-         * @psalm-pure
-         * @psalm-purity-from-template TPurity
-         */
+        /** @psalm-pure */
         public function isRunning(): bool {}
 
-        /**
-         * @psalm-pure
-         * @psalm-purity-from-template TPurity
-         */
+        /** @psalm-pure */
         public function isTerminated(): bool {}
 
         /**
