@@ -310,6 +310,36 @@ Unused-code detection is based on a graph of references between code elements, r
 
 This is enabled by default since Psalm 6, so unused code issues are reported even without passing `--find-unused-code` (or `--find-dead-code`). Set `findUnusedCode="false"` to turn it off.
 
+#### markAllNonInternalCodeAsApi
+```xml
+<psalm
+  markAllNonInternalCodeAsApi="[bool]"
+>
+```
+**For libraries only.** When `true`, every class that isn't marked `@internal` or `@psalm-internal` is treated as if it were marked [`@api`](../annotating_code/supported_annotations.md#api-psalm-api), except for its members that are marked internal. Defaults to `false`.
+
+```php
+<?php
+namespace Lib;
+
+class Client {                           // no issue (and no ClassMustBeFinal)
+    public function send(): void {       // no issue
+        $this->encode();
+    }
+    private function encode(): void {}   // no issue, used by an API method
+    private function unused(): void {}   // UnusedMethod
+    /** @internal */
+    public function reset(): void {}     // PossiblyUnusedMethod
+}
+
+/** @internal */
+final class Helper {}                    // UnusedClass
+```
+
+**This breaks unused-code detection for internal code that isn't marked `@internal`**: Psalm treats it as public API, so it is never reported as unused, and neither is any code that only it uses. Mark every class and member that isn't meant for users of the library with `@internal` (or `@psalm-internal`) before enabling this.
+
+Don't enable it in applications: almost all of their code is internal, so it would turn off most of unused-code detection. Code that a framework calls (controllers, commands, …) is already marked as used by the framework's Psalm plugin; mark any other such code with `@api` instead.
+
 #### forceJit
 ```xml
 <psalm

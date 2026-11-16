@@ -929,7 +929,7 @@ final class ClassLikes
                         // a class that is only alive because of its own methods
                         // still has its members unchecked
                         if (($code_use_graph->isUsed($class_node) || $code_use_graph->isPossiblyUsed($class_node))
-                            && ($classlike_storage->public_api || $code_use_graph->isReferenced($class_node))
+                            && ($this->isPublicApi($classlike_storage) || $code_use_graph->isReferenced($class_node))
                         ) {
                             $this->checkMethodReferences($classlike_storage, $methods, $dynamic_entry_nodes);
                             $this->checkPropertyReferences($classlike_storage);
@@ -945,7 +945,7 @@ final class ClassLikes
                         }
                         $this->checkMethodParamReferences($classlike_storage);
                     }
-                    if (!$classlike_storage->public_api
+                    if (!$this->isPublicApi($classlike_storage)
                         && !$classlike_storage->has_children
                         && !$classlike_storage->abstract
                         && !$classlike_storage->final
@@ -1070,7 +1070,7 @@ final class ClassLikes
 
             $class_node = CodeUseGraph::classNode($fq_class_name_lc);
 
-            if ($classlike_storage->public_api) {
+            if ($this->isPublicApi($classlike_storage)) {
                 $code_use_graph->markAsPublicApi($class_node);
             }
 
@@ -1080,12 +1080,11 @@ final class ClassLikes
                 // a used method means its class is used
                 $code_use_graph->addEdge($method_node, $class_node, CodeUseGraph::EDGE_METHOD);
 
-                if ($method_storage->public_api
-                    || ($classlike_storage->public_api
-                        && ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                            || ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
-                                && !$classlike_storage->final)))
-                ) {
+                if ($method_storage->public_api || $this->isPublicApiMember(
+                    $classlike_storage,
+                    $method_storage->visibility,
+                    $method_storage->internal,
+                )) {
                     $code_use_graph->markAsPublicApi($method_node);
                 }
             }
@@ -2321,17 +2320,9 @@ final class ClassLikes
                 $method_id = $declaring_method_id;
             }
 
-            if ($classlike_storage->public_api
-                && ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                    || ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
-                        && !$classlike_storage->final
-                    )
-                )
+            if ($method_storage->public_api
+                || $this->isPublicApiMember($classlike_storage, $method_storage->visibility, $method_storage->internal)
             ) {
-                continue;
-            }
-
-            if ($method_storage->public_api) {
                 continue;
             }
 
@@ -2779,19 +2770,42 @@ final class ClassLikes
         return true;
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
+    private function isPublicApi(ClassLikeStorage $classlike_storage): bool
+    {
+        return $classlike_storage->public_api
+            || ($this->config->mark_all_non_internal_code_as_api && !$classlike_storage->internal);
+    }
+
+    /**
+     * @param list<non-empty-string> $member_internal
+     *
+     * @psalm-capabilities read-props
+     */
+    private function isPublicApiMember(
+        ClassLikeStorage $classlike_storage,
+        int $visibility,
+        array $member_internal,
+    ): bool {
+        return $this->isPublicApi($classlike_storage)
+            && ($visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                || ($visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED && !$classlike_storage->final))
+            && !($this->config->mark_all_non_internal_code_as_api && $member_internal);
+    }
+
     private function checkPropertyReferences(ClassLikeStorage $classlike_storage): void
     {
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
         foreach ($classlike_storage->properties as $property_name => $property_storage) {
-            if ($classlike_storage->public_api
-                && ($property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                    || ($property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
-                        && !$classlike_storage->final
-                    )
-                )
-            ) {
+            if ($this->isPublicApiMember(
+                $classlike_storage,
+                $property_storage->visibility,
+                $property_storage->internal,
+            )) {
                 continue;
             }
 

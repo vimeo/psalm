@@ -853,6 +853,10 @@ project is treated as public surface automatically, since it can be instantiated
 and invoked through that external type: its overriding methods are considered
 used without an explicit `@api`.
 
+A library can mark all of its code that isn't `@internal` as `@api` with
+[`markAllNonInternalCodeAsApi`](../running_psalm/configuration.md#markallnoninternalcodeasapi),
+at the cost of unused-code detection for internal code that lacks `@internal`.
+
 Do not reach for `@psalm-suppress UnusedClass` (or another `Unused*`
 suppression) in place of `@api`: as noted above, a suppression only silences the
 report, it does not mark the symbol as used, so symbols it references may still
