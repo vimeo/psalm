@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Exception\ScopeAnalysisException;
@@ -22,6 +23,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\IssueBuffer;
@@ -108,8 +110,6 @@ final class IfElseAnalyzer
         $pre_cond_clauses = $context->clauses;
         $pre_cond_remove_vars = $context->parent_remove_vars;
 
-        $phantom_classes_before_cond = $context->phantom_classes;
-
         // the else of an `||` is analysed again from where the condition started, not from where it ended
         $pre_condition_context = $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
@@ -117,21 +117,14 @@ final class IfElseAnalyzer
                 : null;
 
         try {
-            $if_conditional_scope = IfConditionalAnalyzer::analyze(
+            $if_conditional_scope = self::analyzeCondition(
                 $statements_analyzer,
-                $stmt->cond,
+                $stmt,
                 $context,
                 $codebase,
                 $if_scope,
                 $branch_point,
             );
-
-            // a class that doesn't exist is only known to be there in the block run when
-            // `class_exists()` (or the like) is true, and after the if where the condition is false
-            $context->phantom_classes = [
-                ...$phantom_classes_before_cond,
-                ...GuardedClasses::unknownWhenResult($stmt->cond, false, $codebase),
-            ];
 
             // this is the context for stuff that happens within the `if` block
             $if_context = $if_conditional_scope->if_context;
@@ -671,6 +664,47 @@ final class IfElseAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * A class that doesn't exist is only known to be there in the block run when `class_exists()` (or the like)
+     * is true, and after the if where the condition is false; after an if whose other branches leave, it is
+     * known where the condition is true
+     *
+     * @throws ScopeAnalysisException
+     */
+    private static function analyzeCondition(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\If_ $stmt,
+        Context $context,
+        Codebase $codebase,
+        IfScope $if_scope,
+        int $branch_point,
+    ): IfConditionalScope {
+        $phantom_classes_before_cond = $context->phantom_classes;
+
+        $if_conditional_scope = IfConditionalAnalyzer::analyze(
+            $statements_analyzer,
+            $stmt->cond,
+            $context,
+            $codebase,
+            $if_scope,
+            $branch_point,
+        );
+
+        $context->phantom_classes = [
+            ...$phantom_classes_before_cond,
+            ...GuardedClasses::unknownWhenResult($stmt->cond, false, $codebase),
+        ];
+
+        if ($stmt->else) {
+            $if_scope->phantom_classes_of_if_block = [
+                ...$phantom_classes_before_cond,
+                ...GuardedClasses::unknownWhenResult($stmt->cond, true, $codebase),
+            ];
+        }
+
+        return $if_conditional_scope;
     }
 
     /**

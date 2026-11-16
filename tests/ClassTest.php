@@ -1226,6 +1226,40 @@ final class ClassTest extends TestCase
                         Missing\Thing::run();
                     }',
             ],
+            'classExistsCoversTheCodeAfterAnIfWhoseElseLeaves' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (class_exists(Missing\A::class)) {
+                            echo 1;
+                        } else {
+                            return;
+                        }
+
+                        Missing\A::run();
+                    }
+
+                    function bar(): void {
+                        if (class_exists(Missing\B::class)) {
+                            echo 1;
+                        } else {
+                            throw new Exception();
+                        }
+
+                        Missing\B::run();
+                    }
+
+                    function baz(bool $flag): void {
+                        if (class_exists(Missing\C::class)) {
+                            echo 1;
+                        } elseif ($flag) {
+                            return;
+                        } else {
+                            throw new Exception();
+                        }
+
+                        Missing\C::run();
+                    }',
+            ],
             'classExistsCoversTheIfAndElseIfBody' => [
                 'code' => '<?php
                     function foo(): void {
@@ -1740,7 +1774,7 @@ final class ClassTest extends TestCase
 
                         Missing\Thing::run();
                     }',
-                'error_message' => 'UndefinedClass',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
             ],
             'classExistsAndAFlagDoesNotCoverTheCodeAfterTheIf' => [
                 'code' => '<?php
@@ -1798,6 +1832,21 @@ final class ClassTest extends TestCase
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'classExistsDoesNotCoverTheCodeAfterAnIfWhoseElseDoesNotLeave' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            echo 1;
+                        } elseif ($flag) {
+                            return;
+                        } else {
+                            echo 2;
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:25',
             ],
             'classExistsDoesNotCoverTheCodeAfterTheIfInAMethod' => [
                 'code' => '<?php
