@@ -12,6 +12,7 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Name;
+use PhpParser\Node\Stmt\If_;
 use PhpParser\Node\Stmt\Return_;
 use PhpParser\NodeAbstract;
 use Psalm\NodeTypeProvider;
@@ -53,6 +54,9 @@ final class NodeDataProvider implements NodeTypeProvider
      */
     private SplObjectStorage $evaluated;
 
+    /** @var SplObjectStorage<If_, true> */
+    private SplObjectStorage $impossible_implicit_elses;
+
     public bool $cache_assertions = true;
 
     /**
@@ -67,6 +71,28 @@ final class NodeDataProvider implements NodeTypeProvider
         $this->node_literal_prefixes = new SplObjectStorage();
         $this->written_by_reference = new SplObjectStorage();
         $this->evaluated = new SplObjectStorage();
+        $this->impossible_implicit_elses = new SplObjectStorage();
+    }
+
+    /**
+     * Records whether the conditions of an if without an else matched every value of a variable, so that nothing
+     * goes past the if without going through one of its branches
+     */
+    public function setImplicitElseImpossible(If_ $node, bool $impossible): void
+    {
+        if ($impossible) {
+            $this->impossible_implicit_elses[$node] = true;
+        } else {
+            unset($this->impossible_implicit_elses[$node]);
+        }
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    public function isImplicitElseImpossible(If_ $node): bool
+    {
+        return isset($this->impossible_implicit_elses[$node]);
     }
 
     /**
