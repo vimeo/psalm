@@ -235,3 +235,175 @@ namespace Snmp {
         case Hex;
     }
 }
+
+namespace {
+    const CURLINFO_SIZE_DELIVERED = 6291527;
+    const CURLOPT_SEEKFUNCTION = 20167;
+    const CURL_READFUNC_ABORT = 268435456;
+    const CURL_SEEKFUNC_CANTSEEK = 2;
+    const CURL_SEEKFUNC_FAIL = 1;
+    const CURL_SEEKFUNC_OK = 0;
+    const MYSQLI_OPT_COMPRESS = 1;
+    const OPENSSL_RSA_PSS_SALTLEN_AUTO = -2;
+    const OPENSSL_RSA_PSS_SALTLEN_DIGEST = -1;
+    const OPENSSL_RSA_PSS_SALTLEN_MAX = -3;
+    const AF_UNSPEC = 0;
+
+    /**
+     * @var int
+     */
+    const EAI_ADDRFAMILY = 0;
+
+    /**
+     * @var int
+     */
+    const EAI_AGAIN = 0;
+
+    /**
+     * @var int
+     */
+    const EAI_ALLDONE = 0;
+
+    /**
+     * @var int
+     */
+    const EAI_BADFLAGS = 0;
+
+    /**
+     * @var int
+     */
+    const EAI_CANCELED = 0;
+
+    /**
+     * @var int
+     */
+    const EAI_FAIL = 0;
+
+    /**
+     * @var int
+     */
+    const EAI_FAMILY = 0;
+
+    /**
+     * @var int
+     */
+    const EAI_IDN_ENCODE = 0;
+
+    /**
+     * @var int
+     */
+    const EAI_INPROGRESS = 0;
+
+    /**
+     * @var int
+     */
+    const EAI_INTR = 0;
+
+    /**
+     * @var int
+     */
+    const EAI_NODATA = 0;
+
+    /**
+     * @var int
+     */
+    const EAI_NONAME = 0;
+
+    /**
+     * @var int
+     */
+    const EAI_NOTCANCELED = 0;
+
+    /**
+     * @var int
+     */
+    const EAI_OVERFLOW = 0;
+
+    /**
+     * @var int
+     */
+    const EAI_SERVICE = 0;
+
+    /**
+     * @var int
+     */
+    const EAI_SOCKTYPE = 0;
+
+    /**
+     * @var int
+     */
+    const EAI_SYSTEM = 0;
+
+    /**
+     * @var int
+     */
+    const SO_DETACH_REUSEPORT_BPF = 0;
+
+    /**
+     * @var int
+     */
+    const TCP_USER_TIMEOUT = 0;
+
+    const SODIUM_CRYPTO_IPCRYPT_BYTES = 16;
+    const SODIUM_CRYPTO_IPCRYPT_KEYBYTES = 16;
+    const SODIUM_CRYPTO_IPCRYPT_NDX_INPUTBYTES = 16;
+    const SODIUM_CRYPTO_IPCRYPT_NDX_KEYBYTES = 32;
+    const SODIUM_CRYPTO_IPCRYPT_NDX_OUTPUTBYTES = 32;
+    const SODIUM_CRYPTO_IPCRYPT_NDX_TWEAKBYTES = 16;
+    const SODIUM_CRYPTO_IPCRYPT_ND_INPUTBYTES = 16;
+    const SODIUM_CRYPTO_IPCRYPT_ND_KEYBYTES = 16;
+    const SODIUM_CRYPTO_IPCRYPT_ND_OUTPUTBYTES = 24;
+    const SODIUM_CRYPTO_IPCRYPT_ND_TWEAKBYTES = 8;
+    const SODIUM_CRYPTO_IPCRYPT_PFX_BYTES = 16;
+    const SODIUM_CRYPTO_IPCRYPT_PFX_KEYBYTES = 32;
+
+    /**
+     * @var int
+     */
+    const SODIUM_CRYPTO_KEM_CIPHERTEXTBYTES = 0;
+
+    /**
+     * @var int
+     */
+    const SODIUM_CRYPTO_KEM_KEYPAIRBYTES = 0;
+
+    const SODIUM_CRYPTO_KEM_MLKEM768_CIPHERTEXTBYTES = 1088;
+    const SODIUM_CRYPTO_KEM_MLKEM768_KEYPAIRBYTES = 3584;
+    const SODIUM_CRYPTO_KEM_MLKEM768_PUBLICKEYBYTES = 1184;
+    const SODIUM_CRYPTO_KEM_MLKEM768_SECRETKEYBYTES = 2400;
+    const SODIUM_CRYPTO_KEM_MLKEM768_SEEDBYTES = 64;
+    const SODIUM_CRYPTO_KEM_MLKEM768_SHAREDSECRETBYTES = 32;
+
+    /**
+     * @var int
+     */
+    const SODIUM_CRYPTO_KEM_PUBLICKEYBYTES = 0;
+
+    /**
+     * @var int
+     */
+    const SODIUM_CRYPTO_KEM_SECRETKEYBYTES = 0;
+
+    /**
+     * @var int
+     */
+    const SODIUM_CRYPTO_KEM_SEEDBYTES = 0;
+
+    /**
+     * @var int
+     */
+    const SODIUM_CRYPTO_KEM_SHAREDSECRETBYTES = 0;
+
+    const SODIUM_CRYPTO_XOF_SHAKE128_BLOCKBYTES = 168;
+    const SODIUM_CRYPTO_XOF_SHAKE128_STATEBYTES = 256;
+    const SODIUM_CRYPTO_XOF_SHAKE256_BLOCKBYTES = 136;
+    const SODIUM_CRYPTO_XOF_SHAKE256_STATEBYTES = 256;
+    const SODIUM_CRYPTO_XOF_TURBOSHAKE128_BLOCKBYTES = 168;
+    const SODIUM_CRYPTO_XOF_TURBOSHAKE128_STATEBYTES = 256;
+    const SODIUM_CRYPTO_XOF_TURBOSHAKE256_BLOCKBYTES = 136;
+    const SODIUM_CRYPTO_XOF_TURBOSHAKE256_STATEBYTES = 256;
+    const ARRAY_FILTER_USE_VALUE = 0;
+    const STREAM_CRYPTO_STATUS_NONE = 0;
+    const STREAM_CRYPTO_STATUS_WANT_READ = 1;
+    const STREAM_CRYPTO_STATUS_WANT_WRITE = 2;
+}

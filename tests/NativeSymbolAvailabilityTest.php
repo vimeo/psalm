@@ -637,6 +637,32 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'ignored_issues' => [],
             'php_version' => '8.6',
         ];
+
+        yield 'php86GlobalConstantsAreDefined' => [
+            'code' => '<?php
+                $blockBytes = SODIUM_CRYPTO_XOF_SHAKE128_BLOCKBYTES;
+                $filterMode = ARRAY_FILTER_USE_VALUE;
+                $addrinfoError = EAI_AGAIN;
+            ',
+            'assertions' => [
+                '$blockBytes===' => '168',
+                '$filterMode===' => '0',
+                '$addrinfoError===' => 'int',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.6',
+        ];
+
+        yield 'stubConstantWithAVarDocblockHasTheDocblockType' => [
+            'code' => '<?php
+                $icuVersion = INTL_ICU_VERSION;
+            ',
+            'assertions' => [
+                '$icuVersion===' => 'string',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
     }
 
     /**
