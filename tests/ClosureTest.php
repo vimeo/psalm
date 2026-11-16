@@ -319,6 +319,32 @@ final class ClosureTest extends TestCase
                 ],
                 'ignored_issues' => ['MissingClosureReturnType'],
             ],
+            'closureEndingWithADoWhileAlwaysReturningDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function() {
+                        do {
+                            return "a";
+                        } while (false);
+                    };
+                    $r = $f();',
+                'assertions' => [
+                    '$r===' => '\'a\'',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureEndingWithAForeachOverANonEmptyArrayDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function() {
+                        foreach ([1, 2] as $x) {
+                            return $x;
+                        }
+                    };
+                    $r = $f();',
+                'assertions' => [
+                    '$r===' => '1|2',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
             'propertyOfAVariableCapturedByReferenceMayChangeAfterTheClosureIsCreated' => [
                 'code' => '<?php
                     final class Job {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
+use PhpParser\NodeFinder;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\NodeTypeProvider;
 
@@ -291,6 +292,20 @@ final class ScopeAnalyzer
                     [...$control_actions, ...$loop_actions],
                     static fn(string $action): bool => $action !== self::ACTION_NONE,
                 );
+
+                // a body that always runs and never reaches its end leaves nothing after the loop reachable;
+                // break and continue don't show up in the body's actions, so any of them rules this out
+                if (!array_diff($loop_actions, [self::ACTION_END, self::ACTION_RETURN])
+                    && ($stmt instanceof PhpParser\Node\Stmt\Do_
+                        || $stmt->getAttribute('alwaysEntered', false))
+                    && !(new NodeFinder())->findFirst(
+                        $stmt->stmts,
+                        static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Stmt\Break_
+                            || $node instanceof PhpParser\Node\Stmt\Continue_,
+                    )
+                ) {
+                    return array_values(array_unique($control_actions));
+                }
 
                 if (($stmt instanceof PhpParser\Node\Stmt\While_
                     || $stmt instanceof PhpParser\Node\Stmt\Do_)
