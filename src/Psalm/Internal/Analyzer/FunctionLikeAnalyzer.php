@@ -30,6 +30,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -979,6 +980,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if (!$function_param->type
                 && $function_param->location
             ) {
+                if ($this instanceof ClosureAnalyzer && $this->getPropertyHookId() !== null) {
+                    // the property says what an untyped `$value` is
+                    continue;
+                }
+
                 if ($this->function instanceof Closure
                     || $this->function instanceof ArrowFunction
                 ) {
@@ -1023,6 +1029,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $closure_yield_types,
                 true,
             );
+
+            if (!$storage->return_type) {
+                $closure_return_types = ReturnTypeAnalyzer::addImplicitNullReturn(
+                    $closure_return_types,
+                    $closure_yield_types !== [],
+                    $function_stmts,
+                    $type_provider,
+                    $context->has_returned,
+                );
+            }
 
             $closure_return_type = $closure_return_types
                 ? Type::combineUnionTypeArray(
@@ -1342,7 +1358,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        $t = $storage instanceof MethodStorage ? Attribute::TARGET_METHOD : Attribute::TARGET_FUNCTION;
+        $t = $storage instanceof MethodStorage
+            || ($this instanceof ClosureAnalyzer && $this->getPropertyHookId() !== null)
+            ? Attribute::TARGET_METHOD
+            : Attribute::TARGET_FUNCTION;
         AttributesAnalyzer::analyze(
             $this,
             $context,
@@ -1396,6 +1415,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 );
 
                 if ($this instanceof ClosureAnalyzer) {
+                    // a hook cannot leave its parameter out
+                    if ($this->getPropertyHookId() !== null) {
+                        continue;
+                    }
+
                     IssueBuffer::maybeAdd(
                         new UnusedClosureParam(
                             $unused_param_message,
@@ -1579,7 +1603,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         // specialized like the by-reference parameter out nodes of its calls (see
         // ArgumentsAnalyzer::getByRefParamOutNode())
-        $specialization_location = $storage->specialize_call ? $storage->location : null;
+        $specialization_location = $storage->specialize_call
+            || TaintFlowGraph::getSpeculativelySpecializedCallee($codebase, $storage) !== null
+                ? $storage->location
+                : null;
 
         // the classes a method overridden is called through (see getCasedBodyMethodId())
         foreach ($class_storage->parent_classes + $class_storage->class_implements as $ancestor) {
@@ -2440,7 +2467,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             throw new UnexpectedValueException('This is weird');
         }
 
-        return $this->getClosureId();
+        return $this->getPropertyHookId() ?? $this->getClosureId();
     }
 
     /**

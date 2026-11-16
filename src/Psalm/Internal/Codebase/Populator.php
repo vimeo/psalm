@@ -94,6 +94,9 @@ final class Populator
     {
         $this->progress->debug('ClassLikeStorage is populating' . "\n");
 
+        // before the members of the classes inherit their internal namespaces
+        $this->classlikes->markUnshippedCodeInternal();
+
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
             $this->populateClassLikeStorage($class_storage);
         }

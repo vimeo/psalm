@@ -17,6 +17,7 @@ use function array_filter;
 use function array_slice;
 use function count;
 use function end;
+use function str_ends_with;
 
 /**
  * @internal
@@ -74,6 +75,10 @@ final class BreakAnalyzer
                 $loop_scope->addJump($context);
             }
 
+            if ($ends_this_loop) {
+                $loop_scope->addBreak($context);
+            }
+
             $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
 
             foreach ($redefined_vars as $var => $type) {
@@ -88,12 +93,24 @@ final class BreakAnalyzer
                 foreach ($loop_scope->possibly_defined_loop_parent_vars as $var_id => $type) {
                     if ($ends_this_loop && !isset($context->vars_in_scope[$var_id])) {
                         $loop_scope->possibly_defined_loop_parent_vars[$var_id] = $type->setPossiblyUndefined(true);
+
+                        if (str_ends_with($var_id, ']')) {
+                            $loop_scope->unknown_offsets[$var_id] = true;
+                        }
                     }
                 }
 
                 foreach ($context->vars_in_scope as $var_id => $type) {
                     if (!isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])) {
                         $previous_type = $loop_scope->possibly_defined_loop_parent_vars[$var_id] ?? null;
+
+                        if (str_ends_with($var_id, ']')
+                            && ($previous_type
+                                ? $previous_type->possibly_undefined !== $type->possibly_undefined
+                                : $ends_this_loop && $loop_scope->break_count > 0)
+                        ) {
+                            $loop_scope->unknown_offsets[$var_id] = true;
+                        }
 
                         $loop_scope->possibly_defined_loop_parent_vars[$var_id] = Type::combineUnionTypes(
                             $ends_this_loop && $loop_scope->break_count > 0 && $previous_type === null
@@ -123,6 +140,7 @@ final class BreakAnalyzer
                 if ($target_scope && $target_scope !== $loop_scope) {
                     $target_scope->final_actions[] = ScopeAnalyzer::ACTION_BREAK;
                     $target_scope->addJump($context);
+                    $target_scope->addBreak($context);
 
                     $target_redefined_vars = $context->getRedefinedVars(
                         $target_scope->loop_parent_context->vars_in_scope,
@@ -167,13 +185,22 @@ final class BreakAnalyzer
         if ($case_scope && $leaving_switch) {
             $case_scope->addBreak($context);
 
-            foreach ($context->vars_in_scope as $var_id => $type) {
-                if ($case_scope->break_vars === null) {
-                    $case_scope->break_vars = [];
-                }
+            $is_first_break = $case_scope->break_vars === null;
+            $case_scope->break_vars ??= [];
 
+            // a variable that another break of the case has and this one lacks (or the other way around) is only
+            // possibly defined where the switch is left
+            foreach ($case_scope->break_vars as $var_id => $type) {
+                if (!isset($context->vars_in_scope[$var_id])) {
+                    $case_scope->break_vars[$var_id] = $type->setPossiblyUndefined(true);
+                }
+            }
+
+            foreach ($context->vars_in_scope as $var_id => $type) {
                 $case_scope->break_vars[$var_id] = Type::combineUnionTypes(
-                    $type,
+                    $is_first_break || isset($case_scope->break_vars[$var_id])
+                        ? $type
+                        : $type->setPossiblyUndefined(true),
                     $case_scope->break_vars[$var_id] ?? null,
                 );
             }

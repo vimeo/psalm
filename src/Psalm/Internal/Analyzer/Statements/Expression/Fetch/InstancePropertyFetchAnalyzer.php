@@ -39,7 +39,6 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_shift;
 use function array_values;
-use function rtrim;
 use function strtolower;
 
 /**
@@ -147,7 +146,8 @@ final class InstancePropertyFetchAnalyzer
         if ($stmt_var_type->isNull()) {
             return !IssueBuffer::accepts(
                 new NullPropertyFetch(
-                    'Cannot get property on null variable ' . $stmt_var_id,
+                    'Cannot get property on null variable '
+                        . ExpressionIdentifier::getNameForMessage($stmt_var_id, $stmt->var),
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -218,10 +218,11 @@ final class InstancePropertyFetchAnalyzer
             // we can only be sure that the variable is possibly null if we know the var_id
             if (!$context->inside_isset && $stmt->name instanceof PhpParser\Node\Identifier) {
                 // the null of a `?->` short-circuit is added to the result below, it is not a fetch on null
-                if ($receiver_state !== NullsafeChainState::ShortCircuit) {
+                if (!$receiver_state->isNullOnlyByShortCircuit()) {
                     IssueBuffer::maybeAdd(
                         new PossiblyNullPropertyFetch(
-                            rtrim('Cannot get property on possibly null variable ' . $stmt_var_id)
+                            'Cannot get property on possibly null variable '
+                            . ExpressionIdentifier::getNameForMessage($stmt_var_id, $stmt->var)
                             . ' of type ' . $stmt_var_type,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
@@ -306,7 +307,7 @@ final class InstancePropertyFetchAnalyzer
         $short_circuit_null = $receiver_state !== NullsafeChainState::None && $stmt_var_type->isNullable();
 
         if ($short_circuit_null) {
-            $receiver_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
+            $receiver_state->afterLink($stmt_type)->markOn($stmt);
         }
 
         // isset()/empty()/`??` only skip the null of the fetch itself, the `?->` short-circuit stays in the result

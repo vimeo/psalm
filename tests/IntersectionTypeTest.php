@@ -20,6 +20,32 @@ final class IntersectionTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'genericWithoutArgumentsInIntersectionGetsItsDefaultsLikeAlone' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @template T of object */
+                    interface Coll {}
+
+                    abstract class B {
+                        /** @return Coll */
+                        abstract public function alone(): Coll;
+
+                        /** @return I&Coll */
+                        abstract public function both(): I;
+                    }
+
+                    function b(): B {
+                        throw new Exception();
+                    }
+
+                    $alone = b()->alone();
+                    $both = b()->both();',
+                'assertions' => [
+                    '$alone===' => 'Coll<object>',
+                    '$both===' => 'I&Coll<object>',
+                ],
+            ],
             'propertyFetchOfTheSecondClassOfAnIntersectionWithAnInterface' => [
                 'code' => '<?php
                     interface I {}
@@ -466,6 +492,64 @@ final class IntersectionTypeTest extends TestCase
                     '$fromMixin' => 'int',
                 ],
             ],
+            'objectShapePartIsNotAMixedReceiverNarrowsNull' => [
+                'code' => '<?php
+                    class Foo {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @var null|(Foo&object{a: int}) $x */
+                    $x = null;
+                    $x->get();
+                    $after = $x;',
+                'assertions' => [
+                    '$after===' => 'Foo&object{a:int}',
+                ],
+                'ignored_issues' => ['PossiblyNullReference'],
+            ],
+            'objectShapePartIsNotAMixedReceiverByRefArgument' => [
+                'code' => '<?php
+                    class Foo {
+                        public function fill(?int &$out): void {
+                            $out = 1;
+                        }
+                    }
+
+                    /** @var Foo&object{a: int} $x */
+                    $x->fill($filled);
+                    echo $filled;',
+            ],
+            'callableObjectPartOfAnIntersectionWithAShapeKeepsInvoke' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    /** @psalm-assert callable-object $value */
+                    function requireCallable(object $value): void {
+                        if (!is_callable($value)) {
+                            throw new InvalidArgumentException();
+                        }
+                    }
+
+                    /** @param Marker&object{a: int} $value */
+                    function invoke(object $value): void {
+                        requireCallable($value);
+                        $value->__invoke();
+                    }',
+            ],
+            'methodOfAnObjectShapeDeclaredByMethodExistsIsCaseInsensitive' => [
+                'code' => '<?php
+                    final class Card {}
+
+                    function charge(Card $card): void {
+                        if (method_exists($card, "Charge")) {
+                            $card->charge();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedMethodCall'],
+            ],
         ];
     }
 
@@ -676,6 +760,55 @@ final class IntersectionTypeTest extends TestCase
                 'error_message' => 'UndefinedPropertyFetch',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'objectShapePartDoesNotMakeUndefinedMagicMethodPossible' => [
+                'code' => '<?php
+                    /** @psalm-seal-methods */
+                    class Foo {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+
+                        /** @psalm-pure */
+                        public function known(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @var Foo&object{a: int} $x */
+                    $x->notmagic();',
+                'error_message' => 'UndefinedMagicMethod',
+            ],
+            'objectShapePartDoesNotMakeUndefinedMethodPossible' => [
+                'code' => '<?php
+                    final class Card {
+                        public function known(): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @var Card&object{a: int} $x */
+                    $x->nope();',
+                'error_message' => 'UndefinedMethod',
+            ],
+            'loneObjectShapeReceiverIsAMixedMethodCall' => [
+                'code' => '<?php
+                    /** @param object{a: int} $x */
+                    function test(object $x): void {
+                        $x->anything();
+                    }',
+                'error_message' => 'MixedMethodCall',
+            ],
+            'objectShapePartDeclaringMagicCallKeepsAnUndeclaredMethodPossible' => [
+                'code' => '<?php
+                    class Card {}
+
+                    function charge(Card $card): void {
+                        if (method_exists($card, "__call")) {
+                            $card->charge();
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedMethod',
             ],
         ];
     }

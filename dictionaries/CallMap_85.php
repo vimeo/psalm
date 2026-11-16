@@ -24170,11 +24170,6 @@ return array (
     'callback=' => 'callable[impure]',
     'data=' => 'mixed',
   ),
-  'empty' => 
-  array (
-    0 => 'bool',
-    'value' => 'mixed',
-  ),
   'emptyiterator::current' => 
   array (
     -1 => 'never',
@@ -24542,11 +24537,6 @@ return array (
   'ev::verify' => 
   array (
     -1 => 'void',
-  ),
-  'eval' => 
-  array (
-    0 => 'mixed',
-    'code_str' => 'string',
   ),
   'evcheck::__construct' => 
   array (
@@ -48069,12 +48059,6 @@ return array (
     -1 => 'bool',
     'filename' => 'string',
   ),
-  'isset' => 
-  array (
-    0 => 'bool',
-    'value' => 'mixed',
-    '...rest=' => 'mixed',
-  ),
   'iterator::current' => 
   array (
     -1 => 'mixed',
@@ -69572,11 +69556,6 @@ return array (
   array (
     -1 => 'mixed',
     '&r array' => 'array<array-key, mixed>',
-  ),
-  'print' => 
-  array (
-    0 => 'int',
-    'arg' => 'string',
   ),
   'print_r' => 
   array (
@@ -108213,12 +108192,6 @@ return array (
     -1 => 'mixed',
     'data' => 'string',
     'options=' => 'array{allowed_classes?: array<array-key, class-string>|bool, max_depth?: int}',
-  ),
-  'unset' => 
-  array (
-    0 => 'void',
-    'var=' => 'mixed',
-    '...args=' => 'mixed',
   ),
   'untaint' => 
   array (
