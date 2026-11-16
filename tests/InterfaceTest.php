@@ -903,7 +903,7 @@ final class InterfaceTest extends TestCase
                      */
                     class SomeIterator extends IteratorIterator {}',
             ],
-            'SKIPPED-suppressMismatch' => [ // #13924
+            'suppressMismatchOfNativeReturnType' => [
                 'code' => '<?php
                     interface I {
                         /**
@@ -920,6 +920,58 @@ final class InterfaceTest extends TestCase
                         public function check(): bool
                         {
                             return false;
+                        }
+                    }',
+            ],
+            'nativeReturnTypeRefinedByInheritedDocblock' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {
+                        /** @return int */
+                        public function nullable();
+                        /** @return list<int> */
+                        public function list();
+                        /** @return non-empty-string */
+                        public function nonEmpty();
+                        /** @return T */
+                        public function template();
+                        /** @return Iterator */
+                        public function iterator();
+                        /** @return static */
+                        public function fluent();
+                    }
+
+                    /** @psalm-suppress MissingTemplateParam */
+                    class C implements I
+                    {
+                        public function nullable(): ?int
+                        {
+                            return 1;
+                        }
+
+                        public function list(): array
+                        {
+                            return [1];
+                        }
+
+                        public function nonEmpty(): string
+                        {
+                            return "a";
+                        }
+
+                        public function template(): bool
+                        {
+                            return false;
+                        }
+
+                        public function iterator(): Countable
+                        {
+                            return new ArrayIterator([]);
+                        }
+
+                        public function fluent(): self
+                        {
+                            return $this;
                         }
                     }',
             ],
@@ -2564,6 +2616,62 @@ final class InterfaceTest extends TestCase
                       }
                     }',
                 'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'nativeReturnTypeDisjointFromInheritedDocblock' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @return int
+                         */
+                        public function check();
+                    }
+
+                    class C implements I
+                    {
+                        public function check(): bool
+                        {
+                            return false;
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:50 - The inherited return type \'int\' for I::check is different to the implemented return type for C::check \'bool',
+            ],
+            'nativeReturnTypeDisjointFromInheritedTemplatedDocblock' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {
+                        /** @return T */
+                        public function check();
+                    }
+
+                    /** @implements I<int> */
+                    class C implements I
+                    {
+                        public function check(): bool
+                        {
+                            return false;
+                        }
+                    }',
+                'error_message' => 'The inherited return type \'int\' for I::check is different to the implemented return type for C::check \'bool',
+            ],
+            'traitNativeReturnTypeDisjointFromInheritedDocblock' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return int */
+                        public function check();
+                    }
+
+                    trait T {
+                        public function check(): bool
+                        {
+                            return false;
+                        }
+                    }
+
+                    class C implements I
+                    {
+                        use T;
+                    }',
+                'error_message' => 'The inherited return type \'int\' for I::check is different to the implemented return type for T::check \'bool',
             ],
             'abstractInterfaceImplementsButCallUndefinedMethod' => [
                 'code' => '<?php

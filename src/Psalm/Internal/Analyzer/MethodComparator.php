@@ -189,9 +189,11 @@ final class MethodComparator
                 && isset($codebase->classlike_storage_provider->get($implementer_called_class_name)
                     ->documenting_method_ids[strtolower($guide_method_storage->cased_name ?? '')]));
 
+        // an inherited docblock refines a native return type, but cannot replace one it does not overlap
+        // (see Methods::getMethodReturnType())
         if ($guide_method_storage->return_type
             && $implementer_method_storage->return_type
-            && !$inherits_return_type
+            && (!$inherits_return_type || $implementer_method_storage->signature_return_type)
             && ($guide_method_storage->signature_return_type !== $guide_method_storage->return_type
                 || $implementer_method_storage->signature_return_type !== $implementer_method_storage->return_type)
             && $implementer_classlike_storage->user_defined
@@ -209,6 +211,7 @@ final class MethodComparator
                 $implementer_declaring_method_id,
                 $code_location,
                 $suppressed_issues,
+                $inherits_return_type,
             );
         }
 
@@ -1437,6 +1440,7 @@ final class MethodComparator
         ?MethodIdentifier $implementer_declaring_method_id,
         CodeLocation $code_location,
         array $suppressed_issues,
+        bool $inherits_return_type,
     ): void {
         $implementer_method_storage_return_type = TypeExpander::expandUnion(
             $codebase,
@@ -1516,6 +1520,20 @@ final class MethodComparator
 
         if ($guide_method_storage_return_type->isVoid()) {
             $guide_method_storage_return_type = Type::getNull();
+        }
+
+        if ($inherits_return_type
+            && (UnionTypeComparator::isContainedBy(
+                $codebase,
+                $guide_method_storage_return_type,
+                $implementer_method_storage_return_type,
+            ) || Type::intersectUnionTypes(
+                $implementer_method_storage_return_type,
+                $guide_method_storage_return_type,
+                $codebase,
+            ))
+        ) {
+            return;
         }
 
         $union_comparison_results = new TypeComparisonResult();
