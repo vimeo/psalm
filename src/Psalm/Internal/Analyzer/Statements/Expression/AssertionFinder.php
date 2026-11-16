@@ -4333,8 +4333,18 @@ final class AssertionFinder
                     new Union([$array_atomic]),
                 )]);
 
-                // a numeric string finds an int key, so a key disjoint from the keys of T is not narrowed
-                if (Type::intersectUnionTypes($key_of_type, $first_var_type, $source->getCodebase()) !== null) {
+                // only an int finds no other key than itself: '0' finds the key 0, null the key ''
+                if (Type::intersectUnionTypes($key_of_type, $first_var_type, $source->getCodebase()) !== null
+                    && array_all(
+                        $first_var_type->getAtomicTypes(),
+                        static fn(Atomic $key_atomic): bool => $key_atomic instanceof TInt
+                            || Type::intersectUnionTypes(
+                                $key_of_type,
+                                new Union([$key_atomic]),
+                                $source->getCodebase(),
+                            ) !== null,
+                    )
+                ) {
                     $template_key_var_name = $first_var_name;
                     $template_key_assertion = new InArray(
                         $key_of_type,

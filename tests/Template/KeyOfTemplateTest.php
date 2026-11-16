@@ -197,6 +197,23 @@ final class KeyOfTemplateTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'arrayKeyExistsOnTemplateWithIntKeysKeepsNumericStringArm' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<int, string>
+                     * @param T $array
+                     */
+                    function getKey(int|string $key, $array): bool {
+                        if (array_key_exists($key, $array)) {
+                            return $key;
+                        }
+                        return false;
+                    }
+                ',
+                'error_message' => "The inferred type 'int|string' does not match",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'keyOfTemplateNotIncludesInt' => [
                 'code' => '<?php
                     /**
