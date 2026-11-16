@@ -116,6 +116,22 @@ final class SuperGlobalsTest extends TestCase
             ',
         ];
 
+        yield 'globalSuperGlobalReadInAFileScopeTryIsDefined' => [
+            'code' => '<?php
+                try {
+                    echo count($_SESSION);
+                } catch (Exception $e) {
+                }
+
+                function snapshot(): void {
+                    global $_SESSION;
+
+                    $snapshot = $_SESSION;
+                    var_export($snapshot);
+                }
+            ',
+        ];
+
         yield 'globalHttpResponseHeaderIsNullWhenUnset' => [
             'code' => '<?php
                 function headers(): void {
