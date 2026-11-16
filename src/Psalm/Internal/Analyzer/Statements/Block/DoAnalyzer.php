@@ -84,7 +84,7 @@ final class DoAnalyzer
         $loop_issues = IssueBuffer::clearRecordingLevel();
         IssueBuffer::stopRecording();
 
-        self::reportIssues($first_iteration_issues, $loop_issues, $loop_raised_issue_keys);
+        self::reportIssues($stmt->stmts, $first_iteration_issues, $loop_issues, $loop_raised_issue_keys);
 
         if ($loop_result === false) {
             return false;
@@ -264,19 +264,23 @@ final class DoAnalyzer
      * The body runs once with the types it has before the loop: what the loop analysis finds possibly wrong with the
      * types of all the iterations is wrong for sure when the first one has it. The other issues of the first
      * iteration are left to the loop analysis, which also sees what this first pass assumes wrongly (a branch only
-     * impossible in the first iteration, a variable the body defines after reading it, which is possibly undefined).
+     * impossible in the first iteration, a variable the body defines after reading it, which is possibly undefined),
+     * and the issues of the functions and classes the body declares, which run later, if ever.
      *
+     * @param array<PhpParser\Node\Stmt> $stmts
      * @param array<int, CodeIssue> $first_iteration_issues
      * @param array<int, CodeIssue> $loop_issues
      * @param array<string, true> $loop_raised_issue_keys the issues the loop analysis raised, reported or not
      */
     private static function reportIssues(
+        array $stmts,
         array $first_iteration_issues,
         array $loop_issues,
         array $loop_raised_issue_keys,
     ): void {
         $replaced_issue_keys = [];
         $kept_issues = [];
+        $deferred_bounds = null;
 
         foreach ($first_iteration_issues as $issue) {
             if ($issue instanceof UndefinedVariable || $issue instanceof UndefinedGlobalVariable) {
@@ -285,10 +289,21 @@ final class DoAnalyzer
 
             $possible_issue_key = IssueBuffer::getIssueLocationKey('Possibly' . $issue::getIssueType(), $issue);
 
-            if (isset($loop_raised_issue_keys[$possible_issue_key])) {
-                $replaced_issue_keys[$possible_issue_key] = true;
-                $kept_issues[] = $issue;
+            if (!isset($loop_raised_issue_keys[$possible_issue_key])) {
+                continue;
             }
+
+            $deferred_bounds ??= self::getDeferredBounds($stmts);
+            [$from] = $issue->code_location->getSelectionBounds();
+
+            foreach ($deferred_bounds as [$deferred_from, $deferred_to]) {
+                if ($from >= $deferred_from && $from <= $deferred_to) {
+                    continue 2;
+                }
+            }
+
+            $replaced_issue_keys[$possible_issue_key] = true;
+            $kept_issues[] = $issue;
         }
 
         foreach ($loop_issues as $issue) {
@@ -300,6 +315,25 @@ final class DoAnalyzer
         foreach ($kept_issues as $issue) {
             IssueBuffer::bubbleUp($issue);
         }
+    }
+
+    /**
+     * @param array<PhpParser\Node\Stmt> $stmts
+     * @return list<array{int, int}> the bounds of the functions and classes the statements declare
+     */
+    private static function getDeferredBounds(array $stmts): array
+    {
+        $bounds = [];
+
+        foreach ((new PhpParser\NodeFinder())->find(
+            $stmts,
+            static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\FunctionLike
+                || $node instanceof PhpParser\Node\Stmt\ClassLike,
+        ) as $node) {
+            $bounds[] = [(int) $node->getAttribute('startFilePos'), (int) $node->getAttribute('endFilePos')];
+        }
+
+        return $bounds;
     }
 
     /**

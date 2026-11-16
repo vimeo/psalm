@@ -974,6 +974,28 @@ final class DoTest extends TestCase
                 $x = $c;
             } while (rand(0, 1));
         }
+
+        function inAClosureCapturingByReference(): void {
+            $x = new stdClass();
+            do {
+                $f = static function () use (&$x): void {
+                    echo (string) $x;
+                };
+                $x = 'a';
+                $f();
+            } while (rand(0, 1));
+        }
+
+        function inAnArrowFunction(): void {
+            $x = new stdClass();
+            do {
+                $f = static fn(): string => (string) $x;
+                $x = 'a';
+                if (rand(0, 1)) {
+                    echo $f();
+                }
+            } while (rand(0, 1));
+        }
         PHP;
 
     public function testDoWhileFirstIterationIssuesAreDefinite(): void
@@ -1004,6 +1026,8 @@ final class DoTest extends TestCase
                     'PossiblyNullPropertyFetch',
                     'Cannot get property on possibly null variable $x->n->n of type C|null',
                 ],
+                [93, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
+                [103, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
             ],
             self::getIssues($file_path),
         );
