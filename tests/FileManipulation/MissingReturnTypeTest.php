@@ -1207,6 +1207,38 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'safe_types' => true,
                 'allow_backwards_incompatible_changes' => true,
             ],
+            'objectCastReturnTypeIsItsClass74' => [
+                'input' => '<?php
+                    function foo() {
+                        return (object) ["a" => 1];
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-return stdClass&object{a:1}
+                     */
+                    function foo(): stdClass {
+                        return (object) ["a" => 1];
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
+            'objectCastReturnTypeIsItsClass81' => [
+                'input' => '<?php
+                    function foo() {
+                        return (object) ["a" => 1];
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-return stdClass&object{a:1}
+                     */
+                    function foo(): stdClass {
+                        return (object) ["a" => 1];
+                    }',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
         ];
     }
 }

@@ -12,6 +12,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 
+use function array_filter;
 use function array_map;
 use function implode;
 use function strrpos;
@@ -153,7 +154,8 @@ class TNamedObject extends Atomic
             return 'static';
         }
 
-        $intersection_types = $this->getNamespacedIntersectionTypes(
+        $type = $use_phpdoc_format ? $this->withoutObjectShapes() : $this;
+        $intersection_types = $type->getNamespacedIntersectionTypes(
             $namespace,
             $aliased_classes,
             $this_class,
@@ -188,7 +190,7 @@ class TNamedObject extends Atomic
             return $analysis_php_version_id >= 8_00_00 ? 'static' : 'self';
         }
 
-        $result = $this->toNamespacedString($namespace, $aliased_classes, $this_class, false);
+        $result = $this->withoutObjectShapes()->toNamespacedString($namespace, $aliased_classes, $this_class, false);
         $intersection = strrpos($result, '&');
         if ($intersection === false || $analysis_php_version_id >= 8_01_00) {
             return $result;
@@ -199,7 +201,26 @@ class TNamedObject extends Atomic
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
+        foreach ($this->extra_types as $extra_type) {
+            if ($extra_type instanceof TObjectWithProperties) {
+                return false;
+            }
+        }
+
         return ($this->value !== 'static' && $this->is_static === false) || $analysis_php_version_id >= 8_00_00;
+    }
+
+    /**
+     * An object shape has no native counterpart: `Foo&object{a: int}` is declared as `Foo`
+     */
+    protected function withoutObjectShapes(): static
+    {
+        $extra_types = array_filter(
+            $this->extra_types,
+            static fn(Atomic $extra_type): bool => !$extra_type instanceof TObjectWithProperties,
+        );
+
+        return $extra_types === $this->extra_types ? $this : $this->setIntersectionTypes($extra_types);
     }
 
     /**
