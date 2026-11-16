@@ -2912,8 +2912,12 @@ final class SimpleAssertionReconciler extends Reconciler
                 $callable_types[] = $type;
                 $redundant = false;
             } elseif ($type instanceof TArray) {
-                $type = TKeyedArray::makeCallable($type->type_params);
-                $callable_types[] = $type;
+                $callable_array = self::getCallableArray($codebase, $type);
+
+                if ($callable_array !== null) {
+                    $callable_types[] = $callable_array;
+                }
+
                 $redundant = false;
             } elseif ($type instanceof TKeyedArray && count($type->properties) === 2) {
                 $type = TKeyedArray::makeCallable($type->properties);
@@ -2966,6 +2970,10 @@ final class SimpleAssertionReconciler extends Reconciler
                 $redundant = false;
 
                 $callable_types[] = $candidate_callable;
+            } elseif ($type instanceof TNamedObject && $codebase->interfaceExists($type->value)) {
+                // a class implementing the interface may have an __invoke() method
+                $callable_types[] = $type;
+                $redundant = false;
             } else {
                 $redundant = false;
             }
@@ -2993,6 +3001,33 @@ final class SimpleAssertionReconciler extends Reconciler
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
         return Type::getNever();
+    }
+
+    /**
+     * The callable arrays (a class or an object, and a method name) among those of an array type, if any
+     */
+    private static function getCallableArray(Codebase $codebase, TArray $type): ?TKeyedArray
+    {
+        $callable_array = Atomic::create('callable-array');
+        assert($callable_array instanceof TKeyedArray);
+
+        if (Type::intersectUnionTypes($type->type_params[0], Type::getInt(), $codebase) === null) {
+            return null;
+        }
+
+        $properties = [];
+
+        foreach ($callable_array->properties as $offset => $property) {
+            $item = Type::intersectUnionTypes($type->type_params[1], $property, $codebase);
+
+            if ($item === null || $item->isNever()) {
+                return null;
+            }
+
+            $properties[$offset] = $item;
+        }
+
+        return TKeyedArray::makeCallable($properties);
     }
 
     /**

@@ -40,10 +40,12 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TDecimalIntString;
+use Psalm\Type\Atomic\TEmptyNumeric;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
@@ -2031,10 +2033,18 @@ final class AssertionReconciler extends Reconciler
         bool $is_loose_equality,
         bool $is_php8,
     ): ?Union {
+        $value = $assertion_type->value;
+
         foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
             if ($existing_var_atomic_type instanceof TMixed
                 || $existing_var_atomic_type instanceof TScalar
                 || $existing_var_atomic_type instanceof TArrayKey
+                // e.g. '1'
+                || ($existing_var_atomic_type instanceof TNumeric
+                    && is_numeric($value)
+                    && (!$existing_var_atomic_type instanceof TEmptyNumeric || $value === '0'))
+                // the name of a function is never numeric, e.g. 'strlen'
+                || ($existing_var_atomic_type::class === TCallable::class && $value !== '' && !is_numeric($value))
             ) {
                 // Since PHP 8, an int is only loosely equal to a numeric string (`switch` compares loosely), so an
                 // array key loosely equal to a string that isn't numeric is that string

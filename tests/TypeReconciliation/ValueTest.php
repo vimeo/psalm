@@ -1261,6 +1261,86 @@ final class ValueTest extends TestCase
                     }
                     PHP,
             ],
+            'callableIdenticalToLiteralString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(callable $c): void {
+                        if ($c === 'strlen') {
+                            /** @psalm-check-type-exact $c = 'strlen' */
+                        }
+                    }
+                    PHP,
+            ],
+            'numericIdenticalToLiteralNumericString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param numeric $n */
+                    function f($n): void {
+                        if ($n === '1') {
+                            /** @psalm-check-type-exact $n = '1' */
+                        }
+                    }
+                    PHP,
+            ],
+            'nonEmptyScalarIdenticalToCallableIsCallableString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param non-empty-scalar $sc */
+                    function f($sc, callable $c): void {
+                        if ($sc === $c) { // 'strlen'
+                            /** @psalm-check-type-exact $sc = callable-string */
+                        }
+                    }
+                    PHP,
+            ],
+            'callableMayBeIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return callable */
+                    function c() {
+                        return 'strlen';
+                    }
+
+                    $c = c();
+
+                    if (!is_iterable($c)) { // [new ArrayObject(), 'count'], or an invokable Traversable
+                        throw new RuntimeException();
+                    }
+                    PHP,
+                'assertions' => [
+                    '$c===' => 'Traversable|callable-array{0: class-string|object, 1: non-empty-string}',
+                ],
+            ],
+            'iterableOfIntsIdenticalToCallableIsAnInvokableTraversable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable<int, int> $it */
+                    function f(iterable $it, callable $c): void {
+                        if ($it === $c) { // an invokable Traversable
+                            /** @psalm-check-type-exact $it = Traversable<int, int> */
+                            /** @psalm-check-type-exact $c = Traversable<int, int> */
+                        }
+                    }
+                    PHP,
+            ],
+            'callableArrayHasAClassOrObjectAndAMethodName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array<int, mixed> */
+                    function a(): array {
+                        return [];
+                    }
+
+                    $a = a();
+
+                    if (!is_callable($a)) { // [new ArrayObject(), 'count']
+                        throw new RuntimeException();
+                    }
+                    PHP,
+                'assertions' => [
+                    '$a===' => 'callable-array{0: class-string|object, 1: non-empty-string}',
+                ],
+            ],
         ];
     }
 
@@ -1523,6 +1603,26 @@ final class ValueTest extends TestCase
                     <?php
                     function f(iterable $it, string $s): void {
                         if ($it === $s) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'numericNeverIdenticalToLiteralNonNumericString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param numeric $n */
+                    function f($n): void {
+                        if ($n === 'abc') {}
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'arrayOfIntsIsNeverCallable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<int, int> $a */
+                    function f(array $a): void {
+                        if (is_callable($a)) {}
                     }
                     PHP,
                 'error_message' => 'TypeDoesNotContainType',

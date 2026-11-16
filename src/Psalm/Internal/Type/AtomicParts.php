@@ -13,15 +13,24 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
+use Psalm\Type\Atomic\TEmptyNumeric;
+use Psalm\Type\Atomic\TEmptyScalar;
+use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyScalar;
+use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTrue;
 
 /**
  * The disjoint types that a type standing for values of several kinds is made of, so that it can be intersected with
@@ -66,6 +75,24 @@ final class AtomicParts
                 new TFloat($from_docblock),
                 new TString($from_docblock),
                 new TBool($from_docblock),
+            ],
+            TNonEmptyScalar::class => [
+                new TInt($from_docblock),
+                new TFloat($from_docblock),
+                new TNonFalsyString($from_docblock),
+                new TTrue($from_docblock),
+            ],
+            TEmptyScalar::class => [
+                new TLiteralInt(0, $from_docblock),
+                new TLiteralFloat(0.0, $from_docblock),
+                new TLiteralString('', $from_docblock),
+                new TLiteralString('0', $from_docblock),
+                new TFalse($from_docblock),
+            ],
+            TEmptyNumeric::class => [
+                new TLiteralInt(0, $from_docblock),
+                new TLiteralFloat(0.0, $from_docblock),
+                new TLiteralString('0', $from_docblock),
             ],
             default => null,
         };
