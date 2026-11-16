@@ -241,8 +241,8 @@ final class ArrayAnalyzer
     }
 
     /**
-     * The type of an array key after PHP casts decimal int strings to ints, e.g. `'5'` to `5` and
-     * `decimal-int-string` to `int`
+     * The type of an array key after PHP casts decimal int strings to ints, e.g. `'5'` to `5`,
+     * `decimal-int-string` to `int` and `numeric-string` to `int|numeric-string`
      *
      * @psalm-pure
      */
@@ -253,7 +253,8 @@ final class ArrayAnalyzer
 
         foreach ($key_type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TTemplateParam) {
-                // each value of `T of decimal-int-string` is cast too, so such keys are ints rather than T
+                // each value of `T of decimal-int-string` is cast too, so such keys are ints rather than T, and
+                // those of `T of numeric-string` are T|int
                 [$cast_types, $template] = self::splitTemplateArrayKey($atomic_type);
 
                 if ($cast_types !== []) {

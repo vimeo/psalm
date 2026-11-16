@@ -722,6 +722,25 @@ final class ArrayAssignmentTest extends TestCase
                         $by_int = $numerics[5] ?? null;
                     }',
             ],
+            'arraysWithCastKeysAreIterablesOfTheUncastKeys' => [
+                'code' => '<?php
+                    /** @param iterable<numeric-string, int> $i */
+                    function takesNumericKeys(iterable $i): void {}
+
+                    /** @param iterable<decimal-int-string, int> $i */
+                    function takesDecimalKeys(iterable $i): void {}
+
+                    /**
+                     * @param numeric-string $n
+                     * @param array<numeric-string, int> $numerics
+                     * @param array<decimal-int-string, int> $decimals
+                     */
+                    function f(string $n, array $numerics, array $decimals): void {
+                        takesNumericKeys($numerics);
+                        takesNumericKeys([$n => 1]);
+                        takesDecimalKeys($decimals);
+                    }',
+            ],
             'floatKeysAssignedAreInts' => [
                 'code' => '<?php
                     function f(float $f): void {

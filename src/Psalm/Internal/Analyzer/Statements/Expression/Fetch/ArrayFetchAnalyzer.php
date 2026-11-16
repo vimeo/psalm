@@ -2710,7 +2710,9 @@ final class ArrayFetchAnalyzer
             foreach ($offset_type->getAtomicTypes() as $atomic_type) {
                 if ($atomic_type instanceof TFloat) {
                     $int = $atomic_type instanceof TLiteralFloat ? LiteralCast::toInt($atomic_type->value) : null;
-                    $atomic_type = $int === null ? new TInt : new TLiteralInt($int);
+                    $atomic_type = $int === null
+                        ? new TInt($atomic_type->from_docblock)
+                        : new TLiteralInt($int, $atomic_type->from_docblock);
                 }
 
                 $atomic_types[$atomic_type->getKey()] = $atomic_type;
