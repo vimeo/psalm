@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\ImpurePropertyFetch;
@@ -36,7 +37,6 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-use function array_merge;
 use function array_shift;
 use function array_values;
 use function strtolower;
@@ -270,7 +270,7 @@ final class InstancePropertyFetchAnalyzer
 
         while ($lhs_type_part = array_shift($var_atomic_types)) {
             if ($lhs_type_part instanceof TTemplateParam) {
-                $var_atomic_types = array_merge($var_atomic_types, $lhs_type_part->as->getAtomicTypes());
+                $var_atomic_types = [...$var_atomic_types, ...ObjectShapeIntersection::getBoundTypes($lhs_type_part)];
                 continue;
             }
 

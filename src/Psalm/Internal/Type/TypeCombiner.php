@@ -925,6 +925,48 @@ final class TypeCombiner
             return null;
         }
 
+        // `Foo&object{a: int}|Foo&object{a?: int}` is `Foo&object{a?: int}`: intersections that differ in their shape
+        // only combine their shapes, as leading shapes do
+        if (($type::class === TNamedObject::class || $type instanceof TTemplateParam)
+            && ($shape = ObjectShapeIntersection::getShape($type)) !== null
+        ) {
+            if ($type instanceof TNamedObject && $combination->named_object_types === null) {
+                return null;
+            }
+
+            $shapeless_type = ObjectShapeIntersection::withoutShape($type);
+            $shapeless_key = $shapeless_type->getKey() . '&object';
+            $existing_type = $combination->value_types[$shapeless_key] ?? null;
+
+            if ($existing_type instanceof TTemplateParam
+                && $shapeless_type instanceof TTemplateParam
+                && !$existing_type->as->equals($shapeless_type->as)
+            ) {
+                $shapeless_type = $shapeless_type->replaceAs(Type::combineUnionTypes(
+                    $shapeless_type->as,
+                    $existing_type->as,
+                    $codebase,
+                    false,
+                    false,
+                ));
+            }
+
+            $combined_shape = self::combineObjects(
+                $existing_type ? ObjectShapeIntersection::getShape($existing_type) : null,
+                $shape,
+                $codebase,
+            );
+
+            if ($combined_shape instanceof TObjectWithProperties) {
+                $combination->value_types[$shapeless_key] = ObjectShapeIntersection::intersect([
+                    $shapeless_type,
+                    $combined_shape,
+                ]);
+            }
+
+            return null;
+        }
+
         if ($type instanceof TTemplateParam) {
             if (isset($combination->value_types[$type_key])) {
                 /** @var TTemplateParam */

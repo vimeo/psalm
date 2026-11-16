@@ -1223,17 +1223,28 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => true,
             ],
-            'objectCastReturnTypeIsItsClass81' => [
+            'shapeIntersectionReturnTypeIsItsClasses81' => [
                 'input' => '<?php
-                    function foo() {
-                        return (object) ["a" => 1];
+                    interface A {}
+                    interface B {}
+
+                    /** @param A&B&object{a: int} $x */
+                    function foo(object $x) {
+                        return $x;
                     }',
                 'output' => '<?php
+                    interface A {}
+                    interface B {}
+
                     /**
-                     * @psalm-return stdClass&object{a:1}
+                     * @param A&B&object{a: int} $x
+                     *
+                     * @return A&B
+                     *
+                     * @psalm-return A&B&object{a:int}
                      */
-                    function foo(): stdClass {
-                        return (object) ["a" => 1];
+                    function foo(object $x) {
+                        return $x;
                     }',
                 'php_version' => '8.1',
                 'issues_to_fix' => ['MissingReturnType'],

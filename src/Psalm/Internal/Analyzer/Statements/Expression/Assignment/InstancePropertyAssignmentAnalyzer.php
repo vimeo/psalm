@@ -35,6 +35,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -83,7 +84,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_merge;
 use function array_pop;
 use function count;
 use function explode;
@@ -1124,10 +1124,7 @@ final class InstancePropertyAssignmentAnalyzer
             $lhs_type_part = array_pop($lhs_atomic_types);
 
             if ($lhs_type_part instanceof TTemplateParam) {
-                $lhs_atomic_types = array_merge(
-                    $lhs_atomic_types,
-                    $lhs_type_part->as->getAtomicTypes(),
-                );
+                $lhs_atomic_types = [...$lhs_atomic_types, ...ObjectShapeIntersection::getBoundTypes($lhs_type_part)];
 
                 continue;
             }
@@ -1268,6 +1265,7 @@ final class InstancePropertyAssignmentAnalyzer
                 ],
                 true,
             )
+            || self::isUndeclaredShapeProperty($codebase, $lhs_type_part, $prop_name)
         ) {
             if ($var_id) {
                 if ($lhs_type_part instanceof TNamedObject &&
@@ -2126,5 +2124,28 @@ final class InstancePropertyAssignmentAnalyzer
         }
 
         $statements_analyzer->node_data = $old_data_provider;
+    }
+
+    /**
+     * A property of the shape of `Foo&object{a: int}` that `Foo` doesn't declare is assigned as on a lone shape,
+     * unless `Foo` is final without a magic setter, as its properties are read
+     */
+    private static function isUndeclaredShapeProperty(
+        Codebase $codebase,
+        TNamedObject $lhs_type_part,
+        string $prop_name,
+    ): bool {
+        if (!isset(ObjectShapeIntersection::getShape($lhs_type_part)?->properties[$prop_name])) {
+            return false;
+        }
+
+        if (!$codebase->classExists($lhs_type_part->value)) {
+            return true;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+
+        return !isset($class_storage->declaring_property_ids[$prop_name])
+            && (!$class_storage->final || isset($class_storage->declaring_method_ids['__set']));
     }
 }

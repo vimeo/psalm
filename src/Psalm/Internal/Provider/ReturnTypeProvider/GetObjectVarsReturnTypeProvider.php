@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
@@ -86,10 +87,10 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
                 // the properties of a `stdClass` come from a cast or dynamic assignments and can have int keys
                 // (`(object) [1 => 'a']`), unlike what no class is known to declare
                 if (strtolower($object_type->value) === strtolower(stdClass::class)) {
-                    foreach ($object_type->extra_types as $extra_type) {
-                        if ($extra_type instanceof TObjectWithProperties && $extra_type->properties !== []) {
-                            return TKeyedArray::make($extra_type->properties);
-                        }
+                    $shape = ObjectShapeIntersection::getShape($object_type);
+
+                    if ($shape !== null && $shape->properties !== []) {
+                        return TKeyedArray::make($shape->properties);
                     }
 
                     return new TArray([Type::getArrayKey(), Type::getMixed()]);

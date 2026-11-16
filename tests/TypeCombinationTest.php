@@ -243,7 +243,21 @@ final class TypeCombinationTest extends TestCase
                     'object{a: int}',
                 ],
             ],
-            'objectShapesOfTheSameClassAreNotMerged' => [
+            'objectShapesOfTheSameIntersectionAreMerged' => [
+                'Iterator&object{a:string}',
+                [
+                    'object{a: string}&Iterator',
+                    'object{a: string, b: int}&Iterator',
+                ],
+            ],
+            'optionalPropertyOfObjectShapesOfTheSameIntersection' => [
+                'stdClass&object{a?:int}',
+                [
+                    'stdClass&object{a: int}',
+                    'stdClass&object{a?: int}',
+                ],
+            ],
+            'objectShapesOfIntersectionsWithOtherClassesAreNotMerged' => [
                 'Iterator&Countable&object{a:string, b:int}|Iterator&object{a:string}',
                 [
                     'object{a: string}&Iterator',

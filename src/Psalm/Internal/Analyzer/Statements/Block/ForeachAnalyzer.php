@@ -36,6 +36,7 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -1581,6 +1582,9 @@ final class ForeachAnalyzer
         bool &$has_valid_iterator,
         array &$invalid_iterator_types = [],
     ): void {
+        // `Foo&object{a: int}` iterates as `Foo` does
+        $iterator_atomic_type = ObjectShapeIntersection::withoutShape($iterator_atomic_type);
+
         if ($iterator_atomic_type->extra_types) {
             $iterator_atomic_types = [
                 $iterator_atomic_type->setIntersectionTypes([]),

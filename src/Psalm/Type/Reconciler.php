@@ -59,11 +59,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
-use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -1249,15 +1247,22 @@ class Reconciler
                         $existing_key_type_part = array_shift($atomic_types);
 
                         if ($existing_key_type_part instanceof TTemplateParam) {
-                            $atomic_types = array_merge($atomic_types, $existing_key_type_part->as->getAtomicTypes());
+                            $atomic_types = [
+                                ...$atomic_types,
+                                ...ObjectShapeIntersection::getBoundTypes($existing_key_type_part),
+                            ];
                             continue;
                         }
 
+                        $shape = ObjectShapeIntersection::getShape($existing_key_type_part);
+
                         if ($existing_key_type_part instanceof TNull) {
                             $class_property_type = Type::getNull();
-                        } elseif ($existing_key_type_part instanceof TObjectWithProperties) {
-                            $class_property_type =
-                                $existing_key_type_part->properties[$property_name] ?? Type::getMixed();
+                        } elseif ($existing_key_type_part instanceof TObjectWithProperties
+                            // `Foo&object{a: int}` has the property of its shape
+                            || isset($shape->properties[$property_name])
+                        ) {
+                            $class_property_type = $shape->properties[$property_name] ?? Type::getMixed();
                         } elseif ($existing_key_type_part instanceof TMixed
                             || $existing_key_type_part instanceof TObject
                             || ($existing_key_type_part instanceof TNamedObject
@@ -2005,23 +2010,11 @@ class Reconciler
 
         foreach ($base_type->getAtomicTypes() as $base_atomic_type) {
             $new_atomic_type = $base_atomic_type;
+            $shape = ObjectShapeIntersection::getShape($base_atomic_type);
+            $narrowed_shape = $shape ? self::narrowShapeProperty($shape, $property_name, $narrowed_type) : null;
 
-            if ($base_atomic_type instanceof TObjectWithProperties) {
-                $new_atomic_type = self::narrowShapeProperty($base_atomic_type, $property_name, $narrowed_type);
-            } elseif ($base_atomic_type instanceof TNamedObject
-                || $base_atomic_type instanceof TTemplateParam
-                || $base_atomic_type instanceof TIterable
-                || $base_atomic_type instanceof TCallableObject
-            ) {
-                $shape = ObjectShapeIntersection::getShape($base_atomic_type);
-                $narrowed_shape = $shape ? self::narrowShapeProperty($shape, $property_name, $narrowed_type) : null;
-
-                if ($narrowed_shape !== null && $narrowed_shape !== $shape) {
-                    $new_atomic_type = $base_atomic_type->setIntersectionTypes([
-                        ...$base_atomic_type->extra_types,
-                        $narrowed_shape->getKey() => $narrowed_shape,
-                    ]);
-                }
+            if ($narrowed_shape !== null && $narrowed_shape !== $shape) {
+                $new_atomic_type = ObjectShapeIntersection::replaceShape($base_atomic_type, $narrowed_shape);
             }
 
             $changed = $changed || $new_atomic_type !== $base_atomic_type;

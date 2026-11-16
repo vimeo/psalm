@@ -19,12 +19,12 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Scope\TryScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Atomic\DependentType;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use RuntimeException;
@@ -894,14 +894,17 @@ final class Context
         $changed = false;
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TObjectWithProperties
-                && isset($atomic_type->narrowed_from[$property_name])
-            ) {
-                $properties = $atomic_type->properties;
-                $properties[$property_name] = $atomic_type->narrowed_from[$property_name];
-                $narrowed_from = $atomic_type->narrowed_from;
+            $shape = ObjectShapeIntersection::getShape($atomic_type);
+
+            if ($shape !== null && isset($shape->narrowed_from[$property_name])) {
+                $properties = $shape->properties;
+                $properties[$property_name] = $shape->narrowed_from[$property_name];
+                $narrowed_from = $shape->narrowed_from;
                 unset($narrowed_from[$property_name]);
-                $atomic_type = $atomic_type->setProperties($properties)->setNarrowedFrom($narrowed_from);
+                $atomic_type = ObjectShapeIntersection::replaceShape(
+                    $atomic_type,
+                    $shape->setProperties($properties)->setNarrowedFrom($narrowed_from),
+                );
                 $changed = true;
             }
 

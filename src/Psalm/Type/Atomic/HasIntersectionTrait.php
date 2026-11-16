@@ -6,6 +6,7 @@ namespace Psalm\Type\Atomic;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type\Atomic;
@@ -61,6 +62,13 @@ trait HasIntersectionTrait
      */
     public function addIntersectionType(Atomic $type): self
     {
+        $existing_type = $this->extra_types[$type->getKey()] ?? null;
+
+        // every shape has the key `object`: a shape added to another merges with it
+        if ($existing_type instanceof TObjectWithProperties && $type instanceof TObjectWithProperties) {
+            $type = ObjectShapeIntersection::mergeShapes($existing_type, $type);
+        }
+
         return $this->setIntersectionTypes(array_merge(
             $this->extra_types,
             [$type->getKey() => $type],

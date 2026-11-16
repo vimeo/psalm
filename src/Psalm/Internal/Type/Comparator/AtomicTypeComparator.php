@@ -877,7 +877,8 @@ final class AtomicTypeComparator
                 return true;
             }
 
-            // `Foo&object{a: int}` has the properties of its shape too
+            // `Foo&object{a: int}` matches a shape through its own shape, else through the properties `Foo` declares,
+            // one or the other (vimeo/psalm#13899)
             $input_shape = ObjectShapeIntersection::getShape($input_type_part);
 
             if ($input_type_part->value === 'stdClass') {

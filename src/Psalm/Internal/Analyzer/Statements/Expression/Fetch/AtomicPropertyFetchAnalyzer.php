@@ -28,6 +28,7 @@ use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
@@ -153,8 +154,10 @@ final class AtomicPropertyFetchAnalyzer
         }
 
         $intersection_types = [];
+        $intersection_shape = null;
         if (!$lhs_type_part instanceof TObject) {
             $intersection_types = $lhs_type_part->getIntersectionTypes();
+            $intersection_shape = ObjectShapeIntersection::getShape($lhs_type_part);
         }
 
         // stdClass and SimpleXMLElement are special cases where we cannot infer the return types
@@ -166,7 +169,13 @@ final class AtomicPropertyFetchAnalyzer
                     $lhs_type_part->value,
                     $prop_name,
                 )
-                && $intersection_types === []
+                && (
+                    $intersection_types === []
+                    // `stdClass&object{a: int}` can have any other property too
+                    || (count($intersection_types) === 1
+                        && $intersection_shape !== null
+                        && !isset($intersection_shape->properties[$prop_name]))
+                )
             )
         ) {
             $has_valid_fetch_type = true;

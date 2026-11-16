@@ -509,6 +509,158 @@ final class IntersectionTypeTest extends TestCase
                         takesShape($card);
                     }',
             ],
+            'issetOfOptionalPropertiesKeepsASingleShapeIntersection' => [
+                'code' => '<?php
+                    /** @return object{a?: int, b?: int, c?: int}&stdClass */
+                    function card(): object {
+                        throw new RuntimeException();
+                    }
+
+                    $card = card();
+                    if (isset($card->a)) {}
+                    if (isset($card->b)) {}
+                    if (isset($card->c)) {}',
+                'assertions' => [
+                    '$card===' => 'stdClass&object{a?:int, b?:int, c?:int}',
+                ],
+            ],
+            'objectCastsOfATernaryAreMerged' => [
+                'code' => '<?php
+                    $card = rand(0, 1) ? (object) ["a" => 1] : (object) ["a" => 2, "b" => 3];
+                    $vars = get_object_vars($card);',
+                'assertions' => [
+                    '$card===' => 'stdClass&object{a:1|2}',
+                    '$vars===' => 'array{a: 1|2}',
+                ],
+            ],
+            'propertyOfAShapeIntersectedWithATemplate' => [
+                'code' => '<?php
+                    class Card {}
+
+                    /**
+                     * @template T of Card
+                     * @param object{last4: int}&T $card
+                     */
+                    function last4OfCard(object $card): int {
+                        return $card->last4;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @param object{last4: int}&T $card
+                     */
+                    function last4OfObject(object $card): int {
+                        return $card->last4;
+                    }
+
+                    /**
+                     * @template T of Card
+                     * @param object{last4: int}&T $card
+                     */
+                    function setLast4(object $card): void {
+                        $card->last4 = 4242;
+                    }',
+            ],
+            'arrayCastOfAnObjectCastKeepsItsShape' => [
+                'code' => '<?php
+                    $array = (array) (object) ["a" => 1];',
+                'assertions' => [
+                    '$array===' => 'array{a: 1, ...<array-key, mixed>}',
+                ],
+            ],
+            'assertedShapeOfAnObjectCastIsMergedWithItsShape' => [
+                'code' => '<?php
+                    /** @psalm-assert object{b: string} $card */
+                    function assertB(object $card): void {}
+
+                    $card = (object) ["a" => 1];
+                    assertB($card);
+                    $a = $card->a;',
+                'assertions' => [
+                    '$card===' => 'stdClass&object{a:1, b:string}',
+                    '$a===' => '1',
+                ],
+            ],
+            'assertedPropertyOfAnObjectCastIsNarrowed' => [
+                'code' => '<?php
+                    /** @psalm-assert !null $card->a */
+                    function assertA(object $card): void {}
+
+                    $card = (object) ["a" => rand(0, 1) ? 1 : null];
+                    assertA($card);',
+                'assertions' => [
+                    '$card===' => 'stdClass&object{a:1}',
+                ],
+            ],
+            'otherPropertyOfAnObjectCastIsMixed' => [
+                'code' => '<?php
+                    $card = (object) ["a" => 1];
+                    $b = $card->b;',
+                'assertions' => [
+                    '$b===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'templateIntersectedWithAShapeRequiresItsProperty' => [
+                'code' => '<?php
+                    final class Card {}
+
+                    /**
+                     * @template T of object
+                     * @param T $card
+                     * @return T&object{last4: string}
+                     */
+                    function withLast4(object $card): object {
+                        throw new RuntimeException();
+                    }
+
+                    /** @return Card&object{last4?: string} */
+                    function card(): object {
+                        throw new RuntimeException();
+                    }
+
+                    /** @return Card&object{last4: int|float} */
+                    function numericCard(): object {
+                        throw new RuntimeException();
+                    }
+
+                    $required = withLast4(card());
+                    $conflicting = withLast4(numericCard());',
+                'assertions' => [
+                    '$required===' => 'Card&object{last4:string}',
+                    '$conflicting===' => 'Card&object{last4:string}',
+                ],
+            ],
+            'methodOfAShapeIntersectionAsACallable' => [
+                'code' => '<?php
+                    final class Card {
+                        public function brand(int $i): string {
+                            return "visa" . $i;
+                        }
+                    }
+
+                    /**
+                     * @param Card&object{last4: string} $card
+                     * @return list<string>
+                     */
+                    function brands(object $card): array {
+                        return array_map([$card, "brand"], [1, 2]);
+                    }',
+            ],
+            'iterationOfATraversableShapeIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayIterator<int, string>&object{last4: string} $iterator
+                     * @return list<string>
+                     */
+                    function values(object $iterator): array {
+                        $values = [];
+                        foreach ($iterator as $value) {
+                            $values[] = $value;
+                        }
+                        return $values;
+                    }',
+            ],
             'intersectionElementOfAnArrayKeepsItsInterfacesInAnArrayMapClosure' => [
                 'code' => '<?php
                     interface A {}
@@ -1169,6 +1321,20 @@ final class IntersectionTypeTest extends TestCase
 
                     takesShape((object) ["a" => 1]);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'propertyOfAShapeIntersectionIsWidenedAgainOnAssignment' => [
+                'code' => '<?php
+                    /** @param object{a: int} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param object{a: int|null}&stdClass $card */
+                    function test(object $card): void {
+                        if ($card->a !== null) {
+                            $card->a = null;
+                            takesShape($card);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
             'objectShapePartDoesNotMakeUndefinedMagicMethodPossible' => [
                 'code' => '<?php

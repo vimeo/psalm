@@ -7,11 +7,15 @@ namespace Psalm\Internal\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 
 use function array_diff_key;
+use function array_filter;
+use function array_values;
 use function assert;
 
 /**
@@ -25,8 +29,9 @@ final class ObjectShapeIntersection
 {
     /**
      * Intersects the types in their order, except that a class or template takes the place of a leading object
-     * shape (`object{a: int}&Foo` is `Foo&object{a: int}`), and that all object shapes merge into one, the last
-     * type: intersection types are keyed by `getKey()`, which is `object` for every shape.
+     * shape (`object{a: int}&Foo` is `Foo&object{a: int}`), and that all object shapes merge into one: the
+     * primary type if there is nothing else to lead, else the last intersection type. Intersection types are keyed
+     * by `getKey()`, which is `object` for every shape.
      *
      * @param non-empty-list<TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $types
      * @psalm-pure
@@ -111,13 +116,83 @@ final class ObjectShapeIntersection
     }
 
     /**
-     * A property both shapes declare gets one of the two types, either of which is true of an object of both
-     * shapes: the narrower one where the atomic types of one are among those of the other (`int` of `int|string`),
-     * as computing the actual intersection of the types takes a codebase
+     * The type with another shape in place of the one `getShape()` gives
      *
      * @psalm-pure
      */
-    private static function mergeShapes(
+    public static function replaceShape(Atomic $type, TObjectWithProperties $shape): Atomic
+    {
+        if ($type instanceof TObjectWithProperties) {
+            return $shape;
+        }
+
+        if ($type instanceof TNamedObject
+            || $type instanceof TTemplateParam
+            || $type instanceof TIterable
+            || $type instanceof TCallableObject
+        ) {
+            return $type->setIntersectionTypes([...$type->extra_types, $shape->getKey() => $shape]);
+        }
+
+        return $type;
+    }
+
+    /**
+     * @template T of TNamedObject|TTemplateParam|TIterable|TCallableObject
+     * @param T $type
+     * @return T
+     * @psalm-pure
+     */
+    public static function withoutShape(Atomic $type): Atomic
+    {
+        $extra_types = array_filter(
+            $type->extra_types,
+            static fn(Atomic $extra_type): bool => !$extra_type instanceof TObjectWithProperties,
+        );
+
+        return $extra_types === $type->extra_types ? $type : $type->setIntersectionTypes($extra_types);
+    }
+
+    /**
+     * The atomic types of the bound of a template, with the intersection types of the template: the properties of
+     * `T&object{a: int}` are those of the bound of `T` and of the shape
+     *
+     * @return list<Atomic>
+     * @psalm-pure
+     */
+    public static function getBoundTypes(TTemplateParam $type): array
+    {
+        $extra_types = array_values($type->extra_types);
+        $bound_types = [];
+
+        foreach ($type->as->getAtomicTypes() as $bound_type) {
+            if ($extra_types === []) {
+                $bound_types[] = $bound_type;
+            } elseif ($bound_type instanceof TNamedObject
+                || $bound_type instanceof TTemplateParam
+                || $bound_type instanceof TIterable
+                || $bound_type instanceof TObjectWithProperties
+                || $bound_type instanceof TCallableObject
+            ) {
+                $bound_types[] = self::intersect([$bound_type, ...$extra_types]);
+            } elseif ($bound_type instanceof TObject || $bound_type instanceof TMixed) {
+                $bound_types[] = self::intersect($extra_types);
+            } else {
+                $bound_types[] = $bound_type;
+            }
+        }
+
+        return $bound_types;
+    }
+
+    /**
+     * A property both shapes declare gets one of the two types, either of which is true of an object of both
+     * shapes: the narrower one where the atomic types of one are among those of the other (`int` of `int|string`),
+     * else the type of the first shape, as computing the actual intersection of the types takes a codebase
+     *
+     * @psalm-pure
+     */
+    public static function mergeShapes(
         TObjectWithProperties $shape,
         TObjectWithProperties $other_shape,
     ): TObjectWithProperties {

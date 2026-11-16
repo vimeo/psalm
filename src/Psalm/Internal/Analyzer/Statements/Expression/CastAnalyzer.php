@@ -20,6 +20,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\LiteralCast;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
@@ -270,11 +271,12 @@ final class CastAnalyzer
                     ) {
                         // a closure has no properties: it becomes the only element
                         $permissible_atomic_types[] = TKeyedArray::make([new Union([$type])], null, null, true);
-                    } elseif ($type instanceof TObjectWithProperties) {
-                        $array_type = $type->properties === []
+                    } elseif (($shape = ObjectShapeIntersection::getShape($type)) !== null) {
+                        // `Foo&object{a: int}` has the properties of its shape, and maybe others
+                        $array_type = $shape->properties === []
                             ? Type::getArrayAtomic()
                             : TKeyedArray::make(
-                                $type->properties,
+                                $shape->properties,
                                 null,
                                 [Type::getArrayKey(), Type::getMixed()],
                             );
