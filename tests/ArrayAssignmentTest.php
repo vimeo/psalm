@@ -3563,8 +3563,7 @@ final class ArrayAssignmentTest extends TestCase
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
             ],
-            // Skipped because the ref-type of array_pop was fixed (list->list)
-            'SKIPPED-assignToListWithAlteredForeachKeyVar' => [
+            'SKIPPED-assignToListWithAlteredForeachKeyVar' => [ // #13920
                 'code' => '<?php
                     /**
                      * @param list<string> $list

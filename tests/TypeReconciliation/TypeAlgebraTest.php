@@ -4029,6 +4029,146 @@ final class TypeAlgebraTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['TypeDoesNotContainNull'],
             ],
+            'flagOnAnArrayOffsetNarrowsItInAnIfOnTheOffset' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (array_key_exists("#value", $element)) {
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+            ],
+            'flagOnAnArrayOffsetNarrowsItInAnIfOnItsIsset' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = isset($element["#value"]) && is_array($element["#value"]);
+                        if (isset($element["#value"])) {
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+            ],
+            'flagOnAnArrayOffsetNarrowsItInTheElseOfAnIfOnTheOffset' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (!array_key_exists("#value", $element)) {
+                            return false;
+                        } else {
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+            ],
+            'flagOnAnArrayOffsetNarrowsItAfterAnIfOnTheOffsetReturned' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (!array_key_exists("#value", $element)) {
+                            return false;
+                        }
+                        if ($isArray) {
+                            return in_array($key, $element["#value"]);
+                        }
+                        return false;
+                    }',
+            ],
+            'flagOnAnArrayOffsetNarrowsItInAnElseifOnTheOffset' => [
+                'code' => '<?php
+                    function f(array $element, string $key, bool $b): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if ($b) {
+                            return true;
+                        } elseif (array_key_exists("#value", $element)) {
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+            ],
+            'flagOnAnArrayOffsetNarrowsItInTheElseOfATernaryOnTheOffset' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        return !array_key_exists("#value", $element)
+                            ? false
+                            : ($isArray ? in_array($key, $element["#value"]) : false);
+                    }',
+            ],
+            'flagOnAnArrayOffsetNarrowsItAfterAnAssertOnTheOffset' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        assert(array_key_exists("#value", $element));
+                        if ($isArray) {
+                            return in_array($key, $element["#value"]);
+                        }
+                        return false;
+                    }',
+            ],
+            'flagOnAnArrayOffsetNarrowsItInASwitchCaseOnTheOffset' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        switch (true) {
+                            case array_key_exists("#value", $element):
+                                if ($isArray) {
+                                    return in_array($key, $element["#value"]);
+                                }
+                        }
+                        return false;
+                    }',
+            ],
+            'flagOnTwoArrayOffsetsNarrowsBothInAnIfOnOne' => [
+                'code' => '<?php
+                    /** @param array{a?: mixed, b?: mixed} $arr */
+                    function f(array $arr): int {
+                        $ok = isset($arr["a"]) && is_int($arr["a"]) && isset($arr["b"]) && is_int($arr["b"]);
+                        if (isset($arr["a"])) {
+                            if ($ok) {
+                                return $arr["a"] + $arr["b"];
+                            }
+                        }
+                        return 0;
+                    }',
+            ],
+            'flagOnAnArrayOffsetNarrowsItInAnIfOnTheOffsetAndAnotherCondition' => [
+                'code' => '<?php
+                    function f(array $element, string $key, bool $c): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (array_key_exists("#value", $element) && $c) {
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+            ],
+            'flagOnAVariableTheIfMakesCertainIsNotReported' => [
+                'code' => '<?php
+                    function f(mixed $x, bool $y): void {
+                        $flag = is_string($x) && $y;
+                        if (is_string($x)) {
+                            if ($flag) {
+                                echo $x;
+                            }
+                            if (!$flag) {
+                                echo $x;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -5608,6 +5748,60 @@ final class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:37',
                 'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'flagOnAnArrayOffsetIsForgottenWhenTheOffsetIsReassignedInTheIf' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (array_key_exists("#value", $element)) {
+                            $element["#value"] = rand(0, 1) ? "a" : [];
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:55',
+            ],
+            'reassignedFlagOnAnArrayOffsetDoesNotNarrowItInAnIfOnTheOffset' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (array_key_exists("#value", $element)) {
+                            $isArray = (bool) rand(0, 1);
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:55',
+            ],
+            'flagOnAnArrayOffsetIsForgottenWhenTheRightOfAnAndReassignsTheArray' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (array_key_exists("#value", $element) && ($element = ["#value" => "a"])) {
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:55',
+                'error_levels' => ['InvalidLiteralArgument'],
+            ],
+            'flagOnAnArrayOffsetMakesItsTestRedundantInAnIfOnTheOffset' => [
+                'code' => '<?php
+                    function f(array $element): void {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (array_key_exists("#value", $element)) {
+                            if (!$isArray || is_array($element["#value"])) {
+                                echo "always";
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:46',
             ],
         ];
     }

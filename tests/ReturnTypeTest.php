@@ -49,6 +49,52 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'doWhileBodyAlwaysReturning' => [
+                'code' => '<?php
+                    function f(int $i): string {
+                        do {
+                            if ($i > 0) {
+                                return "a";
+                            }
+                            return "b";
+                        } while (false);
+                    }',
+            ],
+            'doWhileBodyAlwaysThrowing' => [
+                'code' => '<?php
+                    function f(): string {
+                        do {
+                            throw new Exception();
+                        } while (false);
+                    }',
+            ],
+            'nestedDoWhileBodiesAlwaysReturning' => [
+                'code' => '<?php
+                    function f(): string {
+                        do {
+                            do {
+                                return "a";
+                            } while (false);
+                        } while (false);
+                    }',
+            ],
+            'foreachOverANonEmptyLiteralArrayAlwaysReturning' => [
+                'code' => '<?php
+                    function f(): string {
+                        foreach ([1, 2] as $_x) {
+                            return "a";
+                        }
+                    }',
+            ],
+            'foreachOverANonEmptyArrayAlwaysReturning' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string, int> $a */
+                    function f(array $a): int {
+                        foreach ($a as $x) {
+                            return $x;
+                        }
+                    }',
+            ],
             'switchBreakWithFallthroughDefaultStillReturns' => [
                 'code' => '<?php
                     function afterSwitch(int $value): int {
@@ -262,7 +308,7 @@ final class ReturnTypeTest extends TestCase
 
                     $t = (new D())->render();',
                 'assertions' => ['$t===' => 'string'],
-                'ignored_issues' => [],
+                'ignored_issues' => ['ImplementedReturnTypeMismatch'],
                 'php_version' => '8.1',
             ],
             'narrowerNativeReturnTypeWinsOverInheritedStringableDocblock' => [
@@ -280,7 +326,7 @@ final class ReturnTypeTest extends TestCase
 
                     $u = (new F())->render();',
                 'assertions' => ['$u===' => 'string'],
-                'ignored_issues' => [],
+                'ignored_issues' => ['ImplementedReturnTypeMismatch'],
                 'php_version' => '8.1',
             ],
             'nativeStringableReturnTypeKeepsStringableOverInheritedStringOrStringable' => [
@@ -2580,6 +2626,99 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'doWhileBodyContinuingToAFalseCondition' => [
+                'code' => '<?php
+                    function f(int $i): string {
+                        do {
+                            if ($i > 0) {
+                                continue;
+                            }
+                            return "a";
+                        } while (false);
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'doWhileBodyBreaking' => [
+                'code' => '<?php
+                    function f(int $i): string {
+                        do {
+                            if ($i > 0) {
+                                break;
+                            }
+                            return "a";
+                        } while (false);
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'foreachOverAPossiblyEmptyListAlwaysReturning' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(array $l): int {
+                        foreach ($l as $x) {
+                            return $x;
+                        }
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'foreachOverAShapeWithOnlyOptionalKeysAlwaysReturning' => [
+                'code' => '<?php
+                    /** @param array{a?: int} $a */
+                    function f(array $a): int {
+                        foreach ($a as $x) {
+                            return $x;
+                        }
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'foreachOverAPossiblyEmptyIteratorAlwaysReturning' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int>|ArrayIterator<int, int> $l */
+                    function f($l): int {
+                        foreach ($l as $x) {
+                            return $x;
+                        }
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'foreachOverANonEmptyArrayLeftByGoto' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        foreach ([1] as $_x) {
+                            if ($b) {
+                                goto end;
+                            }
+                            return 1;
+                        }
+                        end:
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'doWhileLeftByGoto' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        do {
+                            if ($b) {
+                                goto end;
+                            }
+                            return 1;
+                        } while ($b);
+                        end:
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'foreachOverANonEmptyListBreakingOutOfTwoLoops' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $l */
+                    function f(array $l): int {
+                        foreach ($l as $x) {
+                            foreach ($l as $_y) {
+                                break 2;
+                            }
+                            return $x;
+                        }
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
             'objectCastOfAnArrayIsNotAnotherClass' => [
                 'code' => '<?php
                     function takesArrayObject(ArrayObject $o): void {}

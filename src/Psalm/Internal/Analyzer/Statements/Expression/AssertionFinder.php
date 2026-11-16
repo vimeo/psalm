@@ -128,7 +128,6 @@ use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strtolower;
-use function strtr;
 use function substr;
 
 /**
@@ -4386,36 +4385,13 @@ final class AssertionFinder
         ?string $this_class_name,
         FileSource $source,
     ): array {
-        if (!$conditional instanceof BinaryOp) {
+        $comparison = self::getStringLengthComparison($conditional, $this_class_name, $source);
+
+        if ($comparison === null) {
             return [];
         }
 
-        $operator = match (true) {
-            $conditional instanceof BinaryOp\Identical, $conditional instanceof BinaryOp\Equal => '==',
-            $conditional instanceof BinaryOp\NotIdentical, $conditional instanceof BinaryOp\NotEqual => '!=',
-            $conditional instanceof BinaryOp\Greater => '>',
-            $conditional instanceof BinaryOp\GreaterOrEqual => '>=',
-            $conditional instanceof BinaryOp\Smaller => '<',
-            $conditional instanceof BinaryOp\SmallerOrEqual => '<=',
-            default => null,
-        };
-
-        if ($operator === null) {
-            return [];
-        }
-
-        $left_argument = self::getStringLengthArgument($conditional->left);
-        $right_argument = self::getStringLengthArgument($conditional->right);
-        if ($left_argument && $conditional->right instanceof PhpParser\Node\Scalar\Int_) {
-            $length_argument = $left_argument;
-            $compared_length = $conditional->right->value;
-        } elseif ($right_argument && $conditional->left instanceof PhpParser\Node\Scalar\Int_) {
-            $length_argument = $right_argument;
-            $compared_length = $conditional->left->value;
-            $operator = strtr($operator, '<>', '><');
-        } else {
-            return [];
-        }
+        [$var_name, $operator, $compared_length] = $comparison;
 
         // only a condition that holds exactly when the string is (non-)empty, as its negation holds otherwise
         $is_non_empty = match ($operator) {
@@ -4433,6 +4409,91 @@ final class AssertionFinder
             return [];
         }
 
+        $empty_string = TLiteralString::make('');
+
+        return [[$var_name => [[$is_non_empty ? new IsNotIdentical($empty_string) : new IsIdentical($empty_string)]]]];
+    }
+
+    /**
+     * A comparison of strlen() that implies the string isn't empty in only one of its branches, like
+     * `strlen($s) === 3` when true or `strlen($s) < 3` when false
+     *
+     * @return array{string, bool}|null the string, and whether it's non-empty when the comparison is true
+     */
+    public static function getOneWayNonEmptyStringLengthComparison(
+        PhpParser\Node\Expr $conditional,
+        ?string $this_class_name,
+        FileSource $source,
+    ): ?array {
+        $comparison = self::getStringLengthComparison($conditional, $this_class_name, $source);
+
+        if ($comparison === null) {
+            return null;
+        }
+
+        [$var_name, $operator, $compared_length, $argument_type] = $comparison;
+
+        // the comparison would only be reported as redundant for a string that can't be empty anyway
+        if ($argument_type->isNonEmptyString(true)) {
+            return null;
+        }
+
+        return match (true) {
+            $operator === '==' && $compared_length > 0,
+            $operator === '>' && $compared_length > 0,
+            $operator === '>=' && $compared_length > 1 => [$var_name, true],
+            $operator === '!=' && $compared_length > 0,
+            $operator === '<' && $compared_length > 1,
+            $operator === '<=' && $compared_length > 0 => [$var_name, false],
+            default => null,
+        };
+    }
+
+    /**
+     * @return array{string, '=='|'!='|'>'|'>='|'<'|'<=', int, Union}|null
+     */
+    private static function getStringLengthComparison(
+        PhpParser\Node\Expr $conditional,
+        ?string $this_class_name,
+        FileSource $source,
+    ): ?array {
+        if (!$conditional instanceof BinaryOp || !$source instanceof StatementsAnalyzer) {
+            return null;
+        }
+
+        $operator = match (true) {
+            $conditional instanceof BinaryOp\Identical, $conditional instanceof BinaryOp\Equal => '==',
+            $conditional instanceof BinaryOp\NotIdentical, $conditional instanceof BinaryOp\NotEqual => '!=',
+            $conditional instanceof BinaryOp\Greater => '>',
+            $conditional instanceof BinaryOp\GreaterOrEqual => '>=',
+            $conditional instanceof BinaryOp\Smaller => '<',
+            $conditional instanceof BinaryOp\SmallerOrEqual => '<=',
+            default => null,
+        };
+
+        if ($operator === null) {
+            return null;
+        }
+
+        $left_argument = self::getStringLengthArgument($conditional->left, $source);
+        $right_argument = self::getStringLengthArgument($conditional->right, $source);
+        if ($left_argument && $conditional->right instanceof PhpParser\Node\Scalar\Int_) {
+            $length_argument = $left_argument;
+            $compared_length = $conditional->right->value;
+        } elseif ($right_argument && $conditional->left instanceof PhpParser\Node\Scalar\Int_) {
+            $length_argument = $right_argument;
+            $compared_length = $conditional->left->value;
+            $operator = match ($operator) {
+                '>' => '<',
+                '>=' => '<=',
+                '<' => '>',
+                '<=' => '>=',
+                default => $operator,
+            };
+        } else {
+            return null;
+        }
+
         $var_name = ExpressionIdentifier::getExtendedVarId(
             $length_argument,
             $this_class_name,
@@ -4440,31 +4501,43 @@ final class AssertionFinder
         );
 
         if ($var_name === null) {
-            return [];
+            return null;
         }
 
         // in the non-strict mode the length of null and false is 0 too: only a string is empty exactly when it is
-        $argument_type = $source instanceof StatementsAnalyzer
-            ? $source->node_data->getType($length_argument)
-            : null;
+        $argument_type = $source->node_data->getType($length_argument);
 
         if ($argument_type === null || !$argument_type->isString(true)) {
-            return [];
+            return null;
         }
 
-        $empty_string = TLiteralString::make('');
-
-        return [[$var_name => [[$is_non_empty ? new IsNotIdentical($empty_string) : new IsIdentical($empty_string)]]]];
+        return [$var_name, $operator, $compared_length, $argument_type];
     }
 
-    private static function getStringLengthArgument(PhpParser\Node\Expr $expr): ?PhpParser\Node\Expr
-    {
+    private static function getStringLengthArgument(
+        PhpParser\Node\Expr $expr,
+        StatementsAnalyzer $source,
+    ): ?PhpParser\Node\Expr {
         if (!$expr instanceof PhpParser\Node\Expr\FuncCall
             || !$expr->name instanceof PhpParser\Node\Name
-            || !in_array(strtolower($expr->name->getFirst()), ['strlen', 'mb_strlen'])
+            || !in_array($expr->name->toLowerString(), ['strlen', 'mb_strlen'], true)
             || $expr->isFirstClassCallable()
         ) {
             return null;
+        }
+
+        // a function of the namespace, or one imported under that name, is called instead of the built-in one
+        if (!$expr->name instanceof PhpParser\Node\Name\FullyQualified) {
+            $function_id = strtolower($source->getCodebase()->functions->getFullyQualifiedFunctionNameFromString(
+                $expr->name->toString(),
+                $source,
+            ));
+
+            if ($function_id !== $expr->name->toLowerString()
+                && $source->getCodebase()->functions->functionExists($source, $function_id)
+            ) {
+                return null;
+            }
         }
 
         $first_argument = $expr->getArgs()[0] ?? null;
