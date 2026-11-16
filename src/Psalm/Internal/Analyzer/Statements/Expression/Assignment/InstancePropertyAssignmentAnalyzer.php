@@ -1265,7 +1265,6 @@ final class InstancePropertyAssignmentAnalyzer
                 ],
                 true,
             )
-            || self::isUndeclaredShapeProperty($codebase, $lhs_type_part, $prop_name)
         ) {
             if ($var_id) {
                 if ($lhs_type_part instanceof TNamedObject &&
@@ -1629,6 +1628,14 @@ final class InstancePropertyAssignmentAnalyzer
             && $codebase->properties->getStorage($property_id)->is_static
         )
         ) {
+            if (self::isShapeProperty($codebase, $lhs_type_part, $prop_name)) {
+                if ($var_id !== null) {
+                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                }
+
+                return null;
+            }
+
             if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this') {
                 // if this is a proper error, we'll see it on the first pass
                 if ($context->collect_mutations) {
@@ -2127,25 +2134,16 @@ final class InstancePropertyAssignmentAnalyzer
     }
 
     /**
-     * A property of the shape of `Foo&object{a: int}` that `Foo` doesn't declare is assigned as on a lone shape,
-     * unless `Foo` is final without a magic setter, as its properties are read
+     * A property of the shape of `Foo&object{a: int}` that `Foo` doesn't have is assigned as on a lone shape,
+     * unless `Foo` is final, as its properties are read
      */
-    private static function isUndeclaredShapeProperty(
+    private static function isShapeProperty(
         Codebase $codebase,
         TNamedObject $lhs_type_part,
         string $prop_name,
     ): bool {
-        if (!isset(ObjectShapeIntersection::getShape($lhs_type_part)?->properties[$prop_name])) {
-            return false;
-        }
-
-        if (!$codebase->classExists($lhs_type_part->value)) {
-            return true;
-        }
-
-        $class_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
-
-        return !isset($class_storage->declaring_property_ids[$prop_name])
-            && (!$class_storage->final || isset($class_storage->declaring_method_ids['__set']));
+        return isset(ObjectShapeIntersection::getShape($lhs_type_part)?->properties[$prop_name])
+            && !($codebase->classExists($lhs_type_part->value)
+                && $codebase->classlike_storage_provider->get($lhs_type_part->value)->final);
     }
 }
