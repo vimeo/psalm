@@ -2776,6 +2776,79 @@ final class ArrayAccessTest extends TestCase
                         return $a["x"]["y"];
                     }',
             ],
+            'listOffsetAfterDoLeftByABreakOfANestedLoop' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        do {
+                            foreach ([1, 2] as $_) {
+                                if (isset($l[0])) {
+                                    break 2;
+                                }
+                            }
+                        } while (rand(0, 1));
+                        return $l[0];
+                    }',
+            ],
+            'listOffsetAfterWhileWithAContinueBeforeTheIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        $i = 0;
+                        while ($i < 3) {
+                            $i++;
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            if (isset($l[0])) {
+                                break;
+                            }
+                        }
+                        return $l[0];
+                    }',
+            ],
+            'listOffsetAfterForBreakingOnIssetInATryWithFinally' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        for ($i = 0; $i < 3; $i++) {
+                            try {
+                                if (isset($l[0])) {
+                                    break;
+                                }
+                            } finally {
+                                echo $i;
+                            }
+                        }
+                        return $l[0];
+                    }',
+            ],
+            'listPropertyOffsetAfterForBreakingOnIsset' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var list<mixed> */
+                        public array $l = [];
+
+                        /** @return mixed */
+                        public function f() {
+                            for ($i = 0; $i < 3; $i++) {
+                                if (isset($this->l[0])) {
+                                    break;
+                                }
+                            }
+                            return $this->l[0];
+                        }
+                    }',
+            ],
             'optionalOffsetSetOnEveryWayOutOfAFor' => [
                 'code' => '<?php
                     /** @param array{a?: int} $a */
