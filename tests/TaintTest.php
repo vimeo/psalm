@@ -6280,6 +6280,68 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'taintAssignedBeforeABreakInTheElseReachesTheReadAfterTheIf' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param list<string> $list */
+                    function f(array $list, bool $b): void {
+                        if ($b) {
+                            $found = "safe";
+                        } else {
+                            foreach ($list as $_) {
+                                $found = (string) $_GET["x"];
+                                break;
+                            }
+                        }
+
+                        /** @psalm-suppress MixedArgument */
+                        echo $found ?? "";
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignedInACatchInTheElseReachesTheReadAfterTheIf' => [
+                'code' => '<?php // --taint-analysis
+                    function load(): void {
+                        if (rand(0, 1) === 1) {
+                            throw new RuntimeException("x");
+                        }
+                    }
+
+                    function f(bool $b): void {
+                        if ($b) {
+                            $found = "safe";
+                        } else {
+                            try {
+                                load();
+                            } catch (Exception $e) {
+                                $found = (string) $_GET["x"];
+                            }
+                        }
+
+                        /** @psalm-suppress MixedArgument */
+                        echo $found ?? "";
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintOfTheBranchTypingAVariableAnotherBranchAssignsBeforeABreakIsKept' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param list<string> $list */
+                    function f(array $list, string $needle, bool $b): void {
+                        if ($b) {
+                            $found = (string) $_GET["x"];
+                        } else {
+                            foreach ($list as $item) {
+                                if ($item === $needle) {
+                                    $found = $item;
+                                    break;
+                                }
+                            }
+                        }
+
+                        /** @psalm-suppress MixedArgument */
+                        echo $found ?? "";
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'ternaryBranchWritingTheNarrowedTypeKeepsItsTaint' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-assert-if-true non-falsy-string $s */

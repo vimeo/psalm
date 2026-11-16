@@ -235,6 +235,8 @@ final class ElseAnalyzer
                 $if_scope->if_cond_changed_var_ids,
                 true,
                 $if_scope->elseif_cond_assigned_var_ids,
+                branch_nodes: $else->stmts ?? [],
+                detach_references: false,
             );
 
             $if_scope->reasonable_clauses = [];

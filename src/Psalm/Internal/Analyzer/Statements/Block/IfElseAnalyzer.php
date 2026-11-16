@@ -486,9 +486,19 @@ final class IfElseAnalyzer
         }
 
         foreach ($if_scope->partial_new_vars as $var_id => $type) {
-            if (!isset($context->vars_in_scope[$var_id])) {
-                $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true);
+            if (isset($context->vars_in_scope[$var_id])) {
+                continue;
             }
+
+            if (isset($if_scope->untyped_new_vars[$var_id])) {
+                // what the branches that don't type it assigned flows to the uses too
+                $type = Type::getMixed()->setParentNodes([
+                    ...$type->parent_nodes,
+                    ...$if_scope->untyped_new_vars[$var_id],
+                ]);
+            }
+
+            $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true);
         }
 
         if ($if_scope->redefined_vars) {
