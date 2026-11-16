@@ -1222,7 +1222,7 @@ final class MethodComparator
             $union_comparison_results,
         ) || $union_comparison_results->to_string_cast) {
             // is the declared return type more specific than the inferred one?
-            if ($union_comparison_results->type_coerced) {
+            if ($union_comparison_results->type_coerced && !$union_comparison_results->to_string_cast) {
                 if ($guide_classlike_storage->user_defined) {
                     IssueBuffer::maybeAdd(
                         new MoreSpecificImplementedParamType(
@@ -1590,7 +1590,7 @@ final class MethodComparator
             }
 
             // is the declared return type more specific than the inferred one?
-            if ($union_comparison_results->type_coerced) {
+            if ($union_comparison_results->type_coerced && !$union_comparison_results->to_string_cast) {
                 IssueBuffer::maybeAdd(
                     new LessSpecificImplementedReturnType(
                         'The inherited return type \'' . $guide_method_storage_return_type->getId()

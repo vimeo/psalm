@@ -514,7 +514,7 @@ final class MethodSignatureTest extends TestCase
         self::assertSame(
             [
                 "Argument 1 of A::m has wrong type 'string', expecting 'Foo' as defined by I::m",
-                "Argument 1 of B::m has the more specific type 'non-empty-string', expecting 'Foo' as defined by I::m",
+                "Argument 1 of B::m has wrong type 'non-empty-string', expecting 'Foo' as defined by I::m",
                 "Argument 1 of B::m has the more specific type 'non-empty-string', expecting 'string' as defined by"
                     . ' A::m',
             ],
@@ -3431,6 +3431,40 @@ final class MethodSignatureTest extends TestCase
                 'error_message' => 'MoreSpecificImplementedParamType',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'toStringObjectReturnForNonEmptyStringReturn' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        /** @return non-empty-string */
+                        public function m();
+                    }
+
+                    final class C implements I {
+                        /** @return Foo */
+                        public function m() { return new Foo(); }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'nonEmptyStringParamForToStringObjectParam' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        /** @param Foo $x */
+                        public function m($x): void;
+                    }
+
+                    final class C implements I {
+                        /** @param non-empty-string $x */
+                        public function m($x): void {}
+                    }',
+                'error_message' => 'ImplementedParamTypeMismatch',
             ],
             'stringSignatureParamForToStringObjectSignatureParam' => [
                 'code' => '<?php
