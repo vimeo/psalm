@@ -2821,7 +2821,7 @@ final class InterfaceTest extends TestCase
                             return new Exception("x");
                         }
                     }',
-                'error_message' => 'LessSpecificImplementedReturnType',
+                'error_message' => 'ImplementedReturnTypeMismatch',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],

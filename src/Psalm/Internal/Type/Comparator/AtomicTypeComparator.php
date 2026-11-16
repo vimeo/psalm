@@ -616,7 +616,15 @@ final class AtomicTypeComparator
                 array_values($container_type_part->else_type->getAtomicTypes()),
             );
 
+            // a match through a __toString() cast only counts if no alternative matches without one
+            $matched_with_to_string_cast = false;
+            $tried_to_string_cast = false;
+
             foreach ($atomic_types as $container_as_type_part) {
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->to_string_cast = null;
+                }
+
                 if (self::isContainedBy(
                     $codebase,
                     $input_type_part,
@@ -625,11 +633,21 @@ final class AtomicTypeComparator
                     $allow_float_int_equality,
                     $atomic_comparison_result,
                 )) {
-                    return true;
+                    if (!$atomic_comparison_result?->to_string_cast) {
+                        return true;
+                    }
+
+                    $matched_with_to_string_cast = true;
                 }
+
+                $tried_to_string_cast = $tried_to_string_cast || $atomic_comparison_result?->to_string_cast;
             }
 
-            return false;
+            if ($tried_to_string_cast && $atomic_comparison_result) {
+                $atomic_comparison_result->to_string_cast = true;
+            }
+
+            return $matched_with_to_string_cast;
         }
 
         if ($input_type_part instanceof TTemplateParam) {
