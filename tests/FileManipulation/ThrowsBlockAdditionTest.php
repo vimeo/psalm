@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Tests\FileManipulation;
 
 use Override;
-use Psalm\Config;
 use Psalm\Tests\TestConfig;
 
 final class ThrowsBlockAdditionTest extends FileManipulationTestCase
@@ -36,7 +35,7 @@ final class ThrowsBlockAdditionTest extends FileManipulationTestCase
                 'configure' => static function (TestConfig $config): void {
                     $config->setAdvancedErrorLevel('MissingThrowsDocblock', [
                         [
-                            'type' => Config::REPORT_SUPPRESS,
+                            'type' => TestConfig::REPORT_SUPPRESS,
                             'directory' => [['name' => 'src']],
                         ],
                     ]);
@@ -67,7 +66,7 @@ final class ThrowsBlockAdditionTest extends FileManipulationTestCase
                 'configure' => static function (TestConfig $config): void {
                     $config->setAdvancedErrorLevel('MissingThrowsDocblock', [
                         [
-                            'type' => Config::REPORT_SUPPRESS,
+                            'type' => TestConfig::REPORT_SUPPRESS,
                             'referencedClass' => [['name' => 'LogicException']],
                         ],
                     ]);
