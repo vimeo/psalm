@@ -1498,6 +1498,41 @@ final class AssignmentInConditionalTest extends TestCase
                     }',
                 'error_message' => 'PossiblyUndefinedVariable',
             ],
+            'arrayKeyAssignedInAndOperandIsForgottenWhenALaterOneReassignsTheArray' => [
+                'code' => '<?php
+                    function check(mixed $s): bool {
+                        return (bool) $s;
+                    }
+
+                    /** @param array{k?: string} $a */
+                    function f(array $a): bool {
+                        return check($a["k"] = "s") && check($a = ["other" => 1]) && strlen($a["k"]) > 0;
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'variableAssignedInAndOperandKeepsItsReferenceInLaterOnes' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function gate(): bool {
+                        return true;
+                    }
+
+                    function probe(int $i, string $s): bool {
+                        return $i > 0 && $s !== "";
+                    }
+
+                    function f(): bool {
+                        $x = null;
+                        $y =& $x;
+                        return check($x = "a") && gate() && probe($y = 1, $x);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
             'variableAssignedInNegatedAndIsPossiblyUndefinedInNextAndOperand' => [
                 'code' => '<?php
                     function f(bool $b, bool $c, string $s): bool {

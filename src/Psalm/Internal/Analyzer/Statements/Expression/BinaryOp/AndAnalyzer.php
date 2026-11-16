@@ -107,7 +107,11 @@ final class AndAnalyzer
             }
         }
 
-        $context->vars_in_scope = [...$context->vars_in_scope, ...$vars_assigned_in_left];
+        // assigned one by one, which keeps the references between variables
+        foreach ($vars_assigned_in_left as $var_id => $type) {
+            $context->vars_in_scope[$var_id] = $type;
+        }
+
         $context->vars_possibly_in_scope = [
             ...$context->vars_possibly_in_scope,
             ...$left_context->vars_possibly_in_scope,
@@ -184,7 +188,10 @@ final class AndAnalyzer
             );
         } else {
             $right_context = clone $left_context;
-            $right_context->vars_in_scope = [...$right_context->vars_in_scope, ...$vars_assigned_in_left];
+
+            foreach ($vars_assigned_in_left as $var_id => $type) {
+                $right_context->vars_in_scope[$var_id] = $type;
+            }
         }
 
         $right_context->inside_logical_operand = true;
@@ -372,6 +379,13 @@ final class AndAnalyzer
                     && ($pre_right_assigned_var_ids[$var_id] ?? null) !== $right_context->assigned_var_ids[$var_id]
                 ) {
                     $vars_assigned_in_and[$var_id] = $type;
+                }
+            }
+
+            // but not what the right side forgot, like the keys of an array it reassigned
+            foreach ($vars_assigned_in_and as $var_id => $_) {
+                if (!isset($right_context->vars_in_scope[$var_id])) {
+                    unset($vars_assigned_in_and[$var_id]);
                 }
             }
 
