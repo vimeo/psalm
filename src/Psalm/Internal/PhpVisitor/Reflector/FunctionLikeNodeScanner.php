@@ -736,6 +736,11 @@ final class FunctionLikeNodeScanner
             }
         }
 
+        if ($stmt instanceof PhpParser\Node\PropertyHook) {
+            // what the property suppresses is suppressed in its hooks
+            $storage->suppressed_issues += $this->getHookPropertyStorage($stmt)->suppressed_issues ?? [];
+        }
+
         return $storage;
     }
 
@@ -1098,19 +1103,23 @@ final class FunctionLikeNodeScanner
         );
     }
 
-    /**
-     * A hook has no signature of its own: `get` returns a value of the type of the property, and `set` takes a
-     * value of that type unless its parameter has a type. What the property suppresses is suppressed in its hooks.
-     */
-    private function addPropertyTypeToHook(PhpParser\Node\PropertyHook $hook, FunctionLikeStorage $storage): void
+    private function getHookPropertyStorage(PhpParser\Node\PropertyHook $hook): ?PropertyStorage
     {
         /** @var mixed $property_name */
         $property_name = $hook->getAttribute('propertyName');
-        $property_storage = is_string($property_name)
+
+        return is_string($property_name)
             ? $this->classlike_storage?->properties[$property_name] ?? null
             : null;
+    }
 
-        $storage->suppressed_issues += $property_storage->suppressed_issues ?? [];
+    /**
+     * A hook has no signature of its own: `get` returns a value of the type of the property, and `set` takes a
+     * value of that type unless its parameter has a type.
+     */
+    private function addPropertyTypeToHook(PhpParser\Node\PropertyHook $hook, FunctionLikeStorage $storage): void
+    {
+        $property_storage = $this->getHookPropertyStorage($hook);
 
         if ($hook->name->toLowerString() === 'get') {
             $storage->return_type = $property_storage->type ?? Type::getMixed();

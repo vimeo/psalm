@@ -171,6 +171,24 @@ final class Php84Test extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'propertyHookBodySuppressedOnPropertyAndHook' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @psalm-suppress UndefinedFunction */
+                        public string $name {
+                            /** @psalm-suppress MixedReturnStatement */
+                            get => undefined_fn();
+                        }
+                        /** @psalm-suppress UndefinedFunction, MixedReturnStatement */
+                        public string $other {
+                            /** Computed. */
+                            get => undefined_fn();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'abstractAndInterfacePropertyHooks' => [
                 'code' => '<?php
                     interface HasName {
