@@ -1001,6 +1001,104 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'nullsafeFetchIdenticalToABoolLiteralAssertsTheReceiverOnce' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Item {
+                        public bool $flag = true;
+                        public ?bool $maybe = null;
+                        public function isFlag(): bool { return $this->flag; }
+                    }
+
+                    function ternary(?Item $item): string {
+                        return $item?->flag === true ? 'y' : 'n';
+                    }
+
+                    function ifStatement(?Item $item): string {
+                        if ($item?->flag === true) {
+                            /** @psalm-check-type-exact $item = Item */
+                            return 'y';
+                        }
+
+                        /** @psalm-check-type-exact $item = Item|null */
+                        return 'n';
+                    }
+
+                    function reversed(?Item $item): string {
+                        if (true === $item?->flag) {
+                            return $item->isFlag() ? 'y' : 'n';
+                        }
+
+                        return 'n';
+                    }
+
+                    function nullableProperty(?Item $item): string {
+                        if ($item?->maybe === true) {
+                            return $item->isFlag() ? 'y' : 'n';
+                        }
+
+                        return 'n';
+                    }
+
+                    function looselyEqual(?Item $item): string {
+                        if ($item?->flag == true) {
+                            return $item->isFlag() ? 'y' : 'n';
+                        }
+
+                        return 'n';
+                    }
+
+                    function negated(?Item $item): string {
+                        if ($item?->flag !== true) {
+                            /** @psalm-check-type-exact $item = Item|null */
+                            return 'n';
+                        }
+
+                        return 'y';
+                    }
+
+                    function method(?Item $item): string {
+                        if ($item?->isFlag() === true) {
+                            return $item->isFlag() ? 'y' : 'n';
+                        }
+
+                        return 'n';
+                    }
+
+                    function conjunction(?Item $item, bool $other): string {
+                        if ($other && $item?->flag === true) {
+                            return $item->isFlag() ? 'y' : 'n';
+                        }
+
+                        return 'n';
+                    }
+
+                    function disjunction(?Item $item, bool $other): string {
+                        if ($other || $item?->flag === true) {
+                            return 'y';
+                        }
+
+                        return 'n';
+                    }
+
+                    function loop(?Item $item): void {
+                        while ($item?->flag === true) {
+                            $item = null;
+                        }
+                    }
+
+                    function literal(?Item $item): string {
+                        if ($item?->maybe === false) {
+                            return $item->isFlag() ? 'y' : 'n';
+                        }
+
+                        return 'n';
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'negatedInstanceofRemovesTheClassFromTheBoundOfATemplateParam' => [
                 'code' => '<?php
                     /**
@@ -5880,6 +5978,25 @@ final class ConditionalTest extends TestCase
                 'error_message' => 'PossiblyNullPropertyFetch',
                 'error_levels' => [],
                 'php_version' => '8.2',
+            ],
+            'repeatedIdentityOfANullsafeFetchToABoolLiteralIsRedundant' => [
+                'code' => '<?php
+                    final class Item {
+                        public bool $flag = true;
+                    }
+
+                    function f(?Item $item): string {
+                        if ($item?->flag === true) {
+                            if ($item?->flag === true) {
+                                return "y";
+                            }
+                        }
+
+                        return "n";
+                    }',
+                'error_message' => 'TypeDoesNotContainNull',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'identityOfANullsafeFetchWithAUnionContainingMixedDoesNotAssertTheReceiver' => [
                 'code' => '<?php
