@@ -2585,6 +2585,19 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'foreachOverNonEmptyArrayVarAssignedBeforeContinueAndAtTheEndOfTheBody' => [
+                'code' => '<?php
+                    foreach ([1, 2] as $_) {
+                        if (rand(0, 1)) {
+                            $z = 1;
+                            continue;
+                        }
+                        $z = 2;
+                    }',
+                'assertions' => [
+                    '$z===' => '1|2',
+                ],
+            ],
         ];
     }
 
@@ -3124,6 +3137,20 @@ final class ForeachTest extends TestCase
 
                     echo $car;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:26',
+            ],
+            'foreachOverNonEmptyArrayVarNotAssignedBeforeContinue' => [
+                'code' => '<?php
+                    function f(): int {
+                        foreach ([1, 2] as $_) {
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $z = 2;
+                        }
+
+                        return $z;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }

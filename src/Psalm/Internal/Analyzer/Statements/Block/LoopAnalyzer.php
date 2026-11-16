@@ -176,6 +176,7 @@ final class LoopAnalyzer
             $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
 
             $loop_scope->vars_at_breaks = null;
+            $loop_scope->vars_at_continues = null;
 
             $statements_analyzer->analyze($stmts, $continue_context);
             self::updateLoopScopeContexts($loop_scope, $loop_context, $continue_context, $loop_parent_context);
@@ -248,6 +249,7 @@ final class LoopAnalyzer
             $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
 
             $loop_scope->vars_at_breaks = null;
+            $loop_scope->vars_at_continues = null;
 
             $statements_analyzer->analyze($stmts, $continue_context);
 
@@ -499,6 +501,7 @@ final class LoopAnalyzer
                 $vars_at_pass_start = $continue_context->vars_in_scope;
 
                 $loop_scope->vars_at_breaks = null;
+                $loop_scope->vars_at_continues = null;
 
                 $statements_analyzer->analyze($stmts, $continue_context);
 
@@ -1142,6 +1145,9 @@ final class LoopAnalyzer
             return;
         }
 
+        $has_break = in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
+        $has_continue = in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true);
+
         foreach ($inner_context->vars_in_scope as $var_id => $type) {
             // if there are break statements in the loop it's not certain
             // that the loop has finished executing, so the assertions at the end
@@ -1149,8 +1155,7 @@ final class LoopAnalyzer
             // This does not apply to variables assigned before the loop body
             // (e.g. a foreach key/value), which are guaranteed to be assigned at
             // the start of every iteration, even one that breaks or continues.
-            if ((in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
-                    || in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true))
+            if (($has_break || $has_continue)
                 && !in_array($var_id, $always_assigned_before_loop_body_vars, true)
             ) {
                 if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
@@ -1158,6 +1163,22 @@ final class LoopAnalyzer
                         $type,
                         $loop_scope->possibly_defined_loop_parent_vars[$var_id],
                     );
+                } elseif (!$has_break
+                    && !$loop_scope->continues_through_finally
+                    && isset($loop_scope->vars_at_continues[$var_id])
+                ) {
+                    // an iteration ends at the end of the body or at a continue: a variable defined at both is
+                    // defined after the loop
+                    $is_possibly_undefined = $type->possibly_undefined
+                        || $loop_scope->vars_at_continues[$var_id]->possibly_undefined;
+
+                    if (isset($loop_scope->possibly_defined_loop_vars[$var_id])) {
+                        // the type already holds what the continues left
+                        $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined($is_possibly_undefined);
+                    } elseif (!$is_possibly_undefined && isset($context->vars_in_scope[$var_id])) {
+                        $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]
+                            ->setPossiblyUndefined(false);
+                    }
                 }
             } else {
                 $context->vars_in_scope[$var_id] = $type;

@@ -74,6 +74,19 @@ final class LoopScope
     public bool $breaks_through_finally = false;
 
     /**
+     * What the variables hold where the latest pass over the body continues, null before a continue.
+     * A variable missing at one of the continues is possibly undefined.
+     *
+     * @var array<string, Union>|null
+     */
+    public ?array $vars_at_continues = null;
+
+    /**
+     * Whether a continue leaves a `try` of the loop body that has a `finally`
+     */
+    public bool $continues_through_finally = false;
+
+    /**
      * The number of break statements seen in the first iteration
      */
     public int $break_count = 0;
@@ -119,25 +132,44 @@ final class LoopScope
             $this->breaks_through_finally = true;
         }
 
-        if ($this->vars_at_breaks === null) {
-            $this->vars_at_breaks = $context->vars_in_scope;
+        $this->vars_at_breaks = self::addVarsAtJump($this->vars_at_breaks, $context->vars_in_scope);
+    }
 
-            return;
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function addContinue(Context $context): void
+    {
+        if ($context->finally_scope !== $this->loop_parent_context->finally_scope) {
+            $this->continues_through_finally = true;
         }
 
-        $vars_at_breaks = [];
+        $this->vars_at_continues = self::addVarsAtJump($this->vars_at_continues, $context->vars_in_scope);
+    }
 
-        foreach ($this->vars_at_breaks as $var_id => $type) {
-            $vars_at_breaks[$var_id] = isset($context->vars_in_scope[$var_id])
-                ? Type::combineUnionTypes($type, $context->vars_in_scope[$var_id])
+    /**
+     * @param array<string, Union>|null $vars_at_jumps
+     * @param array<string, Union> $vars_in_scope
+     * @return array<string, Union>
+     * @psalm-external-mutation-free
+     */
+    private static function addVarsAtJump(?array $vars_at_jumps, array $vars_in_scope): array
+    {
+        if ($vars_at_jumps === null) {
+            return $vars_in_scope;
+        }
+
+        foreach ($vars_at_jumps as $var_id => $type) {
+            $vars_at_jumps[$var_id] = isset($vars_in_scope[$var_id])
+                ? Type::combineUnionTypes($type, $vars_in_scope[$var_id])
                 : $type->setPossiblyUndefined(true);
         }
 
-        foreach ($context->vars_in_scope as $var_id => $type) {
-            $vars_at_breaks[$var_id] ??= $type->setPossiblyUndefined(true);
+        foreach ($vars_in_scope as $var_id => $type) {
+            $vars_at_jumps[$var_id] ??= $type->setPossiblyUndefined(true);
         }
 
-        $this->vars_at_breaks = $vars_at_breaks;
+        return $vars_at_jumps;
     }
 
     /**
