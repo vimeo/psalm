@@ -36,9 +36,8 @@ final class ScopeAnalyzer
      * @param array<PhpParser\Node> $stmts
      * @param list<'loop'|'switch'> $break_types
      * @param bool $return_is_exit Exit and Throw statements are treated differently from return if this is false
-     * @param bool $skip_impossible_else whether the missing else of an if whose conditions the analysis found to
-     *                                   match every value (see NodeDataProvider::isImplicitElseImpossible()) is
-     *                                   no way through it
+     * @param bool $skip_impossible_else treat the missing else of an if whose conditions matched every value
+     *                                   (see NodeDataProvider::isImplicitElseImpossible()) as leaving
      * @return list<self::ACTION_*>
      * @psalm-suppress ComplexMethod nothing much we can do
      */
