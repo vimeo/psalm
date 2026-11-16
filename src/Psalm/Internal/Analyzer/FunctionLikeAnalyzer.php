@@ -1025,6 +1025,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 true,
             );
 
+            if (!$storage->return_type) {
+                $closure_return_types = ReturnTypeAnalyzer::addImplicitNullReturn(
+                    $closure_return_types,
+                    $closure_yield_types !== [],
+                    $function_stmts,
+                    $type_provider,
+                    $context->has_returned,
+                );
+            }
+
             $closure_return_type = $closure_return_types
                 ? Type::combineUnionTypeArray(
                     $closure_return_types,
