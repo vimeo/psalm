@@ -28,6 +28,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\StaticArgumentsProjector;
 use Psalm\Internal\TypeVisitor\TypeLocalizer;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassLikeStorage;
@@ -846,7 +847,12 @@ final class Methods
 
                 $overridden_storage_return_type = TypeExpander::expandUnion(
                     $codebase,
-                    $overridden_storage->return_type,
+                    StaticArgumentsProjector::projectType(
+                        $codebase,
+                        $overridden_storage->return_type,
+                        $overridden_method_id->fq_class_name,
+                        $appearing_fq_class_name,
+                    ),
                     $overridden_method_id->fq_class_name,
                     $appearing_fq_class_name,
                     $overridden_class_storage->parent_class,

@@ -253,6 +253,42 @@ final class PurityTemplateTest extends TestCase
                         return $box;
                     }',
             ],
+            'inheritedStaticReturnKeepsAnImportedPurityAliasArgument' => [
+                'code' => '<?php
+                    /** @psalm-type Effect = io */
+                    final class Effects {}
+
+                    /**
+                     * @psalm-import-type Effect from Effects
+                     * @template T
+                     * @psalm-purity-template C
+                     */
+                    class Base {
+                        /** @return static[Effect]<T> */
+                        public function same() {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /**
+                     * @template U
+                     * @psalm-purity-template P
+                     * @extends Base[P]<U>
+                     */
+                    class Sub extends Base {
+                        public function same(): static {
+                            throw new \Exception();
+                        }
+                    }
+
+                    /** @var Sub[pure]<int> $s */
+                    $s = new Sub();
+                    $r = $s->same();',
+                'assertions' => [
+                    '$r===' => 'Sub[io]<int>&static',
+                ],
+                'ignored_issues' => ['ImplementedReturnTypeMismatch'],
+            ],
             'pureClosureKeepsFunctionPure' => [
                 'code' => '<?php
                     /**

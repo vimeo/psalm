@@ -31,6 +31,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Internal\TypeVisitor\StaticArgumentsProjector;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
@@ -258,6 +259,16 @@ final class MethodCallReturnTypeFetcher
                     count($stmt->getArgs()),
                     $codebase,
                 );
+
+                if ($static_type instanceof TGenericObject && $self_fq_class_name !== null) {
+                    $return_type_candidate = StaticArgumentsProjector::projectType(
+                        $codebase,
+                        $return_type_candidate,
+                        $self_fq_class_name,
+                        $static_type->value,
+                        $static_type->type_params,
+                    );
+                }
 
                 $return_type_candidate = TypeExpander::expandUnion(
                     $codebase,
