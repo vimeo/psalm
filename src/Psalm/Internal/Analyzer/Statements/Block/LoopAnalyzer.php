@@ -51,6 +51,7 @@ use function min;
 use function sort;
 use function spl_object_id;
 use function str_contains;
+use function str_ends_with;
 use function str_starts_with;
 
 use const PHP_INT_MAX;
@@ -1153,11 +1154,19 @@ final class LoopAnalyzer
                     || in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true))
                 && !in_array($var_id, $always_assigned_before_loop_body_vars, true)
             ) {
-                if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
-                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                        $type,
-                        $loop_scope->possibly_defined_loop_parent_vars[$var_id],
-                    );
+                $break_type = $loop_scope->possibly_defined_loop_parent_vars[$var_id] ?? null;
+
+                if (!$break_type) {
+                    continue;
+                }
+
+                if (isset($loop_scope->unknown_offsets[$var_id])
+                    || (str_ends_with($var_id, ']') && $type->possibly_undefined !== $break_type->possibly_undefined)
+                ) {
+                    // an offset only some of the ways out of the loop know to be set: the type of the array tells
+                    unset($context->vars_in_scope[$var_id], $context->vars_possibly_in_scope[$var_id]);
+                } else {
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes($type, $break_type);
                 }
             } else {
                 $context->vars_in_scope[$var_id] = $type;
