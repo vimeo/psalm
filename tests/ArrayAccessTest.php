@@ -1361,6 +1361,54 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetOfUnsealedArrayNarrowedInIfWithoutElseIsNotOptional' => [
+                'code' => '<?php
+                    function f(array $a): string {
+                        if ($a["c"] === null) {
+                            if (is_string($a["k"])) {
+                                echo "x";
+                            }
+                            return (string) $a["k"];
+                        }
+                        return "";
+                    }',
+            ],
+            'offsetOfUnsealedArrayNarrowedInIfAndElseifIsNotOptional' => [
+                'code' => '<?php
+                    function f(array $a): string {
+                        if ($a["c"] === null) {
+                            if (is_string($a["k"])) {
+                                echo "x";
+                            } elseif (is_int($a["j"])) {
+                                echo "y";
+                            }
+                            return (string) $a["k"] . (string) $a["j"];
+                        }
+                        return "";
+                    }',
+            ],
+            'offsetOfUnsealedArrayNarrowedInLoopIsNotOptional' => [
+                'code' => '<?php
+                    function f(array $a): void {
+                        if ($a["c"] === null) {
+                            foreach ([1, 2] as $_) {
+                                if (is_string($a["k"])) {
+                                    echo "x";
+                                }
+                            }
+                        }
+                    }',
+            ],
+            'offsetOfUnsealedArrayNarrowedBelowItsFallbackInIfWithoutElseIsNotOptional' => [
+                'code' => '<?php
+                    /** @param array{c: null, ...<string, int>} $a */
+                    function f(array $a): int {
+                        if ($a["k"] === 5) {
+                            echo "x";
+                        }
+                        return $a["k"];
+                    }',
+            ],
             'offsetOfANullableArrayIsReadInsideTheGuardsThatNarrowIt' => [
                 'code' => '<?php
                     /** @param array<string, list<string>>|null $lists */
@@ -2736,6 +2784,28 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'declaredOptionalOffsetOfUnsealedArrayNarrowedInIfWithoutElseStaysOptional' => [
+                'code' => '<?php
+                    /** @param array{c: null, k?: string, ...<array-key, mixed>} $a */
+                    function f(array $a): string {
+                        if (is_string($a["k"] ?? null)) {
+                            echo "x";
+                        }
+                        return $a["k"];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'offsetOfUnsealedArrayAssignedOutsideItsFallbackInIfWithoutElseIsOptional' => [
+                'code' => '<?php
+                    /** @param array{c: null, ...<string, int>} $a */
+                    function f(array $a, bool $b): void {
+                        if ($b) {
+                            $a["k"] = "str";
+                        }
+                        echo $a["k"];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
             'nestedUnsetBreaksTheShapeOfAByRefParam' => [
                 'code' => '<?php
                     /** @param array{b: array{c: int}} $a */

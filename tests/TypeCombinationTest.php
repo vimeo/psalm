@@ -195,7 +195,7 @@ final class TypeCombinationTest extends TestCase
     {
         return [
             'unsealedArrayKeyDeclaredInOneAndMissingInTheOtherTakesTheFallback' => [
-                'array{age?: int|mixed, name?: mixed|string, ...<array-key, mixed>}',
+                'non-empty-array<array-key, mixed>',
                 [
                     'array{age: int, ...<array-key, mixed>}',
                     'array{name: string, ...<array-key, mixed>}',
@@ -299,11 +299,71 @@ final class TypeCombinationTest extends TestCase
                     'array{id: string, name?: string, ...<array-key, mixed>}',
                 ],
             ],
-            'keyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItButItsFallbackMayHoldIt' => [
-                'array{id: string, name?: int|string, ...<string, int|string>}',
+            'keyOfAnUnsealedShapeIsTheFallbackWhenAnotherShapeLacksItAndItsFallbackHoldsItsType' => [
+                'array{id: string, ...<string, int|string>}',
                 [
                     'array{id: string, name: string, ...<string, string>}',
                     'array{id: string, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackHoldsAnotherType' => [
+                'array{id: string, name?: int|string, ...<string, int>}',
+                [
+                    'array{id: string, name: string, ...<string, int>}',
+                    'array{id: string, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackCannotHoldIt' => [
+                'array{5?: int, id: string, ...<string, int>}',
+                [
+                    'array{id: string, 5: int, ...<string, int>}',
+                    'array{id: string, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsTheFallbackWhenAnotherShapeLacksItAndAThirdDeclaresIt' => [
+                'array{id: string, ...<string, int>}',
+                [
+                    'array{id: string, name: int, ...<string, int>}',
+                    'array{id: string, ...<string, int>}',
+                    'array{id: string, name: 5, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenASealedShapeLacksIt' => [
+                'array{id: string, name?: int, ...<string, int>}',
+                [
+                    'array{id: string, name: int, ...<string, int>}',
+                    'array{id: string}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenASealedShapeLacksItBeforeUnsealedOnes' => [
+                'array{id: string, name?: int, ...<string, int>}',
+                [
+                    'array{id: string}',
+                    'array{id: string, ...<string, int>}',
+                    'array{id: string, name: int, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenASealedShapeLacksItBetweenUnsealedOnes' => [
+                'array{id: string, name?: int, ...<string, int>}',
+                [
+                    'array{id: string, ...<string, int>}',
+                    'array{id: string}',
+                    'array{id: string, name: int, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackHasOtherKeys' => [
+                'array{id: string, name?: int, ...<int|string, int>}',
+                [
+                    'array{id: string, name: int, ...<string, int>}',
+                    'array{id: string, ...<int, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnEmptyArrayLacksIt' => [
+                'array{id?: string, name?: int, ...<string, int>}',
+                [
+                    'array{id: string, name: int, ...<string, int>}',
+                    'array{id: string, ...<string, int>}',
+                    'array<never, never>',
                 ],
             ],
             'keyOfASealedShapeIsOptionalWhenAnotherShapeDeclaresItOptional' => [

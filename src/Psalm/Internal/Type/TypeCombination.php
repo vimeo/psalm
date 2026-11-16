@@ -70,6 +70,18 @@ final class TypeCombination
     public ?Union $objectlike_value_type = null;
 
     /**
+     * Whether every keyed array is unsealed, with the same fallback key type.
+     */
+    public bool $objectlike_same_fallback_key = true;
+
+    /**
+     * Keys that a keyed array does not declare.
+     *
+     * @var array<string|int, true>
+     */
+    public array $objectlike_missing_keys = [];
+
+    /**
      * What iterating over any of the iterables combined may do (arrays do nothing).
      */
     public ?Union $iterable_purity = null;
