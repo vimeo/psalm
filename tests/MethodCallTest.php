@@ -910,6 +910,24 @@ final class MethodCallTest extends TestCase
                                 $this->boolMap["a"] = 2;
                             }
                         }
+
+                        /** @var array<string, int>|true */
+                        public $trueMap = true;
+
+                        public function addToTrueMap(): void {
+                            if (is_array($this->trueMap)) {
+                                $this->trueMap["a"] = 2;
+                            }
+                        }
+
+                        /** @var array<string, int>|int */
+                        public $intMap = 0;
+
+                        public function addToIntMap(): void {
+                            if (is_array($this->intMap)) {
+                                $this->intMap["a"] = 2;
+                            }
+                        }
                     }
 
                     $foo = new Foo();
@@ -923,12 +941,86 @@ final class MethodCallTest extends TestCase
 
                     $foo->boolMap = true;
                     $foo->addToBoolMap();
-                    $c = $foo->boolMap;',
+                    $c = $foo->boolMap;
+
+                    $foo->trueMap = ["a" => 1];
+                    $foo->addToTrueMap();
+                    $d = $foo->trueMap;
+
+                    $foo->intMap = ["a" => 1];
+                    $foo->addToIntMap();
+                    $e = $foo->intMap;',
                 'assertions' => [
                     '$a===' => 'array<string, int>',
                     '$b===' => 'array<string, int>',
                     '$c===' => 'array<string, int>|bool',
+                    '$d===' => 'array<string, int>',
+                    '$e===' => 'array<string, int>',
                 ],
+            ],
+            'propertyOfAReceiverOfSeveralTypesMayHoldWhatTheCallLeavesItForAnyOfThem' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var array{value: T} */
+                        public array $items;
+
+                        /** @param T $v */
+                        public function __construct($v) { $this->items = ["value" => $v]; }
+
+                        public function touch(): void { $this->items["value"] = $this->items["value"]; }
+                    }
+
+                    final class A {
+                        /** @var array{v: int} */
+                        public array $map = ["v" => 0];
+
+                        public function reset(): void { $this->map = ["v" => 0]; }
+                    }
+
+                    final class B {
+                        /** @var array{v: string} */
+                        public array $map = ["v" => ""];
+
+                        public function reset(): void { $this->map = ["v" => ""]; }
+                    }
+
+                    /** @param Box<int>|Box<string> $box */
+                    function generic(Box $box): void {
+                        $box->touch();
+                        $a = $box->items;
+                        /** @psalm-check-type-exact $a = array{value: int|string} */
+                    }
+
+                    function plain(A|B $x): void {
+                        $x->reset();
+                        $b = $x->map;
+                        /** @psalm-check-type-exact $b = array{v: int|string} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'offsetDependingOnAPropertyIsForgottenAfterAMethodWritingIt' => [
+                'code' => '<?php
+                    final class H {
+                        public string $k = "a";
+
+                        public function setK(): void { $this->k = "b"; }
+                    }
+
+                    /** @param array<string, int|null> $arr */
+                    function f(H $h, array $arr): int {
+                        if ($arr[$h->k] !== null) {
+                            $h->setK();
+
+                            if ($arr[$h->k] !== null) {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
             ],
             'propertyOfAPropertyIsForgottenAfterAMethodWritingIt' => [
                 'code' => '<?php

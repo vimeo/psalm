@@ -70,4 +70,18 @@ final class AtomicMethodCallAnalysisResult
      * whether it comes from a mutation-free method of a class that is not immutable
      */
     public bool $memoized_result_has_mutations = false;
+
+    /**
+     * What was known of the properties the call writes before it, by var id
+     *
+     * @var array<string, ?Union>
+     */
+    public array $property_types_before_call = [];
+
+    /**
+     * What is known of the properties the call writes after it, for the types of the receiver analysed so far
+     *
+     * @var array<string, Union>
+     */
+    public array $property_types_after_call = [];
 }

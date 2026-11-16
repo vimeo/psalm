@@ -1688,14 +1688,15 @@ final class Context
     }
 
     /**
-     * Forgets what is known of the items and properties of what a property holds, after a call wrote some of them.
-     * Those bound to variables by reference stay bound to them
+     * Forgets what is known of the items and properties of what a property holds, and of what depends on them, after
+     * a call wrote some of them. Those bound to variables by reference stay bound to them
      */
     public function forgetPropertyDescendents(string $property_id): void
     {
         $this->removeVarFromConflictingClauses($property_id);
 
-        $descendent_pattern = '/^' . preg_quote($property_id, '/') . '[\[\-]/';
+        // `$a[$this->p]` too
+        $descendent_pattern = '/' . preg_quote($property_id, '/') . '[\]\[\-]/';
 
         foreach (array_keys($this->vars_in_scope) as $var_id) {
             if (preg_match($descendent_pattern, $var_id) === 1) {

@@ -32,10 +32,13 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_key_exists;
 use function array_pop;
 use function array_values;
 use function preg_match;
@@ -616,7 +619,13 @@ final class MethodCallPurityAnalyzer
             foreach ($method_storage->this_property_mutations as $name => $writes_property) {
                 $mutation_var_id = $lhs_var_id . '->' . $name;
 
-                $existing_type = $context->vars_in_scope[$mutation_var_id] ?? null;
+                // the call is analysed once for each type of a receiver of several
+                if (!array_key_exists($mutation_var_id, $result->property_types_before_call)) {
+                    $result->property_types_before_call[$mutation_var_id]
+                        = $context->vars_in_scope[$mutation_var_id] ?? null;
+                }
+
+                $existing_type = $result->property_types_before_call[$mutation_var_id];
 
                 $context->forgetNullArrayOffsets($mutation_var_id);
                 $context->forgetPropertyDescendents($mutation_var_id);
@@ -625,12 +634,12 @@ final class MethodCallPurityAnalyzer
                     && isset($context->vars_in_scope[$mutation_var_id])
                     && !isset($class_storage->declaring_property_ids[$name]);
 
-                // writing items or properties of an object leaves the property holding the same object
-                $keeps_object = !$writes_property && $existing_type !== null && $existing_type->isObjectType();
-
                 if ($this_property_didnt_exist) {
                     unset($context->vars_in_scope[$mutation_var_id]);
-                } elseif (!$keeps_object) {
+                } elseif (!$writes_property && $existing_type !== null && $existing_type->isObjectType()) {
+                    // writing items or properties of an object leaves the property holding the same object
+                    self::setPropertyTypeAfterCall($context, $result, $mutation_var_id, $existing_type);
+                } else {
                     $new_type = AssignmentAnalyzer::getExpandedPropertyType(
                         $codebase,
                         $class_storage->name,
@@ -647,30 +656,12 @@ final class MethodCallPurityAnalyzer
                         );
                     }
 
-                    // writing items never makes the property null or a bool
-                    if (!$writes_property && $existing_type !== null && !$existing_type->hasMixed()) {
-                        $builder = $new_type->getBuilder();
-
-                        if (!$existing_type->isNullable()) {
-                            $builder->removeType('null');
-                        }
-
-                        if (!$existing_type->isFalsable() && !$existing_type->hasBool()) {
-                            $builder->removeType('false');
-                            $builder->removeType('bool');
-                        }
-
-                        if (!$builder->isUnionEmpty()) {
-                            $new_type = $builder->freeze();
-                        }
+                    if (!$writes_property && $existing_type !== null) {
+                        $new_type = self::getTypeAfterItemWrites($codebase, $existing_type, $new_type);
                     }
 
-                    $context->vars_in_scope[$mutation_var_id] = $new_type;
+                    self::setPropertyTypeAfterCall($context, $result, $mutation_var_id, $new_type);
                     $context->possibly_assigned_var_ids[$mutation_var_id] = true;
-                }
-
-                if ($lhs_var_id !== null) {
-                    $context->removeVarFromConflictingClauses($mutation_var_id);
                 }
             }
         } else {
@@ -697,6 +688,54 @@ final class MethodCallPurityAnalyzer
                 $context->assigned_var_ids[$lhs_var_id . '->' . $name] ??= 0;
             }
         }
+    }
+
+    /**
+     * Of a receiver of several types, the property may hold what the call leaves it for any of them
+     */
+    private static function setPropertyTypeAfterCall(
+        Context $context,
+        AtomicMethodCallAnalysisResult $result,
+        string $property_id,
+        Union $type,
+    ): void {
+        if (isset($result->property_types_after_call[$property_id])) {
+            $type = Type::combineUnionTypes($result->property_types_after_call[$property_id], $type);
+        }
+
+        $result->property_types_after_call[$property_id] = $type;
+        $context->vars_in_scope[$property_id] = $type;
+    }
+
+    /**
+     * What a property may hold after a call writing only items or properties of what it holds: what it is declared
+     * to hold, of the kinds it was known to hold, as writing items of null or false makes it an array
+     */
+    private static function getTypeAfterItemWrites(
+        Codebase $codebase,
+        Union $type_before,
+        Union $declared_type,
+    ): Union {
+        if ($type_before->hasMixed() || $type_before->hasTemplate()) {
+            return $declared_type;
+        }
+
+        $may_become_array = $type_before->isNullable() || $type_before->isFalsable() || $type_before->hasBool();
+        $kept_types = [];
+
+        foreach ($declared_type->getAtomicTypes() as $declared_atomic) {
+            if (($may_become_array && ($declared_atomic instanceof TArray || $declared_atomic instanceof TKeyedArray))
+                || UnionTypeComparator::canExpressionTypesBeIdentical(
+                    $codebase,
+                    $type_before,
+                    new Union([$declared_atomic]),
+                )
+            ) {
+                $kept_types[] = $declared_atomic;
+            }
+        }
+
+        return $kept_types ? new Union($kept_types) : $declared_type;
     }
 
     /**
