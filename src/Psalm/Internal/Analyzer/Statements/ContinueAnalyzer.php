@@ -73,6 +73,14 @@ final class ContinueAnalyzer
                 $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_CONTINUE;
                 $loop_scope->addJump($context);
                 $loop_scope->addContinue($context);
+
+                // the loop is left after an iteration that continued too, unless a finally may assign what it removed
+                if ($context->finally_scope === $loop_scope->loop_parent_context->finally_scope) {
+                    $loop_scope->loop_parent_context->removeVarsRemovedIn(
+                        $context,
+                        $loop_scope->loop_parent_context->parent_remove_vars,
+                    );
+                }
             }
 
             $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);

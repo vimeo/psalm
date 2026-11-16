@@ -845,6 +845,95 @@ final class PluginTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testPropertyProviderPropertyCanBeReadAfterCallAssigningIt(): void
+    {
+        require_once __DIR__ . '/Plugin/PropertyPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\PropertyPlugin" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                class Foo {
+                    public function fill(): void {
+                        $this->magic_property = "a";
+                    }
+                }
+
+                $foo = new Foo();
+                $foo->fill();
+                echo $foo->magic_property;',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testPropertyProviderTypeIsKeptAfterCallAssigningAFetchedProperty(): void
+    {
+        require_once __DIR__ . '/Plugin/PropertyPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\PropertyPlugin" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                class Foo {
+                    public function fill(): void {
+                        $this->magic_property = "a";
+                    }
+                }
+
+                $foo = new Foo();
+                echo $foo->magic_property;
+                $foo->fill();
+                echo $foo->magic_property;',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testMethodProviderHooksValidArg(): void
     {
         require_once __DIR__ . '/Plugin/MethodPlugin.php';

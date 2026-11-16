@@ -646,6 +646,11 @@ final class LoopAnalyzer
 
         if ($does_sometimes_break) {
             foreach ($loop_scope->possibly_redefined_loop_parent_vars as $var => $type) {
+                // forgotten at a later break
+                if (!isset($loop_parent_context->vars_in_scope[$var])) {
+                    continue;
+                }
+
                 $loop_parent_context->vars_in_scope[$var] = Type::combineUnionTypes(
                     $type,
                     $loop_parent_context->vars_in_scope[$var],

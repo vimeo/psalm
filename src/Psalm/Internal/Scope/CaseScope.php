@@ -9,6 +9,7 @@ use Psalm\Type\Union;
 
 use function array_intersect_key;
 use function max;
+use function str_contains;
 
 /**
  * @internal
@@ -50,10 +51,27 @@ final class CaseScope
     public bool $has_nested_switch_leaving_it = false;
 
     /**
+     * The properties and memoized calls forgotten (not unset) at a `break` out of the switch in the case, with the
+     * stamp of the change
+     *
+     * @var array<string, int>
+     */
+    public array $forgotten_at_breaks = [];
+
+    /**
      * @psalm-external-mutation-free
      */
     public function addBreak(Context $context): void
     {
+        foreach ($context->vars_possibly_in_scope as $var_id => $_) {
+            if (!isset($context->vars_in_scope[$var_id])
+                && isset($context->parent_remove_vars[$var_id])
+                && (str_contains($var_id, '->') || str_contains($var_id, '::'))
+            ) {
+                $this->forgotten_at_breaks[$var_id] = $context->parent_remove_vars[$var_id];
+            }
+        }
+
         $this->vars_possibly_in_scope_at_breaks += $context->vars_possibly_in_scope;
 
         foreach ($context->parent_remove_vars as $var_id => $stamp) {

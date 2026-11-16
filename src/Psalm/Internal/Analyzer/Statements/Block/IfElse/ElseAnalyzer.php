@@ -21,6 +21,7 @@ use Psalm\Storage\Assertion\IsNotIsset;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
+use function array_fill_keys;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
@@ -54,6 +55,14 @@ final class ElseAnalyzer
             $if_scope->redefined_vars = [];
             $if_scope->reasonable_clauses = [];
             $if_scope->addBranchReachingTheEnd($else_context);
+
+            // the conditions of the elseifs ran on the way through the implicit else
+            if ($if_scope->else_chain_remove_vars !== null) {
+                $if_scope->removed_var_ids += array_fill_keys(
+                    $outer_context->getVarsRemovedIn($else_context, $if_scope->else_chain_remove_vars),
+                    true,
+                );
+            }
 
             return null;
         }
@@ -237,7 +246,16 @@ final class ElseAnalyzer
                 $if_scope->elseif_cond_assigned_var_ids,
                 branch_nodes: $else->stmts ?? [],
                 detach_references: false,
+                start_remove_vars: $original_context->parent_remove_vars,
             );
+
+            // the conditions of the elseifs ran on the way through the else, which starts after them
+            if ($if_scope->else_chain_remove_vars !== null) {
+                $if_scope->removed_var_ids += array_fill_keys(
+                    $outer_context->getVarsRemovedIn($else_context, $if_scope->else_chain_remove_vars),
+                    true,
+                );
+            }
 
             $if_scope->reasonable_clauses = [];
         }

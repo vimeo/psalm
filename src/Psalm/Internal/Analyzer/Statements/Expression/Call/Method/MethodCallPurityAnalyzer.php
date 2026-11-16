@@ -617,20 +617,19 @@ final class MethodCallPurityAnalyzer
 
                 $context->forgetNullArrayOffsets($mutation_var_id);
 
-                $this_property_didnt_exist = $lhs_var_id === '$this'
-                    && isset($context->vars_in_scope[$mutation_var_id])
-                    && !isset($class_storage->declaring_property_ids[$name]);
+                $new_type = AssignmentAnalyzer::getExpandedPropertyType(
+                    $codebase,
+                    $class_storage->name,
+                    $name,
+                    $class_storage,
+                );
 
-                if ($this_property_didnt_exist) {
+                if ($new_type === null) {
+                    // a fresh fetch re-derives the type of a magic or pseudo property
                     unset($context->vars_in_scope[$mutation_var_id]);
+                    // forgotten, not unset: Context::update() tells the two apart
+                    $context->vars_possibly_in_scope[$mutation_var_id] = true;
                 } else {
-                    $new_type = AssignmentAnalyzer::getExpandedPropertyType(
-                        $codebase,
-                        $class_storage->name,
-                        $name,
-                        $class_storage,
-                    ) ?? Type::getMixed();
-
                     $context->vars_in_scope[$mutation_var_id] = $new_type;
                     $context->possibly_assigned_var_ids[$mutation_var_id] = true;
                 }

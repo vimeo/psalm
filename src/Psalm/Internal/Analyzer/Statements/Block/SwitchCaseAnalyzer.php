@@ -43,6 +43,7 @@ use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
+use function array_fill_keys;
 use function array_intersect;
 use function array_intersect_key;
 use function array_merge;
@@ -463,6 +464,14 @@ final class SwitchCaseAnalyzer
 
         // augment the information with data from break statements
         if ($case_scope->break_vars !== null) {
+            foreach ($case_scope->forgotten_at_breaks as $var_id => $stamp) {
+                if (isset($context->vars_in_scope[$var_id])
+                    && ($original_context->parent_remove_vars[$var_id] ?? null) !== $stamp
+                ) {
+                    $switch_scope->removed_var_ids[$var_id] = true;
+                }
+            }
+
             if ($switch_scope->possibly_redefined_vars === null) {
                 $switch_scope->possibly_redefined_vars = array_intersect_key(
                     $case_scope->break_vars,
@@ -654,6 +663,10 @@ final class SwitchCaseAnalyzer
             }
         } else {
             $switch_scope->addWayOut($case_context->null_array_offsets_read);
+            $switch_scope->removed_var_ids += array_fill_keys(
+                $context->getVarsRemovedIn($case_context, $original_context->parent_remove_vars),
+                true,
+            );
 
             $case_redefined_vars = $case_context->getRedefinedVars($original_context->vars_in_scope);
 

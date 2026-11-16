@@ -17,6 +17,7 @@ use Psalm\Type\Reconciler;
 use SplFixedArray;
 
 use function array_intersect_key;
+use function array_keys;
 use function array_merge;
 use function count;
 use function in_array;
@@ -247,6 +248,8 @@ final class SwitchAnalyzer
             ...$context->vars_possibly_in_scope,
             ...$switch_scope->new_vars_possibly_in_scope,
         ];
+
+        $context->forgetVars(array_keys($switch_scope->removed_var_ids));
 
         //a switch can't return in all options without a default
         $context->has_returned = $all_options_returned && $has_default;

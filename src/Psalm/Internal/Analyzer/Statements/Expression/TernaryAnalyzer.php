@@ -220,6 +220,7 @@ final class TernaryAnalyzer
         }
 
         $if_start_vars = $if_context->vars_in_scope;
+        $if_start_remove_vars = $if_context->parent_remove_vars;
         $if_start_assigned_var_ids = $if_context->assigned_var_ids;
 
         $t_else_context = clone $context;
@@ -278,6 +279,7 @@ final class TernaryAnalyzer
         }
 
         $else_start_vars = $t_else_context->vars_in_scope;
+        $else_start_remove_vars = $t_else_context->parent_remove_vars;
         $else_start_assigned_var_ids = $t_else_context->assigned_var_ids;
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->else, $t_else_context) === false) {
@@ -292,10 +294,12 @@ final class TernaryAnalyzer
 
         if (!$if_exits) {
             $context->removeClausesOfVarsChangedIn($if_context);
+            $context->removeVarsRemovedIn($if_context, $if_start_remove_vars);
         }
 
         if (!$else_exits) {
             $context->removeClausesOfVarsChangedIn($t_else_context);
+            $context->removeVarsRemovedIn($t_else_context, $else_start_remove_vars);
         }
 
         if ($if_exits !== $else_exits) {

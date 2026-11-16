@@ -26,6 +26,7 @@ use Psalm\Type\Reconciler;
 use function array_any;
 use function array_combine;
 use function array_diff;
+use function array_diff_assoc;
 use function array_diff_key;
 use function array_filter;
 use function array_key_exists;
@@ -152,6 +153,14 @@ final class ElseIfAnalyzer
         } catch (ScopeAnalysisException) {
             return false;
         }
+
+        $if_scope->else_chain_remove_vars ??= $pre_conditional_context->parent_remove_vars;
+        // the false path goes on from what the condition forgot, which it changed too
+        $else_context->removeVarsRemovedIn($elseif_context, $pre_conditional_context->parent_remove_vars);
+        $else_context->parent_remove_vars = [
+            ...$else_context->parent_remove_vars,
+            ...array_diff_assoc($elseif_context->parent_remove_vars, $pre_conditional_context->parent_remove_vars),
+        ];
 
         // the condition is analysed on a copy of $else_context where the earlier conditions being false narrow
         // it: what the condition assigns is assigned for the elseifs and the else after it too
@@ -428,6 +437,7 @@ final class ElseIfAnalyzer
                 $newly_reconciled_var_ids,
                 assigned_in_conditional_var_ids: $assigned_in_conditional_var_ids,
                 branch_nodes: [$elseif->cond, ...$elseif->stmts],
+                start_remove_vars: $if_scope->else_chain_remove_vars,
             );
 
             // the clauses of the condition about what the elseif body assigned don't hold after it

@@ -31,6 +31,7 @@ use function array_any;
 use function array_combine;
 use function array_diff;
 use function array_diff_key;
+use function array_fill_keys;
 use function array_filter;
 use function array_intersect;
 use function array_intersect_key;
@@ -248,6 +249,7 @@ final class IfAnalyzer
                 $if_scope->if_cond_changed_var_ids,
                 assigned_in_conditional_var_ids: $if_conditional_scope->assigned_in_conditional_var_ids,
                 branch_nodes: $stmt->stmts,
+                start_remove_vars: $old_if_context->parent_remove_vars,
             );
 
             if ($if_scope->reasonable_clauses) {
@@ -485,6 +487,7 @@ final class IfAnalyzer
      * @param  array<string, int>    $assigned_in_conditional_var_ids
      * @param  array<PhpParser\Node> $branch_nodes the code of the branch: what it rebinds by reference is detached
      *                                             in the outer context, unless $detach_references is false
+     * @param  array<string, int>    $start_remove_vars the stamps the branch started with
      */
     public static function updateIfScope(
         StatementsAnalyzer $statements_analyzer,
@@ -497,11 +500,16 @@ final class IfAnalyzer
         bool $update_new_vars = true,
         array $assigned_in_conditional_var_ids = [],
         array $branch_nodes = [],
+        array $start_remove_vars = [],
         bool $detach_references = true,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         $if_scope->addBranchReachingTheEnd($if_context);
+        $if_scope->removed_var_ids += array_fill_keys(
+            $outer_context->getVarsRemovedIn($if_context, $start_remove_vars),
+            true,
+        );
 
         if ($branch_nodes && $detach_references) {
             $outer_context->detachReferencesReboundIn($if_context, $statements_analyzer, $branch_nodes);

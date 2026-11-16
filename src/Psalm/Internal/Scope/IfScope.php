@@ -110,6 +110,20 @@ final class IfScope
     public array $negated_clauses = [];
 
     /**
+     * The properties and memoized calls a branch reaching the end of the if removed
+     *
+     * @var array<string, true>
+     */
+    public array $removed_var_ids = [];
+
+    /**
+     * The removal stamps before the conditions of the elseifs, which the elseifs and the else after them run from
+     *
+     * @var array<string, int>|null
+     */
+    public ?array $else_chain_remove_vars = null;
+
+    /**
      * These are the set of clauses that could be applied after the `if`
      * statement, if the `if` statement contains branches with leaving statements,
      * and the else leaves too

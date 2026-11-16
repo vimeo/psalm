@@ -1346,6 +1346,61 @@ final class Context
     }
 
     /**
+     * The properties, static properties and memoized calls known here that a branch reaching the same point forgot
+     * (or only has at some of its ways there): a call in the branch may have written them, so they are not known
+     * after the branch and what skipped it. Ones the branch only lost by narrowing what holds them are not forgotten.
+     *
+     * @param array<string, int> $baseline_remove_vars the stamps the branch started with
+     * @return list<string>
+     * @psalm-mutation-free
+     */
+    public function getVarsRemovedIn(Context $branch, array $baseline_remove_vars): array
+    {
+        $removed_var_ids = [];
+
+        foreach ($branch->parent_remove_vars as $changed_var_id => $stamp) {
+            if (($baseline_remove_vars[$changed_var_id] ?? null) === $stamp) {
+                continue;
+            }
+
+            foreach ($this->vars_in_scope as $var_id => $_) {
+                // forgotten (possibly in scope), not unset
+                if (!isset($branch->vars_in_scope[$var_id])
+                    && isset($branch->vars_possibly_in_scope[$var_id])
+                    && (str_contains($var_id, '->') || str_contains($var_id, '::'))
+                    && ($var_id === $changed_var_id
+                        || str_starts_with($var_id, $changed_var_id . '->')
+                        || str_starts_with($var_id, $changed_var_id . '['))
+                ) {
+                    $removed_var_ids[$var_id] = true;
+                }
+            }
+        }
+
+        return array_keys($removed_var_ids);
+    }
+
+    /**
+     * @param list<string> $var_ids
+     */
+    public function forgetVars(array $var_ids): void
+    {
+        foreach ($var_ids as $var_id) {
+            $this->remove($var_id, false);
+            // forgotten, not unset: Context::update() tells the two apart
+            $this->vars_possibly_in_scope[$var_id] = true;
+        }
+    }
+
+    /**
+     * @param array<string, int> $baseline_remove_vars the stamps the branch started with
+     */
+    public function removeVarsRemovedIn(Context $branch, array $baseline_remove_vars): void
+    {
+        $this->forgetVars($this->getVarsRemovedIn($branch, $baseline_remove_vars));
+    }
+
+    /**
      * Applies what a branch that may have been skipped, analysed in a clone of this context, changed since it had
      * the stamps $parent_remove_vars: the types it wrote are combined with the ones here, and what it forgot is
      * forgotten here too

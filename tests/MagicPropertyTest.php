@@ -1248,6 +1248,355 @@ final class MagicPropertyTest extends TestCase
                     '$d' => 'B|null',
                 ],
             ],
+            'pseudoPropertyKeepsItsTypeAfterCallAssigningIt' => [
+                'code' => '<?php
+                    final class D {}
+
+                    /** @property D|null $at */
+                    final class Order {
+                        public ?D $declared = null;
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function fulfill(): void {
+                            $this->at = new D();
+                            $this->declared = new D();
+                        }
+                        public function run(): ?D {
+                            $this->fulfill();
+                            return $this->at;
+                        }
+                    }
+
+                    $o = new Order();
+                    $o->fulfill();
+                    $at = $o->at;
+                    $declared = $o->declared;',
+                'assertions' => [
+                    '$at===' => 'D|null',
+                    '$declared===' => 'D|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templatedPseudoPropertyKeepsItsTypeAfterCallAssigningIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property T $at
+                     */
+                    final class Box {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        /** @param T $value */
+                        public function put(mixed $value): void {
+                            $this->at = $value;
+                        }
+                    }
+
+                    /** @var Box<int> $box */
+                    $box = new Box();
+                    $box->put(1);
+                    $at = $box->at;',
+                'assertions' => [
+                    '$at===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedPseudoPropertyKeepsItsTypeAfterCallAssigningIt' => [
+                'code' => '<?php
+                    final class D {}
+
+                    /** @property D|null $at */
+                    final class Order {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function fulfill(): void {
+                            $this->at = new D();
+                        }
+                    }
+
+                    $o = new Order();
+                    if ($o->at === null) {
+                        return;
+                    }
+
+                    $o->fulfill();
+                    $x = $o->at;',
+                'assertions' => [
+                    '$x===' => 'D|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedTemplatedPseudoPropertyKeepsItsTypeAfterCallAssigningIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @property T|null $at
+                     */
+                    final class Box {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        /** @param T $value */
+                        public function put(mixed $value): void {
+                            $this->at = $value;
+                        }
+                    }
+
+                    /** @var Box<int> $box */
+                    $box = new Box();
+                    if ($box->at === null) {
+                        return;
+                    }
+
+                    $box->put(1);
+                    $at = $box->at;',
+                'assertions' => [
+                    '$at===' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedMagicGetPropertyKeepsItsTypeAfterCallAssigningIt' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-properties */
+                    final class W {
+                        public function __get(string $name): ?int { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function fill(): void {
+                            $this->p = 1;
+                        }
+                    }
+
+                    $w = new W();
+                    if ($w->p === null) {
+                        return;
+                    }
+
+                    $w->fill();
+                    $after = $w->p;',
+                'assertions' => [
+                    '$after===' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedWriteOnlyPropertyIsUnchangedByCallAssigningIt' => [
+                'code' => '<?php
+                    /** @property-write int $p */
+                    final class W {
+                        public function __get(string $name): string { return ""; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function fill(): void {
+                            $this->p = 1;
+                        }
+                    }
+
+                    $w = new W();
+                    $before = $w->p;
+                    $w->fill();
+                    $after = $w->p;',
+                'assertions' => [
+                    '$before===' => 'mixed',
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['UndefinedMagicPropertyFetch', 'MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'narrowedConditionalMagicGetPropertyIsFetchedAfterCallAssigningIt' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-properties */
+                    final class W {
+                        /** @return ($name is "p" ? int : string) */
+                        public function __get(string $name): int|string { return 0; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function fill(): void {
+                            $this->p = 1;
+                        }
+                    }
+
+                    $w = new W();
+                    $before = $w->p;
+                    if ($w->p === 0) {
+                        return;
+                    }
+
+                    $w->fill();
+                    $after = $w->p;',
+                'assertions' => [
+                    '$before===' => 'int',
+                    '$after===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'conditionalMagicGetOfThisIsFetchedAfterCallAssigningIt' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-properties */
+                    final class W {
+                        /** @return ($name is "p" ? int : string) */
+                        public function __get(string $name): int|string { return 0; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function fill(): void {
+                            $this->p = 1;
+                        }
+                        public function run(): int {
+                            $_ = $this->p;
+                            $this->fill();
+                            return $this->p;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritedMethodAssignmentKeepsTemplatedPseudoPropertyType' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-properties */
+                    class Base {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function fill(): void {
+                            $this->p = 1;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @property T $p
+                     */
+                    final class Box extends Base {
+                        /** @return T */
+                        public function run() {
+                            $_ = $this->p;
+                            $this->fill();
+                            return $this->p;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedPseudoPropertyAssignedByFinallyKeepsItsTypeAfterBreakThroughIt' => [
+                'code' => '<?php
+                    final class D { public function imm(): string { return ""; } }
+
+                    /** @property D|null $at */
+                    final class Order {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function reset(): void {
+                            $this->at = null;
+                        }
+                    }
+
+                    function f(Order $o, bool $flag): void {
+                        if ($o->at === null) {
+                            return;
+                        }
+
+                        while (true) {
+                            try {
+                                $o->reset();
+                                break;
+                            } finally {
+                                $o->at = new D();
+                            }
+                        }
+
+                        echo $o->at->imm();
+
+                        while ($flag) {
+                            try {
+                                $o->reset();
+                                continue;
+                            } finally {
+                                $o->at = new D();
+                            }
+                        }
+
+                        echo $o->at->imm();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedPseudoPropertyRestoredOnEveryPathAfterElseifConditionCall' => [
+                'code' => '<?php
+                    final class D { public function imm(): string { return ""; } }
+
+                    /** @property D|null $at */
+                    final class Order {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function clear(): bool {
+                            $this->at = null;
+
+                            return true;
+                        }
+                    }
+
+                    function all(Order $o, bool $flag): void {
+                        if ($o->at === null) {
+                            return;
+                        }
+
+                        if ($flag) {
+                            $o->at = new D();
+                        } elseif ($o->clear()) {
+                            $o->at = new D();
+                        } else {
+                            $o->at = new D();
+                        }
+
+                        echo $o->at->imm();
+                    }
+
+                    function leaves(Order $o, bool $flag): void {
+                        if ($o->at === null) {
+                            return;
+                        }
+
+                        if ($flag) {
+                            $o->at = new D();
+                        } elseif ($o->clear()) {
+                            return;
+                        } else {
+                            $o->at = new D();
+                        }
+
+                        echo $o->at->imm();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'magicGetReturnTypeIsUsedAfterCallAssigningUndeclaredProperty' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-properties */
+                    final class W {
+                        public function __get(string $name): int { return 0; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function fill(): void {
+                            $this->p = "x";
+                        }
+                        public function run(): int {
+                            $_ = $this->p;
+                            $this->fill();
+                            return $this->p;
+                        }
+                    }
+
+                    $w = new W();
+                    $w->fill();
+                    $p = $w->p;',
+                'assertions' => [
+                    '$p===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1258,6 +1607,485 @@ final class MagicPropertyTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'narrowedPseudoPropertyIsPossiblyNullAfterConditionalCall' => [
+                'code' => '<?php
+                    final class D { public function imm(): string { return ""; } }
+
+                    /** @property D|null $at */
+                    final class Order {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function clear(): void {
+                            $this->at = null;
+                        }
+                    }
+
+                    function f(Order $o, bool $flag): void {
+                        if ($o->at === null) {
+                            return;
+                        }
+
+                        if ($flag) {
+                            $o->clear();
+                        }
+
+                        echo $o->at->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedPseudoPropertyIsPossiblyNullAfterCallInLoopWithBreak' => [
+                'code' => '<?php
+                    final class D { public function imm(): string { return ""; } }
+
+                    /** @property D|null $at */
+                    final class Order {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function clear(): void {
+                            $this->at = null;
+                        }
+                    }
+
+                    function f(Order $o): void {
+                        if ($o->at === null) {
+                            return;
+                        }
+
+                        while (true) {
+                            $o->clear();
+                            break;
+                        }
+
+                        echo $o->at->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedMagicGetPropertyOfThisIsPossiblyNullAfterConditionalCall' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-properties */
+                    final class W {
+                        public function __get(string $name): ?int { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function clear(): void {
+                            $this->p = null;
+                        }
+                        public function run(bool $flag): int {
+                            if ($this->p === null) {
+                                return 0;
+                            }
+
+                            if ($flag) {
+                                $this->clear();
+                            }
+
+                            return $this->p + 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedMagicGetPropertyIsPossiblyNullAfterConditionalCall' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-properties */
+                    final class W {
+                        public function __get(string $name): ?int { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function clear(): void {
+                            $this->p = null;
+                        }
+                    }
+
+                    function f(W $w, bool $flag): int {
+                        if ($w->p === null) {
+                            return 0;
+                        }
+
+                        if ($flag) {
+                            $w->clear();
+                        }
+
+                        return $w->p + 1;
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedPseudoPropertyIsPossiblyNullAfterConditionalCallWithElse' => [
+                'code' => '<?php
+                    final class D { public function imm(): string { return ""; } }
+
+                    /** @property D|null $at */
+                    final class Order {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function clear(): void {
+                            $this->at = null;
+                        }
+                    }
+
+                    function f(Order $o, bool $flag): void {
+                        if ($o->at === null) {
+                            return;
+                        }
+
+                        if ($flag) {
+                            $o->clear();
+                        } else {
+                            echo "x";
+                        }
+
+                        echo $o->at->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedPseudoPropertyIsPossiblyNullAfterCallInForeach' => [
+                'code' => '<?php
+                    final class D { public function imm(): string { return ""; } }
+
+                    /** @property D|null $at */
+                    final class Order {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function clear(): void {
+                            $this->at = null;
+                        }
+                    }
+
+                    function f(Order $o): void {
+                        if ($o->at === null) {
+                            return;
+                        }
+
+                        foreach ([1, 2] as $_) {
+                            $o->clear();
+                        }
+
+                        echo $o->at->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedPseudoPropertyIsPossiblyNullAfterCallInLoopWithContinue' => [
+                'code' => '<?php
+                    final class D { public function imm(): string { return ""; } }
+
+                    /** @property D|null $at */
+                    final class Order {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function clear(): void {
+                            $this->at = null;
+                        }
+                    }
+
+                    function f(Order $o, bool $flag): void {
+                        if ($o->at === null) {
+                            return;
+                        }
+
+                        while ($flag) {
+                            if (rand(0, 1)) {
+                                $o->clear();
+                                continue;
+                            }
+
+                            echo "x";
+                        }
+
+                        echo $o->at->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedPseudoPropertyIsPossiblyNullAfterCallInSwitchCase' => [
+                'code' => '<?php
+                    final class D { public function imm(): string { return ""; } }
+
+                    /** @property D|null $at */
+                    final class Order {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function clear(): void {
+                            $this->at = null;
+                        }
+                    }
+
+                    function f(Order $o, int $i): void {
+                        if ($o->at === null) {
+                            return;
+                        }
+
+                        switch ($i) {
+                            case 1:
+                                $o->clear();
+                                break;
+                            default:
+                                echo "x";
+                        }
+
+                        echo $o->at->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedPseudoPropertyIsPossiblyNullAfterCallInCatch' => [
+                'code' => '<?php
+                    final class D { public function imm(): string { return ""; } }
+
+                    /** @property D|null $at */
+                    final class Order {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function clear(): void {
+                            $this->at = null;
+                        }
+                    }
+
+                    function f(Order $o): void {
+                        if ($o->at === null) {
+                            return;
+                        }
+
+                        try {
+                            echo "x";
+                        } catch (\\Exception $e) {
+                            $o->clear();
+                        }
+
+                        echo $o->at->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedPseudoPropertyIsPossiblyNullAfterCallInFinally' => [
+                'code' => '<?php
+                    final class D { public function imm(): string { return ""; } }
+
+                    /** @property D|null $at */
+                    final class Order {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function clear(): void {
+                            $this->at = null;
+                        }
+                    }
+
+                    function f(Order $o, bool $flag): void {
+                        if ($o->at === null) {
+                            return;
+                        }
+
+                        try {
+                            echo "x";
+                        } finally {
+                            if ($flag) {
+                                $o->clear();
+                            }
+                        }
+
+                        echo $o->at->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedPseudoPropertyIsPossiblyNullAfterCallInTernary' => [
+                'code' => '<?php
+                    final class D { public function imm(): string { return ""; } }
+
+                    /** @property D|null $at */
+                    final class Order {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function clear(): void {
+                            $this->at = null;
+                        }
+                    }
+
+                    function f(Order $o, bool $flag): void {
+                        if ($o->at === null) {
+                            return;
+                        }
+
+                        $flag ? $o->clear() : null;
+
+                        echo $o->at->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedPseudoPropertyIsPossiblyNullAfterCallInMatchArm' => [
+                'code' => '<?php
+                    final class D { public function imm(): string { return ""; } }
+
+                    /** @property D|null $at */
+                    final class Order {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function clear(): void {
+                            $this->at = null;
+                        }
+                    }
+
+                    function f(Order $o, int $i): void {
+                        if ($o->at === null) {
+                            return;
+                        }
+
+                        $_ = match ($i) {
+                            1 => $o->clear(),
+                            default => null,
+                        };
+
+                        echo $o->at->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedGetterResultIsPossiblyNullAfterConditionalCall' => [
+                'code' => '<?php
+                    final class D { public function imm(): string { return ""; } }
+
+                    final class Order {
+                        private ?D $at = null;
+                        /** @psalm-mutation-free */
+                        public function getAt(): ?D { return $this->at; }
+                        public function clear(): void {
+                            $this->at = null;
+                        }
+                    }
+
+                    function f(Order $o, bool $flag): void {
+                        if ($o->getAt() === null) {
+                            return;
+                        }
+
+                        if ($flag) {
+                            $o->clear();
+                        }
+
+                        echo $o->getAt()->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedPseudoPropertyIsPossiblyNullAfterElseifConditionCall' => [
+                'code' => '<?php
+                    final class D { public function imm(): string { return ""; } }
+
+                    /** @property D|null $at */
+                    final class Order {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function clear(): bool {
+                            $this->at = null;
+
+                            return true;
+                        }
+                    }
+
+                    function f(Order $o, bool $flag): void {
+                        if ($o->at === null) {
+                            return;
+                        }
+
+                        if ($flag) {
+                            echo "x";
+                        } elseif ($o->clear()) {
+                            echo "y";
+                        }
+
+                        echo $o->at->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedPseudoPropertyIsPossiblyNullAfterElseifConditionCallWhenBodyLeaves' => [
+                'code' => '<?php
+                    final class D { public function imm(): string { return ""; } }
+
+                    /** @property D|null $at */
+                    final class Order {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function clear(bool $b): bool {
+                            $this->at = null;
+
+                            return $b;
+                        }
+                    }
+
+                    function f(Order $o, bool $flag, bool $b): void {
+                        if ($o->at === null) {
+                            return;
+                        }
+
+                        if ($flag) {
+                            echo "x";
+                        } elseif ($o->clear($b)) {
+                            return;
+                        }
+
+                        echo $o->at->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowedPseudoPropertyIsPossiblyNullAfterBreakThatCalledClearInSwitch' => [
+                'code' => '<?php
+                    final class D { public function imm(): string { return ""; } }
+
+                    /** @property D|null $at */
+                    final class Order {
+                        public function __get(string $name): mixed { return null; }
+                        public function __set(string $name, mixed $value): void {}
+                        public function clear(): bool {
+                            $this->at = null;
+
+                            return true;
+                        }
+                    }
+
+                    function f(Order $o, int $n, bool $flag): void {
+                        if ($o->at === null) {
+                            return;
+                        }
+
+                        switch ($n) {
+                            case 1:
+                                if ($flag) {
+                                    $o->clear();
+                                    break;
+                                }
+
+                                unset($o->at);
+                                return;
+                            default:
+                                break;
+                        }
+
+                        echo $o->at->imm();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'annotationWithoutGetter' => [
                 'code' => '<?php
                     /**

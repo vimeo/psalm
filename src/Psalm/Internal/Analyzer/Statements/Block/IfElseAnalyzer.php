@@ -568,6 +568,8 @@ final class IfElseAnalyzer
             }
         }
 
+        $context->forgetVars(array_keys($if_scope->removed_var_ids));
+
         // Context::update() left the type the if ends with for an offset or a property it narrowed: nothing is
         // known of it once another branch reaching the end has forgotten it
         foreach ($if_scope->updated_vars as $var_id => $_) {
