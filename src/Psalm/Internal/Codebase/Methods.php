@@ -567,27 +567,60 @@ final class Methods
     }
 
     /**
-     * With the visibility a `use` adaptation gives to a trait method
+     * Whether the `@method` the class has wins over the method the call reaches. One that the class where a method
+     * that isn't public appears has too describes the calls that go through `__call()` or `__callStatic()`, while one
+     * declared below that class refines the method.
      *
      * @psalm-mutation-free
      */
-    public function isMethodPublic(MethodIdentifier $method_id): bool
+    public function pseudoMethodWinsOverMethod(MethodIdentifier $method_id, bool $is_static): bool
     {
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
-
-        if (!$declaring_method_id) {
-            return false;
-        }
-
         $appearing_method_id = $this->getAppearingMethodId($method_id);
 
-        $visibility = ($appearing_method_id
-                ? $this->classlike_storage_provider->get($appearing_method_id->fq_class_name)
-                    ->trait_visibility_map[$appearing_method_id->method_name] ?? null
-                : null)
+        if (!$declaring_method_id || !$appearing_method_id) {
+            return true;
+        }
+
+        $appearing_class_storage = $this->classlike_storage_provider->get($appearing_method_id->fq_class_name);
+
+        // the visibility a `use` adaptation gives to a trait method
+        $visibility = $appearing_class_storage->trait_visibility_map[$appearing_method_id->method_name]
             ?? $this->getStorage($declaring_method_id)->visibility;
 
-        return $visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+        if ($visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
+            return true;
+        }
+
+        $class_storage = $this->classlike_storage_provider->get(
+            $this->classlikes->getUnAliasedName($method_id->fq_class_name),
+        );
+
+        return self::getPseudoMethodDeclaringClass($appearing_class_storage, $method_id->method_name, $is_static)
+            !== self::getPseudoMethodDeclaringClass($class_storage, $method_id->method_name, $is_static);
+    }
+
+    /**
+     * @return lowercase-string|null
+     * @psalm-pure
+     */
+    private static function getPseudoMethodDeclaringClass(
+        ClassLikeStorage $class_storage,
+        string $method_name,
+        bool $is_static,
+    ): ?string {
+        if ($is_static
+            ? !isset($class_storage->pseudo_static_methods[$method_name])
+            : !isset($class_storage->pseudo_methods[$method_name])
+        ) {
+            return null;
+        }
+
+        $declaring_method_id = $is_static
+            ? $class_storage->declaring_pseudo_static_method_ids[$method_name] ?? null
+            : $class_storage->declaring_pseudo_method_ids[$method_name] ?? null;
+
+        return strtolower($declaring_method_id->fq_class_name ?? $class_storage->name);
     }
 
     /**
@@ -614,10 +647,8 @@ final class Methods
 
         $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
-        // a call reaches a method that isn't public only from where it's visible: the `@method` describes the calls
-        // that go through `__call()` instead
         if (isset($original_class_storage->pseudo_methods[$original_method_name])
-            && (!$declaring_method_id || $this->isMethodPublic($method_id))
+            && $this->pseudoMethodWinsOverMethod($method_id, false)
         ) {
             return $original_class_storage->pseudo_methods[$original_method_name]->return_type;
         }

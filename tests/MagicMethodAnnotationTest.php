@@ -2260,6 +2260,62 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$a===' => 'int',
                 ],
             ],
+            'childPseudoMethodRefinesProtectedMethodOfTheParent' => [
+                'code' => '<?php
+                    interface UserInterface {}
+
+                    final class User implements UserInterface {}
+
+                    abstract class AbstractController {
+                        protected function getUser(): ?UserInterface {
+                            return null;
+                        }
+
+                        protected static function make(): ?UserInterface {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @method User getUser()
+                     * @method static User make()
+                     */
+                    final class MyController extends AbstractController {
+                        public function index(): User {
+                            return $this->getUser();
+                        }
+
+                        public static function s(): User {
+                            return self::make();
+                        }
+
+                        public static function s2(): User {
+                            return static::make();
+                        }
+                    }',
+            ],
+            'pseudoMethodOfTheChildWinsOverInheritedProtectedMethodWithAPseudoMethodOfTheParent' => [
+                'code' => '<?php
+                    /** @method int product() */
+                    class ParentClass {
+                        public function __call(string $name, array $args): int {
+                            return 1;
+                        }
+                    }
+
+                    class Child extends ParentClass {
+                        protected function product(): string {
+                            return "Screen";
+                        }
+                    }
+
+                    /** @method float product() */
+                    final class GrandChild extends Child {
+                        public function test(): float {
+                            return $this->product();
+                        }
+                    }',
+            ],
             'parentPseudoMethodYieldsToPrivateMethodOfTheChildInFirstClassCallable' => [
                 'code' => '<?php
                     /**

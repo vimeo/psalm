@@ -1359,9 +1359,7 @@ final class AtomicStaticCallAnalyzer
         MethodIdentifier $method_id,
         bool $method_visible,
     ): ?array {
-        // a call reaches a method that isn't public only from where it's visible: a `@method` describes the calls that
-        // go through `__callStatic()` instead
-        if ($method_visible && !$codebase->methods->isMethodPublic($method_id)) {
+        if ($method_visible && !$codebase->methods->pseudoMethodWinsOverMethod($method_id, true)) {
             return null;
         }
 
