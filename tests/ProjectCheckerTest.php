@@ -40,6 +40,7 @@ use function ob_end_clean;
 use function ob_get_clean;
 use function ob_start;
 use function realpath;
+use function str_replace;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -858,9 +859,9 @@ final class Bat
      */
     private function checkLateTarget(string $api, bool $during_analysis): array
     {
-        $project_dir = (string) getcwd() . '/tests/fixtures/DummyProject';
-        $late_file = $project_dir . '/LateTarget.inc';
-        $first_caller = $project_dir . '/LateCallerA.php';
+        $project_dir = self::fixturePath('DummyProject');
+        $late_file = $project_dir . DIRECTORY_SEPARATOR . 'LateTarget.inc';
+        $first_caller = $project_dir . DIRECTORY_SEPARATOR . 'LateCallerA.php';
         $this->file_provider->registerFile(
             $first_caller,
             '<?php
@@ -875,7 +876,7 @@ function callBeforeTheExpansion(LateTarget $target, mixed $m): void
 ',
         );
         $this->file_provider->registerFile(
-            $project_dir . '/LateCallerB.php',
+            $project_dir . DIRECTORY_SEPARATOR . 'LateCallerB.php',
             '<?php
 
 namespace Vimeo\Test\DummyProject;
@@ -917,7 +918,7 @@ function callAfterTheExpansion(LateTarget $target): void
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->infer_types_from_usage = true;
 
-        $this->project_analyzer->checkPaths([(string) getcwd() . '/tests/fixtures/DummyProject']);
+        $this->project_analyzer->checkPaths([self::fixturePath('DummyProject')]);
 
         $possible_param_types = $codebase->analyzer->possible_method_param_types;
         $this->assertSame(
@@ -930,11 +931,11 @@ function callAfterTheExpansion(LateTarget $target): void
     public function testCheckAltersParamTypesOnlyOfMethodsWhoseIssuesCanBeReported(): void
     {
         // the dry run prints the files it would change: only the project's
-        $this->expectOutputRegex('~^(?!.*VendorTarget).*DummyProject/InferenceTarget\.php~s');
+        $this->expectOutputRegex('~^(?!.*VendorTarget).*DummyProject[/\\\\]InferenceTarget\.php~s');
         $this->project_analyzer = $this->getProjectAnalyzerForParamTypeInference();
         $this->project_analyzer->setIssuesToFix(['MissingParamType' => true]);
         $this->project_analyzer->alterCodeAfterCompletion(false, true);
-        $vendor_file = (string) getcwd() . '/tests/fixtures/ExtraFiles/dependency/VendorTarget.php';
+        $vendor_file = self::fixturePath('ExtraFiles/dependency/VendorTarget.php');
         $vendor_contents = $this->file_provider->getContents($vendor_file);
 
         $this->project_analyzer->check('tests/fixtures/DummyProject');
@@ -942,15 +943,25 @@ function callAfterTheExpansion(LateTarget $target): void
         $codebase = $this->project_analyzer->getCodebase();
         $this->assertStringContainsString(
             'public function project(string $a): void',
-            $codebase->getFileContents((string) getcwd() . '/tests/fixtures/DummyProject/InferenceTarget.php'),
+            $codebase->getFileContents(self::fixturePath('DummyProject/InferenceTarget.php')),
         );
         $this->assertSame($vendor_contents, $codebase->getFileContents($vendor_file));
+    }
+
+    /**
+     * The path of a fixture as the config and the scanned files spell it: the paths of the project directories are
+     * compared as prefixes, so on Windows a path with forward slashes is not in them
+     */
+    private static function fixturePath(string $path_in_fixtures): string
+    {
+        return (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'fixtures'
+            . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path_in_fixtures);
     }
 
     private function getProjectAnalyzerForParamTypeInference(): ProjectAnalyzer
     {
         $this->file_provider->registerFile(
-            (string) getcwd() . '/tests/fixtures/DummyProject/InferenceTarget.php',
+            self::fixturePath('DummyProject/InferenceTarget.php'),
             '<?php
 
 namespace Vimeo\Test\DummyProject;
@@ -979,7 +990,7 @@ function callInferenceTargets(InferenceTarget $target, VendorTarget $vendor_targ
 ',
         );
         $this->file_provider->registerFile(
-            (string) getcwd() . '/tests/fixtures/ExtraFiles/dependency/VendorTarget.php',
+            self::fixturePath('ExtraFiles/dependency/VendorTarget.php'),
             '<?php
 
 namespace Vimeo\Test\Vendor;
