@@ -1924,9 +1924,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             return;
         }
 
-        $source_storage = $source->getCodebase()->classlike_storage_provider->get((string) $source->getFQCLN());
-        $suppressed_issues = $source_storage->properties[$property_name]->suppressed_issues ?? [];
-
         foreach ($hooks as $hook) {
             $hook_name = $hook->name->toLowerString();
 
@@ -1979,7 +1976,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             );
 
             $statements_analyzer = new StatementsAnalyzer($source, new NodeDataProvider(), true);
-            $statements_analyzer->addSuppressedIssues($suppressed_issues);
 
             ClosureAnalyzer::analyzeExpression($statements_analyzer, $closure, clone $class_context);
         }

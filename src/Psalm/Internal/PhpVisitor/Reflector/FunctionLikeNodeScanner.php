@@ -1099,8 +1099,8 @@ final class FunctionLikeNodeScanner
     }
 
     /**
-     * A hook has no signature of its own: `get` returns a value of the type of the property, and `set` without
-     * a parameter list takes a `$value` of that type.
+     * A hook has no signature of its own: `get` returns a value of the type of the property, and `set` takes a
+     * value of that type unless its parameter has a type. What the property suppresses is suppressed in its hooks.
      */
     private function addPropertyTypeToHook(PhpParser\Node\PropertyHook $hook, FunctionLikeStorage $storage): void
     {
@@ -1109,6 +1109,8 @@ final class FunctionLikeNodeScanner
         $property_storage = is_string($property_name)
             ? $this->classlike_storage?->properties[$property_name] ?? null
             : null;
+
+        $storage->suppressed_issues += $property_storage->suppressed_issues ?? [];
 
         if ($hook->name->toLowerString() === 'get') {
             $storage->return_type = $property_storage->type ?? Type::getMixed();
@@ -1120,6 +1122,12 @@ final class FunctionLikeNodeScanner
         }
 
         $storage->return_type = Type::getVoid();
+
+        $value_param = $storage->params[0] ?? null;
+
+        if ($value_param !== null && $value_param->type === null && $property_storage?->type !== null) {
+            $storage->setParams([$value_param->setType($property_storage->type)]);
+        }
 
         if (!$hook->params) {
             $storage->setParams([
