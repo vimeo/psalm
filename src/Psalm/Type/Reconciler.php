@@ -839,10 +839,12 @@ class Reconciler
                 $is_set = false;
 
                 foreach ($type as $offset => $assertions) {
+                    $assertion = reset($assertions);
+
                     if (($offset === 0 || count($assertions) === 1)
-                        && ($assertions[0] instanceof IsEqualIsset
-                            || $assertions[0] instanceof IsIsset
-                            || $assertions[0] instanceof NonEmpty)
+                        && ($assertion instanceof IsEqualIsset
+                            || $assertion instanceof IsIsset
+                            || $assertion instanceof NonEmpty)
                     ) {
                         $is_set = true;
                         break;
