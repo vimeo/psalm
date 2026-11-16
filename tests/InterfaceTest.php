@@ -1268,13 +1268,68 @@ final class InterfaceTest extends TestCase
                         $i::doFoo();
                     }',
             ],
-            'SKIPPED-inheritSystemInterface' => [ // #13933
+            'inheritSystemInterface' => [
                 'code' => '<?php
                     interface I extends \RecursiveIterator {}
 
                     function f(I $c): void {
                         $c->current();
+                        $c->hasChildren();
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingTemplateParam'],
+            ],
+            'inheritGrandparentMethodsOfSystemInterfaces' => [
+                'code' => '<?php
+                    /** @template-extends RecursiveIterator<int, string> */
+                    interface R extends \RecursiveIterator {}
+
+                    interface SubR extends R {}
+
+                    /** @template-extends SeekableIterator<int, float> */
+                    interface S extends \SeekableIterator {}
+
+                    /** @template-extends OuterIterator<int, bool> */
+                    interface O extends \OuterIterator {}
+
+                    function r(): SubR {
+                        throw new RuntimeException();
+                    }
+
+                    function s(): S {
+                        throw new RuntimeException();
+                    }
+
+                    function o(): O {
+                        throw new RuntimeException();
+                    }
+
+                    $r_current = r()->current();
+                    $s_key = s()->key();
+                    $s_current = s()->current();
+                    $o_current = o()->current();',
+                'assertions' => [
+                    '$r_current===' => 'null|string',
+                    '$s_key===' => 'int|null',
+                    '$s_current===' => 'float|null',
+                    '$o_current===' => 'bool|null',
+                ],
+            ],
+            'abstractClassImplementingUserInterfaceOfSystemInterface' => [
+                'code' => '<?php
+                    /** @template-extends RecursiveIterator<int, string> */
+                    interface R extends \RecursiveIterator {}
+
+                    abstract class C implements R {}
+
+                    function c(): C {
+                        throw new RuntimeException();
+                    }
+
+                    $current = c()->current();',
+                'assertions' => [
+                    '$current===' => 'null|string',
+                ],
             ],
             'intersectMixedTypes' => [
                 'code' => '<?php
@@ -2588,6 +2643,34 @@ final class InterfaceTest extends TestCase
 
                     class B implements A { }',
                 'error_message' => 'UnimplementedInterfaceMethod',
+            ],
+            'unimplementedGrandparentMethodOfSystemInterface' => [
+                'code' => '<?php
+                    /** @template-extends RecursiveIterator<int, string> */
+                    interface R extends \RecursiveIterator {}
+
+                    final class C implements R {
+                        public function hasChildren(): bool {
+                            return false;
+                        }
+
+                        public function getChildren(): ?R {
+                            return null;
+                        }
+
+                        public function key(): int {
+                            return 0;
+                        }
+
+                        public function next(): void {}
+
+                        public function rewind(): void {}
+
+                        public function valid(): bool {
+                            return false;
+                        }
+                    }',
+                'error_message' => 'UnimplementedInterfaceMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33 - Method current is not defined on class C',
             ],
             'mismatchingInterfaceMethodSignature' => [
                 'code' => '<?php
