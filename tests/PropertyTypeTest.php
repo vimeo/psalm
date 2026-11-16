@@ -4134,6 +4134,19 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafeCallOnAnUnreadPropertyOfANullableHolderStaysNullable' => [
+                'code' => '<?php
+                    final class Item { public function get(): bool { return true; } }
+                    final class Holder { public function __construct(public Item $item) {} }
+
+                    /** @var ?Holder $h */
+                    $h = null;
+                    $_h = $h;
+                    $_r = $h->item?->get();',
+                'assertions' => ['$_h===' => 'Holder|null', '$_r===' => 'bool|null'],
+                'ignored_issues' => ['PossiblyNullPropertyFetch'],
+                'php_version' => '8.0',
+            ],
             'nullsafeDoubleChainOnAnUnreadNonNullPropertyReceiverIsNotNullable' => [
                 'code' => '<?php
                     final class Sub { public bool $flag = true; }
