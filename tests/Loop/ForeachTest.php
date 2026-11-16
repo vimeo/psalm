@@ -2736,6 +2736,43 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'foreachOverNonEmptyArrayVarAssignedBeforeContinueAndAtTheEndOfTheBody' => [
+                'code' => '<?php
+                    foreach ([1, 2] as $_) {
+                        if (rand(0, 1)) {
+                            $z = 1;
+                            continue;
+                        }
+                        $z = 2;
+                    }',
+                'assertions' => [
+                    '$z===' => '1|2',
+                ],
+            ],
+            'foreachOverNonEmptyArrayOffsetNotAssignedBeforeOneOfTheContinuesKeepsItsType' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var array<string, ?int> */
+                        public array $arr = [];
+                    }
+
+                    function f(C $c): void {
+                        foreach ([1, 2] as $_) {
+                            if (rand(0, 1)) {
+                                $c->arr["x"] = 1;
+                                continue;
+                            }
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $c->arr["x"] = 2;
+                        }
+
+                        if (isset($c->arr["x"]) && $c->arr["x"] === 3) {
+                            echo "three";
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -3289,6 +3326,20 @@ final class ForeachTest extends TestCase
 
                     echo $car;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:26',
+            ],
+            'foreachOverNonEmptyArrayVarNotAssignedBeforeContinue' => [
+                'code' => '<?php
+                    function f(): int {
+                        foreach ([1, 2] as $_) {
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $z = 2;
+                        }
+
+                        return $z;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }

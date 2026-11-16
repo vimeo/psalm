@@ -1911,6 +1911,22 @@ final class WhileTest extends TestCase
                     '$a===' => '1',
                 ],
             ],
+            'whileAlwaysEnteredVarAssignedBeforeContinueAndAtTheEndOfTheBody' => [
+                'code' => '<?php
+                    function f(): int {
+                        $i = 0;
+                        while ($i < 3) {
+                            $i++;
+                            if (rand(0, 1)) {
+                                $z = 1;
+                                continue;
+                            }
+                            $z = 2;
+                        }
+
+                        return $z;
+                    }',
+            ],
         ];
     }
 
