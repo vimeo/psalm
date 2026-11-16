@@ -929,6 +929,167 @@ final class TypeAlgebraTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
+            'aVariablePassedByReferenceOnTheRightOfAnAndLosesWhatTheLeftSideTestedOfIt' => [
+                'code' => '<?php
+                    function clear(?int &$v): bool {
+                        $v = null;
+                        return true;
+                    }
+
+                    final class A {
+                        public function clear(?int &$v): bool {
+                            $v = null;
+                            return true;
+                        }
+
+                        public static function staticClear(?int &$v): bool {
+                            $v = null;
+                            return true;
+                        }
+                    }
+
+                    function f(?int $x, A $a): void {
+                        if ($x !== null && clear($x) && $x === null) {
+                            echo 1;
+                        }
+
+                        if ($x !== null && $a->clear($x) && $x === null) {
+                            echo 1;
+                        }
+
+                        if ($x !== null && A::staticClear($x) && $x === null) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'aPropertyOrItemPassedByReferenceOnTheRightOfAnAndLosesWhatTheLeftSideTestedOfIt' => [
+                'code' => '<?php
+                    function clear(?int &$v): bool {
+                        $v = null;
+                        return true;
+                    }
+
+                    final class A {
+                        public ?int $p = null;
+
+                        public function f(): void {
+                            if ($this->p !== null && clear($this->p) && $this->p === null) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    /** @param array{k: ?int} $a */
+                    function f(array $a): void {
+                        if ($a["k"] !== null && clear($a["k"]) && $a["k"] === null) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'anArgumentPassedByValueOnTheRightOfAnAndKeepsWhatTheLeftSideTestedOfIt' => [
+                'code' => '<?php
+                    function positive(int $v): bool {
+                        return $v > 0;
+                    }
+
+                    function f(?int $x, array $a): void {
+                        if ($x !== null && positive($x)) {
+                            /** @psalm-check-type-exact $x = int */
+                            echo 1;
+                        }
+
+                        if ($a !== [] && count($a) > 1) {
+                            /** @psalm-check-type-exact $a = non-empty-array<array-key, mixed> */
+                            echo 1;
+                        }
+                    }',
+            ],
+            'aBuiltinTakingAnArgumentByReferenceOnTheRightOfAnAndLosesWhatTheLeftSideTestedOfIt' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $a
+                     * @param mixed $x
+                     */
+                    function f(array $a, array $b, int $v, $x): void {
+                        if ($a !== [] && array_pop($a) > 0 && $a === []) {
+                            echo 1;
+                        }
+
+                        if ($a !== [] && array_shift($a) > 0 && $a === []) {
+                            echo 1;
+                        }
+
+                        if ($b === [] && array_push($b, $v) && $b[0] > 0) {
+                            echo 1;
+                        }
+
+                        if (is_int($x) && settype($x, "string") && is_string($x)) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'theNegationOfAConditionPoppingAnArrayOnTheRightKeepsBothValues' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): void {
+                        if ($a === [] || array_pop($a) === 0) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $a = list<int> */
+                        echo 1;
+                    }',
+            ],
+            'theNegationOfAConditionPassingAVariableByReferenceOnTheRightKeepsBothValues' => [
+                'code' => '<?php
+                    function refill(?int &$v): bool {
+                        $v = rand(0, 1) ? null : 1;
+                        return (bool) rand(0, 1);
+                    }
+
+                    function loop(?int $x): void {
+                        do {
+                            echo 1;
+                        } while ($x === null || refill($x));
+
+                        /** @psalm-check-type-exact $x = int|null */
+                        echo 1;
+                    }
+
+                    function negatedAnd(?int $x): void {
+                        if (!($x !== null && refill($x))) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $x = int|null */
+                        echo 1;
+                    }
+
+                    function ternary(?int $x): void {
+                        $r = ($x === null || refill($x)) ? 1 : $x;
+
+                        /** @psalm-check-type-exact $r = int|null */
+                        echo 1;
+                    }',
+            ],
+            'aSwitchCasePassingAVariableByReferenceHasNoNegatedClausesOfItsOldValue' => [
+                'code' => '<?php
+                    function refill(?int &$v): bool {
+                        $v = rand(0, 1) ? null : 1;
+                        return true;
+                    }
+
+                    function f(?int $x): int {
+                        switch (true) {
+                            case $x === null:
+                                return 0;
+                            case refill($x) && $x === null:
+                                return 1;
+                        }
+
+                        return 2;
+                    }',
+            ],
             'anAssertFunctionReassigningAParameterAssertsNothingOfItsArgumentFromThere' => [
                 'code' => '<?php
                     function load(?int $x): ?int {
@@ -3808,6 +3969,206 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }',
             ],
+            'truthinessOfANullableIntIsForgottenWhenItChanges' => [
+                'code' => '<?php
+                    final class B {
+                        public ?int $p = null;
+
+                        public function reset(): void {
+                            $this->p = 0;
+                        }
+                    }
+
+                    function reassigned(?int $x): void {
+                        if ($x) {
+                            $x = rand(0, 1);
+                            if (!$x) {
+                                echo "zero";
+                            }
+                        }
+                    }
+
+                    function decremented(?int $x): void {
+                        if ($x) {
+                            $x--;
+                            if (!$x) {
+                                echo "zero";
+                            }
+                        }
+                    }
+
+                    function byReference(?int $x): void {
+                        if ($x) {
+                            settype($x, "int");
+                            if (!$x) {
+                                echo "zero";
+                            }
+                        }
+                    }
+
+                    function property(B $b): void {
+                        if ($b->p) {
+                            $b->reset();
+                            if (!$b->p) {
+                                echo "zero";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'notNullClauseOfANullableIntIsLeftToItsType' => [
+                'code' => '<?php
+                    function f(?int $x): void {
+                        if ($x !== null) {
+                            if ($x === null) {
+                                echo "never";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainNull'],
+            ],
+            'flagOnAnArrayOffsetNarrowsItInAnIfOnTheOffset' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (array_key_exists("#value", $element)) {
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+            ],
+            'flagOnAnArrayOffsetNarrowsItInAnIfOnItsIsset' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = isset($element["#value"]) && is_array($element["#value"]);
+                        if (isset($element["#value"])) {
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+            ],
+            'flagOnAnArrayOffsetNarrowsItInTheElseOfAnIfOnTheOffset' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (!array_key_exists("#value", $element)) {
+                            return false;
+                        } else {
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+            ],
+            'flagOnAnArrayOffsetNarrowsItAfterAnIfOnTheOffsetReturned' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (!array_key_exists("#value", $element)) {
+                            return false;
+                        }
+                        if ($isArray) {
+                            return in_array($key, $element["#value"]);
+                        }
+                        return false;
+                    }',
+            ],
+            'flagOnAnArrayOffsetNarrowsItInAnElseifOnTheOffset' => [
+                'code' => '<?php
+                    function f(array $element, string $key, bool $b): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if ($b) {
+                            return true;
+                        } elseif (array_key_exists("#value", $element)) {
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+            ],
+            'flagOnAnArrayOffsetNarrowsItInTheElseOfATernaryOnTheOffset' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        return !array_key_exists("#value", $element)
+                            ? false
+                            : ($isArray ? in_array($key, $element["#value"]) : false);
+                    }',
+            ],
+            'flagOnAnArrayOffsetNarrowsItAfterAnAssertOnTheOffset' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        assert(array_key_exists("#value", $element));
+                        if ($isArray) {
+                            return in_array($key, $element["#value"]);
+                        }
+                        return false;
+                    }',
+            ],
+            'flagOnAnArrayOffsetNarrowsItInASwitchCaseOnTheOffset' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        switch (true) {
+                            case array_key_exists("#value", $element):
+                                if ($isArray) {
+                                    return in_array($key, $element["#value"]);
+                                }
+                        }
+                        return false;
+                    }',
+            ],
+            'flagOnTwoArrayOffsetsNarrowsBothInAnIfOnOne' => [
+                'code' => '<?php
+                    /** @param array{a?: mixed, b?: mixed} $arr */
+                    function f(array $arr): int {
+                        $ok = isset($arr["a"]) && is_int($arr["a"]) && isset($arr["b"]) && is_int($arr["b"]);
+                        if (isset($arr["a"])) {
+                            if ($ok) {
+                                return $arr["a"] + $arr["b"];
+                            }
+                        }
+                        return 0;
+                    }',
+            ],
+            'flagOnAnArrayOffsetNarrowsItInAnIfOnTheOffsetAndAnotherCondition' => [
+                'code' => '<?php
+                    function f(array $element, string $key, bool $c): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (array_key_exists("#value", $element) && $c) {
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+            ],
+            'flagOnAVariableTheIfMakesCertainIsNotReported' => [
+                'code' => '<?php
+                    function f(mixed $x, bool $y): void {
+                        $flag = is_string($x) && $y;
+                        if (is_string($x)) {
+                            if ($flag) {
+                                echo $x;
+                            }
+                            if (!$flag) {
+                                echo $x;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -5270,6 +5631,177 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullArgument',
+            ],
+            'truthyResultOfAnAssignedNullsafeCallContradictsItsNegation' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?A $a): void {
+                        if ($r = $a?->foo()) {
+                            if (!$r) {
+                                echo "never";
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:33',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'truthyNullableIntContradictsItsNegationInTheIf' => [
+                'code' => '<?php
+                    function f(?int $x): void {
+                        if ($x) {
+                            if (!$x) {
+                                echo "never";
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyNullableIntIsRedundantInTheIf' => [
+                'code' => '<?php
+                    function f(?int $x): void {
+                        if ($x) {
+                            if ($x) {
+                                echo "always";
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyIntOrFalseContradictsItsNegationInTheIf' => [
+                'code' => '<?php
+                    function f(int|false $x): void {
+                        if ($x) {
+                            if (!$x) {
+                                echo "never";
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'truthyNullableIntContradictsItsNegationInTheElse' => [
+                'code' => '<?php
+                    function f(?int $x): void {
+                        if (!$x) {
+                            echo "falsy";
+                        } else {
+                            if (!$x) {
+                                echo "never";
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyNullableIntContradictsItsNegationInTheElseif' => [
+                'code' => '<?php
+                    function f(bool $y, ?int $x): void {
+                        if ($y) {
+                            echo "y";
+                        } elseif ($x) {
+                            if (!$x) {
+                                echo "never";
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyNullableIntContradictsItsNegationInTheTernaryElse' => [
+                'code' => '<?php
+                    function f(?int $x): int {
+                        return !$x ? 0 : (!$x ? 1 : 2);
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:43',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyNullableIntContradictsItsNegationAfterAssert' => [
+                'code' => '<?php
+                    function f(?int $x): void {
+                        assert((bool) $x);
+                        if (!$x) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'truthyNullableIntContradictsItsNegationInASwitchCase' => [
+                'code' => '<?php
+                    function f(?int $x): void {
+                        switch (true) {
+                            case (bool) $x:
+                                if (!$x) {
+                                    echo "never";
+                                }
+                                break;
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:37',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'flagOnAnArrayOffsetIsForgottenWhenTheOffsetIsReassignedInTheIf' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (array_key_exists("#value", $element)) {
+                            $element["#value"] = rand(0, 1) ? "a" : [];
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:55',
+            ],
+            'reassignedFlagOnAnArrayOffsetDoesNotNarrowItInAnIfOnTheOffset' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (array_key_exists("#value", $element)) {
+                            $isArray = (bool) rand(0, 1);
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:55',
+            ],
+            'flagOnAnArrayOffsetIsForgottenWhenTheRightOfAnAndReassignsTheArray' => [
+                'code' => '<?php
+                    function f(array $element, string $key): bool {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (array_key_exists("#value", $element) && ($element = ["#value" => "a"])) {
+                            if ($isArray) {
+                                return in_array($key, $element["#value"]);
+                            }
+                        }
+                        return false;
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:55',
+                'error_levels' => ['InvalidLiteralArgument'],
+            ],
+            'flagOnAnArrayOffsetMakesItsTestRedundantInAnIfOnTheOffset' => [
+                'code' => '<?php
+                    function f(array $element): void {
+                        $isArray = array_key_exists("#value", $element) && is_array($element["#value"]);
+                        if (array_key_exists("#value", $element)) {
+                            if (!$isArray || is_array($element["#value"])) {
+                                echo "always";
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:46',
             ],
         ];
     }

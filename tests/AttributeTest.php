@@ -779,7 +779,7 @@ final class AttributeTest extends TestCase
                     }',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23',
             ],
-            'SKIPPED-attributeInvalidTargetClassConst' => [ // Will be implemented in Psalm 5 where we have better class const analysis
+            'attributeInvalidTargetClassConst' => [
                 'code' => '<?php
                     class Foo {
                         #[Attribute]

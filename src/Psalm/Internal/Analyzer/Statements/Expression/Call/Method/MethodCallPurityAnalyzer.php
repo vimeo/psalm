@@ -47,6 +47,14 @@ use function strtolower;
  */
 final class MethodCallPurityAnalyzer
 {
+    private const ENGINE_STATE_MOVERS = [
+        'fiber::start' => true,
+        'fiber::resume' => true,
+        'fiber::throw' => true,
+        'generator::send' => true,
+        'generator::throw' => true,
+    ];
+
     /** Set on a method call that gives back the caller's own `$this` */
     private const RETURNS_THIS = 'returns_this';
 
@@ -858,7 +866,8 @@ final class MethodCallPurityAnalyzer
     /**
      * A void method whose purity comes from purity templates (`Iterator::next()`) is called for the
      * effects of what they are bound to, or of its own engine state (the cursor of an iterator):
-     * its call is not unused even when they turn out to be none.
+     * its call is not unused even when they turn out to be none. So are the builtin methods that run
+     * a fiber or a generator on and return what it hands back (`Fiber::resume()`, `Generator::send()`).
      *
      * @psalm-mutation-free
      */
@@ -866,6 +875,9 @@ final class MethodCallPurityAnalyzer
     {
         return $method_storage->purity_from_templates !== []
             && ($method_storage->return_type?->isVoid() === true
-                || $method_storage->signature_return_type?->isVoid() === true);
+                || $method_storage->signature_return_type?->isVoid() === true
+                || isset(self::ENGINE_STATE_MOVERS[
+                    strtolower($method_storage->defining_fqcln . '::' . (string) $method_storage->cased_name)
+                ]));
     }
 }

@@ -256,6 +256,9 @@ final class ForeachAnalyzer
             }
         }
 
+        // read by ScopeAnalyzer::getControlActions()
+        $stmt->setAttribute('alwaysEntered', false);
+
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
@@ -455,6 +458,8 @@ final class ForeachAnalyzer
         $loop_scope = new LoopScope($foreach_context, $context);
 
         $loop_scope->protected_var_ids = $context->protected_var_ids;
+
+        $stmt->setAttribute('alwaysEntered', $iterator_type !== null && $always_non_empty_array);
 
         if (LoopAnalyzer::analyze(
             $statements_analyzer,

@@ -578,7 +578,7 @@ final class AssignmentInConditionalTest extends TestCase
                         return $value;
                     }',
             ],
-            'SKIPPED-assertVarRedefinedInOpWithAnd' => [
+            'SKIPPED-assertVarRedefinedInOpWithAnd' => [ // #13921
                 'code' => '<?php
                     class O {
                         public function foo() : bool { return true; }

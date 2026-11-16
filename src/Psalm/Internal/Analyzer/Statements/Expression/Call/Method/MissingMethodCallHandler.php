@@ -525,13 +525,17 @@ final class MissingMethodCallHandler
             return;
         }
 
-        if ($all_intersection_return_type && $all_intersection_existent_method_ids) {
+        // a part may know the method exists without knowing what it returns, like __invoke() of a callable-object
+        if ($all_intersection_existent_method_ids) {
             $result->existent_method_ids = array_merge(
                 $result->existent_method_ids,
                 $all_intersection_existent_method_ids,
             );
 
-            $result->return_type = Type::combineUnionTypes($all_intersection_return_type, $result->return_type);
+            $result->return_type = Type::combineUnionTypes(
+                $all_intersection_return_type ?? Type::getMixed(),
+                $result->return_type,
+            );
 
             return;
         }

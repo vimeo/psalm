@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\IssueBuffer;
@@ -16,6 +17,7 @@ use Psalm\Plugin\EventHandler\Event\MethodExistenceProviderEvent;
 use Psalm\Storage\Capabilities;
 
 use function array_column;
+use function array_map;
 use function getcwd;
 use function preg_quote;
 use function sort;
@@ -96,6 +98,143 @@ final class UnusedCodeTest extends TestCase
         $this->project_analyzer->consolidateAnalyzedData();
 
         IssueBuffer::processUnusedSuppressions($this->project_analyzer->getCodebase()->file_provider);
+    }
+
+    public function testMarkAllNonInternalCodeAsApi(): void
+    {
+        $config = $this->project_analyzer->getConfig();
+        $config->throw_exception = false;
+        $config->mark_all_non_internal_code_as_api = true;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Lib;
+
+                class Client {
+                    public int $state = 0;
+                    protected int $prot = 0;
+                    /** @internal */
+                    public int $internalState = 0;
+
+                    public function send(): void {
+                        $this->encode();
+                        new Helper();
+                    }
+                    protected function hook(): void {}
+                    private function encode(): void {}
+                    private function unused(): void {}
+                    /** @internal */
+                    public function reset(): void {}
+                }
+
+                final class FinalClient {
+                    protected function prot(): void {}
+                }
+
+                interface Contract {
+                    public function run(): void;
+                }
+
+                trait Reusable {
+                    public function reuse(): void {}
+                }
+
+                /** @internal */
+                final class Helper {
+                    public function unusedHelperMethod(): void {}
+                }
+
+                /** @internal */
+                final class UnusedHelper {}
+
+                /** @psalm-internal Lib */
+                final class UnusedPsalmInternalHelper {}
+
+                /** @internal */
+                class NonFinalHelper {}
+
+                /** @internal */
+                abstract class InternalBase {
+                    public function inherited(): void {}
+                }
+
+                class Child extends InternalBase {}
+
+                /** @api */
+                final class ExplicitApi {
+                    public function api(): void {}
+                    /** @internal */
+                    public function internalMethod(): void {}
+                }
+
+                /** @internal */
+                final class InternalWithApiMethod {
+                    /** @api */
+                    public function api(): void {}
+                }
+
+                new InternalWithApiMethod();',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            [
+                ['UnusedMethod', 16],
+                ['PossiblyUnusedMethod', 18],
+                ['PossiblyUnusedProperty', 8],
+                ['ClassMustBeFinal', 4],
+                ['PossiblyUnusedMethod', 22],
+                ['PossiblyUnusedMethod', 35],
+                ['UnusedClass', 39],
+                ['UnusedClass', 42],
+                ['UnusedClass', 45],
+                ['ClassMustBeFinal', 45],
+                ['PossiblyUnusedMethod', 49],
+                ['ClassMustBeFinal', 52],
+                ['PossiblyUnusedMethod', 58],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->type, $issue->line_from],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testMarkAllNonInternalCodeAsApiSkipsCodeTheLibraryDoesNotShip(): void
+    {
+        $config = $this->project_analyzer->getConfig();
+        $config->throw_exception = false;
+        $config->mark_all_non_internal_code_as_api = true;
+        // Psalm's composer.json autoloads Psalm\Tests\ from tests/ for development only
+        $test_file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $src_file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $test_file_path,
+            '<?php
+                namespace Psalm\Tests;
+
+                final class Helper {}',
+        );
+        $this->addFile(
+            $src_file_path,
+            '<?php
+                namespace Lib;
+
+                final class Client {}',
+        );
+        $this->analyzeFile($test_file_path, new Context(), false);
+        $this->analyzeFile($src_file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            ['UnusedClass'],
+            array_column(IssueBuffer::getIssuesDataForFile($test_file_path), 'type'),
+        );
+        $this->assertSame([], IssueBuffer::getIssuesDataForFile($src_file_path));
     }
 
     public function testSeesClassesUsedAfterUnevaluatedCodeIssue(): void
@@ -3142,6 +3281,35 @@ final class UnusedCodeTest extends TestCase
                     }
 
                     echo test(true);',
+            ],
+            'methodOnlyCalledFromPromotedPropertyHook' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __construct(
+                            public string $foo {
+                                set(string $value) {
+                                    $this->foo = self::sanitized($value);
+                                }
+                            }
+                        ) {}
+
+                        protected static function sanitized(string $value): string {
+                            return ucfirst(trim($value));
+                        }
+                    }
+
+                    $foo = new Foo(" foo ");
+                    echo $foo->foo;',
+            ],
+            'privateMethodOnlyCalledFromPropertyHook' => [
+                'code' => '<?php
+                    final class Foo {
+                        public string $name {
+                            get => $this->compute();
+                        }
+                        private function compute(): string { return "a"; }
+                    }
+                    echo (new Foo())->name;',
             ],
         ];
     }

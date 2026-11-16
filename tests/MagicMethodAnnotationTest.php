@@ -2675,7 +2675,7 @@ final class MagicMethodAnnotationTest extends TestCase
                     ',
                 'error_message' => 'ImplementedParamTypeMismatch',
             ],
-            'SKIPPED-MagicMethodMadeConcreteChecksParams' => [
+            'SKIPPED-MagicMethodMadeConcreteChecksParams' => [ // #3871
                 'code' => '<?php
                     /**
                      * @method static void create(array $x)

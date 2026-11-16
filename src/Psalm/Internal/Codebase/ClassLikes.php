@@ -57,6 +57,7 @@ use UnexpectedValueException;
 use function array_filter;
 use function array_merge;
 use function array_pop;
+use function array_values;
 use function count;
 use function end;
 use function explode;
@@ -73,6 +74,7 @@ use function str_contains;
 use function str_starts_with;
 use function strlen;
 use function strrpos;
+use function strstr;
 use function strtolower;
 use function substr;
 use function token_get_all;
@@ -173,6 +175,8 @@ final class ClassLikes
      * @var array<string, PhpParser\Node\Stmt\Trait_>
      */
     private array $trait_nodes = [];
+
+    private ?UnshippedCode $unshipped_code = null;
 
     public function __construct(
         private readonly Config $config,
@@ -929,7 +933,7 @@ final class ClassLikes
                         // a class that is only alive because of its own methods
                         // still has its members unchecked
                         if (($code_use_graph->isUsed($class_node) || $code_use_graph->isPossiblyUsed($class_node))
-                            && ($classlike_storage->public_api || $code_use_graph->isReferenced($class_node))
+                            && ($this->isPublicApi($classlike_storage) || $code_use_graph->isReferenced($class_node))
                         ) {
                             $this->checkMethodReferences($classlike_storage, $methods, $dynamic_entry_nodes);
                             $this->checkPropertyReferences($classlike_storage);
@@ -1070,7 +1074,7 @@ final class ClassLikes
 
             $class_node = CodeUseGraph::classNode($fq_class_name_lc);
 
-            if ($classlike_storage->public_api) {
+            if ($this->isPublicApi($classlike_storage)) {
                 $code_use_graph->markAsPublicApi($class_node);
             }
 
@@ -1080,12 +1084,11 @@ final class ClassLikes
                 // a used method means its class is used
                 $code_use_graph->addEdge($method_node, $class_node, CodeUseGraph::EDGE_METHOD);
 
-                if ($method_storage->public_api
-                    || ($classlike_storage->public_api
-                        && ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                            || ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
-                                && !$classlike_storage->final)))
-                ) {
+                if ($method_storage->public_api || $this->isPublicApiMember(
+                    $classlike_storage,
+                    $method_storage->visibility,
+                    $method_storage->internal,
+                )) {
                     $code_use_graph->markAsPublicApi($method_node);
                 }
             }
@@ -2321,17 +2324,9 @@ final class ClassLikes
                 $method_id = $declaring_method_id;
             }
 
-            if ($classlike_storage->public_api
-                && ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                    || ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
-                        && !$classlike_storage->final
-                    )
-                )
+            if ($method_storage->public_api
+                || $this->isPublicApiMember($classlike_storage, $method_storage->visibility, $method_storage->internal)
             ) {
-                continue;
-            }
-
-            if ($method_storage->public_api) {
                 continue;
             }
 
@@ -2779,19 +2774,87 @@ final class ClassLikes
         return true;
     }
 
+    private function isPublicApi(ClassLikeStorage $classlike_storage): bool
+    {
+        if ($classlike_storage->public_api) {
+            return true;
+        }
+
+        if (!$this->config->mark_all_non_internal_code_as_api
+            || $classlike_storage->internal
+            || !$classlike_storage->location
+        ) {
+            return false;
+        }
+
+        // code of the global namespace can't be internal
+        return !$this->getUnshippedCode()->contains($classlike_storage->name, $classlike_storage->location->file_path);
+    }
+
+    private function getUnshippedCode(): UnshippedCode
+    {
+        return $this->unshipped_code ??= UnshippedCode::load($this->config->base_dir);
+    }
+
+    /**
+     * Users of a project can't use the code it doesn't ship, so it is internal to the project's test code and tools.
+     */
+    public function markUnshippedCodeInternal(): void
+    {
+        $unshipped_classes = [];
+        $namespaces = [];
+        foreach ($this->classlike_storage_provider->getAll() as $storage) {
+            $file_path = $storage->location?->file_path;
+            if ($storage->populated
+                || $storage->internal
+                || $file_path === null
+                || !$this->config->isInProjectDirs($file_path)
+                || !$this->getUnshippedCode()->contains($storage->name, $file_path)
+            ) {
+                continue;
+            }
+
+            $namespace = strstr($storage->name, '\\', true);
+            if ($namespace === false || $namespace === '') {
+                continue;
+            }
+
+            $namespaces[$namespace] = $namespace;
+            $unshipped_classes[] = $storage;
+        }
+
+        // unshipped code may use the unshipped code of every other namespace
+        $namespaces = array_values($namespaces);
+        foreach ($unshipped_classes as $storage) {
+            $storage->internal = $namespaces;
+        }
+    }
+
+    /**
+     * @param list<non-empty-string> $member_internal
+     */
+    private function isPublicApiMember(
+        ClassLikeStorage $classlike_storage,
+        int $visibility,
+        array $member_internal,
+    ): bool {
+        return $this->isPublicApi($classlike_storage)
+            && ($visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                || ($visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED && !$classlike_storage->final))
+            && !($this->config->mark_all_non_internal_code_as_api && $member_internal);
+    }
+
     private function checkPropertyReferences(ClassLikeStorage $classlike_storage): void
     {
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 
         foreach ($classlike_storage->properties as $property_name => $property_storage) {
-            if ($classlike_storage->public_api
-                && ($property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                    || ($property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
-                        && !$classlike_storage->final
-                    )
-                )
-            ) {
+            if ($this->isPublicApiMember(
+                $classlike_storage,
+                $property_storage->visibility,
+                $property_storage->internal,
+            )) {
                 continue;
             }
 

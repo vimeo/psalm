@@ -34,6 +34,17 @@ final class ForTest extends TestCase
                         return $total;
                     }',
             ],
+            'forIntRangeShiftedInAnArrayOffsetIsWidened' => [
+                'code' => '<?php
+                    function f(stdClass $o): int {
+                        $a = ["n" => 0, "o" => $o];
+                        for ($i = 0; $i < 100; $i++) {
+                            $a["n"] -= rand(1, 3);
+                        }
+                        /** @psalm-check-type-exact $a = array{n: int<min, -1>, o: stdClass} */;
+                        return $a["n"];
+                    }',
+            ],
             'forIntRangeComputedFromTheCounterIsNotWidened' => [
                 'code' => '<?php
                     function f(): int {
@@ -470,6 +481,19 @@ final class ForTest extends TestCase
                     '$i===' => 'int<0, max>',
                 ],
             ],
+            'forVarAssignedBeforeContinueAndAtTheEndOfTheBody' => [
+                'code' => '<?php
+                    for ($i = 0; $i < 10; $i++) {
+                        if (rand(0, 1)) {
+                            $z = 1;
+                            continue;
+                        }
+                        $z = 2;
+                    }',
+                'assertions' => [
+                    '$z===' => '1|2',
+                ],
+            ],
         ];
     }
 
@@ -582,6 +606,35 @@ final class ForTest extends TestCase
 
                     echo $i * $j;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'forPossiblyNotEnteredVarAssignedBeforeContinue' => [
+                'code' => '<?php
+                    function f(int $n): int {
+                        for ($i = 0; $i < $n; $i++) {
+                            if (rand(0, 1)) {
+                                $z = 1;
+                                continue;
+                            }
+                            $z = 2;
+                        }
+
+                        return $z;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'forVarNotAssignedBeforeContinue' => [
+                'code' => '<?php
+                    function f(): int {
+                        for ($i = 0; $i < 10; $i++) {
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $z = 2;
+                        }
+
+                        return $z;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }
