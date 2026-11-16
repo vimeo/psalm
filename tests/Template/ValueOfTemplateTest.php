@@ -94,6 +94,24 @@ final class ValueOfTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'inArrayOnTwoTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @template U of array
+                     * @param T $a
+                     * @param U $b
+                     */
+                    function f(string $value, $a, $b): void {
+                        if (in_array($value, $a, true) && in_array($value, $b, true)) {
+                            echo strlen($value);
+                        }
+                        if (in_array($value, $a, true) && !in_array($value, $b, true)) {
+                            echo strlen($value);
+                        }
+                    }
+                ',
+            ],
             'valueOfUnreplacedTemplateParam' => [
                 'code' => '<?php
                     /**
@@ -157,6 +175,23 @@ final class ValueOfTemplateTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'inArrayOnTemplateKeepsUnionNeedle' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     */
+                    function getValue(int|string $value, $array): bool {
+                        if (in_array($value, $array, true)) {
+                            return $value;
+                        }
+                        return false;
+                    }
+                ',
+                'error_message' => "The inferred type 'value-of<T:fn-getvalue as array<array-key, int|string",
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'valueOfTemplateNotIncludesInt' => [
                 'code' => '<?php

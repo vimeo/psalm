@@ -4118,7 +4118,6 @@ final class AssertionFinder
 
     /**
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
-     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function getInarrayAssertions(
         PhpParser\Node\Expr\FuncCall $expr,
@@ -4186,14 +4185,18 @@ final class AssertionFinder
                         $if_types[$first_var_name] = [$assertions];
                     }
                 } elseif ($second_arg_type->isSingle() && self::isArrayTemplate($atomic_type)) {
-                    $if_types[$first_var_name] = [[new InArray(
-                        new Union([new TTemplateValueOf(
-                            $atomic_type->param_name,
-                            $atomic_type->defining_class,
-                            new Union([$atomic_type]),
-                        )]),
-                        $haystack,
-                    )]];
+                    $value_of_type = new Union([new TTemplateValueOf(
+                        $atomic_type->param_name,
+                        $atomic_type->defining_class,
+                        new Union([$atomic_type]),
+                    )]);
+
+                    // the values of two templates can't be intersected
+                    if (($first_var_type = $source->node_data->getType($expr->getArgs()[0]->value))
+                        && Type::intersectUnionTypes($value_of_type, $first_var_type, $source->getCodebase()) !== null
+                    ) {
+                        $if_types[$first_var_name] = [[new InArray($value_of_type, $haystack)]];
+                    }
                 }
             }
         }

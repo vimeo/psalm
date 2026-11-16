@@ -180,6 +180,23 @@ final class KeyOfTemplateTest extends TestCase
                 ',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'arrayKeyExistsOnTemplateKeepsUnionKey' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     */
+                    function getKey(int|string $key, $array): bool {
+                        if (array_key_exists($key, $array)) {
+                            return $key;
+                        }
+                        return false;
+                    }
+                ',
+                'error_message' => "The inferred type 'key-of<T:fn-getkey as array<int|string, mixed",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'keyOfTemplateNotIncludesInt' => [
                 'code' => '<?php
                     /**
