@@ -996,6 +996,16 @@ final class DoTest extends TestCase
                 }
             } while (rand(0, 1));
         }
+
+        function inTheArgumentOfAnAnonymousClass(): void {
+            $x = new stdClass();
+            do {
+                $o = new class ((string) $x) {
+                    public function __construct(string $_s) {}
+                };
+                $x = 'a';
+            } while (rand(0, 1));
+        }
         PHP;
 
     public function testDoWhileFirstIterationIssuesAreDefinite(): void
@@ -1027,7 +1037,8 @@ final class DoTest extends TestCase
                     'Cannot get property on possibly null variable $x->n->n of type C|null',
                 ],
                 [93, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
-                [103, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
+                [103, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [114, 'InvalidCast', 'stdClass cannot be cast to string'],
             ],
             self::getIssues($file_path),
         );
@@ -1066,8 +1077,45 @@ final class DoTest extends TestCase
                     'PossiblyNullPropertyFetch',
                     'Cannot get property on possibly null variable $x->n->n of type C|null',
                 ],
+                [103, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [114, 'InvalidCast', 'stdClass cannot be cast to string'],
             ],
             self::getIssues($file_path),
+        );
+    }
+
+    public function testDoWhileIssuesOfAnIncludedFileStayPossible(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $included_file_path = self::$src_dir_path . 'included.php';
+
+        $this->addFile(
+            $included_file_path,
+            <<<'PHP'
+                <?php
+                $f = function () use (&$x): void {
+                    echo (string) $x;
+                };
+                PHP,
+        );
+        $this->addFile(
+            $file_path,
+            <<<'PHP'
+                <?php
+                $x = new stdClass();
+                do {
+                    require __DIR__ . '/included.php';
+                    $x = 'a';
+                    $f();
+                } while (rand(0, 1));
+                PHP,
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [[3, 'PossiblyInvalidCast', 'stdClass cannot be cast to string']],
+            self::getIssues($included_file_path),
         );
     }
 

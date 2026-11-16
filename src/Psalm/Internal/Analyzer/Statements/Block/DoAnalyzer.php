@@ -24,6 +24,8 @@ use UnexpectedValueException;
 use function array_diff;
 use function array_keys;
 use function array_map;
+use function array_values;
+use function count;
 use function in_array;
 use function is_array;
 use function preg_match;
@@ -84,7 +86,13 @@ final class DoAnalyzer
         $loop_issues = IssueBuffer::clearRecordingLevel();
         IssueBuffer::stopRecording();
 
-        self::reportIssues($stmt->stmts, $first_iteration_issues, $loop_issues, $loop_raised_issue_keys);
+        self::reportIssues(
+            $statements_analyzer->getFilePath(),
+            $stmt->stmts,
+            $first_iteration_issues,
+            $loop_issues,
+            $loop_raised_issue_keys,
+        );
 
         if ($loop_result === false) {
             return false;
@@ -265,14 +273,16 @@ final class DoAnalyzer
      * types of all the iterations is wrong for sure when the first one has it. The other issues of the first
      * iteration are left to the loop analysis, which also sees what this first pass assumes wrongly (a branch only
      * impossible in the first iteration, a variable the body defines after reading it, which is possibly undefined),
-     * and the issues of the functions and classes the body declares, which run later, if ever.
+     * the issues of the files it includes and those of the closures capturing by reference, which can run with the
+     * types of a later iteration.
      *
-     * @param array<PhpParser\Node\Stmt> $stmts
+     * @param array<PhpParser\Node\Stmt> $stmts the body, in $file_path
      * @param array<int, CodeIssue> $first_iteration_issues
      * @param array<int, CodeIssue> $loop_issues
      * @param array<string, true> $loop_raised_issue_keys the issues the loop analysis raised, reported or not
      */
     private static function reportIssues(
+        string $file_path,
         array $stmts,
         array $first_iteration_issues,
         array $loop_issues,
@@ -280,7 +290,7 @@ final class DoAnalyzer
     ): void {
         $replaced_issue_keys = [];
         $kept_issues = [];
-        $deferred_bounds = null;
+        $by_reference_closure_bounds = null;
 
         foreach ($first_iteration_issues as $issue) {
             if ($issue instanceof UndefinedVariable || $issue instanceof UndefinedGlobalVariable) {
@@ -289,15 +299,15 @@ final class DoAnalyzer
 
             $possible_issue_key = IssueBuffer::getIssueLocationKey('Possibly' . $issue::getIssueType(), $issue);
 
-            if (!isset($loop_raised_issue_keys[$possible_issue_key])) {
+            if (!isset($loop_raised_issue_keys[$possible_issue_key]) || $issue->getFilePath() !== $file_path) {
                 continue;
             }
 
-            $deferred_bounds ??= self::getDeferredBounds($stmts);
+            $by_reference_closure_bounds ??= self::getByReferenceClosureBounds($stmts);
             [$from] = $issue->code_location->getSelectionBounds();
 
-            foreach ($deferred_bounds as [$deferred_from, $deferred_to]) {
-                if ($from >= $deferred_from && $from <= $deferred_to) {
+            foreach ($by_reference_closure_bounds as [$closure_from, $closure_to]) {
+                if ($from >= $closure_from && $from <= $closure_to) {
                     continue 2;
                 }
             }
@@ -319,18 +329,29 @@ final class DoAnalyzer
 
     /**
      * @param array<PhpParser\Node\Stmt> $stmts
-     * @return list<array{int, int}> the bounds of the functions and classes the statements declare
+     * @return list<array{int, int}> the bounds of the bodies of the closures capturing by reference
      */
-    private static function getDeferredBounds(array $stmts): array
+    private static function getByReferenceClosureBounds(array $stmts): array
     {
         $bounds = [];
 
-        foreach ((new PhpParser\NodeFinder())->find(
-            $stmts,
-            static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\FunctionLike
-                || $node instanceof PhpParser\Node\Stmt\ClassLike,
-        ) as $node) {
-            $bounds[] = [(int) $node->getAttribute('startFilePos'), (int) $node->getAttribute('endFilePos')];
+        foreach ((new PhpParser\NodeFinder())->findInstanceOf($stmts, PhpParser\Node\Expr\Closure::class) as $closure) {
+            $closure_stmts = array_values($closure->stmts);
+
+            if (!$closure_stmts) {
+                continue;
+            }
+
+            foreach ($closure->uses as $use) {
+                if ($use->byRef) {
+                    $bounds[] = [
+                        (int) $closure_stmts[0]->getAttribute('startFilePos'),
+                        (int) $closure_stmts[count($closure_stmts) - 1]->getAttribute('endFilePos'),
+                    ];
+
+                    break;
+                }
+            }
         }
 
         return $bounds;
