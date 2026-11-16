@@ -1954,8 +1954,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     }
                 }
 
-                $param_type = $this->bindTraitTemplatesToUse($codebase, $storage, $context, $param_type);
-
                 if ($function_param->type_location && !$inherited_type) {
                     if ($param_type->check(
                         $this,
@@ -1971,6 +1969,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $check_stmts = false;
                     }
                 }
+
+                $param_type = $this->bindTraitTemplatesToUse($codebase, $storage, $context, $param_type);
 
                 $param_type = $param_type->addParentNodes($parent_nodes);
             } else {

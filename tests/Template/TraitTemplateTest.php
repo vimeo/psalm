@@ -899,7 +899,37 @@ final class TraitTemplateTest extends TestCase
 
                         function b(stdClass $data): void {}
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:38 - '
+                    . 'Argument 1 of Bar::b expects stdClass, but DateTime provided',
+            ],
+            'covariantTraitTemplateInAParameterIsStillReportedWithAConcreteUse' => [
+                'code' => '<?php
+                    /** @template-covariant TValue */
+                    trait EV {
+                        /** @param TValue $v */
+                        public function has($v): bool { return (bool) $v; }
+                    }
+
+                    class Coll {
+                        /** @use EV<int> */
+                        use EV;
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+            ],
+            'covariantClassTemplateInAParameterIsStillReportedWhereTheTraitIsUsedWithIt' => [
+                'code' => '<?php
+                    /** @template-covariant TValue */
+                    trait EV {
+                        /** @param TValue $v */
+                        public function has($v): bool { return (bool) $v; }
+                    }
+
+                    /** @template-covariant TValue */
+                    class Coll {
+                        /** @use EV<TValue> */
+                        use EV;
+                    }',
+                'error_message' => 'InvalidTemplateParam',
             ],
             'receiverWithoutTypeArgumentsOfAGenericClassUsingATraitStillChecksTheBound' => [
                 'code' => '<?php
