@@ -765,6 +765,7 @@ final class AssignmentAnalyzer
                             'Variable ' . $var_id . ' is limited to values of type '
                                 . $outer_constraint_type->getId()
                                 . (($referenced_property = $context->byref_constraints[$var_id]->referenced_property)
+                                    !== null
                                     ? ' because it is a reference to ' . $referenced_property . ', '
                                     : ' because it is passed by reference, ')
                                 . $assign_value_type->getId() . ' type found',
@@ -1753,7 +1754,8 @@ final class AssignmentAnalyzer
                 // an object of a templated class without its type arguments has their bounds, but `$this` has the
                 // templates themselves
                 if ($receiver === null
-                    && $template_types
+                    && $template_types !== null
+                    && $template_types !== []
                     && !($expr->var instanceof PhpParser\Node\Expr\Variable && $expr->var->name === 'this')
                 ) {
                     $receiver = new TGenericObject(
