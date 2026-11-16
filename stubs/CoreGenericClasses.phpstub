@@ -354,7 +354,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * Sort the entries by value
      * @link http://php.net/manual/en/arrayobject.asort.php
      *
-     * @return void
+     * @return true
      *
      * @since 5.2.0
      *
@@ -367,7 +367,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * Sort the entries by key
      * @link http://php.net/manual/en/arrayobject.ksort.php
      *
-     * @return void
+     * @return true
      *
      * @since 5.2.0
      *
@@ -389,7 +389,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @psalm-purity-template P
      * @param callable[P](TValue, TValue):int $cmp_function
-     * @return void
+     * @return true
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template P, TStorage
@@ -411,7 +411,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @psalm-purity-template P
      * @param callable[P](TKey, TKey):int $cmp_function The callable comparison function.
-     * @return void
+     * @return true
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template P, TStorage
@@ -424,7 +424,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * Sort entries using a "natural order" algorithm
      * @link http://php.net/manual/en/arrayobject.natsort.php
      *
-     * @return void
+     * @return true
      *
      * @since 5.2.0
      *
@@ -437,7 +437,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * Sort an array using a case insensitive "natural order" algorithm
      * @link http://php.net/manual/en/arrayobject.natcasesort.php
      *
-     * @return void
+     * @return true
      *
      * @since 5.2.0
      *
