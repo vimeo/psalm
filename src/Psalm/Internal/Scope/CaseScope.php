@@ -27,10 +27,16 @@ final class CaseScope
     public ?array $null_array_offsets_read_at_breaks = null;
 
     /**
+     * @var array<string, bool>
+     */
+    public array $vars_possibly_in_scope_at_breaks = [];
+
+    /**
      * @psalm-external-mutation-free
      */
     public function addBreak(Context $context): void
     {
+        $this->vars_possibly_in_scope_at_breaks += $context->vars_possibly_in_scope;
         $this->null_array_offsets_read_at_breaks = $this->null_array_offsets_read_at_breaks === null
             ? $context->null_array_offsets_read
             : array_intersect_key($this->null_array_offsets_read_at_breaks, $context->null_array_offsets_read);
