@@ -1551,9 +1551,12 @@ final class MethodComparator
             false,
             $union_comparison_results,
         )) {
-            // they overlap even where the intersection can't be built (callable-array, a constant wildcard),
-            // and the inherited docblock refines the native type there
-            if ($inherits_return_type && $union_comparison_results->type_coerced) {
+            // the types overlap where the intersection can't be built (callable-array, a constant wildcard);
+            // an object castable to string does not overlap a string
+            if ($inherits_return_type
+                && $union_comparison_results->type_coerced
+                && !$union_comparison_results->to_string_cast
+            ) {
                 return;
             }
 

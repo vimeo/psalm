@@ -1013,7 +1013,10 @@ final class InterfaceTest extends TestCase
             ],
             'arrayObjectSortMethodsReturnTrue' => [
                 'code' => '<?php
-                    /** @extends ArrayObject<int, int> */
+                    /**
+                     * @extends ArrayObject<int, int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
                     class C extends ArrayObject
                     {
                         public function natsort(): bool
@@ -1024,7 +1027,6 @@ final class InterfaceTest extends TestCase
 
                     $r = (new ArrayObject([2, 1]))->asort();',
                 'assertions' => ['$r===' => 'true'],
-                'ignored_issues' => ['ImmutableDependency'],
             ],
             'implementStaticReturn' => [
                 'code' => '<?php
@@ -2721,6 +2723,36 @@ final class InterfaceTest extends TestCase
                 'error_message' => 'The inherited return type \'Stringable\' for I::render is different to the implemented return type for C::render \'string',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'nativeObjectOnlyCastToInheritedString' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return non-empty-string */
+                        public function render();
+                    }
+
+                    class C implements I
+                    {
+                        public function render(): Stringable
+                        {
+                            return new Exception("x");
+                        }
+                    }',
+                'error_message' => 'LessSpecificImplementedReturnType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayObjectSortMethodOverriddenAsVoid' => [
+                'code' => '<?php
+                    /**
+                     * @extends ArrayObject<int, int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    class C extends ArrayObject
+                    {
+                        public function asort(): void {}
+                    }',
+                'error_message' => 'The inherited return type \'true\' for ArrayObject::asort is different to the implemented return type for C::asort \'null',
             ],
             'traitNativeReturnTypeDisjointFromInheritedDocblock' => [
                 'code' => '<?php
