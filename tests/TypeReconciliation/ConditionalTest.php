@@ -11,6 +11,9 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function sort;
+use function str_ends_with;
+
 use const DIRECTORY_SEPARATOR;
 
 final class ConditionalTest extends TestCase
@@ -144,6 +147,45 @@ final class ConditionalTest extends TestCase
 
                     echo $value;
                 }'),
+        );
+    }
+
+    public function testRepeatedNullsafeFetchIdenticalToABoolLiteralIsStillRedundant(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            final class Item {
+                public bool $flag = true;
+            }
+
+            function andRepeat(?Item $item): string {
+                if ($item?->flag === true && $item?->flag === true) {
+                    return "y";
+                }
+
+                return "n";
+            }');
+
+        $this->analyzeFile($file_path, new Context());
+
+        $redundant_conditions = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'RedundantCondition' && str_ends_with($issue->message, 'has already been asserted')) {
+                $redundant_conditions[] = $issue->line_from . ': ' . $issue->message;
+            }
+        }
+
+        sort($redundant_conditions);
+
+        self::assertSame(
+            [
+                '7: $item is not null has already been asserted',
+                '7: $item->flag has already been asserted',
+            ],
+            $redundant_conditions,
         );
     }
 
@@ -1090,6 +1132,26 @@ final class ConditionalTest extends TestCase
                     function literal(?Item $item): string {
                         if ($item?->maybe === false) {
                             return $item->isFlag() ? 'y' : 'n';
+                        }
+
+                        return 'n';
+                    }
+
+                    function elseifOther(?Item $item, bool $b): string {
+                        if ($item?->flag === true) {
+                            return 'a';
+                        } elseif ($b) {
+                            return 'b';
+                        }
+
+                        return 'n';
+                    }
+
+                    function elseifSame(?Item $item): string {
+                        if ($item?->maybe === false) {
+                            return 'a';
+                        } elseif ($item?->flag === true) {
+                            return 'b';
                         }
 
                         return 'n';
@@ -5978,25 +6040,6 @@ final class ConditionalTest extends TestCase
                 'error_message' => 'PossiblyNullPropertyFetch',
                 'error_levels' => [],
                 'php_version' => '8.2',
-            ],
-            'repeatedIdentityOfANullsafeFetchToABoolLiteralIsRedundant' => [
-                'code' => '<?php
-                    final class Item {
-                        public bool $flag = true;
-                    }
-
-                    function f(?Item $item): string {
-                        if ($item?->flag === true) {
-                            if ($item?->flag === true) {
-                                return "y";
-                            }
-                        }
-
-                        return "n";
-                    }',
-                'error_message' => 'TypeDoesNotContainNull',
-                'error_levels' => [],
-                'php_version' => '8.0',
             ],
             'identityOfANullsafeFetchWithAUnionContainingMixedDoesNotAssertTheReceiver' => [
                 'code' => '<?php

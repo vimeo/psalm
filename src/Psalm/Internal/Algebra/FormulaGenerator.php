@@ -631,13 +631,18 @@ final class FormulaGenerator
 
             // `$a?->p === true` already asserts the receiver through the truthiness of `$a?->p`, and a repeated
             // clause is reported as redundant
+            $found = false;
+
             foreach ($clauses as $clause) {
                 if ($clause->hash === $receiver_clause->hash) {
-                    return $clauses;
+                    $found = true;
+                    break;
                 }
             }
 
-            $clauses[] = $receiver_clause;
+            if (!$found) {
+                $clauses[] = $receiver_clause;
+            }
         }
 
         return $clauses;
