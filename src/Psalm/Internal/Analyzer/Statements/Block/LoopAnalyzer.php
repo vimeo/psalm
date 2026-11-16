@@ -232,9 +232,12 @@ final class LoopAnalyzer
 
             IssueBuffer::startRecording();
 
+            // what the condition writes is recorded by the passes below, which start with the values before the loop
+            // too: in a loop, this first evaluation does not know the bounds of what it computes, so it is only kept
+            // when no pass evaluates the condition again
+            $first_condition_written_var_ids = [];
+
             if (!$is_do) {
-                // what the condition writes is recorded by the passes below, which start with the values before the
-                // loop too: in a loop, this first evaluation does not know the bounds of what it computes
                 foreach ($pre_conditions as $condition_offset => $pre_condition) {
                     self::applyPreConditionToLoopContext(
                         $statements_analyzer,
@@ -243,6 +246,7 @@ final class LoopAnalyzer
                         $loop_context,
                         $loop_parent_context,
                         $is_do,
+                        written_var_ids: $first_condition_written_var_ids,
                     );
                 }
             }
@@ -276,6 +280,7 @@ final class LoopAnalyzer
                         $loop_parent_context,
                         $is_do,
                         $vars_after_condition,
+                        $first_condition_written_var_ids,
                     ), ...$always_assigned_before_loop_body_vars];
 
                     self::applyVarsAfterCondition($inner_do_context, $vars_after_condition, $condition_offset > 0);
@@ -455,6 +460,17 @@ final class LoopAnalyzer
                 $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
                 IssueBuffer::startRecording();
 
+                // what a pass computed of the condition (the assertions of its operands too) and of the body is no
+                // longer true of the next one
+                $traverser = new PhpParser\NodeTraverser;
+
+                $traverser->addVisitor(
+                    new NodeCleanerVisitor(
+                        $statements_analyzer->node_data,
+                    ),
+                );
+                $traverser->traverse([...$pre_conditions, ...$stmts]);
+
                 if (!$is_do) {
                     foreach ($pre_conditions as $condition_offset => $pre_condition) {
                         self::applyPreConditionToLoopContext(
@@ -493,15 +509,6 @@ final class LoopAnalyzer
                 $continue_context->clauses = $pre_loop_context->clauses;
 
                 $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
-
-                $traverser = new PhpParser\NodeTraverser;
-
-                $traverser->addVisitor(
-                    new NodeCleanerVisitor(
-                        $statements_analyzer->node_data,
-                    ),
-                );
-                $traverser->traverse($stmts);
 
                 $vars_at_pass_start = $continue_context->vars_in_scope;
 
@@ -606,6 +613,10 @@ final class LoopAnalyzer
                     $data_flow_pass_added = true;
                     $force_pass = true;
                 }
+            }
+
+            if (!$condition_written_var_ids) {
+                $condition_written_var_ids = $first_condition_written_var_ids;
             }
 
             if ($recorded_issues) {
@@ -739,28 +750,14 @@ final class LoopAnalyzer
             $loop_scope->exit_truths = $negated_pre_condition_types;
 
             if ($negated_pre_condition_types) {
-                if ($is_do) {
-                    // a do-while is left after its body, where its condition is not yet assumed
-                    $exit_context = $inner_do_context ?? $continue_context;
-                    $exit_vars = $exit_context->vars_in_scope;
-                } else {
-                    // a while or for loop is also left before its body ever runs: the parent context holds the
-                    // types of both ways out, but what the condition writes holds what evaluating it left on either
-                    $exit_context = $loop_parent_context;
-                    $exit_vars = $exit_context->vars_in_scope;
-
-                    foreach ($condition_written_var_ids as $var_id => $type) {
-                        if (isset($exit_vars[$var_id])) {
-                            $exit_vars[$var_id] = $type;
-                        }
-                    }
-                }
-
+                // a do-while is left after its body, where its condition is not yet assumed; a while or for loop is
+                // also left before its body ever runs: the parent context holds the types of both ways out, but what
+                // the condition writes holds what evaluating it left on either
                 self::applyExitTruths(
                     $statements_analyzer,
                     $negated_pre_condition_types,
-                    $exit_vars,
-                    $exit_context,
+                    $is_do ? ($inner_do_context ?? $continue_context) : $loop_parent_context,
+                    $is_do ? [] : $condition_written_var_ids,
                     $loop_parent_context,
                     new CodeLocation($statements_analyzer->getSource(), $pre_conditions[0]),
                 );
@@ -912,19 +909,11 @@ final class LoopAnalyzer
 
             if (!$while_true && $loop_scope->exit_truths) {
                 // the loop is left after an iteration, once the condition evaluated again is false
-                $exit_vars = $context->vars_in_scope;
-
-                foreach ($loop_scope->condition_written_vars as $var_id => $type) {
-                    if (isset($exit_vars[$var_id])) {
-                        $exit_vars[$var_id] = $type;
-                    }
-                }
-
                 self::applyExitTruths(
                     $statements_analyzer,
                     $loop_scope->exit_truths,
-                    $exit_vars,
                     $context,
+                    $loop_scope->condition_written_vars,
                     $context,
                     null,
                 );
@@ -997,16 +986,27 @@ final class LoopAnalyzer
      * Narrows the variables of the context to what the condition being false says of them where the loop is left
      *
      * @param array<string, list<list<Assertion>>> $exit_truths
-     * @param array<string, Union> $exit_vars the variables where the loop is left
+     * @param array<string, Union> $condition_written_vars what the variables the condition writes hold where the loop is
+     *                                                    left, rather than what the exit context says
      */
     private static function applyExitTruths(
         StatementsAnalyzer $statements_analyzer,
         array $exit_truths,
-        array $exit_vars,
         Context $exit_context,
+        array $condition_written_vars,
         Context $context,
         ?CodeLocation $code_location,
     ): void {
+        $exit_vars = $exit_context->vars_in_scope;
+        $overridden_var_ids = [];
+
+        foreach ($condition_written_vars as $var_id => $type) {
+            if (isset($exit_vars[$var_id])) {
+                $exit_vars[$var_id] = $type;
+                $overridden_var_ids[$var_id] = true;
+            }
+        }
+
         $changed_var_ids = [];
 
         [$vars_in_scope_reconciled, $_] = Reconciler::reconcileKeyedTypes(
@@ -1022,7 +1022,8 @@ final class LoopAnalyzer
             $code_location,
         );
 
-        foreach ($changed_var_ids as $var_id => $_) {
+        // what the condition wrote is the value the loop is left with, whether or not its being false narrows it
+        foreach ($changed_var_ids + $overridden_var_ids as $var_id => $_) {
             if (isset($vars_in_scope_reconciled[$var_id])
                 && isset($context->vars_in_scope[$var_id])
             ) {

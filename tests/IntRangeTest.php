@@ -548,6 +548,50 @@ final class IntRangeTest extends TestCase
                     '$c===' => 'int<min, 7>',
                 ],
             ],
+            'loopLeftWithWhatItsConditionWroteWhenTheBodyRestoresIt' => [
+                'code' => '<?php
+                    final class O {
+                        public int $n = 0;
+                    }
+
+                    $n = rand(0, 5);
+                    while ($n-- > 0) {}
+
+                    $t = rand(0, 5);
+                    while ($t-- > 0) {
+                        $t = 0;
+                    }
+
+                    $o = new O();
+                    $o->n = rand(0, 5);
+                    while ($o->n-- > 0) {
+                        $o->n = 0;
+                    }
+                    $p = $o->n;',
+                'assertions' => [
+                    '$n===' => '-1',
+                    '$t===' => '-1',
+                    '$p===' => '-1',
+                ],
+            ],
+            'comparedVariableWrittenByTheOtherOperand' => [
+                'code' => '<?php
+                    $i = rand(0, 20);
+                    $r = null;
+                    if (++$i < ($i = 10)) {
+                        $r = $i;
+                    }
+
+                    $k = rand(0, 20);
+                    $s = null;
+                    if (($k = 10) < ++$k) {
+                        $s = $k;
+                    }',
+                'assertions' => [
+                    '$r===' => '10|null',
+                    '$s===' => '11|null',
+                ],
+            ],
             'loopNeverEnteredKeepsTheValueBeforeIt' => [
                 'code' => '<?php
                     /** @return int<-5, 5> */

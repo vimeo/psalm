@@ -22,6 +22,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\FileSource;
 use Psalm\Internal\Algebra;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
@@ -122,6 +123,7 @@ use function is_numeric;
 use function is_string;
 use function ltrim;
 use function preg_match;
+use function preg_replace;
 use function sprintf;
 use function str_ends_with;
 use function str_starts_with;
@@ -3965,31 +3967,48 @@ final class AssertionFinder
 
     /**
      * The variable an operand compared with an integer is: `$a++` and `$a--` compare the value `$a` had before, so
-     * when it is an integer, what `$a` holds afterwards is compared with the integer shifted by one
+     * when it is an integer, what `$a` holds afterwards is compared with the integer shifted by one. A variable the
+     * operand evaluated after it writes (`$a < ($a = 10)`) no longer holds the compared value.
      */
     private static function getComparedVarId(
         PhpParser\Node\Expr $operand,
+        ?PhpParser\Node\Expr $later_operand,
         ?string $this_class_name,
         FileSource $source,
         int &$compared_value,
     ): ?string {
-        if (!$operand instanceof PhpParser\Node\Expr\PostInc && !$operand instanceof PhpParser\Node\Expr\PostDec) {
-            return ExpressionIdentifier::getExtendedVarId($operand, $this_class_name, $source);
+        $shift = 0;
+
+        if ($operand instanceof PhpParser\Node\Expr\PostInc || $operand instanceof PhpParser\Node\Expr\PostDec) {
+            $shift = $operand instanceof PhpParser\Node\Expr\PostInc ? 1 : -1;
+
+            if (!$source instanceof StatementsAnalyzer
+                || !($old_type = $source->node_data->getType($operand))
+                || !$old_type->isInt()
+                || $compared_value === ($shift === 1 ? PHP_INT_MAX : PHP_INT_MIN)
+            ) {
+                return null;
+            }
+
+            $operand = $operand->var;
         }
 
-        $shift = $operand instanceof PhpParser\Node\Expr\PostInc ? 1 : -1;
+        $var_id = ExpressionIdentifier::getExtendedVarId($operand, $this_class_name, $source);
 
-        if (!$source instanceof StatementsAnalyzer
-            || !($old_type = $source->node_data->getType($operand))
-            || !$old_type->isInt()
-            || $compared_value === ($shift === 1 ? PHP_INT_MAX : PHP_INT_MIN)
+        if ($var_id === null
+            || ($later_operand !== null
+                && isset(FormulaGenerator::getAssignedVarIds(
+                    $later_operand,
+                    $this_class_name,
+                    $source instanceof StatementsAnalyzer ? $source->node_data : null,
+                )[(string) preg_replace('/(\[|->|::).*$/s', '', $var_id)]))
         ) {
             return null;
         }
 
         $compared_value += $shift;
 
-        return ExpressionIdentifier::getExtendedVarId($operand->var, $this_class_name, $source);
+        return $var_id;
     }
 
     /**
@@ -4374,6 +4393,7 @@ final class AssertionFinder
         if ($superior_value_position && $superior_value_comparison !== null) {
             $var_name = self::getComparedVarId(
                 $superior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->left : $conditional->right,
+                $superior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->right : null,
                 $this_class_name,
                 $source,
                 $superior_value_comparison,
@@ -4574,6 +4594,7 @@ final class AssertionFinder
             $var_name = $inferior_value_comparison !== null
                 ? self::getComparedVarId(
                     $inferior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->left : $conditional->right,
+                    $inferior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->right : null,
                     $this_class_name,
                     $source,
                     $inferior_value_comparison,
