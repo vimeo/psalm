@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
@@ -16,7 +17,11 @@ use Psalm\Node\Expr\VirtualTernary;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\VirtualName;
 use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
 
+use function array_all;
 use function is_string;
 
 /**
@@ -25,6 +30,37 @@ use function is_string;
 final class NullsafeAnalyzer
 {
     /**
+     * Whether the receiver is a place that keeps its value: a property, a static property or an item of an array.
+     * Other receivers (an assignment, a call, an item of an ArrayAccess object) are evaluated once into the
+     * temporary variable.
+     */
+    private static function isStoredInPlace(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Expr $expr): bool
+    {
+        if ($expr instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $base_type = $statements_analyzer->node_data->getType($expr->var);
+
+            if ($base_type === null
+                || !array_all(
+                    $base_type->getAtomicTypes(),
+                    static fn(Atomic $atomic): bool => $atomic instanceof TArray || $atomic instanceof TKeyedArray,
+                )
+            ) {
+                return false;
+            }
+        } elseif (!$expr instanceof PhpParser\Node\Expr\PropertyFetch
+            && !$expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
+            return false;
+        }
+
+        return ExpressionIdentifier::getExtendedVarId(
+            $expr,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer,
+        ) !== null;
+    }
+
+    /**
      * @param PhpParser\Node\Expr\NullsafePropertyFetch|PhpParser\Node\Expr\NullsafeMethodCall $stmt
      */
     public static function analyze(
@@ -32,7 +68,19 @@ final class NullsafeAnalyzer
         PhpParser\Node\Expr $stmt,
         Context $context,
     ): bool {
-        if (!$stmt->var instanceof PhpParser\Node\Expr\Variable) {
+        $receiver_id = $stmt->var instanceof PhpParser\Node\Expr\PropertyFetch
+            ? ExpressionIdentifier::getExtendedVarId(
+                $stmt->var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            )
+            : null;
+
+        if ($receiver_id !== null) {
+            // a chain of variables and properties is analysed as it stands, so that what is known of it applies
+            $tmp_var = $stmt->var;
+            $var_type = $context->vars_in_scope[$receiver_id] ?? null;
+        } elseif (!$stmt->var instanceof PhpParser\Node\Expr\Variable) {
             $was_inside_general_use = $context->inside_general_use;
 
             $context->inside_general_use = true;
@@ -44,7 +92,11 @@ final class NullsafeAnalyzer
             $condition_type = $statements_analyzer->node_data->getType($stmt->var);
             $var_type = $condition_type;
 
-            if ($condition_type) {
+            // a property, static property or array item is the one the call acts on: what the call does to the
+            // object (what it stores in it, for the taint analysis) would be lost on a temporary variable
+            if ($condition_type
+                && !self::isStoredInPlace($statements_analyzer, $stmt->var)
+            ) {
                 $context->vars_in_scope['$' . $tmp_name] = $condition_type;
 
                 $tmp_var = new VirtualVariable($tmp_name, $stmt->var->getAttributes());
@@ -91,11 +143,29 @@ final class NullsafeAnalyzer
             );
         }
 
-        ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $context);
+        $receiver_is_known = $stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            && $receiver_id !== null
+            && $var_type !== null
+            && $var_type->isObjectType()
+            && !$var_type->isNullable()
+            && !$var_type->possibly_undefined
+            && !$var_type->possibly_undefined_from_try;
+
+        // checking a known receiver against null is reported, but must not make the context forget what it knows
+        // of the receiver's properties
+        ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $receiver_is_known ? clone $context : $context);
 
         $ternary_type = $statements_analyzer->node_data->getType($ternary);
 
         $call_type = $statements_analyzer->node_data->getType($ternary->else);
+
+        if ($receiver_is_known) {
+            $fetch = new VirtualPropertyFetch($tmp_var, $stmt->name, $stmt->getAttributes());
+
+            ExpressionAnalyzer::analyze($statements_analyzer, $fetch, $context);
+
+            $call_type = $statements_analyzer->node_data->getType($fetch);
+        }
 
         $statements_analyzer->node_data = $old_node_data;
 
@@ -117,9 +187,7 @@ final class NullsafeAnalyzer
         $chain_state = NullsafeChainState::None;
 
         if ($ternary_type && $ternary_type->isNullable()) {
-            $chain_state = $call_type && $call_type->isNullable()
-                ? NullsafeChainState::ShortCircuitAndNull
-                : NullsafeChainState::ShortCircuit;
+            $chain_state = NullsafeChainState::ShortCircuit->afterLink($call_type);
         }
 
         $chain_state->markOn($stmt);

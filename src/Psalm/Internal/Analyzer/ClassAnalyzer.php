@@ -22,10 +22,12 @@ use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\Comparator\GenericTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -68,13 +70,18 @@ use Psalm\Issue\UndefinedTrait;
 use Psalm\Issue\UnimplementedAbstractMethod;
 use Psalm\Issue\UnimplementedInterfaceMethod;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualAssign;
+use Psalm\Node\Expr\VirtualClosure;
+use Psalm\Node\Expr\VirtualPropertyFetch;
 use Psalm\Node\Expr\VirtualStaticCall;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\Stmt\VirtualClassMethod;
 use Psalm\Node\Stmt\VirtualExpression;
+use Psalm\Node\Stmt\VirtualReturn;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
+use Psalm\Node\VirtualParam;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeAnalysisEvent;
 use Psalm\StatementsSource;
 use Psalm\Storage\Capabilities;
@@ -98,7 +105,6 @@ use UnexpectedValueException;
 use function array_filter;
 use function array_keys;
 use function array_map;
-use function array_merge;
 use function array_pop;
 use function array_shift;
 use function array_values;
@@ -107,6 +113,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_string;
 use function preg_match;
 use function preg_replace;
 use function reset;
@@ -123,6 +130,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     private static array $anonymous_classes_in_analysis = [];
     /** Set on the call of the constructor that stands for it when the initialization of properties is checked */
     public const FAKE_CONSTRUCTOR_CALL_ATTRIBUTE = 'fake_constructor_call';
+
+    public const PROPERTY_HOOK_ATTRIBUTE = 'psalm-property-hook';
 
     /**
      * @var array<string, Union>
@@ -370,34 +379,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        if (($storage->templatedMixins || $storage->namedMixins)
-            && $storage->mixin_declaring_fqcln === $storage->name) {
-            /** @var non-empty-array<int, TTemplateParam|TNamedObject> $mixins */
-            $mixins = array_merge($storage->templatedMixins, $storage->namedMixins);
-            $union = new Union($mixins);
-
-            $static_self = new TNamedObject($storage->name, true);
-
-            $union = TypeExpander::expandUnion(
-                $codebase,
-                $union,
-                $storage->name,
-                $static_self,
-                null,
-            );
-
-            /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
-            $union->check(
-                $this,
-                new CodeLocation(
-                    $this,
-                    $class->name ?: $class,
-                    null,
-                    true,
-                ),
-                $this->getSuppressedIssues(),
-            );
-        }
+        self::checkMixins(
+            $this,
+            $storage,
+            new CodeLocation($this, $class->name ?: $class, null, true),
+            $this->getSuppressedIssues(),
+        );
 
         if ($storage->template_extended_params) {
             foreach ($storage->template_extended_params as $type_map) {
@@ -608,6 +595,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider(), true);
         $statements_analyzer->analyze($member_stmts, $class_context, $global_context);
 
+        CliOutput::checkCliOnlyInstancesClass(
+            $storage,
+            $storage->suppressed_issues + $this->getSuppressedIssues(),
+        );
+
         ClassConstAnalyzer::analyze($storage, $this->getCodebase());
 
         $config = Config::getInstance();
@@ -682,8 +674,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        $pseudo_methods = $storage->pseudo_methods + $storage->pseudo_static_methods;
-        MethodComparator::comparePseudoMethods($pseudo_methods, $this->fq_class_name, $codebase, $storage);
+        MethodComparator::comparePseudoMethods($codebase, $storage);
 
         $event = new AfterClassLikeAnalysisEvent(
             $class,
@@ -772,6 +763,22 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                                 $property_storage->location,
                             ),
                         );
+                    } elseif ($guide_property_storage->readonly_public_set
+                        && $property_storage->native_readonly
+                        && !$property_storage->readonly_public_set
+                        // where Populator cleared it, the redeclaration may still be public(set)
+                        && !$property_class_storage->isMutationFree()
+                        && !$property_class_storage->taint_specialize
+                        && $property_storage->location
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new OverriddenPropertyAccess(
+                                'Property ' . $fq_class_name . '::$' . $property_name
+                                    . ' is readonly, so implicitly protected(set), a more restrictive set visibility'
+                                    . ' than ' . $guide_class_name . '::$' . $property_name . ' (public(set))',
+                                $property_storage->location,
+                            ),
+                        );
                     }
 
                     if ($guide_property_storage->is_final
@@ -820,8 +827,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         );
                     }
 
-                    if ($property_storage->type === null) {
-                        // Property type not set, no need to check for docblock invariance
+                    // without a docblock type of its own, the property has the one it overrides
+                    if ($property_storage->type === null || $property_storage->inherited_type) {
                         continue;
                     }
 
@@ -937,7 +944,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                                 $storage->declaring_method_ids['__construct']->fq_class_name,
                             ) === strtolower($fq_class_name)))
                     && !$property_storage->has_default
-                    && !($property_type->isNullable() && $property_type->from_docblock)
+                    && !($property_storage->signature_type === null
+                        && $property_type->isNullable()
+                        && $property_type->from_docblock)
                 ) {
                     $property_type = $property_type->setProperties([
                         'initialized' => false,
@@ -1012,8 +1021,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
+            // an inherited docblock type is checked where it is written, and the native type here
             $has_docblock_over_signature = $property_storage->signature_type
-                && $property_storage->type?->getId() !== $property_storage->signature_type->getId();
+                && ($property_storage->inherited_type
+                    || $property_storage->type?->getId() !== $property_storage->signature_type->getId());
 
             if ($property_type_location && (!$fleshed_out_type->isMixed() || $has_docblock_over_signature)) {
                 $stmt = array_filter(
@@ -1038,14 +1049,16 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
-                /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
-                $fleshed_out_type->check(
-                    $statements_source,
-                    $property_type_location,
-                    $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
-                    [],
-                    false,
-                );
+                if (!$property_storage->inherited_type) {
+                    /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
+                    $fleshed_out_type->check(
+                        $statements_source,
+                        $property_type_location,
+                        $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
+                        [],
+                        false,
+                    );
+                }
 
                 if ($property_storage->signature_type) {
                     $union_comparison_result = new TypeComparisonResult();
@@ -1059,7 +1072,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_fq_class_name,
                     );
 
-                    if (!UnionTypeComparator::isContainedBy(
+                    if (!$property_storage->inherited_type && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $fleshed_out_type,
                         $signature_type,
@@ -1070,9 +1083,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     ) {
                         IssueBuffer::maybeAdd(
                             new MismatchingDocblockPropertyType(
-                                'Parameter '
+                                'Property '
                                     . $property_class_name . '::$' . $property_name
-                                    . ' has wrong type \'' . $fleshed_out_type .
+                                    . ' has wrong type \'' . $fleshed_out_type->getId() .
                                     '\', should be \'' . $signature_type->getId() . '\'',
                                 $property_type_location,
                             ),
@@ -1257,7 +1270,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 continue;
             }
 
-            if ($property->type && $property->type->from_docblock && $property->type->isNullable()) {
+            // an untyped property is null until it is assigned
+            if ($property->signature_type === null
+                && $property->type
+                && $property->type->from_docblock
+                && $property->type->isNullable()
+            ) {
                 continue;
             }
 
@@ -1409,25 +1427,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $fake_constructor_attributes,
                 );
 
-                $codebase->analyzer->disableMixedCounts();
-
-                $was_collecting_initializations = $class_context->collect_initializations;
-
-                $class_context->collect_initializations = true;
-                $class_context->collect_nonprivate_initializations = !$uninitialized_private_properties;
-
-                $constructor_analyzer = $this->analyzeClassMethod(
-                    $fake_stmt,
-                    $storage,
-                    $this,
-                    $class_context,
-                    $global_context,
-                    true,
-                );
-
-                $class_context->collect_initializations = $was_collecting_initializations;
-
-                $codebase->analyzer->enableMixedCounts();
+                // analysed below, where the properties it initialises are collected
+                $constructor_analyzer = new MethodAnalyzer($fake_stmt, $this);
             }
         }
 
@@ -1574,11 +1575,14 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
-            $codebase->analyzer->setAnalyzedMethod(
-                $included_file_path,
-                $fq_class_name_lc . '::__construct',
-                true,
-            );
+            // recorded issues may be discarded (a loop keeps only those of its last pass): check again next time
+            if (!IssueBuffer::isRecording()) {
+                $codebase->analyzer->setAnalyzedMethod(
+                    $included_file_path,
+                    $fq_class_name_lc . '::__construct',
+                    true,
+                );
+            }
 
             return;
         }
@@ -1792,6 +1796,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         $fq_class_name = $source->getFQCLN();
         $property_name = $stmt->props[0]->name->name;
 
+        self::analyzePropertyHooks($source, $property_name, $stmt->hooks, $context);
+
         $codebase = $this->getCodebase();
 
         $property_id = $fq_class_name . '::$' . $property_name;
@@ -1886,6 +1892,95 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         );
     }
 
+    private static function analyzePromotedPropertyHooks(
+        SourceAnalyzer $source,
+        PhpParser\Node\Stmt\ClassMethod $stmt,
+        Context $class_context,
+    ): void {
+        if ($stmt->name->toLowerString() !== '__construct') {
+            return;
+        }
+
+        foreach ($stmt->params as $param) {
+            if ($param->var instanceof PhpParser\Node\Expr\Variable && is_string($param->var->name)) {
+                self::analyzePropertyHooks($source, $param->var->name, $param->hooks, $class_context);
+            }
+        }
+    }
+
+    /**
+     * A hook body is analysed as a closure bound to the object: `get` returns a value of the type of the
+     * property, `set` takes `$value`.
+     *
+     * @param array<PhpParser\Node\PropertyHook> $hooks
+     */
+    private static function analyzePropertyHooks(
+        SourceAnalyzer $source,
+        string $property_name,
+        array $hooks,
+        Context $class_context,
+    ): void {
+        if (!$hooks) {
+            return;
+        }
+
+        foreach ($hooks as $hook) {
+            $hook_name = $hook->name->toLowerString();
+
+            if ($hook->body === null || ($hook_name !== 'get' && $hook_name !== 'set')) {
+                continue;
+            }
+
+            $params = $hook->params;
+
+            if ($hook_name === 'set' && !$params) {
+                $params = [new VirtualParam(new VirtualVariable('value', $hook->name->getAttributes()))];
+            }
+
+            if ($hook->body instanceof PhpParser\Node\Expr) {
+                $body_attributes = $hook->body->getAttributes();
+
+                $stmts = $hook_name === 'get'
+                    ? [new VirtualReturn($hook->body, $body_attributes)]
+                    : [
+                        new VirtualExpression(
+                            new VirtualAssign(
+                                new VirtualPropertyFetch(
+                                    new VirtualVariable('this', $body_attributes),
+                                    new VirtualIdentifier($property_name, $body_attributes),
+                                    $body_attributes,
+                                ),
+                                $hook->body,
+                                $body_attributes,
+                            ),
+                            $body_attributes,
+                        ),
+                    ];
+            } else {
+                $stmts = $hook->body;
+            }
+
+            $closure = new VirtualClosure(
+                [
+                    'byRef' => $hook->byRef,
+                    'params' => $params,
+                    'stmts' => $stmts,
+                    'attrGroups' => $hook->attrGroups,
+                ],
+                $hook->getAttributes(),
+            );
+
+            $closure->setAttribute(
+                self::PROPERTY_HOOK_ATTRIBUTE,
+                $class_context->self . '::$' . $property_name . '::' . $hook_name,
+            );
+
+            $statements_analyzer = new StatementsAnalyzer($source, new NodeDataProvider(), true);
+
+            ClosureAnalyzer::analyzeExpression($statements_analyzer, $closure, clone $class_context);
+        }
+    }
+
     private static function addOrUpdatePropertyType(
         ProjectAnalyzer $project_analyzer,
         PhpParser\Node\Stmt\Property $property,
@@ -1939,9 +2034,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         SourceAnalyzer $source,
         Context $class_context,
         ?Context $global_context = null,
-        bool $is_fake = false,
     ): ?MethodAnalyzer {
         $config = Config::getInstance();
+
+        self::analyzePromotedPropertyHooks($source, $stmt, $class_context);
 
         if ($stmt->stmts === null && !$stmt->isAbstract()) {
             IssueBuffer::maybeAdd(
@@ -2041,7 +2137,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             && $method_already_analyzed
             && !$class_context->collect_initializations
             && !$class_context->collect_mutations
-            && !$is_fake
         ) {
             $project_analyzer->progress->debug(
                 'Skipping analysis of pre-analyzed method ' . $analyzed_method_id . "\n",
@@ -2104,7 +2199,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         if (!$method_already_analyzed
             && !$class_context->collect_initializations
             && !$class_context->collect_mutations
-            && !$is_fake
         ) {
             $codebase->analyzer->setAnalyzedMethod($included_file_path, $trait_safe_method_id);
         }
@@ -2779,7 +2873,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             } elseif ($case_value === null && $storage->enum_type !== null) {
                 IssueBuffer::maybeAdd(
                     new InvalidEnumCaseValue(
-                        'Case of a backed enum should have a value',
+                        $case_storage->value instanceof UnresolvedConstantComponent
+                            ? 'Case of a backed enum should have either string or int value'
+                            : 'Case of a backed enum should have a value',
                         $case_storage->stmt_location,
                         $storage->name,
                     ),

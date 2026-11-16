@@ -204,9 +204,6 @@ final class TypeCombiner
 
             $combination->array_type_params = [];
 
-            /**
-             * @psalm-suppress PossiblyNullArrayAccess
-             */
             unset(
                 $combination->value_types['array'],
                 $combination->named_object_types['Traversable'],
@@ -618,7 +615,6 @@ final class TypeCombiner
                 $combination->builtin_type_params['iterable'] = [Type::getMixed(), Type::getMixed()];
             }
 
-            /** @psalm-suppress PossiblyNullArrayAccess */
             unset(
                 $combination->named_object_types['Traversable'],
                 $combination->builtin_type_params['Traversable'],
@@ -774,6 +770,14 @@ final class TypeCombiner
             $combination->objectlike_sealed = $combination->objectlike_sealed
                 && $type->fallback_params === null;
 
+            if (!$type->fallback_params
+                || ($combination->objectlike_key_type
+                    ? $combination->objectlike_key_type->getId() !== $type->fallback_params[0]->getId()
+                    : $existing_objectlike_entries)
+            ) {
+                $combination->objectlike_same_fallback_key = false;
+            }
+
             $has_defined_keys = false;
 
             $class_strings = $type->class_strings ?? [];
@@ -785,6 +789,9 @@ final class TypeCombiner
                     $combination->objectlike_entries[$candidate_property_name] = $candidate_property_type
                         ->setPossiblyUndefined($existing_objectlike_entries
                             || $candidate_property_type->possibly_undefined);
+                    if ($existing_objectlike_entries && $combination->objectlike_same_fallback_key) {
+                        $combination->objectlike_missing_keys[$candidate_property_name] = true;
+                    }
                 } else {
                     $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
                         $value_type,
@@ -865,6 +872,9 @@ final class TypeCombiner
             foreach ($missing_entries as $k => $_) {
                 $combination->objectlike_entries[$k] = $combination->objectlike_entries[$k]
                     ->setPossiblyUndefined(true);
+                if ($combination->objectlike_same_fallback_key) {
+                    $combination->objectlike_missing_keys[$k] = true;
+                }
             }
 
             if ($combination->objectlike_value_type) {
@@ -874,7 +884,7 @@ final class TypeCombiner
                     }
                     $combination->objectlike_entries[$k] =  Type::combineUnionTypes(
                         $combination->objectlike_entries[$k],
-                        $combination->objectlike_value_type,
+                        $type->fallback_params[1] ?? $combination->objectlike_value_type,
                         $codebase,
                         $overwrite_empty_array,
                     );
@@ -1582,11 +1592,10 @@ final class TypeCombiner
         }
 
         if ($type instanceof TLiteralInt) {
-            if ($combination->ints !== null && count($combination->ints) < $literal_limit) {
-                $combination->ints[$type_key] = $type;
-            } else {
-                $combination->ints[$type_key] = $type;
+            $is_below_limit = $combination->ints !== null && count($combination->ints) < $literal_limit;
+            $combination->ints[$type_key] = $type;
 
+            if (!$is_below_limit) {
                 $all_nonnegative = !array_any(
                     $combination->ints,
                     static fn($int): bool => $int->value < 0,
@@ -1777,14 +1786,27 @@ final class TypeCombiner
             }
 
             if ($combination->objectlike_value_type
-                && $combination->objectlike_value_type->isMixed()
-                && $combination->array_type_params
-                && !$combination->array_type_params[1]->isNever()
+                && $combination->objectlike_same_fallback_key
+                && !$combination->array_type_params
+                && !$combination->all_arrays_lists
+                && !$combination->all_arrays_callable
             ) {
-                $combination->objectlike_entries = array_filter(
-                    $combination->objectlike_entries,
-                    static fn(Union $type): bool => !$type->possibly_undefined,
-                );
+                // a key that every array lacking it may hold in its fallback, with the fallback's type, is the fallback
+                $fallback_value_type = $combination->objectlike_value_type;
+                foreach ($combination->objectlike_missing_keys as $k => $_) {
+                    $objectlike_entry = $combination->objectlike_entries[$k];
+                    if ($objectlike_entry->possibly_undefined
+                        && $combination->fallbackKeyAlwaysContains($k)
+                        && ($objectlike_entry->hasMixed()
+                            ? $fallback_value_type->hasMixed()
+                            : $objectlike_entry->getId() === $fallback_value_type->getId())
+                    ) {
+                        unset(
+                            $combination->objectlike_entries[$k],
+                            $combination->objectlike_class_string_keys[$k],
+                        );
+                    }
+                }
             }
 
             if ($combination->objectlike_entries) {
@@ -1806,12 +1828,7 @@ final class TypeCombiner
                     $fallback_value_type = $combination->array_type_params[1];
                 }
 
-                $sealed = $combination->objectlike_sealed && (
-                    !$combination->array_type_params
-                    || (isset($combination->array_type_params[1])
-                        && $combination->array_type_params[1]->isNever()
-                    )
-                );
+                $sealed = $combination->objectlike_sealed;
 
                 if ($combination->all_arrays_callable) {
                     $objectlike = TKeyedArray::makeCallable(

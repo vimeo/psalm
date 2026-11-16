@@ -237,9 +237,8 @@ final class GeneratorTest extends TestCase
                         echo yield;
                     }',
             ],
-            'SKIPPED-yieldFromTwiceWithVoidSend' => [
+            'SKIPPED-yieldFromTwiceWithVoidSend' => [ // #13927
                 'code' => '<?php
-                    // this test is all wrong
                     /**
                      * @return \Generator<int, string, void, string>
                      */
@@ -449,9 +448,6 @@ final class GeneratorTest extends TestCase
                         yield 2;
                     }
 
-                    /**
-                     * @psalm-suppress InvalidNullableReturnType
-                     */
                     function notagenerator() : Generator {
                         if (rand(0, 1)) {
                             return;

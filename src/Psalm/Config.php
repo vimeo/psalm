@@ -468,6 +468,8 @@ final class Config
 
     public bool $find_unused_code = true;
 
+    public bool $mark_all_non_internal_code_as_api = false;
+
     public bool $find_unused_variables = false;
 
     public bool $find_unused_psalm_suppress = false;
@@ -1151,6 +1153,7 @@ final class Config
             'allowInternalNamedArgumentsCalls' => 'allow_internal_named_arg_calls',
             'allowNamedArgumentCalls' => 'allow_named_arg_calls',
             'findUnusedPsalmSuppress' => 'find_unused_psalm_suppress',
+            'markAllNonInternalCodeAsApi' => 'mark_all_non_internal_code_as_api',
             'findUnusedBaselineEntry' => 'find_unused_baseline_entry',
             'findUnusedIssueHandlerSuppression' => 'find_unused_issue_handler_suppression',
             'reportInfo' => 'report_info',
@@ -1395,7 +1398,8 @@ final class Config
         // Hack for Symfonys own argv resolution.
         // @see https://github.com/vimeo/psalm/issues/10465
         if (self::$add_command_line_paths && basename($argv[0] ?? '') !== 'psalm-plugin') {
-            $paths_to_check = CliUtils::getPathsToCheck(null);
+            // reading STDIN here would consume it before Psalm restarts, so the paths of `psalm -` are left out
+            $paths_to_check = CliUtils::getPathsToCheck(null, false);
         }
 
         if ($paths_to_check !== null) {
@@ -2871,7 +2875,8 @@ final class Config
                 static fn(string $classlike): bool => $codebase->classlike_storage_provider->has($classlike),
             ) || array_any(
                 $functions,
-                static fn(string $function): bool => $codebase->functions->isDeclaredInCode($function),
+                static fn(string $function): bool
+                    => $codebase->functions->isDeclaredInCode($function, $codebase->scanner),
             )) {
                 $library_stubs[] = $library_stub;
                 // the real definitions of the class-likes, which the stub then refines like a class the scan found
@@ -3252,6 +3257,9 @@ final class Config
         if ($autoload_included_files) {
             $codebase->register_autoload_files = true;
 
+            // what the plugins queued is scanned with the project's files, in parallel, not here
+            $queued = $codebase->scanner->takeQueue();
+
             $progress->debug('Registering autoloaded files' . "\n");
             foreach ($autoload_included_files as $file_path) {
                 $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
@@ -3260,6 +3268,8 @@ final class Config
             }
 
             $codebase->scanner->scanFiles($codebase->classlikes);
+
+            $codebase->scanner->restoreQueue($queued);
 
             $progress->debug('Finished registering autoloaded files' . "\n");
 
@@ -3385,7 +3395,15 @@ final class Config
             // may have been removed in the meantime
             clearstatcache(true, $dir);
             if (is_dir($dir)) {
-                rmdir($dir);
+                try {
+                    rmdir($dir);
+                } catch (RuntimeException $e) {
+                    // another Psalm process may have removed the directory or created files in it in the meantime
+                    clearstatcache(true, $dir);
+                    if (is_dir($dir) && count((array) scandir($dir, SCANDIR_SORT_NONE)) <= 2) {
+                        throw $e;
+                    }
+                }
             }
         }
     }

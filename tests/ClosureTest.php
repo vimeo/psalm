@@ -129,6 +129,785 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'closureFallingOffItsEndReturnsNull' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        if ($x > 0) {
+                            return "a";
+                        }
+                    };
+                    $r = $f(1);
+                    $m = array_map($f, [1, 2]);',
+                'assertions' => [
+                    '$r===' => '\'a\'|null',
+                    '$m===' => 'list{\'a\'|null, \'a\'|null}',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureFallingOffALoopReturnsNull' => [
+                'code' => '<?php
+                    /** @var list<int> */
+                    $a = [];
+                    $f = function() use ($a) {
+                        foreach ($a as $x) {
+                            return $x;
+                        }
+                    };
+                    $r = $f();',
+                'assertions' => [
+                    '$r===' => 'int|null',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureFallingOffASwitchWithoutDefaultReturnsNull' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        switch ($x) {
+                            case 1:
+                                return "a";
+                            case 2:
+                                return "b";
+                        }
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '\'a\'|\'b\'|null',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureWithADocblockReturnTypeFallingOffItsEndReturnsNull' => [
+                'code' => '<?php
+                    $f =
+                        /** @return string|null */
+                        function(int $x) {
+                            if ($x > 0) {
+                                return "a";
+                            }
+                        };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => 'null|string',
+                ],
+            ],
+            'closureReturningOnEveryPathDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        if ($x > 0) {
+                            return "a";
+                        } else {
+                            return "b";
+                        }
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '\'a\'|\'b\'',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureEndingWithAThrowDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        if ($x > 0) {
+                            return "a";
+                        }
+                        throw new RuntimeException();
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '\'a\'',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureEndingWithAnExitDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        if ($x > 0) {
+                            return "a";
+                        }
+                        exit(1);
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '\'a\'',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureEndingWithANeverReturningCallDoesNotReturnNull' => [
+                'code' => '<?php
+                    function fail(): never {
+                        throw new RuntimeException();
+                    }
+                    $f = function(int $x) {
+                        if ($x > 0) {
+                            return "a";
+                        }
+                        fail();
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '\'a\'',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+                'php_version' => '8.1',
+            ],
+            'closureEndingWithAnExhaustiveSwitchDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        switch ($x) {
+                            case 1:
+                                return "a";
+                            default:
+                                return "b";
+                        }
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '\'a\'|\'b\'',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureEndingWithATryReturningOnEveryPathDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        try {
+                            if ($x > 0) {
+                                return "a";
+                            }
+                            return "b";
+                        } catch (Exception $e) {
+                            return "c";
+                        }
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '\'a\'|\'b\'|\'c\'',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureWithoutReturnValueStaysVoid' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        if ($x > 0) {
+                            echo $x;
+                            return;
+                        }
+                    };',
+                'assertions' => [
+                    '$f===' => 'Closure[io](int):void',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'generatorClosureFallingOffItsEndIsUnchanged' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        if ($x > 0) {
+                            yield 1;
+                        }
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => 'Generator[pure]<int, 1, mixed, void>',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'arrowFunctionDoesNotReturnImplicitNull' => [
+                'code' => '<?php
+                    $f = fn(int $x) => $x > 0 ? "a" : "b";
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '\'a\'|\'b\'',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureEndingWithADoWhileAlwaysReturningDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function() {
+                        do {
+                            return "a";
+                        } while (false);
+                    };
+                    $r = $f();',
+                'assertions' => [
+                    '$r===' => '\'a\'',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'closureEndingAfterExhaustiveTypeChecksDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function(int|string $x) {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '1|2',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType', 'RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'closureEndingAfterAnExhaustiveElseifChainDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function(int|string $x) {
+                        if (is_int($x)) {
+                            return 1;
+                        } elseif (is_string($x)) {
+                            return 2;
+                        }
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '1|2',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType', 'RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'closureEndingAfterALoopOfExhaustiveTypeChecksStillReturnsNull' => [
+                'code' => '<?php
+                    $f = function(int|string $x, array $a) {
+                        foreach ($a as $_) {
+                            if (is_int($x)) {
+                                continue;
+                            }
+                            if (is_string($x)) {
+                                continue;
+                            }
+                        }
+                        if (rand(0, 1)) {
+                            return 1;
+                        }
+                    };
+                    $r = $f(1, []);',
+                'assertions' => [
+                    '$r===' => '1|null',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType', 'RedundantCondition', 'MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'closureEndingAfterAnImpossibleBranchThatDoesNotLeaveStillReturnsNull' => [
+                'code' => '<?php
+                    $f = function(int $x) {
+                        if (is_string($x)) {
+                            echo "never";
+                        }
+                        if (rand(0, 1)) {
+                            return 1;
+                        }
+                    };
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => '1|null',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType', 'TypeDoesNotContainType'],
+            ],
+            'closureEndingWithAForeachOverANonEmptyArrayDoesNotReturnNull' => [
+                'code' => '<?php
+                    $f = function() {
+                        foreach ([1, 2] as $x) {
+                            return $x;
+                        }
+                    };
+                    $r = $f();',
+                'assertions' => [
+                    '$r===' => '1|2',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
+            'propertyOfAVariableCapturedByReferenceMayChangeAfterTheClosureIsCreated' => [
+                'code' => '<?php
+                    final class Job {
+                        public string $state = "idle";
+                    }
+
+                    function run(): bool {
+                        $job = new Job();
+                        $job->state = "idle";
+
+                        $isRunning = function () use (&$job): bool {
+                            return $job->state === "running";
+                        };
+
+                        $job->state = "running";
+
+                        return $isRunning();
+                    }
+
+                    /** @param array<string, int> $data */
+                    function offset(array $data): int {
+                        if (isset($data["k"])) {
+                            $get = function () use (&$data): int {
+                                return $data["k"];
+                            };
+
+                            return $get();
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'byRefCapturedIntKeepsItsPrecisionInTheEnclosingScopeWhenTheClosureOnlyReadsIt' => [
+                'code' => '<?php
+                    $i = 0;
+                    $cb = function () use (&$i): int {
+                        return $i;
+                    };',
+                'assertions' => [
+                    '$i===' => '0',
+                ],
+            ],
+            'byRefCapturedIntKeepsItsRangeInTheEnclosingScopeWhenTheClosureIncrementsIt' => [
+                'code' => '<?php
+                    $i = 0;
+                    $cb = function () use (&$i): void {
+                        $i++;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int<0, max>',
+                ],
+            ],
+            'byRefCapturedPossiblyUndefinedIntIsBoundAndWidened' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        $i = 0;
+                    }
+
+                    $inside = null;
+                    $cb = function () use (&$i): void {
+                        $inside = $i;
+                        echo $inside;
+                    };',
+                'assertions' => [
+                    '$i===' => '0|null',
+                ],
+                'ignored_issues' => ['PossiblyUndefinedGlobalVariable'],
+            ],
+            'byRefCapturedIntIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $i = -1;
+                        $callback = function () use (&$i): void {
+                            switch ($i) {
+                                case 0:
+                                    echo "zero";
+                                    break;
+                                case 1:
+                                    echo "one";
+                                    break;
+                                default:
+                                    echo "other";
+                            }
+                        };
+                        ++$i;
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedStringIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $state = "idle";
+                        $callback = function () use (&$state): void {
+                            if ($state === "running") {
+                                echo "running";
+                            }
+                        };
+                        $state = "running";
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedClassStringStaysAClassString' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    function f(): void {
+                        $c = Foo::class;
+                        $cb = function () use (&$c): Foo {
+                            return new $c();
+                        };
+                        $cb();
+                    }',
+            ],
+            'byRefCapturedEnumCaseIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    enum E {
+                        case A;
+                        case B;
+                    }
+
+                    function f(): void {
+                        $e = E::A;
+                        $cb = function () use (&$e): void {
+                            if ($e === E::B) {
+                                echo 1;
+                            }
+                        };
+                        $e = E::B;
+                        $cb();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'byRefCapturedBoolIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $done = false;
+                        $callback = function () use (&$done): void {
+                            if ($done) {
+                                echo "done";
+                            }
+                        };
+                        $done = true;
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedFloatIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $ratio = 1.5;
+                        $callback = function () use (&$ratio): void {
+                            if ($ratio === 2.5) {
+                                echo "changed";
+                            }
+                        };
+                        $ratio = 2.5;
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedUnionOfLiteralsIsWidened' => [
+                'code' => '<?php
+                    function f(bool $c): void {
+                        $v = $c ? 1 : "a";
+                        $callback = function () use (&$v): void {
+                            if ($v === 2) {
+                                echo "two";
+                            }
+                        };
+                        $v = 2;
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedArrayShapeLiteralIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $state = ["k" => "idle"];
+                        $callback = function () use (&$state): void {
+                            if ($state["k"] === "running") {
+                                echo "running";
+                            }
+                        };
+                        $state["k"] = "running";
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedListLiteralIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $flags = [false];
+                        $callback = function () use (&$flags): void {
+                            if ($flags[0]) {
+                                echo "set";
+                            }
+                        };
+                        $flags[0] = true;
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedNestedArrayShapeLiteralIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $state = ["a" => ["b" => 1]];
+                        $callback = function () use (&$state): void {
+                            if ($state["a"]["b"] === 2) {
+                                echo "two";
+                            }
+                        };
+                        $state["a"]["b"] = 2;
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedGenericArrayLiteralIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    /** @param array<string, "idle"> $state */
+                    function f(array $state): void {
+                        $callback = function () use (&$state): void {
+                            if (($state["k"] ?? null) === "running") {
+                                echo "running";
+                            }
+                        };
+                        $state["k"] = "running";
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedArrayShapeKeepsItsLiteralsInTheEnclosingScope' => [
+                'code' => '<?php
+                    $state = ["k" => "idle"];
+                    $callback = function () use (&$state): void {
+                        echo $state["k"];
+                    };',
+                'assertions' => [
+                    '$state===' => "array{k: 'idle'}",
+                ],
+            ],
+            'closureByRefWriteInABranchBeforeAReturnIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): int {
+                        if (rand(0, 1)) {
+                            $i++;
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int<0, max>',
+                ],
+            ],
+            'closureByRefWriteInALoopIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function (array $xs) use (&$i): void {
+                        foreach ($xs as $_) {
+                            $i++;
+                        }
+                    };',
+                'assertions' => [
+                    '$i===' => 'int<0, max>',
+                ],
+            ],
+            'closureByRefWriteInALoopBeforeAReturnIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function (array $xs) use (&$i): int {
+                        foreach ($xs as $_) {
+                            $i++;
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int<0, max>',
+                ],
+            ],
+            'closureByRefWriteInABranchBeforeItsOwnReturnIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): int {
+                        if (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $i++;
+                            }
+
+                            return 0;
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int<0, max>',
+                ],
+            ],
+            'closureByRefWriteInAFinallyIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): int {
+                        try {
+                            if (rand(0, 1)) {
+                                $i = 5;
+
+                                return 0;
+                            }
+                        } finally {
+                            echo "done";
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$i===' => '0|5',
+                ],
+            ],
+            'closureByRefWriteInANestedClosureIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): void {
+                        $g = function () use (&$i): void {
+                            $i++;
+                        };
+                    };',
+                'assertions' => [
+                    '$i===' => 'int<0, max>',
+                ],
+            ],
+            'closureByRefWriteThroughAReferenceIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): void {
+                        $j = &$i;
+                        $j++;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int<0, max>',
+                ],
+            ],
+            'closureByRefWriteThroughAByRefArgumentInAConditionIsKept' => [
+                'code' => '<?php
+                    function inc(int &$x): bool {
+                        $x++;
+                        return true;
+                    }
+
+                    $i = 0;
+
+                    $f = function () use (&$i): void {
+                        if (inc($i)) {}
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
+            'closureByRefWriteOfAnIntToACapturedLiteralIsKept' => [
+                'code' => '<?php
+                    $count = 0;
+
+                    $f = static function (int $x) use (&$count): int {
+                        if ($x > 1) {
+                            $count = $x * 2;
+
+                            return 0;
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$count===' => 'int<0, max>',
+                ],
+            ],
+            'useByReferenceOfAPossiblyUndefinedVariableDefinesIt' => [
+                'code' => '<?php
+                    function f(): ?int {
+                        if (rand(0, 1)) {
+                            $y = 1;
+                        }
+
+                        $f = function () use (&$y): ?int {
+                            return $y;
+                        };
+
+                        return $f();
+                    }',
+            ],
+            'useOfAVariableDefinedInATryBindsItToNullWhenUndefined' => [
+                'code' => '<?php
+                    function f(): int {
+                        try {
+                            $y = rand(0, 1);
+                            throw new Exception();
+                        } catch (Exception $e) {
+                        }
+
+                        $f = function () use ($y): int {
+                            /** @psalm-check-type-exact $y = int<0, 1>|null */;
+                            return (int) $y;
+                        };
+
+                        return $f();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedVariable'],
+            ],
+            'useOfANonEmptyMixedDefinedByAPreviousIterationBindsItToMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param list<non-empty-mixed> $xs
+                     */
+                    function f(array $xs): void {
+                        foreach ($xs as $x) {
+                            $f = function () use ($a): void {
+                                /** @psalm-check-type-exact $a = mixed */;
+                                if (!isset($a)) {
+                                    echo "first";
+                                }
+                            };
+                            $f();
+                            $a = $x;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedVariable', 'MixedAssignment'],
+            ],
+            'useOfAMixedDefinedByAPreviousIterationKeepsMixed' => [
+                'code' => '<?php
+                    function f(array $xs): void {
+                        foreach ($xs as $x) {
+                            $f = function () use ($a): void {
+                                /** @psalm-check-type-exact $a = mixed */;
+                                if (!isset($a)) {
+                                    echo "first";
+                                }
+                            };
+                            $f();
+                            $a = $x;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedVariable', 'MixedAssignment'],
+            ],
+            'useByReferenceOfAVariableDefinedByAPreviousIterationDefinesIt' => [
+                'code' => '<?php
+                    function f(array $xs): ?int {
+                        $r = null;
+                        foreach ($xs as $_) {
+                            $g = function () use (&$y): ?int {
+                                return $y;
+                            };
+                            $r = $g();
+                            $y = 1;
+                        }
+
+                        return $r;
+                    }',
+            ],
+            'methodCallableOfATraitMethodResolvesSelfAndParentOfTheParamsToTheUsingClass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait T {
+                        public function take(self $other): string { return 'x'; }
+                        public function adopt(parent $other): string { return 'y'; }
+                    }
+
+                    class P {}
+
+                    final class C extends P {
+                        use T;
+                    }
+
+                    /** @param callable(C): string $f */
+                    function run(callable $f, C $c): string { return $f($c); }
+
+                    /** @param callable(P): string $f */
+                    function runParent(callable $f, P $p): string { return $f($p); }
+
+                    $c = new C;
+                    echo run([$c, 'take'], $c);
+                    echo runParent([$c, 'adopt'], $c);
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'closureByRefWriteBeforeAnEarlyReturnIsKept' => [
                 'code' => '<?php
                     $hasOne = false;
@@ -218,7 +997,7 @@ final class ClosureTest extends TestCase
                         return $total;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'closureCapturingTheVariableItIsAssignedToByReferenceInAnArgument' => [
                 'code' => '<?php
@@ -318,7 +1097,7 @@ final class ClosureTest extends TestCase
                 ',
                 'assertions' => [
                     '$testBefore===' => '123',
-                    '$testInsideBefore===' => "'test'|123|null",
+                    '$testInsideBefore===' => "'test'|int|null",
                     '$testInsideAfter===' => "'test'|null",
                     '$test===' => "'test'|123",
 
@@ -1036,7 +1815,7 @@ final class ClosureTest extends TestCase
                 ',
                 'assertions' => [
                     '$closure' => 'Closure[pure](string):int<0, max>',
-                    '$result' => 'int<0, max>',
+                    '$result' => 'int<1, max>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -1120,7 +1899,7 @@ final class ClosureTest extends TestCase
                     '$make===' => 'Closure[impure]():SubItems',
                     '$result' => 'SubItems',
                 ],
-                'ignored_issues' => ['ClassMustBeFinal'],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:InstanceMethod:InheritedReturnTypeKeepsTheOwnParameters' => [
@@ -1189,9 +1968,9 @@ final class ClosureTest extends TestCase
                     $result = $id("s");',
                 'assertions' => [
                     '$id===' => 'Closure[impure](mixed):mixed',
-                    '$result' => 'mixed',
+                    '$result' => 'string',
                 ],
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:InstanceMethod:UserDefined' => [
@@ -1608,12 +2387,16 @@ final class ClosureTest extends TestCase
                     $wrap = $coll->wrap(...);
                     $wrapped = $wrap(5);
                     $list_of = Coll::listOf(...);
+                    $mapped_direct = $coll->map(fn(int $i): string => (string) $i);
+                    $wrapped_direct = $coll->wrap(5);
                 ',
                 'assertions' => [
                     '$map===' => 'Closure[impure](callable[impure](int):mixed):list<mixed>',
-                    '$mapped===' => 'list<mixed>',
+                    '$mapped===' => 'list<decimal-int-string>',
+                    '$mapped_direct===' => 'list<decimal-int-string>',
                     '$wrap===' => 'Closure[impure](int):list<int>',
-                    '$wrapped===' => 'list<int>',
+                    '$wrapped===' => 'list<5>',
+                    '$wrapped_direct===' => 'list<5>',
                     '$list_of===' => 'Closure[impure](mixed):list<mixed>',
                 ],
                 'ignored_issues' => [],
@@ -1740,7 +2523,7 @@ final class ClosureTest extends TestCase
                     '$identity===' => 'Closure[impure](Model):Model',
                     '$model===' => 'Model',
                     '$chained===' => 'Closure[impure](mixed, mixed):list<mixed>',
-                    '$list===' => 'list<mixed>',
+                    '$list===' => 'list<2>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -1807,7 +2590,7 @@ final class ClosureTest extends TestCase
                     '$find===' => 'Closure[impure](int):int',
                     '$fresh===' => 'Closure[impure]():Repository<int>&static',
                 ],
-                'ignored_issues' => ['MissingAbstractPureAnnotation'],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:InstanceMethod:PassedToTemplatedCallableParam' => [
@@ -2223,6 +3006,222 @@ final class ClosureTest extends TestCase
                         echo $closure() . $arrow();
                     }',
             ],
+            'recursiveClosureCalledThroughItsByReferenceUseHasItsOwnReturnType' => [
+                'code' => '<?php
+                    $factorial = function (int $x) use (&$factorial): int {
+                        if ($x === 1) {
+                            return 1;
+                        }
+
+                        return $x * $factorial($x - 1);
+                    };
+
+                    $result = $factorial(5);',
+                'assertions' => ['$result===' => 'int'],
+            ],
+            'recursiveClosureOfATemplatedClassPassesTheTemplatedValuesOfItsMethodsToItself' => [
+                'code' => '<?php
+                    /**
+                     * @template TNode
+                     */
+                    final class Link {
+                        /**
+                         * @param TNode $to
+                         */
+                        public function __construct(public mixed $to) {}
+                    }
+
+                    /**
+                     * @template TNode
+                     */
+                    final class Graph {
+                        /**
+                         * @param array<int, list<Link<TNode>>> $links
+                         */
+                        public function __construct(private array $links = []) {}
+
+                        /**
+                         * @param TNode $from
+                         * @return list<Link<TNode>>
+                         */
+                        public function linksFrom(mixed $from): array {
+                            return $this->links[(int) $from] ?? [];
+                        }
+
+                        public function reaches(): bool {
+                            $visit =
+                                /**
+                                 * @param TNode $node
+                                 */
+                                function (mixed $node) use (&$visit): bool {
+                                    foreach ($this->linksFrom($node) as $link) {
+                                        if ($visit($link->to)) {
+                                            return true;
+                                        }
+                                    }
+
+                                    return false;
+                                };
+
+                            return false;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'fromCallableOfAClassStringMethodReturningStaticIsTheClassItself' => [
+                'code' => '<?php
+                    class P {
+                        /** @return static */
+                        public static function make() {
+                            return new static();
+                        }
+                    }
+
+                    $viaArray = Closure::fromCallable([P::class, "make"]);
+                    $viaString = Closure::fromCallable("P::make");
+                    $direct = P::make(...);',
+                'assertions' => [
+                    '$viaArray===' => 'Closure[impure]():P',
+                    '$viaString===' => 'Closure[impure]():P',
+                    '$direct===' => 'Closure[impure]():P',
+                ],
+                'ignored_issues' => ['MissingReturnType', 'UnsafeInstantiation'],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableOfMethodWithParamConditionalReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class C {
+                        /** @return ($x is string ? int : bool) */
+                        public function m(string|int $x): int|bool {
+                            return is_string($x) ? 1 : true;
+                        }
+
+                        /** @return ($x is string ? int : bool) */
+                        public static function s(string|int $x): int|bool {
+                            return is_string($x) ? 1 : true;
+                        }
+                    }
+
+                    function check(C $c): void {
+                        $method = $c->m(...);
+                        $viaMethod = $method('a');
+                        /** @psalm-check-type-exact $viaMethod = int */
+
+                        $static = C::s(...);
+                        $viaStatic = $static('a');
+                        /** @psalm-check-type-exact $viaStatic = int */
+
+                        $fromCallable = Closure::fromCallable([$c, 'm']);
+                        $viaFromCallable = $fromCallable('a');
+                        /** @psalm-check-type-exact $viaFromCallable = bool|int */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'methodCallableOfAStringAndOfAnArrayWithParamConditionalReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class C {
+                        /** @return ($x is string ? int : bool) */
+                        public function m(string|int $x): int|bool {
+                            return is_string($x) ? 1 : true;
+                        }
+
+                        /** @return ($x is string ? int : bool) */
+                        public static function s(string|int $x): int|bool {
+                            return is_string($x) ? 1 : true;
+                        }
+                    }
+
+                    /**
+                     * @template A
+                     * @template U
+                     * @param callable(A): U $c
+                     * @param A $a
+                     * @return U
+                     */
+                    function run(callable $c, $a) {
+                        return $c($a);
+                    }
+
+                    function check(C $c): void {
+                        $string = Closure::fromCallable('C::s');
+                        $viaString = $string('a');
+                        /** @psalm-check-type-exact $viaString = bool|int */
+
+                        $viaArray = run([$c, 'm'], 'a');
+                        /** @psalm-check-type-exact $viaArray = bool|int */
+
+                        $viaClassArray = run([C::class, 's'], 'a');
+                        /** @psalm-check-type-exact $viaClassArray = bool|int */
+
+                        $viaStringTemplate = run('C::s', 'a');
+                        /** @psalm-check-type-exact $viaStringTemplate = bool|int */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'paramOutOfMethodClosureResolvesSelfAndStatic' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public function name(): string {
+                            return 'a';
+                        }
+                    }
+
+                    class B extends A {
+                        /** @param-out self $out */
+                        public function setSelf(?self &$out): void {
+                            $out = $this;
+                        }
+
+                        /** @param-out static $out */
+                        public function setStatic(?self &$out): void {
+                            $out = $this;
+                        }
+
+                        public function viaMethod(): string {
+                            $setSelf = $this->setSelf(...);
+                            $self = null;
+                            $setSelf($self);
+
+                            $setStatic = $this->setStatic(...);
+                            $static = null;
+                            $setStatic($static);
+
+                            return $self->name() . $static->name();
+                        }
+                    }
+
+                    class C extends B {
+                        public function viaStaticCall(): string {
+                            $setSelf = self::setSelf(...);
+                            $self = null;
+                            $setSelf($self);
+
+                            $setStatic = self::setStatic(...);
+                            $static = null;
+                            $setStatic($static);
+
+                            /** @psalm-check-type-exact $self = B */
+                            /** @psalm-check-type-exact $static = C&static */
+
+                            return $self->name() . $static->name();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -2233,6 +3232,132 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'resultOfAClosureFallingOffItsEndIsPossiblyNull' => [
+                'code' => '<?php
+                    /** @param list<string> $rows */
+                    function f(array $rows): void {
+                        $lengths = array_map(
+                            function(string $row) {
+                                if (strlen($row) <= 10) {
+                                    return $row;
+                                }
+                            },
+                            $rows,
+                        );
+                        foreach ($lengths as $s) {
+                            echo strlen($s);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+                'error_levels' => ['MissingClosureReturnType'],
+            ],
+            'functionFallingOffItsEndIsExpectedToReturnNull' => [
+                'code' => '<?php
+                    function f(int $x) {
+                        if ($x > 0) {
+                            return "a";
+                        }
+                    }',
+                'error_message' => 'MissingReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:30 - Method f does not have a return type, expecting \'a\'|null',
+            ],
+            'methodFallingOffItsEndIsExpectedToReturnNull' => [
+                'code' => '<?php
+                    final class A {
+                        public function f(int $x) {
+                            if ($x > 0) {
+                                return "a";
+                            }
+                        }
+                    }',
+                'error_message' => 'expecting \'a\'|null',
+            ],
+            'functionWithADocblockReturnTypeFallingOffItsEndReturnsNull' => [
+                'code' => '<?php
+                    /** @return string */
+                    function f(int $x) {
+                        if ($x > 0) {
+                            return "a";
+                        }
+                    }',
+                'error_message' => 'InvalidNullableReturnType',
+            ],
+            'byRefCapturedTypeFromAnAssertionKeepsItsDocblockOrigin' => [
+                'code' => '<?php
+                    function f(): void {
+                        \assert((bool) ($trace = \debug_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS)));
+                        $cb = static function () use (&$trace): void {
+                            if ($trace ?? false) {
+                                echo 1;
+                            }
+                        };
+                        $cb();
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
+            'byRefCapturedDocblockLiteralIsWidenedWithItsDocblockOrigin' => [
+                'code' => '<?php
+                    function f(): void {
+                        /** @var "a"|"b" $s */
+                        $s = rand(0, 1) ? "a" : "b";
+                        $cb = function () use (&$s): void {
+                            if (is_int($s)) {
+                                echo 1;
+                            }
+                        };
+                        $cb();
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33',
+            ],
+            'arrowFunctionReadingAVariableDefinedInAnIfIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(): ?int {
+                        if (rand(0, 1)) {
+                            $y = 1;
+                        }
+
+                        $f = fn(): ?int => $y;
+
+                        return $f();
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:44',
+            ],
+            'useOfAVariableDefinedByAPreviousIterationIsPossiblyUndefinedAtTheUse' => [
+                'code' => '<?php
+                    function f(array $xs): void {
+                        foreach ($xs as $_) {
+                            $f = function () use ($a): ?string {
+                                return $a;
+                            };
+                            echo (string) $f();
+                            $a = "s";
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:51',
+            ],
+            'useOfAVariableExtractedFromAnOptionalKeyIsPossiblyUndefinedAtTheUse' => [
+                'code' => '<?php
+                    /** @param array{x?: int} $data */
+                    function f(array $data): ?int {
+                        extract($data);
+                        $f = function () use ($x): ?int {
+                            return $x;
+                        };
+                        return $f();
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:47'
+                    . ' - Possibly undefined variable $x',
+            ],
+            'arrowFunctionReadingAVariableDefinedByAPreviousIterationIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(array $xs): void {
+                        foreach ($xs as $_) {
+                            $f = fn(): ?string => $a;
+                            echo (string) $f();
+                            $a = "s";
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:51',
+            ],
             'FirstClassCallable:InstanceMethod:InheritedReturnTypeKeepsTheOwnParameterType' => [
                 'code' => '<?php
                     interface Fmt {
@@ -2324,12 +3449,8 @@ final class ClosureTest extends TestCase
                      */
                     $foo = null;
 
-
                     $foo =
-                        /**
-                         * @param mixed $bar
-                         * @psalm-suppress MixedFunctionCall
-                         */
+                        /** @param mixed $bar */
                         function ($bar) use (&$foo): string
                         {
                             if (is_array($bar)) {
@@ -2878,6 +3999,17 @@ final class ClosureTest extends TestCase
                 'error_message' => 'NullableReturnStatement',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'recursiveClosureCalledThroughItsByReferenceUseChecksItsParams' => [
+                'code' => '<?php
+                    $factorial = function (int $x) use (&$factorial): int {
+                        if ($x === 1) {
+                            return 1;
+                        }
+
+                        return $factorial("a");
+                    };',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

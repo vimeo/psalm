@@ -29,6 +29,245 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'variableUsedInArgumentOfStaticCallOnUndefinedClass' => [
+                'code' => '<?php
+                    $foo = "foo";
+
+                    return Missing::config(["foo" => $foo]);',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedClass'],
+            ],
+            'variableUsedInArgumentOfStaticCallOnUndefinedClassInFunction' => [
+                'code' => '<?php
+                    function f(string $a): string {
+                        $b = strtoupper($a);
+
+                        return Missing::config($b);
+                    }
+
+                    echo f("x");',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedClass', 'MixedReturnStatement', 'MixedInferredReturnType'],
+            ],
+            'arrowFunctionParamNamedLikeAPossiblyUndefinedVariableDoesNotUseIt' => [
+                'code' => '<?php
+                    /** @param list<string> $names */
+                    function f(array $names, bool $b): int {
+                        if ($b) {
+                            $name = "x";
+                            echo $name;
+                        }
+
+                        $found = array_filter($names, static fn(string $name): bool => $name !== "");
+
+                        return count($found);
+                    }',
+            ],
+            'closureParamInAnArrowFunctionNamedLikeAPossiblyUndefinedVariableDoesNotUseIt' => [
+                'code' => '<?php
+                    function f(bool $b): Closure {
+                        if ($b) {
+                            $x = 1;
+                            echo $x;
+                        }
+
+                        return fn(): Closure => function (int $x): int {
+                            return $x + 1;
+                        };
+                    }',
+            ],
+            'possiblyUndefinedVariableReadInAnArrowFunctionIsUsed' => [
+                'code' => '<?php
+                    function f(bool $b): ?int {
+                        if ($b) {
+                            $x = 1;
+                        }
+
+                        /** @psalm-suppress PossiblyUndefinedVariable */
+                        $f = fn(): ?int => $x;
+
+                        return $f();
+                    }',
+            ],
+            'incrementInTheKeyOfAnArrayItemIsReadByTheValue' => [
+                'code' => '<?php
+                    function f(): array {
+                        $i = 0;
+                        $a = [];
+                        $a[$i++] = $i;
+
+                        return $a;
+                    }',
+            ],
+            'incrementInTheKeyOfAnArrayItemIsReadByTheNextIteration' => [
+                'code' => '<?php
+                    function fill(int $start, int $count): array {
+                        $result = [];
+                        if ($start < 0) {
+                            $result[$start] = "x";
+                            $start = 0;
+                            $count--;
+                        }
+                        while ($count > 0) {
+                            $result[$start++] = "x";
+                            $count--;
+                        }
+                        return $result;
+                    }',
+            ],
+            'arrowFunctionParamNamedLikeAVariableOfAPreviousIterationDoesNotUseIt' => [
+                'code' => '<?php
+                    /** @param list<string> $names */
+                    function f(array $names, array $xs): int {
+                        $n = 0;
+                        foreach ($xs as $_) {
+                            $found = array_filter($names, static fn(string $name): bool => $name !== "");
+                            $n += count($found);
+                            $name = "x";
+                            echo $name;
+                        }
+
+                        return $n;
+                    }',
+            ],
+            'closureParamInAnArrowFunctionNamedLikeAVariableOfAPreviousIterationDoesNotUseIt' => [
+                'code' => '<?php
+                    function f(array $xs): ?Closure {
+                        $r = null;
+                        foreach ($xs as $_) {
+                            $r = fn(): Closure => function (int $x): int {
+                                return $x + 1;
+                            };
+                            $x = 1;
+                            echo $x;
+                        }
+
+                        return $r;
+                    }',
+            ],
+            'variableOfAPreviousIterationReadInAnArrowFunctionIsUsed' => [
+                'code' => '<?php
+                    function f(array $xs): mixed {
+                        $r = null;
+                        foreach ($xs as $_) {
+                            /** @psalm-suppress PossiblyUndefinedVariable */
+                            $f = fn() => $x;
+                            $r = $f();
+                            $x = 1;
+                        }
+
+                        return $r;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClosureReturnType'],
+                'php_version' => '8.0',
+            ],
+            'assignmentUsedAfterBreakTwoFromSwitchInInfiniteWhile' => [
+                'code' => '<?php
+                    final class Step {
+                        public function code(): string {
+                            return random_int(0, 1) === 1 ? "a" : "b";
+                        }
+
+                        public function previous(): Step {
+                            return new Step();
+                        }
+                    }
+
+                    function build(Step $step, bool $flag): string {
+                        $label = "";
+                        if ($flag) {
+                            $label = "changed";
+                            while (true) {
+                                switch ($step->code()) {
+                                    case "a":
+                                        break;
+                                    default:
+                                        break 2;
+                                }
+                                $step = $step->previous();
+                            }
+                        }
+
+                        return $label;
+                    }',
+            ],
+            'assignmentUsedAfterBreakTwoFromSwitchInInfiniteFor' => [
+                'code' => '<?php
+                    function buildWithFor(int $mode, bool $flag): string {
+                        $label = "";
+                        if ($flag) {
+                            $label = "changed";
+                            for (;;) {
+                                switch ($mode) {
+                                    case 0:
+                                        break;
+                                    default:
+                                        break 2;
+                                }
+                            }
+                        }
+
+                        return $label;
+                    }',
+            ],
+            'assignmentUsedAfterBreakTwoInFirstCaseOfInfiniteWhile' => [
+                'code' => '<?php
+                    function buildWithEarlierBreak(int $mode, bool $flag): string {
+                        $label = "";
+                        if ($flag) {
+                            $label = "changed";
+                            while (true) {
+                                switch ($mode) {
+                                    case 0:
+                                        break 2;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+
+                        return $label;
+                    }',
+            ],
+            'assignmentUsedAfterBreakTwoInFirstCaseOfInfiniteFor' => [
+                'code' => '<?php
+                    function buildWithEarlierForBreak(int $mode, bool $flag): string {
+                        $label = "";
+                        if ($flag) {
+                            $label = "changed";
+                            for (;;) {
+                                switch ($mode) {
+                                    case 0:
+                                        break 2;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+
+                        return $label;
+                    }',
+            ],
+            'continueTwoDoesNotDiscardBreakTwoInAnotherCase' => [
+                'code' => '<?php
+                    function eventuallyBreaks(int $mode, bool $flag): string {
+                        $label = "";
+                        if ($flag) {
+                            $label = "changed";
+                            while (true) {
+                                switch ($mode) {
+                                    case 0:
+                                        break 2;
+                                    default:
+                                        continue 2;
+                                }
+                            }
+                        }
+
+                        return $label;
+                    }',
+            ],
             'phpstanVarSetsTheTypeOfTheAssignedVariable' => [
                 'code' => '<?php
                     /** @phpstan-var list<string> $a */
@@ -241,6 +480,21 @@ final class UnusedVariableTest extends TestCase
                         $k = "x";
                         sort($a[$k]);
                         return $a;
+                    }',
+            ],
+            'variablesOfAllCatchesAreUsedWhenTryAlwaysReturns' => [
+                'code' => '<?php
+                    function test(): void
+                    {
+                        try {
+                            return;
+                        } catch (\RuntimeException $exception) {
+                            $exception = new \LogicException("test", 0, $exception);
+                        } catch (Throwable $exception) {
+                            $exception = new \InvalidArgumentException("test 2", 0, $exception);
+                        }
+
+                        echo $exception->getMessage();
                     }',
             ],
             'callOfCallableNarrowedFromClassStringOrCallable' => [
@@ -1465,6 +1719,59 @@ final class UnusedVariableTest extends TestCase
                         echo $b;
                     }',
             ],
+            'referenceToAnItemReboundInALoopStillWritesToTheArrayAfterIt' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $data
+                     * @param list<string> $path
+                     */
+                    function set(array &$data, array $path, string $value): void {
+                        $cursor = &$data["root"];
+
+                        foreach ($path as $key) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = $value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess', 'ReferenceReusedFromConfusingScope'],
+            ],
+            'valueOverwrittenInATryAndReadInTheCatchStaysUsed' => [
+                'code' => '<?php
+                    /** @param list<string> $lines */
+                    function import(array $lines): void {
+                        foreach ($lines as $line) {
+                            $ok = true;
+
+                            try {
+                                $ok = false;
+                                $ok = $line === "";
+                                echo $line;
+                            } catch (Exception $e) {
+                                echo $ok;
+                            }
+                        }
+                    }',
+            ],
+            'valueOverwrittenInTheCatchOfANestedTryIsUsedByTheOuterCatch' => [
+                'code' => '<?php
+                    function f(): void {
+                        $x = 1;
+
+                        try {
+                            try {
+                                throw new LogicException();
+                            } catch (RuntimeException $e) {
+                                $x = 2;
+                                $x = 3;
+                                echo $x;
+                            }
+                        } catch (Exception $e) {
+                            echo $x;
+                        }
+                    }',
+            ],
             'tryWithWhile' => [
                 'code' => '<?php
                     function foo(): void {
@@ -2101,10 +2408,7 @@ final class UnusedVariableTest extends TestCase
                             $hue = "goodbye";
                         }
 
-                        /**
-                         * @psalm-suppress PossiblyUndefinedVariable
-                         * @psalm-suppress MixedArgument
-                         */
+                        /** @psalm-suppress PossiblyUndefinedVariable */
                         echo $hue;
                     }',
             ],
@@ -2179,7 +2483,6 @@ final class UnusedVariableTest extends TestCase
                         }
 
                         if (isset($j)) {
-                            /** @psalm-suppress MixedArgument */
                             echo $j;
                         }
                     }',
@@ -2385,7 +2688,6 @@ final class UnusedVariableTest extends TestCase
                             $maybe_undefined = $arr;
                         }
 
-                        /** @psalm-suppress MixedAssignment */
                         $maybe_undefined = $maybe_undefined ?? [0];
 
                         print_r($maybe_undefined);
@@ -2557,6 +2859,67 @@ final class UnusedVariableTest extends TestCase
                     $a();
 
                     print_r($output_rows);',
+            ],
+            'aliasedReturnedReferenceUsesAssignedValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function &sharedText(): string {
+                        /** @var string $text */
+                        static $text = '';
+                        return $text;
+                    }
+
+                    function updateThroughAliasedReference(string $value): void {
+                        $reference = &sharedText();
+                        $alias = &$reference;
+                        $alias = $value;
+                    }
+                    PHP,
+            ],
+            'returnedReferenceArrayAssignmentUsesValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array<string, string> */
+                    function &storage(): array {
+                        /** @var array<string, string> $items */
+                        static $items = [];
+                        return $items;
+                    }
+
+                    function store(string $value): void {
+                        $items = &storage();
+                        $items['key'] = $value;
+                    }
+                    PHP,
+            ],
+            'returnedReferenceToArrayElementUsesValueAndInput' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, mixed> $data */
+                    function &findNode(array &$data, string $path): mixed {
+                        $node = &$data[$path];
+                        return $node;
+                    }
+
+                    /**
+                     * @param array<string, string> $fields
+                     * @param array<string, string> $input
+                     * @return array<string, mixed>
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function apply(array $fields, array $input): array {
+                        $data = [];
+                        foreach ($fields as $group => $name) {
+                            $node = &findNode($data, $group);
+                            $value = $input[$name];
+                            $node[$name] = $value;
+                        }
+                        return $data;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
             ],
             'usedInAssignOpToByRef' => [
                 'code' => '<?php
@@ -2764,6 +3127,22 @@ final class UnusedVariableTest extends TestCase
                     echo $a;
                 ',
             ],
+            'referenceToAByRefParamReboundInAnIfIsUsedAfterIt' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, bool $nested): void {
+                        $cursor = &$data;
+
+                        if ($nested) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = [];
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => ['ReferenceReusedFromConfusingScope'],
+            ],
             'referenceUsedInForeach' => [
                 'code' => '<?php
                     foreach ([1, 2, 3] as &$var) {
@@ -2771,7 +3150,7 @@ final class UnusedVariableTest extends TestCase
                     }
                 ',
             ],
-            'SKIPPED-referenceUsedInDestructuredForeach' => [
+            'SKIPPED-referenceUsedInDestructuredForeach' => [ // #13914
                 'code' => '<?php
                     foreach ([[1, 2], [3, 4]] as [&$a, $_]) {
                         $a += 1;
@@ -2929,25 +3308,20 @@ final class UnusedVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
-            'variableUsedInArgumentOfStaticCallOnUndefinedClass' => [
+            'throwAfterExhaustiveTypeChecksIsEvaluated' => [
                 'code' => '<?php
-                    $foo = "foo";
-
-                    return Missing::config(["foo" => $foo]);',
+                    function f(int|string $x): int {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                        throw new LogicException("unreachable");
+                    }',
                 'assertions' => [],
-                'ignored_issues' => ['UndefinedClass'],
-            ],
-            'variableUsedInArgumentOfStaticCallOnUndefinedClassInFunction' => [
-                'code' => '<?php
-                    function f(string $a): string {
-                        $b = strtoupper($a);
-
-                        return Missing::config($b);
-                    }
-
-                    echo f("x");',
-                'assertions' => [],
-                'ignored_issues' => ['UndefinedClass', 'MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.0',
             ],
         ];
     }
@@ -2959,6 +3333,58 @@ final class UnusedVariableTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'valueOverwrittenInTheCatchOfANestedTryAndNeverReadIsUnused' => [
+                'code' => '<?php
+                    function f(): void {
+                        try {
+                            try {
+                                throw new LogicException();
+                            } catch (RuntimeException $e) {
+                                $y = 2;
+                                $y = 3;
+                                echo $y;
+                            }
+                        } catch (Exception $e) {
+                        }
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33',
+            ],
+            'deadStoreInATryInALoopWhoseVariableIsReassignedInTheNextIteration' => [
+                'code' => '<?php
+                    /** @param list<string> $lines */
+                    function import(array $lines): void {
+                        foreach ($lines as $line) {
+                            try {
+                                $ok = true;
+                                if ($line === "") {
+                                    $ok = false;
+                                } else {
+                                    if ($line === "bad") {
+                                        $ok = false;
+                                    }
+                                    if ($ok) {
+                                        echo $line;
+                                    }
+                                }
+                            } catch (Exception $e) {
+                            }
+                        }
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:37',
+            ],
+            'valueBeforeATryIsUnusedWhenTheTryOverwritesItBeforeAnyRead' => [
+                'code' => '<?php
+                    function f(): void {
+                        $x = 1;
+
+                        try {
+                            $x = 2;
+                            echo $x;
+                        } catch (Exception $e) {
+                        }
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
+            ],
             'objectForeachValueReassignedFromACallOfItself' => [
                 'code' => '<?php
                     class D { public int $n = 0; }
@@ -3388,7 +3814,7 @@ final class UnusedVariableTest extends TestCase
                     }',
                 'error_message' => 'UnusedVariable',
             ],
-            'SKIPPED-byrefInForeachLoopWithoutReference' => [
+            'SKIPPED-byrefInForeachLoopWithoutReference' => [ // #13915
                 'code' => '<?php
                     $a = [1, 2, 3];
                     foreach ($a as &$b) {
@@ -4008,9 +4434,8 @@ final class UnusedVariableTest extends TestCase
                 ',
                 'error_message' => 'UnusedVariable',
             ],
-            'SKIPPED-warnAboutVariableUsedInNestedTryNotUsedInOuterTry' => [
+            'warnAboutVariableUsedInNestedTryNotUsedInOuterTry' => [
                 'code' => '<?php
-                    $step = 0;
                     try {
                         $step = 1; // Unused
                         $step = 2;
@@ -4051,7 +4476,7 @@ final class UnusedVariableTest extends TestCase
                 ',
                 'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:21 - $b',
             ],
-            'SKIPPED-unusedReferenceToSubsequentlyUsedVariable' => [ // Not easy to do the way it's currently set up
+            'SKIPPED-unusedReferenceToSubsequentlyUsedVariable' => [ // #13916
                 'code' => '<?php
                     $a = 1;
                     $b = &$a;
@@ -4066,7 +4491,7 @@ final class UnusedVariableTest extends TestCase
                 ',
                 'error_message' => 'UnusedForeachValue',
             ],
-            'SKIPPED-unusedReferenceInDestructuredForeach' => [
+            'SKIPPED-unusedReferenceInDestructuredForeach' => [ // #13914
                 'code' => '<?php
                     foreach ([[1, 2], [3, 4]] as [&$var, $_]) {
                     }
@@ -4098,7 +4523,7 @@ final class UnusedVariableTest extends TestCase
                 ',
                 'error_message' => 'UnusedParam',
             ],
-            'SKIPPED-unusedGlobalVariable' => [
+            'SKIPPED-unusedGlobalVariable' => [ // #13917
                 'code' => '<?php
                     $a = 0;
                     function foo(): void
@@ -4145,6 +4570,21 @@ final class UnusedVariableTest extends TestCase
                 'error_message' => 'UnusedFunctionCall',
                 'error_levels' => [],
                 'php_version' => '8.5',
+            ],
+            'unusedVariableInPropertyHook' => [
+                'code' => '<?php
+                    final class Foo {
+                        public string $name {
+                            set {
+                                $unused = 5;
+                                $this->name = $value;
+                            }
+                        }
+                        public function __construct() { $this->name = "a"; }
+                    }',
+                'error_message' => 'UnusedVariable',
+                'error_levels' => [],
+                'php_version' => '8.4',
             ],
         ];
     }

@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\PropertyTypeProviderEvent;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Type;
+use Psalm\Type\Union;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -15,6 +20,72 @@ final class InterfaceTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testHookedInterfacePropertyProvider(): void
+    {
+        $this->project_analyzer->getCodebase()->properties->property_type_provider->registerClosure(
+            'I',
+            static fn(PropertyTypeProviderEvent $event): Union => $event->isReadMode()
+                ? Type::getBool()
+                : Type::getInt(),
+        );
+        $this->testValidCode(
+            '<?php
+                interface I {
+                    public bool $value { get; set; }
+                }
+                function make(): I {
+                    throw new RuntimeException();
+                }
+                $i = make();
+                $i->value = 123;
+                $read = $i->value;',
+            ['$read' => 'bool'],
+            [],
+            '8.4',
+        );
+    }
+
+    public function testEveryAccessOfAnUndeclaredPropertyOfAnInterfaceIsReported(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface Shape {}
+
+                function readThenWrite(Shape $shape): void {
+                    echo $shape->name;
+                    $shape->name = "renamed";
+                }
+
+                function issetThenWrite(Shape $shape): void {
+                    if (isset($shape->name)) {
+                        $shape->name = "renamed";
+                    }
+                }
+
+                function negatedIssetThenWrite(Shape $shape): void {
+                    if (!isset($shape->name)) {
+                        $shape->name = "renamed";
+                    }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'NoInterfaceProperties') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        // the read and the assignment after it, and the assignment where the isset() did not find the property;
+        // nothing in the function that checks with isset() first
+        $this->assertSame([5, 6, 17], $lines);
+    }
+
     /**
      * @psalm-pure
      */
@@ -22,6 +93,492 @@ final class InterfaceTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'hookedSetterDocblockKeepsNativeInputType' => [
+                'code' => '<?php
+                    interface I {
+                        public string $value {
+                            get;
+                            /** @param non-empty-string|list<string> $value */
+                            set(string|array $value);
+                        }
+                    }
+                    function make(): I {
+                        throw new RuntimeException();
+                    }
+                    $i = make();
+                    $i->value = [123];
+                    $read = $i->value;',
+                'assertions' => ['$read' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedSetterDocblockKeepsPropertyTypeFallback' => [
+                'code' => '<?php
+                    interface I {
+                        public string $value {
+                            get;
+                            /** @param non-empty-string $value */
+                            set;
+                        }
+                    }
+                    function make(): I {
+                        throw new RuntimeException();
+                    }
+                    $i = make();
+                    $i->value = "";
+                    $read = $i->value;',
+                'assertions' => ['$read' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedGenericReadRoot' => [
+                'code' => '<?php
+
+                    class Animal {
+                    }
+                    final class Dog extends Animal {
+                    }
+                    /** @template T */
+                    interface Marker {
+                    }
+                    /** @template T of Animal */
+                    interface Sink {
+                        /** @var T */
+                        public Animal $value {
+                            get;
+                            set;
+                        }
+                    }
+                    /** @return Marker<int>&Sink<Animal> */
+                    function make() {
+                        throw new RuntimeException();
+                    }
+                    $i = make();
+                    $i->value = new Dog();
+                    $read = $i->value;',
+                'assertions' => ['$read' => 'Animal'],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedGenericReadReverse' => [
+                'code' => '<?php
+
+                    class Animal {
+                    }
+                    final class Dog extends Animal {
+                    }
+                    /** @template T */
+                    interface Marker {
+                    }
+                    /** @template T of Animal */
+                    interface Sink {
+                        /** @var T */
+                        public Animal $value {
+                            get;
+                            set;
+                        }
+                    }
+                    /** @return Sink<Animal>&Marker<int> */
+                    function make() {
+                        throw new RuntimeException();
+                    }
+                    $i = make();
+                    $i->value = new Dog();
+                    $read = $i->value;',
+                'assertions' => ['$read' => 'Animal'],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedUnionReadState' => [
+                'code' => '<?php
+
+                    interface I {
+                        public bool $value {
+                            get;
+                            set;
+                        }
+                    }
+                    interface J {
+                        public bool $value {
+                            get;
+                            set;
+                        }
+                    }
+                    function make(): I|J {
+                        throw new RuntimeException();
+                    }
+                    $i = make();
+                    $i->value = true;
+                    $read = $i->value;',
+                'assertions' => ['$read' => 'bool'],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedClassMagicControl' => [
+                'code' => '<?php
+
+                    /** @property-write bool $unknown */
+                    class C {
+                        public function __set(string $name, mixed $value): void {
+                        }
+                    }
+                    function run(C $c): void {
+                        $c->unknown = true;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedWriteDoesNotNarrowRead' => [
+                'code' => '<?php
+
+                    interface I {
+                        public bool $value {
+                            get;
+                            set;
+                        }
+                    }
+                    function make(): I {
+                        throw new RuntimeException();
+                    }
+                    $i = make();
+                    assert($i->value === false);
+                    $i->value = true;
+                    $read = $i->value;',
+                'assertions' => ['$read' => 'bool'],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedLiteralDynamicWrite' => [
+                'code' => '<?php
+
+                    interface I {
+                        public bool $value {
+                            get;
+                            set;
+                        }
+                    }
+                    function make(): I {
+                        throw new RuntimeException();
+                    }
+                    $i = make();
+                    $i->{"value"} = true;
+                    $read = $i->value;',
+                'assertions' => ['$read' => 'bool'],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedExplicitSetterInput' => [
+                'code' => '<?php
+
+                    interface I {
+                        public string $value {
+                            get;
+                            set(string|array $value);
+                        }
+                    }
+                    function make(): I {
+                        throw new RuntimeException();
+                    }
+                    $i = make();
+                    $i->value = ["ok"];
+                    $read = $i->value;',
+                'assertions' => ['$read' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedContravariantSetterRedeclaration' => [
+                'code' => '<?php
+
+                    interface P {
+                        public string $value {
+                            set;
+                        }
+                    }
+                    interface I extends P {
+                        public string $value {
+                            set(string|array $value);
+                        }
+                    }
+                    function run(I $i): void {
+                        $i->value = ["ok"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedGenericComparatorReadState' => [
+                'code' => '<?php
+
+                    class Animal {
+                    }
+                    final class Dog extends Animal {
+                    }
+                    /** @template-covariant T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public readonly mixed $value) {
+                        }
+                    }
+                    interface I {
+                        /** @var Box<Animal> */
+                        public Box $value {
+                            get;
+                            set;
+                        }
+                    }
+                    function make(): I {
+                        throw new RuntimeException();
+                    }
+                    $i = make();
+                    $i->value = new Box(new Dog());
+                    $read = $i->value;',
+                'assertions' => ['$read' => 'Box<Animal>'],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedValidDirectWrite' => [
+                'code' => '<?php
+
+                    interface I {
+                        public bool $value {
+                            set;
+                        }
+                    }
+                    function run(I $i): void {
+                        $i->value = true;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedGenericRootValid' => [
+                'code' => '<?php
+
+                    class Animal {
+                    }
+                    final class Dog extends Animal {
+                    }
+                    final class Cat extends Animal {
+                    }
+                    /** @template T */
+                    interface Marker {
+                    }
+                    /** @template T of Animal */
+                    interface Sink {
+                        /** @var T */
+                        public Animal $value {
+                            set;
+                        }
+                    }
+                    /** @param Marker<int>&Sink<Dog> $i */
+                    function run($i): void {
+                        $i->value = new Dog();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedGenericReverseValid' => [
+                'code' => '<?php
+
+                    class Animal {
+                    }
+                    final class Dog extends Animal {
+                    }
+                    final class Cat extends Animal {
+                    }
+                    /** @template T */
+                    interface Marker {
+                    }
+                    /** @template T of Animal */
+                    interface Sink {
+                        /** @var T */
+                        public Animal $value {
+                            set;
+                        }
+                    }
+                    /** @param Sink<Dog>&Marker<int> $i */
+                    function run($i): void {
+                        $i->value = new Dog();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedInheritedGenericValid' => [
+                'code' => '<?php
+
+                    class Animal {
+                    }
+                    final class Dog extends Animal {
+                    }
+                    final class Cat extends Animal {
+                    }
+                    /** @template T */
+                    interface Marker {
+                    }
+                    /** @template T of Animal */
+                    interface Sink {
+                        /** @var T */
+                        public Animal $value {
+                            set;
+                        }
+                    }
+                    /** @extends Sink<Dog> */
+                    interface ChildSink extends Sink {
+                    }
+                    function run(ChildSink $i): void {
+                        $i->value = new Dog();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'assignmentToAPropertyOfAnInterfaceAfterIsset' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    function renameShape(Shape $shape): void {
+                        if (!isset($shape->name)) {
+                            return;
+                        }
+
+                        $shape->name = "renamed";
+                    }
+
+                    function renameShapeIfNamed(Shape $shape): void {
+                        if (isset($shape->name)) {
+                            $shape->name = "renamed";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'propertyOfAnInterfaceThatAnIntersectedInterfaceDeclaresIsRemembered' => [
+                'code' => '<?php
+                    final class Address {
+                        public function __construct(public string $email) {}
+                    }
+
+                    interface MailerConfig {}
+
+                    interface ProvidesDefaultSender {
+                        public ?Address $defaultSender { get; }
+                    }
+
+                    final class Mapper {
+                        public function __construct(private MailerConfig $mailerConfig) {}
+
+                        public function email(): string {
+                            if ($this->mailerConfig instanceof ProvidesDefaultSender
+                                && $this->mailerConfig->defaultSender
+                            ) {
+                                return $this->mailerConfig->defaultSender->email;
+                            }
+
+                            return "";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyOfAnInterfaceGivenByAShapeOrAMixinIsRemembered' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @param I&object{foo: ?int} $x */
+                    function f($x): int {
+                        if ($x->foo !== null) {
+                            return $x->foo;
+                        }
+
+                        return 0;
+                    }
+
+                    final class Data {
+                        public ?int $foo = null;
+                    }
+
+                    /** @mixin Data */
+                    interface J {}
+
+                    function g(J $x): int {
+                        if ($x->foo !== null) {
+                            return $x->foo;
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'propertyDeclaredByAnInterfaceWinsOverItsMixinWhenRemembered' => [
+                'code' => '<?php
+                    final class Data {
+                        /** @deprecated */
+                        public int $foo = 0;
+                    }
+
+                    /** @mixin Data */
+                    interface J {
+                        public int $foo { get; }
+                    }
+
+                    function f(J $x): int {
+                        $a = $x->foo;
+
+                        return $a + $x->foo;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyOfAShapeWinsOverTheMixinOfTheInterfaceWhenRemembered' => [
+                'code' => '<?php
+                    final class Data {
+                        /** @deprecated */
+                        public int $foo = 0;
+                    }
+
+                    /** @mixin Data */
+                    interface J {}
+
+                    /** @param J&object{foo: int} $x */
+                    function f($x): int {
+                        $a = $x->foo;
+
+                        return $a + $x->foo;
+                    }',
+            ],
+            'unsetOfAPropertyOfAnInterfaceAnIssetFound' => [
+                'code' => '<?php
+                    interface I {}
+
+                    function f(I $x): void {
+                        if (isset($x->foo)) {
+                            unset($x->foo);
+                        }
+                    }
+
+                    function g(I $x): void {
+                        if (isset($x->foo)) {
+                            unset($x->{"foo"});
+                        }
+                    }',
+            ],
+            'unsetOfAPropertyOfAClassAnIssetFound' => [
+                'code' => '<?php
+                    class A {}
+
+                    function f(A $x): void {
+                        if (isset($x->foo)) {
+                            unset($x->foo);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal'],
+            ],
             'issetOfAPropertyOfAnInterfaceIsNotAnInterfaceProperty' => [
                 'code' => '<?php
                     interface Shape {}
@@ -38,7 +595,7 @@ final class InterfaceTest extends TestCase
                         return $shape->name ?? null;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType', 'RiskyTruthyFalsyComparison'],
+                'ignored_issues' => ['MixedReturnStatement', 'RiskyTruthyFalsyComparison'],
                 'php_version' => '8.2',
             ],
             'interfaceDeclaredInAConditional' => [
@@ -346,7 +903,7 @@ final class InterfaceTest extends TestCase
                      */
                     class SomeIterator extends IteratorIterator {}',
             ],
-            'SKIPPED-suppressMismatch' => [
+            'suppressMismatchOfNativeReturnType' => [
                 'code' => '<?php
                     interface I {
                         /**
@@ -365,6 +922,111 @@ final class InterfaceTest extends TestCase
                             return false;
                         }
                     }',
+            ],
+            'nativeReturnTypeRefinedByInheritedDocblock' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {
+                        /** @return int */
+                        public function nullable();
+                        /** @return list<int> */
+                        public function list();
+                        /** @return non-empty-string */
+                        public function nonEmpty();
+                        /** @return T */
+                        public function template();
+                        /** @return Iterator */
+                        public function iterator();
+                        /** @return static */
+                        public function fluent();
+                    }
+
+                    /** @psalm-suppress MissingTemplateParam */
+                    class C implements I
+                    {
+                        public function nullable(): ?int
+                        {
+                            return 1;
+                        }
+
+                        public function list(): array
+                        {
+                            return [1];
+                        }
+
+                        public function nonEmpty(): string
+                        {
+                            return "a";
+                        }
+
+                        public function template(): bool
+                        {
+                            return false;
+                        }
+
+                        public function iterator(): Countable
+                        {
+                            return new ArrayIterator([]);
+                        }
+
+                        public function fluent(): self
+                        {
+                            return $this;
+                        }
+                    }',
+            ],
+            'nativeArrayImplementsInheritedCallable' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return callable */
+                        public function get();
+                    }
+
+                    class C implements I
+                    {
+                        public function get(): array
+                        {
+                            return [$this, "run"];
+                        }
+
+                        public function run(): void {}
+                    }',
+            ],
+            'nativeIntRefinedByInheritedConstantWildcard' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class AbstractLexer {
+                        /** @return T|null */
+                        abstract protected function getType(string $value);
+                    }
+
+                    /** @template-extends AbstractLexer<DocLexer::T_*> */
+                    final class DocLexer extends AbstractLexer {
+                        public const T_NONE = 1;
+                        public const T_INTEGER = 2;
+
+                        protected function getType(string $value): int
+                        {
+                            return self::T_NONE;
+                        }
+                    }',
+            ],
+            'arrayObjectSortMethodsReturnTrue' => [
+                'code' => '<?php
+                    /**
+                     * @extends ArrayObject<int, int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    class C extends ArrayObject
+                    {
+                        public function natsort(): bool
+                        {
+                            return true;
+                        }
+                    }
+
+                    $r = (new ArrayObject([2, 1]))->asort();',
+                'assertions' => ['$r===' => 'true'],
             ],
             'implementStaticReturn' => [
                 'code' => '<?php
@@ -606,7 +1268,7 @@ final class InterfaceTest extends TestCase
                         $i::doFoo();
                     }',
             ],
-            'SKIPPED-inheritSystemInterface' => [
+            'SKIPPED-inheritSystemInterface' => [ // #13933
                 'code' => '<?php
                     interface I extends \RecursiveIterator {}
 
@@ -1166,6 +1828,431 @@ final class InterfaceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'hookedSetterDocblockDoesNotWidenNativeInputType' => [
+                'code' => '<?php
+                    interface I {
+                        public string $value {
+                            /** @param mixed $value */
+                            set(string|array $value);
+                        }
+                    }
+                    function run(I $i): void {
+                        $i->value = 123;
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedUnionSetOnlyArmNotReadable' => [
+                'code' => '<?php
+
+                    interface I {
+                        public bool $value {
+                            get;
+                            set;
+                        }
+                    }
+                    interface J {
+                        public bool $value {
+                            set;
+                        }
+                    }
+                    function run(I|J $i): bool {
+                        $i->value = true;
+                        return $i->value;
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedInvalidDirectWrite' => [
+                'code' => '<?php
+
+                    interface I {
+                        public bool $value {
+                            set;
+                        }
+                    }
+                    function run(I $i): void {
+                        $i->value = "wrong";
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedClassControl' => [
+                'code' => '<?php
+
+                    final class C {
+                        public bool $value = false;
+                    }
+                    function run(C $i): void {
+                        $i->value = "wrong";
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedSetOnlyWriteDoesNotMakeReadable' => [
+                'code' => '<?php
+
+                    interface I {
+                        public bool $value {
+                            set;
+                        }
+                    }
+                    function run(I $i): bool {
+                        $i->value = true;
+                        return $i->value;
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedGetOnlyWrite' => [
+                'code' => '<?php
+
+                    interface I {
+                        public bool $value {
+                            get;
+                        }
+                    }
+                    function run(I $i): void {
+                        $i->value = true;
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedUndeclaredWrite' => [
+                'code' => '<?php
+
+                    interface I {
+                        public bool $value {
+                            set;
+                        }
+                    }
+                    function run(I $i): void {
+                        $i->missing = true;
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedUnionMustMatchAllArms' => [
+                'code' => '<?php
+
+                    interface I {
+                        public bool $value {
+                            set;
+                        }
+                    }
+                    interface J {
+                        public int $value {
+                            set;
+                        }
+                    }
+                    function run(I|J $i): void {
+                        $i->value = true;
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedNullableWrite' => [
+                'code' => '<?php
+
+                    interface I {
+                        public bool $value {
+                            set;
+                        }
+                    }
+                    function run(?I $i): void {
+                        $i->value = true;
+                    }',
+                'error_message' => 'PossiblyNullPropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedNullableNarrowedInvalidWrite' => [
+                'code' => '<?php
+
+                    interface I {
+                        public bool $value {
+                            set;
+                        }
+                    }
+                    function run(?I $i): void {
+                        if ($i !== null) {
+                            $i->value = "wrong";
+                        }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedDynamicInvalidWrite' => [
+                'code' => '<?php
+
+                    interface I {
+                        public bool $value {
+                            set;
+                        }
+                    }
+                    function run(I $i): void {
+                        $i->{"value"} = "wrong";
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedImplementationWideningDoesNotChangeInterface' => [
+                'code' => '<?php
+
+                    interface I {
+                        public string $value {
+                            set;
+                        }
+                    }
+                    final class C implements I {
+                        public string $value = "" {
+                            set(string|array $value) {
+                                $this->value = is_array($value) ? implode(",", $value) : $value;
+                            }
+                        }
+                    }
+                    function run(I $i): void {
+                        $i->value = ["wrong"];
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedSetOnlyComparatorDoesNotMakeReadable' => [
+                'code' => '<?php
+
+                    class Animal {
+                    }
+                    final class Dog extends Animal {
+                    }
+                    /** @template-covariant T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public readonly mixed $value) {
+                        }
+                    }
+                    interface I {
+                        /** @var Box<Animal> */
+                        public Box $value {
+                            set;
+                        }
+                    }
+                    function run(I $i): Box {
+                        $i->value = new Box(new Dog());
+                        return $i->value;
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedClassRootInvalid' => [
+                'code' => '<?php
+
+                    class Animal {
+                    }
+                    final class Dog extends Animal {
+                    }
+                    final class Cat extends Animal {
+                    }
+                    /** @template T */
+                    class Marker {
+                    }
+                    /** @template T of Animal */
+                    interface Sink {
+                        /** @var T */
+                        public Animal $value {
+                            set;
+                        }
+                    }
+                    /** @param Marker<int>&Sink<Dog> $i */
+                    function run($i): void {
+                        $i->value = new Cat();
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedClassReverseInvalid' => [
+                'code' => '<?php
+
+                    class Animal {
+                    }
+                    final class Dog extends Animal {
+                    }
+                    final class Cat extends Animal {
+                    }
+                    /** @template T */
+                    class Marker {
+                    }
+                    /** @template T of Animal */
+                    interface Sink {
+                        /** @var T */
+                        public Animal $value {
+                            set;
+                        }
+                    }
+                    /** @param Sink<Dog>&Marker<int> $i */
+                    function run($i): void {
+                        $i->value = new Cat();
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedGenericRootInvalid' => [
+                'code' => '<?php
+
+                    class Animal {
+                    }
+                    final class Dog extends Animal {
+                    }
+                    final class Cat extends Animal {
+                    }
+                    /** @template T */
+                    interface Marker {
+                    }
+                    /** @template T of Animal */
+                    interface Sink {
+                        /** @var T */
+                        public Animal $value {
+                            set;
+                        }
+                    }
+                    /** @param Marker<int>&Sink<Dog> $i */
+                    function run($i): void {
+                        $i->value = new Cat();
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedGenericReverseInvalid' => [
+                'code' => '<?php
+
+                    class Animal {
+                    }
+                    final class Dog extends Animal {
+                    }
+                    final class Cat extends Animal {
+                    }
+                    /** @template T */
+                    interface Marker {
+                    }
+                    /** @template T of Animal */
+                    interface Sink {
+                        /** @var T */
+                        public Animal $value {
+                            set;
+                        }
+                    }
+                    /** @param Sink<Dog>&Marker<int> $i */
+                    function run($i): void {
+                        $i->value = new Cat();
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedInheritedGenericInvalid' => [
+                'code' => '<?php
+
+                    class Animal {
+                    }
+                    final class Dog extends Animal {
+                    }
+                    final class Cat extends Animal {
+                    }
+                    /** @template T */
+                    interface Marker {
+                    }
+                    /** @template T of Animal */
+                    interface Sink {
+                        /** @var T */
+                        public Animal $value {
+                            set;
+                        }
+                    }
+                    /** @extends Sink<Dog> */
+                    interface ChildSink extends Sink {
+                    }
+                    function run(ChildSink $i): void {
+                        $i->value = new Cat();
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'assignmentToAPropertyOfAnInterfaceAfterAnIssetOfAnotherOne' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    function renameShape(Shape $shape): void {
+                        if (!isset($shape->name)) {
+                            return;
+                        }
+
+                        $shape->label = "renamed";
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+            ],
+            'assignmentToAPropertyOfAnInterfaceGivenByAMixinAfterAFetch' => [
+                'code' => '<?php
+                    final class Data {
+                        public int $foo = 0;
+                    }
+
+                    /** @mixin Data */
+                    interface J {}
+
+                    function f(J $x): int {
+                        $old = $x->foo;
+                        $x->foo = "bad";
+
+                        return $old;
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+            ],
+            'assignmentToAPropertyOfAnInterfaceGivenByAShapeAfterAFetch' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @param I&object{foo: int} $x */
+                    function f($x): int {
+                        $old = $x->foo;
+                        $x->foo = "bad";
+
+                        return $old;
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+            ],
+            'unsetOfAPropertyOfAnInterfaceGivenByAMixinAfterAFetchWritesIt' => [
+                'code' => '<?php
+                    final class Data {
+                        public int $foo = 0;
+                    }
+
+                    /** @mixin Data */
+                    interface J {}
+
+                    /** @psalm-capabilities read-props */
+                    function f(J $x): int {
+                        $old = $x->foo;
+                        unset($x->foo);
+
+                        return $old;
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
             'interfaceExtendsUndefinedInterface' => [
                 'code' => '<?php
                     interface Foo extends Bar {}',
@@ -1582,6 +2669,110 @@ final class InterfaceTest extends TestCase
                       }
                     }',
                 'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'nativeReturnTypeDisjointFromInheritedDocblock' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @return int
+                         */
+                        public function check();
+                    }
+
+                    class C implements I
+                    {
+                        public function check(): bool
+                        {
+                            return false;
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:50 - The inherited return type \'int\' for I::check is different to the implemented return type for C::check \'bool',
+            ],
+            'nativeReturnTypeDisjointFromInheritedTemplatedDocblock' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {
+                        /** @return T */
+                        public function check();
+                    }
+
+                    /** @implements I<int> */
+                    class C implements I
+                    {
+                        public function check(): bool
+                        {
+                            return false;
+                        }
+                    }',
+                'error_message' => 'The inherited return type \'int\' for I::check is different to the implemented return type for C::check \'bool',
+            ],
+            'nativeReturnTypeOnlyCastToInheritedDocblock' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return Stringable */
+                        public function render();
+                    }
+
+                    class C implements I
+                    {
+                        public function render(): string
+                        {
+                            return "x";
+                        }
+                    }',
+                'error_message' => 'The inherited return type \'Stringable\' for I::render is different to the implemented return type for C::render \'string',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nativeObjectOnlyCastToInheritedString' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return non-empty-string */
+                        public function render();
+                    }
+
+                    class C implements I
+                    {
+                        public function render(): Stringable
+                        {
+                            return new Exception("x");
+                        }
+                    }',
+                'error_message' => 'LessSpecificImplementedReturnType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayObjectSortMethodOverriddenAsVoid' => [
+                'code' => '<?php
+                    /**
+                     * @extends ArrayObject<int, int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    class C extends ArrayObject
+                    {
+                        public function asort(): void {}
+                    }',
+                'error_message' => 'The inherited return type \'true\' for ArrayObject::asort is different to the implemented return type for C::asort \'null',
+            ],
+            'traitNativeReturnTypeDisjointFromInheritedDocblock' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return int */
+                        public function check();
+                    }
+
+                    trait T {
+                        public function check(): bool
+                        {
+                            return false;
+                        }
+                    }
+
+                    class C implements I
+                    {
+                        use T;
+                    }',
+                'error_message' => 'The inherited return type \'int\' for I::check is different to the implemented return type for T::check \'bool',
             ],
             'abstractInterfaceImplementsButCallUndefinedMethod' => [
                 'code' => '<?php

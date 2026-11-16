@@ -13,6 +13,7 @@ use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Algebra;
@@ -87,9 +88,11 @@ use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TMixed;
@@ -100,6 +103,9 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_filter;
+use function array_map;
+use function array_values;
 use function assert;
 use function count;
 use function is_int;
@@ -108,9 +114,11 @@ use function reset;
 use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
+use function strncasecmp;
 use function strpos;
 use function strtolower;
 use function substr;
+use function usort;
 
 /**
  * @internal
@@ -118,6 +126,47 @@ use function substr;
  */
 final class AssignmentAnalyzer
 {
+    /**
+     * The type of a variable a closure calls itself through (`$f = function () use (&$f) { $f(); }`): its own signature
+     */
+    private static function getRecursiveClosureType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\Closure $closure,
+        Context $context,
+    ): Union {
+        $closure_id = strtolower($statements_analyzer->getFilePath())
+            . ':' . $closure->getLine()
+            . ':' . (int) $closure->getAttribute('startFilePos')
+            . ':-:closure';
+
+        try {
+            $storage = $statements_analyzer->getCodebase()->getClosureStorage(
+                $statements_analyzer->getFilePath(),
+                $closure_id,
+            );
+        } catch (UnexpectedValueException) {
+            return Type::getClosure();
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        // the self of the parameters, which a trait leaves open, is the class of the code that calls the closure
+        $params = array_map(
+            static fn(FunctionLikeParameter $param): FunctionLikeParameter => $param->type
+                ? $param->setType(TypeExpander::expandUnion(
+                    $codebase,
+                    $param->type,
+                    $context->self,
+                    $context->self,
+                    null,
+                ))
+                : $param,
+            $storage->params,
+        );
+
+        return new Union([new TClosure($params, $storage->return_type, $storage->capabilities)]);
+    }
+
     /**
      * The capabilities writing a variable needs on top of a local write, for what the variable
      * may be shared with: a superglobal or a `global` variable, a variable captured by reference
@@ -152,7 +201,6 @@ final class AssignmentAnalyzer
 
     /**
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
-     * @psalm-suppress ComplexMethod dispatches on every kind of assignment target
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -163,6 +211,137 @@ final class AssignmentAnalyzer
         ?PhpParser\Comment\Doc $doc_comment,
         array $not_ignored_docblock_var_ids = [],
         ?PhpParser\Node\Expr $assign_expr = null,
+    ): ?Union {
+        // the keys of an array item are evaluated before the value, so a variable a key assigns is set in the value
+        $keys = $assign_value !== null && $assign_var instanceof PhpParser\Node\Expr\ArrayDimFetch
+            ? self::getKeysEvaluatedFirst($assign_var)
+            : [];
+
+        if (!$keys) {
+            return self::analyzeAfterTheKeys(
+                $statements_analyzer,
+                $assign_var,
+                $assign_value,
+                $assign_value_type,
+                $context,
+                $doc_comment,
+                $not_ignored_docblock_var_ids,
+                $assign_expr,
+            );
+        }
+
+        $was_in_assignment = $context->inside_assignment;
+        $context->inside_assignment = true;
+
+        // the annotations of the statement hold in its keys too
+        $var_comments = [];
+        $comment_type = null;
+        $comment_type_location = null;
+        $removed_taints = 0;
+
+        self::analyzeDocComment(
+            $statements_analyzer,
+            $statements_analyzer->getCodebase(),
+            $context,
+            $assign_var,
+            ExpressionIdentifier::getVarId($assign_var, $statements_analyzer->getFQCLN(), $statements_analyzer),
+            $assign_value_type,
+            $doc_comment,
+            $var_comments,
+            $comment_type,
+            $comment_type_location,
+            $not_ignored_docblock_var_ids,
+            $removed_taints,
+        );
+
+        // as ArrayAssignmentAnalyzer analyses them
+        $was_inside_general_use = $context->inside_general_use;
+        $context->inside_general_use = true;
+
+        foreach ($keys as $key) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $key, $context) === false) {
+                $context->inside_assignment = $was_in_assignment;
+                $context->inside_general_use = $was_inside_general_use;
+
+                return null;
+            }
+        }
+
+        $context->inside_assignment = $was_in_assignment;
+        $context->inside_general_use = $was_inside_general_use;
+
+        $statements_analyzer->node_data->markEvaluated($keys);
+
+        try {
+            return self::analyzeAfterTheKeys(
+                $statements_analyzer,
+                $assign_var,
+                $assign_value,
+                $assign_value_type,
+                $context,
+                $doc_comment,
+                $not_ignored_docblock_var_ids,
+                $assign_expr,
+                [$var_comments, $comment_type, $comment_type_location, $removed_taints],
+            );
+        } finally {
+            $statements_analyzer->node_data->unmarkEvaluated($keys);
+        }
+    }
+
+    /**
+     * The keys (and what the root array is fetched from) of an array item that PHP evaluates before the value, in
+     * source order, when one of them assigns something. A variable key is only read when the item is written.
+     *
+     * @return list<PhpParser\Node\Expr>
+     */
+    private static function getKeysEvaluatedFirst(PhpParser\Node\Expr\ArrayDimFetch $assign_var): array
+    {
+        $keys = array_values(array_filter(
+            ArrayAssignmentAnalyzer::getOperands($assign_var),
+            static fn(PhpParser\Node\Expr $operand): bool => !$operand instanceof PhpParser\Node\Expr\Variable
+                || !is_string($operand->name),
+        ));
+
+        $assignment = (new PhpParser\NodeFinder())->findFirst(
+            $keys,
+            static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
+                || $node instanceof PhpParser\Node\Expr\AssignOp
+                || $node instanceof PhpParser\Node\Expr\AssignRef
+                || $node instanceof PhpParser\Node\Expr\PreInc
+                || $node instanceof PhpParser\Node\Expr\PostInc
+                || $node instanceof PhpParser\Node\Expr\PreDec
+                || $node instanceof PhpParser\Node\Expr\PostDec,
+        );
+
+        if ($assignment === null) {
+            return [];
+        }
+
+        usort(
+            $keys,
+            static fn(PhpParser\Node\Expr $a, PhpParser\Node\Expr $b): int
+                => (int) $a->getAttribute('startFilePos') <=> (int) $b->getAttribute('startFilePos'),
+        );
+
+        return $keys;
+    }
+
+    /**
+     * @param array{list<VarDocblockComment>, ?Union, ?DocblockTypeLocation, int}|null $doc_comment_analysis
+     *     what analyzeDocComment() found, when it was analysed before the keys
+     * @psalm-suppress ComplexMethod dispatches on every kind of assignment target
+     */
+    private static function analyzeAfterTheKeys(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $assign_var,
+        ?PhpParser\Node\Expr $assign_value,
+        ?Union $assign_value_type,
+        Context $context,
+        ?PhpParser\Comment\Doc $doc_comment,
+        array $not_ignored_docblock_var_ids,
+        ?PhpParser\Node\Expr $assign_expr,
+        ?array $doc_comment_analysis = null,
     ): ?Union {
         $var_id = ExpressionIdentifier::getVarId(
             $assign_var,
@@ -193,7 +372,7 @@ final class AssignmentAnalyzer
             $base_assign_value = $base_assign_value->expr;
         }
 
-        if ($base_assign_value !== $assign_value) {
+        if ($base_assign_value !== null && $base_assign_value !== $assign_value) {
             ExpressionAnalyzer::analyze($statements_analyzer, $base_assign_value, $context);
 
             $assign_value_type = $statements_analyzer->node_data->getType($base_assign_value) ?? $assign_value_type;
@@ -201,25 +380,33 @@ final class AssignmentAnalyzer
 
         $removed_taints = 0;
 
-        self::analyzeDocComment(
-            $statements_analyzer,
-            $codebase,
-            $context,
-            $assign_var,
-            $var_id,
-            $assign_value_type,
-            $doc_comment,
-            $var_comments,
-            $comment_type,
-            $comment_type_location,
-            $not_ignored_docblock_var_ids,
-            $removed_taints,
-        );
+        if ($doc_comment_analysis !== null) {
+            [$var_comments, $comment_type, $comment_type_location, $removed_taints] = $doc_comment_analysis;
+        } else {
+            self::analyzeDocComment(
+                $statements_analyzer,
+                $codebase,
+                $context,
+                $assign_var,
+                $var_id,
+                $assign_value_type,
+                $doc_comment,
+                $var_comments,
+                $comment_type,
+                $comment_type_location,
+                $not_ignored_docblock_var_ids,
+                $removed_taints,
+            );
+        }
 
         if ($extended_var_id) {
             unset($context->cond_referenced_var_ids[$extended_var_id]);
             $context->assigned_var_ids[$extended_var_id] = (int) $assign_var->getAttribute('startFilePos');
             $context->possibly_assigned_var_ids[$extended_var_id] = true;
+
+            if (!$assign_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                $context->fully_assigned_var_ids[$extended_var_id] = true;
+            }
         }
 
         $root_expr = $assign_var;
@@ -321,7 +508,11 @@ final class AssignmentAnalyzer
                         && is_string($closure_use->var->name)
                         && $var_id === '$' . $closure_use->var->name
                     ) {
-                        $context->vars_in_scope[$var_id] = Type::getClosure();
+                        $context->vars_in_scope[$var_id] = self::getRecursiveClosureType(
+                            $statements_analyzer,
+                            $assign_value,
+                            $context,
+                        );
                         $context->vars_possibly_in_scope[$var_id] = true;
                         $assign_value->setAttribute('recursive_var_id', $var_id);
                     }
@@ -465,6 +656,15 @@ final class AssignmentAnalyzer
                 $statements_analyzer,
             );
         } else {
+            // a property never fetched may still be in clauses, from the assertion of a call
+            if ($extended_var_id !== null) {
+                $context->removeVarFromConflictingClauses(
+                    $extended_var_id,
+                    $assign_value_type,
+                    $statements_analyzer,
+                );
+            }
+
             $root_var_id = ExpressionIdentifier::getRootVarId(
                 $assign_var,
                 $statements_analyzer->getFQCLN(),
@@ -1080,8 +1280,46 @@ final class AssignmentAnalyzer
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
+        // `$a += $b` with an array `$a` keeps the offsets it had, whatever `$b` is
+        $union_var_id = $stmt instanceof PhpParser\Node\Expr\AssignOp\Plus
+            ? ExpressionIdentifier::getExtendedVarId(
+                $stmt->var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            )
+            : null;
+        // only where it was not assigned as a whole before in the branch, whichever union follows
+        $array_union_var_id = $union_var_id !== null
+            && isset($context->vars_in_scope[$union_var_id])
+            && $context->vars_in_scope[$union_var_id]->isArray()
+            && !isset($context->fully_assigned_var_ids[$union_var_id])
+                ? $union_var_id
+                : null;
+
+        // what is known of the offsets of the array before the union holds after it
+        $kept_offsets = [];
+
+        if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Plus && $array_union_var_id !== null) {
+            foreach ($context->vars_in_scope as $offset_var_id => $offset_type) {
+                if (str_starts_with($offset_var_id, $array_union_var_id . '[')
+                    || str_starts_with($offset_var_id, $array_union_var_id . '->')
+                ) {
+                    $kept_offsets[$offset_var_id] = $offset_type;
+                }
+            }
+        }
+
         if (ExpressionAnalyzer::analyze($statements_analyzer, $fake_assignment, $context) === false) {
             return false;
+        }
+
+        if ($array_union_var_id !== null) {
+            // the union is not an assignment of the array as a whole
+            unset($context->fully_assigned_var_ids[$array_union_var_id]);
+
+            foreach ($kept_offsets as $offset_var_id => $offset_type) {
+                $context->vars_in_scope[$offset_var_id] ??= $offset_type;
+            }
         }
 
         $old_node_data->setType(
@@ -1100,7 +1338,22 @@ final class AssignmentAnalyzer
         Context $context,
         ?PhpParser\Node\Stmt $from_stmt,
     ): bool {
+        // Usage through a reference held by a property or array item can't be tracked, so the referenced
+        // variable counts as used, like the value of a regular assignment to one.
+        $was_inside_general_use = $context->inside_general_use;
+        $context->inside_general_use = $was_inside_general_use
+            || $stmt->var instanceof PropertyFetch
+            || $stmt->var instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            || $stmt->var instanceof ArrayDimFetch;
+        $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+        $context->inside_by_ref_offset = $stmt->expr instanceof ArrayDimFetch;
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context, false, null, null, null, true);
+        $context->inside_by_ref_offset = $was_inside_by_ref_offset;
+        $context->inside_general_use = $was_inside_general_use;
+
+        if ($stmt->expr instanceof ArrayDimFetch) {
+            self::makeReferencedArrayNonNull($statements_analyzer, $stmt->expr, $context);
+        }
 
         $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
@@ -1148,6 +1401,76 @@ final class AssignmentAnalyzer
             }
         }
 
+        if ($lhs_var_id !== null
+            && $rhs_var_id === null
+            && $stmt->var instanceof PhpParser\Node\Expr\Variable
+            && ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall
+                || $stmt->expr instanceof PhpParser\Node\Expr\MethodCall
+                || $stmt->expr instanceof PhpParser\Node\Expr\StaticCall
+            )
+            && ($return_type = $statements_analyzer->node_data->getType($stmt->expr))
+            && $return_type->by_ref
+        ) {
+            // The call returns a reference whose target is outside the local variable map.
+            // A normal assignment still handles its type, annotations, diagnostics and data flow.
+            // Rebinding can release the old value before the normal assignment gets to inspect it.
+            DestructorAnalyzer::chargeOverwrite(
+                $statements_analyzer,
+                $context,
+                $stmt->var,
+                $lhs_var_id,
+                $return_type,
+            );
+            FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $lhs_var_id);
+            $context->forgetReferencesPossiblyBound($lhs_var_id);
+
+            if (isset($context->references_in_scope[$lhs_var_id])) {
+                $context->decrementReferenceCount($lhs_var_id);
+                unset($context->references_in_scope[$lhs_var_id]);
+            }
+
+            unset(
+                $context->references_possibly_from_confusing_scope[$lhs_var_id],
+                $context->references_to_external_scope[$lhs_var_id],
+            );
+
+            if (isset($context->vars_in_scope[$lhs_var_id])) {
+                $context->removeDescendents(
+                    $lhs_var_id,
+                    $context->vars_in_scope[$lhs_var_id],
+                    $return_type,
+                    $statements_analyzer,
+                );
+            }
+
+            // Detach any previous PHP-level alias before assigning the new value.
+            unset($context->vars_in_scope[$lhs_var_id]);
+            // Reuse the already analyzed return type without evaluating the call a second time.
+            $assignment_type = self::analyze(
+                $statements_analyzer,
+                $stmt->var,
+                null,
+                $return_type,
+                $context,
+                $doc_comment,
+                [],
+                $from_stmt === null ? $stmt : null,
+            );
+
+            // Binding the returned reference does not write through the previous alias.
+            if (isset($context->vars_in_scope[$lhs_var_id])) {
+                $context->vars_in_scope[$lhs_var_id] = $context->vars_in_scope[$lhs_var_id]->setByRef(true);
+            }
+            $context->references_to_external_scope[$lhs_var_id] = true;
+
+            // The assignment expression itself evaluates to the referenced value.
+            if ($from_stmt === null && $assignment_type !== null) {
+                $statements_analyzer->node_data->setType($stmt, $assignment_type->setByRef(false));
+            }
+
+            return true;
+        }
+
         if ($lhs_var_id === null || $rhs_var_id === null) {
             return false;
         }
@@ -1158,7 +1481,22 @@ final class AssignmentAnalyzer
                 ?? Type::getMixed();
         }
 
+        $rhs_type = $context->vars_in_scope[$rhs_var_id];
+
+        // binding a reference to a variable or an offset that is not set creates it as null (a superglobal read
+        // is taken as defined, but $http_response_header: see VariableFetchAnalyzer::getReadSuperGlobalType())
+        if ($rhs_type->possibly_undefined || $rhs_type->possibly_undefined_from_try) {
+            $rhs_type = $rhs_type->setPossiblyUndefined(false, false);
+
+            $context->vars_in_scope[$rhs_var_id] = $rhs_type->isNullable()
+                || $rhs_type->hasMixed()
+                || (VariableFetchAnalyzer::isSuperGlobal($rhs_var_id) && $rhs_var_id !== '$http_response_header')
+                ? $rhs_type
+                : $rhs_type->getBuilder()->addType(new TNull())->freeze();
+        }
+
         FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $lhs_var_id);
+        $context->forgetReferencesPossiblyBound($lhs_var_id);
 
         if ($rhs_var_id === '$GLOBALS[\'' . substr($lhs_var_id, 1) . '\']') {
             $context->bound_globals[$lhs_var_id] = VariableFetchAnalyzer::getGlobalType(
@@ -1173,15 +1511,27 @@ final class AssignmentAnalyzer
 
             // Remove old reference parent node so previously referenced variable usage doesn't count as reference usage
             $old_type = $context->vars_in_scope[$lhs_var_id];
-            foreach ($old_type->parent_nodes as $old_parent_node_id => $_) {
+            $old_parent_nodes = $old_type->parent_nodes;
+            foreach ($old_parent_nodes as $old_parent_node_id => $_) {
                 if (str_starts_with($old_parent_node_id, "$lhs_var_id from ")) {
-                    unset($old_type->parent_nodes[$old_parent_node_id]);
+                    unset($old_parent_nodes[$old_parent_node_id]);
                 }
             }
+
+            // still a reference to the variable it was bound to, which keeps the new type
+            $context->vars_in_scope[$lhs_var_id] = $old_type->setParentNodes(
+                $old_parent_nodes,
+                $old_type->propagate_parent_nodes,
+            );
         }
         // When assigning an existing reference as a reference it removes the
         // old reference, so it's no longer potentially from a confusing scope.
         unset($context->references_possibly_from_confusing_scope[$lhs_var_id]);
+        $rhs_is_external = isset($context->references_to_external_scope[$rhs_var_id]);
+        unset($context->references_to_external_scope[$lhs_var_id]);
+        if ($rhs_is_external) {
+            $context->references_to_external_scope[$lhs_var_id] = true;
+        }
 
         $context->vars_in_scope[$lhs_var_id] = &$context->vars_in_scope[$rhs_var_id];
         $context->hasVariable($lhs_var_id);
@@ -1213,7 +1563,10 @@ final class AssignmentAnalyzer
         }
 
         $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
-        if (!$stmt->var instanceof ArrayDimFetch && !$stmt->var instanceof PropertyFetch) {
+        if (!$stmt->var instanceof ArrayDimFetch
+            && !$stmt->var instanceof PropertyFetch
+            && !$stmt->var instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
             // If left-hand-side is an array offset or object property, usage is too difficult to track,
             // so it's not registered as an unused variable (this mirrors behavior for non-references).
             $statements_analyzer->registerVariableAssignment(
@@ -1238,6 +1591,57 @@ final class AssignmentAnalyzer
         return true;
     }
 
+    /**
+     * PHP turns the null a local variable holds into an array when an offset of it is bound by reference. What is
+     * written through the reference can't be followed, so the item itself is left as it is.
+     */
+    private static function makeReferencedArrayNonNull(
+        StatementsAnalyzer $statements_analyzer,
+        ArrayDimFetch $stmt,
+        Context $context,
+    ): void {
+        $root = $stmt->var;
+
+        while ($root instanceof ArrayDimFetch) {
+            $root = $root->var;
+        }
+
+        if (!$root instanceof PhpParser\Node\Expr\Variable
+            || !is_string($root->name)
+            || $root->name === 'this'
+        ) {
+            return;
+        }
+
+        $root_id = '$' . $root->name;
+        $root_type = $context->vars_in_scope[$root_id] ?? null;
+
+        if ($root_type === null || !$root_type->isNullable()) {
+            return;
+        }
+
+        foreach ($root_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TArray
+                && !$atomic_type instanceof TKeyedArray
+                && !$atomic_type instanceof TNull
+            ) {
+                return;
+            }
+        }
+
+        $array_type = $root_type->getBuilder();
+        $array_type->removeType('null');
+
+        if ($array_type->isUnionEmpty()) {
+            $array_type->addType(new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]));
+        }
+
+        $array_type = $array_type->freeze();
+
+        $context->vars_in_scope[$root_id] = $array_type;
+        $context->removeVarFromConflictingClauses($root_id, $array_type, $statements_analyzer);
+    }
+
     public static function assignByRefParam(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
@@ -1248,6 +1652,9 @@ final class AssignmentAnalyzer
         bool $prevent_null = false,
         bool $out_type_holds_value = false,
     ): void {
+        // a condition holding the call is then known to assign the argument (see FormulaGenerator::getAssignedVarIds())
+        $statements_analyzer->node_data->markWrittenByReference($stmt);
+
         if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch
             && ($prop_name = InstancePropertyFetchAnalyzer::getPropertyName($statements_analyzer, $stmt)) !== null
         ) {
@@ -1258,7 +1665,22 @@ final class AssignmentAnalyzer
                 null,
                 $by_ref_out_type,
                 $context,
+                modifies_value: true,
             );
+
+            $property_var_id = ExpressionIdentifier::getExtendedVarId(
+                $stmt,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($property_var_id !== null) {
+                $context->removeVarFromConflictingClauses(
+                    $property_var_id,
+                    $by_ref_out_type,
+                    $statements_analyzer,
+                );
+            }
 
             return;
         }
@@ -1277,6 +1699,14 @@ final class AssignmentAnalyzer
                 $context->self ?? $statements_analyzer->getFQCLN(),
                 $statements_analyzer,
             );
+
+            // `static::$p` is a variable of its own, but the property it names is declared for the class the code is in
+            if ($property_id !== null
+                && strncasecmp($property_id, 'static::$', 9) === 0
+                && ($self_class = $context->self ?? $statements_analyzer->getFQCLN()) !== null
+            ) {
+                $property_id = $self_class . substr($property_id, 6);
+            }
 
             if ($property_id !== null
                 && $codebase->propertyExists($property_id, false)
@@ -1368,6 +1798,10 @@ final class AssignmentAnalyzer
                 $context->byref_constraints[$var_id] = new ReferenceConstraint($by_ref_type);
             }
 
+            if ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+                StaticPropertyAssignmentAnalyzer::forgetAliasesOfStaticProperty($codebase, $context, $var_id);
+            }
+
             if (!$context->hasVariable($var_id)) {
                 $context->vars_possibly_in_scope[$var_id] = true;
 
@@ -1437,6 +1871,7 @@ final class AssignmentAnalyzer
                 if (!$context->inside_conditional) {
                     $context->possibly_assigned_var_ids[$var_id] = true;
                     $context->vars_in_scope[$var_id] = $by_ref_out_type;
+                    $context->writeToReferencesPossiblyBound($var_id, $by_ref_out_type, $codebase);
 
                     if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))
                         || $stmt_type->isNever()
@@ -1451,6 +1886,7 @@ final class AssignmentAnalyzer
             $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
 
             $context->vars_in_scope[$var_id] = $by_ref_out_type;
+            $context->writeToReferencesPossiblyBound($var_id, $by_ref_out_type, $codebase);
 
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
@@ -2149,8 +2585,14 @@ final class AssignmentAnalyzer
         if (is_string($assign_var->name)) {
             if ($var_id) {
                 $original_type = $context->vars_in_scope[$var_id] ?? null;
+
+                if ($original_type !== null) {
+                    self::keepOverwrittenNodesForCatches($context, $var_id, $original_type);
+                }
+
                 $context->vars_in_scope[$var_id] = $assign_value_type;
                 $context->vars_possibly_in_scope[$var_id] = true;
+                $context->writeToReferencesPossiblyBound($var_id, $assign_value_type, $codebase);
 
                 $location = new CodeLocation($statements_analyzer, $assign_var);
 
@@ -2232,35 +2674,46 @@ final class AssignmentAnalyzer
                     );
                 }
 
+                $assigned_condition = $assign_value instanceof PhpParser\Node\Expr\BooleanNot
+                    ? $assign_value->expr
+                    : $assign_value;
+
                 if ($assign_value_type->getId() === 'bool'
-                    && ($assign_value instanceof PhpParser\Node\Expr\BinaryOp
-                        || $assign_value instanceof PhpParser\Node\Expr\Instanceof_
-                        || ($assign_value instanceof PhpParser\Node\Expr\BooleanNot
-                            && ($assign_value->expr instanceof PhpParser\Node\Expr\BinaryOp
-                                || $assign_value->expr instanceof PhpParser\Node\Expr\Instanceof_)))
+                    && $assign_value !== null
+                    && ($assigned_condition instanceof PhpParser\Node\Expr\BinaryOp
+                        || $assigned_condition instanceof PhpParser\Node\Expr\Instanceof_
+                        || $assigned_condition instanceof PhpParser\Node\Expr\FuncCall
+                        || $assigned_condition instanceof PhpParser\Node\Expr\MethodCall
+                        || $assigned_condition instanceof PhpParser\Node\Expr\StaticCall
+                        || $assigned_condition instanceof PhpParser\Node\Expr\Isset_
+                        || $assigned_condition instanceof PhpParser\Node\Expr\Empty_)
                 ) {
                     $var_object_id = spl_object_id($assign_var);
                     $cond_object_id = spl_object_id($assign_value);
 
-                    $right_clauses = FormulaGenerator::getFormula(
-                        $cond_object_id,
-                        $cond_object_id,
-                        $assign_value,
-                        $context->self,
-                        $statements_analyzer,
-                        $codebase,
-                    );
+                    try {
+                        $right_clauses = FormulaGenerator::getFormula(
+                            $cond_object_id,
+                            $cond_object_id,
+                            $assign_value,
+                            $context->self,
+                            $statements_analyzer,
+                            $codebase,
+                        );
 
-                    $right_clauses = Context::filterClauses(
-                        $var_id,
-                        $right_clauses,
-                    );
+                        $right_clauses = Context::filterClauses(
+                            $var_id,
+                            $right_clauses,
+                        );
 
-                    $assignment_clauses = Algebra::combineOredClauses(
-                        [new Clause([$var_id => ['falsy' => new Falsy()]], $var_object_id, $var_object_id)],
-                        $right_clauses,
-                        $cond_object_id,
-                    );
+                        $assignment_clauses = Algebra::combineOredClauses(
+                            [new Clause([$var_id => ['falsy' => new Falsy()]], $var_object_id, $var_object_id)],
+                            $right_clauses,
+                            $cond_object_id,
+                        );
+                    } catch (ComplicatedExpressionException) {
+                        $assignment_clauses = [];
+                    }
 
                     $context->clauses = [...$context->clauses, ...$assignment_clauses];
                 }
@@ -2326,15 +2779,30 @@ final class AssignmentAnalyzer
             $assignment_node->id => $assignment_node,
         ];
 
-        if ($context->inside_try) {
-            // Copy previous assignment's parent nodes inside a try. Since an exception could be thrown at any
-            // point this is a workaround to ensure that use of a variable also uses all previous assignments.
-            if ($extended_var_id !== null && isset($context->vars_in_scope[$extended_var_id])) {
-                $parent_nodes += $context->vars_in_scope[$extended_var_id]->parent_nodes;
-            }
+        if ($extended_var_id !== null && isset($context->vars_in_scope[$extended_var_id])) {
+            self::keepOverwrittenNodesForCatches($context, $extended_var_id, $context->vars_in_scope[$extended_var_id]);
         }
 
         return $assign_value_type->setParentNodes($parent_nodes);
+    }
+
+    /**
+     * An exception could be thrown at any point of a try body, so a catch or the finally of a try the assignment is in
+     * uses all the previous assignments (see TryAnalyzer)
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    private static function keepOverwrittenNodesForCatches(
+        Context $context,
+        string $var_id,
+        Union $overwritten_type,
+    ): void {
+        for ($try_scope = $context->try_scope; $try_scope !== null; $try_scope = $try_scope->outer) {
+            $try_scope->overwritten_parent_nodes[$var_id] = [
+                ...($try_scope->overwritten_parent_nodes[$var_id] ?? []),
+                ...$overwritten_type->parent_nodes,
+            ];
+        }
     }
 
     private static function analyzeAssignValueDataFlow(
