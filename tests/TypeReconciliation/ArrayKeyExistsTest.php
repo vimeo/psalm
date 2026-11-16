@@ -779,6 +779,34 @@ final class ArrayKeyExistsTest extends TestCase
                         }
                     }',
             ],
+            'arrayKeyExistsRemovesNullAfterANegatedCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int>|null $a
+                     * @psalm-suppress PossiblyNullArgument
+                     */
+                    function f(?array $a): int {
+                        if (!array_key_exists("x", $a)) {
+                            return 0;
+                        }
+
+                        /** @psalm-check-type-exact $a = array{x: int, ...<string, int>} */;
+                        return $a["x"];
+                    }
+
+                    /**
+                     * @param array<string, int>|null $a
+                     * @psalm-suppress PossiblyNullArgument
+                     */
+                    function g(?array $a): int {
+                        if (!array_key_exists("x", $a)) {
+                            return 0;
+                        } else {
+                            /** @psalm-check-type-exact $a = array{x: int, ...<string, int>} */;
+                            return $a["x"];
+                        }
+                    }',
+            ],
         ];
     }
 

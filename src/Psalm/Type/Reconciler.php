@@ -790,6 +790,7 @@ class Reconciler
             foreach ($type as $assertions) {
                 if (count($assertions) === 1 && reset($assertions) instanceof ArrayKeyExists) {
                     $key_exists = true;
+                    break;
                 }
             }
 
@@ -806,8 +807,8 @@ class Reconciler
                 continue;
             }
 
-            // array_key_exists() is only true for a non-empty array (or an object before PHP 8). The assertion goes
-            // first for the ones on the keys the array is nested in to be added below
+            // array_key_exists() is only true for a non-empty array (or an object before PHP 8). First, so that the
+            // loop below adds the isset assertions on the keys the array is nested in
             $new_types[$array_key] = array_merge([[new NonEmpty()]], $new_types[$array_key] ?? []);
         }
 
