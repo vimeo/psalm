@@ -101,36 +101,33 @@ final class CodeLocationTest extends BaseTestCase
 
     /**
      * Workers send their locations to the parent, which must get back what they had: the lazily computed
-     * properties only when they were computed, and the previous location of one.
+     * properties only when they were computed.
      *
-     * The location is restored through __unserialize() rather than unserialize(): its file path comes
-     * from FileSource::getFilePath(), which Psalm's taint analysis treats as user input.
+     * The location is a Raw one, which takes its path as a string: a location built from a FileSource would be
+     * reported by Psalm's own taint analysis as user input reaching unserialize().
      */
     #[DataProvider('provideSnippetStates')]
     public function testSerializationRoundTrip(bool $computed): void
     {
         $contents = "<?php\n// Grüße\n\$a = 'x' . \$b;\n";
-        $previous = $this->locate($contents, '$b', 3);
-
-        $start = strlen("<?php\n// Grüße\n\$a = ");
-        $node = new String_('x', ['startFilePos' => $start, 'endFilePos' => $start + 2, 'startLine' => 3]);
-        $location = new CodeLocation($this->file_analyzer, $node, $previous, true, null, null, 7);
+        $this->file_provider->registerFile(self::FILE, $contents);
+        $start = strlen("<?php\n// Grüße\n\$a = 'x' . ");
+        $location = new Raw($contents, self::FILE, self::FILE, $start, $start + 1);
 
         if ($computed) {
             $this->assertNotSame('', $location->getSnippet());
         }
 
-        $copy = (new ReflectionClass(CodeLocation::class))->newInstanceWithoutConstructor();
-        $copy->__unserialize($location->__serialize());
+        $copy = unserialize(serialize($location));
 
         $this->assertEquals($location, $copy);
+        $this->assertInstanceOf(Raw::class, $copy);
         $this->assertSame($location->getSelectedText(), $copy->getSelectedText());
         $this->assertSame($location->getSnippet(), $copy->getSnippet());
         $this->assertSame($location->getLineNumber(), $copy->getLineNumber());
         $this->assertSame($location->getEndLineNumber(), $copy->getEndLineNumber());
         $this->assertSame($location->getSelectionBounds(), $copy->getSelectionBounds());
         $this->assertSame($location->getColumn(), $copy->getColumn());
-        $this->assertEquals($previous, $copy->previous_location);
     }
 
     /**

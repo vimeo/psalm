@@ -206,7 +206,7 @@ class CodeLocation
      * Mirrors __serialize().
      *
      * @param SerializedLocation $properties
-     * @psalm-external-mutation-free
+     * @psalm-mutation-free
      */
     public function __unserialize(array $properties): void
     {
