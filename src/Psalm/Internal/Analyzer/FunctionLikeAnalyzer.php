@@ -980,6 +980,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if (!$function_param->type
                 && $function_param->location
             ) {
+                if ($this instanceof ClosureAnalyzer && $this->getPropertyHookId() !== null) {
+                    // the property says what an untyped `$value` is
+                    continue;
+                }
+
                 if ($this->function instanceof Closure
                     || $this->function instanceof ArrowFunction
                 ) {
@@ -1353,7 +1358,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        $t = $storage instanceof MethodStorage ? Attribute::TARGET_METHOD : Attribute::TARGET_FUNCTION;
+        $t = $storage instanceof MethodStorage
+            || ($this instanceof ClosureAnalyzer && $this->getPropertyHookId() !== null)
+            ? Attribute::TARGET_METHOD
+            : Attribute::TARGET_FUNCTION;
         AttributesAnalyzer::analyze(
             $this,
             $context,
@@ -1407,6 +1415,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 );
 
                 if ($this instanceof ClosureAnalyzer) {
+                    // a hook cannot leave its parameter out
+                    if ($this->getPropertyHookId() !== null) {
+                        continue;
+                    }
+
                     IssueBuffer::maybeAdd(
                         new UnusedClosureParam(
                             $unused_param_message,
@@ -2454,7 +2467,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             throw new UnexpectedValueException('This is weird');
         }
 
-        return $this->getClosureId();
+        return $this->getPropertyHookId() ?? $this->getClosureId();
     }
 
     /**

@@ -4059,7 +4059,9 @@ final class PropertyTypeTest extends TestCase
                         public string $combinedCode {
                             get => sprintf("%s_%s", $this->languageCode, $this->countryCode);
                             set (string $value) {
-                                [$this->languageCode, $this->countryCode] = explode("_", $value, 2);
+                                $parts = explode("_", $value, 2);
+                                $this->languageCode = $parts[0];
+                                $this->countryCode = $parts[1] ?? "";
                             }
                         }
 

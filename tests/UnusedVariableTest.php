@@ -4537,6 +4537,21 @@ final class UnusedVariableTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.5',
             ],
+            'unusedVariableInPropertyHook' => [
+                'code' => '<?php
+                    final class Foo {
+                        public string $name {
+                            set {
+                                $unused = 5;
+                                $this->name = $value;
+                            }
+                        }
+                        public function __construct() { $this->name = "a"; }
+                    }',
+                'error_message' => 'UnusedVariable',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 }
