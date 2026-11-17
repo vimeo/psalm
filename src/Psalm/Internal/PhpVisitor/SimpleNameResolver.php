@@ -12,9 +12,11 @@ use PhpParser\ErrorHandler;
 use PhpParser\NameContext;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
+use PhpParser\Node\IntersectionType;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Stmt;
+use PhpParser\Node\UnionType;
 use PhpParser\NodeVisitorAbstract;
 
 /**
@@ -191,6 +193,14 @@ final class SimpleNameResolver extends NodeVisitorAbstract
     {
         if ($node instanceof NullableType) {
             $node->type = $this->resolveType($node->type);
+
+            return $node;
+        }
+        if ($node instanceof UnionType || $node instanceof IntersectionType) {
+            foreach ($node->types as &$type) {
+                $type = $this->resolveType($type);
+            }
+            unset($type);
 
             return $node;
         }

@@ -11,6 +11,7 @@ use PhpParser\Node\Expr\ArrowFunction;
 use PhpParser\Node\Expr\Closure;
 use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Name;
+use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\NodeFinder;
@@ -301,6 +302,67 @@ final class CodebaseTest extends TestCase
         yield 'function' => [Function_::class];
         yield 'closure' => [Closure::class];
         yield 'arrow function' => [ArrowFunction::class];
+    }
+
+    /**
+     * @param class-string<FunctionLike> $function_like_class
+     * @param positive-int $name_count
+     */
+    #[DataProvider('functionLikesWithCompositeSignatureTypes')]
+    #[Test]
+    public function compositeSignatureTypesOfFunctionLikesAreNameResolved(
+        string $function_like_class,
+        int $name_count,
+    ): void {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Psalm\CurrentTest;
+
+                use Some\Vendor\Param;
+                use Some\Vendor\Result;
+
+                function f(Param|Result $p): (Param&Result)|Result { return $p; }
+                $c = function (Param&Result $p): Param|Result { return $p; };
+                $a = fn (Param|Result $p): (Param&Result)|Result => $p;
+                final class C { public function m(Param&Result $p): Param|Result { return $p; } }',
+        );
+
+        $statements = $this->codebase->getStatementsForFile('somefile.php');
+
+        $function_like = (new NodeFinder())->findFirstInstanceOf($statements, $function_like_class);
+
+        self::assertInstanceOf($function_like_class, $function_like);
+
+        $param_type = $function_like->getParams()[0]->type;
+        $return_type = $function_like->getReturnType();
+
+        self::assertNotNull($param_type);
+        self::assertNotNull($return_type);
+
+        $names = (new NodeFinder())->findInstanceOf([$param_type, $return_type], Name::class);
+
+        self::assertCount($name_count, $names);
+
+        foreach ($names as $name) {
+            self::assertContains(
+                $name->getAttribute('resolvedName'),
+                ['Some\\Vendor\\Param', 'Some\\Vendor\\Result'],
+                $name->toString(),
+            );
+        }
+    }
+
+    /**
+     * @return iterable<string, array{class-string<FunctionLike>, positive-int}>
+     * @psalm-pure
+     */
+    public static function functionLikesWithCompositeSignatureTypes(): iterable
+    {
+        yield 'function' => [Function_::class, 5];
+        yield 'closure' => [Closure::class, 4];
+        yield 'arrow function' => [ArrowFunction::class, 5];
+        yield 'method' => [ClassMethod::class, 4];
     }
 
     /**
