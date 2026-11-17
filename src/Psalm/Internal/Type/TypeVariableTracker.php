@@ -311,8 +311,7 @@ final class TypeVariableTracker
                     // a value passed or assigned after the requirement was set
                     // (`$this->p = new Coll(); $this->p->add($v)`) is reported
                     // there, as the issue the eager template model reported there
-                    $lower_bound_is_later = $relevant_lower_bound->pos !== null
-                        && $relevant_lower_bound->recorded_order > $upper_bound->recorded_order
+                    $lower_bound_is_later = $relevant_lower_bound->recorded_order > $upper_bound->recorded_order
                         && ($relevant_lower_bound->from_argument_value
                             || $relevant_lower_bound->property_value_id !== null);
 

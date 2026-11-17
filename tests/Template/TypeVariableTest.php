@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests\Template;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -15,6 +17,77 @@ final class TypeVariableTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testConflictingArgumentRequirementsAreReportedAtTheSecondCall(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param SplObjectStorage<object, array<int, string>> $s */
+                function takesStrings(SplObjectStorage $s): void {}
+
+                /** @param SplObjectStorage<object, array<int, int>> $s */
+                function takesInts(SplObjectStorage $s): void {}
+
+                function fill(): void {
+                    $s = new SplObjectStorage();
+                    takesStrings($s);
+                    takesInts($s);
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issues[] = $issue->line_from . ':' . $issue->column_from . ' ' . $issue->type . ': ' . $issue->message;
+        }
+
+        $this->assertSame(
+            [
+                '11:31 IncompatibleTypeParameters: Type array<int, string> should be a subtype of array<int, int>',
+                '11:31 IncompatibleTypeParameters: Type array<int, int> should be a subtype of array<int, string>',
+            ],
+            $issues,
+        );
+    }
+
+    public function testMixedWritesBeforeAndAfterAnArgumentRequirementAreReportedWhereEachConflicts(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param SplObjectStorage<object, array<int, string>> $s */
+                function takes(SplObjectStorage $s): void {}
+
+                /** @param mixed $g */
+                function fill(object $o, object $o2, $g): void {
+                    $s = new SplObjectStorage();
+                    $s[$o] = (array) $g;
+                    takes($s);
+                    $s[$o2] = (array) $g;
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issues[] = $issue->line_from . ':' . $issue->column_from . ' ' . $issue->type . ': ' . $issue->message;
+        }
+
+        $this->assertSame(
+            [
+                '9:27 MixedArgumentTypeCoercion: Type array<array-key, mixed> should be a subtype of array<int, string>',
+                '10:31 MixedArgumentTypeCoercion: Type array<array-key, mixed> should be a subtype of array<int, string>',
+            ],
+            $issues,
+        );
+    }
 
     /**
      * @psalm-pure
