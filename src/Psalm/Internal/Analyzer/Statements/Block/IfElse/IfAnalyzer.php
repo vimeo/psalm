@@ -14,7 +14,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
-use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -28,7 +27,6 @@ use Psalm\Node\VirtualArg;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
-use UnexpectedValueException;
 
 use function array_any;
 use function array_combine;
@@ -49,7 +47,6 @@ use function preg_match;
 use function preg_quote;
 use function spl_object_id;
 use function str_ends_with;
-use function strtolower;
 
 /**
  * @internal
@@ -640,10 +637,9 @@ final class IfAnalyzer
 
     /**
      * Whether the statements may assign the variable as a whole, in nested blocks too: an assignment to it
-     * (`$a = `, `$a .= `, `[$a] = `, `$a++`), a foreach, static or global declaration of it, `unset($a)`, or
-     * passing it by reference to a call or a closure (any argument of a call whose parameters are not known). The
-     * condition of the branch itself is left out: what a call there writes through a reference is not recorded as
-     * an assignment
+     * (`$a = `, `$a .= `, `[$a] = `, `$a = &$b`, `$b = &$a`, `$a++`), a foreach, static or global declaration of
+     * it, `unset($a)`, or passing it by reference to a call or a closure. The condition of the branch itself is
+     * left out, as the assignments the condition records are
      *
      * @param array<PhpParser\Node> $nodes
      */
@@ -660,9 +656,9 @@ final class IfAnalyzer
             static fn(PhpParser\Node $node): bool => match (true) {
                 $node instanceof PhpParser\Node\Expr\CallLike => array_any(
                     $node->getRawArgs(),
-                    static fn(PhpParser\Node $arg, int $offset): bool => $arg instanceof PhpParser\Node\Arg
-                        && $is_target($arg->value)
-                        && self::mayBeByReference($node, $arg, $offset, $statements_analyzer),
+                    static fn(PhpParser\Node $arg): bool => $arg instanceof PhpParser\Node\Arg
+                        && $statements_analyzer->node_data->isWrittenByReference($arg->value)
+                        && $is_target($arg->value),
                 ),
                 // an alias of it may be written whole too
                 $node instanceof PhpParser\Node\Expr\AssignRef => $is_target($node->var) || $is_target($node->expr),
@@ -713,88 +709,5 @@ final class IfAnalyzer
                 $statements_analyzer->getFQCLN(),
                 $statements_analyzer,
             ) === $var_id;
-    }
-
-    /**
-     * Whether the argument may be passed by reference: only the parameters of a named function are looked up
-     */
-    private static function mayBeByReference(
-        PhpParser\Node\Expr\CallLike $call,
-        PhpParser\Node\Arg $arg,
-        int $offset,
-        StatementsAnalyzer $statements_analyzer,
-    ): bool {
-        if (!$call instanceof PhpParser\Node\Expr\FuncCall || !$call->name instanceof PhpParser\Node\Name) {
-            return true;
-        }
-
-        $codebase = $statements_analyzer->getCodebase();
-        $original_function_id = $call->name->toString();
-        $function_id = $call->name instanceof PhpParser\Node\Name\FullyQualified
-            ? $original_function_id
-            : $codebase->functions->getFullyQualifiedFunctionNameFromString(
-                $original_function_id,
-                $statements_analyzer,
-            );
-
-        if (!$codebase->functions->functionExists($statements_analyzer, strtolower($function_id))) {
-            $function_id = $original_function_id;
-        }
-
-        $lc_function_id = strtolower($function_id);
-
-        // a plugin may give it other parameters
-        if ($codebase->functions->params_provider->has($lc_function_id)
-            || $codebase->functions->dynamic_storage_provider->has($lc_function_id)
-        ) {
-            return true;
-        }
-
-        $param_lists = [];
-
-        if (InternalCallMapHandler::inCallMap($function_id)
-            && !$codebase->functions->hasStubbedFunction($lc_function_id)
-        ) {
-            foreach (InternalCallMapHandler::getCallablesFromCallMap($function_id) ?? [] as $callable) {
-                $param_lists[] = $callable->params ?? [];
-            }
-        } else {
-            try {
-                $param_lists[] = $codebase->functions->getStorage($statements_analyzer, $lc_function_id)->params;
-            } catch (UnexpectedValueException) {
-                return true;
-            }
-        }
-
-        if (!$param_lists) {
-            return true;
-        }
-
-        foreach ($param_lists as $params) {
-            $param = null;
-
-            if ($arg->name === null) {
-                $param = $params[$offset] ?? null;
-            } else {
-                foreach ($params as $named_param) {
-                    if ($named_param->name === $arg->name->name) {
-                        $param = $named_param;
-                        break;
-                    }
-                }
-            }
-
-            // what matches no parameter is collected by a variadic one
-            if ($param === null && $params) {
-                $last_param = $params[count($params) - 1];
-                $param = $last_param->is_variadic ? $last_param : null;
-            }
-
-            if ($param === null || $param->by_ref) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

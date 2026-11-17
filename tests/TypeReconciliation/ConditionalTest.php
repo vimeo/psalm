@@ -5186,24 +5186,27 @@ final class ConditionalTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedAssignment'],
             ],
-            'mixedVarPassedByNameToAVariadicByReferenceParamStaysUnioned' => [
+            'mixedVarPassedByValueToAMethodInTheBranchStaysMixed' => [
                 'code' => '<?php
-                    function setAll(mixed &...$v): void {}
+                    final class Service {
+                        public function take(array $a): void {}
+                    }
+
+                    $service = new Service();
 
                     /** @var mixed $u */
                     $u = $_GET["u"];
 
                     if (is_array($u)) {
                         $u["a"] = 1;
-                        setAll(x: $u);
+                        $service->take($u);
                     }
 
                     $after = $u;',
                 'assertions' => [
-                    '$after===' => 'array{a: 1, ...<array-key, mixed>}|mixed',
+                    '$after===' => 'mixed',
                 ],
                 'ignored_issues' => ['MixedAssignment'],
-                'php_version' => '8.0',
             ],
             'mixedVarPassedToACallInTheBranchStaysUnioned' => [
                 'code' => '<?php
