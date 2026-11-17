@@ -1085,7 +1085,7 @@ final class InterfaceTest extends TestCase
                     $r = $o->asort(SORT_REGULAR);',
                 'assertions' => ['$r===' => 'true'],
             ],
-            'arrayObjectSortFlagsKeepPurityAndOverridePhp80' => [
+            'arrayObjectSortFlagsKeepPurityAndOverride' => [
                 'code' => '<?php
                     /** @psalm-pure */
                     function sortLocal(): array {
@@ -1115,8 +1115,6 @@ final class InterfaceTest extends TestCase
 
                     $sorted = (new Sorted(["a" => 1]))->asort(SORT_NUMERIC);',
                 'assertions' => ['$sorted===' => 'true'],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
             ],
             'implementStaticReturn' => [
                 'code' => '<?php
@@ -1990,7 +1988,7 @@ final class InterfaceTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
-            'arrayObjectSortFlagsMustBeIntPhp80' => [
+            'arrayObjectSortFlagsMustBeInt' => [
                 'code' => '<?php
                     /** @param ArrayObject<string, int> $o */
                     function sortObject(ArrayObject $o): void
@@ -1998,10 +1996,8 @@ final class InterfaceTest extends TestCase
                         $o->ksort("x");
                     }',
                 'error_message' => 'InvalidScalarArgument',
-                'error_levels' => [],
-                'php_version' => '8.0',
             ],
-            'arrayObjectSortWithFlagsWritesItPhp80' => [
+            'arrayObjectSortWithFlagsWritesIt' => [
                 'code' => '<?php
                     /**
                      * @param ArrayObject<string, int> $o
@@ -2012,10 +2008,8 @@ final class InterfaceTest extends TestCase
                         $o->asort(SORT_NUMERIC);
                     }',
                 'error_message' => 'ImpureMethodCall',
-                'error_levels' => [],
-                'php_version' => '8.0',
             ],
-            'arrayObjectNatsortTakesNoFlagsPhp80' => [
+            'arrayObjectNatsortTakesNoFlags' => [
                 'code' => '<?php
                     /** @param ArrayIterator<string, int> $i */
                     function sortIterator(ArrayIterator $i): void
@@ -2023,8 +2017,6 @@ final class InterfaceTest extends TestCase
                         $i->natsort(SORT_STRING);
                     }',
                 'error_message' => 'TooManyArguments',
-                'error_levels' => [],
-                'php_version' => '8.0',
             ],
             'hookedSetterDocblockDoesNotWidenNativeInputType' => [
                 'code' => '<?php
