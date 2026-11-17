@@ -1531,6 +1531,67 @@ final class PurityTemplateTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.1',
             ],
+            'fiberStateIsNotRememberedAcrossResume' => [
+                'code' => '<?php
+                    function once(Fiber $fiber): void {
+                        if (!$fiber->isTerminated()) {
+                            $fiber->resume();
+                            if (!$fiber->isTerminated()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function run(Fiber $fiber): void {
+                        while (!$fiber->isTerminated()) {
+                            $fiber->resume();
+                            if (!$fiber->isTerminated() && rand(0, 1)) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    /** @param Fiber[pure] $fiber */
+                    function oncePure(Fiber $fiber): void {
+                        if (!$fiber->isTerminated()) {
+                            $fiber->resume();
+                            if (!$fiber->isTerminated()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function fresh(): void {
+                        $f = new Fiber(static function (): void {
+                            Fiber::suspend(1);
+                        });
+                        $f->start();
+                        if (!$f->isTerminated()) {
+                            $f->resume();
+                            if (!$f->isTerminated()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    /** @param Generator[pure]<int, int, mixed, void> $g */
+                    function sent(Generator $g): void {
+                        if ($g->valid()) {
+                            $g->send(1);
+                            if ($g->valid()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function isDone(Fiber $f): bool {
+                        return $f->isTerminated();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'classPurityTemplateInTypeTemplateBound' => [
                 'code' => '<?php
                     /**

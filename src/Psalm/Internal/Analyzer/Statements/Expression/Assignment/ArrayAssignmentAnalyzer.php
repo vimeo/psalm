@@ -51,6 +51,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 
 use function array_fill;
+use function array_key_last;
 use function array_keys;
 use function array_pop;
 use function array_reverse;
@@ -67,7 +68,6 @@ use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
 use function strlen;
-use function strpos;
 use function substr;
 
 /**
@@ -285,6 +285,7 @@ final class ArrayAssignmentAnalyzer
                     $root_type,
                     $context,
                     false,
+                    true,
                 );
 
                 self::trackPropertyElementImpurity($statements_analyzer, $root_array_expr, $context);
@@ -318,6 +319,7 @@ final class ArrayAssignmentAnalyzer
                 && !$root_type->possibly_undefined_from_try
                     ? $root_type->setPossiblyUndefined(false)
                     : $root_type;
+            $context->writeToReferencesPossiblyBound($root_var_id, $root_type, $codebase);
         }
 
         if ($root_array_expr instanceof PhpParser\Node\Expr\MethodCall
@@ -978,7 +980,9 @@ final class ArrayAssignmentAnalyzer
                     }
                 }
 
-                $array_atomic_key_type = ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type);
+                $array_atomic_key_type = ArrayFetchAnalyzer::castInvalidOffsetTypes(
+                    ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type),
+                );
             } else {
                 $array_atomic_key_type = Type::getArrayKey();
             }
@@ -1063,6 +1067,18 @@ final class ArrayAssignmentAnalyzer
                     && $atomic_root_type_array->fallback_params === null
                 ) {
                     $array_atomic_type = $atomic_root_type_array;
+
+                    // the item an append in the middle of a nested write added holds nothing yet: it is the value
+                    $last_item_key = array_key_last($atomic_root_type_array->properties);
+
+                    if ($array_atomic_type_list !== null
+                        && $atomic_root_type_array->properties[$last_item_key]->isNever()
+                    ) {
+                        $array_atomic_type = $atomic_root_type_array->setProperties([
+                            ...$atomic_root_type_array->properties,
+                            $last_item_key => $array_atomic_type_list,
+                        ]);
+                    }
                 } elseif ($atomic_root_type_array instanceof TNonEmptyArray
                     || ($atomic_root_type_array instanceof TKeyedArray
                         && $atomic_root_type_array->is_list
@@ -1101,27 +1117,12 @@ final class ArrayAssignmentAnalyzer
                     }
                 } elseif ($atomic_root_type_array instanceof TKeyedArray
                     && $atomic_root_type_array->fallback_params === null
+                    && $array_atomic_type_array
                 ) {
-                    if ($array_atomic_type_array) {
-                        $array_atomic_type = new TNonEmptyArray(
-                            $array_atomic_type_array,
-                            count($atomic_root_type_array->properties),
-                        );
-                    } else {
-                        assert($array_atomic_type_list !== null);
-                        $array_atomic_type = array_fill(
-                            $atomic_root_type_array->getMinCount(),
-                            count($atomic_root_type_array->properties)-1,
-                            $array_atomic_type_list,
-                        );
-                        assert(count($array_atomic_type) > 0);
-                        $array_atomic_type = TKeyedArray::make(
-                            $array_atomic_type,
-                            null,
-                            null,
-                            true,
-                        );
-                    }
+                    $array_atomic_type = new TNonEmptyArray(
+                        $array_atomic_type_array,
+                        count($atomic_root_type_array->properties),
+                    );
                     $from_countable_object_like = true;
                 } elseif ($array_atomic_type_list) {
                     $array_atomic_type = Type::getNonEmptyListAtomic(
@@ -1255,6 +1256,7 @@ final class ArrayAssignmentAnalyzer
         $existing_offsets = [];
 
         $root_var = end($child_stmts)->var;
+        $previous_dim_is_append = false;
 
         // First go from the root element up, and go as far as we can to figure out what
         // array types there are
@@ -1311,7 +1313,7 @@ final class ArrayAssignmentAnalyzer
             $existing_offsets[spl_object_id($child_stmt)] = isset($context->vars_in_scope[$extended_var_id])
                 && !$context->vars_in_scope[$extended_var_id]->possibly_undefined;
 
-            if ($parent_var_id && isset($context->vars_in_scope[$parent_var_id])) {
+            if ($parent_var_id && !$previous_dim_is_append && isset($context->vars_in_scope[$parent_var_id])) {
                 $array_type = $context->vars_in_scope[$parent_var_id];
                 $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
             }
@@ -1336,6 +1338,11 @@ final class ArrayAssignmentAnalyzer
                     $child_stmt->dim,
                     $child_stmt_dim_type_or_int,
                 );
+            }
+
+            // the element an append creates holds nothing yet
+            if (!$child_stmt->dim && !$is_last) {
+                $child_stmt_type = Type::getNever();
             }
 
             $statements_analyzer->node_data->setType(
@@ -1384,6 +1391,7 @@ final class ArrayAssignmentAnalyzer
             $current_dim = $child_stmt->dim;
 
             $parent_var_id = $extended_var_id;
+            $previous_dim_is_append = !$child_stmt->dim;
         }
 
         if ($root_var_id !== null) {
@@ -1663,10 +1671,14 @@ final class ArrayAssignmentAnalyzer
 
         for ($i = $position; $i < $length; $i++) {
             if ($var_id[$i] === "'") {
-                // string literals aren't escaped in var ids, so one ends where a quote closes a key
-                $i = strpos($var_id, "']", $i + 1);
+                // a string literal ends at the first quote that isn't escaped
+                for ($i++; $i < $length && $var_id[$i] !== "'"; $i++) {
+                    if ($var_id[$i] === '\\') {
+                        $i++;
+                    }
+                }
 
-                if ($i === false) {
+                if ($i >= $length) {
                     return null;
                 }
             } elseif ($var_id[$i] === '[') {
@@ -1784,7 +1796,7 @@ final class ArrayAssignmentAnalyzer
             if ($string_to_int !== false) {
                 $var_id_addition = '[' . $string_to_int . ']';
             } else {
-                $var_id_addition = '[\'' . $offset_type->value . '\']';
+                $var_id_addition = '[' . ExpressionIdentifier::quoteOffset($offset_type->value) . ']';
             }
 
             return [$offset_type, $var_id_addition, true];

@@ -22,13 +22,9 @@ use Psalm\Progress\Progress;
 use Psalm\Report\ReportOptions;
 
 use function array_key_exists;
-use function fwrite;
 use function in_array;
 use function is_numeric;
 use function is_string;
-
-use const PHP_EOL;
-use const STDERR;
 
 /**
  * The config, the providers and a configured ProjectAnalyzer, as `psalm` builds them from its options
@@ -148,6 +144,7 @@ final class ProjectBootstrap
 
     /**
      * @return array<string,array<string,array{o:int, s: list<string>}>>
+     * @throws ProjectBootstrapException if the file is missing or not a baseline, with what to do about it
      */
     public static function readBaselineFile(string $baseline_file_path): array
     {
@@ -157,9 +154,12 @@ final class ProjectBootstrap
                 $baseline_file_path,
             );
         } catch (ConfigException $exception) {
-            fwrite(STDERR, 'Could not read the baseline: ' . $exception->getMessage()
-                . '. Create it with --set-baseline=' . $baseline_file_path . PHP_EOL);
-            exit(1);
+            throw new ProjectBootstrapException(
+                'Could not read the baseline: ' . $exception->getMessage()
+                    . '. Create it with --set-baseline=' . $baseline_file_path,
+                0,
+                $exception,
+            );
         }
     }
 

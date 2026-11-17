@@ -68,7 +68,7 @@ final class KeyOfTemplateTest extends TestCase
                     }
                 ',
             ],
-            'SKIPPED-acceptsIfArrayKeyExistsFn' => [
+            'SKIPPED-acceptsIfArrayKeyExistsFn' => [ // #13931
                 'code' => '<?php
                     /**
                      * @template T of array
@@ -108,6 +108,179 @@ final class KeyOfTemplateTest extends TestCase
                         return array_keys($array);
                     }',
             ],
+            'keyOfTemplateNarrowedByIdentity' => [
+                'code' => '<?php
+                    /** @param "a" $s */
+                    function takesA(string $s): void {}
+
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     * @return key-of<T>
+                     */
+                    function f(array $array, $k) {
+                        if ($k === "a") {
+                            takesA($k);
+                        }
+
+                        return $k;
+                    }',
+            ],
+            'keyOfTemplateNarrowedByNotIdentical' => [
+                'code' => '<?php
+                    /** @param "b" $s */
+                    function takesB(string $s): void {}
+
+                    /**
+                     * @template T of array<"a"|"b", int>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     * @return key-of<T>
+                     */
+                    function f(array $array, $k) {
+                        if ($k !== "a") {
+                            takesB($k);
+                        }
+
+                        return $k;
+                    }',
+            ],
+            'keyOfTemplateNarrowedByIdentityAlternatives' => [
+                'code' => '<?php
+                    /** @param "a"|"b" $s */
+                    function takesAOrB(string $s): void {}
+
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     * @return key-of<T>
+                     */
+                    function f(array $array, $k) {
+                        if ($k === "a" || $k === "b") {
+                            takesAOrB($k);
+                        }
+
+                        return $k;
+                    }',
+            ],
+            'keyOfTemplateNarrowedByIsInt' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     * @param key-of<T> $k
+                     * @return key-of<T>
+                     */
+                    function f(array $array, $k) {
+                        if (is_int($k)) {
+                            takesInt($k);
+                        } else {
+                            takesString($k);
+                        }
+
+                        return $k;
+                    }
+
+                    function takesInt(int $i): void {}
+                    function takesString(string $s): void {}',
+            ],
+            'keyOfTemplateNarrowedByIsString' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     * @param key-of<T> $k
+                     * @return key-of<T>
+                     */
+                    function f(array $array, $k) {
+                        if (is_string($k)) {
+                            takesString($k);
+                        } else {
+                            takesInt($k);
+                        }
+
+                        return $k;
+                    }
+
+                    function takesInt(int $i): void {}
+                    function takesString(string $s): void {}',
+            ],
+            'keyOfTemplateNarrowedByIsNumeric' => [
+                'code' => '<?php
+                    /** @param numeric-string $s */
+                    function takesNumericString(string $s): void {}
+
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     * @return key-of<T>
+                     */
+                    function f(array $array, $k) {
+                        if (is_numeric($k)) {
+                            takesNumericString($k);
+                        }
+
+                        return $k;
+                    }',
+            ],
+            'keyOfTemplateNarrowedByTruthiness' => [
+                'code' => '<?php
+                    /** @param non-falsy-string $s */
+                    function takesNonFalsyString(string $s): void {}
+
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     * @return key-of<T>
+                     */
+                    function f(array $array, $k) {
+                        if ($k) {
+                            takesNonFalsyString($k);
+                        }
+
+                        return $k;
+                    }',
+            ],
+            'keyOfTemplateInUnionNarrowedByIsInt' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $array
+                     * @param key-of<T>|int $k
+                     * @return key-of<T>
+                     */
+                    function f(array $array, $k) {
+                        if (is_int($k)) {
+                            takesInt($k);
+
+                            throw new Exception();
+                        }
+
+                        return $k;
+                    }
+
+                    function takesInt(int $i): void {}',
+            ],
+            'keyOfTemplateOrNullNarrowedByNotNull' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $array
+                     * @param key-of<T>|null $k
+                     * @return key-of<T>
+                     */
+                    function f(array $array, $k) {
+                        if ($k !== null) {
+                            return $k;
+                        }
+
+                        throw new Exception();
+                    }',
+            ],
         ];
     }
 
@@ -118,6 +291,32 @@ final class KeyOfTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'keyOfTemplateIdenticalToImpossibleLiteral' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     */
+                    function f(array $array, $k): void {
+                        if ($k === 5) {}
+                    }
+                ',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'keyOfTemplateIsImpossibleType' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     */
+                    function f(array $array, $k): void {
+                        if (is_int($k)) {}
+                    }
+                ',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'keyOfTemplateNotIncludesString' => [
                 'code' => '<?php
                     /**

@@ -152,8 +152,9 @@ final class Cache
 
         $this->dir = $dir.DIRECTORY_SEPARATOR;
         if ($this->read_only) {
-            // the lock of a cache that exists keeps consolidate() from replacing the data file under the reader
-            $lock = is_file($this->dir . 'lock') ? fopen($this->dir . 'lock', 'r') : false;
+            // the lock of a cache that exists keeps consolidate() from replacing the data file under the reader;
+            // --clear-cache can delete it after is_file()
+            $lock = is_file($this->dir . 'lock') ? self::quietly(fn() => fopen($this->dir . 'lock', 'r')) : false;
             if ($lock !== false) {
                 flock($lock, LOCK_SH);
                 $this->lock = $lock;
@@ -439,6 +440,15 @@ final class Cache
         return $this->consolidated[$key][0] ?? null;
     }
 
+    /**
+     * Whether nothing was ever written for these dependencies, this config and this version of Psalm: a read-only
+     * cache then computes every item and keeps it in memory
+     */
+    public function isCold(): bool
+    {
+        return $this->persistent && !is_dir($this->dir);
+    }
+
     /** Whether contents are stored for the key, even if they are unusable */
     public function hasItem(string $key): bool
     {
@@ -482,7 +492,8 @@ final class Cache
 
         /** @var T $content */
         $content = ($from_consolidated ? $this->consolidated_serializer : $this->serializer)->unserialize($entry[3]);
-        if ($this->arrayCache) {
+        // in read-only mode a different item in memory is the only copy of what saveItem() was given
+        if ($this->arrayCache && !($this->read_only && isset($this->cache[$key]))) {
             $this->cache[$key] = [$entry[1], $content];
         }
 
@@ -490,13 +501,25 @@ final class Cache
     }
 
     /**
-     * Drops the item from memory, so that the next saveItem() with the same hash isn't skipped as a duplicate.
+     * Drops the item from memory, the consolidated copy included, so that the next saveItem() with the same hash
+     * isn't skipped as a duplicate.
      *
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public function forgetItem(string $key): void
     {
         unset($this->cache[$key], $this->consolidated[$key]);
+    }
+
+    /**
+     * Drops the copy of the item that this process holds in the array, which the caller may have changed in place.
+     * The copy on disk is left alone and is read again on demand.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function evictItem(string $key): void
+    {
+        unset($this->cache[$key]);
     }
 
     /** @param T $item */
@@ -519,8 +542,9 @@ final class Cache
                 $payload,
             );
         }
-        // Without a disk cache the array is the only copy. With one, keep it only if arrayCache is on,
-        // otherwise a cold run holds every parsed AST and storage object in memory for nothing.
+        // Without a disk cache, or with one that is read-only, the array is the only copy. With a disk cache, keep it
+        // only if arrayCache is on, otherwise a cold run holds every parsed AST and storage object in memory for
+        // nothing.
         if (!$this->persistent || $this->read_only || $this->arrayCache) {
             $this->cache[$key] = [$hash, $item];
         }
