@@ -193,18 +193,16 @@ final class ClassLikeStorageProvider
     /**
      * Runs the callback with the storage standing in for the class-like of the same name
      *
-     * @template T
-     * @param callable(): T $callback
-     * @return T
+     * @param callable(): void $callback
      */
-    public function withStorage(ClassLikeStorage $storage, callable $callback): mixed
+    public function withStorage(ClassLikeStorage $storage, callable $callback): void
     {
         $fq_classlike_name_lc = strtolower($storage->name);
         $previous = self::$storage[$fq_classlike_name_lc] ?? null;
         self::$storage[$fq_classlike_name_lc] = $storage;
 
         try {
-            return $callback();
+            $callback();
         } finally {
             if ($previous === null) {
                 unset(self::$storage[$fq_classlike_name_lc]);
