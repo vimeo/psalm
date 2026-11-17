@@ -1693,6 +1693,7 @@ final class Context
      */
     public function forgetPropertyDescendents(string $property_id): void
     {
+        $this->forgetNullArrayOffsets($property_id);
         $this->removeVarFromConflictingClauses($property_id);
 
         // `$a[$this->p]` too
@@ -1706,8 +1707,8 @@ final class Context
     }
 
     /**
-     * Forgets a var a call wrote, as removeMutableObjectVars() does: one forgotten in a branch is not forgotten after
-     * it, whatever a later branch does
+     * Forgets a var a call wrote as removeMutableObjectVars() does: forgotten, not unset (Context::update() tells the
+     * two apart)
      */
     private function forgetWrittenVar(string $var_id): void
     {
@@ -1722,7 +1723,6 @@ final class Context
      */
     public function forgetPropertyOfHeldObject(string $property_id): void
     {
-        $this->forgetNullArrayOffsets($property_id);
         $this->forgetPropertyDescendents($property_id);
 
         if (isset($this->vars_in_scope[$property_id]) && !$this->vars_in_scope[$property_id]->isObjectType()) {

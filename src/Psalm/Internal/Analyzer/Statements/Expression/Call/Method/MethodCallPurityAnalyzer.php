@@ -682,13 +682,27 @@ final class MethodCallPurityAnalyzer
             $item_mutations = $method_storage->this_property_item_mutations[$name] ?? [];
 
             if (!$writes_property && $item_mutations && !isset($item_mutations[''])) {
+                // for another type of the receiver, the call left the property holding another object
+                if (isset($result->property_types_after_call[$mutation_var_id])) {
+                    $context->forgetPropertyDescendents($mutation_var_id);
+
+                    continue;
+                }
+
                 // only properties of the object the property holds are written: it still holds that object
+                $declared_type = self::getDeclaredPropertyType(
+                    $codebase,
+                    $class_storage,
+                    $name,
+                    $class_template_params,
+                );
+
                 foreach ($item_mutations as $sub_path => $writes_last) {
                     self::resetPropertyOfHeldObject(
                         $codebase,
                         $context,
                         $mutation_var_id,
-                        self::getDeclaredPropertyType($codebase, $class_storage, $name, $class_template_params),
+                        $declared_type,
                         explode('->', $sub_path),
                         $writes_last,
                     );
@@ -705,7 +719,6 @@ final class MethodCallPurityAnalyzer
 
             $existing_type = $result->property_types_before_call[$mutation_var_id];
 
-            $context->forgetNullArrayOffsets($mutation_var_id);
             $context->forgetPropertyDescendents($mutation_var_id);
 
             $this_property_didnt_exist = $lhs_var_id === '$this'
@@ -971,7 +984,6 @@ final class MethodCallPurityAnalyzer
             $property_id .= '->' . $name;
         }
 
-        $context->forgetNullArrayOffsets($property_id);
         $context->forgetPropertyDescendents($property_id);
 
         $type_before = $context->vars_in_scope[$property_id] ?? null;

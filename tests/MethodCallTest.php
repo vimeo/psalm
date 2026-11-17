@@ -1140,6 +1140,38 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'propertyOfAHeldObjectIsForgottenWhenAnotherReceiverTypeReplacesTheObject' => [
+                'code' => '<?php
+                    final class OA { public int $q = 0; }
+                    final class OB { public string $q = ""; }
+
+                    final class A {
+                        public function __construct(public OA $p) {}
+
+                        public function m(): void { $this->p = new OA(); }
+                    }
+
+                    final class B {
+                        public function __construct(public OB $p) {}
+
+                        public function m(): void { $this->p->q = "z"; }
+                    }
+
+                    function ab(A|B $x): void {
+                        $x->m();
+                        $q = $x->p->q;
+                        /** @psalm-check-type-exact $q = int|string */
+                    }
+
+                    function ba(B|A $x): void {
+                        $x->m();
+                        $q = $x->p->q;
+                        /** @psalm-check-type-exact $q = int|string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'otherPropertiesOfAHeldObjectOfANonFinalClassAreKeptAfterAMethodWritingOneOfThemInPhp84' => [
                 'code' => '<?php
                     class Ctx {
