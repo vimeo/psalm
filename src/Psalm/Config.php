@@ -525,7 +525,10 @@ final class Config
 
     public float $long_scan_warning = 10.0;
 
-    /** The percentage of the type coverage below which a full run fails, validated by config.xsd */
+    /**
+     * The type coverage in percent below which a full run fails, with at most two decimals: from the minTypeCoverage
+     * attribute, the --min-type-coverage option, or set through the API
+     */
     public ?float $min_type_coverage = null;
 
     /**

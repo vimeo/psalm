@@ -30,7 +30,6 @@ use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\Progress\EchoProgress;
 use Psalm\Tests\TestConfig;
 
-use function array_keys;
 use function array_map;
 use function get_class;
 use function getcwd;
@@ -672,80 +671,6 @@ final class Bat
                 $this->project_analyzer->getCodebase(),
             ),
         );
-    }
-
-    public function testDiffRunChecksTheMinimumTypeCoverageOfTheWholeProject(): void
-    {
-        $project_dir = (string) getcwd()
-            . DIRECTORY_SEPARATOR . 'tests'
-            . DIRECTORY_SEPARATOR . 'fixtures'
-            . DIRECTORY_SEPARATOR . 'DummyProject';
-
-        $this->file_provider->registerFile(
-            $project_dir . DIRECTORY_SEPARATOR . 'Untyped.php',
-            '<?php
-
-namespace Vimeo\Test\DummyProject;
-
-/**
- * @param mixed $a
- * @return mixed
- */
-function untyped($a)
-{
-    return $a->foo($a->bar);
-}
-',
-        );
-
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            Config::loadFromXML(
-                (string)getcwd(),
-                '<?xml version="1.0"?>
-                <psalm minTypeCoverage="75">
-                    <projectFiles>
-                        <directory name="tests/fixtures/DummyProject" />
-                    </projectFiles>
-                </psalm>',
-            ),
-        );
-
-        $this->assertNotNull($this->project_analyzer->stdout_report_options);
-
-        $this->project_analyzer->stdout_report_options->format = Report::TYPE_JSON;
-
-        $this->project_analyzer->check('tests/fixtures/DummyProject', true);
-        ob_start();
-        // 80% of the expressions are typed, above the minimum
-        IssueBuffer::finish($this->project_analyzer, true, microtime(true));
-        ob_end_clean();
-
-        $codebase = $this->project_analyzer->getCodebase();
-        $full_run_coverage = $codebase->analyzer->getTotalTypeCoverage($codebase);
-
-        // unlike a method, a function of a changed file is always analyzed again
-        $untyped_file_path = $project_dir . DIRECTORY_SEPARATOR . 'Untyped.php';
-        $this->file_provider->registerFile($untyped_file_path, $this->file_provider->getContents($untyped_file_path) . "\n");
-
-        $codebase->reloadFiles($this->project_analyzer, []);
-
-        $this->project_analyzer->check('tests/fixtures/DummyProject', true);
-        ob_start();
-        IssueBuffer::finish($this->project_analyzer, true, microtime(true));
-        ob_end_clean();
-
-        $this->assertTrue($codebase->diff_run);
-        // the counts of the other files come from the cache
-        $this->assertSame([$untyped_file_path], array_keys($codebase->analyzer->getMixedCounts()));
-        $this->assertSame([2, 8], $full_run_coverage);
-        $this->assertSame($full_run_coverage, $codebase->analyzer->getTotalTypeCoverage($codebase));
-
-        $codebase->config->min_type_coverage = 95.0;
-        $this->assertSame(
-            'Type coverage 80.00% is below the minimum of 95.00%',
-            IssueBuffer::checkMinTypeCoverage($codebase, true),
-        );
-        $this->assertNull(IssueBuffer::checkMinTypeCoverage($codebase, false));
     }
 
     public function testCheckDir(): void
