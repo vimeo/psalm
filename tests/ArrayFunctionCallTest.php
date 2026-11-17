@@ -4828,6 +4828,19 @@ final class ArrayFunctionCallTest extends TestCase
                     array_filter($arg, "abs", 0);',
                 'error_message' => 'InvalidArgument',
             ],
+            'arrayFilterCallbackValidationNumericParam' => [
+                'code' => '<?php
+                    /** @param numeric $n */
+                    function takesNumeric($n): bool {
+                        return true;
+                    }
+
+                    /**
+                     * @var array<int, string|int|float> $arg
+                     */
+                    array_filter($arg, "takesNumeric", 0);',
+                'error_message' => 'InvalidArgument',
+            ],
             'arrayFilterKeyCallbackLiteral' => [
                 'code' => '<?php
                     array_filter(["a" => 5, "b" => 12, "c" => null], "abs", ARRAY_FILTER_USE_KEY);',
