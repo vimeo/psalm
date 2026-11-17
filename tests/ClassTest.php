@@ -1184,6 +1184,92 @@ final class ClassTest extends TestCase
                     }
                 ',
             ],
+            'negatedClassExistsWithReturnCoversTheCodeAfter' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (!class_exists(Missing\Thing::class)) {
+                            return;
+                        }
+
+                        echo Missing\Thing::class;
+                        Missing\Thing::run();
+                    }',
+            ],
+            'negatedClassExistsInAnOrWithReturnCoversTheCodeAfter' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (!class_exists(Missing\Thing::class) || $flag) {
+                            return;
+                        }
+
+                        Missing\Thing::run();
+                    }',
+            ],
+            'twoNegatedClassExistsInAnOrWithReturnCoverTheCodeAfter' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (!class_exists(Missing\Thing::class) || !class_exists(Missing\Other::class)) {
+                            return;
+                        }
+
+                        Missing\Thing::run();
+                        Missing\Other::run();
+                    }',
+            ],
+            'negatedInterfaceExistsWithThrowCoversTheCodeAfter' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (!interface_exists(Missing\Thing::class)) {
+                            throw new Exception();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+            ],
+            'classExistsCoversTheCodeAfterAnIfWhoseElseLeaves' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (class_exists(Missing\A::class)) {
+                            echo 1;
+                        } else {
+                            return;
+                        }
+
+                        Missing\A::run();
+                    }
+
+                    function bar(): void {
+                        if (class_exists(Missing\B::class)) {
+                            echo 1;
+                        } else {
+                            throw new Exception();
+                        }
+
+                        Missing\B::run();
+                    }
+
+                    function baz(bool $flag): void {
+                        if (class_exists(Missing\C::class)) {
+                            echo 1;
+                        } elseif ($flag) {
+                            return;
+                        } else {
+                            throw new Exception();
+                        }
+
+                        Missing\C::run();
+                    }',
+            ],
+            'classExistsCoversTheIfAndElseIfBody' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            Missing\Thing::run();
+                        } elseif (class_exists(Missing\Other::class)) {
+                            Missing\Other::run();
+                        }
+                    }',
+            ],
             'extendException' => [
                 'code' => '<?php
                     class ME extends Exception {
@@ -1679,6 +1765,103 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classExistsDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            Missing\Thing::run();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+            ],
+            'classExistsAndAFlagDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (class_exists(Missing\Thing::class) && $flag) {
+                            Missing\Thing::run();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+            ],
+            'negatedClassExistsAndAFlagWithReturnDoesNotCoverTheCodeAfter' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (!class_exists(Missing\Thing::class) && $flag) {
+                            return;
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+            ],
+            'classExistsComparedToTrueDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (class_exists(Missing\Thing::class) === true) {
+                            Missing\Thing::run();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+            ],
+            'interfaceExistsDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (interface_exists(Missing\Thing::class)) {
+                            Missing\Thing::run();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+            ],
+            'enumExistsDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (enum_exists(Missing\Thing::class)) {
+                            Missing\Thing::run();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'classExistsDoesNotCoverTheCodeAfterAnIfWhoseElseDoesNotLeave' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            echo 1;
+                        } elseif ($flag) {
+                            return;
+                        } else {
+                            echo 2;
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:25',
+            ],
+            'classExistsDoesNotCoverTheCodeAfterTheIfInAMethod' => [
+                'code' => '<?php
+                    final class C {
+                        public function __construct() {
+                            if (class_exists(Missing\Thing::class)) {
+                                Missing\Thing::run();
+                            }
+
+                            echo Missing\Thing::class;
+                            Missing\Thing::run();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:8',
+            ],
             'classStringNewChecksTheConstructorArguments' => [
                 'code' => '<?php
                     /**

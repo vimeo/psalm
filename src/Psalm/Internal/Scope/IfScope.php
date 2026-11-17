@@ -129,6 +129,14 @@ final class IfScope
     public array $final_actions = [];
 
     /**
+     * The classes the code after the if may use without them being reported when every other branch leaves, so it
+     * is only reached through the if block
+     *
+     * @var array<lowercase-string, true>|null
+     */
+    public ?array $phantom_classes_of_if_block = null;
+
+    /**
      * Whether there is no else and the conditions matched every value of a variable
      */
     public bool $implicit_else_is_impossible = false;
