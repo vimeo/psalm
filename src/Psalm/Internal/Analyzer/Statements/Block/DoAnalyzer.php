@@ -257,6 +257,7 @@ final class DoAnalyzer
 
         // the loop analysis records the bounds of the first iteration again, with the types of all of them
         $statements_analyzer->type_variable_tracker->discardBoundsRecordedBetween($bounds_before);
+        $statements_analyzer->type_variable_tracker->reanalyseSitesIn($stmt->stmts);
 
         if (!isset($suppressed_issues['RedundantCondition'])) {
             $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);

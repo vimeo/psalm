@@ -1689,6 +1689,38 @@ final class TypeVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'constructionInAClosureAnalysedForEachReceiverType' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+
+                        /** @return T */
+                        public function get(): mixed { return $this->v; }
+                    }
+
+                    final class TakesIntCallback {
+                        /** @param Closure(int): int $_c */
+                        public function m(Closure $_c): void {}
+                    }
+
+                    final class TakesFloatCallback {
+                        /** @param Closure(float): float $_c */
+                        public function m(Closure $_c): void {}
+                    }
+
+                    function f(TakesIntCallback|TakesFloatCallback $x): void {
+                        $x->m(fn($v) => (new Box($v))->get());
+                    }
+
+                    function g(TakesFloatCallback|TakesIntCallback $x): void {
+                        $x->m(fn($v) => (new Box($v))->get());
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'loopPassReadsWhatAPreviousIterationRecorded' => [
                 'code' => '<?php
                     /** @param list<string> $ids */

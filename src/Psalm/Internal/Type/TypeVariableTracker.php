@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
+use PhpParser\Node;
 use PhpParser\Node\Expr\New_;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -27,6 +28,8 @@ use function array_unique;
 use function array_values;
 use function count;
 use function implode;
+use function max;
+use function min;
 use function spl_object_id;
 use function usort;
 
@@ -48,9 +51,11 @@ final class TypeVariableTracker
     private array $bounds = [];
 
     /**
-     * The variable minted for each template of each construction site.
+     * The variable last minted for each template of each construction site,
+     * and whether the next analysis of the site takes the place of the one
+     * that minted it.
      *
-     * @var WeakMap<New_, array<string, string>>
+     * @var WeakMap<New_, array<string, array{string, bool}>>
      */
     private WeakMap $site_variables;
 
@@ -59,17 +64,18 @@ final class TypeVariableTracker
      */
     public function __construct()
     {
-        /** @var WeakMap<New_, array<string, string>> */
+        /** @var WeakMap<New_, array<string, array{string, bool}>> */
         $this->site_variables = new WeakMap();
     }
 
     /**
      * Mints the type variable a template of a construction site is carried as.
-     * An analysis of a site analysed before (a loop pass, a closure analysed
-     * once more) gets the same variable, which gets the bounds of both: the
-     * types an earlier analysis left mention it, and get the bounds the next
-     * ones record. Those of a discarded analysis are dropped with it
-     * (discardBoundsRecordedBetween()).
+     * An analysis that takes the place of the previous one of the site (see
+     * reanalyseSitesIn()) gets the same variable back, with the bounds of
+     * both: the types the previous analysis left mention it, and get the
+     * bounds the next one records. Those of the previous analysis are dropped
+     * with it (discardBoundsRecordedBetween()). Any other analysis of the site
+     * (a closure argument analysed for each type of a receiver) gets its own.
      *
      * @param list<TemplateBound> $lower_bounds
      * @param list<TemplateBound> $upper_bounds
@@ -81,23 +87,67 @@ final class TypeVariableTracker
         array $upper_bounds,
     ): TTypeVariable {
         $site_variables = $this->site_variables[$site] ?? [];
-        $name = $site_variables[$template_name] ?? null;
+        [$name, $is_reanalysed] = $site_variables[$template_name] ?? [null, false];
 
-        if ($name !== null && isset($this->bounds[$name])) {
+        if ($name !== null && $is_reanalysed && isset($this->bounds[$name])) {
             $bounds = $this->bounds[$name];
             $bounds->addInitialBounds($lower_bounds, $upper_bounds);
-
-            return new TTypeVariable($name, $bounds);
+        } else {
+            $bounds = new TypeVariableBounds($lower_bounds, $upper_bounds);
+            $name = '`_' . count($this->bounds);
+            $this->bounds[$name] = $bounds;
         }
 
-        $bounds = new TypeVariableBounds($lower_bounds, $upper_bounds);
-        $name = '`_' . count($this->bounds);
-        $this->bounds[$name] = $bounds;
-
-        $site_variables[$template_name] = $name;
+        $site_variables[$template_name] = [$name, false];
         $this->site_variables[$site] = $site_variables;
 
         return new TTypeVariable($name, $bounds);
+    }
+
+    /**
+     * Marks the construction sites among these nodes as about to be analysed
+     * again in place of their last analysis: a loop pass after the previous
+     * one, a closure body after its pre-analysis.
+     *
+     * @param array<Node> $nodes
+     */
+    public function reanalyseSitesIn(array $nodes): void
+    {
+        $start = null;
+        $end = null;
+
+        foreach ($nodes as $node) {
+            $node_start = $node->getStartFilePos();
+
+            if ($node_start < 0) {
+                continue;
+            }
+
+            $start = $start === null ? $node_start : min($start, $node_start);
+            $end = $end === null ? $node->getEndFilePos() : max($end, $node->getEndFilePos());
+        }
+
+        if ($start === null || $end === null) {
+            return;
+        }
+
+        $reanalysed_sites = [];
+
+        foreach ($this->site_variables as $site => $site_variables) {
+            $site_start = $site->getStartFilePos();
+
+            if ($site_start >= $start && $site_start <= $end) {
+                $reanalysed_sites[] = [$site, $site_variables];
+            }
+        }
+
+        foreach ($reanalysed_sites as [$site, $site_variables]) {
+            foreach ($site_variables as $template_name => [$name]) {
+                $site_variables[$template_name] = [$name, true];
+            }
+
+            $this->site_variables[$site] = $site_variables;
+        }
     }
 
     /**
@@ -307,7 +357,7 @@ final class TypeVariableTracker
     ): void {
         $all_bounds = $this->bounds;
         $this->bounds = [];
-        /** @var WeakMap<New_, array<string, string>> */
+        /** @var WeakMap<New_, array<string, array{string, bool}>> */
         $this->site_variables = new WeakMap();
 
         foreach ($all_bounds as $bounds) {

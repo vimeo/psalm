@@ -464,6 +464,7 @@ final class LoopAnalyzer
 
                 $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
                 $bounds_at_kept_pass_start = $type_variable_tracker->snapshotBounds();
+                $type_variable_tracker->reanalyseSitesIn([...$pre_conditions, ...$stmts, ...$post_expressions]);
                 IssueBuffer::startRecording();
 
                 // what a pass computed of the condition (the assertions of its operands too) and of the body is no
