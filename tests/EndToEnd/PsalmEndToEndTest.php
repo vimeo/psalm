@@ -418,6 +418,50 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
     {
         yield 'option' => ['', ['--min-type-coverage=95']];
         yield 'config' => ['minTypeCoverage="95"', []];
+        yield 'option overrides config' => ['minTypeCoverage="50"', ['--min-type-coverage=95']];
+    }
+
+    public function testIssuesAndATypeCoverageBelowTheMinimumAreBothReported(): void
+    {
+        $this->writeAProjectWithTypeCoverage('minTypeCoverage="95"');
+        file_put_contents(self::$tmpDir . '/src/WithAnIssue.php', "<?php\nnew Missing();\n");
+
+        $process = $this->runPsalmInTheProject(['--no-cache', '--output-format=json']);
+
+        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertSame('Type coverage 77.77% is below the minimum of 95.00%' . PHP_EOL, $process->getErrorOutput());
+        $this->assertStringContainsString('UndefinedClass', $process->getOutput());
+    }
+
+    public function testTypeCoverageIsOnlyCheckedOnAFullRun(): void
+    {
+        $this->writeAProjectWithTypeCoverage('minTypeCoverage="95"');
+
+        $full_run = $this->runPsalmInTheProject(['--no-cache', '--output-format=json']);
+
+        $this->assertSame(2, $full_run->getExitCode(), $full_run->getOutput() . $full_run->getErrorOutput());
+        $this->assertSame('Type coverage 77.77% is below the minimum of 95.00%' . PHP_EOL, $full_run->getErrorOutput());
+
+        $partial_run = $this->runPsalmInTheProject(['--no-cache', '--output-format=json', 'src/Untyped.php']);
+
+        $this->assertSame(0, $partial_run->getExitCode(), $partial_run->getOutput() . $partial_run->getErrorOutput());
+        $this->assertSame('', $partial_run->getErrorOutput());
+    }
+
+    public function testTypeCoverageOfAWarmRunDoesNotCountADeletedFile(): void
+    {
+        $this->writeAProjectWithTypeCoverage('minTypeCoverage="95" cacheDirectory="cache"');
+
+        $cold_run = $this->runPsalmInTheProject(['--output-format=json']);
+
+        $this->assertSame(2, $cold_run->getExitCode(), $cold_run->getOutput() . $cold_run->getErrorOutput());
+
+        // the other file is fully typed
+        unlink(self::$tmpDir . '/src/Untyped.php');
+        $warm_run = $this->runPsalmInTheProject(['--output-format=json']);
+
+        $this->assertSame(0, $warm_run->getExitCode(), $warm_run->getOutput() . $warm_run->getErrorOutput());
+        $this->assertSame('', $warm_run->getErrorOutput());
     }
 
     /**
@@ -439,7 +483,6 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
     public static function provideTypeCoverageNotChecked(): iterable
     {
         yield 'option overrides config' => ['minTypeCoverage="95"', ['--min-type-coverage=77.77']];
-        yield 'partial run with the config attribute' => ['minTypeCoverage="95"', ['src/Untyped.php']];
         yield 'creating the baseline' => ['minTypeCoverage="95"', ['--set-baseline=psalm-baseline.xml']];
     }
 
@@ -472,6 +515,10 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         ];
         yield 'paths' => [
             ['--min-type-coverage=95', 'src/Untyped.php'],
+            'Cannot check the minimum type coverage when checking specific files',
+        ];
+        yield 'paths after the terminator' => [
+            ['--min-type-coverage=95', '--', 'src/Untyped.php'],
             'Cannot check the minimum type coverage when checking specific files',
         ];
     }
@@ -515,6 +562,13 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
      */
     private function runPsalmOnAProjectWithTypeCoverage(string $attributes, array $args, array $env = []): Process
     {
+        $this->writeAProjectWithTypeCoverage($attributes);
+
+        return $this->runPsalmInTheProject(['--no-cache', ...$args], $env);
+    }
+
+    private function writeAProjectWithTypeCoverage(string $attributes): void
+    {
         @unlink(self::$tmpDir . '/src/FileWithErrors.php');
         file_put_contents(
             self::$tmpDir . '/psalm.xml',
@@ -526,9 +580,16 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         // Psalm infers the types of 7 of the 9 expressions: 77.7778%
         file_put_contents(self::$tmpDir . '/src/Typed.php', "<?php\nfunction typed(int \$a): int { \$b = \$a + 1; return \$b * 2; }\n");
         file_put_contents(self::$tmpDir . '/src/Untyped.php', "<?php\nfunction untyped(\$a) { return \$a->foo(\$a->bar); }\n");
+    }
 
+    /**
+     * @param list<string> $args
+     * @param array<string, string|false> $env
+     */
+    private function runPsalmInTheProject(array $args, array $env = []): Process
+    {
         $process = self::newProcess(
-            [PHP_BINARY, $this->psalm, '--no-progress', '--no-cache', ...$args],
+            [PHP_BINARY, $this->psalm, '--no-progress', ...$args],
             self::$tmpDir,
             [...self::agentEnvVarsToUnset(), ...$env],
         );
