@@ -33,9 +33,14 @@ final class FileReferenceCacheProvider
     /** @var Cache<array> */
     private readonly Cache $cache;
 
-    public function __construct(Config $config, string $composerLock, CacheMode $mode = CacheMode::Persistent)
-    {
-        $this->cache = new Cache($config, 'file_reference', [$composerLock], $mode);
+    /** @param ?string $identity_directory the directory of the analysis identity to open, by default the config's */
+    public function __construct(
+        Config $config,
+        string $composerLock,
+        CacheMode $mode = CacheMode::Persistent,
+        ?string $identity_directory = null,
+    ) {
+        $this->cache = new Cache($config, 'file_reference', [$composerLock], $mode, $identity_directory);
     }
 
     public function consolidate(): void

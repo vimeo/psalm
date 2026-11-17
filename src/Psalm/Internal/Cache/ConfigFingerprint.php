@@ -46,16 +46,18 @@ final class ConfigFingerprint
         'global_cache_directory' => 'where the caches are',
         'cache_directory_initialized' => 'where the caches are',
         'array_cache' => 'whether the caches keep their items in memory',
-        'use_igbinary' => 'the serializer, which every cache directory name includes',
-        'compressor' => 'the serializer, which every cache directory name includes',
+        'use_igbinary' => 'the serializer: the engine component',
+        'compressor' => 'the serializer: the engine component',
         'threads' => 'parallelism',
         'scan_threads' => 'parallelism',
         'eventDispatcher' => 'the handlers of the plugins: their files are the plugins component',
         'plugins' => 'the instances of the plugins: their files are the plugins component',
         'autoloaders' => 'the class loaders of the process',
         'include_collector' => 'the files the process included',
-        'predefined_constants' => 'a snapshot of the running PHP: the runtime component',
-        'predefined_functions' => 'a snapshot of the running PHP: the runtime component',
+        'predefined_constants' => 'collected from the running PHP (the runtime component) and the autoload files of '
+            . 'the project when these are visited, after the caches open',
+        'predefined_functions' => 'collected from the running PHP (the runtime component) and the autoload files of '
+            . 'the project when these are visited, after the caches open',
         'internal_stubs' => 'derived from the analysis PHP version (the php component) when the stubs are scanned',
         'config_warnings' => 'messages printed at the start',
         'debug_emitted_issues' => 'debug output',
@@ -63,6 +65,7 @@ final class ConfigFingerprint
         'long_scan_warning' => 'when the progress output warns about a slow scan',
         'shepherd_endpoint' => 'where the Shepherd report goes',
         'min_type_coverage' => 'a threshold checked after the analysis',
+        'analysis_identity' => 'the identity itself, once taken',
     ];
 
     public static function of(Config $config): string

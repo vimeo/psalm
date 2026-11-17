@@ -314,6 +314,9 @@ final class Config
      */
     private ?array $php_version_override = null;
 
+    /** The analysis identity, taken when the first cache opens */
+    private ?AnalysisIdentity $analysis_identity = null;
+
     /**
      * @var array<int, string>
      */
@@ -842,11 +845,22 @@ final class Config
 
     /**
      * The fingerprint of the analysis identity of this config (its settings, the PHP version, the runtime, Psalm, the
-     * dependencies and the plugins): every cache directory is keyed by it
+     * dependencies and the plugins): every cache directory is keyed by it. It is taken the first time a cache opens
+     * (or this is called) and kept for the life of the config, so that the plugins and stubs that change the config
+     * later in the run do not change it. It reads files, so it is not mutation-free.
      */
     public function computeHash(): string
     {
-        return AnalysisIdentity::of($this)->getFingerprint();
+        return $this->getAnalysisIdentity()->getFingerprint();
+    }
+
+    /**
+     * @internal
+     * @see computeHash()
+     */
+    public function getAnalysisIdentity(): AnalysisIdentity
+    {
+        return $this->analysis_identity ??= AnalysisIdentity::of($this);
     }
 
     /**
@@ -1239,11 +1253,6 @@ final class Config
 
         if (isset($config_xml['phpVersion'])) {
             $config->configured_php_version = (string) $config_xml['phpVersion'];
-            try {
-                ProjectAnalyzer::getPhpVersionId($config->configured_php_version);
-            } catch (UnexpectedValueException $e) {
-                throw new ConfigException('phpVersion: ' . $e->getMessage(), 0, $e);
-            }
         }
 
         if (isset($config_xml['autoloader'])) {
@@ -1916,6 +1925,10 @@ final class Config
         ];
         foreach ($this->plugin_classes as $plugin_class) {
             $file = $this->getComposerFilePathForClassLike($plugin_class['class']);
+            // as loadPlugin(), a class Composer does not map may still be loaded or autoloadable
+            if ($file === false && class_exists($plugin_class['class'])) {
+                $file = (new ReflectionClass($plugin_class['class']))->getFileName();
+            }
             if ($file !== false) {
                 $files[] = $file;
             }
@@ -3560,6 +3573,7 @@ final class Config
      *
      * @internal
      * @return array{int, 'cli'|'tests'|'config'|'composer'|'runtime'}
+     * @throws ConfigException if phpVersion is the version to analyse for, and not one Psalm supports
      */
     public function getAnalysisPhpVersion(): array
     {
@@ -3568,7 +3582,11 @@ final class Config
         }
 
         if ($this->configured_php_version !== null) {
-            return [ProjectAnalyzer::getPhpVersionId($this->configured_php_version), 'config'];
+            try {
+                return [ProjectAnalyzer::getPhpVersionId($this->configured_php_version), 'config'];
+            } catch (UnexpectedValueException $e) {
+                throw new ConfigException('phpVersion: ' . $e->getMessage(), 0, $e);
+            }
         }
 
         $composer_version = $this->getPHPVersionFromComposerJson();

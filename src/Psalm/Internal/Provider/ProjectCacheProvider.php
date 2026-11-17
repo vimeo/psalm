@@ -31,9 +31,6 @@ class ProjectCacheProvider
 
     private CacheMode $mode = CacheMode::Persistent;
 
-    /** @var array{?string}|null */
-    private ?array $directory = null;
-
     public function __construct(CacheMode $mode = CacheMode::Persistent)
     {
         $this->mode = $mode;
@@ -128,12 +125,9 @@ class ProjectCacheProvider
         touch($run_cache_location, (int)$start_time);
     }
 
-    /**
-     * The directory of the analysis identity, as it was when the run first asked for it (the ProjectAnalyzer does,
-     * before the plugins it initializes later change the config): the one the caches of the run opened
-     */
+    /** The directory of the analysis identity, which the config keeps from when the caches opened */
     private function getDirectory(): ?string
     {
-        return ($this->directory ??= [$this->mode->getIdentityDirectory(Config::getInstance())])[0];
+        return $this->mode->getIdentityDirectory(Config::getInstance());
     }
 }

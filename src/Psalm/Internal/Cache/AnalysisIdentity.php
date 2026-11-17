@@ -4,29 +4,52 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Cache;
 
+use FilesystemIterator;
 use Psalm\Config;
+use Psalm\Internal\Cache;
 use Psalm\Internal\Composer;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use RuntimeException;
+use SplFileInfo;
+use Symfony\Component\Filesystem\Path;
 
+use function array_any;
+use function array_filter;
+use function array_map;
+use function array_unique;
+use function array_values;
 use function bin2hex;
 use function dirname;
 use function error_clear_last;
 use function error_get_last;
+use function explode;
 use function file_exists;
+use function file_get_contents;
 use function file_put_contents;
 use function get_loaded_extensions;
+use function glob;
 use function hash;
 use function hash_file;
 use function hash_final;
 use function hash_init;
 use function hash_update;
 use function implode;
+use function ini_get;
+use function is_array;
 use function is_dir;
+use function is_file;
+use function is_string;
+use function json_decode;
 use function json_encode;
+use function ksort;
 use function mkdir;
 use function random_bytes;
+use function realpath;
 use function rename;
 use function sort;
+use function strtolower;
+use function trim;
 
 use const DIRECTORY_SEPARATOR;
 use const JSON_PRETTY_PRINT;
@@ -48,7 +71,7 @@ final class AnalysisIdentity
     public const FILE_NAME = 'identity.json';
 
     /** Files of Psalm that the format of cached storages and statements depends on, relative to src/Psalm */
-    private const ENGINE_FILES = [
+    public const ENGINE_FILES = [
         'Storage/FileStorage.php',
         'Storage/FunctionLikeStorage.php',
         'Storage/ClassLikeStorage.php',
@@ -77,31 +100,62 @@ final class AnalysisIdentity
 
     public static function of(Config $config): self
     {
-        [$php_version_id, $php_version_source] = $config->getAnalysisPhpVersion();
-
         $extensions = get_loaded_extensions();
         sort($extensions, SORT_STRING);
 
+        $serializer = $config->getCacheSerializer();
         $engine = hash_init('xxh128');
-        hash_update($engine, PSALM_VERSION . "\0" . PHP_PARSER_VERSION . "\0");
+        hash_update($engine, PSALM_VERSION . "\0" . PHP_PARSER_VERSION . "\0" . Cache::LAYOUT_VERSION . "\0");
+        hash_update($engine, $serializer->serialize($serializer) . "\0");
         foreach (self::ENGINE_FILES as $file) {
             hash_update($engine, $file . "\0" . self::hashFile(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $file));
         }
 
         $plugins = hash_init('xxh128');
-        foreach ($config->getPluginFiles() as $file) {
+        foreach (self::getPluginSources($config) as $file) {
             hash_update($plugins, $file . "\0" . self::hashFile($file) . "\0");
         }
 
+        $lock_file = Composer::getLockFilePath($config->base_dir);
+
         return new self([
             'config' => ConfigFingerprint::of($config),
-            'php' => $php_version_id . ' ' . $php_version_source,
-            'runtime' => PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION . ' '
-                . hash('xxh128', implode(',', $extensions)),
+            'php' => (string) $config->getAnalysisPhpVersion()[0],
+            'runtime' => PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION . ' ' . hash('xxh128', implode("\0", [
+                implode(',', $extensions),
+                self::iniList('disable_functions'),
+                self::iniList('disable_classes'),
+            ])),
             'engine' => hash_final($engine),
-            'deps' => hash('xxh128', Composer::getLockFile($config->base_dir)),
+            'deps' => is_file($lock_file) ? self::hashFile($lock_file) : 'none',
             'plugins' => hash_final($plugins),
         ]);
+    }
+
+    /**
+     * The directories of $cache_directory that hold caches of identities with the engine of $this, so that the
+     * current Psalm can read their records
+     *
+     * @return list<string>
+     */
+    public function getDirectoriesWithTheSameEngine(string $cache_directory): array
+    {
+        $directories = [];
+        $files = glob($cache_directory . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . self::FILE_NAME);
+        foreach ($files === false ? [] : $files as $file) {
+            $contents = @file_get_contents($file);
+            /** @var mixed $identity */
+            $identity = $contents !== false ? json_decode($contents, true) : null;
+            if (is_array($identity)
+                && is_array($identity['components'] ?? null)
+                && ($identity['components']['engine'] ?? null) === $this->components['engine']
+            ) {
+                $directories[] = dirname($file);
+            }
+        }
+        sort($directories);
+
+        return $directories;
     }
 
     public function getFingerprint(): string
@@ -150,6 +204,84 @@ final class AnalysisIdentity
 
     private static function hashFile(string $path): string
     {
-        return file_exists($path) ? (string) hash_file('xxh128', $path) : 'missing';
+        return is_file($path) ? (string) hash_file('xxh128', $path) : 'missing';
+    }
+
+    /** A comma-separated ini setting, normalised: the functions or classes it names, sorted */
+    private static function iniList(string $name): string
+    {
+        $names = array_filter(array_map(
+            static fn(string $name): string => strtolower(trim($name)),
+            explode(',', (string) ini_get($name)),
+        ), static fn(string $name): bool => $name !== '');
+        $names = array_unique($names);
+        sort($names, SORT_STRING);
+
+        return implode(',', $names);
+    }
+
+    /**
+     * The files of the plugins. A plugin in a directory of its own inside the project counts with every PHP file of
+     * that directory, as its hooks may be in other files than its entry file; elsewhere (in the project root, a
+     * directory of project files, the vendor directory or outside the project) only its entry file counts.
+     *
+     * @return list<string>
+     */
+    private static function getPluginSources(Config $config): array
+    {
+        $base_dir = realpath($config->base_dir);
+        $vendor_dir = realpath(Path::makeAbsolute(self::getVendorDirectory($config->base_dir), $config->base_dir));
+        $project_dirs = [];
+        foreach ($config->getProjectDirectories() as $project_dir) {
+            $project_dir = realpath($project_dir);
+            if ($project_dir !== false) {
+                $project_dirs[] = $project_dir;
+            }
+        }
+
+        $sources = [];
+        foreach ($config->getPluginFiles() as $file) {
+            $directory = realpath(dirname($file));
+            $own_directory = $base_dir !== false
+                && $directory !== false
+                && Path::isBasePath($base_dir, $directory)
+                && $directory !== $base_dir
+                && ($vendor_dir === false || !Path::isBasePath($vendor_dir, $directory))
+                && !array_any(
+                    $project_dirs,
+                    static fn(string $project_dir): bool => Path::isBasePath($directory, $project_dir),
+                );
+
+            if (!$own_directory) {
+                $sources[$file] = $file;
+                continue;
+            }
+
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
+            );
+            /** @var SplFileInfo $source */
+            foreach ($iterator as $source) {
+                if ($source->isFile() && $source->getExtension() === 'php') {
+                    $sources[$source->getPathname()] = $source->getPathname();
+                }
+            }
+        }
+        ksort($sources, SORT_STRING);
+
+        return array_values($sources);
+    }
+
+    private static function getVendorDirectory(string $base_dir): string
+    {
+        $composer_json = @file_get_contents(Composer::getJsonFilePath($base_dir));
+        /** @var mixed $composer */
+        $composer = $composer_json !== false ? json_decode($composer_json, true) : null;
+        /** @var mixed $vendor_dir */
+        $vendor_dir = is_array($composer) && is_array($composer['config'] ?? null)
+            ? ($composer['config']['vendor-dir'] ?? null)
+            : null;
+
+        return is_string($vendor_dir) ? $vendor_dir : 'vendor';
     }
 }

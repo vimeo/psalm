@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal;
 
 use Psalm\Config;
-use Psalm\Internal\Cache\AnalysisIdentity;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -46,7 +45,7 @@ enum CacheMode
             return null;
         }
 
-        $identity = AnalysisIdentity::of($config);
+        $identity = $config->getAnalysisIdentity();
 
         return $this === self::Persistent
             ? $identity->createDirectory($cache_directory)

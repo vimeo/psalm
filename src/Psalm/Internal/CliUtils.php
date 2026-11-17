@@ -761,21 +761,23 @@ final class CliUtils
         }
     }
 
-    /** Passes --php-version to the config, which resolves the version to analyse for */
+    /**
+     * Passes --php-version to the config, which resolves the version to analyse for, and exits when that version is
+     * not one Psalm supports
+     */
     public static function initPhpVersion(array $options, Config $config): void
     {
-        if (!isset($options['php-version'])) {
-            return;
-        }
-
-        if (!is_string($options['php-version'])) {
+        if (isset($options['php-version']) && !is_string($options['php-version'])) {
             fwrite(STDERR, 'Expecting a version number in the format x.y' . PHP_EOL);
             exit(1);
         }
 
         try {
-            $config->setPhpVersionOverride($options['php-version']);
-        } catch (UnexpectedValueException $e) {
+            if (isset($options['php-version'])) {
+                $config->setPhpVersionOverride($options['php-version']);
+            }
+            $config->getAnalysisPhpVersion();
+        } catch (ConfigException | UnexpectedValueException $e) {
             fwrite(
                 STDERR,
                 $e->getMessage() . PHP_EOL,

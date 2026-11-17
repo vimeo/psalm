@@ -7,15 +7,26 @@ namespace Psalm\Tests\EndToEnd;
 use Override;
 use PHPUnit\Framework\TestCase;
 use Psalm\Config;
+use Symfony\Component\Process\Process;
 
+use function basename;
+use function clearstatcache;
+use function dirname;
 use function file_put_contents;
+use function filemtime;
+use function filesize;
+use function glob;
 use function json_decode;
+use function ksort;
 use function mkdir;
 use function sort;
 use function sys_get_temp_dir;
 use function uniqid;
+use function var_export;
 
 use const DIRECTORY_SEPARATOR;
+use const GLOB_BRACE;
+use const GLOB_ONLYDIR;
 use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
 
@@ -139,32 +150,138 @@ final class CacheIdentityEndToEndTest extends TestCase
         $this->assertWarmIsCold([]);
     }
 
-    /** @param list<string> $args */
-    private function assertWarmIsCold(array $args): void
+    public function testACacheOfARuntimeWithOtherDisabledFunctionsIsNotRead(): void
     {
-        $this->assertSame($this->psalm([...$args, '--no-cache']), $this->psalm($args));
+        $this->writeConfig();
+        file_put_contents(
+            $this->project . '/src/A.php',
+            "<?php\n\nif (!function_exists('phpinfo')) {\n    final class A { public const VALUE = 'polyfill'; }\n"
+                . "} else {\n    final class A { public const VALUE = 123; }\n}\n",
+        );
+        file_put_contents($this->project . '/src/b.php', "<?php\n\nfunction value(): int\n{\n    return A::VALUE;\n}\n");
+
+        $this->psalm([]);
+
+        $this->assertWarmIsCold([], ['-d', 'disable_functions=phpinfo']);
+    }
+
+    public function testAChangedPluginClassComposerDoesNotMapIsSeen(): void
+    {
+        $this->writeConfig('', '<plugins><pluginClass class="LoadedDeprecator"/></plugins>');
+        $this->writeDeprecatedClassUse();
+        mkdir($this->project . '/vendor');
+        // the autoloader of the project loads the plugin itself
+        file_put_contents(
+            $this->project . '/vendor/autoload.php',
+            "<?php\n\n\$loader = require " . var_export(dirname(__DIR__, 2) . '/vendor/autoload.php', true) . ";\n"
+                . "require_once __DIR__ . '/../plugins/LoadedDeprecator.php';\n\nreturn \$loader;\n",
+        );
+        $this->writeLoadedPlugin(true);
+
+        $this->psalm([], [], $this->project);
+        $this->writeLoadedPlugin(false);
+
+        $this->assertWarmIsCold([], [], $this->project);
+    }
+
+    public function testAChangedFileOfAPluginDirectoryIsSeen(): void
+    {
+        $this->writeConfig('', '<plugins><plugin filename="tools/Deprecator.php"/></plugins>');
+        $this->writeDeprecatedClassUse();
+        mkdir($this->project . '/tools');
+        file_put_contents(
+            $this->project . '/tools/Deprecator.php',
+            <<<'PHP'
+                <?php
+
+                use Psalm\Plugin\EventHandler\AfterClassLikeVisitInterface;
+                use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
+
+                require_once __DIR__ . '/Deprecation.php';
+
+                final class Deprecator implements AfterClassLikeVisitInterface
+                {
+                    public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event): void
+                    {
+                        $event->getStorage()->deprecated = Deprecation::DEPRECATED;
+                    }
+                }
+                PHP,
+        );
+        $this->writeDeprecation(true);
+
+        $this->psalm([]);
+        $this->writeDeprecation(false);
+
+        $this->assertWarmIsCold([]);
+    }
+
+    public function testConsolidateCacheConsolidatesTheCacheOfAnyOptions(): void
+    {
+        $this->writeConfig();
+        $this->writeDeprecatedClassUse();
+
+        $this->psalm(['--php-version=8.2', '--find-unused-code']);
+        $consolidate = $this->process(['--consolidate-cache']);
+
+        $this->assertSame(0, $consolidate->getExitCode(), $consolidate->getErrorOutput());
+        $identities = $this->identityDirectories();
+        $this->assertCount(1, $identities);
+        // parser, file storage, class-like storage and reference caches
+        $this->assertCount(4, $this->glob($identities[0] . '/*/*/consolidated'));
+    }
+
+    public function testRunsWithAnotherThreadCountReadTheSameCache(): void
+    {
+        $this->writeConfig();
+        $this->writeDeprecatedClassUse();
+
+        $this->assertSame(0, $this->process(['--threads=2'])->getExitCode());
+        $statements = $this->statementEntries();
+        $this->assertNotSame([], $statements);
+        $this->assertSame(0, $this->process(['--threads=1'])->getExitCode());
+
+        $this->assertCount(1, $this->identityDirectories());
+        // nothing parsed again
+        $this->assertSame($statements, $this->statementEntries());
+    }
+
+    public function testEachIdentityKeepsItsOwnRunState(): void
+    {
+        $this->writeConfig();
+        $this->writeDeprecatedClassUse();
+
+        $this->psalm(['--php-version=8.0']);
+        $this->psalm(['--php-version=7.4']);
+
+        $identities = $this->identityDirectories();
+        $this->assertCount(2, $identities);
+        foreach ($identities as $identity) {
+            $this->assertFileExists($identity . '/good_run');
+        }
+        $this->assertSame([], $this->glob($this->project . '/cache/*/{good_run,custom_taints}', GLOB_BRACE));
     }
 
     /**
      * @param list<string> $args
+     * @param list<string> $php_options
+     */
+    private function assertWarmIsCold(array $args, array $php_options = [], ?string $cwd = null): void
+    {
+        $this->assertSame(
+            $this->psalm([...$args, '--no-cache'], $php_options, $cwd),
+            $this->psalm($args, $php_options, $cwd),
+        );
+    }
+
+    /**
+     * @param list<string> $args
+     * @param list<string> $php_options
      * @return list<string> the issues, sorted
      */
-    private function psalm(array $args): array
+    private function psalm(array $args, array $php_options = [], ?string $cwd = null): array
     {
-        $process = self::newProcess(
-            [
-                PHP_BINARY,
-                $this->psalm,
-                '-c=' . $this->project . '/psalm.xml',
-                '--output-format=json',
-                '--no-progress',
-                '--threads=1',
-                ...$args,
-            ],
-            null,
-            self::agentEnvVarsToUnset(),
-        );
-        $process->run();
+        $process = $this->process(['--output-format=json', '--threads=1', ...$args], $php_options, $cwd);
 
         $output = json_decode($process->getOutput(), true, 512, JSON_THROW_ON_ERROR);
         $this->assertIsArray($output, $process->getErrorOutput());
@@ -177,6 +294,35 @@ final class CacheIdentityEndToEndTest extends TestCase
         sort($issues);
 
         return $issues;
+    }
+
+    /**
+     * @param list<string> $args
+     * @param list<string> $php_options
+     */
+    private function process(array $args, array $php_options = [], ?string $cwd = null): Process
+    {
+        $process = self::newProcess(
+            [
+                PHP_BINARY,
+                ...$php_options,
+                $this->psalm,
+                '-c=' . $this->project . '/psalm.xml',
+                '--no-progress',
+                ...$args,
+            ],
+            $cwd,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        return $process;
+    }
+
+    /** @return list<string> the directories of the analysis identities in the cache of the project */
+    private function identityDirectories(): array
+    {
+        return $this->glob($this->project . '/cache/*/*', GLOB_ONLYDIR);
     }
 
     private function writeConfig(string $attributes = '', string $elements = ''): void
@@ -230,6 +376,72 @@ final class CacheIdentityEndToEndTest extends TestCase
                 }
                 PHP,
         );
+    }
+
+    /** A plugin class the autoloader of the project loads, which Composer's class map does not know */
+    private function writeLoadedPlugin(bool $deprecates): void
+    {
+        @mkdir($this->project . '/plugins');
+        file_put_contents(
+            $this->project . '/plugins/LoadedDeprecator.php',
+            <<<PHP
+                <?php
+
+                use Psalm\Plugin\EventHandler\AfterClassLikeVisitInterface;
+                use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
+                use Psalm\Plugin\PluginEntryPointInterface;
+                use Psalm\Plugin\RegistrationInterface;
+
+                final class LoadedDeprecator implements PluginEntryPointInterface, AfterClassLikeVisitInterface
+                {
+                    public function __invoke(RegistrationInterface \$registration, ?SimpleXMLElement \$config = null): void
+                    {
+                        \$registration->registerHooksFromClass(self::class);
+                    }
+
+                    public static function afterClassLikeVisit(AfterClassLikeVisitEvent \$event): void
+                    {
+                        \$event->getStorage()->deprecated = {$this->bool($deprecates)};
+                    }
+                }
+                PHP,
+        );
+    }
+
+    /** The file of a plugin directory, beside its entry file, that decides what the plugin does */
+    private function writeDeprecation(bool $deprecates): void
+    {
+        file_put_contents(
+            $this->project . '/tools/Deprecation.php',
+            "<?php\n\nfinal class Deprecation\n{\n    public const DEPRECATED = {$this->bool($deprecates)};\n}\n",
+        );
+    }
+
+    /** @return array<string, string> the entries of the parser cache, with their size and modification time */
+    private function statementEntries(): array
+    {
+        $entries = [];
+        foreach ($this->glob($this->project . '/cache/*/*/php-parser/*/*') as $entry) {
+            if (basename($entry) !== 'lock') {
+                clearstatcache(true, $entry);
+                $entries[$entry] = (string) filesize($entry) . ' ' . (string) filemtime($entry);
+            }
+        }
+        ksort($entries);
+
+        return $entries;
+    }
+
+    /**
+     * @param int-mask<GLOB_BRACE, GLOB_ONLYDIR> $flags
+     * @return list<string>
+     */
+    private function glob(string $pattern, int $flags = 0): array
+    {
+        $paths = glob($pattern, $flags);
+        $this->assertNotFalse($paths);
+
+        return $paths;
     }
 
     /** @psalm-pure */

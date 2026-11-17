@@ -83,7 +83,7 @@ use const LOCK_UN;
 final class Cache
 {
     /** Changing the format of the records or the consolidated files requires changing this. */
-    private const LAYOUT_VERSION = '3';
+    public const LAYOUT_VERSION = '3';
     private const RECORD_PREFIX_LENGTH = 28;
     private const CONSOLIDATED_INDEX = 'consolidated';
     private const TEMP_SUFFIX = '.tmp';
@@ -122,11 +122,15 @@ final class Cache
 
     private readonly bool $read_only;
 
+    /**
+     * @param ?string $identity_directory the directory of the analysis identity to open, by default the one of $config
+     */
     public function __construct(
         Config $config,
         string $subdir,
         array $dependencies = [],
         CacheMode $mode = CacheMode::Persistent,
+        ?string $identity_directory = null,
     ) {
         $this->serializer = $config->getCacheSerializer();
         $this->consolidated_serializer = $this->serializer;
@@ -137,7 +141,7 @@ final class Cache
             return;
         }
 
-        $dir = $mode->getIdentityDirectory($config) . DIRECTORY_SEPARATOR . $subdir;
+        $dir = ($identity_directory ?? $mode->getIdentityDirectory($config)) . DIRECTORY_SEPARATOR . $subdir;
 
         $hash = hash_init('xxh128');
         foreach ($dependencies as $dep) {

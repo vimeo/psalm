@@ -21,9 +21,20 @@ final class FileStorageCacheProvider
 
     private const FILE_STORAGE_CACHE_DIRECTORY = 'file_cache';
 
-    public function __construct(Config $config, string $composerLock, CacheMode $mode = CacheMode::Persistent)
-    {
-        $this->cache = new Cache($config, self::FILE_STORAGE_CACHE_DIRECTORY, [$composerLock], $mode);
+    /** @param ?string $identity_directory the directory of the analysis identity to open, by default the config's */
+    public function __construct(
+        Config $config,
+        string $composerLock,
+        CacheMode $mode = CacheMode::Persistent,
+        ?string $identity_directory = null,
+    ) {
+        $this->cache = new Cache(
+            $config,
+            self::FILE_STORAGE_CACHE_DIRECTORY,
+            [$composerLock],
+            $mode,
+            $identity_directory,
+        );
     }
 
     public function consolidate(): void
