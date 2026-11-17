@@ -158,6 +158,20 @@ final class ArrayAssignmentAnalyzer
         $root_type = $statements_analyzer->node_data->getType($root_array_expr) ?? Type::getMixed();
 
         if ($root_type->hasMixed()) {
+            $unknown_offset_ids = [];
+
+            foreach (array_slice($child_stmts, 1) as $child_stmt) {
+                $child_var_id = ExpressionIdentifier::getExtendedVarId(
+                    $child_stmt,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer,
+                );
+
+                if ($child_var_id !== null && !isset($context->vars_in_scope[$child_var_id])) {
+                    $unknown_offset_ids[] = $child_var_id;
+                }
+            }
+
             // read the chain as PHP does for a write: missing offsets along the arrays are created
             $was_inside_by_ref_offset = $context->inside_by_ref_offset;
             $context->inside_by_ref_offset = true;
@@ -170,6 +184,11 @@ final class ArrayAssignmentAnalyzer
             );
 
             $context->inside_by_ref_offset = $was_inside_by_ref_offset;
+
+            // the read created them as null, the write below creates them as arrays
+            foreach ($unknown_offset_ids as $unknown_offset_id) {
+                unset($context->vars_in_scope[$unknown_offset_id]);
+            }
 
             if ($stmt->dim) {
                 ExpressionAnalyzer::analyze(

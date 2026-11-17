@@ -1472,6 +1472,17 @@ final class ArrayAssignmentTest extends TestCase
                         $element["upload"]["#attached"]["ds"] = "y";
                     }',
             ],
+            'deeplyNestedKeyAddedToKeyedArrayUnderMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $element
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f(&$element): void {
+                        $element["upload"] = ["#name" => "n", "#type" => "file"];
+                        $element["upload"]["#attached"]["ds"]["file"]["el"] = "y";
+                    }',
+            ],
             'nestedKeyAddedToKeyedArrayUnderMixedHasItsType' => [
                 'code' => '<?php
                     /** @return mixed */
@@ -1498,7 +1509,7 @@ final class ArrayAssignmentTest extends TestCase
                     $m["a"]["c"][] = 1;
                     $x = $m["a"];',
                 'assertions' => [
-                    '$x===' => 'array{b: 1, c: list<1>}',
+                    '$x===' => 'array{b: 1, c: non-empty-list<1>}',
                 ],
                 'ignored_issues' => ['MixedAssignment', 'MixedArrayAssignment'],
             ],
