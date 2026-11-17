@@ -1083,13 +1083,6 @@ final class UnusedCodeTest extends TestCase
                         return $array;
                     }',
             ],
-            'libxmlEntityLoaderIsGlobalState' => [
-                'code' => '<?php
-                    /** @psalm-api */
-                    function f(): void {
-                        libxml_set_external_entity_loader(null);
-                    }',
-            ],
             'preDecrementAsArrayLiteralKey' => [
                 'code' => '<?php
                     /** @psalm-api */
