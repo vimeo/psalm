@@ -1028,6 +1028,112 @@ final class InterfaceTest extends TestCase
                     $r = (new ArrayObject([2, 1]))->asort();',
                 'assertions' => ['$r===' => 'true'],
             ],
+            'arrayObjectAndIteratorSortMethodsReturnTruePhp83' => [
+                'code' => '<?php
+                    /** @var ArrayObject<string, int> */
+                    $o = new ArrayObject(["b" => 2, "a" => 1]);
+                    $o1 = $o->asort();
+                    $o2 = $o->ksort();
+                    $o3 = $o->natsort();
+                    $o4 = $o->natcasesort();
+                    $o5 = $o->uasort(fn(int $a, int $b): int => $a <=> $b);
+                    $o6 = $o->uksort(fn(string $a, string $b): int => $a <=> $b);
+
+                    /** @var ArrayIterator<string, int> */
+                    $i = new ArrayIterator(["b" => 2, "a" => 1]);
+                    $i1 = $i->asort();
+                    $i2 = $i->ksort();
+                    $i3 = $i->natsort();
+                    $i4 = $i->natcasesort();
+                    $i5 = $i->uasort(fn(int $a, int $b): int => $a <=> $b);
+                    $i6 = $i->uksort(fn(string $a, string $b): int => $a <=> $b);',
+                'assertions' => [
+                    '$o1===' => 'true',
+                    '$o2===' => 'true',
+                    '$o3===' => 'true',
+                    '$o4===' => 'true',
+                    '$o5===' => 'true',
+                    '$o6===' => 'true',
+                    '$i1===' => 'true',
+                    '$i2===' => 'true',
+                    '$i3===' => 'true',
+                    '$i4===' => 'true',
+                    '$i5===' => 'true',
+                    '$i6===' => 'true',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'arrayObjectAndIteratorSortFlagsPhp80' => [
+                'code' => '<?php
+                    /** @param ArrayObject<string, int> $o */
+                    function sortObject(ArrayObject $o): bool
+                    {
+                        $o->ksort(SORT_STRING);
+                        return $o->asort(SORT_NUMERIC);
+                    }
+
+                    /** @param ArrayIterator<string, int> $i */
+                    function sortIterator(ArrayIterator $i): bool
+                    {
+                        $i->ksort(SORT_STRING);
+                        return $i->asort(SORT_NUMERIC);
+                    }
+
+                    /** @var ArrayObject<string, int> */
+                    $o = new ArrayObject(["b" => 2, "a" => 1]);
+                    $r = $o->asort(SORT_REGULAR);',
+                'assertions' => ['$r===' => 'true'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayObjectAndIteratorKeepTemplatesAndPurityWithSortFlagsPhp80' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function sortLocal(): array {
+                        $o = new ArrayObject(["b" => 2, "a" => 1]);
+                        $o->asort(SORT_NUMERIC);
+                        $i = new ArrayIterator(["b" => 2, "a" => 1]);
+                        $i->ksort(SORT_STRING);
+                        return [$o->getArrayCopy(), $i->getArrayCopy()];
+                    }
+
+                    /** @var ArrayObject<string, int> */
+                    $o = new ArrayObject(["b" => 2, "a" => 1]);
+                    $o->ksort(SORT_STRING);
+                    $o_copy = $o->getArrayCopy();
+
+                    /** @var ArrayIterator<int, string> */
+                    $i = new ArrayIterator([3 => "c"]);
+                    $i->asort(SORT_STRING);
+                    $i_key = $i->key();
+
+                    /**
+                     * @psalm-purity-template TStorage(write-props) <= write-props
+                     * @extends ArrayObject[TStorage]<string, int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    class Sorted extends ArrayObject
+                    {
+                        /**
+                         * @psalm-capabilities read-props|write-this-props
+                         * @psalm-purity-from-template TStorage
+                         */
+                        public function asort(int $flags = SORT_REGULAR): bool
+                        {
+                            return parent::asort($flags);
+                        }
+                    }
+
+                    $sorted = (new Sorted(["a" => 1]))->asort(SORT_NUMERIC);',
+                'assertions' => [
+                    '$o_copy===' => 'array<string, int>',
+                    '$i_key===' => 'int|null',
+                    '$sorted===' => 'true',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'implementStaticReturn' => [
                 'code' => '<?php
                     class A {}
@@ -1883,6 +1989,60 @@ final class InterfaceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayObjectSortFlagsTooManyArgumentsPhp74' => [
+                'code' => '<?php
+                    /** @param ArrayObject<string, int> $o */
+                    function sortObject(ArrayObject $o): void
+                    {
+                        $o->asort(SORT_NUMERIC);
+                    }',
+                'error_message' => 'TooManyArguments',
+            ],
+            'arrayIteratorSortFlagsTooManyArgumentsPhp74' => [
+                'code' => '<?php
+                    /** @param ArrayIterator<string, int> $i */
+                    function sortIterator(ArrayIterator $i): void
+                    {
+                        $i->ksort(SORT_STRING);
+                    }',
+                'error_message' => 'TooManyArguments',
+            ],
+            'arrayObjectSortFlagsMustBeIntPhp80' => [
+                'code' => '<?php
+                    /** @param ArrayObject<string, int> $o */
+                    function sortObject(ArrayObject $o): void
+                    {
+                        $o->ksort("x");
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayObjectSortWithFlagsWritesItPhp80' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayObject<string, int> $o
+                     * @psalm-mutation-free
+                     */
+                    function sortObject(ArrayObject $o): void
+                    {
+                        $o->asort(SORT_NUMERIC);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayObjectNatsortTakesNoFlagsPhp80' => [
+                'code' => '<?php
+                    /** @param ArrayIterator<string, int> $i */
+                    function sortIterator(ArrayIterator $i): void
+                    {
+                        $i->natsort(SORT_STRING);
+                    }',
+                'error_message' => 'TooManyArguments',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'hookedSetterDocblockDoesNotWidenNativeInputType' => [
                 'code' => '<?php
                     interface I {
