@@ -158,7 +158,7 @@ final class ArrayAssignmentAnalyzer
         $root_type = $statements_analyzer->node_data->getType($root_array_expr) ?? Type::getMixed();
 
         if ($root_type->hasMixed()) {
-            // like a write, the fetch creates the offsets missing along the arrays
+            // read the chain as PHP does for a write: missing offsets along the arrays are created
             $was_inside_by_ref_offset = $context->inside_by_ref_offset;
             $context->inside_by_ref_offset = true;
 

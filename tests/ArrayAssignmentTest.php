@@ -1472,6 +1472,48 @@ final class ArrayAssignmentTest extends TestCase
                         $element["upload"]["#attached"]["ds"] = "y";
                     }',
             ],
+            'nestedKeyAddedToKeyedArrayUnderMixedHasItsType' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function g() {
+                        return 1;
+                    }
+                    $m = g();
+                    $m["a"] = ["b" => 1];
+                    $m["a"]["c"]["d"] = 1;
+                    $x = $m["a"];',
+                'assertions' => [
+                    '$x===' => 'array{b: 1, c: array{d: 1}}',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAssignment'],
+            ],
+            'nestedAppendToKeyedArrayUnderMixedHasItsType' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function g() {
+                        return 1;
+                    }
+                    $m = g();
+                    $m["a"] = ["b" => 1];
+                    $m["a"]["c"][] = 1;
+                    $x = $m["a"];',
+                'assertions' => [
+                    '$x===' => 'array{b: 1, c: list<1>}',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAssignment'],
+            ],
+            'possiblyUndefinedKeyWrittenUnderMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $m
+                     * @param array{k?: array{z: int}} $arr
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f($m, array $arr): void {
+                        $m["a"] = $arr;
+                        $m["a"]["k"]["y"] = 1;
+                    }',
+            ],
             'nestedKeyAddedByDestructuringUnderMixed' => [
                 'code' => '<?php
                     /**
