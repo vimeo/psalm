@@ -6355,6 +6355,43 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInATernaryBranchReachesTheReadAfterIt' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $u */
+                    function f($u): void {
+                        is_array($u) && rand(0, 1) ? ($u["a"] = $_GET["x"]) : null;
+
+                        /** @psalm-suppress MixedArrayAccess */
+                        echo (string) $u["a"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInTheElseOfATernaryReachesTheReadAfterIt' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $u */
+                    function f($u): void {
+                        !is_array($u) ? null : ($u["a"] = $_GET["x"]);
+
+                        /** @psalm-suppress MixedArrayAccess */
+                        echo (string) $u["a"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInAMatchArmReachesTheReadAfterIt' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $u */
+                    function f($u): void {
+                        match (true) {
+                            is_array($u) && rand(0, 1) => $u["a"] = $_GET["x"],
+                            default => null,
+                        };
+
+                        /** @psalm-suppress MixedArrayAccess */
+                        echo (string) $u["a"];
+                    }',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.0',
+            ],
             'taintAssignedBeforeABreakInTheElseReachesTheReadAfterTheIf' => [
                 'code' => '<?php // --taint-analysis
                     /** @param list<string> $list */

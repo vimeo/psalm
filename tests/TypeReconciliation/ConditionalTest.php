@@ -5311,19 +5311,6 @@ final class ConditionalTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedAssignment'],
             ],
-            'mixedVarWrittenAtAnOffsetInTheElseOfATernaryStaysMixed' => [
-                'code' => '<?php
-                    /** @var mixed $u */
-                    $u = $_GET["u"];
-
-                    !is_array($u) ? null : ($u["a"] = 1);
-
-                    $after = $u;',
-                'assertions' => [
-                    '$after===' => 'mixed',
-                ],
-                'ignored_issues' => ['MixedAssignment'],
-            ],
             'mixedVarWrittenAtAnOffsetInAMatchArmStaysMixed' => [
                 'code' => '<?php
                     /** @var mixed $u */
@@ -6283,6 +6270,18 @@ final class ConditionalTest extends TestCase
                     /** @param mixed $u */
                     function f($u): void {
                         is_array($u) && rand(0, 1) ? ($u["a"] = 1) : null;
+
+                        if (!empty($u["a"])) {
+                            echo (string) $u["a"];
+                        }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'mixedOffsetReadAfterTheElseOfATernaryWritingAnOffsetOfAMixedVar' => [
+                'code' => '<?php
+                    /** @param mixed $u */
+                    function f($u): void {
+                        !is_array($u) ? null : ($u["a"] = 1);
 
                         if (!empty($u["a"])) {
                             echo (string) $u["a"];

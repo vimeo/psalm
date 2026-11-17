@@ -464,11 +464,7 @@ final class TernaryAnalyzer
                 $redef_var_id,
                 $stmt->else,
                 $else_condition_assigned_var_ids,
-            )) {
-                continue;
-            }
-
-            if (isset($if_narrowed_var_ids[$redef_var_id], $else_narrowed_var_ids[$redef_var_id])) {
+            ) || isset($if_narrowed_var_ids[$redef_var_id], $else_narrowed_var_ids[$redef_var_id])) {
                 $context->vars_in_scope[$redef_var_id] = $context->vars_in_scope[$redef_var_id]
                     ->addParentNodes($if_context->vars_in_scope[$redef_var_id]->parent_nodes)
                     ->addParentNodes($t_else_context->vars_in_scope[$redef_var_id]->parent_nodes);
@@ -484,7 +480,11 @@ final class TernaryAnalyzer
 
         //these vars were changed in the if and existed before
         foreach ($redef_var_ifs as $redef_var_ifs_id) {
-            if (!isset($context->vars_in_scope[$redef_var_ifs_id])
+            if (!isset($context->vars_in_scope[$redef_var_ifs_id])) {
+                continue;
+            }
+
+            if (isset($if_narrowed_var_ids[$redef_var_ifs_id])
                 || self::keepsOuterMixedType(
                     $statements_analyzer,
                     $context,
@@ -494,10 +494,6 @@ final class TernaryAnalyzer
                     $if_condition_assigned_var_ids,
                 )
             ) {
-                continue;
-            }
-
-            if (isset($if_narrowed_var_ids[$redef_var_ifs_id])) {
                 $context->vars_in_scope[$redef_var_ifs_id] = $context->vars_in_scope[$redef_var_ifs_id]
                     ->addParentNodes($if_context->vars_in_scope[$redef_var_ifs_id]->parent_nodes);
 
@@ -512,7 +508,11 @@ final class TernaryAnalyzer
 
         //these vars were changed in the else and existed before
         foreach ($redef_var_else as $redef_var_else_id) {
-            if (!isset($context->vars_in_scope[$redef_var_else_id])
+            if (!isset($context->vars_in_scope[$redef_var_else_id])) {
+                continue;
+            }
+
+            if (isset($else_narrowed_var_ids[$redef_var_else_id])
                 || self::keepsOuterMixedType(
                     $statements_analyzer,
                     $context,
@@ -522,10 +522,6 @@ final class TernaryAnalyzer
                     $else_condition_assigned_var_ids,
                 )
             ) {
-                continue;
-            }
-
-            if (isset($else_narrowed_var_ids[$redef_var_else_id])) {
                 $context->vars_in_scope[$redef_var_else_id] = $context->vars_in_scope[$redef_var_else_id]
                     ->addParentNodes($t_else_context->vars_in_scope[$redef_var_else_id]->parent_nodes);
 
