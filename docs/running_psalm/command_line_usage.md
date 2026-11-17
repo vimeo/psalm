@@ -20,14 +20,14 @@ Run with `--help` to see a list of options that Psalm supports.
 
 Psalm exits with status `0` when it successfully completed and found no issues,
 `1` when there was a problem running Psalm and `2` when it completed
-successfully but found some issues, or a [type coverage](#minimum-type-coverage)
+successfully but found issues or the [type coverage](#minimum-type-coverage) is
 below the minimum. Any exit status apart from those indicates some internal problem.
 
 ## Minimum type coverage
 
 ```bash
 vendor/bin/psalm --min-type-coverage=95                      # exit status 2 when the type coverage is below 95%
-vendor/bin/psalm --min-type-coverage=95 --output-format=json  # the same, the JSON report is unchanged
+vendor/bin/psalm --min-type-coverage=95 --output-format=json  # the same: STDOUT holds only the JSON report; the message goes to STDERR
 vendor/bin/psalm --min-type-coverage=95 src/Foo.php          # exit status 1: the option can't be combined with file paths
 ```
 
