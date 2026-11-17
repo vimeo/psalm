@@ -25,53 +25,16 @@ below the minimum. Any exit status apart from those indicates some internal prob
 
 ## Minimum type coverage
 
+`--min-type-coverage` (or the [`minTypeCoverage`](configuration.md#mintypecoverage) config attribute) makes Psalm exit with status `2` when the type coverage is below the given percentage:
+
 ```bash
-vendor/bin/psalm --min-type-coverage=95                      # exit status 2 when the type coverage is below 95%
-vendor/bin/psalm --min-type-coverage=95 --output-format=json  # the same: STDOUT holds only the JSON report; the message goes to STDERR
-vendor/bin/psalm --min-type-coverage=95 src/Foo.php          # exit status 1: the option can't be combined with file paths
+./vendor/bin/psalm --min-type-coverage=95
+# STDERR: Type coverage 93.41% is below the minimum of 95.00%
 ```
 
-Below the minimum, Psalm writes this to STDERR with any `--output-format` and exits with status `2`:
+Type coverage is the number in Psalm's summary line and on [Shepherd](#shepherd): the share of expressions whose inferred type is not `mixed`. Files in a `<directory ignoreTypeStats="true">` aren't counted.
 
-```
-Type coverage 93.41% is below the minimum of 95.00%
-```
-
-The minimum is a percentage from 0 to 100 with at most two decimals. The coverage in the message is rounded down,
-so 94.999% prints as `94.99%`. The option overrides the [`minTypeCoverage`](configuration.md#mintypecoverage)
-config attribute.
-
-Runs with `--set-baseline` or `--update-baseline` don't check the config attribute and reject the option. Runs with
-file paths (`psalm src/Foo.php`) skip the config attribute, which isn't an error. Like for issues, a taint analysis
-run in GitHub Actions that writes a SARIF report prints the message but exits with status `0`, so that a following
-step can upload the report.
-
-Type coverage is the number in the summary line (`Psalm was able to infer types for 93.4127% of the codebase`)
-and the one [Shepherd](#shepherd) tracks: the share of the counted expressions whose inferred type is not `mixed`.
-Psalm counts assignments to variables and properties, returned values, call arguments, the objects that methods
-are called on, arithmetic operations, string concatenations, and array and property fetches. Variable reads and
-literals aren't counted.
-
-```php
-/** @param mixed $a */
-function f($a, int $b): int
-{
-    $c = $a;      // 1 expression, mixed
-    $d = $b + 1;  // 2 expressions (the sum and the assignment), inferred
-    return $d;    // 1 expression, inferred
-}
-// type coverage: 3 of 4 expressions, 75.00%
-```
-
-`--stats` lists the coverage of each file. It also lists the files of a directory with `ignoreTypeStats="true"`,
-but they aren't counted in the total:
-
-```xml
-<projectFiles>
-  <directory name="src" />
-  <directory name="generated" ignoreTypeStats="true" />
-</projectFiles>
-```
+Only full runs are checked: the option can't be combined with file paths, `--set-baseline` or `--update-baseline`, and the config attribute is skipped on such runs.
 
 ## Shepherd
 
