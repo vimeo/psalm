@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTy
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -52,6 +53,7 @@ use Psalm\Issue\UnusedFunctionCall;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualMethodCall;
+use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\Name\VirtualFullyQualified;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualIdentifier;
@@ -95,7 +97,6 @@ use UnexpectedValueException;
 
 use function array_filter;
 use function array_map;
-use function array_shift;
 use function array_slice;
 use function array_values;
 use function assert;
@@ -104,6 +105,8 @@ use function explode;
 use function implode;
 use function in_array;
 use function is_string;
+use function ltrim;
+use function max;
 use function preg_replace;
 use function reset;
 use function spl_object_id;
@@ -111,6 +114,7 @@ use function str_contains;
 use function str_ends_with;
 use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -357,6 +361,16 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             );
         }
 
+        if (!$is_first_class_callable && $function_call_info->callee_function_names !== []) {
+            self::analyzeFunctionNameCallees(
+                $statements_analyzer,
+                $stmt,
+                $real_stmt,
+                $context,
+                $function_call_info->callee_function_names,
+            );
+        }
+
         if (!$is_first_class_callable
             && $function_call_info->function_id !== null
             && ($function_call_info->in_call_map || $function_call_info->is_stubbed)
@@ -444,6 +458,17 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         continue;
                     }
 
+                    // the closure of a function named among several callees is made below
+                    if ($atomic_type instanceof TLiteralString
+                        && in_array(
+                            ltrim($atomic_type->value, '\\'),
+                            $function_call_info->callee_function_names,
+                            true,
+                        )
+                    ) {
+                        continue;
+                    }
+
                     $candidate_callable = CallableTypeComparator::getCallableFromAtomic(
                         $codebase,
                         $atomic_type,
@@ -462,13 +487,23 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            if ($closure_types) {
-                $stmt_type = TypeCombiner::combine($closure_types, $codebase);
-            } else {
-                $stmt_type = Type::getClosure();
+            $stmt_type = $closure_types ? TypeCombiner::combine($closure_types, $codebase) : null;
+
+            foreach ($function_call_info->callee_function_names as $callee_function_name) {
+                $callee_closure_type = self::analyzeFunctionNameCall(
+                    $statements_analyzer,
+                    $stmt,
+                    clone $context,
+                    $callee_function_name,
+                    [new PhpParser\Node\VariadicPlaceholder($stmt->getAttributes())],
+                );
+
+                $stmt_type = $stmt_type === null
+                    ? $callee_closure_type
+                    : Type::combineUnionTypes($stmt_type, $callee_closure_type);
             }
 
-            $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
+            $statements_analyzer->node_data->setType($real_stmt, $stmt_type ?? Type::getClosure());
 
             return true;
         }
@@ -1462,6 +1497,402 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         );
     }
 
+    /**
+     * Gives the call what a call of each function named among its callees returns, and the variables it passes by
+     * reference what those calls assign them, with the arguments it was given: calls checked against none of them,
+     * whose issues are not reported
+     *
+     * @param list<string> $function_names
+     */
+    private static function analyzeFunctionNameCallees(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        PhpParser\Node\Expr\FuncCall $real_stmt,
+        Context $context,
+        array $function_names,
+    ): void {
+        $callee_context = clone $context;
+        $callee_args = [];
+        $arg_types = [];
+
+        foreach ($stmt->getArgs() as $i => $arg) {
+            $arg_var_id = '$callee-arg-' . $i;
+
+            $callee_context->vars_in_scope[$arg_var_id] = $arg_types[$i]
+                = $statements_analyzer->node_data->getType($arg->value) ?? Type::getMixed();
+
+            $callee_args[] = new VirtualArg(
+                new VirtualVariable(substr($arg_var_id, 1), $arg->value->getAttributes()),
+                $arg->byRef,
+                $arg->unpack,
+                $arg->getAttributes(),
+                $arg->name,
+            );
+        }
+
+        $return_type = $statements_analyzer->node_data->getType($real_stmt);
+
+        /** @var array<int, Union> $by_ref_arg_types */
+        $by_ref_arg_types = [];
+        /** @var array<int, true> $assigned_args */
+        $assigned_args = [];
+
+        foreach ($function_names as $function_name) {
+            $call_context = clone $callee_context;
+
+            $callee_return_type = self::analyzeFunctionNameCall(
+                $statements_analyzer,
+                $stmt,
+                $call_context,
+                $function_name,
+                $callee_args,
+            );
+
+            $return_type = $return_type === null
+                ? $callee_return_type
+                : Type::combineUnionTypes($return_type, $callee_return_type);
+
+            foreach ($arg_types as $i => $arg_type) {
+                $by_ref_arg_type = $call_context->vars_in_scope['$callee-arg-' . $i] ?? $arg_type;
+
+                if ($by_ref_arg_type !== $arg_type) {
+                    $assigned_args[$i] = true;
+                }
+
+                $by_ref_arg_types[$i] = isset($by_ref_arg_types[$i])
+                    ? Type::combineUnionTypes($by_ref_arg_types[$i], $by_ref_arg_type)
+                    : $by_ref_arg_type;
+            }
+        }
+
+        if ($return_type !== null) {
+            $statements_analyzer->node_data->setType($real_stmt, $return_type);
+        }
+
+        foreach ($assigned_args as $i => $_) {
+            $var_id = ExpressionIdentifier::getExtendedVarId(
+                $stmt->getArgs()[$i]->value,
+                null,
+                $statements_analyzer,
+            );
+
+            if ($var_id !== null && isset($context->vars_in_scope[$var_id])) {
+                $context->vars_in_scope[$var_id] = $by_ref_arg_types[$i]->setParentNodes(
+                    $context->vars_in_scope[$var_id]->parent_nodes,
+                );
+            }
+        }
+    }
+
+    /**
+     * The type of call $stmt as a call of the function named $function_name with $args, whose issues are not
+     * reported
+     *
+     * @param list<PhpParser\Node\Arg|PhpParser\Node\VariadicPlaceholder> $args
+     */
+    private static function analyzeFunctionNameCall(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        Context $context,
+        string $function_name,
+        array $args,
+    ): Union {
+        $callee_stmt = new VirtualFuncCall(
+            new VirtualFullyQualified($function_name, $stmt->name->getAttributes()),
+            $args,
+            $stmt->getAttributes(),
+        );
+
+        IssueBuffer::startRecording();
+
+        self::analyze($statements_analyzer, $callee_stmt, $context);
+
+        IssueBuffer::clearRecordingLevel();
+        IssueBuffer::stopRecording();
+
+        return $statements_analyzer->node_data->getType($callee_stmt) ?? Type::getMixed();
+    }
+
+    /**
+     * The callees of a call of a value of type $types, a template standing for the types it is called as, and the
+     * functions the callables among them were named as: when there are several, a function name stands for the
+     * callable it names, and the call is also one of each function named (see analyzeFunctionNameCallees())
+     *
+     * @param array<Atomic> $types
+     * @return array{list<Atomic>, array<int, string>}
+     */
+    private static function getCallees(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        FunctionCallInfo $function_call_info,
+        array $types,
+    ): array {
+        $callees = self::getCalledTypes($statements_analyzer, $types);
+
+        if (count($callees) < 2) {
+            return [$callees, []];
+        }
+
+        $callable_function_names = [];
+
+        foreach ($callees as $i => $callee) {
+            if (!$callee instanceof TLiteralString || str_contains($callee->value, '::')) {
+                continue;
+            }
+
+            $function_name = ltrim($callee->value, '\\');
+
+            if ($function_name === '') {
+                continue;
+            }
+
+            $function_call_info->callee_function_names[] = $function_name;
+
+            $callable = self::getFunctionNameCallable($statements_analyzer, $context, strtolower($function_name));
+
+            if ($callable !== null) {
+                $callees[$i] = $callable;
+                $callable_function_names[spl_object_id($callable)] = $function_name;
+            }
+        }
+
+        return [$callees, $callable_function_names];
+    }
+
+    private static function addCallableReturnType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $real_stmt,
+        TClosure|TCallable $callable,
+    ): void {
+        // the type variables the closure returns resolve as those a method call returns
+        $closure_return_type = $callable->return_type
+            ? TypeVariableTracker::resolveTypeVariables($callable->return_type, $statements_analyzer->getCodebase())
+            : null;
+
+        if (($stmt_type = $statements_analyzer->node_data->getType($real_stmt))
+            && $closure_return_type
+        ) {
+            $statements_analyzer->node_data->setType(
+                $real_stmt,
+                Type::combineUnionTypes(
+                    $stmt_type,
+                    $closure_return_type,
+                ),
+            );
+        } else {
+            $statements_analyzer->node_data->setType(
+                $real_stmt,
+                $closure_return_type ?? Type::getMixed(),
+            );
+        }
+    }
+
+    /**
+     * @param array<Atomic> $types
+     * @return list<Atomic>
+     */
+    private static function getCalledTypes(StatementsAnalyzer $statements_analyzer, array $types): array
+    {
+        $called_types = [];
+
+        foreach ($types as $type) {
+            if ($type instanceof TTemplateParam
+                || $type instanceof TTemplateKeyOf
+                || $type instanceof TTemplateValueOf
+            ) {
+                $called_types = [
+                    ...$called_types,
+                    ...self::getCalledTypes(
+                        $statements_analyzer,
+                        self::getTemplateCalledTypes($statements_analyzer, $type),
+                    ),
+                ];
+            } elseif (!$type instanceof TNull) {
+                $called_types[] = $type;
+            }
+        }
+
+        return $called_types;
+    }
+
+    /**
+     * The callable a function name stands for, with the templates of the function standing for their bounds: the
+     * call, which may be of another callee, doesn't infer them
+     *
+     * @param non-empty-lowercase-string $function_id
+     */
+    private static function getFunctionNameCallable(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        string $function_id,
+    ): TCallable|TClosure|null {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $callable = CallableTypeComparator::getCallableFromAtomic(
+            $codebase,
+            Type::getAtomicStringFromLiteral($function_id),
+            null,
+            $statements_analyzer,
+            $context,
+        );
+
+        if ($callable === null) {
+            return null;
+        }
+
+        try {
+            $template_types = $codebase->functions->getStorage($statements_analyzer, $function_id)->template_types
+                ?? [];
+        } catch (UnexpectedValueException) {
+            $template_types = [];
+        }
+
+        if ($template_types === []) {
+            return $callable;
+        }
+
+        $bounds_result = new TemplateResult([], []);
+
+        foreach ($template_types as $template_name => $bounds) {
+            foreach ($bounds as $defining_class => $bound) {
+                $bounds_result->lower_bounds[$template_name][$defining_class] = [new TemplateBound($bound)];
+            }
+        }
+
+        return $callable->replaceTemplateTypesWithArgTypes($bounds_result, $codebase);
+    }
+
+    /**
+     * The parameters a call of either of two callables is checked against: those they have in common, and where they
+     * differ, a parameter of any type, by reference if either is
+     *
+     * @param ?array<int, FunctionLikeParameter> $params
+     * @param ?array<int, FunctionLikeParameter> $other_params
+     * @return ?list<FunctionLikeParameter>
+     * @psalm-mutation-free
+     */
+    private static function mergeParams(?array $params, ?array $other_params): ?array
+    {
+        if ($params === null || $other_params === null) {
+            return null;
+        }
+
+        $params = array_values($params);
+        $other_params = array_values($other_params);
+
+        $merged_params = [];
+
+        for ($i = 0, $count = max(count($params), count($other_params)); $i < $count; $i++) {
+            $param = $params[$i] ?? null;
+            $other_param = $other_params[$i] ?? null;
+
+            if ($param !== null
+                && $other_param !== null
+                && $param->name === $other_param->name
+                && $param->by_ref === $other_param->by_ref
+                && $param->getId() === $other_param->getId()
+                && $param->out_type?->getId() === $other_param->out_type?->getId()
+            ) {
+                $merged_params[] = $param;
+            } else {
+                $named_param = $param ?? $other_param;
+                assert($named_param !== null);
+
+                $merged_params[] = new FunctionLikeParameter(
+                    $named_param->name,
+                    $param?->by_ref || $other_param?->by_ref,
+                    is_optional: $param === null
+                        || $other_param === null
+                        || $param->is_optional
+                        || $other_param->is_optional,
+                    is_variadic: $param?->is_variadic || $other_param?->is_variadic,
+                );
+            }
+
+            if ($merged_params[$i]->is_variadic) {
+                break;
+            }
+        }
+
+        return $merged_params;
+    }
+
+    /**
+     * Signals what a call of callable $var_type_part, described as $callee_name, may do
+     */
+    private static function signalCallableCalleeMutation(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        PhpParser\Node\Expr $function_name,
+        FunctionCallInfo $function_call_info,
+        TClosure|TCallable $var_type_part,
+        string $callee_name,
+    ): void {
+        $source = $statements_analyzer->getSource();
+
+        // the purity of the closure, where a purity template the enclosing function-like
+        // inherits its purity from requires nothing: that is deferred to its callers
+        $closure_capabilities = CallPurityResolver::resolvePurity(
+            $var_type_part->purity,
+            $statements_analyzer,
+        );
+
+        // a closure created in this scope: what it does to the variables it captured
+        // by reference, and through its by-reference parameters, stays in this scope
+        if ($statements_analyzer->node_data->isPureCompatible($function_name)) {
+            $closure_capabilities &= ~Capabilities::RECEIVER_LOCAL;
+        }
+
+        $closure_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
+            $statements_analyzer,
+            $context,
+            $closure_capabilities,
+            $var_type_part->params,
+            $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+        );
+
+        if (!$stmt->isFirstClassCallable()) {
+            if (($closure_capabilities & Capabilities::READ_GLOBALS) !== 0) {
+                $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
+            }
+
+            GlobalStateAnalyzer::checkArguments(
+                $statements_analyzer,
+                $context,
+                $stmt->getArgs(),
+                $closure_capabilities,
+                ImpureFunctionCall::class,
+                'the closure',
+            );
+        }
+
+        if ($function_name instanceof PhpParser\Node\Expr\Variable
+            && is_string($function_name->name)
+            && $source instanceof ClosureAnalyzer
+            && $source->getRecursiveVarId() === '$' . $function_name->name
+        ) {
+            // a recursive call of the closure being analysed: not a mutation of its own
+        } elseif ($statements_analyzer->signalMutation(
+            $closure_capabilities,
+            $context,
+            'function call on ' . $callee_name,
+            ImpureFunctionCall::class,
+            $stmt,
+            self::isPurityWildcardCandidate($statements_analyzer, $function_name, $var_type_part)
+                ? Capabilities::NONE
+                : null,
+            false,
+            $function_call_info->function_storage,
+        )) {
+            if (!$function_call_info->function_storage) {
+                $function_call_info->function_storage = new FunctionStorage();
+            }
+
+            $function_call_info->function_storage->capabilities |= $closure_capabilities;
+        }
+    }
+
     private static function getAnalyzeNamedExpression(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
@@ -1512,108 +1943,36 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $invalid_function_call_types = [];
             $has_valid_function_call_type = false;
 
-            $var_atomic_types = $stmt_name_type->getAtomicTypes();
+            [$callees, $callable_function_names] = self::getCallees(
+                $statements_analyzer,
+                $context,
+                $function_call_info,
+                $stmt_name_type->getAtomicTypes(),
+            );
 
-            $source = $statements_analyzer->getSource();
+            $callable_callee_count = 0;
 
-            while ($var_atomic_types) {
-                $var_type_part = array_shift($var_atomic_types);
-
-                if ($var_type_part instanceof TTemplateParam
-                    || $var_type_part instanceof TTemplateKeyOf
-                    || $var_type_part instanceof TTemplateValueOf
-                ) {
-                    $var_atomic_types = [
-                        ...$var_atomic_types,
-                        ...self::getTemplateCalledTypes($statements_analyzer, $var_type_part),
-                    ];
-                    continue;
-                }
-
+            foreach ($callees as $var_type_part) {
                 if ($var_type_part instanceof TClosure || $var_type_part instanceof TCallable) {
-                    // the purity of the closure, where a purity template the enclosing function-like
-                    // inherits its purity from requires nothing: that is deferred to its callers
-                    $closure_capabilities = CallPurityResolver::resolvePurity(
-                        $var_type_part->purity,
-                        $statements_analyzer,
-                    );
-
-                    // a closure created in this scope: what it does to the variables it captured
-                    // by reference, and through its by-reference parameters, stays in this scope
-                    if ($statements_analyzer->node_data->isPureCompatible($function_name)) {
-                        $closure_capabilities &= ~Capabilities::RECEIVER_LOCAL;
-                    }
-
-                    $closure_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
+                    self::signalCallableCalleeMutation(
                         $statements_analyzer,
                         $context,
-                        $closure_capabilities,
-                        $var_type_part->params,
-                        $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
-                    );
-
-                    if (!$stmt->isFirstClassCallable()) {
-                        if (($closure_capabilities & Capabilities::READ_GLOBALS) !== 0) {
-                            $stmt->setAttribute(GlobalStateAnalyzer::ATTRIBUTE, true);
-                        }
-
-                        GlobalStateAnalyzer::checkArguments(
-                            $statements_analyzer,
-                            $context,
-                            $stmt->getArgs(),
-                            $closure_capabilities,
-                            ImpureFunctionCall::class,
-                            'the closure',
-                        );
-                    }
-
-                    if ($function_name instanceof PhpParser\Node\Expr\Variable
-                        && is_string($function_name->name)
-                        && $source instanceof ClosureAnalyzer
-                        && $source->getRecursiveVarId() === '$' . $function_name->name
-                    ) {
-                        // a recursive call of the closure being analysed: not a mutation of its own
-                    } elseif ($statements_analyzer->signalMutation(
-                        $closure_capabilities,
-                        $context,
-                        'function call on ' . $var_type_part->getId(),
-                        ImpureFunctionCall::class,
                         $stmt,
-                        self::isPurityWildcardCandidate($statements_analyzer, $function_name, $var_type_part)
-                            ? Capabilities::NONE
-                            : null,
-                        false,
-                        $function_call_info->function_storage,
-                    )) {
-                        if (!$function_call_info->function_storage) {
-                            $function_call_info->function_storage = new FunctionStorage();
-                        }
+                        $function_name,
+                        $function_call_info,
+                        $var_type_part,
+                        $callable_function_names[spl_object_id($var_type_part)] ?? $var_type_part->getId(),
+                    );
 
-                        $function_call_info->function_storage->capabilities |= $closure_capabilities;
-                    }
+                    $function_call_info->function_params = $callable_callee_count === 0
+                        ? $var_type_part->params
+                        : self::mergeParams($function_call_info->function_params, $var_type_part->params);
 
-                    $function_call_info->function_params = $var_type_part->params;
+                    $callable_callee_count++;
 
-                    // the type variables the closure returns resolve as those a method call returns
-                    $closure_return_type = $var_type_part->return_type
-                        ? TypeVariableTracker::resolveTypeVariables($var_type_part->return_type, $codebase)
-                        : null;
-
-                    if (($stmt_type = $statements_analyzer->node_data->getType($real_stmt))
-                        && $closure_return_type
-                    ) {
-                        $statements_analyzer->node_data->setType(
-                            $real_stmt,
-                            Type::combineUnionTypes(
-                                $stmt_type,
-                                $closure_return_type,
-                            ),
-                        );
-                    } else {
-                        $statements_analyzer->node_data->setType(
-                            $real_stmt,
-                            $closure_return_type ?? Type::getMixed(),
-                        );
+                    // the return type of a function named is that of a call of it, see analyzeFunctionNameCallees()
+                    if (!isset($callable_function_names[spl_object_id($var_type_part)])) {
+                        self::addCallableReturnType($statements_analyzer, $real_stmt, $var_type_part);
                     }
 
                     if ($var_type_part instanceof TClosure) {
@@ -1703,7 +2062,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $fq_class_name = $parts[0];
                             $fq_class_name = (string) preg_replace('/^\\\/', '', $fq_class_name, 1);
                             $potential_method_id = new MethodIdentifier($fq_class_name, $parts[1]);
-                        } else {
+                        } elseif (count($callees) === 1) {
                             $function_call_info->new_function_name = new VirtualFullyQualified(
                                 $var_type_part->value,
                                 $function_name->getAttributes(),
@@ -1733,8 +2092,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $potential_method_id,
                         $function_call_info,
                     );
-                } elseif ($var_type_part instanceof TNull) {
-                    // handled above
                 } elseif (!$var_type_part instanceof TNamedObject
                     || !$codebase->classlikes->classOrInterfaceExists($var_type_part->value, null, $context)
                     || !$codebase->methodExists(
@@ -1755,6 +2112,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $var_type_part,
                     );
                 }
+            }
+
+            // a callee whose parameters are unknown
+            if ($callable_callee_count < count($callees)) {
+                $function_call_info->function_params = null;
             }
 
             if ($invalid_function_call_types) {
@@ -1825,7 +2187,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
-        if (!$statements_analyzer->node_data->getType($real_stmt)) {
+        if (!$statements_analyzer->node_data->getType($real_stmt)
+            && $function_call_info->callee_function_names === []
+        ) {
             $statements_analyzer->node_data->setType($real_stmt, Type::getMixed());
         }
 

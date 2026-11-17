@@ -3681,6 +3681,115 @@ final class CallableTest extends TestCase
                         protected function runLoop(): void {}
                     }',
             ],
+            'callUnionOfFunctionNamesChecksTheArgumentsAgainstNone' => [
+                'code' => '<?php
+                    /** @param non-empty-string $from */
+                    function f(string $from, string|\Closure $to, string $s): ?string {
+                        if ($to instanceof \Closure) {
+                            $replace = "preg_replace_callback";
+                        } else {
+                            $replace = "preg_replace";
+                        }
+                        return $replace($from, $to, $s);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callUnionOfFunctionNamesReturnsWhatEachReturns' => [
+                'code' => '<?php
+                    function getString(): string {
+                        return "";
+                    }
+
+                    $fn = rand(0, 1) ? "strlen" : "trim";
+                    $r = $fn(getString());',
+                'assertions' => [
+                    '$r===' => 'int<0, max>|string',
+                ],
+            ],
+            'callUnionOfFunctionNamesAssignsWhatEachAssignsByReference' => [
+                'code' => '<?php
+                    function getString(): string {
+                        return "";
+                    }
+
+                    $fn = rand(0, 1) ? "preg_match" : "preg_match_all";
+                    $fn("/a/", getString(), $m);',
+                'assertions' => [
+                    '$m===' => 'array<array-key, list<string>|string>',
+                ],
+            ],
+            'callUnionOfAFunctionNameAndAClosureReturnsWhatEachReturns' => [
+                'code' => '<?php
+                    function getString(): string {
+                        return "";
+                    }
+
+                    $fn = rand(0, 1) ? "strlen" : fn(string $s): bool => $s === "";
+                    $r = $fn(getString());',
+                'assertions' => [
+                    '$r===' => 'bool|int<0, max>',
+                ],
+            ],
+            'callUnionOfClosuresWithDifferentParamsChecksTheArgumentsAgainstNone' => [
+                'code' => '<?php
+                    $fn = rand(0, 1) ? fn(int $i): int => $i : fn(string $s): string => $s;
+                    $r = $fn(1);',
+                'assertions' => [
+                    '$r===' => 'int|string',
+                ],
+            ],
+            'firstClassCallableOfUnionOfFunctionNames' => [
+                'code' => '<?php
+                    $fn = rand(0, 1) ? "strlen" : "trim";
+                    $c = $fn(...);',
+                'assertions' => [
+                    '$c===' => 'Closure[pure](string):int<0, max>|Closure[pure](string, string=):string',
+                ],
+            ],
+            'callUnionOfTemplatedFunctionNames' => [
+                'code' => '<?php
+                    /** @return list<int> */
+                    function getList(): array {
+                        return [];
+                    }
+
+                    $fn = rand(0, 1) ? "array_values" : "array_reverse";
+                    $r = $fn(getList());',
+                'assertions' => [
+                    '$r===' => 'list<int>',
+                ],
+            ],
+            'callTemplateBoundToUnionOfFunctionNames' => [
+                'code' => '<?php
+                    /**
+                     * @template T of "strlen"|"trim"
+                     * @param T $fn
+                     */
+                    function f(string $fn, string $s): void {
+                        $r = $fn($s);
+                        /** @psalm-check-type-exact $r = int<0, max>|string */
+                    }',
+            ],
+            'callUnionOfNamespacedFunctionNames' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    function a(int $i): int {
+                        return $i;
+                    }
+
+                    function b(int $i): string {
+                        return (string) $i;
+                    }
+
+                    $fn = rand(0, 1) ? "\Foo\a" : "Foo\b";
+                    $r = $fn(1);',
+                'assertions' => [
+                    '$r===' => 'int|string',
+                ],
+            ],
         ];
     }
 
@@ -3691,6 +3800,27 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callUnionOfClosuresWithTheSameParamsChecksTheArguments' => [
+                'code' => '<?php
+                    $fn = rand(0, 1) ? fn(int $i): int => $i : fn(int $i): string => (string) $i;
+                    $fn("a");',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'callUnionOfFunctionNamesChecksTheParamsTheyHaveInCommon' => [
+                'code' => '<?php
+                    $fn = rand(0, 1) ? "strlen" : "trim";
+                    $fn();',
+                'error_message' => 'TooFewArguments',
+            ],
+            'callUnionOfFunctionNamesInPureContextChecksThePurityOfEach' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function f(bool $b): int {
+                        $fn = $b ? "rand" : "strlen";
+                        return $fn("");
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32 - The context is pure but function call on rand',
+            ],
             'invokeGenericFirstClassCallableWithInvalidBound' => [
                 'code' => '<?php
                     /**

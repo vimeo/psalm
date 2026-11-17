@@ -39,6 +39,13 @@ final class FunctionCallInfo
     public ?PhpParser\Node\Name $new_function_name = null;
 
     /**
+     * The functions named among several callees of the call
+     *
+     * @var list<string>
+     */
+    public array $callee_function_names = [];
+
+    /**
      * When the call target is a callable value (closure / first-class callable) whose
      * underlying function id is known, this holds that id so taint sources can be
      * re-dispatched on invocation. If the target is a union of several distinct

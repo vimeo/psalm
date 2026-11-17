@@ -1196,6 +1196,29 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'callOfUnionOfEscapingFunctionNamesIsEscaped' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape html
+                     * @psalm-taint-escape has_quotes
+                     */
+                    function escape(string $s): string {
+                        return $s;
+                    }
+
+                    /**
+                     * @psalm-taint-escape html
+                     * @psalm-taint-escape has_quotes
+                     */
+                    function escapeOtherwise(string $s): string {
+                        return $s;
+                    }
+
+                    function f(bool $b): void {
+                        $fn = $b ? "escapeOtherwise" : "escape";
+                        echo $fn((string) $_GET["x"]);
+                    }',
+            ],
             'coalesceOnAnOffsetKeepsTheTypeOfTheArrayItReads' => [
                 'code' => '<?php
                     /** @param list<mixed> $l */
@@ -6280,6 +6303,30 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'callOfUnionOfFunctionNamesReachesTheSinkOfEach' => [
+                'code' => '<?php
+                    function f(bool $b): void {
+                        $fn = $b ? "exec" : "strlen";
+                        $fn((string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
+            'callOfUnionOfFunctionNamesReturnsTheTaintOfEach' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape html
+                     * @psalm-taint-escape has_quotes
+                     */
+                    function escape(string $s): string {
+                        return $s;
+                    }
+
+                    function f(bool $b): void {
+                        $fn = $b ? "trim" : "escape";
+                        echo $fn((string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'superGlobalPassedByReferenceIsTainted' => [
                 'code' => '<?php // --taint-analysis
                     function show(array &$a): void {
