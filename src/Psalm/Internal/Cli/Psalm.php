@@ -55,15 +55,19 @@ use function count;
 use function ctype_digit;
 use function defined;
 use function extension_loaded;
+use function fclose;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
+use function flock;
+use function fopen;
 use function function_exists;
 use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
 use function getcwd;
 use function getenv;
+use function glob;
 use function implode;
 use function ini_get;
 use function is_array;
@@ -91,6 +95,8 @@ use function wordwrap;
 use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
+use const LOCK_EX;
+use const LOCK_NB;
 use const PHP_EOL;
 use const PHP_URL_SCHEME;
 use const PHP_VERSION;
@@ -1002,6 +1008,7 @@ final class Psalm
         $cache_directory = $config->getCacheDirectory();
 
         if ($cache_directory !== null) {
+            self::announceWaitForTheCache($cache_directory);
             Config::removeCacheDirectory($cache_directory);
         }
         echo 'Cache directory deleted' . PHP_EOL;
@@ -1014,6 +1021,7 @@ final class Psalm
         $cache_directory = $config->getCacheDirectory();
 
         if ($cache_directory !== null) {
+            self::announceWaitForTheCache($cache_directory);
             $lock = Composer::getLockFile($current_dir);
             (new ParserCacheProvider($config, $lock))->consolidate();
             (new FileStorageCacheProvider($config, $lock))->consolidate();
@@ -1022,6 +1030,30 @@ final class Psalm
         }
         echo 'Cache consolidated' . PHP_EOL;
         exit;
+    }
+
+    /**
+     * The cache commands wait for the processes reading the cache, which hold the locks of its parts for as long as
+     * they run: they say so rather than hang without a word
+     */
+    private static function announceWaitForTheCache(string $cache_directory): void
+    {
+        $lock_files = glob($cache_directory . '/*/*/lock');
+        foreach ($lock_files === false ? [] : $lock_files as $lock_file) {
+            $lock = @fopen($lock_file, 'r');
+            if ($lock === false) {
+                continue;
+            }
+
+            $free = flock($lock, LOCK_EX | LOCK_NB);
+            fclose($lock);
+            if (!$free) {
+                fwrite(STDERR, 'Waiting for other Psalm processes (for example `psalm --overlay-server`) to release'
+                    . ' the cache' . PHP_EOL);
+
+                return;
+            }
+        }
     }
 
     private static function getCurrentDir(array $options): string

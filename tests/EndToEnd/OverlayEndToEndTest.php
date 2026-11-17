@@ -7,6 +7,7 @@ namespace Psalm\Tests\EndToEnd;
 use FilesystemIterator;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 use Psalm\Overlay\OverlayException;
 use Psalm\Overlay\OverlayOptions;
@@ -585,6 +586,40 @@ final class OverlayEndToEndTest extends TestCase
             json_encode($analyzed, JSON_THROW_ON_ERROR),
         );
         $this->stopServer($server, $input);
+    }
+
+    #[TestWith(['--clear-cache'])]
+    #[TestWith(['--consolidate-cache'])]
+    public function testCacheCommandsSayTheyWaitForTheServer(string $option): void
+    {
+        $this->skipWithoutServer();
+        $this->writeFiles(['A.php' => self::A, 'B.php' => self::B]);
+        $this->recordReferences();
+        [$server, $input] = $this->startServer([PHP_BINARY, $this->psalm, '--overlay-server']);
+        $initialized = $this->ask($server, $input, ['id' => 1, 'method' => 'initialize', 'params' => ['protocol' => 1]]);
+        $this->assertSame(1, $initialized['result']['protocol'] ?? null);
+
+        $command = self::newProcess([PHP_BINARY, $this->psalm, $option], $this->project, self::agentEnvVarsToUnset());
+        $command->start();
+        $deadline = microtime(true) + 10.0;
+        while (!str_contains($command->getErrorOutput(), 'Waiting for other Psalm processes')
+            && $command->isRunning()
+            && microtime(true) < $deadline
+        ) {
+            usleep(10_000);
+        }
+        $waiting = $command->isRunning();
+        $stderr = $command->getErrorOutput();
+
+        $this->stopServer($server, $input);
+        $command->wait();
+
+        $this->assertTrue($waiting, 'the snapshot holds the cache until it stops');
+        $this->assertStringContainsString(
+            'Waiting for other Psalm processes (for example `psalm --overlay-server`) to release the cache',
+            $stderr,
+        );
+        $this->assertSame(0, $command->getExitCode(), $command->getErrorOutput());
     }
 
     public function testNotCheckedListsWhatTheConfigRuns(): void
