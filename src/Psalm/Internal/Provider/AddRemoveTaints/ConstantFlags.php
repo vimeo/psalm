@@ -55,6 +55,7 @@ use ReflectionClass;
 use function array_map;
 use function array_values;
 use function class_exists;
+use function count;
 use function get_defined_constants;
 use function in_array;
 use function interface_exists;
@@ -221,6 +222,7 @@ final class ConstantFlags
         if ($type === null
             || !$type->isInt()
             || $type->possibly_undefined
+            || $type->possibly_undefined_from_try
             || isset($visited['$' . $name])
             || !$source instanceof FunctionLikeAnalyzer
         ) {
@@ -323,9 +325,7 @@ final class ConstantFlags
         if (($node instanceof Variable && !is_string($node->name))
             || $node instanceof Eval_
             || $node instanceof Include_
-            || ($node instanceof FuncCall
-                && $node->name instanceof Name
-                && strtolower($node->name->getLast()) === 'extract')
+            || ($node instanceof FuncCall && self::writesTheScope($node))
         ) {
             return false;
         }
@@ -383,6 +383,22 @@ final class ConstantFlags
     }
 
     /**
+     * Whether the call may set variables of the scope it is in: `extract()`, and before PHP 8 `parse_str()` and
+     * `mb_parse_str()` without a result. They can't be called dynamically.
+     */
+    private static function writesTheScope(FuncCall $call): bool
+    {
+        if (!$call->name instanceof Name || $call->isFirstClassCallable()) {
+            return false;
+        }
+
+        $function_id = strtolower($call->name->getLast());
+
+        return $function_id === 'extract'
+            || (($function_id === 'parse_str' || $function_id === 'mb_parse_str') && count($call->getArgs()) < 2);
+    }
+
+    /**
      * Whether the call is one of a builtin function that takes its flags, and every other argument, by value
      */
     private static function takesFlagsByValue(StatementsAnalyzer $statements_analyzer, CallLike $call): bool
@@ -391,22 +407,36 @@ final class ConstantFlags
             return false;
         }
 
-        $function_name = strtolower($call->name->getLast());
+        $function_id = strtolower($call->name->getLast());
 
-        if (!in_array($function_name, self::FLAG_FUNCTIONS, true)) {
-            return false;
+        return in_array($function_id, self::FLAG_FUNCTIONS, true)
+            && self::isBuiltin($statements_analyzer, $call->name, $function_id);
+    }
+
+    /**
+     * Whether the name calls the builtin function, not a function of the namespace named the same
+     *
+     * @param lowercase-string $function_id
+     */
+    public static function isBuiltin(
+        StatementsAnalyzer $statements_analyzer,
+        Name $name,
+        string $function_id,
+    ): bool {
+        $functions = $statements_analyzer->getCodebase()->functions;
+
+        $called_id = strtolower($name instanceof Name\FullyQualified
+            ? $name->toString()
+            : $functions->getFullyQualifiedFunctionNameFromString($name->toString(), $statements_analyzer));
+
+        if ($called_id === $function_id) {
+            return true;
         }
 
-        // an unqualified name in a namespace may call a function of the namespace
-        /** @var mixed $namespaced_name */
-        $namespaced_name = $call->name->getAttribute('namespacedName');
-
-        return $call->name->isFullyQualified()
-            || !$namespaced_name instanceof Name
-            || !$statements_analyzer->getCodebase()->functions->functionExists(
-                $statements_analyzer,
-                strtolower($namespaced_name->toString()),
-            );
+        // an unqualified name falls back to the global function when the namespace has none
+        return !$name instanceof Name\FullyQualified
+            && strtolower($name->toString()) === $function_id
+            && !$functions->functionExists($statements_analyzer, $called_id);
     }
 
     /**

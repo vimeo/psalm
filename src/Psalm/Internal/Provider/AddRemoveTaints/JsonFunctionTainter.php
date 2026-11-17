@@ -11,8 +11,6 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\Type\TaintKind;
 
-use function strtolower;
-
 use const JSON_HEX_AMP;
 use const JSON_HEX_TAG;
 use const JSON_PRETTY_PRINT;
@@ -46,7 +44,7 @@ final class JsonFunctionTainter implements RemoveTaintsInterface
     ): int {
         if ($item->isFirstClassCallable()
             || !$item->name instanceof PhpParser\Node\Name
-            || !self::isBuiltin($statements_analyzer, $item->name, 'json_decode')
+            || !ConstantFlags::isBuiltin($statements_analyzer, $item->name, 'json_decode')
         ) {
             return 0;
         }
@@ -64,7 +62,7 @@ final class JsonFunctionTainter implements RemoveTaintsInterface
             || !$item instanceof PhpParser\Node\Expr\FuncCall
             || $item->isFirstClassCallable()
             || !$item->name instanceof PhpParser\Node\Name
-            || !self::isBuiltin($statements_analyzer, $item->name, 'json_encode')
+            || !ConstantFlags::isBuiltin($statements_analyzer, $item->name, 'json_encode')
         ) {
             return 0;
         }
@@ -95,31 +93,5 @@ final class JsonFunctionTainter implements RemoveTaintsInterface
         }
 
         return $removed_taints;
-    }
-
-    /**
-     * Whether the name calls the builtin function, not a function of the namespace named the same
-     *
-     * @param lowercase-string $function_id
-     */
-    private static function isBuiltin(
-        StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Name $name,
-        string $function_id,
-    ): bool {
-        $functions = $statements_analyzer->getCodebase()->functions;
-
-        $called_id = strtolower($name instanceof PhpParser\Node\Name\FullyQualified
-            ? $name->toString()
-            : $functions->getFullyQualifiedFunctionNameFromString($name->toString(), $statements_analyzer));
-
-        if ($called_id === $function_id) {
-            return true;
-        }
-
-        // an unqualified name falls back to the global function when the namespace has none
-        return !$name instanceof PhpParser\Node\Name\FullyQualified
-            && strtolower($name->toString()) === $function_id
-            && !$functions->functionExists($statements_analyzer, $called_id);
     }
 }

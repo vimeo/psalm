@@ -41,7 +41,9 @@ final class HtmlFunctionTainter implements RemoveTaintsInterface
 
         $function_id = strtolower($item->name->getFirst());
 
-        if ($function_id !== 'html_entity_decode' && $function_id !== 'htmlspecialchars_decode') {
+        if (($function_id !== 'html_entity_decode' && $function_id !== 'htmlspecialchars_decode')
+            || !ConstantFlags::isBuiltin($statements_analyzer, $item->name, $function_id)
+        ) {
             return 0;
         }
 
@@ -84,7 +86,9 @@ final class HtmlFunctionTainter implements RemoveTaintsInterface
 
         $function_id = strtolower($item->name->getFirst());
 
-        if ($function_id !== 'htmlentities' && $function_id !== 'htmlspecialchars') {
+        if (($function_id !== 'htmlentities' && $function_id !== 'htmlspecialchars')
+            || !ConstantFlags::isBuiltin($statements_analyzer, $item->name, $function_id)
+        ) {
             return 0;
         }
 

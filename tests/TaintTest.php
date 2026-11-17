@@ -7108,6 +7108,45 @@ final class TaintTest extends TestCase
                     (new H())->f();',
                 'error_message' => 'TaintedHtml',
             ],
+            'userFunctionNamedHtmlspecialcharsDoesNotEscape' => [
+                'code' => '<?php
+                    namespace App;
+
+                    function htmlspecialchars(string $s): string {
+                        return $s;
+                    }
+
+                    echo htmlspecialchars((string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'flagsGivenToAUserFunctionImportedAsJsonEncodeAreUnknown' => [
+                'code' => '<?php
+                    namespace App;
+
+                    use function App\\reset_flags as json_encode;
+
+                    function reset_flags(mixed $value, int &$flags): string {
+                        $flags = 0;
+                        return "";
+                    }
+
+                    function f(): void {
+                        $flags = \\JSON_HEX_TAG | \\JSON_HEX_AMP;
+                        json_encode("", $flags);
+                        echo \\json_encode($_GET["x"], $flags);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'flagsSetByParseStrWithoutAResultAreUnknown' => [
+                'code' => '<?php
+                    function f(string $query): void {
+                        $flags = JSON_HEX_TAG | JSON_HEX_AMP;
+                        parse_str($query);
+                        echo json_encode($_GET["x"], $flags);
+                    }',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '7.4',
+            ],
             'conditionallyEscapedTaintIgnoresUnpackedArguments' => [
                 'code' => '<?php
                     /**
