@@ -6,6 +6,7 @@ namespace Psalm\Internal\Cli;
 
 use AssertionError;
 use Composer\XdebugHandler\XdebugHandler;
+use Psalm\Exception\RefactorException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
@@ -42,6 +43,7 @@ use function realpath;
 use function str_starts_with;
 use function strpos;
 use function substr;
+use function trim;
 
 use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
@@ -229,6 +231,11 @@ final class Refactor
         $to_refactor = [];
 
         foreach ($args as $arg) {
+            if (($operation === 'move_into' || $operation === 'rename_to') && str_starts_with($arg, '-')) {
+                fwrite(STDERR, ($operation === 'move_into' ? '--into' : '--to') . ' expects a value' . PHP_EOL);
+                exit(1);
+            }
+
             if ($arg === '--move') {
                 $operation = 'move';
                 continue;
@@ -271,6 +278,11 @@ final class Refactor
                     exit(1);
                 }
 
+                if (trim($arg) === '') {
+                    fwrite(STDERR, ($operation === 'move_into' ? '--into' : '--to') . ' expects a value' . PHP_EOL);
+                    exit(1);
+                }
+
                 if ($operation === 'move_into') {
                     $last_arg_parts = preg_split('/, ?/', $last_arg);
                     if ($last_arg_parts === false) {
@@ -303,6 +315,11 @@ final class Refactor
             }
 
             fwrite(STDERR, 'Unexpected argument "' . $arg . '"' . PHP_EOL);
+            exit(1);
+        }
+
+        if ($operation === 'move_into' || $operation === 'rename_to') {
+            fwrite(STDERR, ($operation === 'move_into' ? '--into' : '--to') . ' expects a value' . PHP_EOL);
             exit(1);
         }
 
@@ -386,7 +403,12 @@ final class Refactor
 
         $start_time = microtime(true);
 
-        $project_analyzer->check($current_dir);
+        try {
+            $project_analyzer->check($current_dir);
+        } catch (RefactorException $e) {
+            fwrite(STDERR, $e->getMessage() . PHP_EOL);
+            exit(1);
+        }
 
         IssueBuffer::finish($project_analyzer, false, $start_time);
     }

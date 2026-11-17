@@ -92,6 +92,7 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         );
         $process->run();
 
+        $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
         $this->assertStringNotContainsString('Cannot locate', $process->getErrorOutput());
         $this->assertStringNotContainsString('No --move or --rename arguments supplied', $process->getErrorOutput());
 
@@ -123,6 +124,55 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         yield 'psalm --refactor' => [
             true,
             ['--refactor', '--move', 'Ns\A::foo', '--into', 'Ns\B'],
+        ];
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideInvalidRefactorDestinations')]
+    public function testRefactorReportsAnInvalidDestinationWithoutCrashing(array $args, string $message): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        $source = "<?php\n\nnamespace Ns;\n\nclass A\n{\n    public static function foo(): void\n    {\n    }\n}\n\n"
+            . "class B\n{\n    public static function bar(): void\n    {\n    }\n}\n\nclass C\n{\n}\n";
+        file_put_contents(self::$tmpDir . '/src/Moves.php', $source);
+
+        $process = self::newProcess(
+            [PHP_BINARY, $this->psalmRefactor, '--no-progress', '--no-cache', ...$args],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertSame($message . PHP_EOL, $process->getErrorOutput());
+        $this->assertSame($source, file_get_contents(self::$tmpDir . '/src/Moves.php'));
+    }
+
+    /**
+     * @return iterable<string, array{list<string>, string}>
+     * @psalm-pure
+     */
+    public static function provideInvalidRefactorDestinations(): iterable
+    {
+        yield 'empty --into' => [['--move', 'Ns\A::foo', '--into='], '--into expects a value'];
+        yield 'empty --to' => [['--rename', 'Ns\A::foo', '--to='], '--to expects a value'];
+        yield 'whitespace --into' => [['--move', 'Ns\A::foo', '--into= '], '--into expects a value'];
+        yield 'whitespace --to' => [['--rename', 'Ns\A::foo', '--to= '], '--to expects a value'];
+        yield 'missing --into value' => [['--move', 'Ns\A::foo', '--into'], '--into expects a value'];
+        yield 'missing --to value' => [['--rename', 'Ns\A::foo', '--to'], '--to expects a value'];
+        yield 'empty separate --into value' => [['--move', 'Ns\A::foo', '--into', ''], '--into expects a value'];
+        yield '--into followed by another operation' => [
+            ['--move', 'Ns\A::foo', '--into', '--rename', 'Ns\B::bar', '--to', 'Ns\C::baz'],
+            '--into expects a value',
+        ];
+        yield 'missing destination class' => [
+            ['--move', 'Ns\A::foo', '--into', 'Ns\Missing'],
+            'Destination class Ns\Missing doesn’t exist',
         ];
     }
 
