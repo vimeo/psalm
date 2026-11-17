@@ -40,7 +40,7 @@ With `--overlay` or `--overlays-from` the exit statuses differ: `0` no new error
 
 ## Overlay analysis
 
-`--overlay=ORIGINAL=REPLACEMENT` (repeatable) and `--overlays-from=FILE|-` report the issues that would be new if files had other contents, without changing anything on disk or in the cache. They need a reference index, written by a normal run with `--record-references`. `--overlay-timeout=SECONDS` limits the run from its start. See [Overlay analysis](overlays.md).
+`--overlay=ORIGINAL=REPLACEMENT` (repeatable) and `--overlays-from=FILE|-` report the issues that would be new if files had other contents, without changing anything on disk or in the cache. They need a reference index, written by a normal run with `--record-references`. `--overlay-timeout=SECONDS` limits the run from its start. See [Overlay analysis](overlays.md). `--record-references` is experimental: the option and the index may change in any release.
 
 ## Shepherd
 

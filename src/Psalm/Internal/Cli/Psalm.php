@@ -1588,7 +1588,7 @@ final class Psalm
                 Runs Psalm without using cached representations of unchanged methods.
 
             --record-references
-                Also record which files depend on which, for overlay analysis (see --overlay)
+                Experimental. Also record which files depend on which, for overlay analysis (see --overlay)
 
             --no-file-cache
                 Runs Psalm without using caching every single file for later diffing.
