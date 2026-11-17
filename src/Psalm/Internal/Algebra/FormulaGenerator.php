@@ -798,7 +798,9 @@ final class FormulaGenerator
      * the sides before it let it be.
      *
      * Otherwise, a formula too big to negate is only made from the negated condition with
-     * $rebuild_when_too_complicated, as its expansion is not bounded the same way.
+     * $rebuild_when_too_complicated, as its expansion is not bounded the same way. A formula with an assertion the
+     * negation drops (`=int` has no usable negation) is also made from the negated condition, as negating a negated
+     * call gives that assertion back (`if (!isFive($x)) return;`).
      *
      * @param list<Clause> $clauses
      * @return list<Clause>
@@ -814,6 +816,22 @@ final class FormulaGenerator
         bool $rebuild_when_too_complicated = false,
     ): array {
         if (!self::hasAssigningRightSide($conditional, $this_class_name, self::getNodeData($source))) {
+            if (self::hasLossyNegation($conditional, $this_class_name, $source, $codebase)) {
+                try {
+                    return self::getFormula(
+                        $conditional_object_id,
+                        $conditional_object_id,
+                        new VirtualBooleanNot($conditional),
+                        $this_class_name,
+                        $source,
+                        $codebase,
+                        false,
+                    );
+                } catch (ComplicatedExpressionException) {
+                    // negated below
+                }
+            }
+
             try {
                 return Algebra::negateFormula($clauses);
             } catch (ComplicatedExpressionException $e) {
@@ -832,6 +850,52 @@ final class FormulaGenerator
             $codebase,
             false,
         );
+    }
+
+    /**
+     * Whether the condition negates an expression whose formula has an assertion the negation drops
+     */
+    private static function hasLossyNegation(
+        PhpParser\Node\Expr $conditional,
+        ?string $this_class_name,
+        FileSource $source,
+        ?Codebase $codebase,
+        bool $negated = false,
+    ): bool {
+        if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
+            return self::hasLossyNegation($conditional->expr, $this_class_name, $source, $codebase, !$negated);
+        }
+
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+        ) {
+            return self::hasLossyNegation($conditional->left, $this_class_name, $source, $codebase, $negated)
+                || self::hasLossyNegation($conditional->right, $this_class_name, $source, $codebase, $negated);
+        }
+
+        if (!$negated) {
+            return false;
+        }
+
+        $formula = self::getFormula(
+            spl_object_id($conditional),
+            spl_object_id($conditional),
+            $conditional,
+            $this_class_name,
+            $source,
+            $codebase,
+            true,
+        );
+
+        foreach ($formula as $clause) {
+            if (!$clause->wedge && $clause->calculateNegation()->partial_negation) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function hasAssigningRightSide(
