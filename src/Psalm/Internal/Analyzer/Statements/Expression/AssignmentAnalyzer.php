@@ -2220,7 +2220,6 @@ final class AssignmentAnalyzer
 
                 if (!$context->inside_conditional) {
                     $context->possibly_assigned_var_ids[$var_id] = true;
-                    $context->fully_assigned_var_ids[$var_id] = true;
                     $context->vars_in_scope[$var_id] = $by_ref_out_type;
                     $context->writeToReferencesPossiblyBound($var_id, $by_ref_out_type, $codebase);
 

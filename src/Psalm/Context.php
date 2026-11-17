@@ -427,9 +427,8 @@ final class Context
     public array $possibly_assigned_var_ids = [];
 
     /**
-     * The variables (and properties) that were assigned as a whole in this context, including as a by-reference
-     * argument, not only an offset of them and not by the union of an array into them (`$a += [...]`, which keeps
-     * every offset the array had)
+     * The variables (and properties) that were assigned as a whole in this context, not only an offset of them and
+     * not by the union of an array into them (`$a += [...]`, which keeps every offset the array had)
      *
      * @var array<string, bool>
      */

@@ -5148,7 +5148,7 @@ final class ConditionalTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedAssignment'],
             ],
-            'mixedVarAssignedInABlockNestedInTheBranchIsMixed' => [
+            'mixedVarAssignedInABlockNestedInTheBranchStaysUnioned' => [
                 'code' => '<?php
                     /** @var mixed $u */
                     $u = $_GET["u"];
@@ -5161,7 +5161,23 @@ final class ConditionalTest extends TestCase
 
                     $after = $u;',
                 'assertions' => [
-                    '$after===' => 'mixed',
+                    '$after===' => '5|array<array-key, mixed>|mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarPassedToACallInTheBranchStaysUnioned' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (is_array($u)) {
+                        $u["a"] = 1;
+                        preg_match("/a/", "a", $u);
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'array<array-key, string>|mixed',
                 ],
                 'ignored_issues' => ['MixedAssignment'],
             ],
@@ -5979,6 +5995,36 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'mixedOffsetAssignedAsAWholeInIfStaysUnioned' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function cast(mixed $v) {
+                        return $v;
+                    }
+
+                    /** @return array<string, string> */
+                    function casts(): array {
+                        return [];
+                    }
+
+                    /** @param array<string, mixed> $attributes */
+                    function f(array $attributes): void {
+                        foreach (casts() as $key => $value) {
+                            $attributes[$key] = cast($attributes[$key]);
+
+                            if (isset($attributes[$key]) && $value === "date") {
+                                $attributes[$key] = "s";
+                            }
+
+                            if (isset($attributes[$key]) && $value === "custom") {
+                                echo $attributes[$key]->format("x");
+                            }
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidMethodCall',
+                'error_levels' => ['MixedAssignment', 'MixedMethodCall', 'MixedArgument'],
+                'php_version' => '8.0',
+            ],
             'mixedVarUnsetInIfAndAssignedInANestedBlockIsPossiblyUndefined' => [
                 'code' => '<?php
                     function f(mixed $u): void {

@@ -10,6 +10,7 @@ use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -580,13 +581,13 @@ final class IfAnalyzer
             } elseif (isset($outer_context->vars_in_scope[$var_id])
                 && $outer_context->vars_in_scope[$var_id]->hasMixed()
                 && !isset($assigned_in_conditional_var_ids[$var_id])
-                && !isset($if_context->fully_assigned_var_ids[$var_id])
                 && (!$type->possibly_undefined || $outer_context->vars_in_scope[$var_id]->possibly_undefined)
                 && UnionTypeComparator::isContainedBy($codebase, $type, $outer_context->vars_in_scope[$var_id])
+                && (!isset($possibly_assigned_var_ids[$var_id])
+                    || !self::mayAssignAsAWhole($branch_nodes, $var_id, $statements_analyzer))
             ) {
                 // a mixed var that this branch only narrowed, or wrote at some of its offsets, is still just mixed:
-                // merging the narrowed type back in would only produce a `mixed|Foo` union. Only the assignments of
-                // the condition and of the branch's own statements count: a nested block's are not recorded here
+                // merging the narrowed type back in would only produce a `mixed|Foo` union
                 $possibly_redefined_vars[$var_id] = $outer_context->vars_in_scope[$var_id]
                     ->addParentNodes($type->parent_nodes);
             }
@@ -633,5 +634,71 @@ final class IfAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Whether the code may assign the variable as a whole, in nested blocks too: an assignment to it (`$a = `,
+     * `$a .= `, `[$a] = `, `$a++`), a foreach, static or global declaration of it, `unset($a)`, or passing it by
+     * reference to a closure or to a call made as a statement or assigned (`f($a);`, `$n = f($a)`): what a call in
+     * a condition writes through a reference is not recorded as an assignment either
+     *
+     * @param array<PhpParser\Node> $nodes
+     */
+    private static function mayAssignAsAWhole(
+        array $nodes,
+        string $var_id,
+        StatementsAnalyzer $statements_analyzer,
+    ): bool {
+        $fq_class_name = $statements_analyzer->getFQCLN();
+
+        $is_target = static function (?PhpParser\Node\Expr $expr) use (
+            &$is_target,
+            $var_id,
+            $fq_class_name,
+            $statements_analyzer,
+        ): bool {
+            if ($expr instanceof PhpParser\Node\Expr\List_ || $expr instanceof PhpParser\Node\Expr\Array_) {
+                return array_any(
+                    $expr->items,
+                    static fn(?PhpParser\Node\ArrayItem $item): bool => $item !== null && $is_target($item->value),
+                );
+            }
+
+            return $expr !== null
+                && ExpressionIdentifier::getExtendedVarId($expr, $fq_class_name, $statements_analyzer) === $var_id;
+        };
+
+        $passes_target = static fn(PhpParser\Node\Expr $expr): bool => $expr instanceof PhpParser\Node\Expr\CallLike
+            && array_any(
+                $expr->args,
+                static fn(PhpParser\Node $arg): bool => $arg instanceof PhpParser\Node\Arg && $is_target($arg->value),
+            );
+
+        return (new PhpParser\NodeFinder())->findFirst(
+            $nodes,
+            static fn(PhpParser\Node $node): bool => match (true) {
+                $node instanceof PhpParser\Node\Expr\Assign,
+                $node instanceof PhpParser\Node\Expr\AssignOp => $is_target($node->var) || $passes_target($node->expr),
+                $node instanceof PhpParser\Node\Stmt\Expression => $passes_target($node->expr),
+                $node instanceof PhpParser\Node\Expr\AssignRef,
+                $node instanceof PhpParser\Node\Expr\PreInc,
+                $node instanceof PhpParser\Node\Expr\PreDec,
+                $node instanceof PhpParser\Node\Expr\PostInc,
+                $node instanceof PhpParser\Node\Expr\PostDec => $is_target($node->var),
+                $node instanceof PhpParser\Node\Stmt\Foreach_ => $is_target($node->keyVar)
+                    || $is_target($node->valueVar),
+                $node instanceof PhpParser\Node\Stmt\Unset_,
+                $node instanceof PhpParser\Node\Stmt\Global_ => array_any($node->vars, $is_target),
+                $node instanceof PhpParser\Node\Stmt\Static_ => array_any(
+                    $node->vars,
+                    static fn(PhpParser\Node\StaticVar $static_var): bool => $is_target($static_var->var),
+                ),
+                $node instanceof PhpParser\Node\Expr\Closure => array_any(
+                    $node->uses,
+                    static fn(PhpParser\Node\ClosureUse $use): bool => $use->byRef && $is_target($use->var),
+                ),
+                default => false,
+            },
+        ) !== null;
     }
 }
