@@ -1546,7 +1546,7 @@ final class ArgumentsAnalyzer
                             // Mirror the value-node keying in ArgumentAnalyzer::processTaintedness:
                             // when the caller has no storage, resolve it from the cased method id so
                             // the sink is keyed by the declared parameter index (via $function_param),
-                            // and only a genuinely storage-less callable falls back to the call offset.
+                            // and only a genuinely storage-less callable falls back to getForCallableArg().
                             $sink = ($in_call_map
                                 ? null
                                 : DataFlowNode::getForMethodArgumentById(
