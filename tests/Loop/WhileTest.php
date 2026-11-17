@@ -300,6 +300,72 @@ final class WhileTest extends TestCase
                     }
                     PHP,
             ],
+            'whileChainThroughADestructuringSwapIsAnalysedUntilItReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            [$a, $b] = [$b, $c];
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 0|'s' */;
+                    }
+                    PHP,
+            ],
+            'whileChainThroughACoalescingAssignmentIsAnalysedUntilItReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = rand(0, 1) ? 0 : null;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            $a ??= $b;
+                            $b = $c;
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 0|'s'|null */;
+                    }
+                    PHP,
+            ],
+            'whileChainThroughACompoundAssignmentIsAnalysedUntilItReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $n = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            $n += $b;
+                            $b = $c;
+                            $c = 1.5;
+                        }
+                        /** @psalm-check-type-exact $n = float|int<0, max> */;
+                    }
+                    PHP,
+            ],
+            'whileChainReadAfterAConditionalAssignmentIsAnalysedUntilItReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $b = 1;
+                            }
+                            $a = $b;
+                            $b = $c;
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 0|1|'s' */;
+                    }
+                    PHP,
+            ],
             'whileCounterCopiedAlongAChainIsStillWidened' => [
                 'code' => <<<'PHP'
                     <?php

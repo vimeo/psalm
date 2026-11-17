@@ -2062,11 +2062,6 @@ final class LoopAnalyzer
     }
 
     /**
-     * Types that read the same may still differ: closures made from different functions or methods do
-     *
-     * @psalm-pure
-     */
-    /**
      * @param array<string, true> $feeding_var_ids
      * @param array<string, Union> $vars_at_start
      * @param array<string, Union> $vars_at_end
@@ -2096,6 +2091,8 @@ final class LoopAnalyzer
     }
 
     /**
+     * Types that read the same may still differ: closures made from different functions or methods do
+     *
      * @psalm-pure
      */
     private static function differ(Union $type, Union $other_type): bool
