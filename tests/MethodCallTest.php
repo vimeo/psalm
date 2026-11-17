@@ -2844,6 +2844,15 @@ final class MethodCallTest extends TestCase
                     '$a===' => 'SplObjectStorage<`_0:object, `_1:mixed>',
                 ],
             ],
+            'splObjectStorageAttachAcceptsValueTypeOrNothing' => [
+                'code' => '<?php
+                    /** @param SplObjectStorage<object, list<string>> $s */
+                    function f(SplObjectStorage $s, object $o): void {
+                        $s->attach($o, ["a"]);
+                        $s->attach($o, null);
+                        $s->attach($o);
+                    }',
+            ],
             'allowIteratorToBeNull' => [
                 'code' => '<?php
                     /**
@@ -3288,6 +3297,22 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'splObjectStorageAttachChecksValueType' => [
+                'code' => '<?php
+                    /** @param SplObjectStorage<object, list<string>> $s */
+                    function f(SplObjectStorage $s, object $o): void {
+                        $s->attach($o, 5);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:40 - Argument 2 of SplObjectStorage::attach expects list<string>|null, but 5 provided',
+            ],
+            'splObjectStorageAttachChecksArrayValue' => [
+                'code' => '<?php
+                    /** @param SplObjectStorage<object, list<string>> $s */
+                    function f(SplObjectStorage $s, object $o, array $g): void {
+                        $s->attach($o, $g);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:40 - Argument 2 of SplObjectStorage::attach expects list<string>|null, but parent type array<array-key, mixed> provided',
+            ],
             'methodAssertionOnMethodCallingTheAssertingMethodNotMemoized' => [
                 'code' => '<?php
                     final class Foo { public function bar(): void {} }

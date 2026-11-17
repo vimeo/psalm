@@ -1114,7 +1114,7 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @link https://php.net/manual/en/splobjectstorage.attach.php
      *
      * @param TObject $object The object to add.
-     * @param TArrayValue|null $data [optional] The data to associate with the object.
+     * @param TArrayValue|null $info [optional] The data to associate with the object.
      * @return void
      *
      * @since 5.1.0
