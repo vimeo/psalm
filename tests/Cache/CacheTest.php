@@ -46,6 +46,7 @@ use function pcntl_waitpid;
 use function pcntl_wexitstatus;
 use function pcntl_wifexited;
 use function posix_getrlimit;
+use function posix_getuid;
 use function posix_setrlimit;
 use function preg_match;
 use function restore_error_handler;
@@ -775,6 +776,72 @@ final class CacheTest extends TestCase
         self::assertSame($files_before, scandir($this->entryDirectory()));
         self::assertSame('written', $this->newCache()->getItem(self::KEY, 'hash'));
         self::assertSame('kept in memory', $cache->getItem('src/B.php'));
+    }
+
+    public function testReadOnlyCacheWithoutArrayCacheKeepsWhatItIsGivenInMemory(): void
+    {
+        $cache = $this->newReadOnlyCache(false);
+        $cache->saveItem(self::KEY, 'kept in memory', 'hash');
+
+        self::assertSame('kept in memory', $cache->getItem(self::KEY, 'hash'));
+        self::assertDirectoryDoesNotExist($this->cache_directory);
+    }
+
+    public function testReadOnlyCacheReadsAConsolidatedCache(): void
+    {
+        $cache = $this->newCache();
+        $cache->saveItem(self::KEY, 'consolidated', 'hash');
+        $cache->consolidate();
+
+        self::assertSame('consolidated', $this->newReadOnlyCache()->getItem(self::KEY, 'hash'));
+    }
+
+    public function testReadOnlyCacheKeepsTheItemItWasGivenWhenItReadsAnOlderOne(): void
+    {
+        $this->newCache()->saveItem(self::KEY, 'written', 'old hash');
+
+        $cache = $this->newReadOnlyCache();
+        $cache->saveItem(self::KEY, 'kept in memory', 'new hash');
+
+        self::assertSame('written', $cache->getItem(self::KEY, 'old hash'));
+        self::assertSame('kept in memory', $cache->getItem(self::KEY, 'new hash'));
+    }
+
+    public function testReadOnlyCacheTellsWhetherItIsCold(): void
+    {
+        self::assertTrue($this->newReadOnlyCache()->isCold());
+
+        $this->newCache();
+
+        self::assertFalse($this->newReadOnlyCache()->isCold());
+    }
+
+    public function testReadOnlyCacheWithALockItCannotOpenRaisesNothing(): void
+    {
+        if (DIRECTORY_SEPARATOR === '\\' || (function_exists('posix_getuid') && posix_getuid() === 0)) {
+            self::markTestSkipped('needs a file its owner cannot read');
+        }
+
+        $this->newCache()->saveItem(self::KEY, 'written', 'hash');
+        // what --clear-cache deleting the lock between is_file() and fopen() looks like to the reader
+        chmod($this->entryDirectory() . '/lock', 0o000);
+
+        $cache = null;
+        self::assertSame([], self::errorsRaisedBy(function () use (&$cache): void {
+            $cache = $this->newReadOnlyCache();
+        }));
+        self::assertInstanceOf(Cache::class, $cache);
+        self::assertSame('written', $cache->getItem(self::KEY, 'hash'));
+    }
+
+    /** @return Cache<string> */
+    private function newReadOnlyCache(bool $array_cache = true): Cache
+    {
+        $config = $this->newConfig();
+        $config->cache_read_only = true;
+        $config->array_cache = $array_cache;
+
+        return new Cache($config, 'test');
     }
 
     /**
