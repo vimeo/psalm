@@ -84,11 +84,7 @@ final class Engine
     public function validate(Request $request): void
     {
         $config = $this->project_analyzer->getConfig();
-        $snapshot_inputs = [
-            ...ReferenceIndex::getConfigurationFiles($config),
-            ...$config->getStubFiles(),
-            ...$config->getPreloadedStubFiles(),
-        ];
+        $snapshot_inputs = ReferenceIndex::getConfigurationFiles($config);
         $snapshot_inputs[] = Path::join($config->base_dir, 'composer.json');
         $snapshot_inputs = array_map(self::canonical(...), $snapshot_inputs);
 
