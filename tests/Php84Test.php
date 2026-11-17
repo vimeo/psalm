@@ -124,6 +124,25 @@ final class Php84Test extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'magicMethodConstantsInAPropertyHook' => [
+                'code' => '<?php
+                    namespace N;
+
+                    final class H {
+                        /** @var \'N\\H::$method::get\' */
+                        public string $method {
+                            get => __METHOD__;
+                        }
+
+                        /** @var \'$function::get\' */
+                        public string $function {
+                            get => __FUNCTION__;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'propertyHookOfTemplatedClass' => [
                 'code' => '<?php
                     /** @template T */
