@@ -222,10 +222,6 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 return null;
             }
 
-            if (!$node instanceof PhpParser\Node\FunctionLike) {
-                return null;
-            }
-
             $classlike_storage = null;
 
             if ($this->classlike_node_scanners) {

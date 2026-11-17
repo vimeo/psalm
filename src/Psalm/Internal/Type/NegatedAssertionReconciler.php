@@ -582,6 +582,9 @@ final class NegatedAssertionReconciler extends Reconciler
         return $existing_var_type;
     }
 
+    /**
+     * @psalm-pure
+     */
     private static function isLateStatic(?Atomic $type): bool
     {
         return $type instanceof TNamedObject && $type->is_static;
