@@ -3652,6 +3652,80 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'procOpenOnlyWritesPipes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $pipes = null;
+                    $process = proc_open('ls', [1 => ['pipe', 'w']], $pipes);
+                    PHP,
+                'assertions' => ['$pipes===' => 'array<array-key, resource>'],
+            ],
+            'procOpenOnlyWritesPipesOnPhp80' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $pipes = 'not an array';
+                    $process = proc_open(['ls'], [1 => ['pipe', 'w']], $pipes);
+                    PHP,
+                'assertions' => ['$pipes===' => 'array<array-key, resource>'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'splFileObjectFscanfOnlyWritesVars' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(SplFileObject $file, SplTempFileObject $temp): void {
+                        $hours = [];
+                        $file->fscanf('%d', $hours);
+                        /** @psalm-check-type-exact $hours = float|int|string */
+                        $minutes = [];
+                        $temp->fscanf('%d', $minutes);
+                        /** @psalm-check-type-exact $minutes = float|int|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'intltzOnlyWritesOutParams' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $tz = intltz_get_gmt();
+                        $raw = null;
+                        $dst = null;
+                        intltz_get_offset($tz, 0.0, false, $raw, $dst);
+                        /** @psalm-check-type-exact $raw = int */
+                        /** @psalm-check-type-exact $dst = int */
+                        $is_system = 'unknown';
+                        intltz_get_canonical_id('Europe/Paris', $is_system);
+                        /** @psalm-check-type-exact $is_system = bool */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'intltzGetCanonicalIdOnlyWritesIsSystemIdOnPhp74' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $is_system = 'unknown';
+                    intltz_get_canonical_id('Europe/Paris', $is_system);
+                    PHP,
+                'assertions' => ['$is_system===' => 'bool'],
+            ],
+            'opensslSealOnlyWritesIv' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(OpenSSLAsymmetricKey $key): void {
+                        $iv = null;
+                        openssl_seal('data', $sealed, $keys, [$key], 'aes-256-cbc', $iv);
+                        /** @psalm-check-type-exact $iv = string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'socketAddrinfoLookupTakesAnErrorCodeOnPhp86' => [
                 'code' => <<<'PHP'
                     <?php
