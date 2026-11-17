@@ -45,6 +45,14 @@ final class TypeVariableTracker
     private array $bounds = [];
 
     /**
+     * The recording order of each position that recorded bounds, kept from its first time so a loop body analyzed
+     * again doesn't move its bounds after the ones that follow it
+     *
+     * @var array<string, int>
+     */
+    private array $position_orders = [];
+
+    /**
      * Mints a fresh type variable name, registering its bound storage.
      *
      * @psalm-external-mutation-free
@@ -86,10 +94,18 @@ final class TypeVariableTracker
         ?CodeLocation $pos,
         array $suppressed_issues = [],
     ): void {
+        $recorded_order = 0;
+
+        if ($pos !== null) {
+            $position_key = $pos->file_path . ':' . $pos->raw_file_start . ':' . $pos->raw_file_end;
+            $recorded_order = $this->position_orders[$position_key] ??= count($this->position_orders) + 1;
+        }
+
         foreach ($lower as [$name, $bound]) {
             if (isset($this->bounds[$name])) {
                 $bound->pos = $pos;
                 $bound->suppressed_issues = $suppressed_issues;
+                $bound->recorded_order = $recorded_order;
                 $this->bounds[$name]->lower_bounds[] = $bound;
             }
         }
@@ -98,6 +114,7 @@ final class TypeVariableTracker
             if (isset($this->bounds[$name])) {
                 $bound->pos = $pos;
                 $bound->suppressed_issues = $suppressed_issues;
+                $bound->recorded_order = $recorded_order;
                 $this->bounds[$name]->upper_bounds[] = $bound;
             }
         }
@@ -210,6 +227,7 @@ final class TypeVariableTracker
     ): void {
         $all_bounds = $this->bounds;
         $this->bounds = [];
+        $this->position_orders = [];
 
         foreach ($all_bounds as $bounds) {
             self::reconcileLowerBoundsWithUpperBounds(
@@ -293,10 +311,7 @@ final class TypeVariableTracker
                     // a value passed or assigned after the requirement was set
                     // (`$this->p = new Coll(); $this->p->add($v)`) is reported
                     // there, as the issue the eager template model reported there
-                    $lower_bound_is_later = $relevant_lower_bound->pos !== null
-                        && $upper_bound->pos !== null
-                        && $relevant_lower_bound->pos->file_path === $upper_bound->pos->file_path
-                        && $relevant_lower_bound->pos->raw_file_start > $upper_bound->pos->raw_file_start
+                    $lower_bound_is_later = $relevant_lower_bound->recorded_order > $upper_bound->recorded_order
                         && ($relevant_lower_bound->from_argument_value
                             || $relevant_lower_bound->property_value_id !== null);
 
