@@ -331,6 +331,22 @@ final class WhileTest extends TestCase
                     }
                     PHP,
             ],
+            'whileChainThroughAnAssignmentInsideAnOverwritingOneIsAnalysedUntilItReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            $z = 1;
+                            $b = rand(0, 1) ? ($a = $b) : $c;
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 0|'s' */;
+                    }
+                    PHP,
+            ],
             'whileChainThroughACompoundAssignmentIsAnalysedUntilItReachesTheFirst' => [
                 'code' => <<<'PHP'
                     <?php

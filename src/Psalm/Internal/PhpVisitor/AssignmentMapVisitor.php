@@ -124,13 +124,6 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
                 $this->assignment_map[$left_var_id][$right_var_id ?? 'isset'] = true;
             }
 
-            if ($node->var instanceof PhpParser\Node\Expr\Variable
-                && is_string($node->var->name)
-                && isset($this->statement_expr_ids[spl_object_id($node)])
-            ) {
-                $this->overwritten_var_ids['$' . $node->var->name] = true;
-            }
-
             // what the sides change themselves (`$x = $counts['one']++`, `$a[$i++] = 1`) is in the map too
             $inner_visitor = new self($this->this_class_name, $this);
             $inner_traverser = new PhpParser\NodeTraverser;
@@ -143,6 +136,14 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
 
             $this->defined_var_ids += $inner_visitor->defined_var_ids;
             $this->feeding_var_ids += $inner_visitor->feeding_var_ids;
+
+            // the sides are evaluated before the variable is overwritten
+            if ($node->var instanceof PhpParser\Node\Expr\Variable
+                && is_string($node->var->name)
+                && isset($this->statement_expr_ids[spl_object_id($node)])
+            ) {
+                $this->overwritten_var_ids['$' . $node->var->name] = true;
+            }
 
             return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
         }
