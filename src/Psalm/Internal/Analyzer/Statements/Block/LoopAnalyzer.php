@@ -231,6 +231,10 @@ final class LoopAnalyzer
             // record all the vars that existed before we did the first pass through the loop
             $pre_loop_context = clone $loop_context;
 
+            $type_variable_tracker = $statements_analyzer->type_variable_tracker;
+            $bounds_before_loop = $type_variable_tracker->snapshotBounds();
+            $bounds_at_kept_pass_start = $bounds_before_loop;
+
             IssueBuffer::startRecording();
 
             // what the condition writes is recorded by the passes below, which start with the values before the loop
@@ -459,6 +463,7 @@ final class LoopAnalyzer
                 $vars_at_iteration_start = $continue_context->vars_in_scope;
 
                 $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
+                $bounds_at_kept_pass_start = $type_variable_tracker->snapshotBounds();
                 IssueBuffer::startRecording();
 
                 // what a pass computed of the condition (the assertions of its operands too) and of the body is no
@@ -619,6 +624,15 @@ final class LoopAnalyzer
             if (!$condition_written_var_ids) {
                 $condition_written_var_ids = $first_condition_written_var_ids;
             }
+
+            // like their issues, the bounds the passes before the last one gave the type variables minted before the
+            // loop are dropped: the last pass records them again with the types the loop leaves. They stay until then,
+            // as the last pass reads them before recording its own (a value taken from a collection a previous
+            // iteration filled).
+            $type_variable_tracker->discardBoundsRecordedBetween(
+                $bounds_before_loop,
+                $bounds_at_kept_pass_start,
+            );
 
             if ($recorded_issues) {
                 foreach ($recorded_issues as $recorded_issue) {

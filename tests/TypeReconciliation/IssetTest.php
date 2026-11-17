@@ -1992,6 +1992,312 @@ final class IssetTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'issetOfDynamicOffsetSetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (isset($data[$k])) {
+                            echo $data[$k];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'issetOfLiteralOffsetSetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (isset($data["a"])) {
+                            echo $data["a"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'issetOfOffsetsOfSetMixedVariableNarrowsItAfterTheReturn' => [
+                'code' => '<?php
+                    function f(array $trace): ?string {
+                        $i = count($trace);
+                        $line = $trace[$i];
+
+                        if (!isset($line["object"]) && !isset($line["class"])) {
+                            return null;
+                        }
+
+                        if (!isset($line["class"], $trace[$i - 2]["function"])
+                            || !str_starts_with((string) $line["class"], "X")
+                        ) {
+                            return "a";
+                        }
+
+                        $test = $line["args"][0] ?? null;
+                        return is_string($test) ? $test : null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'issetOfIntOffsetSetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (isset($data[0])) {
+                            echo $data[0];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'issetOfOffsetSetsMixedVariableAssignedInTry' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function f(string $s, string $k): void {
+                        try {
+                            $data = dec($s);
+                        } catch (\Exception $e) {
+                            echo "error";
+                        }
+                        if (!isset($data[$k])) {
+                            return;
+                        }
+                        echo $data[$k];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'issetOfNestedOffsetSetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (isset($data[$k]["b"])) {
+                            echo $data[$k]["b"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'nonEmptyOffsetSetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (!empty($data[$k])) {
+                            echo $data[$k];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'issetOfPropertySetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s); }
+
+                    function g(string $s): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (isset($data->a)) {
+                            echo $data->a;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedPropertyFetch'],
+            ],
+            'elseifIssetOfOffsetSetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (rand(0, 1)) {
+                            echo "a";
+                        } elseif (isset($data[$k])) {
+                            echo $data[$k];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'elseifNotIssetOfOffsetSetsPossiblyUndefinedMixedVariableAfterIt' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (rand(0, 1)) {
+                            return;
+                        } elseif (!isset($data[$k])) {
+                            return;
+                        }
+                        echo $data[$k];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'ternaryIssetOfOffsetSetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    /** @return mixed */
+                    function g(string $s, string $k) {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        return isset($data[$k]) ? $data[$k] : null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
+            'ternaryNotIssetOfOffsetSetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    /** @return mixed */
+                    function g(string $s, string $k) {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        return !isset($data[$k]) ? null : $data[$k];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
+            'doWhileNotIssetOfOffsetSetsPossiblyUndefinedMixedVariableAfterIt' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        do {
+                            if (rand(0, 1)) {
+                                $data = dec($s);
+                            }
+                        } while (!isset($data[$k]));
+                        echo $data[$k];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'coalesceOfOffsetOfPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        echo $data["a"] ?? "x";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'nonEmptyOffsetOfSetMixedItemKeepsTheArrayType' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function hooks() { return []; }
+
+                    $result = hooks();
+                    if ($result) {
+                        foreach ($result as $hook => $_) {
+                            $result[$hook]["type"] = "module";
+                            if (!empty($result[$hook]["base hook"])) {
+                                $result[$hook]["incomplete"] = true;
+                            }
+                        }
+                        $r = $result;
+                    }',
+                'assertions' => [
+                    '$r===' => 'non-empty-array<array-key, mixed>|non-empty-mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess', 'MixedArrayOffset', 'MixedArrayAssignment'],
+            ],
+            'emptyOffsetOfSetMixedItemThenContinueKeepsTheArrayType' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function hooks() { return []; }
+
+                    $result = hooks();
+                    if ($result) {
+                        foreach ($result as $hook => $_) {
+                            $result[$hook]["type"] = "module";
+                            if (empty($result[$hook]["base hook"])) {
+                                continue;
+                            }
+                            $result[$hook]["incomplete"] = true;
+                        }
+                        $r = $result;
+                    }',
+                'assertions' => [
+                    '$r===' => 'non-empty-array<array-key, mixed>|non-empty-mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess', 'MixedArrayOffset', 'MixedArrayAssignment'],
+            ],
+            'issetOfAnotherOffsetOfMixedVariableIsNotRedundant' => [
+                'code' => '<?php
+                    /** @param mixed $data */
+                    function f($data): void {
+                        if (!isset($data["a"])) {
+                            return;
+                        }
+                        if (isset($data["b"])) {
+                            echo "b";
+                        }
+                    }',
+            ],
+            'nestedIssetOfOffsetsOfPossiblyUndefinedMixedVariableIsNotRedundant' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (isset($data["a"])) {
+                            if (isset($data["b"])) {
+                                echo "b";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
         ];
     }
 
@@ -2002,6 +2308,56 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'possiblyUndefinedMixedVariableStaysSoWhereIssetOfOffsetIsFalse' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (isset($data[$k])) {
+                            echo "set";
+                        } else {
+                            echo $data;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => ['MixedAssignment', 'MixedArgument'],
+            ],
+            'possiblyUndefinedMixedVariableStaysSoWhereIssetOfOffsetIsOnlyAnAlternative' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (isset($data[$k]) || rand(0, 1)) {
+                            echo $data;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => ['MixedAssignment', 'MixedArgument'],
+            ],
+            'possiblyUndefinedMixedVariableStaysSoWhereOffsetIsNotSet' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (!isset($data[$k])) {
+                            echo $data;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => ['MixedAssignment', 'MixedArgument'],
+            ],
             'variableAssignedInANullsafeCallOnTheLeftOfACoalesceIsPossiblyUndefined' => [
                 'code' => '<?php
                     final class K {

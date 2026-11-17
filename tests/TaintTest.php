@@ -3019,6 +3019,18 @@ final class TaintTest extends TestCase
                     curl_setopt($curl, CURLOPT_POSTFIELDS, (string) $_GET["body"]);
                     curl_setopt($curl, \\CURLOPT_PRIVATE, (string) $_GET["private"]);',
             ],
+            'dontTaintSsrfInACurlOptionNotChoosingTheDestinationPassedByName' => [
+                'code' => '<?php // --taint-analysis
+                    $curl = curl_init("https://example.com/");
+                    curl_setopt($curl, value: (string) $_GET["private"], option: CURLOPT_PRIVATE);',
+            ],
+            'dontTaintSsrfInACurlOptionArrayNotChoosingTheDestinationPassedByName' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt_array(
+                        options: [CURLOPT_PRIVATE => (string) $_GET["private"]],
+                        handle: curl_init("https://example.com/"),
+                    );',
+            ],
             'dontTaintAnImmutableObjectBuiltFromAnotherCallsArgument' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-immutable */
@@ -12155,6 +12167,40 @@ final class TaintTest extends TestCase
                 'code' => '<?php // --taint-analysis
                     curl_setopt_array(curl_init(), [CURLOPT_COOKIEFILE => (string) $_GET["file"]]);',
                 'error_message' => 'TaintedFile',
+            ],
+            'taintCallableInACurlOptionPassedByName' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt(curl_init(), value: (string) $_GET["callback"], option: CURLOPT_WRITEFUNCTION);',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintFileInACurlOptionArrayPassedByName' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt_array(options: [CURLOPT_COOKIEFILE => (string) $_GET["file"]], handle: curl_init());',
+                'error_message' => 'TaintedFile',
+            ],
+            'taintShellInANamedArgumentOfABuiltin' => [
+                'code' => '<?php // --taint-analysis
+                    mail("a@b.c", "s", "m", additional_params: (string) $_GET["x"]);',
+                'error_message' => 'TaintedShell',
+            ],
+            'taintSqlInANamedArgumentOfABuiltinPassedFirst' => [
+                'code' => '<?php // --taint-analysis
+                    function f(mysqli $c): void {
+                        mysqli_query(query: (string) $_GET["x"], mysql: $c);
+                    }',
+                'error_message' => 'TaintedSql',
+            ],
+            'taintSqlInANamedArgumentOfABuiltinPassedAtItsParameter' => [
+                'code' => '<?php // --taint-analysis
+                    function f(mysqli $c): void {
+                        mysqli_query(mysql: $c, query: (string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedSql',
+            ],
+            'taintShellInAnUnpackedListOfABuiltin' => [
+                'code' => '<?php // --taint-analysis
+                    mail(...["a@b.c", "s", "m", "", (string) $_GET["x"]]);',
+                'error_message' => 'TaintedShell',
             ],
             'taintFileInACurlFile' => [
                 'code' => '<?php // --taint-analysis

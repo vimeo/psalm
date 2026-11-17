@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
+use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -32,6 +33,7 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_diff;
+use function array_diff_key;
 use function array_fill_keys;
 use function array_filter;
 use function array_intersect_key;
@@ -153,7 +155,7 @@ final class IfElseAnalyzer
 
         $cond_object_id = spl_object_id($stmt->cond);
 
-        $if_clauses = self::getConditionClauses(
+        [$if_clauses, $get_negated_clauses] = self::getConditionClauses(
             $statements_analyzer,
             $stmt->cond,
             $cond_object_id,
@@ -243,15 +245,7 @@ final class IfElseAnalyzer
         $if_scope->reasonable_clauses = $if_context->clauses;
 
         try {
-            $if_scope->negated_clauses = FormulaGenerator::getNegatedFormula(
-                $if_clauses,
-                $stmt->cond,
-                $cond_object_id,
-                $context->self,
-                $statements_analyzer,
-                $codebase,
-                true,
-            );
+            $if_scope->negated_clauses = $get_negated_clauses();
         } catch (ComplicatedExpressionException) {
             $if_scope->negated_clauses = [];
         }
@@ -566,10 +560,10 @@ final class IfElseAnalyzer
     }
 
     /**
-     * The clauses of the condition, with those on the offsets or properties of a variable that is mixed in the body
-     * replaced by an empty wedge
+     * The clauses of the condition, where a clause on an offset or a property of a variable that is mixed in the body
+     * is unknown, and a function returning those of its negation
      *
-     * @return list<Clause>
+     * @return array{list<Clause>, Closure(): list<Clause>}
      */
     private static function getConditionClauses(
         StatementsAnalyzer $statements_analyzer,
@@ -579,15 +573,16 @@ final class IfElseAnalyzer
         Context $context,
         Codebase $codebase,
     ): array {
-        $mixed_var_ids = [];
+        // whether each mixed variable may be unset
+        $mixed_vars = [];
 
         foreach ($if_context->vars_in_scope as $var_id => $type) {
             if ($type->isMixed() && isset($context->vars_in_scope[$var_id])) {
-                $mixed_var_ids[] = $var_id;
+                $mixed_vars[$var_id] = $type->possibly_undefined || $type->possibly_undefined_from_try;
             }
         }
 
-        $if_clauses = FormulaGenerator::getFormula(
+        $cond_clauses = FormulaGenerator::getFormula(
             $cond_object_id,
             $cond_object_id,
             $cond,
@@ -596,28 +591,39 @@ final class IfElseAnalyzer
             $codebase,
         );
 
-        if (count($if_clauses) > 200) {
-            $if_clauses = [];
+        if (count($cond_clauses) > 200) {
+            $cond_clauses = [];
         }
 
-        $if_clauses_handled = [];
-        foreach ($if_clauses as $clause) {
-            $keys = array_keys($clause->possibilities);
-            $mixed_var_ids = array_diff($mixed_var_ids, $keys);
+        $if_clauses = [];
+        foreach ($cond_clauses as $clause) {
+            $mixed_vars = array_diff_key($mixed_vars, $clause->possibilities);
 
-            foreach ($keys as $key) {
-                foreach ($mixed_var_ids as $mixed_var_id) {
-                    if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                        $clause = new Clause([], $cond_object_id, $cond_object_id, true);
-                        break 2;
-                    }
-                }
-            }
-
-            $if_clauses_handled[] = $clause;
+            $if_clauses[] = $clause->forgetItemsOfMixedVars($mixed_vars, $cond_object_id);
         }
 
-        return $if_clauses_handled;
+        $get_negated_clauses = static fn(): array => [
+            ...FormulaGenerator::getNegatedFormula(
+                Algebra::simplifyCNF($if_clauses),
+                $cond,
+                $cond_object_id,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+                true,
+            ),
+            ...FormulaGenerator::getNegatedSetMixedVarClauses(
+                $cond_clauses,
+                $mixed_vars,
+                $cond,
+                $cond_object_id,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+            ),
+        ];
+
+        return [$if_clauses, $get_negated_clauses];
     }
 
     /**

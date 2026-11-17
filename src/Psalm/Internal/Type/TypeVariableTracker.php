@@ -21,6 +21,7 @@ use Psalm\Type\Union;
 
 use function array_filter;
 use function array_map;
+use function array_splice;
 use function array_unique;
 use function array_values;
 use function count;
@@ -117,6 +118,50 @@ final class TypeVariableTracker
                 $bound->recorded_order = $recorded_order;
                 $this->bounds[$name]->upper_bounds[] = $bound;
             }
+        }
+    }
+
+    /**
+     * How many lower and upper bounds each variable has so far.
+     *
+     * @return array<string, array{int, int}>
+     * @psalm-mutation-free
+     */
+    public function snapshotBounds(): array
+    {
+        return array_map(
+            static fn(TypeVariableBounds $bounds): array => [
+                count($bounds->lower_bounds),
+                count($bounds->upper_bounds),
+            ],
+            $this->bounds,
+        );
+    }
+
+    /**
+     * Drops the bounds recorded between two calls to snapshotBounds() (or since
+     * the first one, without the second) by analyses whose results are
+     * discarded (a loop pass followed by another one, a pre-analysis) on the
+     * variables minted before them. A variable minted by such an analysis
+     * keeps its bounds: the types it is in can outlive it, and only the
+     * analysis that minted it constrains them.
+     *
+     * @param array<string, array{int, int}> $from
+     * @param array<string, array{int, int}>|null $to
+     */
+    public function discardBoundsRecordedBetween(array $from, ?array $to = null): void
+    {
+        foreach ($from as $name => [$lower_from, $upper_from]) {
+            if (!isset($this->bounds[$name])) {
+                continue;
+            }
+
+            $bounds = $this->bounds[$name];
+
+            [$lower_to, $upper_to] = $to[$name] ?? [count($bounds->lower_bounds), count($bounds->upper_bounds)];
+
+            array_splice($bounds->lower_bounds, $lower_from, $lower_to - $lower_from);
+            array_splice($bounds->upper_bounds, $upper_from, $upper_to - $upper_from);
         }
     }
 

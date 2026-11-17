@@ -29393,7 +29393,7 @@ return array (
     -1 => 'array<array-key, mixed>|false|int|null',
     'stream' => 'resource',
     'format' => 'string',
-    '&...vars=' => 'mixed',
+    '&...w vars=' => 'mixed',
   ),
   'fscanf\'1' => 
   array (
@@ -47716,7 +47716,7 @@ return array (
   array (
     -1 => 'false|string',
     'timezoneId' => 'string',
-    '&isSystemId=' => 'bool',
+    '&w isSystemId=' => 'bool',
   ),
   'intltz_get_display_name' => 
   array (
@@ -47777,8 +47777,8 @@ return array (
     'timezone' => 'IntlTimeZone',
     'timestamp' => 'float',
     'local' => 'bool',
-    '&rawOffset' => 'int',
-    '&dstOffset' => 'int',
+    '&w rawOffset' => 'int',
+    '&w dstOffset' => 'int',
   ),
   'intltz_get_raw_offset' => 
   array (
@@ -62415,7 +62415,7 @@ return array (
     '&w encrypted_keys' => 'array<array-key, mixed>',
     'public_key' => 'list<OpenSSLAsymmetricKey>',
     'cipher_algo' => 'string',
-    '&iv=' => 'string',
+    '&w iv=' => 'string',
   ),
   'openssl_sign' => 
   array (
@@ -69600,7 +69600,7 @@ return array (
     0 => 'false|resource',
     'command' => 'array<array-key, mixed>|string',
     'descriptor_spec' => 'array<array-key, mixed>',
-    '&pipes' => 'array<array-key, resource>',
+    '&w pipes' => 'array<array-key, resource>',
     'cwd=' => 'null|string',
     'env_vars=' => 'array<array-key, mixed>|null',
     'options=' => 'array<array-key, mixed>|null',
@@ -88238,7 +88238,7 @@ return array (
   array (
     -1 => 'array<array-key, mixed>|int|null',
     'format' => 'string',
-    '&...vars=' => 'float|int|string',
+    '&...w vars=' => 'float|int|string',
     -2 => 'tentative',
   ),
   'splfileobject::fseek' => 
@@ -89486,7 +89486,7 @@ return array (
   array (
     -1 => 'array<array-key, mixed>|int|null',
     'format' => 'string',
-    '&...vars=' => 'float|int|string',
+    '&...w vars=' => 'float|int|string',
     -2 => 'tentative',
   ),
   'spltempfileobject::fseek' => 
@@ -90797,7 +90797,7 @@ return array (
     -1 => 'array<array-key, mixed>|int|null',
     'string' => 'string',
     'format' => 'string',
-    '&...vars=' => 'float|int|null|string',
+    '&...w vars=' => 'float|int|null|string',
   ),
   'ssdeep_fuzzy_compare' => 
   array (
@@ -92082,7 +92082,7 @@ return array (
   ),
   'stream_get_meta_data' => 
   array (
-    0 => 'array{blocked: bool, crypto?: array{cipher_bits: int, cipher_name: string, cipher_version: string, protocol: string}, eof: bool, mediatype: string, mode: string, seekable: bool, stream_type: string, timed_out: bool, unread_bytes: int, uri: string, wrapper_data: mixed, wrapper_type: string}',
+    0 => 'array{base64?: bool, blocked?: bool, charset?: string, crypto?: array{cipher_bits: int, cipher_name: string, cipher_version: string, protocol: string}, eof?: bool, mediatype?: string, mode: string, seekable: bool, stream_type: string, timed_out?: bool, unread_bytes: int, uri?: string, wrapper_data?: mixed, wrapper_type?: string}',
     -1 => 'array<array-key, mixed>',
     'stream' => 'resource',
   ),

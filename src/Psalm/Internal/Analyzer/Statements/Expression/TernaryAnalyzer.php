@@ -26,8 +26,8 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
-use function array_diff;
 use function array_diff_assoc;
+use function array_diff_key;
 use function array_fill_keys;
 use function array_filter;
 use function array_intersect;
@@ -37,8 +37,6 @@ use function array_map;
 use function array_values;
 use function count;
 use function in_array;
-use function preg_match;
-use function preg_quote;
 use function spl_object_id;
 
 /**
@@ -103,38 +101,29 @@ final class TernaryAnalyzer
             $if_clauses = [];
         }
 
-        $mixed_var_ids = [];
+        // whether each mixed variable may be unset
+        $mixed_vars = [];
 
         foreach ($if_context->vars_in_scope as $var_id => $type) {
             if ($type->isMixed() && isset($context->vars_in_scope[$var_id])) {
-                $mixed_var_ids[] = $var_id;
+                $mixed_vars[$var_id] = $type->possibly_undefined || $type->possibly_undefined_from_try;
             }
         }
 
         foreach ($context->vars_possibly_in_scope as $var_id => $_) {
             if (!isset($context->vars_in_scope[$var_id])) {
-                $mixed_var_ids[] = $var_id;
+                $mixed_vars[$var_id] = true;
             }
         }
 
-        $if_clauses = array_map(
-            static function (Clause $c) use ($mixed_var_ids, $cond_object_id): Clause {
-                $keys = array_keys($c->possibilities);
-
-                $mixed_var_ids = array_diff($mixed_var_ids, $keys);
-
-                foreach ($keys as $key) {
-                    foreach ($mixed_var_ids as $mixed_var_id) {
-                        if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                            return new Clause([], $cond_object_id, $cond_object_id, true);
-                        }
-                    }
-                }
-
-                return $c;
-            },
-            $if_clauses,
+        $forget_items_of_mixed_vars = static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars(
+            array_diff_key($mixed_vars, $c->possibilities),
+            $cond_object_id,
         );
+
+        $cond_clauses = $if_clauses;
+
+        $if_clauses = array_map($forget_items_of_mixed_vars, $if_clauses);
 
         $entry_clauses = $context->clauses;
 
@@ -175,15 +164,26 @@ final class TernaryAnalyzer
         }
 
         try {
-            $if_scope->negated_clauses = FormulaGenerator::getNegatedFormula(
-                $if_clauses,
-                $stmt->cond,
-                $cond_object_id,
-                $context->self,
-                $statements_analyzer,
-                $codebase,
-                true,
-            );
+            $if_scope->negated_clauses = [
+                ...FormulaGenerator::getNegatedFormula(
+                    $if_clauses,
+                    $stmt->cond,
+                    $cond_object_id,
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                    true,
+                ),
+                ...FormulaGenerator::getNegatedSetMixedVarClauses(
+                    $cond_clauses,
+                    $mixed_vars,
+                    $stmt->cond,
+                    $cond_object_id,
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                ),
+            ];
         } catch (ComplicatedExpressionException) {
             $if_scope->negated_clauses = [];
         }

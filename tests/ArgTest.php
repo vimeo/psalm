@@ -1371,6 +1371,74 @@ final class ArgTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'namedArgumentsAreNumberedByTheirParameter' => [
+                'code' => '<?php
+                    final class Style {
+                        public function __construct(?int $a = null, ?string $b = null, ?bool $c = null) {}
+                    }
+
+                    /** @param array<string, mixed> $slots */
+                    function f(array $slots): Style {
+                        return new Style(
+                            c: $slots["c"] ?? null,
+                            b: $slots["b"] ?? null,
+                        );
+                    }',
+                'error_message' => 'Argument 3 of Style::__construct cannot be mixed|null, expecting bool|null',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'namedArgumentAfterAPositionalOneIsNumberedByItsParameter' => [
+                'code' => '<?php
+                    function test(int $a, string $b = "", int $c = 0): void {
+                        echo $a, $b, $c;
+                    }
+
+                    test(1, c: "bad");',
+                'error_message' => 'Argument 3 of test expects int',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'namedArgumentCollectedByTheVariadicIsNumberedAfterTheParameters' => [
+                'code' => '<?php
+                    function test(int $a = 0, int ...$rest): void {
+                        echo $a, count($rest);
+                    }
+
+                    test(foo: "bad");',
+                'error_message' => 'Argument 2 of test expects int',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedNamedValueIsNumberedByItsParameter' => [
+                'code' => '<?php
+                    function test(int $a = 0, string $b = "", int $c = 0): void {
+                        echo $a, $b, $c;
+                    }
+
+                    test(...["c" => "bad"]);',
+                'error_message' => 'Argument 3 of test expects int',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'namedByRefArgumentOfAFunctionIsNumberedByItsParameter' => [
+                'code' => '<?php
+                    function test(int $a, ?int &$b): void {
+                        $b = $a;
+                    }
+
+                    test(b: 1, a: 1);',
+                'error_message' => 'Parameter 2 of test expects a variable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'namedByRefArgumentOfAnInternalFunctionMustBeAVariable' => [
+                'code' => '<?php
+                    preg_match("/a/", matches: [], subject: "a");',
+                'error_message' => 'Parameter 3 of preg_match expects a variable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'unpackedVariadicIsCheckedNextToANamedArgumentOfTheSameName' => [
                 'code' => '<?php
                     function test(int ...$args): void {
