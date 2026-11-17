@@ -22,6 +22,77 @@ final class TypeVariableTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testConflictingArgumentRequirementsAreReportedAtTheSecondCall(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param SplObjectStorage<object, array<int, string>> $s */
+                function takesStrings(SplObjectStorage $s): void {}
+
+                /** @param SplObjectStorage<object, array<int, int>> $s */
+                function takesInts(SplObjectStorage $s): void {}
+
+                function fill(): void {
+                    $s = new SplObjectStorage();
+                    takesStrings($s);
+                    takesInts($s);
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issues[] = $issue->line_from . ':' . $issue->column_from . ' ' . $issue->type . ': ' . $issue->message;
+        }
+
+        $this->assertSame(
+            [
+                '11:31 IncompatibleTypeParameters: Type array<int, string> should be a subtype of array<int, int>',
+                '11:31 IncompatibleTypeParameters: Type array<int, int> should be a subtype of array<int, string>',
+            ],
+            $issues,
+        );
+    }
+
+    public function testMixedWritesBeforeAndAfterAnArgumentRequirementAreReportedWhereEachConflicts(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param SplObjectStorage<object, array<int, string>> $s */
+                function takes(SplObjectStorage $s): void {}
+
+                /** @param mixed $g */
+                function fill(object $o, object $o2, $g): void {
+                    $s = new SplObjectStorage();
+                    $s[$o] = (array) $g;
+                    takes($s);
+                    $s[$o2] = (array) $g;
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issues[] = $issue->line_from . ':' . $issue->column_from . ' ' . $issue->type . ': ' . $issue->message;
+        }
+
+        $this->assertSame(
+            [
+                '9:27 MixedArgumentTypeCoercion: Type array<array-key, mixed> should be a subtype of array<int, string>',
+                '10:31 MixedArgumentTypeCoercion: Type array<array-key, mixed> should be a subtype of array<int, string>',
+            ],
+            $issues,
+        );
+    }
+
     /**
      * @param list<string> $expected_issues
      */
@@ -1701,6 +1772,24 @@ final class TypeVariableTest extends TestCase
                         }
                     }',
             ],
+            'mixedWriteAfterPropertyRequirementSuppressedAtTheWrite' => [
+                'code' => '<?php
+                    final class Groups {
+                        /** @var SplObjectStorage<object, array<int, string>> */
+                        private SplObjectStorage $groups;
+
+                        public function __construct() {
+                            $this->groups = new SplObjectStorage();
+                        }
+
+                        /** @param mixed $g */
+                        public function reset(object $o, $g): void {
+                            $this->groups = new SplObjectStorage();
+                            /** @psalm-suppress MixedArgumentTypeCoercion */
+                            $this->groups[$o] = (array) $g;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1795,6 +1884,134 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'MixedPropertyTypeCoercion - src' . DIRECTORY_SEPARATOR
                     . "somefile.php:21:42 - \$this->box expects 'Box<Foo>',  parent type `Box<mixed>` provided",
+            ],
+            'propertyRequirementThenMixedWrite' => [
+                // the property requires array<int, string> first, the mixed
+                // value comes later: reported where it is written, as the
+                // eager model reported the offsetSet() argument
+                'code' => '<?php
+                    final class Groups {
+                        /** @var SplObjectStorage<object, array<int, string>> */
+                        private SplObjectStorage $groups;
+
+                        public function __construct() {
+                            $this->groups = new SplObjectStorage();
+                        }
+
+                        /** @param mixed $g */
+                        public function reset(object $o, $g): void {
+                            $this->groups = new SplObjectStorage();
+                            $this->groups[$o] = (array) $g;
+                        }
+                    }',
+                'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:13:49 - Type array<array-key, mixed> should be a subtype of array<int',
+            ],
+            'propertyRequirementThenCoercedWrite' => [
+                'code' => '<?php
+                    final class Names {
+                        /** @var SplObjectStorage<object, non-empty-string> */
+                        private SplObjectStorage $names;
+
+                        public function __construct() {
+                            $this->names = new SplObjectStorage();
+                        }
+
+                        public function reset(object $o, string $name): void {
+                            $this->names = new SplObjectStorage();
+                            $this->names[$o] = $name;
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:12:48 - Type string should be a subtype of non-empty-string',
+            ],
+            'mixedWriteThenPropertyRequirement' => [
+                // the mixed value comes first: reported where the property
+                // requires something else
+                'code' => '<?php
+                    final class Groups {
+                        /** @var SplObjectStorage<object, array<int, string>> */
+                        private SplObjectStorage $groups;
+
+                        /** @param mixed $g */
+                        public function __construct(object $o, $g) {
+                            $s = new SplObjectStorage();
+                            $s[$o] = (array) $g;
+                            $this->groups = $s;
+                        }
+                    }',
+                'error_message' => 'MixedPropertyTypeCoercion - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:10:45 - Type array<array-key, mixed> should be a subtype of array<int',
+            ],
+            'argumentRequirementThenMixedWrite' => [
+                'code' => '<?php
+                    /** @param SplObjectStorage<object, array<int, string>> $s */
+                    function takes(SplObjectStorage $s): void {}
+
+                    /** @param mixed $g */
+                    function fill(object $o, $g): void {
+                        $s = new SplObjectStorage();
+                        takes($s);
+                        $s[$o] = (array) $g;
+                    }',
+                'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:9:34 - Type array<array-key, mixed> should be a subtype of array<int',
+            ],
+            'argumentRequirementThenMixedWriteInLoop' => [
+                // analyzing the loop body again doesn't make the requirement
+                // come after the write
+                'code' => '<?php
+                    /** @param SplObjectStorage<object, array<int, string>> $s */
+                    function takes(SplObjectStorage $s): void {}
+
+                    /**
+                     * @param list<object> $os
+                     * @param mixed $g
+                     */
+                    function fill(array $os, $g): void {
+                        $s = new SplObjectStorage();
+                        foreach ($os as $o) {
+                            takes($s);
+                            $s[$o] = (array) $g;
+                        }
+                    }',
+                'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:13:38 - Type array<array-key, mixed> should be a subtype of array<int',
+            ],
+            'argumentRequirementThenCoercedPropertyWrite' => [
+                // a value assigned to a property after the requirement is
+                // reported as the property coercion, not the argument one
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public $v) {}
+                    }
+
+                    /** @param Box<non-empty-string> $b */
+                    function takes(Box $b): void {}
+
+                    /** @param non-empty-string $n */
+                    function fill(string $n, string $s): void {
+                        $b = new Box($n);
+                        takes($b);
+                        $b->v = $s;
+                    }',
+                'error_message' => 'PropertyTypeCoercion - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:15:33 - Type string should be a subtype of non-empty-string',
+            ],
+            'argumentRequirementThenInvalidWrite' => [
+                'code' => '<?php
+                    /** @param SplObjectStorage<object, array<int, string>> $s */
+                    function takes(SplObjectStorage $s): void {}
+
+                    function fill(object $o): void {
+                        $s = new SplObjectStorage();
+                        takes($s);
+                        $s[$o] = [1 => 2];
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:8:34 - Type array{1: 2} should be a subtype of array<int',
             ],
             'unionAlternativesAllViolated' => [
                 // what every alternative of the declared union requires is
