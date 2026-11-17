@@ -31,6 +31,9 @@ class ProjectCacheProvider
 
     private CacheMode $mode = CacheMode::Persistent;
 
+    /** @var array{?string}|null */
+    private ?array $directory = null;
+
     public function __construct(CacheMode $mode = CacheMode::Persistent)
     {
         $this->mode = $mode;
@@ -45,7 +48,7 @@ class ProjectCacheProvider
      */
     public function loadCustomTaints(): ?array
     {
-        $cache_directory = $this->mode->getDirectory(Config::getInstance());
+        $cache_directory = $this->getDirectory();
 
         if ($cache_directory === null) {
             return null;
@@ -87,7 +90,7 @@ class ProjectCacheProvider
             return;
         }
 
-        $cache_directory = Config::getInstance()->getCacheDirectory();
+        $cache_directory = $this->getDirectory();
 
         if ($cache_directory === null) {
             return;
@@ -101,7 +104,7 @@ class ProjectCacheProvider
 
     public function canDiffFiles(): bool
     {
-        $cache_directory = $this->mode->getDirectory(Config::getInstance());
+        $cache_directory = $this->getDirectory();
 
         return $cache_directory !== null && file_exists($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME);
     }
@@ -112,7 +115,7 @@ class ProjectCacheProvider
             return;
         }
 
-        $cache_directory = Config::getInstance()->getCacheDirectory();
+        $cache_directory = $this->getDirectory();
 
         if ($cache_directory === null) {
             return;
@@ -123,5 +126,14 @@ class ProjectCacheProvider
         file_put_contents($run_cache_location, $psalm_version);
 
         touch($run_cache_location, (int)$start_time);
+    }
+
+    /**
+     * The directory of the analysis identity, as it was when the run first asked for it (the ProjectAnalyzer does,
+     * before the plugins it initializes later change the config): the one the caches of the run opened
+     */
+    private function getDirectory(): ?string
+    {
+        return ($this->directory ??= [$this->mode->getIdentityDirectory(Config::getInstance())])[0];
     }
 }

@@ -137,15 +137,13 @@ final class Cache
             return;
         }
 
-        $dir = $mode->getDirectory($config) . DIRECTORY_SEPARATOR . $subdir;
+        $dir = $mode->getIdentityDirectory($config) . DIRECTORY_SEPARATOR . $subdir;
 
         $hash = hash_init('xxh128');
         foreach ($dependencies as $dep) {
             hash_update($hash, (string) $dep);
             hash_update($hash, "\0");
         }
-        hash_update($hash, $config->computeHash());
-        hash_update($hash, "\0");
         hash_update($hash, $this->serializer->serialize($this->serializer));
         hash_update($hash, "\0");
         hash_update($hash, self::LAYOUT_VERSION);

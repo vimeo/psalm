@@ -389,14 +389,6 @@ final class EventDispatcher
         return null;
     }
 
-    /**
-     * @psalm-mutation-free
-     */
-    public function hasAfterClassLikeVisitHandlers(): bool
-    {
-        return count($this->after_visit_classlikes) > 0;
-    }
-
     public function dispatchAfterClassLikeVisit(AfterClassLikeVisitEvent $event): void
     {
         foreach ($this->after_visit_classlikes as $handler) {

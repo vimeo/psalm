@@ -127,7 +127,7 @@ final class CacheConsolidationTest extends TestCase
     /** The directory the cache of newCache() uses, with a trailing separator */
     private function directory(): string
     {
-        $directories = glob($this->cache_directory . '/*/test_subdir/*', GLOB_ONLYDIR);
+        $directories = glob($this->cache_directory . '/*/*/test_subdir/*', GLOB_ONLYDIR);
         $this->assertNotFalse($directories);
         $this->assertCount(1, $directories);
 
@@ -146,8 +146,8 @@ final class CacheConsolidationTest extends TestCase
     /** @return list<string> */
     private function fileNames(): array
     {
-        $files = glob($this->cache_directory . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . 'test_subdir'
-            . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . '*');
+        $files = glob($this->cache_directory . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . '*'
+            . DIRECTORY_SEPARATOR . 'test_subdir' . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . '*');
         $this->assertNotFalse($files);
 
         $names = array_map(basename(...), $files);

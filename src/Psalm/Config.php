@@ -34,6 +34,7 @@ use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Cache\AnalysisIdentity;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\EventDispatcher;
@@ -82,6 +83,7 @@ use function array_merge;
 use function array_pad;
 use function array_pop;
 use function array_shift;
+use function array_values;
 use function assert;
 use function basename;
 use function chdir;
@@ -103,6 +105,7 @@ use function get_defined_constants;
 use function get_defined_functions;
 use function getcwd;
 use function glob;
+use function hash;
 use function implode;
 use function in_array;
 use function interface_exists;
@@ -156,7 +159,6 @@ use const LIBXML_NOWARNING;
 use const LOCK_EX;
 use const PHP_EOL;
 use const PHP_VERSION_ID;
-use const PSALM_VERSION;
 use const SCANDIR_SORT_NONE;
 
 /**
@@ -561,6 +563,7 @@ final class Config
     /** @var list<ClassLoader> $autoloaders */
     private array $autoloaders = [];
 
+    /** A digest of the XML the config was loaded from, XIncludes expanded */
     public string $hash = '';
 
     /** Whether loading a config adds the paths passed on the command line to its project files */
@@ -828,7 +831,6 @@ final class Config
 
         try {
             $config = self::loadFromXML($base_dir, $file_contents, $current_dir, $file_path);
-            $config->hash = sha1($file_contents . PSALM_VERSION);
         } catch (ConfigException $e) {
             throw new ConfigException(
                 'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage(),
@@ -839,13 +841,12 @@ final class Config
     }
 
     /**
-     * Computes the hash to use for a cache folder from CLI flags and from the config file's xml contents
-     *
-     * @psalm-mutation-free
+     * The fingerprint of the analysis identity of this config (its settings, the PHP version, the runtime, Psalm, the
+     * dependencies and the plugins): every cache directory is keyed by it
      */
     public function computeHash(): string
     {
-        return sha1($this->hash . ':' . $this->level);
+        return AnalysisIdentity::of($this)->getFingerprint();
     }
 
     /**
@@ -1108,6 +1109,7 @@ final class Config
         $config = new static();
 
         $dom_document = self::loadDomDocument($base_dir, $file_contents);
+        $config->hash = hash('xxh128', (string) $dom_document->saveXML());
 
         if (null !== $config_path) {
             self::processConfigDeprecations(
@@ -1896,6 +1898,30 @@ final class Config
     public function getPluginClasses(): array
     {
         return $this->plugin_classes;
+    }
+
+    /**
+     * The files of the plugins: plugin files, the files of plugin classes the autoloaders find, and the scanners and
+     * analyzers of file extensions
+     *
+     * @internal
+     * @return list<string>
+     */
+    public function getPluginFiles(): array
+    {
+        $files = [
+            ...array_values($this->plugin_paths),
+            ...array_values($this->filetype_scanner_paths),
+            ...array_values($this->filetype_analyzer_paths),
+        ];
+        foreach ($this->plugin_classes as $plugin_class) {
+            $file = $this->getComposerFilePathForClassLike($plugin_class['class']);
+            if ($file !== false) {
+                $files[] = $file;
+            }
+        }
+
+        return $files;
     }
 
     public function processPluginFileExtensions(ProjectAnalyzer $projectAnalyzer): void

@@ -143,10 +143,10 @@ final class CacheTest extends TestCase
         return new ParserCacheProvider($this->newConfig(), '');
     }
 
-    /** The directory of the cache: <cache directory>/<subdir>/<config hash> */
+    /** The directory of the cache: <cache directory>/<identity fingerprint>/<subdir>/<hash of its dependencies> */
     private function entryDirectory(): string
     {
-        $paths = glob($this->cache_directory . '/*/*', GLOB_ONLYDIR);
+        $paths = glob($this->cache_directory . '/*/*/*', GLOB_ONLYDIR);
 
         self::assertNotFalse($paths);
         self::assertCount(1, $paths);

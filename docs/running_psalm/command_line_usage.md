@@ -59,6 +59,12 @@ Data from the last run is stored in the *cache directory*, which may be set in [
 If you are running Psalm on a build server, you may want to configure the server to ensure that the cache directory
 is preserved between runs.
 
+The cache directory holds a directory per *analysis identity*: a fingerprint of the configuration (with its XIncluded
+files and the command line options that change the analysis, like `--php-version`, `--error-level` and `--plugin`),
+the PHP version analysed for, the PHP that runs Psalm and its extensions, Psalm itself, `composer.lock` and the plugin
+files. A run never reads data stored under another identity, so it gives the same answer with a cache as without one.
+The `identity.json` file of each directory lists the components its fingerprint was made from.
+
 Running them together (e.g. `--threads=8 --diff`) will result in the fastest possible Psalm run.
 
 ### Consolidating the cache
