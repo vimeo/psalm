@@ -309,11 +309,7 @@ final class LoopAnalyzer
             $data_flow_pass_added = false;
             $widening_passes = 0;
             $propagation_passes = 0;
-            // only what the loop assigns changes from one pass to the next
-            $feeding_var_ids = array_intersect_key(
-                $assignment_mapper->getFeedingVarIds(),
-                $assignment_mapper->getAssignedVarIds(),
-            );
+            $feeding_var_ids = $assignment_mapper->getFeedingVarIds();
             $max_propagation_passes = count($feeding_var_ids);
             $widening_bounds = null;
             $force_pass = false;

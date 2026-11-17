@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 
 use function array_diff_key;
 use function array_flip;
+use function array_intersect_key;
 use function array_map;
 use function is_string;
 use function spl_object_id;
@@ -44,6 +45,14 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
      * @var array<string, true>
      */
     private array $feeding_var_ids = [];
+
+    /**
+     * The variables assigned, incremented or unset: a call doesn't change the type of the variables it is given
+     * other than by an assertion, which holds on the next iteration too
+     *
+     * @var array<string, true>
+     */
+    private array $written_var_ids = [];
 
     /**
      * The expression statements of the loop body, evaluated on every iteration that gets to them
@@ -122,6 +131,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
 
             foreach ($left_var_ids as $left_var_id) {
                 $this->assignment_map[$left_var_id][$right_var_id ?? 'isset'] = true;
+                $this->written_var_ids[$left_var_id] = true;
             }
 
             // what the sides change themselves (`$x = $counts['one']++`, `$a[$i++] = 1`) is in the map too
@@ -136,6 +146,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
 
             $this->defined_var_ids += $inner_visitor->defined_var_ids;
             $this->feeding_var_ids += $inner_visitor->feeding_var_ids;
+            $this->written_var_ids += $inner_visitor->written_var_ids;
 
             // the sides are evaluated before the variable is overwritten
             if ($node->var instanceof PhpParser\Node\Expr\Variable
@@ -166,6 +177,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
 
             if ($var_id !== null) {
                 $this->assignment_map[$var_id][$var_id] = true;
+                $this->written_var_ids[$var_id] = true;
             }
 
             return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
@@ -198,6 +210,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
 
                 if ($arg_var_id !== null) {
                     $this->assignment_map[$arg_var_id][$arg_var_id] = true;
+                    $this->written_var_ids[$arg_var_id] = true;
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Foreach_) {
@@ -301,11 +314,14 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     }
 
     /**
+     * The feeding variables the loop writes: only those change from one pass to the next
+     *
      * @return array<string, true>
+     * @psalm-capabilities read-props
      */
     public function getFeedingVarIds(): array
     {
-        return $this->feeding_var_ids;
+        return array_intersect_key($this->feeding_var_ids, $this->written_var_ids + $this->defined_var_ids);
     }
 
     /**
