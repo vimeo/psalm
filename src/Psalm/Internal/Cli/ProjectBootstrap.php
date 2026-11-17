@@ -9,6 +9,7 @@ use Psalm\Config;
 use Psalm\ErrorBaseline;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
@@ -67,28 +68,35 @@ final class ProjectBootstrap
         return $config;
     }
 
-    public static function initProviders(array $options, Config $config, string $current_dir): Providers
-    {
+    /**
+     * @param CacheMode $mode of the caches the options keep in the cache directory
+     */
+    public static function initProviders(
+        array $options,
+        Config $config,
+        string $current_dir,
+        CacheMode $mode = CacheMode::Persistent,
+    ): Providers {
         if ($config->cache_directory === null || isset($options['i'])) {
             $providers = new Providers(
                 new FileProvider,
-                new ParserCacheProvider($config, Composer::getLockFile($current_dir), false),
-                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), false),
-                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), false),
-                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), false),
+                new ParserCacheProvider($config, Composer::getLockFile($current_dir), CacheMode::Memory),
+                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), CacheMode::Memory),
+                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), CacheMode::Memory),
+                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), CacheMode::Memory),
             );
         } else {
-            $no_reflection_cache = isset($options['no-reflection-cache']);
-            $no_file_cache = isset($options['no-file-cache']);
-            $no_reference_cache = isset($options['no-reference-cache']);
+            $file_cache = isset($options['no-file-cache']) ? CacheMode::Memory : $mode;
+            $reflection_cache = isset($options['no-reflection-cache']) ? CacheMode::Memory : $mode;
+            $reference_cache = isset($options['no-reference-cache']) ? CacheMode::Memory : $mode;
 
             $providers = new Providers(
                 new FileProvider,
-                new ParserCacheProvider($config, Composer::getLockFile($current_dir), !$no_file_cache),
-                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), !$no_reflection_cache),
-                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), !$no_reflection_cache),
-                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), !$no_reference_cache),
-                new ProjectCacheProvider(),
+                new ParserCacheProvider($config, Composer::getLockFile($current_dir), $file_cache),
+                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), $reflection_cache),
+                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), $reflection_cache),
+                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), $reference_cache),
+                new ProjectCacheProvider($mode),
             );
         }
         return $providers;
@@ -113,6 +121,8 @@ final class ProjectBootstrap
         ?string $find_references_to,
         bool $run_taint_analysis,
     ): ProjectAnalyzer {
+        $find_unused_code = self::shouldFindUnusedCode($options, $config);
+
         $project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
@@ -130,7 +140,7 @@ final class ProjectBootstrap
             $config,
             $project_analyzer,
             $find_references_to,
-            self::shouldFindUnusedCode($options, $config),
+            $find_unused_code,
             isset($options['find-unused-variables']),
             $run_taint_analysis,
         );

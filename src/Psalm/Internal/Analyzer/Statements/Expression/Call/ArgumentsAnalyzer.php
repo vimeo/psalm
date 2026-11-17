@@ -67,6 +67,7 @@ use UnexpectedValueException;
 
 use function array_all;
 use function array_any;
+use function array_key_first;
 use function array_keys;
 use function array_map;
 use function array_reduce;
@@ -1249,6 +1250,11 @@ final class ArgumentsAnalyzer
             $args = array_reverse($args, true);
         }
 
+        /**
+         * The parameters each argument is checked against, keyed by their offset
+         *
+         * @var array<int, non-empty-array<int, FunctionLikeParameter>>
+         */
         $arg_function_params = [];
         $matched_args = [];
         // names given as named arguments to the variadic parameter: positional ones are not duplicates of them
@@ -1308,11 +1314,11 @@ final class ArgumentsAnalyzer
                             continue;
                         }
 
-                        $arg_function_params[$argument_offset][] = $function_params[$i];
+                        $arg_function_params[$argument_offset][$i] = $function_params[$i];
                     }
                 } elseif ($last_param && $last_param->is_variadic) {
                     // what the arguments before consumed already is every parameter: the rest goes to the variadic
-                    $arg_function_params[$argument_offset][] = $last_param;
+                    $arg_function_params[$argument_offset][$param_offset] = $last_param;
                 }
 
                 if (($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
@@ -1381,7 +1387,7 @@ final class ArgumentsAnalyzer
             } elseif ($arg->name && (!$function_storage || $function_storage->allow_named_arg_calls)) {
                 $named_args_was_used = true;
 
-                foreach ($function_params as $candidate_param) {
+                foreach ($function_params as $candidate_offset => $candidate_param) {
                     if ($candidate_param->name === $arg->name->name || $candidate_param->is_variadic) {
                         if ($candidate_param->name === $arg->name->name) {
                             if (($candidate_param->is_variadic
@@ -1406,7 +1412,12 @@ final class ArgumentsAnalyzer
                             }
                         }
 
-                        $arg_function_params[$argument_offset] = [$candidate_param];
+                        // like a positional argument, one collected by the variadic parameter is numbered after
+                        // the arguments before it
+                        $param_offset = $candidate_param->is_variadic
+                            ? max($candidate_offset, $param_offsets[$argument_offset])
+                            : $candidate_offset;
+                        $arg_function_params[$argument_offset] = [$param_offset => $candidate_param];
                         break;
                     }
                 }
@@ -1424,10 +1435,10 @@ final class ArgumentsAnalyzer
                 }
             } elseif ($function_param_count > $param_offsets[$argument_offset]) {
                 $param = $function_params[$param_offsets[$argument_offset]];
-                $arg_function_params[$argument_offset] = [$param];
+                $arg_function_params[$argument_offset] = [$param_offsets[$argument_offset] => $param];
                 $matched_args[$param->name] = true;
             } elseif ($last_param && $last_param->is_variadic) {
-                $arg_function_params[$argument_offset] = [$last_param];
+                $arg_function_params[$argument_offset] = [$param_offsets[$argument_offset] => $last_param];
                 $matched_args[$last_param->name] = true;
             }
         }
@@ -1437,7 +1448,9 @@ final class ArgumentsAnalyzer
                 continue;
             }
 
-            if ($arg_function_params[$argument_offset][0]->by_ref
+            $first_param_offset = array_key_first($arg_function_params[$argument_offset]);
+
+            if ($arg_function_params[$argument_offset][$first_param_offset]->by_ref
                 && $method_id !== 'extract'
             ) {
                 if (self::handlePossiblyMatchingByRefParam(
@@ -1447,7 +1460,7 @@ final class ArgumentsAnalyzer
                     $cased_method_id,
                     $last_param,
                     $function_params,
-                    $argument_offset,
+                    $first_param_offset,
                     $arg,
                     $context,
                     $template_result,
@@ -1463,7 +1476,7 @@ final class ArgumentsAnalyzer
 
             $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
 
-            foreach ($arg_function_params[$argument_offset] as $i => $function_param) {
+            foreach ($arg_function_params[$argument_offset] as $param_offset => $function_param) {
                 if (ArgumentAnalyzer::checkArgumentMatches(
                     $statements_analyzer,
                     $cased_method_id,
@@ -1473,8 +1486,8 @@ final class ArgumentsAnalyzer
                     $code_location,
                     $function_storage,
                     $function_param,
-                    $param_offsets[$argument_offset] + $i,
-                    $i,
+                    $param_offset,
+                    $param_offset - $param_offsets[$argument_offset],
                     $function_storage->allow_named_arg_calls ?? true,
                     $arg,
                     $arg_value_type,
@@ -1505,7 +1518,10 @@ final class ArgumentsAnalyzer
                     continue;
                 }
 
-                if ($in_call_map && $argument_offset === 1 && strtolower($cased_method_id) === 'curl_setopt_array') {
+                if ($in_call_map
+                    && array_key_first($arg_function_params[$argument_offset]) === 1
+                    && strtolower($cased_method_id) === 'curl_setopt_array'
+                ) {
                     self::addCurlOptionArraySinks(
                         $statements_analyzer->taint_flow_graph,
                         $codebase,
@@ -1516,21 +1532,27 @@ final class ArgumentsAnalyzer
                     continue;
                 }
 
-                foreach ($arg_function_params[$argument_offset] as $function_param) {
-                    $sinks = self::getArgumentSinks($cased_method_id, $argument_offset, $args, $function_param->sinks);
+                foreach ($arg_function_params[$argument_offset] as $param_offset => $function_param) {
+                    $sinks = self::getArgumentSinks(
+                        $cased_method_id,
+                        $param_offset,
+                        $args,
+                        $function_params,
+                        $function_param->sinks,
+                    );
 
                     if ($sinks || $function_param->value_sinks) {
                         if (!$function_storage) {
                             // Mirror the value-node keying in ArgumentAnalyzer::processTaintedness:
                             // when the caller has no storage, resolve it from the cased method id so
                             // the sink is keyed by the declared parameter index (via $function_param),
-                            // and only a genuinely storage-less callable falls back to the call offset.
+                            // and only a genuinely storage-less callable falls back to getForCallableArg().
                             $sink = ($in_call_map
                                 ? null
                                 : DataFlowNode::getForMethodArgumentById(
                                     $codebase->methods,
                                     $cased_method_id,
-                                    $argument_offset,
+                                    $param_offset,
                                     $code_location,
                                     $function_param,
                                 ))
@@ -1541,7 +1563,7 @@ final class ArgumentsAnalyzer
                                             ? 'magic-method'
                                             : 'callable-object'),
                                     $cased_method_id,
-                                    $argument_offset,
+                                    $param_offset,
                                     $code_location,
                                     $sinks,
                                 );
@@ -1551,7 +1573,7 @@ final class ArgumentsAnalyzer
                                 DataFlowNode::getParameterOffset(
                                     $function_storage,
                                     $function_param,
-                                    $argument_offset,
+                                    $param_offset,
                                 ),
                                 $function_storage,
                                 $code_location,
@@ -1567,7 +1589,7 @@ final class ArgumentsAnalyzer
                                 DataFlowNode::getParameterOffset(
                                     $function_storage,
                                     $function_param,
-                                    $argument_offset,
+                                    $param_offset,
                                 ),
                                 $function_storage,
                                 null,
@@ -2837,19 +2859,29 @@ final class ArgumentsAnalyzer
     ];
 
     /**
-     * The sinks of the argument at $argument_offset of a call of $function_id. The value given to curl_setopt()
-     * is the sink of its option (see CURL_OPTION_SINKS). An option the analysis can't tell may be any of them.
+     * The sinks of the argument passed as the parameter at $param_offset of a call of $function_id. The value given
+     * to curl_setopt() is the sink of its option (see CURL_OPTION_SINKS). An option the analysis can't tell may be
+     * any of them.
      *
      * @param array<int, PhpParser\Node\Arg> $args
+     * @param array<int, FunctionLikeParameter> $function_params
      * @psalm-capabilities read-props
      */
-    private static function getArgumentSinks(string $function_id, int $argument_offset, array $args, int $sinks): int
-    {
-        if ($argument_offset !== 2 || strtolower($function_id) !== 'curl_setopt' || !isset($args[1])) {
+    private static function getArgumentSinks(
+        string $function_id,
+        int $param_offset,
+        array $args,
+        array $function_params,
+        int $sinks,
+    ): int {
+        if ($param_offset !== 2
+            || strtolower($function_id) !== 'curl_setopt'
+            || !($option_arg = self::getArgForParam($args, $function_params, 'option'))
+        ) {
             return $sinks;
         }
 
-        $option = $args[1]->value;
+        $option = $option_arg->value;
 
         if (!$option instanceof PhpParser\Node\Expr\ConstFetch) {
             return self::CURL_ANY_OPTION_SINKS;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
+use Psalm\Internal\CacheMode;
 
 use function file_exists;
 use function file_get_contents;
@@ -28,6 +29,13 @@ class ProjectCacheProvider
 
     private const CUSTOM_TAINTS_NAME = 'custom_taints';
 
+    private CacheMode $mode = CacheMode::Persistent;
+
+    public function __construct(CacheMode $mode = CacheMode::Persistent)
+    {
+        $this->mode = $mode;
+    }
+
     /**
      * Load the custom taint mapping persisted by a previous run, so that the taint bits baked into the
      * reused file/classlike storage cache keep matching their taint names (otherwise cached sinks and
@@ -37,7 +45,7 @@ class ProjectCacheProvider
      */
     public function loadCustomTaints(): ?array
     {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
+        $cache_directory = $this->mode->getDirectory(Config::getInstance());
 
         if ($cache_directory === null) {
             return null;
@@ -75,10 +83,13 @@ class ProjectCacheProvider
      */
     public function saveCustomTaints(array $data): void
     {
-        $config = Config::getInstance();
-        $cache_directory = $config->getCacheDirectory();
+        if ($this->mode !== CacheMode::Persistent) {
+            return;
+        }
 
-        if ($cache_directory === null || $config->cache_read_only) {
+        $cache_directory = Config::getInstance()->getCacheDirectory();
+
+        if ($cache_directory === null) {
             return;
         }
 
@@ -90,17 +101,20 @@ class ProjectCacheProvider
 
     public function canDiffFiles(): bool
     {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
+        $cache_directory = $this->mode->getDirectory(Config::getInstance());
 
         return $cache_directory !== null && file_exists($cache_directory . DIRECTORY_SEPARATOR . self::GOOD_RUN_NAME);
     }
 
     public function processSuccessfulRun(float $start_time, string $psalm_version): void
     {
-        $config = Config::getInstance();
-        $cache_directory = $config->getCacheDirectory();
+        if ($this->mode !== CacheMode::Persistent) {
+            return;
+        }
 
-        if ($cache_directory === null || $config->cache_read_only) {
+        $cache_directory = Config::getInstance()->getCacheDirectory();
+
+        if ($cache_directory === null) {
             return;
         }
 

@@ -13,6 +13,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Exception\UnpopulatedClasslikeException;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Issue\InvalidReturnStatement;
@@ -229,7 +230,7 @@ final class CodebaseTest extends TestCase
         };
         (new PluginRegistrationSocket($this->codebase->config, $this->codebase))
             ->registerHooksFromClass(get_class($hook));
-        $this->codebase->classlike_storage_provider->cache = new ClassLikeStorageCacheProvider($this->codebase->config, '', false);
+        $this->codebase->classlike_storage_provider->cache = new ClassLikeStorageCacheProvider($this->codebase->config, '', CacheMode::Memory);
 
         $this->analyzeFile('somefile.php', new Context);
 

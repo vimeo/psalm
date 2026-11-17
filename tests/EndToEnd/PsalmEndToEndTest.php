@@ -26,6 +26,7 @@ use function unlink;
 
 use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
+use const PHP_EOL;
 
 /**
  * Tests some of the most important use cases of the psalm command,
@@ -394,5 +395,214 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         yield 'psalm --threads=0' => ['psalm', ['--threads=0'], '--threads' . $message];
         yield 'psalm --scan-threads=-1' => ['psalm', ['--scan-threads=-1'], '--scan-threads' . $message];
         yield 'psalter --threads=abc' => ['psalter', ['--issues=all', '--threads=abc'], '--threads' . $message];
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideTypeCoverageBelowTheMinimum')]
+    public function testTypeCoverageBelowTheMinimumFailsAFullRun(string $attributes, array $args): void
+    {
+        $process = $this->runPsalmOnAProjectWithTypeCoverage($attributes, [...$args, '--output-format=json']);
+
+        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertSame('Type coverage 77.77% is below the minimum of 95.00%' . PHP_EOL, $process->getErrorOutput());
+        $this->assertSame("[]\n", $process->getOutput());
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>}>
+     * @psalm-pure
+     */
+    public static function provideTypeCoverageBelowTheMinimum(): iterable
+    {
+        yield 'option' => ['', ['--min-type-coverage=95']];
+        yield 'config' => ['minTypeCoverage="95"', []];
+        yield 'option overrides config' => ['minTypeCoverage="50"', ['--min-type-coverage=95']];
+    }
+
+    public function testIssuesAndATypeCoverageBelowTheMinimumAreBothReported(): void
+    {
+        $this->writeAProjectWithTypeCoverage('minTypeCoverage="95"');
+        file_put_contents(self::$tmpDir . '/src/WithAnIssue.php', "<?php\nnew Missing();\n");
+
+        $process = $this->runPsalmInTheProject(['--no-cache', '--output-format=json']);
+
+        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertSame('Type coverage 77.77% is below the minimum of 95.00%' . PHP_EOL, $process->getErrorOutput());
+        $this->assertStringContainsString('UndefinedClass', $process->getOutput());
+    }
+
+    public function testTypeCoverageIsOnlyCheckedOnAFullRun(): void
+    {
+        $this->writeAProjectWithTypeCoverage('minTypeCoverage="95"');
+
+        $full_run = $this->runPsalmInTheProject(['--no-cache', '--output-format=json']);
+
+        $this->assertSame(2, $full_run->getExitCode(), $full_run->getOutput() . $full_run->getErrorOutput());
+        $this->assertSame('Type coverage 77.77% is below the minimum of 95.00%' . PHP_EOL, $full_run->getErrorOutput());
+
+        $partial_run = $this->runPsalmInTheProject(['--no-cache', '--output-format=json', 'src/Untyped.php']);
+
+        $this->assertSame(0, $partial_run->getExitCode(), $partial_run->getOutput() . $partial_run->getErrorOutput());
+        $this->assertSame('', $partial_run->getErrorOutput());
+    }
+
+    public function testTypeCoverageOfAWarmRunDoesNotCountADeletedFile(): void
+    {
+        $this->writeAProjectWithTypeCoverage('minTypeCoverage="95" cacheDirectory="cache"');
+
+        $cold_run = $this->runPsalmInTheProject(['--output-format=json']);
+
+        $this->assertSame(2, $cold_run->getExitCode(), $cold_run->getOutput() . $cold_run->getErrorOutput());
+
+        // the other file is fully typed
+        unlink(self::$tmpDir . '/src/Untyped.php');
+        $warm_run = $this->runPsalmInTheProject(['--output-format=json']);
+
+        $this->assertSame(0, $warm_run->getExitCode(), $warm_run->getOutput() . $warm_run->getErrorOutput());
+        $this->assertSame('', $warm_run->getErrorOutput());
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideTypeCoverageNotChecked')]
+    public function testTypeCoverageNotBelowTheMinimumOrNotCheckedPasses(string $attributes, array $args): void
+    {
+        $process = $this->runPsalmOnAProjectWithTypeCoverage($attributes, ['--output-format=json', ...$args]);
+
+        $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringNotContainsString('Type coverage', $process->getErrorOutput());
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>}>
+     * @psalm-pure
+     */
+    public static function provideTypeCoverageNotChecked(): iterable
+    {
+        yield 'option overrides config' => ['minTypeCoverage="95"', ['--min-type-coverage=77.77']];
+        yield 'creating the baseline' => ['minTypeCoverage="95"', ['--set-baseline=psalm-baseline.xml']];
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideInvalidMinTypeCoverage')]
+    public function testInvalidMinTypeCoverageIsAnError(array $args, string $message): void
+    {
+        $process = $this->runPsalmOnAProjectWithTypeCoverage('', $args);
+
+        $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertSame($message . PHP_EOL, $process->getErrorOutput());
+    }
+
+    /**
+     * @return iterable<string, array{list<string>, string}>
+     * @psalm-pure
+     */
+    public static function provideInvalidMinTypeCoverage(): iterable
+    {
+        $message = '--min-type-coverage expects a percentage from 0 to 100 with at most two decimals';
+
+        yield 'three decimals' => [['--min-type-coverage=95.555'], $message];
+        yield 'above 100' => [['--min-type-coverage=100.01'], $message];
+        yield 'not a number' => [['--min-type-coverage=abc'], $message];
+        yield 'repeated' => [
+            ['--min-type-coverage=90', '--min-type-coverage=95'],
+            'Only one --min-type-coverage can be given',
+        ];
+        yield 'paths' => [
+            ['--min-type-coverage=95', 'src/Untyped.php'],
+            'Cannot check the minimum type coverage when checking specific files',
+        ];
+        yield 'paths after the terminator' => [
+            ['--min-type-coverage=95', '--', 'src/Untyped.php'],
+            'Cannot check the minimum type coverage when checking specific files',
+        ];
+        yield 'creating the baseline' => [
+            ['--min-type-coverage=95', '--set-baseline=psalm-baseline.xml'],
+            'Cannot check the minimum type coverage when creating or updating the baseline',
+        ];
+        yield 'updating the baseline' => [
+            ['--min-type-coverage=95', '--update-baseline'],
+            'Cannot check the minimum type coverage when creating or updating the baseline',
+        ];
+    }
+
+    /**
+     * @param array<string, string|false> $env
+     */
+    #[DataProvider('provideTaintRunWithASarifReport')]
+    public function testTypeCoverageBelowTheMinimumOfATaintRunWithASarifReport(array $env, int $exit_code): void
+    {
+        $report = self::$tmpDir . '/report.sarif';
+
+        try {
+            $process = $this->runPsalmOnAProjectWithTypeCoverage(
+                'minTypeCoverage="95"',
+                ['--taint-analysis', '--report=' . $report, '--output-format=json'],
+                $env,
+            );
+
+            $this->assertSame($exit_code, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+            $this->assertSame('Type coverage 77.77% is below the minimum of 95.00%' . PHP_EOL, $process->getErrorOutput());
+        } finally {
+            @unlink($report);
+        }
+    }
+
+    /**
+     * @return iterable<string, array{array<string, string|false>, int}>
+     * @psalm-pure
+     */
+    public static function provideTaintRunWithASarifReport(): iterable
+    {
+        // like for issues, so that a following step can upload the report
+        yield 'in GitHub Actions' => [['GITHUB_WORKFLOW' => 'CI'], 0];
+        yield 'elsewhere' => [['GITHUB_WORKFLOW' => false], 2];
+    }
+
+    /**
+     * @param list<string> $args
+     * @param array<string, string|false> $env
+     */
+    private function runPsalmOnAProjectWithTypeCoverage(string $attributes, array $args, array $env = []): Process
+    {
+        $this->writeAProjectWithTypeCoverage($attributes);
+
+        return $this->runPsalmInTheProject(['--no-cache', ...$args], $env);
+    }
+
+    private function writeAProjectWithTypeCoverage(string $attributes): void
+    {
+        @unlink(self::$tmpDir . '/src/FileWithErrors.php');
+        file_put_contents(
+            self::$tmpDir . '/psalm.xml',
+            '<?xml version="1.0"?>
+            <psalm errorLevel="8" runTaintAnalysis="false" findUnusedCode="false" ' . $attributes . '>
+                <projectFiles><directory name="src"/></projectFiles>
+            </psalm>',
+        );
+        // Psalm infers the types of 7 of the 9 expressions: 77.7778%
+        file_put_contents(self::$tmpDir . '/src/Typed.php', "<?php\nfunction typed(int \$a): int { \$b = \$a + 1; return \$b * 2; }\n");
+        file_put_contents(self::$tmpDir . '/src/Untyped.php', "<?php\nfunction untyped(\$a) { return \$a->foo(\$a->bar); }\n");
+    }
+
+    /**
+     * @param list<string> $args
+     * @param array<string, string|false> $env
+     */
+    private function runPsalmInTheProject(array $args, array $env = []): Process
+    {
+        $process = self::newProcess(
+            [PHP_BINARY, $this->psalm, '--no-progress', ...$args],
+            self::$tmpDir,
+            [...self::agentEnvVarsToUnset(), ...$env],
+        );
+        $process->run();
+
+        return $process;
     }
 }

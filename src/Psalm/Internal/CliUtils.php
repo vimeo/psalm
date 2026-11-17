@@ -637,7 +637,7 @@ final class CliUtils
             try {
                 self::$stdin_contents = trim((string) stream_get_contents(STDIN));
             } finally {
-                stream_set_blocking(STDIN, $meta['blocked']);
+                stream_set_blocking(STDIN, $meta['blocked'] ?? true);
             }
         }
 

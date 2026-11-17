@@ -118,24 +118,26 @@ final class Cache
 
     private readonly bool $arrayCache;
 
-    /** Entries are read but never written, see {@see Config::$cache_read_only} */
+    private readonly bool $persistent;
+
     private readonly bool $read_only;
 
     public function __construct(
         Config $config,
         string $subdir,
         array $dependencies = [],
-        private readonly bool $persistent = true,
+        CacheMode $mode = CacheMode::Persistent,
     ) {
         $this->serializer = $config->getCacheSerializer();
         $this->consolidated_serializer = $this->serializer;
         $this->arrayCache = $config->array_cache;
-        $this->read_only = $config->cache_read_only;
-        if (!$persistent) {
+        $this->persistent = $mode !== CacheMode::Memory;
+        $this->read_only = $mode === CacheMode::ReadOnly;
+        if (!$this->persistent) {
             return;
         }
 
-        $dir = $config->getCacheDirectory().DIRECTORY_SEPARATOR.$subdir;
+        $dir = $mode->getDirectory($config) . DIRECTORY_SEPARATOR . $subdir;
 
         $hash = hash_init('xxh128');
         foreach ($dependencies as $dep) {

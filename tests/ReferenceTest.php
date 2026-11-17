@@ -1591,7 +1591,7 @@ final class ReferenceTest extends TestCase
                             /** @psalm-suppress PossiblyUndefinedVariable */
                             preg_match("/(.*)/", $str, $out["m"]);
                         }
-                        return $out["m"][1] ?? "";
+                        return (string) $out["m"][1];
                     }',
                 'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:8',
             ],
