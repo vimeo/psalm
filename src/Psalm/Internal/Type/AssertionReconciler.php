@@ -50,6 +50,7 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -67,10 +68,13 @@ use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
@@ -173,6 +177,55 @@ final class AssertionReconciler extends Reconciler
             }
 
             return new Union($type_variables);
+        }
+
+        $template_key_or_value_of_bounds = [];
+        $expanded_var_type = $existing_var_type->getBuilder();
+
+        foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $existing_atomic) {
+            if (!$existing_atomic instanceof TTemplateKeyOf && !$existing_atomic instanceof TTemplateValueOf) {
+                continue;
+            }
+
+            $bound = $existing_atomic instanceof TTemplateKeyOf
+                ? TKeyOf::getArrayKeyType($existing_atomic->as)
+                : TValueOf::getValueType($existing_atomic->as, $codebase);
+
+            if ($bound === null) {
+                continue;
+            }
+
+            $template_key_or_value_of_bounds[$atomic_key] = [$existing_atomic, $bound];
+            $expanded_var_type->removeType($atomic_key);
+
+            foreach ($bound->getAtomicTypes() as $bound_atomic) {
+                $expanded_var_type->addType($bound_atomic);
+            }
+        }
+
+        if ($template_key_or_value_of_bounds) {
+            $expanded_var_type = $expanded_var_type->freeze();
+
+            $reconciled_type = self::reconcile(
+                $assertion,
+                $expanded_var_type,
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $negated,
+            );
+
+            return self::restoreTemplateKeyOrValueOf(
+                $codebase,
+                $existing_var_type,
+                $expanded_var_type,
+                $reconciled_type,
+                $template_key_or_value_of_bounds,
+            );
         }
 
         if (($assertion instanceof IsLooselyEqual || $assertion instanceof IsNotLooselyEqual)
@@ -304,6 +357,119 @@ final class AssertionReconciler extends Reconciler
             false,
             true,
         );
+    }
+
+    /**
+     * key-of<T> and value-of<T> are reconciled as their bound, then the part of the result within that bound
+     * becomes key-of<T> or value-of<T> again, with T narrowed to it
+     *
+     * @param non-empty-array<string, array{TTemplateKeyOf|TTemplateValueOf, Union}> $template_key_or_value_of_bounds
+     */
+    private static function restoreTemplateKeyOrValueOf(
+        Codebase $codebase,
+        Union $existing_var_type,
+        Union $expanded_var_type,
+        Union $reconciled_type,
+        array $template_key_or_value_of_bounds,
+    ): Union {
+        if ($reconciled_type->isNever() || $reconciled_type->failed_reconciliation) {
+            return $reconciled_type;
+        }
+
+        if ($reconciled_type->getId() === $expanded_var_type->getId()) {
+            return $existing_var_type;
+        }
+
+        $new_type = $reconciled_type->getBuilder();
+        $other_atomics = array_diff_key(
+            $existing_var_type->getAtomicTypes(),
+            $template_key_or_value_of_bounds,
+        );
+
+        foreach ($reconciled_type->getAtomicTypes() as $reconciled_key => $reconciled_atomic) {
+            $in_bound = false;
+
+            foreach ($template_key_or_value_of_bounds as [, $bound]) {
+                if (UnionTypeComparator::isContainedBy($codebase, new Union([$reconciled_atomic]), $bound)) {
+                    $in_bound = true;
+                    break;
+                }
+            }
+
+            if (!$in_bound) {
+                continue;
+            }
+
+            $in_other_type = false;
+
+            foreach ($other_atomics as $other_atomic) {
+                if (AtomicTypeComparator::isContainedBy($codebase, $reconciled_atomic, $other_atomic)) {
+                    $in_other_type = true;
+                    break;
+                }
+            }
+
+            if (!$in_other_type) {
+                $new_type->removeType($reconciled_key);
+            }
+        }
+
+        foreach ($template_key_or_value_of_bounds as [$template_of, $bound]) {
+            $narrowed_atomics = [];
+
+            foreach ($reconciled_type->getAtomicTypes() as $reconciled_atomic) {
+                if (UnionTypeComparator::isContainedBy($codebase, new Union([$reconciled_atomic]), $bound)) {
+                    $narrowed_atomics[] = $reconciled_atomic;
+                }
+            }
+
+            if (!$narrowed_atomics) {
+                continue;
+            }
+
+            $narrowed_bound = new Union($narrowed_atomics);
+
+            if ($narrowed_bound->getId() === $bound->getId()) {
+                $new_type->addType($template_of);
+                continue;
+            }
+
+            $template = $template_of->as->isSingle() ? $template_of->as->getSingleAtomic() : null;
+            $key_type = TKeyOf::getArrayKeyType($template_of->as);
+            $value_type = TValueOf::getValueType($template_of->as, $codebase);
+
+            if (!$template instanceof TTemplateParam || $key_type === null || $value_type === null) {
+                foreach ($narrowed_atomics as $narrowed_atomic) {
+                    $new_type->addType($narrowed_atomic);
+                }
+
+                continue;
+            }
+
+            $narrowed_template = new Union([$template->replaceAs(new Union([new TArray(
+                $template_of instanceof TTemplateKeyOf
+                    ? [$narrowed_bound, $value_type]
+                    : [$key_type, $narrowed_bound],
+            )]))]);
+
+            $new_type->addType(
+                $template_of instanceof TTemplateKeyOf
+                    ? new TTemplateKeyOf(
+                        $template_of->param_name,
+                        $template_of->defining_class,
+                        $narrowed_template,
+                        $template_of->from_docblock,
+                    )
+                    : new TTemplateValueOf(
+                        $template_of->param_name,
+                        $template_of->defining_class,
+                        $narrowed_template,
+                        $template_of->from_docblock,
+                    ),
+            );
+        }
+
+        return $new_type->freeze();
     }
 
     /**

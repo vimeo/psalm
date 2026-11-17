@@ -259,6 +259,13 @@ final class AtomicTypeComparator
                 return true;
             }
 
+            if ($container_type_part instanceof TTemplateValueOf
+                && ($value_type = TValueOf::getValueType($container_type_part->as, $codebase))
+                && ($value_type->isNullable() || $value_type->isMixed())
+            ) {
+                return true;
+            }
+
             return false;
         }
 
