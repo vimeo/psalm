@@ -264,6 +264,24 @@ final class OverlayEndToEndTest extends TestCase
         $this->assertSame('invalid_overlay', self::decodeError($process->getOutput()));
     }
 
+    public function testAnEditedStubFileMakesTheIndexStale(): void
+    {
+        file_put_contents($this->project . '/stub.phpstub', '<?php class StubBase {}');
+        file_put_contents($this->project . '/psalm.xml', str_replace(
+            '</psalm>',
+            '<stubs><file name="stub.phpstub" /></stubs></psalm>',
+            self::CONFIG,
+        ));
+        $this->writeFiles(['A.php' => self::A, 'B.php' => self::B]);
+        $this->recordReferences();
+
+        file_put_contents($this->project . '/stub.phpstub', '<?php class StubBase { public int $x = 1; }');
+
+        [$kind, $message] = $this->failure(['--overlay=src/A.php=src/A.php']);
+        $this->assertSame('references_stale', $kind);
+        $this->assertStringContainsString('stub.phpstub changed', $message);
+    }
+
     public function testConfigInASubdirectory(): void
     {
         mkdir($this->project . '/cfg');
