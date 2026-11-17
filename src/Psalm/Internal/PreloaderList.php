@@ -764,6 +764,7 @@ final class PreloaderList {
         \Psalm\Internal\Cli\LanguageServer::class,
         \Psalm\Internal\Cli\Plugin::class,
         \Psalm\Internal\Cli\ProjectBootstrap::class,
+        \Psalm\Internal\Cli\ProjectBootstrapException::class,
         \Psalm\Internal\Cli\Psalm::class,
         \Psalm\Internal\Cli\Psalter::class,
         \Psalm\Internal\Cli\Refactor::class,

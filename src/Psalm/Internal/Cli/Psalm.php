@@ -1189,7 +1189,12 @@ final class Psalm
         }
 
         if (!$issue_baseline && $baseline_file_path && !isset($options['ignore-baseline'])) {
-            $issue_baseline = ProjectBootstrap::readBaselineFile($baseline_file_path);
+            try {
+                $issue_baseline = ProjectBootstrap::readBaselineFile($baseline_file_path);
+            } catch (ProjectBootstrapException $exception) {
+                fwrite(STDERR, $exception->getMessage() . PHP_EOL);
+                exit(1);
+            }
         }
 
         if ($paths_to_check !== null) {
