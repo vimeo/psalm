@@ -1316,6 +1316,31 @@ final class ReferenceTest extends TestCase
                     '$a===' => 'array<string, int>|null',
                 ],
             ],
+            'writeThroughAReferenceInAnIfIsCombinedAfterIt' => [
+                'code' => '<?php
+                    $w = 1;
+                    $v = &$w;
+                    if (rand(0, 1)) {
+                        $v = "a";
+                    }',
+                'assertions' => [
+                    '$w===' => "'a'|1",
+                ],
+            ],
+            'writeThroughAReferenceInALoopIsCombinedAfterIt' => [
+                'code' => '<?php
+                    $w = 1;
+                    $v = &$w;
+                    while (rand(0, 1)) {
+                        if ($v === 1) {
+                            continue;
+                        }
+                        $v = "a";
+                    }',
+                'assertions' => [
+                    '$w===' => "'a'|1",
+                ],
+            ],
             'referenceBoundInConditionIsNarrowedByNotIdenticalNull' => [
                 'code' => '<?php
                     /** @param array<string, list<int>|null> $arr */
