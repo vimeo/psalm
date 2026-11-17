@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\LanguageServer;
 
+use AdvancedJsonRpc\Notification;
 use Amp\DeferredFuture;
 use Amp\TimeoutCancellation;
 use LanguageServerProtocol\ClientCapabilities;
+use LanguageServerProtocol\DiagnosticSeverity;
 use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\IssueData;
@@ -28,11 +30,18 @@ use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\TestConfig;
 
 use function Amp\delay;
+use function array_map;
 use function defined;
+use function file_put_contents;
 use function getcwd;
+use function json_decode;
 use function json_encode;
 use function rand;
+use function sys_get_temp_dir;
+use function tempnam;
+use function unlink;
 
+use const DIRECTORY_SEPARATOR;
 use const JSON_THROW_ON_ERROR;
 
 final class DiagnosticTest extends AsyncTestCase
@@ -201,6 +210,84 @@ final class DiagnosticTest extends AsyncTestCase
         $deferred->getFuture()->await(new TimeoutCancellation(5));
 
         $this->assertTrue($server->client->clientConfiguration->provideDiagnostics);
+    }
+
+    public function testAnUnsuppressibleIssueInTheBaselineIsPublishedAsAnError(): void
+    {
+        $this->codebase->config->addUnsuppressibleIssue('UndefinedFunction');
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Baselined'
+            . DIRECTORY_SEPARATOR . 'file.php';
+
+        $this->assertSame([['UndefinedFunction', DiagnosticSeverity::ERROR]], $this->publishBaselined($file_path));
+    }
+
+    public function testABaselinedIssueIsPublishedAsAWarningWhateverTheSeparators(): void
+    {
+        // the separator of Windows, on every system
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Baselined\\file.php';
+
+        $this->assertSame([['UndefinedFunction', DiagnosticSeverity::WARNING]], $this->publishBaselined($file_path));
+    }
+
+    /**
+     * @return list<array{string, int}> the type and the severity of each diagnostic published for the file
+     */
+    private function publishBaselined(string $file_path): array
+    {
+        $baseline = (string) tempnam(sys_get_temp_dir(), 'psalm-baseline');
+        file_put_contents($baseline, '<?xml version="1.0" encoding="UTF-8"?>
+            <files psalm-version="dev">
+              <file src="src/Baselined/file.php">
+                <UndefinedFunction>
+                  <code><![CDATA[undefined_function()]]></code>
+                </UndefinedFunction>
+              </file>
+            </files>');
+        $this->codebase->config->throw_exception = false;
+        $this->file_provider->registerFile($file_path, '<?php
+            function f(): void
+            {
+                undefined_function();
+            }');
+
+        $client_configuration = new ClientConfiguration();
+        $client_configuration->provideDiagnostics = true;
+        $client_configuration->hideWarnings = false;
+        $client_configuration->baseline = $baseline;
+        $write = new MockProtocolStream();
+        $server = new LanguageServer(
+            new MockProtocolStream(),
+            $write,
+            $this->project_analyzer,
+            $this->codebase,
+            $client_configuration,
+            new Progress,
+            new PathMapper((string) getcwd(), (string) getcwd()),
+        );
+
+        /** @var DeferredFuture<string> $published */
+        $published = new DeferredFuture;
+        $write->on('message', static function (Message $message) use ($published): void {
+            if ($message->body instanceof Notification && $message->body->method === 'textDocument/publishDiagnostics') {
+                $published->complete((string) $message->body);
+            }
+        });
+
+        try {
+            $server->initialize(new ClientCapabilities());
+            $server->doVersionedAnalysis([$file_path => 'file://' . $file_path], 1);
+            $json = $published->getFuture()->await(new TimeoutCancellation(5));
+        } finally {
+            unlink($baseline);
+        }
+
+        /** @var array{params: array{diagnostics: list<array{severity: int, data: array{type: string}}>}} $body */
+        $body = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+
+        return array_map(
+            static fn(array $diagnostic): array => [$diagnostic['data']['type'], $diagnostic['severity']],
+            $body['params']['diagnostics'],
+        );
     }
 
     public function testOnChangeDebounceMs(): void
