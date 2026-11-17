@@ -25,7 +25,6 @@ use function array_diff;
 use function array_filter;
 use function array_keys;
 use function array_map;
-use function array_slice;
 use function array_values;
 use function count;
 use function in_array;
@@ -352,26 +351,33 @@ final class DoAnalyzer
                 $node instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr,
                 $node instanceof PhpParser\Node\Expr\BinaryOp\Coalesce => [$node->right],
                 $node instanceof PhpParser\Node\Expr\AssignOp\Coalesce => [$node->expr],
-                // the condition of the first arm or case is always evaluated
                 $node instanceof PhpParser\Node\Expr\Match_ => [
                     ...array_map(
                         static fn(PhpParser\Node\MatchArm $arm): PhpParser\Node\Expr => $arm->body,
                         $node->arms,
                     ),
-                    ...array_map(
+                    ...self::getConditionsAfterTheFirst(array_map(
                         static fn(PhpParser\Node\MatchArm $arm): ?array => $arm->conds,
-                        array_slice($node->arms, 1),
-                    ),
+                        $node->arms,
+                    )),
                 ],
                 $node instanceof PhpParser\Node\Stmt\Switch_ => [
                     ...array_map(static fn(PhpParser\Node\Stmt\Case_ $case): array => $case->stmts, $node->cases),
-                    ...array_map(
-                        static fn(PhpParser\Node\Stmt\Case_ $case): ?PhpParser\Node\Expr => $case->cond,
-                        array_slice($node->cases, 1),
-                    ),
+                    ...self::getConditionsAfterTheFirst(array_map(
+                        static fn(PhpParser\Node\Stmt\Case_ $case): ?array
+                            => $case->cond !== null ? [$case->cond] : null,
+                        $node->cases,
+                    )),
                 ],
-                $node instanceof PhpParser\Node\Expr\NullsafeMethodCall => [$node->args],
-                $node instanceof PhpParser\Node\Expr\NullsafePropertyFetch => [$node->name],
+                // a null object skips the rest of the chain
+                $node instanceof PhpParser\Node\Expr\MethodCall,
+                $node instanceof PhpParser\Node\Expr\NullsafeMethodCall
+                    => self::isAfterANullsafe($node) ? [$node->args, $node->name] : [],
+                $node instanceof PhpParser\Node\Expr\PropertyFetch,
+                $node instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+                    => self::isAfterANullsafe($node) ? [$node->name] : [],
+                $node instanceof PhpParser\Node\Expr\ArrayDimFetch
+                    => self::isAfterANullsafe($node) ? [$node->dim] : [],
                 $node instanceof PhpParser\Node\Stmt\For_ => [$node->stmts, $node->loop],
                 $node instanceof PhpParser\Node\Stmt\Foreach_,
                 $node instanceof PhpParser\Node\Stmt\While_ => [$node->stmts],
@@ -397,9 +403,56 @@ final class DoAnalyzer
     }
 
     /**
+     * @param array<?array<PhpParser\Node\Expr>> $conditions the conditions of the arms or cases, null for the default
+     * @return list<PhpParser\Node\Expr> the conditions evaluated only when the first one is false
+     * @psalm-pure
+     */
+    private static function getConditionsAfterTheFirst(array $conditions): array
+    {
+        $after_the_first = [];
+        $first_seen = false;
+
+        foreach ($conditions as $arm_conditions) {
+            foreach ($arm_conditions ?? [] as $condition) {
+                if ($first_seen) {
+                    $after_the_first[] = $condition;
+                }
+
+                $first_seen = true;
+            }
+        }
+
+        return $after_the_first;
+    }
+
+    /**
+     * Whether the node is a nullsafe call or fetch, or follows one in a chain
+     *
+     * @psalm-mutation-free
+     */
+    private static function isAfterANullsafe(PhpParser\Node\Expr $node): bool
+    {
+        if ($node instanceof PhpParser\Node\Expr\NullsafeMethodCall
+            || $node instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+        ) {
+            return true;
+        }
+
+        if ($node instanceof PhpParser\Node\Expr\MethodCall
+            || $node instanceof PhpParser\Node\Expr\PropertyFetch
+            || $node instanceof PhpParser\Node\Expr\ArrayDimFetch
+        ) {
+            return self::isAfterANullsafe($node->var);
+        }
+
+        return false;
+    }
+
+    /**
      * Adds the bounds of the statements that follow one that may go to the next iteration, in the list and the lists
-     * nested in it: the first iteration may skip them. After a `break`, a `return` or a `throw`, there is no next
-     * iteration, so what follows runs first in the first one.
+     * nested in it: the first iteration may skip them. After a `break`, a `return` or a `throw` leaving the loop,
+     * there is no next iteration, so what follows runs first in the first one; a `break` or a `continue` of a loop
+     * nested in the body may lead to a later iteration of the loop.
      *
      * @param list<PhpParser\Node\Stmt> $stmts
      * @param int $depth the loops and switches between the statements and the loop
@@ -410,7 +463,10 @@ final class DoAnalyzer
         foreach ($stmts as $i => $stmt) {
             self::addSkippableStatementBoundsIn($stmt, $depth, $bounds);
 
-            if ($i + 1 < count($stmts) && self::hasExitToTheLoop([$stmt], $depth, to_the_next_iteration: true)) {
+            if ($i + 1 < count($stmts)
+                && (self::hasExitToTheLoop([$stmt], $depth, to_the_next_iteration: true)
+                    || ($depth > 0 && self::hasExitToTheLoop([$stmt], 0)))
+            ) {
                 $bounds[] = self::getBounds([$stmts[$i + 1], $stmts[count($stmts) - 1]]);
 
                 return;

@@ -1115,6 +1115,58 @@ final class DoTest extends TestCase
                 $x = 'a';
             } while (rand(0, 1));
         }
+
+        function inTheSecondConditionOfTheFirstMatchArm(): void {
+            $c = true;
+            $x = new stdClass();
+            do {
+                echo match (true) {
+                    $c, (string) $x === 'a' => 1,
+                    default => 2,
+                };
+                $c = (bool) rand(0, 1);
+                $x = 'a';
+            } while (rand(0, 1));
+        }
+
+        function afterAContinueOrABreakInANestedDo(): void {
+            $c = true;
+            $x = new stdClass();
+            do {
+                do {
+                    if ($c) {
+                        $c = false;
+                        continue;
+                    }
+                    echo (string) $x;
+                } while (rand(0, 1));
+                do {
+                    if (rand(0, 1)) {
+                        break;
+                    }
+                    echo (string) $x;
+                } while (rand(0, 1));
+                $x = 'a';
+            } while (rand(0, 1));
+        }
+
+        final class Chain {
+            public function next(): Chain {
+                return $this;
+            }
+
+            public function take(string $_s): void {}
+        }
+
+        function inANullsafeChain(): void {
+            $c = null;
+            $x = new stdClass();
+            do {
+                $c?->next()->take((string) $x);
+                $x = 'a';
+                $c = new Chain();
+            } while (rand(0, 1));
+        }
         PHP;
 
     public function testDoWhileFirstIterationIssuesAreDefinite(): void
@@ -1157,6 +1209,10 @@ final class DoTest extends TestCase
                 [199, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
                 [214, 'InvalidCast', 'stdClass cannot be cast to string'],
                 [223, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [235, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
+                [252, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
+                [258, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
+                [276, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
             ],
             self::getIssues($file_path),
         );
