@@ -2251,7 +2251,11 @@ final class ArgumentAnalyzer
 
         $graph->addNode($method_node);
 
-        if ($taint_flow_graph && $function_storage && !$in_call_map) {
+        // a builtin calls its callables out of the analyzed code: what they return matters only to the flows of its stub
+        if ($taint_flow_graph
+            && $function_storage
+            && (!$in_call_map || $function_storage->return_source_callable_params !== [])
+        ) {
             $callable_param_method_id = $cased_method_id;
             $callable_param_storage = $function_storage;
 

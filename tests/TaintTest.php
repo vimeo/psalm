@@ -1196,6 +1196,20 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'noTaintReturnedByAnEscapingPregReplaceCallbackCallback' => [
+                'code' => '<?php
+                    function render(string $template, string $value): string {
+                        return preg_replace_callback(
+                            \'/{value}/\',
+                            function (array $matches) use ($value): string {
+                                return htmlspecialchars($value, ENT_QUOTES);
+                            },
+                            $template,
+                        );
+                    }
+
+                    echo render("<p>{value}</p>", (string) $_GET["bad"]);',
+            ],
             'coalesceOnAnOffsetKeepsTheTypeOfTheArrayItReads' => [
                 'code' => '<?php
                     /** @param list<mixed> $l */
@@ -14137,6 +14151,26 @@ final class TaintTest extends TestCase
                     );
 
                     echo $b;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByThePregReplaceCallbackCallback' => [
+                'code' => '<?php
+                    function render(string $template, string $value): string {
+                        return preg_replace_callback(
+                            \'/{value}/\',
+                            function (array $matches) use ($value): string {
+                                return $value;
+                            },
+                            $template,
+                        );
+                    }
+
+                    echo render("<p>{value}</p>", (string) $_GET["bad"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByThePregReplaceCallbackArrowFunction' => [
+                'code' => '<?php
+                    echo preg_replace_callback(\'/x/\', fn(array $matches): string => (string) $_GET["bad"], "x");',
                 'error_message' => 'TaintedHtml',
             ],
             'taintedFunctionWithNoTypes' => [

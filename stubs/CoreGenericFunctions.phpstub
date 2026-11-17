@@ -1331,7 +1331,7 @@ function preg_replace($pattern, $replacement, $subject, int $limit = -1, &$count
  * @psalm-purity-from-template P
  *
  * @psalm-taint-specialize
- * @psalm-flow ($subject) -> return
+ * @psalm-flow ($subject, $callback()) -> return
  */
 function preg_replace_callback($pattern, $callback, $subject, int $limit = -1, &$count = null, int $flags = 0) {}
 
