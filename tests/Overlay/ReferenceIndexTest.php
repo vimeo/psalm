@@ -57,7 +57,6 @@ final class ReferenceIndexTest extends TestCase
         $dir = sys_get_temp_dir() . '/PsalmConfigurationFiles_' . uniqid();
         $filesystem->dumpFile($dir . '/stub.phpstub', '<?php class Stubbed {}');
         $filesystem->dumpFile($dir . '/A.php', '<?php');
-        $filesystem->dumpFile($dir . '/files.xml', '<projectFiles><file name="A.php"/></projectFiles>');
         $dir = (string) realpath($dir);
 
         try {
@@ -98,10 +97,6 @@ final class ReferenceIndexTest extends TestCase
         yield 'preloaded stub file' => [
             '<psalm>' . $project_files . '<stubs><file name="stub.phpstub" preloadClasses="true"/></stubs></psalm>',
             'stub.phpstub',
-        ];
-        yield 'XIncluded file' => [
-            '<psalm xmlns:xi="http://www.w3.org/2001/XInclude"><xi:include href="files.xml"/></psalm>',
-            'files.xml',
         ];
     }
 }

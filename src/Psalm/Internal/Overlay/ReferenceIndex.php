@@ -150,7 +150,6 @@ final class ReferenceIndex
             Composer::getLockFilePath($config->base_dir),
             ...array_values($config->getStubFiles()),
             ...array_values($config->getPreloadedStubFiles()),
-            ...$config->getIncludedFiles(),
         ];
 
         if ($config->source_filename !== null) {
