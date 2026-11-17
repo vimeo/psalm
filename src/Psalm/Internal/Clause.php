@@ -292,13 +292,14 @@ final class Clause implements Stringable
             return $this;
         }
 
+        // not written in the condition, so not redundant with what is already known
         return new self(
             $possibilities,
             $this->creating_conditional_id,
             $this->creating_object_id,
             $this->wedge,
             $this->reconcilable,
-            $this->generated,
+            true,
             $this->redefined_vars,
         );
     }
