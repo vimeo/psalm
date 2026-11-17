@@ -4826,7 +4826,7 @@ final class ArrayFunctionCallTest extends TestCase
                      * @var array<int, string|int|float> $arg
                      */
                     array_filter($arg, "abs", 0);',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:40 - Argument 2 of array_filter expects callable[impure](float|int|string):mixed, but parent type callable[pure](float|int|numeric-string',
             ],
             'arrayFilterKeyCallbackLiteral' => [
                 'code' => '<?php
