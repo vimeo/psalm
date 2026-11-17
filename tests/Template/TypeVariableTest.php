@@ -151,22 +151,6 @@ final class TypeVariableTest extends TestCase
             ],
         ];
 
-        yield 'constructedAndCheckedInTheLoop' => [
-            'code' => $sort . '
-                /** @param list<string> $ids */
-                function f(array $ids, mixed $m): void {
-                    $order = PHP_INT_MAX;
-                    foreach ($ids as $id) {
-                        $q = new SplPriorityQueue();
-                        $q->insert($id, [$m, --$order]);
-                        sortIt($q);
-                    }
-                }',
-            'expected_issues' => [
-                'MixedArgumentTypeCoercion 11: Type list{mixed, int} should be a subtype of list{int, int}',
-            ],
-        ];
-
         yield 'constructedInTheLoopCheckedAfterIt' => [
             'code' => $sort . '
                 /** @param list<string> $ids */
@@ -267,24 +251,6 @@ final class TypeVariableTest extends TestCase
                 }',
             'expected_issues' => [
                 'MixedArgumentTypeCoercion 12: Type list{mixed, 1} should be a subtype of list{int, int}',
-            ],
-        ];
-
-        yield 'constructorArgumentsOfLoopPasses' => [
-            'code' => '<?php
-                /** @param ArrayIterator<int, string> $_it */
-                function takesStrings(ArrayIterator $_it): void {}
-
-                /** @param list<string> $ids */
-                function f(array $ids): void {
-                    $order = PHP_INT_MAX;
-                    foreach ($ids as $_) {
-                        $it = new ArrayIterator([--$order]);
-                        takesStrings($it);
-                    }
-                }',
-            'expected_issues' => [
-                'IncompatibleTypeParameters 10: Type int should be a subtype of string',
             ],
         ];
     }

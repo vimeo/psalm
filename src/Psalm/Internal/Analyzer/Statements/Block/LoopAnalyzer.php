@@ -464,7 +464,6 @@ final class LoopAnalyzer
 
                 $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
                 $bounds_at_kept_pass_start = $type_variable_tracker->snapshotBounds();
-                $type_variable_tracker->reanalyseSitesIn([...$pre_conditions, ...$stmts, ...$post_expressions]);
                 IssueBuffer::startRecording();
 
                 // what a pass computed of the condition (the assertions of its operands too) and of the body is no
@@ -626,9 +625,10 @@ final class LoopAnalyzer
                 $condition_written_var_ids = $first_condition_written_var_ids;
             }
 
-            // like their issues, the bounds the passes before the last one gave the type variables are dropped: the
-            // last pass records them again with the types the loop leaves. They stay until then, as the last pass
-            // reads them before recording its own (a value taken from a collection a previous iteration filled).
+            // like their issues, the bounds the passes before the last one gave the type variables minted before the
+            // loop are dropped: the last pass records them again with the types the loop leaves. They stay until then,
+            // as the last pass reads them before recording its own (a value taken from a collection a previous
+            // iteration filled).
             $type_variable_tracker->discardBoundsRecordedBetween(
                 $bounds_before_loop,
                 $bounds_at_kept_pass_start,

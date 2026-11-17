@@ -34,6 +34,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableBounds;
 use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\ImpureMethodCall;
@@ -71,6 +72,7 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TUnknownClassString;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
@@ -880,7 +882,6 @@ final class NewAnalyzer extends CallAnalyzer
     private static function mintTypeVariable(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\New_ $stmt,
-        string $template_name,
         array $arg_bounds,
         Union $constraint,
         bool $bound_through_class_string,
@@ -924,12 +925,11 @@ final class NewAnalyzer extends CallAnalyzer
             }
         }
 
-        return new Union([$statements_analyzer->type_variable_tracker->mintVariable(
-            $stmt,
-            $template_name,
-            $lower_bounds,
-            $upper_bounds,
-        )]);
+        $type_variable_bounds = new TypeVariableBounds($lower_bounds, $upper_bounds);
+
+        $type_variable_name = $statements_analyzer->type_variable_tracker->addVariable($type_variable_bounds);
+
+        return new Union([new TTypeVariable($type_variable_name, $type_variable_bounds)]);
     }
 
     /**
@@ -2145,7 +2145,6 @@ final class NewAnalyzer extends CallAnalyzer
                     $generic_param_type = self::mintTypeVariable(
                         $statements_analyzer,
                         $stmt,
-                        $template_name,
                         $lower_bounds[$template_name][$fq_class_name],
                         $constraint,
                         $method_storage
@@ -2282,12 +2281,14 @@ final class NewAnalyzer extends CallAnalyzer
             return $constraint;
         }
 
-        return new Union([$statements_analyzer->type_variable_tracker->mintVariable(
-            $stmt,
-            $template_name,
+        $type_variable_bounds = new TypeVariableBounds(
             [],
             [new TemplateBound($constraint, 0, null, null, new CodeLocation($statements_analyzer->getSource(), $stmt))],
-        )]);
+        );
+
+        $type_variable_name = $statements_analyzer->type_variable_tracker->addVariable($type_variable_bounds);
+
+        return new Union([new TTypeVariable($type_variable_name, $type_variable_bounds)]);
     }
 
     /**

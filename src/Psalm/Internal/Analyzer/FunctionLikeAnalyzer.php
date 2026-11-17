@@ -633,7 +633,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         : $enclosing_type;
                 }
 
-                $statements_analyzer->type_variable_tracker->reanalyseSitesIn($function_stmts);
                 IssueBuffer::startRecording();
                 $statements_analyzer->analyze([$virtual_while], $ref_context);
                 IssueBuffer::clearRecordingLevel();
@@ -642,7 +641,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             // the analysis of the body below records the bounds of these passes again, with the types they found
             $statements_analyzer->type_variable_tracker->discardBoundsRecordedBetween($bounds_before);
-            $statements_analyzer->type_variable_tracker->reanalyseSitesIn($function_stmts);
 
             foreach ($byref_uses as $var_id => $_) {
                 $byref_vars[$var_id] = self::combineByRefPathTypes(
