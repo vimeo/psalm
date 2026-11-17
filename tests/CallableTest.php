@@ -3796,8 +3796,8 @@ final class CallableTest extends TestCase
             'callUnionOfFunctionNamesAssignsAPropertyByReference' => [
                 'code' => '<?php
                     final class P {
-                        /** @var mixed */
-                        public $m;
+                        /** @var array<array-key, mixed>|null */
+                        public ?array $m = null;
                     }
 
                     $p = new P();
@@ -3806,6 +3806,24 @@ final class CallableTest extends TestCase
                     $m = $p->m;',
                 'assertions' => [
                     '$m===' => 'array<array-key, list<string>|string>',
+                ],
+            ],
+            'callUnionOfSortFunctionNames' => [
+                'code' => '<?php
+                    /** @return list<int> */
+                    function getList(): array {
+                        return [];
+                    }
+
+                    $a = getList();
+                    $sort = rand(0, 1) ? "rsort" : "sort";
+                    $sort($a);
+
+                    $b = getList();
+                    $usort = rand(0, 1) ? "usort" : "uasort";
+                    $usort($b, fn(int $x, int $y): int => $x <=> $y);',
+                'assertions' => [
+                    '$a===' => 'list<int>',
                 ],
             ],
             'callUnionOfFunctionNamesWithDifferentParamNamesTakesNamedArguments' => [
@@ -3869,6 +3887,17 @@ final class CallableTest extends TestCase
                     $fn = rand(0, 1) ? "var_dump" : "print_r";
                     $fn("x");',
                 'error_message' => 'ForbiddenCode',
+            ],
+            'callUnionOfFunctionNamesReportsTheDeprecatedOne' => [
+                'code' => '<?php
+                    /** @deprecated */
+                    function old(string $s): int {
+                        return strlen($s);
+                    }
+
+                    $fn = rand(0, 1) ? "old" : "strlen";
+                    $fn("x");',
+                'error_message' => 'DeprecatedFunction',
             ],
             'callUnionOfFunctionNamesInPureContextChecksThePurityOfEach' => [
                 'code' => '<?php

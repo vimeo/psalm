@@ -1766,6 +1766,27 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
+        // a bound may be another template of the function (`@template TArray as array<T>`)
+        for ($i = count($template_types); $i > 0; $i--) {
+            $replaced_bounds = false;
+
+            foreach ($template_types as $template_name => $bounds) {
+                foreach ($bounds as $defining_class => $_) {
+                    $bound = $bounds_result->lower_bounds[$template_name][$defining_class][0]->type;
+                    $replaced = TemplateInferredTypeReplacer::replace($bound, $bounds_result, $codebase);
+
+                    if ($replaced->getId() !== $bound->getId()) {
+                        $bounds_result->lower_bounds[$template_name][$defining_class] = [new TemplateBound($replaced)];
+                        $replaced_bounds = true;
+                    }
+                }
+            }
+
+            if (!$replaced_bounds) {
+                break;
+            }
+        }
+
         $callable = $callable->replaceTemplateTypesWithArgTypes($bounds_result, $codebase);
 
         if ($callable->params === null) {
