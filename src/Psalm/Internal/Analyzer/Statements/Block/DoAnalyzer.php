@@ -246,12 +246,17 @@ final class DoAnalyzer
 
         $do_context->loop_scope = $loop_scope;
 
+        $bound_counts = $statements_analyzer->type_variable_tracker->getBoundCounts();
+
         IssueBuffer::startRecording();
 
         $statements_analyzer->analyze($stmt->stmts, $do_context);
 
         $issues = IssueBuffer::clearRecordingLevel();
         IssueBuffer::stopRecording();
+
+        // the loop analysis records the bounds of the first iteration again, with the types of all of them
+        $statements_analyzer->type_variable_tracker->discardBoundsRecordedBetween($bound_counts);
 
         if (!isset($suppressed_issues['RedundantCondition'])) {
             $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);

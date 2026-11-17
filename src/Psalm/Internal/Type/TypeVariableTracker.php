@@ -21,6 +21,7 @@ use Psalm\Type\Union;
 
 use function array_filter;
 use function array_map;
+use function array_splice;
 use function array_unique;
 use function array_values;
 use function count;
@@ -99,6 +100,53 @@ final class TypeVariableTracker
                 $bound->pos = $pos;
                 $bound->suppressed_issues = $suppressed_issues;
                 $this->bounds[$name]->upper_bounds[] = $bound;
+            }
+        }
+    }
+
+    /**
+     * How many lower and upper bounds each variable has so far, to drop later
+     * the ones an analysis whose results are discarded records.
+     *
+     * @return array<string, array{int, int}>
+     * @psalm-mutation-free
+     */
+    public function getBoundCounts(): array
+    {
+        return array_map(
+            static fn(TypeVariableBounds $bounds): array => [
+                count($bounds->lower_bounds),
+                count($bounds->upper_bounds),
+            ],
+            $this->bounds,
+        );
+    }
+
+    /**
+     * Drops the bounds recorded between two calls to getBoundCounts() (or since
+     * the first one, without the second), by analyses whose results are
+     * discarded: a loop pass followed by another one, a trial analysis. A
+     * variable minted in between keeps the bounds it was minted with, as the
+     * types it is in can outlive these analyses.
+     *
+     * @param array<string, array{int, int}> $from
+     * @param array<string, array{int, int}>|null $to
+     */
+    public function discardBoundsRecordedBetween(array $from, ?array $to = null): void
+    {
+        foreach ($this->bounds as $name => $bounds) {
+            [$lower_from, $upper_from] = $from[$name]
+                ?? [$bounds->initial_lower_bound_count, $bounds->initial_upper_bound_count];
+            [$lower_to, $upper_to] = $to === null
+                ? [count($bounds->lower_bounds), count($bounds->upper_bounds)]
+                : $to[$name] ?? [$lower_from, $upper_from];
+
+            if ($lower_to > $lower_from) {
+                array_splice($bounds->lower_bounds, $lower_from, $lower_to - $lower_from);
+            }
+
+            if ($upper_to > $upper_from) {
+                array_splice($bounds->upper_bounds, $upper_from, $upper_to - $upper_from);
             }
         }
     }

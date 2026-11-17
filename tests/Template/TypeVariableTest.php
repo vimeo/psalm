@@ -5,9 +5,15 @@ declare(strict_types=1);
 namespace Psalm\Tests\Template;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -15,6 +21,155 @@ final class TypeVariableTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    /**
+     * @param list<string> $expected_issues
+     */
+    #[DataProvider('providerBoundsOfReanalysedCode')]
+    public function testBoundsOfReanalysedCodeAreReconciledOnce(string $code, array $expected_issues): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context());
+
+        $this->assertSame(
+            $expected_issues,
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ' ' . $issue->line_from . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{code: string, expected_issues: list<string>}>
+     * @psalm-pure
+     */
+    public static function providerBoundsOfReanalysedCode(): iterable
+    {
+        $sort = '<?php
+            /** @param SplPriorityQueue<array{int, int}, string> $_queue */
+            function sortIt(SplPriorityQueue $_queue): void {}
+            ';
+
+        yield 'foreachPassesOfAWidenedRange' => [
+            'code' => $sort . '
+                /** @param list<string> $ids */
+                function f(array $ids, mixed $m): void {
+                    $q = new SplPriorityQueue();
+                    $order = PHP_INT_MAX;
+                    foreach ($ids as $id) {
+                        $q->insert($id, [$m, --$order]);
+                    }
+                    sortIt($q);
+                }',
+            'expected_issues' => [
+                'MixedArgumentTypeCoercion 12: Type list{mixed, int} should be a subtype of list{int, int}',
+            ],
+        ];
+
+        yield 'nestedLoops' => [
+            'code' => $sort . '
+                /** @param list<string> $ids */
+                function f(array $ids, mixed $m): void {
+                    $q = new SplPriorityQueue();
+                    $order = 10;
+                    foreach ($ids as $id) {
+                        while (rand(0, 1)) {
+                            $q->insert($id, [$m, --$order]);
+                        }
+                    }
+                    sortIt($q);
+                }',
+            'expected_issues' => [
+                'MixedArgumentTypeCoercion 14: Type list{mixed, int<min, 9>} should be a subtype of list{int, int}',
+            ],
+        ];
+
+        yield 'doWhileFirstIteration' => [
+            'code' => $sort . '
+                function f(mixed $m): void {
+                    $q = new SplPriorityQueue();
+                    $order = 10;
+                    do {
+                        $q->insert("a", [$m, --$order]);
+                    } while ($order > 0);
+                    sortIt($q);
+                }',
+            'expected_issues' => [
+                'MixedArgumentTypeCoercion 11: Type list{mixed, int<0, 9>} should be a subtype of list{int, int}',
+            ],
+        ];
+
+        yield 'closureCapturingByReference' => [
+            'code' => $sort . '
+                function f(mixed $m): void {
+                    $q = new SplPriorityQueue();
+                    $order = 10;
+                    $insert = function () use (&$order, $q, $m): void {
+                        $q->insert("a", [$m, --$order]);
+                    };
+                    $insert();
+                    sortIt($q);
+                }',
+            'expected_issues' => [
+                'MixedArgumentTypeCoercion 12: Type list{mixed, int} should be a subtype of list{int, int}',
+            ],
+        ];
+
+        yield 'constructedAndCheckedInTheLoop' => [
+            'code' => $sort . '
+                /** @param list<string> $ids */
+                function f(array $ids, mixed $m): void {
+                    $order = PHP_INT_MAX;
+                    foreach ($ids as $id) {
+                        $q = new SplPriorityQueue();
+                        $q->insert($id, [$m, --$order]);
+                        sortIt($q);
+                    }
+                }',
+            'expected_issues' => [
+                'MixedArgumentTypeCoercion 11: Type list{mixed, int} should be a subtype of list{int, int}',
+            ],
+        ];
+
+        yield 'constructedInTheLoopCheckedAfterIt' => [
+            'code' => $sort . '
+                /** @param list<string> $ids */
+                function f(array $ids, mixed $m): void {
+                    $order = PHP_INT_MAX;
+                    $q = null;
+                    foreach ($ids as $id) {
+                        $q = new SplPriorityQueue();
+                        $q->insert($id, [$m, --$order]);
+                    }
+                    if ($q !== null) {
+                        sortIt($q);
+                    }
+                }',
+            'expected_issues' => [
+                'MixedArgumentTypeCoercion 14: Type list{mixed, int} should be a subtype of list{int, int}',
+            ],
+        ];
+
+        yield 'loopWithASinglePass' => [
+            'code' => $sort . '
+                /** @param list<string> $ids */
+                function f(array $ids, mixed $m): void {
+                    $q = new SplPriorityQueue();
+                    foreach ($ids as $id) {
+                        $q->insert($id, [$m, 1]);
+                    }
+                    sortIt($q);
+                }',
+            'expected_issues' => [
+                'MixedArgumentTypeCoercion 11: Type list{mixed, 1} should be a subtype of list{int, int}',
+            ],
+        ];
+    }
 
     /**
      * @psalm-pure
@@ -1415,6 +1570,20 @@ final class TypeVariableTest extends TestCase
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'loopPassReadsWhatAPreviousIterationRecorded' => [
+                'code' => '<?php
+                    /** @param list<string> $ids */
+                    function f(array $ids): void {
+                        $q = new SplPriorityQueue();
+                        $priority = 0;
+                        foreach ($ids as $id) {
+                            if (!$q->isEmpty()) {
+                                echo strlen($q->top());
+                            }
+                            $q->insert($id, ++$priority);
+                        }
+                    }',
             ],
         ];
     }

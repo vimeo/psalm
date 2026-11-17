@@ -23,6 +23,11 @@ final class TypeVariableBounds
     public readonly int $initial_lower_bound_count;
 
     /**
+     * How many of the upper bounds were set at the construction site.
+     */
+    public readonly int $initial_upper_bound_count;
+
+    /**
      * @param list<TemplateBound> $lower_bounds
      * @param list<TemplateBound> $upper_bounds
      * @psalm-mutation-free
@@ -32,5 +37,6 @@ final class TypeVariableBounds
         public array $upper_bounds = [],
     ) {
         $this->initial_lower_bound_count = count($lower_bounds);
+        $this->initial_upper_bound_count = count($upper_bounds);
     }
 }
