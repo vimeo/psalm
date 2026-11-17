@@ -89,6 +89,210 @@ final class Php84Test extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'propertyHookBodies' => [
+                'code' => '<?php
+                    final class Foo {
+                        private string $first = "a";
+                        public string $name {
+                            get => $this->name;
+                            set { $this->name = $this->normalize($value); }
+                        }
+                        public string $lower {
+                            set => strtolower($value);
+                        }
+                        public string $wide {
+                            set(string|int $value) { $this->wide = (string) $value; }
+                        }
+                        public string $full {
+                            get { return $this->first . $this->name; }
+                        }
+                        /** @var list<int> */
+                        public array $list = [] {
+                            &get => $this->list;
+                        }
+                        public string $ignored {
+                            set(string $value) { }
+                        }
+                        public function __construct() {
+                            $this->name = "a";
+                            $this->lower = "b";
+                            $this->wide = "c";
+                        }
+                        private function normalize(string $s): string { return trim($s); }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'magicMethodConstantsInAPropertyHook' => [
+                'code' => '<?php
+                    namespace N;
+
+                    final class H {
+                        /** @var \'N\\H::$method::get\' */
+                        public string $method {
+                            get => __METHOD__;
+                        }
+
+                        /** @var \'$function::get\' */
+                        public string $function {
+                            get => __FUNCTION__;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'getHookOfANullablePropertyMayReturnANonNullValue' => [
+                'code' => '<?php
+                    interface Logger {}
+
+                    final class H {
+                        public function __construct(private Logger $logger) {}
+
+                        public ?Logger $current {
+                            get => $this->logger;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyHookOfTemplatedClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var T */
+                        public mixed $value {
+                            get => $this->value;
+                            set { $this->value = $value; }
+                        }
+                        /** @param T $value */
+                        public function __construct(mixed $value) { $this->value = $value; }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyHookCallsParentHook' => [
+                'code' => '<?php
+                    class Foo {
+                        public string $name {
+                            get => "a";
+                            set { $this->name = $value; }
+                        }
+                        public function __construct() { $this->name = "a"; }
+                    }
+                    final class Bar extends Foo {
+                        public string $name {
+                            get => strtoupper(parent::$name::get());
+                            set { parent::$name::set(trim($value)); }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyHookBodySuppressedOnProperty' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @psalm-suppress UndefinedFunction, MixedReturnStatement */
+                        public string $name {
+                            get => undefined_fn();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyHookBodySuppressedOnPropertyAndHook' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @psalm-suppress UndefinedFunction */
+                        public string $name {
+                            /** @psalm-suppress MixedReturnStatement */
+                            get => undefined_fn();
+                        }
+                        /** @psalm-suppress UndefinedFunction, MixedReturnStatement */
+                        public string $other {
+                            /** Computed. */
+                            get => undefined_fn();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'abstractAndInterfacePropertyHooks' => [
+                'code' => '<?php
+                    interface HasName {
+                        public string $name { get; }
+                    }
+                    abstract class Foo implements HasName {
+                        abstract public string $name { get; }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'promotedPropertyHookBodies' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __construct(
+                            public string $name {
+                                get => strtoupper($this->name);
+                                set => strtolower($value);
+                            },
+                        ) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyHookOfTraitCallsParentHook' => [
+                'code' => '<?php
+                    class Foo {
+                        public string $name = "a";
+                    }
+                    trait UpperName {
+                        public string $name {
+                            get => strtoupper(parent::$name::get());
+                        }
+                    }
+                    final class Bar extends Foo {
+                        use UpperName;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyHookWithMethodAttribute' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_METHOD)]
+                    final class OnlyMethod {}
+
+                    final class Foo {
+                        public string $name {
+                            #[OnlyMethod]
+                            get => "a";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyHookUntypedValueOfDocblockTypedProperty' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @var string */
+                        public $name = "a" {
+                            set($value) { $this->name = $value; }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
@@ -222,6 +426,230 @@ final class Php84Test extends TestCase
                     $reflectionClass = new ReflectionClass(Foo::class);
                     $reflectionClass->resetAsLazyProxy(new Foo, fn(Foo $foo) => new Bar);',
                 'error_message' => 'Argument 2 of ReflectionClass::resetAsLazyProxy expects callable[impure](Foo):Foo, but Closure[pure](Foo):Bar provided',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyHookGetBodyIsAnalysed' => [
+                'code' => '<?php
+                    final class Foo {
+                        public string $name {
+                            get => strtoupper($this->name) . undefined_fn();
+                        }
+                        public function __construct() { $this->name = "a"; }
+                    }',
+                'error_message' => 'UndefinedFunction',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyHookSetBodyIsAnalysed' => [
+                'code' => '<?php
+                    final class Foo {
+                        public string $name {
+                            set(string $value) {
+                                $this->name = $value + [];
+                            }
+                        }
+                        public function __construct() { $this->name = "a"; }
+                    }',
+                'error_message' => 'InvalidOperand',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyHookGetReturnsThePropertyType' => [
+                'code' => '<?php
+                    final class Foo {
+                        public int $count {
+                            get => "not an int";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:36'
+                    . ' - The inferred type \'\'not an int\'\' does not match the declared return type \'int\''
+                    . ' for Foo::$count::get',
+                'error_levels' => ['InvalidReturnType'],
+                'php_version' => '8.4',
+            ],
+            'propertyHookGetReturnsTheDocblockPropertyType' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @var non-empty-string */
+                        public string $name {
+                            get { return ""; }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => ['InvalidReturnType'],
+                'php_version' => '8.4',
+            ],
+            'propertyHookGetMustReturn' => [
+                'code' => '<?php
+                    final class Foo {
+                        public int $count {
+                            get { }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyHookSetReturnsNothing' => [
+                'code' => '<?php
+                    final class Foo {
+                        public int $count {
+                            set { return 1; }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => ['InvalidReturnType'],
+                'php_version' => '8.4',
+            ],
+            'propertyHookImplicitValueHasThePropertyType' => [
+                'code' => '<?php
+                    final class Foo {
+                        public string $name {
+                            set { $this->name = $value; echo $value + 1; }
+                        }
+                        public function __construct() { $this->name = "a"; }
+                    }',
+                'error_message' => 'InvalidOperand',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyHookShortSetAssignsTheProperty' => [
+                'code' => '<?php
+                    final class Foo {
+                        public string $name {
+                            set => 5;
+                        }
+                        public function __construct() { $this->name = "a"; }
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyHookOfTraitIsAnalysed' => [
+                'code' => '<?php
+                    trait HasCount {
+                        public int $count {
+                            get => undefined_fn();
+                        }
+                    }
+                    final class Foo {
+                        use HasCount;
+                    }',
+                'error_message' => 'UndefinedFunction',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyHookCallsMissingParentHook' => [
+                'code' => '<?php
+                    class Foo {}
+                    final class Bar extends Foo {
+                        public string $name {
+                            get => parent::$name::get();
+                        }
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'closureInPropertyHookIsAnalysed' => [
+                'code' => '<?php
+                    final class Foo {
+                        public int $count {
+                            get {
+                                $f = fn(): int => $this->missing;
+                                return $f();
+                            }
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'promotedPropertyHookBodyIsAnalysed' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __construct(
+                            public string $name {
+                                set => strtolower($value) . undefined_fn();
+                            },
+                        ) {}
+                    }',
+                'error_message' => 'UndefinedFunction',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'promotedPropertyHookGetReturnsThePropertyType' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __construct(
+                            public int $count {
+                                get => "not an int";
+                            },
+                        ) {}
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => ['InvalidReturnType'],
+                'php_version' => '8.4',
+            ],
+            'propertySuppressionStaysInItsHooks' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @psalm-suppress UndefinedFunction, MixedReturnStatement */
+                        public string $a {
+                            get => undefined_fn();
+                        }
+                        public string $b {
+                            get => other_undefined_fn();
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:36',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'propertySuppressionStaysInItsClass' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @psalm-suppress UndefinedFunction, MixedReturnStatement */
+                        public string $a {
+                            get => undefined_fn();
+                        }
+                    }
+                    final class Bar {
+                        public function f(): void {
+                            other_undefined_fn();
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyHookWithFunctionAttribute' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_FUNCTION)]
+                    final class OnlyFunction {}
+
+                    final class Foo {
+                        public string $name {
+                            #[OnlyFunction]
+                            get => "a";
+                        }
+                    }',
+                'error_message' => 'InvalidAttribute',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'parentHookCallOutsideOfAHook' => [
+                'code' => '<?php
+                    class Foo {
+                        public string $name = "a";
+                    }
+                    final class Bar extends Foo {
+                        public function f(): string {
+                            return parent::$name::get();
+                        }
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
                 'error_levels' => [],
                 'php_version' => '8.4',
             ],

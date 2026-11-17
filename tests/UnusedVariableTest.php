@@ -29,6 +29,129 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'assignmentBeforeABreakInTheElseIsReadAfterTheIf' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function f(array $list, string $needle): string {
+                        if (count($list) === 1) {
+                            $found = $list[0];
+                        } else {
+                            foreach ($list as $item) {
+                                if ($item === $needle) {
+                                    $found = $item;
+                                    break;
+                                }
+                            }
+                        }
+
+                        return is_string($found ?? null) ? "found" : "";
+                    }',
+            ],
+            'assignmentBeforeABreakInTheIfIsReadAfterTheElse' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function f(array $list, string $needle, bool $b): string {
+                        if ($b) {
+                            foreach ($list as $item) {
+                                if ($item === $needle) {
+                                    $found = $item;
+                                    break;
+                                }
+                            }
+                        } else {
+                            $found = "a";
+                        }
+
+                        return is_string($found ?? null) ? "found" : "";
+                    }',
+            ],
+            'assignmentsBeforeBreaksInTheElseAreReadAfterTheIf' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function f(array $list, string $needle, bool $b): string {
+                        if ($b) {
+                            $found = "a";
+                        } else {
+                            foreach ($list as $item) {
+                                if ($item === $needle) {
+                                    $found = $item;
+                                    break;
+                                }
+
+                                if ($item === "") {
+                                    $found = "empty";
+                                    break;
+                                }
+                            }
+                        }
+
+                        return is_string($found ?? null) ? "found" : "";
+                    }',
+            ],
+            'assignmentInACatchInTheElseifIsReadAfterTheIf' => [
+                'code' => '<?php
+                    function load(): void {
+                        if (rand(0, 1) === 1) {
+                            throw new RuntimeException("x");
+                        }
+                    }
+
+                    function f(bool $a, bool $b): ?bool {
+                        if ($a) {
+                            if ($b) {
+                                $searched = false;
+                            }
+                        } elseif ($b) {
+                            try {
+                                load();
+                            } catch (Exception $e) {
+                                $searched = false;
+                            }
+                        }
+
+                        return is_bool($searched ?? null) ? true : null;
+                    }',
+            ],
+            'arrowFunctionParamNamedLikeAPossiblyUndefinedVariableDoesNotUseIt' => [
+                'code' => '<?php
+                    /** @param list<string> $names */
+                    function f(array $names, bool $b): int {
+                        if ($b) {
+                            $name = "x";
+                            echo $name;
+                        }
+
+                        $found = array_filter($names, static fn(string $name): bool => $name !== "");
+
+                        return count($found);
+                    }',
+            ],
+            'closureParamInAnArrowFunctionNamedLikeAPossiblyUndefinedVariableDoesNotUseIt' => [
+                'code' => '<?php
+                    function f(bool $b): Closure {
+                        if ($b) {
+                            $x = 1;
+                            echo $x;
+                        }
+
+                        return fn(): Closure => function (int $x): int {
+                            return $x + 1;
+                        };
+                    }',
+            ],
+            'possiblyUndefinedVariableReadInAnArrowFunctionIsUsed' => [
+                'code' => '<?php
+                    function f(bool $b): ?int {
+                        if ($b) {
+                            $x = 1;
+                        }
+
+                        /** @psalm-suppress PossiblyUndefinedVariable */
+                        $f = fn(): ?int => $x;
+
+                        return $f();
+                    }',
+            ],
             'incrementInTheKeyOfAnArrayItemIsReadByTheValue' => [
                 'code' => '<?php
                     function f(): array {
@@ -1659,6 +1782,24 @@ final class UnusedVariableTest extends TestCase
                         echo $b;
                     }',
             ],
+            'referenceToAnItemReboundInALoopStillWritesToTheArrayAfterIt' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $data
+                     * @param list<string> $path
+                     */
+                    function set(array &$data, array $path, string $value): void {
+                        $cursor = &$data["root"];
+
+                        foreach ($path as $key) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = $value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess', 'ReferenceReusedFromConfusingScope'],
+            ],
             'valueOverwrittenInATryAndReadInTheCatchStaysUsed' => [
                 'code' => '<?php
                     /** @param list<string> $lines */
@@ -2330,10 +2471,7 @@ final class UnusedVariableTest extends TestCase
                             $hue = "goodbye";
                         }
 
-                        /**
-                         * @psalm-suppress PossiblyUndefinedVariable
-                         * @psalm-suppress MixedArgument
-                         */
+                        /** @psalm-suppress PossiblyUndefinedVariable */
                         echo $hue;
                     }',
             ],
@@ -2408,7 +2546,6 @@ final class UnusedVariableTest extends TestCase
                         }
 
                         if (isset($j)) {
-                            /** @psalm-suppress MixedArgument */
                             echo $j;
                         }
                     }',
@@ -2614,7 +2751,6 @@ final class UnusedVariableTest extends TestCase
                             $maybe_undefined = $arr;
                         }
 
-                        /** @psalm-suppress MixedAssignment */
                         $maybe_undefined = $maybe_undefined ?? [0];
 
                         print_r($maybe_undefined);
@@ -3054,6 +3190,22 @@ final class UnusedVariableTest extends TestCase
                     echo $a;
                 ',
             ],
+            'referenceToAByRefParamReboundInAnIfIsUsedAfterIt' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, bool $nested): void {
+                        $cursor = &$data;
+
+                        if ($nested) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = [];
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => ['ReferenceReusedFromConfusingScope'],
+            ],
             'referenceUsedInForeach' => [
                 'code' => '<?php
                     foreach ([1, 2, 3] as &$var) {
@@ -3061,7 +3213,7 @@ final class UnusedVariableTest extends TestCase
                     }
                 ',
             ],
-            'SKIPPED-referenceUsedInDestructuredForeach' => [
+            'SKIPPED-referenceUsedInDestructuredForeach' => [ // #13914
                 'code' => '<?php
                     foreach ([[1, 2], [3, 4]] as [&$a, $_]) {
                         $a += 1;
@@ -3219,6 +3371,21 @@ final class UnusedVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
+            'throwAfterExhaustiveTypeChecksIsEvaluated' => [
+                'code' => '<?php
+                    function f(int|string $x): int {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                        throw new LogicException("unreachable");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3229,6 +3396,44 @@ final class UnusedVariableTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'assignmentBeforeABreakInTheElseNeverReadIsUnused' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function f(array $list, string $needle, bool $b): string {
+                        if ($b) {
+                            $found = "a";
+                            echo $found;
+                        } else {
+                            foreach ($list as $item) {
+                                if ($item === $needle) {
+                                    $found = $item;
+                                    break;
+                                }
+                            }
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:37',
+            ],
+            'overwrittenAssignmentInTheIfIsUnusedWhenTheElseAssignsBeforeABreak' => [
+                'code' => '<?php
+                    /** @param list<string> $list */
+                    function f(array $list, bool $b): string {
+                        if ($b) {
+                            $found = "dead";
+                            $found = "a";
+                        } else {
+                            foreach ($list as $item) {
+                                $found = $item;
+                                break;
+                            }
+                        }
+
+                        return is_string($found ?? null) ? "found" : "";
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29',
+            ],
             'valueOverwrittenInTheCatchOfANestedTryAndNeverReadIsUnused' => [
                 'code' => '<?php
                     function f(): void {
@@ -3710,7 +3915,7 @@ final class UnusedVariableTest extends TestCase
                     }',
                 'error_message' => 'UnusedVariable',
             ],
-            'SKIPPED-byrefInForeachLoopWithoutReference' => [
+            'SKIPPED-byrefInForeachLoopWithoutReference' => [ // #13915
                 'code' => '<?php
                     $a = [1, 2, 3];
                     foreach ($a as &$b) {
@@ -4330,9 +4535,8 @@ final class UnusedVariableTest extends TestCase
                 ',
                 'error_message' => 'UnusedVariable',
             ],
-            'SKIPPED-warnAboutVariableUsedInNestedTryNotUsedInOuterTry' => [
+            'warnAboutVariableUsedInNestedTryNotUsedInOuterTry' => [
                 'code' => '<?php
-                    $step = 0;
                     try {
                         $step = 1; // Unused
                         $step = 2;
@@ -4373,7 +4577,7 @@ final class UnusedVariableTest extends TestCase
                 ',
                 'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:21 - $b',
             ],
-            'SKIPPED-unusedReferenceToSubsequentlyUsedVariable' => [ // Not easy to do the way it's currently set up
+            'SKIPPED-unusedReferenceToSubsequentlyUsedVariable' => [ // #13916
                 'code' => '<?php
                     $a = 1;
                     $b = &$a;
@@ -4388,7 +4592,7 @@ final class UnusedVariableTest extends TestCase
                 ',
                 'error_message' => 'UnusedForeachValue',
             ],
-            'SKIPPED-unusedReferenceInDestructuredForeach' => [
+            'SKIPPED-unusedReferenceInDestructuredForeach' => [ // #13914
                 'code' => '<?php
                     foreach ([[1, 2], [3, 4]] as [&$var, $_]) {
                     }
@@ -4420,7 +4624,7 @@ final class UnusedVariableTest extends TestCase
                 ',
                 'error_message' => 'UnusedParam',
             ],
-            'SKIPPED-unusedGlobalVariable' => [
+            'SKIPPED-unusedGlobalVariable' => [ // #13917
                 'code' => '<?php
                     $a = 0;
                     function foo(): void
@@ -4467,6 +4671,21 @@ final class UnusedVariableTest extends TestCase
                 'error_message' => 'UnusedFunctionCall',
                 'error_levels' => [],
                 'php_version' => '8.5',
+            ],
+            'unusedVariableInPropertyHook' => [
+                'code' => '<?php
+                    final class Foo {
+                        public string $name {
+                            set {
+                                $unused = 5;
+                                $this->name = $value;
+                            }
+                        }
+                        public function __construct() { $this->name = "a"; }
+                    }',
+                'error_message' => 'UnusedVariable',
+                'error_levels' => [],
+                'php_version' => '8.4',
             ],
         ];
     }

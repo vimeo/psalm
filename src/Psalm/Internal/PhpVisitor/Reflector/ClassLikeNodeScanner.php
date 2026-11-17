@@ -295,6 +295,7 @@ final class ClassLikeNodeScanner
         if ($node instanceof PhpParser\Node\Stmt\Class_) {
             $storage->abstract = $node->isAbstract();
             $storage->final = $node->isFinal();
+            $storage->anonymous = $node->name === null;
             $storage->readonly = $node->isReadonly();
 
             $this->codebase->classlikes->addFullyQualifiedClassName($fq_classlike_name, $this->file_path);
@@ -1401,7 +1402,7 @@ final class ClassLikeNodeScanner
             $storage->template_type_extends_count[$atomic_type->value] = count($atomic_type->type_params);
 
             foreach ($atomic_type->type_params as $type_param) {
-                $extended_type_parameters[] = $type_param;
+                $extended_type_parameters[] = $type_param->replaceClassLike('self', $storage->name);
             }
 
             $storage->template_extended_offsets[$atomic_type->value] = $extended_type_parameters;
@@ -1487,7 +1488,7 @@ final class ClassLikeNodeScanner
             $storage->template_type_implements_count[$generic_class_lc] = count($atomic_type->type_params);
 
             foreach ($atomic_type->type_params as $type_param) {
-                $implemented_type_parameters[] = $type_param;
+                $implemented_type_parameters[] = $type_param->replaceClassLike('self', $storage->name);
             }
 
             $storage->template_extended_offsets[$atomic_type->value] = $implemented_type_parameters;
@@ -1808,6 +1809,7 @@ final class ClassLikeNodeScanner
 
             if ($this->codebase->analysis_php_version_id >= 8_03_00
                 && !$storage->final
+                && !$stmt->isFinal()
                 && $stmt->type === null
             ) {
                 $missing_type_issue = new MissingClassConstType(
@@ -2247,6 +2249,26 @@ final class ClassLikeNodeScanner
                 if ($hook_name === 'get'
                     || $hook_name === 'set'
                 ) {
+                    // Hook docblocks are not part of the external write contract yet.
+                    $param_type = null;
+                    $hook_param_type = $hook->params[0]->type ?? null;
+                    if ($hook_name === 'set'
+                        && ($hook_param_type instanceof PhpParser\Node\Identifier
+                            || $hook_param_type instanceof PhpParser\Node\Name
+                            || $hook_param_type instanceof PhpParser\Node\NullableType
+                            || $hook_param_type instanceof PhpParser\Node\UnionType
+                            || $hook_param_type instanceof PhpParser\Node\IntersectionType)
+                    ) {
+                        $param_type = TypeHintResolver::resolve(
+                            $hook_param_type,
+                            new CodeLocation($this->file_scanner, $hook_param_type),
+                            $this->codebase,
+                            $this->file_storage,
+                            $this->storage,
+                            $this->aliases,
+                            $this->codebase->analysis_php_version_id,
+                        );
+                    }
                     $hook_storage = new PropertyHookStorage(
                         $hook_name === 'get',
                         $hook->isFinal(),
@@ -2257,6 +2279,7 @@ final class ClassLikeNodeScanner
                             null,
                             true,
                         ),
+                        $param_type,
                     );
                     if ($hook_storage->is_get) {
                         $property_storage->hook_get = $hook_storage;

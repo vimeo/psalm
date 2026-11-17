@@ -109,6 +109,9 @@ abstract class TaintCasesTestCase extends TestCase
             Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
         }
 
+        // the taint handlers psalm registers (AddRemoveTaints) remove and add taints of the cases too
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
         $this->analyzeFile($file_path, new Context(), false);
     }
 

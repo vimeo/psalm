@@ -68,24 +68,39 @@ final class NullsafeAnalyzer
         PhpParser\Node\Expr $stmt,
         Context $context,
     ): bool {
-        if (!$stmt->var instanceof PhpParser\Node\Expr\Variable) {
+        $receiver_id = $stmt->var instanceof PhpParser\Node\Expr\PropertyFetch
+            ? ExpressionIdentifier::getExtendedVarId(
+                $stmt->var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            )
+            : null;
+
+        $var_type = $receiver_id !== null ? $context->vars_in_scope[$receiver_id] ?? null : null;
+
+        // a receiver the context has no type for (a call, or a property not read yet) is analysed to get its type
+        if ($var_type === null && !$stmt->var instanceof PhpParser\Node\Expr\Variable) {
             $was_inside_general_use = $context->inside_general_use;
 
             $context->inside_general_use = true;
             ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var, $context);
             $context->inside_general_use = $was_inside_general_use;
 
-            $tmp_name = '__tmp_nullsafe__' . (int) $stmt->var->getAttribute('startFilePos');
+            $var_type = $statements_analyzer->node_data->getType($stmt->var);
+        }
 
-            $condition_type = $statements_analyzer->node_data->getType($stmt->var);
-            $var_type = $condition_type;
+        if ($receiver_id !== null) {
+            // a chain of variables and properties is analysed as it stands, so that what is known of it applies
+            $tmp_var = $stmt->var;
+        } elseif (!$stmt->var instanceof PhpParser\Node\Expr\Variable) {
+            $tmp_name = '__tmp_nullsafe__' . (int) $stmt->var->getAttribute('startFilePos');
 
             // a property, static property or array item is the one the call acts on: what the call does to the
             // object (what it stores in it, for the taint analysis) would be lost on a temporary variable
-            if ($condition_type
+            if ($var_type
                 && !self::isStoredInPlace($statements_analyzer, $stmt->var)
             ) {
-                $context->vars_in_scope['$' . $tmp_name] = $condition_type;
+                $context->vars_in_scope['$' . $tmp_name] = $var_type;
 
                 $tmp_var = new VirtualVariable($tmp_name, $stmt->var->getAttributes());
             } else {
@@ -131,11 +146,29 @@ final class NullsafeAnalyzer
             );
         }
 
-        ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $context);
+        $receiver_is_known = $stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            && $receiver_id !== null
+            && $var_type !== null
+            && $var_type->isObjectType()
+            && !$var_type->isNullable()
+            && !$var_type->possibly_undefined
+            && !$var_type->possibly_undefined_from_try;
+
+        // checking a known receiver against null is reported, but must not make the context forget what it knows
+        // of the receiver's properties
+        ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $receiver_is_known ? clone $context : $context);
 
         $ternary_type = $statements_analyzer->node_data->getType($ternary);
 
         $call_type = $statements_analyzer->node_data->getType($ternary->else);
+
+        if ($receiver_is_known) {
+            $fetch = new VirtualPropertyFetch($tmp_var, $stmt->name, $stmt->getAttributes());
+
+            ExpressionAnalyzer::analyze($statements_analyzer, $fetch, $context);
+
+            $call_type = $statements_analyzer->node_data->getType($fetch);
+        }
 
         $statements_analyzer->node_data = $old_node_data;
 
@@ -157,9 +190,7 @@ final class NullsafeAnalyzer
         $chain_state = NullsafeChainState::None;
 
         if ($ternary_type && $ternary_type->isNullable()) {
-            $chain_state = $call_type && $call_type->isNullable()
-                ? NullsafeChainState::ShortCircuitAndNull
-                : NullsafeChainState::ShortCircuit;
+            $chain_state = NullsafeChainState::ShortCircuit->afterLink($call_type);
         }
 
         $chain_state->markOn($stmt);

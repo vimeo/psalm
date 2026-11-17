@@ -799,6 +799,69 @@ final class CapabilitiesTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
+            'callsWritingNothingKeepGetterResults' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Value {
+                        /** @var mixed */
+                        private $value;
+                        /** @param mixed $value */
+                        public function __construct($value) { $this->value = $value; }
+                        /** @return mixed */
+                        public function getValue() { return $this->value; }
+                        public function noop(): void {}
+                    }
+                    final class Checker {
+                        public function check(string $s): bool { return $s !== ''; }
+                    }
+                    final class Dumper {
+                        private function canBe(string $s): bool { return $s !== ''; }
+                        private function nothing(): void {}
+                        private function ind(string $s): string { return $s; }
+
+                        public function inCondition(Value $value): string {
+                            if (is_string($value->getValue()) && $this->canBe($value->getValue())) {
+                                return $this->ind($value->getValue());
+                            }
+                            return '';
+                        }
+                        public function inStatement(Value $value): string {
+                            if (is_string($value->getValue())) {
+                                $this->nothing();
+                                return $this->ind($value->getValue());
+                            }
+                            return '';
+                        }
+                        public function onTheGetterReceiver(Value $value): string {
+                            if (is_string($value->getValue())) {
+                                $value->noop();
+                                return $this->ind($value->getValue());
+                            }
+                            return '';
+                        }
+                        public function onAnotherReceiver(Value $value, Checker $checker): string {
+                            if (is_string($value->getValue()) && $checker->check($value->getValue())) {
+                                return $this->ind($value->getValue());
+                            }
+                            return '';
+                        }
+                    }
+                    PHP,
+            ],
+            'stubWithAnEmptyBodyMayWriteItsReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param ArrayObject<int, int> $ao */
+                    function resetFlags(ArrayObject $ao): void {
+                        if ($ao->getFlags() === ArrayObject::ARRAY_AS_PROPS) {
+                            $ao->setFlags(0);
+                            if ($ao->getFlags() === 0) {
+                                echo 'reset';
+                            }
+                        }
+                    }
+                    PHP,
+            ],
             'mutatingAnotherObjectKeepsWhatPureClassMethodsReturned' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -3435,6 +3498,125 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'NullableReturnStatement',
             ],
+            'overriddenMethodWritingNothingMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    class Base {
+                        protected function hook(Owner $owner): void {}
+                        public function afterHook(Owner $owner): Child {
+                            if ($owner->getChild() === null) {
+                                return new Child();
+                            }
+                            $this->hook($owner);
+                            return $owner->getChild();
+                        }
+                    }
+                    final class Clearing extends Base {
+                        protected function hook(Owner $owner): void { $owner->child = null; }
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'overrideFromATraitMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    trait Clears {
+                        protected function hook(Owner $owner): void { $owner->child = null; }
+                    }
+                    class Base {
+                        protected function hook(Owner $owner): void {}
+                        public function afterHook(Owner $owner): Child {
+                            if ($owner->getChild() === null) {
+                                return new Child();
+                            }
+                            $this->hook($owner);
+                            return $owner->getChild();
+                        }
+                    }
+                    final class Clearing extends Base {
+                        use Clears;
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'methodReturningByReferenceMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Holder {
+                        private Owner $owner;
+                        public function __construct(Owner $owner) { $this->owner = $owner; }
+                        public function &slot(): ?Child { return $this->owner->child; }
+                    }
+                    function afterWrite(Owner $owner, Holder $holder): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $slot = &$holder->slot();
+                        $slot = null;
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'methodSpreadingATraversableMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Drainer {
+                        /** @param Traversable<int, int> $items */
+                        public function drain(Traversable $items): array { return [...$items]; }
+                    }
+                    /** @return Generator<int, int> */
+                    function clearing(Owner $owner): Generator {
+                        $owner->child = null;
+                        yield 1;
+                    }
+                    function afterDrain(Owner $owner, Drainer $drainer): Child {
+                        $items = clearing($owner);
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $drainer->drain($items);
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'methodWritingAByReferenceParameterMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child ?? null; }
+                    }
+                    final class Clearer {
+                        public function clear(?Child &$slot): void { $slot = null; }
+                    }
+                    function afterClear(Owner $owner, Clearer $clearer): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $clearer->clear($owner->child);
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
             'mutatorWritingThroughAnotherMethodMustNotKeepGetterOfAnAlias' => [
                 'code' => '<?php
                     final class Box {
@@ -5536,6 +5718,19 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureFunctionCall',
             ],
+            'passingSuperGlobalByReferenceReadsIt' => [
+                'code' => '<?php
+                    /** @psalm-capabilities write-refs */
+                    function byRef(array &$a): void {
+                        $a = [];
+                    }
+
+                    /** @psalm-capabilities write-globals */
+                    function f(): void {
+                        byRef($_SESSION);
+                    }',
+                'error_message' => 'ImpureGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:31 - The context is write-globals but superglobal $_SESSION requires read-globals',
+            ],
             'writingBoundGlobalNeedsWriteGlobals' => [
                 'code' => '<?php
                     /** @psalm-capabilities read-globals */
@@ -7117,6 +7312,41 @@ final class CapabilitiesTest extends TestCase
                         return new Child();
                     }
                     $other->touch();
+                    return $owner->getChild();
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testCallToAShallowScannedMethodForgetsGetters(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullableReturnStatement');
+
+        $this->addFile(
+            'dependency.php',
+            '<?php
+                final class Child {}
+                final class Owner {
+                    public ?Child $child = null;
+                    /** @psalm-mutation-free */
+                    public function getChild(): ?Child { return $this->child; }
+                }
+                final class Clearer {
+                    public function clear(Owner $owner): void { $owner->child = null; }
+                }',
+        );
+        $this->project_analyzer->getCodebase()->scanner->addFilesToShallowScan(['dependency.php' => 'dependency.php']);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function afterClear(Owner $owner, Clearer $clearer): Child {
+                    if ($owner->getChild() === null) {
+                        return new Child();
+                    }
+                    $clearer->clear($owner);
                     return $owner->getChild();
                 }',
         );

@@ -27,7 +27,6 @@ use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\BinaryOp\VirtualEqual;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualArray;
-use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Node\Expr\VirtualVariable;
@@ -44,12 +43,14 @@ use Psalm\Type\Atomic\TDependentGetType;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
+use function array_intersect;
 use function array_intersect_key;
 use function array_merge;
 use function count;
 use function in_array;
 use function is_string;
 use function spl_object_id;
+use function str_ends_with;
 use function str_starts_with;
 use function strtolower;
 use function substr;
@@ -87,6 +88,7 @@ final class SwitchCaseAnalyzer
         }
 
         $case_scope = $case_context->case_scope = new CaseScope($case_context);
+        $case_scope->outer_case_scope = $original_context->case_scope;
 
         $case_equality_expr = null;
 
@@ -143,67 +145,13 @@ final class SwitchCaseAnalyzer
                 && is_string($switch_condition->name)
                 && isset($context->vars_in_scope['$' . $switch_condition->name])
             ) {
-                $switch_var_type = $context->vars_in_scope['$' . $switch_condition->name];
+                $dependent_type_condition = self::getDependentTypeCondition(
+                    $context->vars_in_scope['$' . $switch_condition->name],
+                    $stmt->cond->getAttributes(),
+                );
 
-                $type_statements = [];
-
-                foreach ($switch_var_type->getAtomicTypes() as $type) {
-                    if ($type instanceof TDependentGetClass) {
-                        $type_statements[] = new VirtualFuncCall(
-                            new VirtualName(['get_class']),
-                            [
-                                new VirtualArg(
-                                    new VirtualVariable(
-                                        substr($type->typeof, 1),
-                                        $stmt->cond->getAttributes(),
-                                    ),
-                                    false,
-                                    false,
-                                    $stmt->cond->getAttributes(),
-                                ),
-                            ],
-                            $stmt->cond->getAttributes(),
-                        );
-                    } elseif ($type instanceof TDependentGetType) {
-                        $type_statements[] = new VirtualFuncCall(
-                            new VirtualName(['gettype']),
-                            [
-                                new VirtualArg(
-                                    new VirtualVariable(
-                                        substr($type->typeof, 1),
-                                        $stmt->cond->getAttributes(),
-                                    ),
-                                    false,
-                                    false,
-                                    $stmt->cond->getAttributes(),
-                                ),
-                            ],
-                            $stmt->cond->getAttributes(),
-                        );
-                    } elseif ($type instanceof TDependentGetDebugType) {
-                        $type_statements[] = new VirtualFuncCall(
-                            new VirtualName(['get_debug_type']),
-                            [
-                                new VirtualArg(
-                                    new VirtualVariable(
-                                        substr($type->typeof, 1),
-                                        $stmt->cond->getAttributes(),
-                                    ),
-                                    false,
-                                    false,
-                                    $stmt->cond->getAttributes(),
-                                ),
-                            ],
-                            $stmt->cond->getAttributes(),
-                        );
-                    } else {
-                        $type_statements = null;
-                        break;
-                    }
-                }
-
-                if ($type_statements && count($type_statements) === 1) {
-                    $switch_condition = $type_statements[0];
+                if ($dependent_type_condition) {
+                    $switch_condition = $dependent_type_condition;
 
                     if ($fake_switch_condition) {
                         $statements_analyzer->node_data->setType(
@@ -346,13 +294,15 @@ final class SwitchCaseAnalyzer
             );
         }
 
-        if ($switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50) {
-            $entry_clauses = Algebra::simplifyCNF(
-                [...$original_context->clauses, ...$switch_scope->negated_clauses],
-            );
-        } else {
-            $entry_clauses = $original_context->clauses;
-        }
+        // what the earlier conditions said of a variable the case assigns is not true of the new value
+        $entry_clauses = FormulaGenerator::withoutClausesOfVarsAssignedIn(
+            $switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50
+                ? Algebra::simplifyCNF([...$original_context->clauses, ...$switch_scope->negated_clauses])
+                : $original_context->clauses,
+            $case_equality_expr,
+            $context->self,
+            $statements_analyzer->node_data,
+        );
 
         if ($case_clauses && $case->cond) {
             // this will see whether any of the clauses in set A conflict with the clauses in set B
@@ -429,30 +379,28 @@ final class SwitchCaseAnalyzer
             }
 
             if ($changed_var_ids) {
-                $case_context->clauses = Context::removeReconciledClauses($case_context->clauses, $changed_var_ids)[0];
+                $case_context->clauses = AlgebraAnalyzer::removeReconciledClauses(
+                    $case_context->clauses,
+                    $changed_var_ids,
+                    $case_context->vars_in_scope,
+                    $statements_analyzer,
+                )[0];
             }
         }
 
         if ($case_clauses && $case_equality_expr) {
             try {
-                $negated_case_clauses = Algebra::negateFormula($case_clauses);
+                $negated_case_clauses = FormulaGenerator::getNegatedFormula(
+                    $case_clauses,
+                    $case_equality_expr,
+                    spl_object_id($case_equality_expr),
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                    true,
+                );
             } catch (ComplicatedExpressionException) {
-                $case_equality_expr_id = spl_object_id($case_equality_expr);
-
-                try {
-                    $negated_case_clauses = FormulaGenerator::getFormula(
-                        $case_equality_expr_id,
-                        $case_equality_expr_id,
-                        new VirtualBooleanNot($case_equality_expr),
-                        $context->self,
-                        $statements_analyzer,
-                        $codebase,
-                        false,
-                        false,
-                    );
-                } catch (ComplicatedExpressionException) {
-                    $negated_case_clauses = [];
-                }
+                $negated_case_clauses = [];
             }
 
             $switch_scope->negated_clauses = [...$switch_scope->negated_clauses, ...$negated_case_clauses];
@@ -472,11 +420,30 @@ final class SwitchCaseAnalyzer
 
         $statements_analyzer->node_data = $old_node_data;
 
-        if ($case_exit_type !== 'return_throw') {
+        // a case whose end is unreachable (return/throw, possibly in a following case it falls through to)
+        // but that leaves the switch through `break` statements contributes the variables of its `break`s
+        $ends_unless_breaking = $case_context->has_returned
+            && $case_scope->break_vars !== null
+            && ($case_scope->has_nested_switch_leaving_it
+                || ($case_actions !== [ScopeAnalyzer::ACTION_LEAVE_SWITCH]
+                    && ($case_exit_type !== 'break' || array_intersect(
+                        [ScopeAnalyzer::ACTION_END, ScopeAnalyzer::ACTION_BREAK, ScopeAnalyzer::ACTION_CONTINUE],
+                        $case_actions,
+                    ))));
+
+        // a case left only through its breaks forgets what they changed, not what its unreachable end did
+        if ($ends_unless_breaking) {
+            $context->removeClausesOfVarsChangedWith($case_scope->parent_remove_vars_at_breaks);
+        } elseif ($case_exit_type !== 'return_throw') {
+            $context->removeClausesOfVarsChangedIn($case_context);
+        }
+
+        if ($case_exit_type !== 'return_throw' && !$ends_unless_breaking) {
             if (self::handleNonReturningCase(
                 $statements_analyzer,
                 $switch_var_id,
                 $case,
+                $case_stmts,
                 $context,
                 $case_context,
                 $original_context,
@@ -488,6 +455,10 @@ final class SwitchCaseAnalyzer
 
                 return false;
             }
+        }
+
+        if ($case_scope->null_array_offsets_read_at_breaks !== null) {
+            $switch_scope->addWayOut($case_scope->null_array_offsets_read_at_breaks);
         }
 
         // augment the information with data from break statements
@@ -508,11 +479,23 @@ final class SwitchCaseAnalyzer
                 }
             }
 
-            if ($switch_scope->new_vars_in_scope !== null) {
+            $switch_scope->new_vars_possibly_in_scope = [
+                ...array_diff_key($case_scope->vars_possibly_in_scope_at_breaks, $context->vars_possibly_in_scope),
+                ...$switch_scope->new_vars_possibly_in_scope,
+            ];
+
+            if ($ends_unless_breaking && $switch_scope->new_vars_in_scope === null) {
+                $switch_scope->new_vars_in_scope = array_diff_key($case_scope->break_vars, $context->vars_in_scope);
+            } elseif ($switch_scope->new_vars_in_scope !== null) {
                 foreach ($switch_scope->new_vars_in_scope as $var_id => $type) {
                     if (isset($case_scope->break_vars[$var_id])) {
-                        if (!isset($case_context->vars_in_scope[$var_id])) {
+                        if (!$ends_unless_breaking && !isset($case_context->vars_in_scope[$var_id])) {
                             unset($switch_scope->new_vars_in_scope[$var_id]);
+                        } elseif (str_ends_with($var_id, ']')
+                            && $type->possibly_undefined !== $case_scope->break_vars[$var_id]->possibly_undefined
+                        ) {
+                            unset($switch_scope->new_vars_in_scope[$var_id]);
+                            $switch_scope->unknown_offsets[$var_id] = true;
                         } else {
                             $switch_scope->new_vars_in_scope[$var_id] = Type::combineUnionTypes(
                                 $case_scope->break_vars[$var_id],
@@ -536,6 +519,8 @@ final class SwitchCaseAnalyzer
                         unset($switch_scope->redefined_vars[$var_id]);
                     }
                 }
+            } elseif ($case_exit_type === 'return_throw' || $ends_unless_breaking) {
+                $switch_scope->redefined_vars = array_intersect_key($case_scope->break_vars, $context->vars_in_scope);
             }
         }
 
@@ -543,6 +528,44 @@ final class SwitchCaseAnalyzer
         unset($case_context->case_scope);
 
         return null;
+    }
+
+    /**
+     * The `get_class($x)`, `gettype($x)` or `get_debug_type($x)` call a switch over a value of that single dependent
+     * type compares its cases with
+     *
+     * @param array<string, mixed> $attributes
+     */
+    private static function getDependentTypeCondition(Type\Union $switch_var_type, array $attributes): ?VirtualFuncCall
+    {
+        $type_statements = [];
+
+        foreach ($switch_var_type->getAtomicTypes() as $type) {
+            if ($type instanceof TDependentGetClass) {
+                $function_name = 'get_class';
+            } elseif ($type instanceof TDependentGetType) {
+                $function_name = 'gettype';
+            } elseif ($type instanceof TDependentGetDebugType) {
+                $function_name = 'get_debug_type';
+            } else {
+                return null;
+            }
+
+            $type_statements[] = new VirtualFuncCall(
+                new VirtualName([$function_name]),
+                [
+                    new VirtualArg(
+                        new VirtualVariable(substr($type->typeof, 1), $attributes),
+                        false,
+                        false,
+                        $attributes,
+                    ),
+                ],
+                $attributes,
+            );
+        }
+
+        return count($type_statements) === 1 ? $type_statements[0] : null;
     }
 
     /**
@@ -575,16 +598,26 @@ final class SwitchCaseAnalyzer
         return $case_equality_expr;
     }
 
+    /**
+     * @param array<PhpParser\Node\Stmt> $case_stmts
+     */
     private static function handleNonReturningCase(
         StatementsAnalyzer $statements_analyzer,
         ?string $switch_var_id,
         PhpParser\Node\Stmt\Case_ $case,
+        array $case_stmts,
         Context $context,
         Context $case_context,
         Context $original_context,
         string $case_exit_type,
         SwitchScope $switch_scope,
     ): ?bool {
+        $context->mergeConstraintsOfReferencesReboundIn(
+            $case_context,
+            $case_stmts,
+            $statements_analyzer->getCodebase(),
+        );
+
         if (!$case->cond
             && $switch_var_id
             && isset($case_context->vars_in_scope[$switch_var_id])
@@ -600,8 +633,8 @@ final class SwitchCaseAnalyzer
         }
 
         // if we're leaving this block, add vars to outer for loop scope
-        if ($case_exit_type === 'continue') {
-            if (!$context->loop_scope) {
+        if ($case_exit_type === 'continue' || $case_exit_type === 'leave') {
+            if ($case_exit_type === 'continue' && !$context->loop_scope) {
                 if (IssueBuffer::accepts(
                     new ContinueOutsideLoop(
                         'Continue called when not in loop',
@@ -611,7 +644,17 @@ final class SwitchCaseAnalyzer
                     return false;
                 }
             }
+
+            // the loop may be left, or go on, with the variables the case defined
+            if ($context->loop_scope) {
+                $context->loop_scope->vars_possibly_in_scope = [
+                    ...array_diff_key($case_context->vars_possibly_in_scope, $context->vars_possibly_in_scope),
+                    ...$context->loop_scope->vars_possibly_in_scope,
+                ];
+            }
         } else {
+            $switch_scope->addWayOut($case_context->null_array_offsets_read);
+
             $case_redefined_vars = $case_context->getRedefinedVars($original_context->vars_in_scope);
 
             if ($switch_scope->possibly_redefined_vars === null) {
@@ -652,6 +695,11 @@ final class SwitchCaseAnalyzer
                 foreach ($switch_scope->new_vars_in_scope as $new_var => $type) {
                     if (!$case_context->hasVariable($new_var)) {
                         unset($switch_scope->new_vars_in_scope[$new_var]);
+                    } elseif (str_ends_with($new_var, ']')
+                        && $type->possibly_undefined !== $case_context->vars_in_scope[$new_var]->possibly_undefined
+                    ) {
+                        unset($switch_scope->new_vars_in_scope[$new_var]);
+                        $switch_scope->unknown_offsets[$new_var] = true;
                     } else {
                         $switch_scope->new_vars_in_scope[$new_var] =
                             Type::combineUnionTypes($case_context->vars_in_scope[$new_var], $type);

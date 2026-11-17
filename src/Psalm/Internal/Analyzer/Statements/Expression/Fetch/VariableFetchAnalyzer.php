@@ -459,25 +459,26 @@ final class VariableFetchAnalyzer
                         : $stmt_type->setPossiblyUndefined(false)),
             );
 
-            // a variable a loop defines, where an iteration starts (see LoopAnalyzer)
+            // a variable some branches or a loop's previous iterations define
             if ($stmt_type->possibly_undefined
                 && !$stmt_type->possibly_undefined_from_try
                 && !$context->inside_isset
                 && !$context->inside_unset
-                // passed by reference, which defines it
-                && (!$context->inside_assignment || $array_assignment)
-                && ($first_appearance = $statements_analyzer->getFirstAppearance($var_name))
+                // assigning it by reference defines it
+                && !$assigned_to_reference
             ) {
+                // extract() defines variables without a first appearance
+                $first_appearance = $statements_analyzer->getFirstAppearance($var_name);
+                $first_seen = $first_appearance ? ', first seen on line ' . $first_appearance->getLineNumber() : '';
+
                 $issue = $context->is_global
                     ? new PossiblyUndefinedGlobalVariable(
-                        'Possibly undefined global variable ' . $var_name . ', first seen on line '
-                            . $first_appearance->getLineNumber(),
+                        'Possibly undefined global variable ' . $var_name . $first_seen,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $var_name,
                     )
                     : new PossiblyUndefinedVariable(
-                        'Possibly undefined variable ' . $var_name . ', first seen on line '
-                            . $first_appearance->getLineNumber(),
+                        'Possibly undefined variable ' . $var_name . $first_seen,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     );
 
@@ -498,7 +499,7 @@ final class VariableFetchAnalyzer
                 }
             }
 
-            if ($stmt_type->possibly_undefined_from_try && !$context->inside_isset) {
+            if ($stmt_type->possibly_undefined_from_try && !$context->inside_isset && !$assigned_to_reference) {
                 if ($context->is_global) {
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedGlobalVariable(
@@ -743,16 +744,26 @@ final class VariableFetchAnalyzer
     }
 
     /**
-     * The value that is read from a superglobal is defined, whatever the superglobal is (an isset() asks about it),
-     * but $http_response_header, which only exists after a network request, may not be
+     * The value that is read from a superglobal is defined (an isset() asks about it), see isReadAsSetSuperGlobal()
      *
      * @psalm-capabilities read-props
      */
     private static function getReadSuperGlobalType(Union $type, string $var_name, Context $context): Union
     {
-        return $context->inside_isset || $var_name === '$http_response_header'
+        return $context->inside_isset || !self::isReadAsSetSuperGlobal($var_name)
             ? $type
             : $type->setPossiblyUndefined(false);
+    }
+
+    /**
+     * Whether the superglobal is taken as set wherever it is used: all of them but $http_response_header, which
+     * only exists after a network request
+     *
+     * @psalm-pure
+     */
+    public static function isReadAsSetSuperGlobal(string $var_id): bool
+    {
+        return $var_id !== '$http_response_header' && self::isSuperGlobal($var_id);
     }
 
     /**
