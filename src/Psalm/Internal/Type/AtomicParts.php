@@ -119,6 +119,7 @@ final class AtomicParts
      * The object half of an iterable, of its key and value types (or the given ones) and its purity
      *
      * @param array{Union, Union}|null $type_params
+     * @psalm-pure
      */
     public static function getTraversable(TIterable $type, ?array $type_params = null): TNamedObject
     {
