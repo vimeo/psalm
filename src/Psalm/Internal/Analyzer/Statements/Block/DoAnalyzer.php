@@ -378,6 +378,13 @@ final class DoAnalyzer
                     => self::isAfterANullsafe($node) ? [$node->name] : [],
                 $node instanceof PhpParser\Node\Expr\ArrayDimFetch
                     => self::isAfterANullsafe($node) ? [$node->dim] : [],
+                $node instanceof PhpParser\Node\Expr\StaticCall
+                    => self::isAfterANullsafe($node) ? [$node->args, $node->name] : [],
+                $node instanceof PhpParser\Node\Expr\StaticPropertyFetch
+                    => self::isAfterANullsafe($node) ? [$node->name] : [],
+                // the body of a nested do-while may leave it before its condition
+                $node instanceof PhpParser\Node\Stmt\Do_
+                    => self::hasExitToTheLoop($node->stmts, 0) ? [$node->cond] : [],
                 $node instanceof PhpParser\Node\Stmt\For_ => [$node->stmts, $node->loop],
                 $node instanceof PhpParser\Node\Stmt\Foreach_,
                 $node instanceof PhpParser\Node\Stmt\While_ => [$node->stmts],
@@ -443,6 +450,13 @@ final class DoAnalyzer
             || $node instanceof PhpParser\Node\Expr\ArrayDimFetch
         ) {
             return self::isAfterANullsafe($node->var);
+        }
+
+        if (($node instanceof PhpParser\Node\Expr\StaticCall
+                || $node instanceof PhpParser\Node\Expr\StaticPropertyFetch)
+            && $node->class instanceof PhpParser\Node\Expr
+        ) {
+            return self::isAfterANullsafe($node->class);
         }
 
         return false;

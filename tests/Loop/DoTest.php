@@ -1156,6 +1156,8 @@ final class DoTest extends TestCase
             }
 
             public function take(string $_s): void {}
+
+            public static function make(string $_s): void {}
         }
 
         function inANullsafeChain(): void {
@@ -1163,8 +1165,21 @@ final class DoTest extends TestCase
             $x = new stdClass();
             do {
                 $c?->next()->take((string) $x);
+                $c?->next()::make((string) $x);
                 $x = 'a';
                 $c = new Chain();
+            } while (rand(0, 1));
+        }
+
+        function inTheConditionOfANestedDoItsBodyMayLeave(): void {
+            $x = new stdClass();
+            do {
+                do {
+                    if (rand(0, 1)) {
+                        break;
+                    }
+                } while ((string) $x === 'a');
+                $x = 'a';
             } while (rand(0, 1));
         }
         PHP;
@@ -1212,7 +1227,9 @@ final class DoTest extends TestCase
                 [235, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
                 [252, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
                 [258, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
-                [276, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
+                [278, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
+                [279, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
+                [292, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
             ],
             self::getIssues($file_path),
         );
