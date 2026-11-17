@@ -29,8 +29,6 @@ use function array_values;
 use function count;
 use function in_array;
 use function is_array;
-use function preg_match;
-use function preg_quote;
 use function spl_object_id;
 
 /**
@@ -117,38 +115,24 @@ final class DoAnalyzer
             cache: false,
         );
 
-        // a clause on an offset or property of a mixed variable says nothing, but its negation is not true either
-        $while_clauses = array_map(
-            static function (Clause $c) use ($mixed_var_ids, $cond_id): Clause {
-                $keys = array_keys($c->possibilities);
-
-                $mixed_var_ids = array_diff($mixed_var_ids, $keys);
-
-                foreach ($keys as $key) {
-                    foreach ($mixed_var_ids as $mixed_var_id) {
-                        if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                            return new Clause([], $cond_id, $cond_id, true);
-                        }
-                    }
-                }
-
-                return $c;
-            },
-            $while_clauses,
-        );
-
         if (!$while_clauses) {
             $while_clauses = [new Clause([], $cond_id, $cond_id, true)];
         }
 
         try {
-            $negated_while_clauses = FormulaGenerator::getNegatedFormula(
-                $while_clauses,
-                $stmt->cond,
-                $cond_id,
-                $context->self,
-                $statements_analyzer,
-                $codebase,
+            $negated_while_clauses = array_map(
+                static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars(
+                    array_diff($mixed_var_ids, array_keys($c->possibilities)),
+                    $cond_id,
+                ),
+                FormulaGenerator::getNegatedFormula(
+                    $while_clauses,
+                    $stmt->cond,
+                    $cond_id,
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                ),
             );
         } catch (ComplicatedExpressionException) {
             $negated_while_clauses = [];

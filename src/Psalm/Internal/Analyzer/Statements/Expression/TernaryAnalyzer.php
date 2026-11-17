@@ -36,8 +36,6 @@ use function array_map;
 use function array_values;
 use function count;
 use function in_array;
-use function preg_match;
-use function preg_quote;
 use function spl_object_id;
 
 /**
@@ -116,24 +114,15 @@ final class TernaryAnalyzer
             }
         }
 
-        $if_clauses = array_map(
-            static function (Clause $c) use ($mixed_var_ids, $cond_object_id): Clause {
-                $keys = array_keys($c->possibilities);
-
-                $mixed_var_ids = array_diff($mixed_var_ids, $keys);
-
-                foreach ($keys as $key) {
-                    foreach ($mixed_var_ids as $mixed_var_id) {
-                        if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                            return new Clause([], $cond_object_id, $cond_object_id, true);
-                        }
-                    }
-                }
-
-                return $c;
-            },
-            $if_clauses,
+        $forget_items_of_mixed_vars = static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars(
+            array_diff($mixed_var_ids, array_keys($c->possibilities)),
+            $cond_object_id,
         );
+
+        // the negation is that of the condition, not of what is left of it
+        $cond_clauses = $if_clauses;
+
+        $if_clauses = array_map($forget_items_of_mixed_vars, $if_clauses);
 
         $entry_clauses = $context->clauses;
 
@@ -174,14 +163,17 @@ final class TernaryAnalyzer
         }
 
         try {
-            $if_scope->negated_clauses = FormulaGenerator::getNegatedFormula(
-                $if_clauses,
-                $stmt->cond,
-                $cond_object_id,
-                $context->self,
-                $statements_analyzer,
-                $codebase,
-                true,
+            $if_scope->negated_clauses = array_map(
+                $forget_items_of_mixed_vars,
+                FormulaGenerator::getNegatedFormula(
+                    Algebra::simplifyCNF($cond_clauses),
+                    $stmt->cond,
+                    $cond_object_id,
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                    true,
+                ),
             );
         } catch (ComplicatedExpressionException) {
             $if_scope->negated_clauses = [];

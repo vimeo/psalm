@@ -7,12 +7,15 @@ namespace Psalm\Internal;
 use Override;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\InArray;
+use Psalm\Storage\Assertion\IsEqualIsset;
 use Psalm\Storage\Assertion\IsIdentical;
+use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsLooselyEqual;
 use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\IsType;
+use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NotInArray;
 use Psalm\Storage\ImmutableNonCloneableTrait;
 use Psalm\Type\Atomic\TClassConstant;
@@ -31,6 +34,8 @@ use function count;
 use function hash;
 use function implode;
 use function ksort;
+use function preg_match;
+use function preg_quote;
 use function reset;
 use function serialize;
 use function substr;
@@ -248,6 +253,54 @@ final class Clause implements Stringable
         assert(!empty($clause_strings));
 
         return reset($clause_strings);
+    }
+
+    /**
+     * What is assigned to an offset or a property of a mixed variable is not tracked, so a clause on one says nothing
+     * of it. Where the clause only holds if the variable is set, it says that instead.
+     *
+     * @param array<string> $mixed_var_ids
+     */
+    public function forgetItemsOfMixedVars(array $mixed_var_ids, int $cond_object_id): self
+    {
+        $possibilities = [];
+
+        foreach ($this->possibilities as $key => $assertions) {
+            foreach ($mixed_var_ids as $mixed_var_id) {
+                if (!preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
+                    continue;
+                }
+
+                foreach ($assertions as $assertion) {
+                    if (!$assertion instanceof IsIsset
+                        && !$assertion instanceof IsEqualIsset
+                        && !$assertion instanceof NonEmpty
+                    ) {
+                        return new self([], $cond_object_id, $cond_object_id, true);
+                    }
+                }
+
+                $possibilities[$mixed_var_id] = ['=isset' => new IsEqualIsset()];
+
+                continue 2;
+            }
+
+            $possibilities[$key] = $assertions;
+        }
+
+        if ($possibilities === $this->possibilities) {
+            return $this;
+        }
+
+        return new self(
+            $possibilities,
+            $this->creating_conditional_id,
+            $this->creating_object_id,
+            $this->wedge,
+            $this->reconcilable,
+            $this->generated,
+            $this->redefined_vars,
+        );
     }
 
     public function removePossibilities(string $var_id): ?self

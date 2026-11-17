@@ -890,7 +890,11 @@ class Reconciler
                         $base_key .= array_shift($key_parts);
                     }
 
-                    if (!isset($existing_types[$base_key]) || $existing_types[$base_key]->isNullable()) {
+                    if (!isset($existing_types[$base_key])
+                        || $existing_types[$base_key]->isNullable()
+                        || $existing_types[$base_key]->possibly_undefined
+                        || $existing_types[$base_key]->possibly_undefined_from_try
+                    ) {
                         if (!isset($new_types[$base_key])) {
                             $new_types[$base_key] = [[new IsEqualIsset()]];
                         } else {
