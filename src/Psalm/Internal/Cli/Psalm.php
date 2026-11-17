@@ -144,6 +144,7 @@ final class Psalm
         'init',
         'init-ci',
         'memory-limit:',
+        'min-type-coverage:',
         'monochrome',
         'no-diff',
         'force-jit',
@@ -217,6 +218,8 @@ final class Psalm
 
         CliUtils::rejectUnrecognisedOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
 
+        $min_type_coverage = self::parseMinTypeCoverageOption($options);
+
         CliUtils::setMemoryLimit($options);
 
         self::syncShortOptions($options);
@@ -289,6 +292,8 @@ final class Psalm
             $config->cache_directory = null;
         }
 
+        $config->min_type_coverage = $min_type_coverage ?? $config->min_type_coverage;
+
         $config->setIncludeCollector($include_collector);
 
         $in_ci = CliUtils::runningInCI();        // disable progressbar on CI
@@ -323,7 +328,25 @@ final class Psalm
             }
         }
 
+        // creating or updating the baseline is maintenance, so it doesn't check the type coverage
+        if (isset($options['set-baseline']) || isset($options['update-baseline'])) {
+            if ($min_type_coverage !== null) {
+                fwrite(
+                    STDERR,
+                    'Cannot check the minimum type coverage when creating or updating the baseline' . PHP_EOL,
+                );
+                exit(1);
+            }
+
+            $config->min_type_coverage = null;
+        }
+
         $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? null);
+
+        if ($paths_to_check !== null && isset($options['min-type-coverage'])) {
+            fwrite(STDERR, 'Cannot check the minimum type coverage when checking specific files' . PHP_EOL);
+            exit(1);
+        }
 
         if ($config->resolve_from_config_file) {
             $current_dir = $config->base_dir;
@@ -510,6 +533,31 @@ final class Psalm
         }
 
         fwrite(STDERR, '--' . $name . ' expects a positive integer or "auto"' . PHP_EOL);
+        exit(1);
+    }
+
+    /**
+     * @return float|null null if the option isn't given
+     */
+    private static function parseMinTypeCoverageOption(array $options): ?float
+    {
+        if (!isset($options['min-type-coverage'])) {
+            return null;
+        }
+
+        if (is_array($options['min-type-coverage'])) {
+            fwrite(STDERR, 'Only one --min-type-coverage can be given' . PHP_EOL);
+            exit(1);
+        }
+
+        // the coverage is reported with two decimals; the same pattern as for minTypeCoverage in config.xsd
+        if (is_string($options['min-type-coverage'])
+            && preg_match('/^([0-9]{1,2}(\.[0-9]{1,2})?|100(\.0{1,2})?)\z/', $options['min-type-coverage'])
+        ) {
+            return (float) $options['min-type-coverage'];
+        }
+
+        fwrite(STDERR, '--min-type-coverage expects a percentage from 0 to 100 with at most two decimals' . PHP_EOL);
         exit(1);
     }
 
@@ -1578,6 +1626,11 @@ final class Psalm
 
             --stats
                 Shows a breakdown of Psalm’s ability to infer types in the codebase
+
+            --min-type-coverage=PERCENTAGE
+                Exit with status 2 when Psalm infers types for less than PERCENTAGE of the codebase (0 to 100,
+                at most two decimals). Cannot be combined with file paths, --set-baseline or --update-baseline.
+                Overrides the minTypeCoverage config option
 
         Reports:
             --report=PATH

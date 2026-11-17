@@ -68,7 +68,7 @@ final class KeyOfTemplateTest extends TestCase
                     }
                 ',
             ],
-            'SKIPPED-acceptsIfArrayKeyExistsFn' => [ // #13931
+            'acceptsIfArrayKeyExistsFn' => [
                 'code' => '<?php
                     /**
                      * @template T of array
@@ -80,6 +80,86 @@ final class KeyOfTemplateTest extends TestCase
                             return $key;
                         }
                         return null;
+                    }
+                ',
+            ],
+            'useAfterArrayKeyExistsOnTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     * @param list<int> $other
+                     */
+                    function f(int $key, $array, array $other): int {
+                        if (array_key_exists($key, $array)) {
+                            echo $key . "x";
+                            return ($other[$key] ?? 0) + $key * 2;
+                        }
+                        return 0;
+                    }
+                ',
+            ],
+            'typeCheckAfterArrayKeyExistsOnTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     */
+                    function f(int $key, $array): void {
+                        if (array_key_exists($key, $array)) {
+                            if ($key === 0) {
+                                echo "first";
+                            }
+                        }
+                    }
+                ',
+            ],
+            'arrayKeyExistsOnTemplateKeepsKeyType' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     * @return key-of<T>|null
+                     */
+                    function getKey(string $key, $array) {
+                        if (array_key_exists($key, $array)) {
+                            echo strlen($key);
+                            return $key;
+                        }
+                        echo strlen($key);
+                        return null;
+                    }
+                ',
+            ],
+            'negatedKeyExistsOnShapeTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array{a: int, b: int}
+                     * @param T $array
+                     * @return key-of<T>
+                     */
+                    function getKey(int|string $key, $array) {
+                        if (!key_exists($key, $array)) {
+                            throw new Exception();
+                        }
+                        return $key;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayKeyExistsOnTemplateWithIntKeysKeepsStringKey' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<int, string>
+                     * @param T $array
+                     */
+                    function getValue(string $key, $array): string {
+                        if (array_key_exists($key, $array)) {
+                            return $key;
+                        }
+                        return "";
                     }
                 ',
             ],
@@ -281,6 +361,107 @@ final class KeyOfTemplateTest extends TestCase
                         throw new Exception();
                     }',
             ],
+            'keyOfTemplateInArithmetic' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<int, string>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     */
+                    function f(array $array, $k): int {
+                        $r = $k * 2;
+                        /** @psalm-check-type-exact $r = int */;
+                        return $r;
+                    }',
+            ],
+            'keyOfTemplateIncremented' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<int, string>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     */
+                    function f(array $array, $k): int {
+                        $k++;
+                        return $k;
+                    }',
+            ],
+            'keyOfTemplateConcatenated' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array{a: int, b: int}
+                     * @param T $array
+                     * @param key-of<T> $k
+                     */
+                    function f(array $array, $k): string {
+                        $r = $k . "x";
+                        /** @psalm-check-type-exact $r = "ax"|"bx" */;
+                        return $r;
+                    }',
+            ],
+            'keyOfTemplateCastToString' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<int, string>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     */
+                    function f(array $array, $k): string {
+                        return (string) $k;
+                    }',
+            ],
+            'keyOfTemplateAsOffsetOfAnotherArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<int, string>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     * @param array<int, string> $other
+                     * @return array<int, string>
+                     */
+                    function f(array $array, $k, array $other): array {
+                        echo $other[$k] ?? "";
+                        $other[$k] = "x";
+                        return $other;
+                    }',
+            ],
+            'keyOfTemplateStringOffset' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     */
+                    function f(array $array, $k): string {
+                        return $k[0];
+                    }',
+            ],
+            'templateBoundedByKeyOfTemplateConcatenated' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @template K of key-of<T>
+                     * @param T $array
+                     * @param K $k
+                     */
+                    function f(array $array, $k): string {
+                        return $k . "x";
+                    }',
+            ],
+            'keyOfClassTemplateInArithmetic' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<int, string>
+                     */
+                    final class C {
+                        /**
+                         * @param key-of<T> $k
+                         */
+                        public function next($k): int {
+                            return $k + 1;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -330,6 +511,40 @@ final class KeyOfTemplateTest extends TestCase
                 ',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'arrayKeyExistsOnTemplateKeepsUnionKey' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     */
+                    function getKey(int|string $key, $array): bool {
+                        if (array_key_exists($key, $array)) {
+                            return $key;
+                        }
+                        return false;
+                    }
+                ',
+                'error_message' => "The inferred type 'key-of<T:fn-getkey as array<int|string, mixed",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayKeyExistsOnTemplateWithIntKeysKeepsNumericStringArm' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<int, string>
+                     * @param T $array
+                     */
+                    function getKey(int|string $key, $array): bool {
+                        if (array_key_exists($key, $array)) {
+                            return $key;
+                        }
+                        return false;
+                    }
+                ',
+                'error_message' => "The inferred type 'int|string' does not match",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'keyOfTemplateNotIncludesInt' => [
                 'code' => '<?php
                     /**
@@ -356,6 +571,18 @@ final class KeyOfTemplateTest extends TestCase
                     }
                 ',
                 'error_message' => 'MismatchingDocblockReturnType',
+            ],
+            'keyOfTemplateWithStringKeysInArithmetic' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     */
+                    function f(array $array, $k): void {
+                        echo $k * 2;
+                    }',
+                'error_message' => 'Cannot perform a numeric operation with a non-numeric type string',
             ],
         ];
     }

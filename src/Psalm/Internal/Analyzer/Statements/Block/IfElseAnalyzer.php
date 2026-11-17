@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Exception\ScopeAnalysisException;
@@ -17,10 +18,12 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseIfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\GuardedClasses;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\IssueBuffer;
@@ -114,9 +117,9 @@ final class IfElseAnalyzer
                 : null;
 
         try {
-            $if_conditional_scope = IfConditionalAnalyzer::analyze(
+            $if_conditional_scope = self::analyzeCondition(
                 $statements_analyzer,
-                $stmt->cond,
+                $stmt,
                 $context,
                 $codebase,
                 $if_scope,
@@ -148,47 +151,16 @@ final class IfElseAnalyzer
             );
         }
 
-        $mixed_var_ids = [];
-
-        foreach ($if_context->vars_in_scope as $var_id => $type) {
-            if ($type->isMixed() && isset($context->vars_in_scope[$var_id])) {
-                $mixed_var_ids[] = $var_id;
-            }
-        }
-
         $cond_object_id = spl_object_id($stmt->cond);
 
-        $if_clauses = FormulaGenerator::getFormula(
-            $cond_object_id,
-            $cond_object_id,
-            $stmt->cond,
-            $context->self,
+        $if_clauses = self::getConditionClauses(
             $statements_analyzer,
+            $stmt->cond,
+            $cond_object_id,
+            $if_context,
+            $context,
             $codebase,
         );
-
-        if (count($if_clauses) > 200) {
-            $if_clauses = [];
-        }
-
-        $if_clauses_handled = [];
-        foreach ($if_clauses as $clause) {
-            $keys = array_keys($clause->possibilities);
-            $mixed_var_ids = array_diff($mixed_var_ids, $keys);
-
-            foreach ($keys as $key) {
-                foreach ($mixed_var_ids as $mixed_var_id) {
-                    if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                        $clause = new Clause([], $cond_object_id, $cond_object_id, true);
-                        break 2;
-                    }
-                }
-            }
-
-            $if_clauses_handled[] = $clause;
-        }
-
-        $if_clauses = $if_clauses_handled;
 
         $entry_clauses = $context->clauses;
 
@@ -594,6 +566,61 @@ final class IfElseAnalyzer
     }
 
     /**
+     * The clauses of the condition, with those on the offsets or properties of a variable that is mixed in the body
+     * replaced by an empty wedge
+     *
+     * @return list<Clause>
+     */
+    private static function getConditionClauses(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $cond,
+        int $cond_object_id,
+        Context $if_context,
+        Context $context,
+        Codebase $codebase,
+    ): array {
+        $mixed_var_ids = [];
+
+        foreach ($if_context->vars_in_scope as $var_id => $type) {
+            if ($type->isMixed() && isset($context->vars_in_scope[$var_id])) {
+                $mixed_var_ids[] = $var_id;
+            }
+        }
+
+        $if_clauses = FormulaGenerator::getFormula(
+            $cond_object_id,
+            $cond_object_id,
+            $cond,
+            $context->self,
+            $statements_analyzer,
+            $codebase,
+        );
+
+        if (count($if_clauses) > 200) {
+            $if_clauses = [];
+        }
+
+        $if_clauses_handled = [];
+        foreach ($if_clauses as $clause) {
+            $keys = array_keys($clause->possibilities);
+            $mixed_var_ids = array_diff($mixed_var_ids, $keys);
+
+            foreach ($keys as $key) {
+                foreach ($mixed_var_ids as $mixed_var_id) {
+                    if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
+                        $clause = new Clause([], $cond_object_id, $cond_object_id, true);
+                        break 2;
+                    }
+                }
+            }
+
+            $if_clauses_handled[] = $clause;
+        }
+
+        return $if_clauses_handled;
+    }
+
+    /**
      * The context the code after a leaving if starts from is taken before its condition, so it misses what the calls of
      * the condition did: the properties and memoized calls an impure call forgets, and the properties a callee sets
      * (recorded as assigned at offset 0). The variables the condition assigns itself are derived again from it
@@ -675,6 +702,47 @@ final class IfElseAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * A class that doesn't exist is only known to be there in the block run when `class_exists()` (or the like)
+     * is true, and after the if where the condition is false; after an if whose other branches leave, it is
+     * known where the condition is true
+     *
+     * @throws ScopeAnalysisException
+     */
+    private static function analyzeCondition(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\If_ $stmt,
+        Context $context,
+        Codebase $codebase,
+        IfScope $if_scope,
+        int $branch_point,
+    ): IfConditionalScope {
+        $phantom_classes_before_cond = $context->phantom_classes;
+
+        $if_conditional_scope = IfConditionalAnalyzer::analyze(
+            $statements_analyzer,
+            $stmt->cond,
+            $context,
+            $codebase,
+            $if_scope,
+            $branch_point,
+        );
+
+        $context->phantom_classes = [
+            ...$phantom_classes_before_cond,
+            ...GuardedClasses::unknownWhenResult($stmt->cond, false, $codebase),
+        ];
+
+        if ($stmt->else) {
+            $if_scope->phantom_classes_of_if_block = [
+                ...$phantom_classes_before_cond,
+                ...GuardedClasses::unknownWhenResult($stmt->cond, true, $codebase),
+            ];
+        }
+
+        return $if_conditional_scope;
     }
 
     /**

@@ -6325,6 +6325,84 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInAnElseReachesTheReadAfterTheIf' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $u */
+                    function f($u): void {
+                        if (!is_array($u) || rand(0, 1)) {
+                            echo 1;
+                        } else {
+                            $u["a"] = $_GET["x"];
+                        }
+
+                        /** @psalm-suppress MixedArrayAccess */
+                        echo (string) $u["a"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInASwitchCaseReachesTheReadAfterTheSwitch' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $u */
+                    function f($u): void {
+                        switch (true) {
+                            case is_array($u) && rand(0, 1):
+                                $u["a"] = $_GET["x"];
+                                break;
+                        }
+
+                        /** @psalm-suppress MixedArrayAccess */
+                        echo (string) $u["a"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInATernaryBranchReachesTheReadAfterIt' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $u */
+                    function f($u): void {
+                        is_array($u) && rand(0, 1) ? ($u["a"] = $_GET["x"]) : null;
+
+                        /** @psalm-suppress MixedArrayAccess */
+                        echo (string) $u["a"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInTheElseOfATernaryReachesTheReadAfterIt' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $u */
+                    function f($u): void {
+                        !is_array($u) ? null : ($u["a"] = $_GET["x"]);
+
+                        /** @psalm-suppress MixedArrayAccess */
+                        echo (string) $u["a"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInBothTernaryBranchesReachesTheReadAfterIt' => [
+                'code' => '<?php // --taint-analysis
+                    /** @var mixed $u */
+                    $u = [];
+
+                    is_array($u) ? ($u["a"] = (string) $_GET["x"]) : ($u["b"] = 1);
+
+                    /** @psalm-suppress MixedArrayAccess */
+                    echo (string) $u["a"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInAMatchArmReachesTheReadAfterIt' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $u */
+                    function f($u): void {
+                        match (true) {
+                            is_array($u) && rand(0, 1) => $u["a"] = $_GET["x"],
+                            default => null,
+                        };
+
+                        /** @psalm-suppress MixedArrayAccess */
+                        echo (string) $u["a"];
+                    }',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.0',
+            ],
             'taintAssignedBeforeABreakInTheElseReachesTheReadAfterTheIf' => [
                 'code' => '<?php // --taint-analysis
                     /** @param list<string> $list */
@@ -14208,6 +14286,44 @@ final class TaintTest extends TestCase
                     }
                     $unsafe = new MyClass();
                     echo $unsafe;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'printToStringMagic' => [
+                'code' => '<?php
+                    class MyClass {
+                        public function __toString() {
+                            return $_GET["blah"];
+                        }
+                    }
+                    $unsafe = new MyClass();
+                    print $unsafe;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'stringArgumentOfAnObjectOrArrayKeepsTheTaintsOfTheArray' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string {
+                            return "name";
+                        }
+                    }
+                    /** @param Name|array<string> $value */
+                    function f($value): void {
+                        echo mb_convert_encoding($value, "UTF-8");
+                    }
+                    f($_GET["value"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'castToStringMagicInUnion' => [
+                'code' => '<?php
+                    class MyClass {
+                        public function __toString() {
+                            return $_GET["blah"];
+                        }
+                    }
+                    function f(MyClass|int $unsafe): void {
+                        echo $unsafe;
+                    }
+                    f(new MyClass());',
                 'error_message' => 'TaintedHtml',
             ],
             'castToStringViaArgument' => [

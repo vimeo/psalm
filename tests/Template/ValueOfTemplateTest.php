@@ -44,7 +44,7 @@ final class ValueOfTemplateTest extends TestCase
                     '$a' => 'list<mixed>',
                 ],
             ],
-            'SKIPPED-acceptsIfInArrayFn' => [ // #13931
+            'acceptsIfInArrayFn' => [
                 'code' => '<?php
                     /**
                      * @template T of array
@@ -52,10 +52,99 @@ final class ValueOfTemplateTest extends TestCase
                      * @return value-of<T>|null
                      */
                     function getValue(string $value, $array) {
-                        if (in_array($value, $array)) {
+                        if (in_array($value, $array, true)) {
                             return $value;
                         }
                         return null;
+                    }
+                ',
+            ],
+            'useAfterInArrayOnTemplate' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     */
+                    function f(Foo $o, string $s, $array): int {
+                        if (in_array($o, $array, true) && in_array($s, $array, true)) {
+                            echo $s[0];
+                            return $o->m();
+                        }
+                        return 0;
+                    }
+                ',
+            ],
+            'typeCheckAfterInArrayOnTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     */
+                    function f(string $value, $array): void {
+                        if (in_array($value, $array, true)) {
+                            if ($value === "") {
+                                echo "empty";
+                            }
+                        }
+                    }
+                ',
+            ],
+            'inArrayOnTemplateKeepsValueType' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     * @return value-of<T>|null
+                     */
+                    function getValue(string $value, $array) {
+                        if (in_array($value, $array, true)) {
+                            echo strlen($value);
+                            return $value;
+                        }
+                        echo strlen($value);
+                        return null;
+                    }
+                ',
+            ],
+            'inArrayOnTemplateNarrowsMixed' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $array
+                     * @return value-of<T>|null
+                     */
+                    function getValue(mixed $value, $array) {
+                        if (in_array($value, $array, true)) {
+                            return $value;
+                        }
+                        return null;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inArrayOnTwoTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @template U of array
+                     * @param T $a
+                     * @param U $b
+                     */
+                    function f(string $value, $a, $b): void {
+                        if (in_array($value, $a, true) && in_array($value, $b, true)) {
+                            echo strlen($value);
+                        }
+                        if (in_array($value, $a, true) && !in_array($value, $b, true)) {
+                            echo strlen($value);
+                        }
                     }
                 ',
             ],
@@ -248,6 +337,256 @@ final class ValueOfTemplateTest extends TestCase
 
                     function takesInt(int $i): void {}',
             ],
+            'valueOfTemplateInArithmetic' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     */
+                    function f(array $array, $v): int {
+                        $r = $v % 3;
+                        $v += 1;
+                        $v++;
+                        /** @psalm-check-type-exact $v = int */;
+                        return $r + $v;
+                    }',
+            ],
+            'valueOfTemplateConcatenated' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, "a"|"b">
+                     * @param T $array
+                     * @param value-of<T> $v
+                     */
+                    function f(array $array, $v): string {
+                        $r = $v . "x";
+                        /** @psalm-check-type-exact $r = "ax"|"bx" */;
+                        return $r;
+                    }',
+            ],
+            'valueOfTemplateCast' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, string>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     */
+                    function f(array $array, $v): float {
+                        return (int) $v + (float) $v;
+                    }',
+            ],
+            'valueOfTemplateStringOffset' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<int, string>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     */
+                    function f(array $array, $v): string {
+                        return $v[0];
+                    }',
+            ],
+            'valueOfTemplateAsOffsetOfAnotherArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     * @param list<string> $other
+                     */
+                    function f(array $array, $v, array $other): string {
+                        return $other[$v] ?? "";
+                    }',
+            ],
+            'valueOfTemplateIterated' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, list<int>>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     */
+                    function f(array $array, $v): int {
+                        $sum = 0;
+                        foreach ($v as $i) {
+                            $sum += $i;
+                        }
+                        return $sum;
+                    }',
+            ],
+            'valueOfTemplatePropertyFetchAndAssignment' => [
+                'code' => '<?php
+                    final class Foo {
+                        public int $p = 0;
+                    }
+
+                    /**
+                     * @template T of array<string, Foo>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     */
+                    function f(array $array, $v): int {
+                        $v->p = 3;
+                        return $v->p;
+                    }',
+            ],
+            'valueOfTemplateMethodCall' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @template T of array<string, Foo>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     * @return value-of<T>
+                     */
+                    function f(array $array, $v) {
+                        echo $v->m();
+                        /** @psalm-check-type-exact $v = value-of<T> */;
+                        return $v;
+                    }',
+            ],
+            'valueOfNullableTemplateNullsafeMethodCall' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @template T of array<string, ?Foo>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     */
+                    function f(array $array, $v): ?int {
+                        $r = $v?->m();
+                        /** @psalm-check-type-exact $r = int|null */;
+                        return $r;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'valueOfTemplateStaticCallAndClone' => [
+                'code' => '<?php
+                    final class Foo {
+                        public static function s(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @template T of array<string, Foo>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     */
+                    function f(array $array, $v): Foo {
+                        echo $v::s();
+                        return clone $v;
+                    }',
+            ],
+            'valueOfTemplateClassFetched' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /**
+                     * @template T of array<string, Foo>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     * @return class-string<Foo>
+                     */
+                    function f(array $array, $v): string {
+                        $c = $v::class;
+                        /** @psalm-check-type-exact $c = class-string<Foo> */;
+                        return $c;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'valueOfTemplateCloned' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /**
+                     * @template T of array<string, Foo>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     */
+                    function f(array $array, $v): Foo {
+                        return clone $v;
+                    }',
+            ],
+            'valueOfTemplateCastToArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, list<int>|null>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     * @return list<int>
+                     */
+                    function f(array $array, $v): array {
+                        $r = (array) $v;
+                        /** @psalm-check-type-exact $r = list<int> */;
+                        return $r;
+                    }',
+            ],
+            'valueOfTemplateClassStringInstantiated' => [
+                'code' => '<?php
+                    final class Foo {
+                        public static function s(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @template T of array<string, class-string<Foo>>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     */
+                    function f(array $array, $v): Foo {
+                        echo $v::s();
+                        return new $v();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnsafeInstantiation'],
+            ],
+            'valueOfTemplateCalled' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, Closure(): int>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     */
+                    function f(array $array, $v): int {
+                        return $v();
+                    }',
+            ],
+            'templateBoundedByValueOfTemplateMethodCall' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @template T of array<string, Foo>
+                     * @template V of value-of<T>
+                     * @param T $array
+                     * @param V $v
+                     * @return V
+                     */
+                    function f(array $array, $v) {
+                        echo $v->m();
+                        return $v;
+                    }',
+            ],
         ];
     }
 
@@ -284,6 +623,39 @@ final class ValueOfTemplateTest extends TestCase
                 ',
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'looseInArrayOnTemplateDoesNotNarrow' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     * @return value-of<T>|null
+                     */
+                    function getValue(string $value, $array) {
+                        if (in_array($value, $array)) {
+                            return $value;
+                        }
+                        return null;
+                    }
+                ',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'inArrayOnTemplateKeepsUnionNeedle' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     */
+                    function getValue(int|string $value, $array): bool {
+                        if (in_array($value, $array, true)) {
+                            return $value;
+                        }
+                        return false;
+                    }
+                ',
+                'error_message' => "The inferred type 'value-of<T:fn-getvalue as array<array-key, int|string",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'valueOfTemplateNotIncludesInt' => [
                 'code' => '<?php
                     /**
@@ -310,6 +682,52 @@ final class ValueOfTemplateTest extends TestCase
                     }
                 ',
                 'error_message' => 'MismatchingDocblockReturnType',
+            ],
+            'valueOfNullableTemplateMethodCall' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @template T of array<string, ?Foo>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     */
+                    function f(array $array, $v): int {
+                        return $v->m();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
+            'valueOfNullableTemplatePropertyAssignment' => [
+                'code' => '<?php
+                    final class Foo {
+                        public int $p = 0;
+                    }
+
+                    /**
+                     * @template T of array<string, ?Foo>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     */
+                    function f(array $array, $v): void {
+                        $v->p = 3;
+                    }',
+                'error_message' => 'PossiblyNullPropertyAssignment',
+            ],
+            'valueOfNonObjectTemplatePropertyFetch' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     */
+                    function f(array $array, $v): void {
+                        echo $v->p;
+                    }',
+                'error_message' => 'Cannot fetch property on non-object $v of type int',
             ],
         ];
     }

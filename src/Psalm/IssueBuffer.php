@@ -1072,9 +1072,24 @@ final class IssueBuffer
         // runs), so cached taint sinks/sources keep matching after the analysis is reused from cache.
         $project_analyzer->persistCustomTaints();
 
+        $min_type_coverage = $codebase->config->min_type_coverage;
+
+        // a run of specific files doesn't measure the type coverage of the whole project
+        $type_coverage_message = $is_full && $min_type_coverage !== null
+            ? self::getTypeCoverageBelowMinimumMessage(
+                $codebase->analyzer->getTotalTypeCoverage($codebase),
+                $min_type_coverage,
+            )
+            : null;
+
+        if ($type_coverage_message !== null) {
+            fwrite(STDERR, $type_coverage_message . PHP_EOL);
+        }
+
         // a taint analysis run in GitHub Actions that writes a SARIF report exits successfully, so that a following
-        // step can upload the report; every other combination exits with an error when issues were found
-        if ($error_count
+        // step can upload the report; every other combination exits with an error when issues were found or the
+        // type coverage is below the minimum
+        if (($error_count || $type_coverage_message !== null)
             && !($codebase->taint_flow_graph
                 && self::hasSarifReport($project_analyzer->generated_report_options)
                 && isset($_SERVER['GITHUB_WORKFLOW']))
@@ -1104,6 +1119,37 @@ final class IssueBuffer
         }
 
         return false;
+    }
+
+    /**
+     * @internal
+     * @param array{int, int} $type_coverage the counts of mixed and of non-mixed expressions
+     * @psalm-pure
+     */
+    public static function getTypeCoverageBelowMinimumMessage(array $type_coverage, float $min_type_coverage): ?string
+    {
+        [$mixed_count, $nonmixed_count] = $type_coverage;
+        $total = $mixed_count + $nonmixed_count;
+
+        // without expressions there is no type that Psalm couldn't infer
+        if ($total === 0) {
+            return null;
+        }
+
+        // in hundredths of a percent, the coverage rounded down, so that a coverage below the minimum never prints
+        // as reaching it; the minimum has at most two decimals
+        $coverage = intdiv(10_000 * $nonmixed_count, $total);
+        $minimum = (int) round($min_type_coverage * 100.0);
+
+        if ($coverage >= $minimum) {
+            return null;
+        }
+
+        return sprintf(
+            'Type coverage %s%% is below the minimum of %s%%',
+            number_format($coverage / 100, 2),
+            number_format($minimum / 100, 2),
+        );
     }
 
     private static function printAlterSummary(

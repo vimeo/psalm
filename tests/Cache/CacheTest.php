@@ -217,11 +217,14 @@ final class CacheTest extends TestCase
      * @param list<array{
      *     files: array<string, string|null>,
      *     issues?: array<string, list<string>>,
+     *     type_coverage?: array{int, int},
      * }> $interactions
+     * @param bool $is_diff the diff mode, which the command line does not use
      */
     #[DataProvider('provideCacheInteractions')]
     public function testCacheInteractions(
         array $interactions,
+        bool $is_diff = true,
     ): void {
         $config = Config::loadFromXML(
             __DIR__ . DIRECTORY_SEPARATOR . 'test_base_dir',
@@ -260,11 +263,16 @@ final class CacheTest extends TestCase
 
             $start_time = microtime(true);
             $project_analyzer = new ProjectAnalyzer($config, $providers);
-            $project_analyzer->check($config->base_dir, true);
+            $project_analyzer->check($config->base_dir, $is_diff);
             $project_analyzer->finish($start_time, PSALM_VERSION);
 
             $issues = self::normalizeIssueData(IssueBuffer::getIssuesData());
             self::assertSame($interaction['issues'] ?? [], $issues);
+
+            if (isset($interaction['type_coverage'])) {
+                $codebase = $project_analyzer->getCodebase();
+                self::assertSame($interaction['type_coverage'], $codebase->analyzer->getTotalTypeCoverage($codebase));
+            }
         }
     }
 
@@ -741,11 +749,13 @@ final class CacheTest extends TestCase
     }
 
     /**
-     * @return iterable<string, list{
-     *     list<array{
+     * @return iterable<string, array{
+     *     0: list<array{
      *         files: array<string, string|null>,
      *         issues?: array<string, list<string>>,
+     *         type_coverage?: array{int, int},
      *     }>,
+     *     1?: bool,
      * }>
      * @psalm-pure
      */
@@ -991,6 +1001,62 @@ final class CacheTest extends TestCase
                     ],
                 ],
             ],
+        ];
+
+        $typed = <<<'PHP'
+            <?php
+            function typed(int $i): int {
+                return $i + 1;
+            }
+            PHP;
+        $untyped = <<<'PHP'
+            <?php
+            /** @param mixed $m */
+            function untyped($m): void {
+                echo $m;
+            }
+            PHP;
+        $mixed_argument = ['MixedArgument: Argument 1 of echo cannot be mixed, expecting string'];
+
+        $deleted_file_interactions = [
+            [
+                'files' => ['src/A.php' => $typed, 'src/Untyped.php' => $untyped],
+                'issues' => ['src/Untyped.php' => $mixed_argument],
+                'type_coverage' => [1, 2],
+            ],
+            [
+                'files' => ['src/Untyped.php' => null],
+                'type_coverage' => [0, 2],
+            ],
+            [
+                'files' => [],
+                'type_coverage' => [0, 2],
+            ],
+        ];
+
+        yield 'deletedFileIsNotCountedInTheTypeCoverage' => [$deleted_file_interactions, false];
+
+        yield 'deletedFileIsNotCountedInTheTypeCoverageOfADiffRun' => [$deleted_file_interactions];
+
+        yield 'renamedFileIsCountedOnceInTheTypeCoverage' => [
+            [
+                [
+                    'files' => ['src/A.php' => $typed, 'src/Untyped.php' => $untyped],
+                    'issues' => ['src/Untyped.php' => $mixed_argument],
+                    'type_coverage' => [1, 2],
+                ],
+                [
+                    'files' => ['src/Untyped.php' => null, 'src/Renamed.php' => $untyped],
+                    'issues' => ['src/Renamed.php' => $mixed_argument],
+                    'type_coverage' => [1, 2],
+                ],
+                [
+                    'files' => [],
+                    'issues' => ['src/Renamed.php' => $mixed_argument],
+                    'type_coverage' => [1, 2],
+                ],
+            ],
+            false,
         ];
     }
 }
