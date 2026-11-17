@@ -6377,6 +6377,17 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInBothTernaryBranchesReachesTheReadAfterIt' => [
+                'code' => '<?php // --taint-analysis
+                    /** @var mixed $u */
+                    $u = [];
+
+                    is_array($u) ? ($u["a"] = (string) $_GET["x"]) : ($u["b"] = 1);
+
+                    /** @psalm-suppress MixedArrayAccess */
+                    echo (string) $u["a"];',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintWrittenAtAnOffsetOfANarrowedMixedVarInAMatchArmReachesTheReadAfterIt' => [
                 'code' => '<?php // --taint-analysis
                     /** @param mixed $u */
