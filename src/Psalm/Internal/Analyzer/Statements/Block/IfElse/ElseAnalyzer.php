@@ -24,6 +24,7 @@ use function array_diff_key;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
+use function array_slice;
 use function count;
 use function in_array;
 use function preg_match;
@@ -210,6 +211,19 @@ final class ElseAnalyzer
         $has_continue_statement = $final_actions === [ScopeAnalyzer::ACTION_CONTINUE];
 
         $if_scope->final_actions = array_merge($final_actions, $if_scope->final_actions);
+
+        $other_branch_actions = array_slice(
+            $if_scope->final_actions,
+            0,
+            count($if_scope->final_actions) - count($if_scope->if_actions),
+        );
+
+        if ($if_scope->phantom_classes_of_if_block !== null
+            && in_array(ScopeAnalyzer::ACTION_NONE, $if_scope->if_actions, true)
+            && !in_array(ScopeAnalyzer::ACTION_NONE, $other_branch_actions, true)
+        ) {
+            $outer_context->phantom_classes = $if_scope->phantom_classes_of_if_block;
+        }
 
         // if it doesn't end in a return
         if (!$has_leaving_statements) {

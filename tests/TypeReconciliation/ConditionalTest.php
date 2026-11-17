@@ -1295,12 +1295,12 @@ final class ConditionalTest extends TestCase
                         if ($id === null || !str_contains($id, "::")) {
                             return "";
                         }
-                        /** @psalm-check-type-exact $id = string */;
+                        /** @psalm-check-type-exact $id = non-empty-string */;
 
                         if ($name === null || !isFilled($name)) {
                             return "";
                         }
-                        /** @psalm-check-type-exact $name = string */;
+                        /** @psalm-check-type-exact $name = non-empty-string */;
 
                         return $id . $name;
                     }',
@@ -4059,15 +4059,249 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'negatedInstanceofOfANonFinalClassKeepsIt' => [
+            'exhaustedInstanceofChecksOfFinalClassesLeaveNoValue' => [
                 'code' => '<?php
-                    class Open {}
+                    final class A {}
+                    final class B {}
 
-                    function f(Open $o): void {
-                        if (!$o instanceof Open) {
-                            /** @psalm-check-type-exact $o = Open */
+                    function f(A|B $o): int {
+                        if ($o instanceof A) {
+                            return 1;
+                        }
+                        if ($o instanceof B) {
+                            return 2;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'exhaustedInstanceofChecksOfOpenClassesAndInterfacesLeaveNoValue' => [
+                'code' => '<?php
+                    class A {}
+                    class B {}
+                    interface I {}
+
+                    function f(A|B $o): int {
+                        if ($o instanceof A) {
+                            return 1;
+                        }
+                        if ($o instanceof B) {
+                            return 2;
+                        }
+                    }
+
+                    function g(I $o): int {
+                        if ($o instanceof I) {
+                            return 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'equalityAssertionOfANegatedCallHoldsWhereTheNegationIsFalse' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true =int $x */
+                    function isFive(mixed $x): bool {
+                        return $x === 5;
+                    }
+
+                    function returnIfNot(int|string $x): void {
+                        if (!isFive($x)) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function elseOfNot(int|string $x): void {
+                        if (!isFive($x)) {
+                            /** @psalm-check-type-exact $x = int|string */;
+                        } else {
+                            /** @psalm-check-type-exact $x = int */;
+                        }
+                    }
+
+                    function returnIfNotOr(int|string $x, bool $b): void {
+                        if (!isFive($x) || $b) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function returnIfNotAnd(int|string $x, bool $b): void {
+                        if (!(isFive($x) && $b)) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function ternaryOfNot(int|string $x): void {
+                        $y = !isFive($x) ? 0 : $x;
+                        /** @psalm-check-type-exact $y = int */;
+                    }
+
+                    function whileNot(int|string $x): void {
+                        while (!isFive($x)) {
+                            $x = rand(0, 1) ? 1 : "a";
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function returnIfFalse(int|string $x): void {
+                        if (isFive($x) === false) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function returnIfFalseOnTheLeft(int|string $x): void {
+                        if (false === isFive($x)) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function returnIfNotTrue(int|string $x, bool $b): void {
+                        if (isFive($x) !== true || $b) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function returnIfLooselyFalse(int|string $x): void {
+                        if (isFive($x) == false) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function matchTrue(int|string $x): int {
+                        return match (true) {
+                            !isFive($x) => 0,
+                            default => $x,
+                        };
+                    }
+
+                    function switchTrue(int|string $x): void {
+                        switch (true) {
+                            case !isFive($x):
+                                return;
+                            default:
+                                /** @psalm-check-type-exact $x = int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'equalityAssertionOfANegatedCallInAnElseIfOnlyHoldsAfterIt' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true =int $x */
+                    function isFive(mixed $x): bool {
+                        return $x === 5;
+                    }
+
+                    function f(int|string $x, bool $b): void {
+                        if ($b) {
+                        } elseif (!isFive($x)) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int|string */;
+                    }
+
+                    function g(int|string $x, bool $b): void {
+                        if ($b) {
+                            return;
+                        } elseif (!isFive($x)) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'negatedReflectionClassChecksKeepTheirTypes' => [
+                'code' => '<?php
+                    interface I {}
+                    class P {}
+
+                    /** @param ReflectionClass<object> $r */
+                    function implementsI(ReflectionClass $r): void {
+                        if (!$r->implementsInterface(I::class)) {
+                            /** @psalm-check-type-exact $r = ReflectionClass<object> */;
+                            throw new Exception();
+                        }
+                        /** @psalm-check-type-exact $r = ReflectionClass<I> */;
+                    }
+
+                    /** @param ReflectionClass<I> $r */
+                    function alreadyImplementsI(ReflectionClass $r): void {
+                        if (!$r->implementsInterface(I::class)) {
+                            /** @psalm-check-type-exact $r = ReflectionClass<I> */;
+                        }
+                    }
+
+                    /** @param ReflectionClass<P> $r */
+                    function alreadySubclassOfP(ReflectionClass $r): void {
+                        if (!$r->isSubclassOf(P::class)) {
+                            /** @psalm-check-type-exact $r = ReflectionClass<P> */;
+                        }
+                    }
+
+                    /** @param ReflectionClass<P> $r */
+                    function alreadyInstanceOfP(ReflectionClass $r, P $p): void {
+                        if (!$r->isInstance($p)) {
+                            /** @psalm-check-type-exact $p = P */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'negatedInstanceofOfThisInATraitKeepsThisForTheOtherClasses' => [
+                'code' => '<?php
+                    interface HasA {
+                        public function a(): int;
+                    }
+
+                    trait T {
+                        public int $calls = 0;
+
+                        public function f(): int {
+                            if (!$this instanceof HasA) {
+                                $this->calls++;
+                                return 0;
+                            }
+                            return $this->a();
+                        }
+                    }
+
+                    class A implements HasA {
+                        use T;
+
+                        public function a(): int {
+                            return 1;
+                        }
+                    }
+
+                    class B {
+                        use T;
+                    }',
+            ],
+            'negatedLateStaticIsAKeepsTheClassItself' => [
+                'code' => '<?php
+                    class Open {
+                        public function f(Open|int $o): void {
+                            if (!is_a($o, static::class)) {
+                                /** @psalm-check-type-exact $o = Open|int */;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'exhaustedNullChecksLeaveNoValue' => [
                 'code' => '<?php
@@ -5161,6 +5395,186 @@ final class ConditionalTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedAssignment'],
             ],
+            'mixedVarWrittenAtAnOffsetInElseStaysMixed' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (!is_array($u) || rand(0, 1)) {
+                        echo 0;
+                    } else {
+                        $u["a"] = 1;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarWrittenAtAnOffsetInSwitchCaseStaysMixed' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    switch (true) {
+                        case is_array($u) && rand(0, 1):
+                            $u["a"] = 1;
+                            break;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarWrittenAtAnOffsetInLastSwitchCaseStaysMixed' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    switch (true) {
+                        case is_array($u) && rand(0, 1):
+                            $u["a"] = 1;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarWrittenAtAnOffsetInSwitchWithDefaultStaysMixed' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    switch (true) {
+                        case is_array($u) && rand(0, 1):
+                            $u["a"] = 1;
+                            break;
+                        default:
+                            echo 0;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarAssignedInASwitchCaseStaysUnioned' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    switch (true) {
+                        case is_array($u) && rand(0, 1):
+                            $u["a"] = 1;
+                            break;
+                        case rand(0, 1):
+                            $u = 5;
+                            break;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => '5|array{a: 1, ...<array-key, mixed>}|mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarNarrowedOnTheRightOfAnOrStaysMixed' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (!is_array($u) || rand(0, 1)) {
+                        $in_if = $u;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$in_if===' => 'mixed',
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarNarrowedInALongOrConditionStaysMixed' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (!is_array($u) || rand(0, 1) || rand(0, 1) || rand(0, 1) || rand(0, 1)) {
+                        $in_if = $u;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$in_if===' => 'mixed',
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarAssignedOnTheRightOfAnOrStaysUnioned' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (rand(0, 1) || ($u = 5)) {
+                        $in_if = $u;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$in_if===' => '5|mixed',
+                    '$after===' => '5|mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarWrittenAtAnOffsetInATernaryBranchStaysMixed' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    is_array($u) && rand(0, 1) ? ($u["a"] = 1) : null;
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarWrittenAtAnOffsetInAMatchArmStaysMixed' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    match (true) {
+                        is_array($u) && rand(0, 1) => $u["a"] = 1,
+                        default => null,
+                    };
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'mixedVarAssignedInATernaryBranchStaysUnioned' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    is_array($u) ? ($u = 5) : null;
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => '5|mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'mixedPropertyWrittenAtANestedOffsetAfterIssetInAndConditionStaysMixed' => [
                 'code' => '<?php
                     final class K {
@@ -6085,6 +6499,79 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'mixedOffsetReadAfterATernaryWritingAnOffsetOfAMixedVar' => [
+                'code' => '<?php
+                    /** @param mixed $u */
+                    function f($u): void {
+                        is_array($u) && rand(0, 1) ? ($u["a"] = 1) : null;
+
+                        if (!empty($u["a"])) {
+                            echo (string) $u["a"];
+                        }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'mixedOffsetReadAfterTheElseOfATernaryWritingAnOffsetOfAMixedVar' => [
+                'code' => '<?php
+                    /** @param mixed $u */
+                    function f($u): void {
+                        !is_array($u) ? null : ($u["a"] = 1);
+
+                        if (!empty($u["a"])) {
+                            echo (string) $u["a"];
+                        }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'mixedOffsetReadAfterAMatchArmWritingAnOffsetOfAMixedVar' => [
+                'code' => '<?php
+                    /** @param mixed $u */
+                    function f($u): void {
+                        match (true) {
+                            is_array($u) && rand(0, 1) => $u["a"] = 1,
+                            default => null,
+                        };
+
+                        if (!empty($u["a"])) {
+                            echo (string) $u["a"];
+                        }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'mixedOffsetReadAfterAnElseWritingAnOffsetOfAMixedVar' => [
+                'code' => '<?php
+                    /** @param mixed $u */
+                    function f($u, bool $b): void {
+                        if (!is_array($u) || $b) {
+                            echo 1;
+                        } else {
+                            $u["a"] = 1;
+                        }
+
+                        if (!empty($u["a"])) {
+                            echo (string) $u["a"];
+                        }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'mixedOffsetReadAfterASwitchCaseWritingAnOffsetOfAMixedVar' => [
+                'code' => '<?php
+                    /** @param mixed $u */
+                    function f($u): void {
+                        switch (true) {
+                            case is_array($u) && rand(0, 1):
+                                $u["a"] = 1;
+                                break;
+                        }
+
+                        if (!empty($u["a"])) {
+                            echo (string) $u["a"];
+                        }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
             'mixedVarWrittenByReferenceInTheConditionOfANestedIfStaysUnioned' => [
                 'code' => '<?php
                     /** @param-out string|false $s */
@@ -6315,6 +6802,29 @@ final class ConditionalTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:30 - Type Code for $code',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'negatedInstanceofOfAnOpenClassOfItself' => [
+                'code' => '<?php
+                    class Open {}
+
+                    function f(Open $o): void {
+                        if (!$o instanceof Open) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:30 - Type Open for $o',
+            ],
+            'negatedInstanceofOfADocblockClassOfItself' => [
+                'code' => '<?php
+                    final class Fin {}
+
+                    /** @param Fin $o */
+                    function f($o): void {
+                        if (!$o instanceof Fin) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:30 - Docblock-defined type Fin for $o',
             ],
             'identicalKeyedArraysOfDisjointTypes' => [
                 'code' => '<?php

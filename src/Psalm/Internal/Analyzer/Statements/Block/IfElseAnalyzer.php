@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
+use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Exception\ScopeAnalysisException;
@@ -17,10 +19,12 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseIfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\GuardedClasses;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\IssueBuffer;
@@ -116,9 +120,9 @@ final class IfElseAnalyzer
                 : null;
 
         try {
-            $if_conditional_scope = IfConditionalAnalyzer::analyze(
+            $if_conditional_scope = self::analyzeCondition(
                 $statements_analyzer,
-                $stmt->cond,
+                $stmt,
                 $context,
                 $codebase,
                 $if_scope,
@@ -150,41 +154,16 @@ final class IfElseAnalyzer
             );
         }
 
-        // whether each mixed variable may be unset
-        $mixed_vars = [];
-
-        foreach ($if_context->vars_in_scope as $var_id => $type) {
-            if ($type->isMixed() && isset($context->vars_in_scope[$var_id])) {
-                $mixed_vars[$var_id] = $type->possibly_undefined || $type->possibly_undefined_from_try;
-            }
-        }
-
         $cond_object_id = spl_object_id($stmt->cond);
 
-        $if_clauses = FormulaGenerator::getFormula(
-            $cond_object_id,
-            $cond_object_id,
-            $stmt->cond,
-            $context->self,
+        [$if_clauses, $get_negated_clauses] = self::getConditionClauses(
             $statements_analyzer,
+            $stmt->cond,
+            $cond_object_id,
+            $if_context,
+            $context,
             $codebase,
         );
-
-        if (count($if_clauses) > 200) {
-            $if_clauses = [];
-        }
-
-        // the negation is that of the condition, not of what is left of it
-        $cond_clauses = $if_clauses;
-
-        $if_clauses_handled = [];
-        foreach ($if_clauses as $clause) {
-            $mixed_vars = array_diff_key($mixed_vars, $clause->possibilities);
-
-            $if_clauses_handled[] = $clause->forgetItemsOfMixedVars($mixed_vars, $cond_object_id);
-        }
-
-        $if_clauses = $if_clauses_handled;
 
         $entry_clauses = $context->clauses;
 
@@ -267,18 +246,7 @@ final class IfElseAnalyzer
         $if_scope->reasonable_clauses = $if_context->clauses;
 
         try {
-            $if_scope->negated_clauses = array_map(
-                static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars($mixed_vars, $cond_object_id),
-                FormulaGenerator::getNegatedFormula(
-                    Algebra::simplifyCNF($cond_clauses),
-                    $stmt->cond,
-                    $cond_object_id,
-                    $context->self,
-                    $statements_analyzer,
-                    $codebase,
-                    true,
-                ),
-            );
+            $if_scope->negated_clauses = $get_negated_clauses();
         } catch (ComplicatedExpressionException) {
             $if_scope->negated_clauses = [];
         }
@@ -593,6 +561,66 @@ final class IfElseAnalyzer
     }
 
     /**
+     * The clauses of the condition, where a clause on an offset or a property of a variable that is mixed in the body
+     * is unknown, and a function returning those of its negation
+     *
+     * @return array{list<Clause>, Closure(): list<Clause>}
+     */
+    private static function getConditionClauses(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $cond,
+        int $cond_object_id,
+        Context $if_context,
+        Context $context,
+        Codebase $codebase,
+    ): array {
+        // whether each mixed variable may be unset
+        $mixed_vars = [];
+
+        foreach ($if_context->vars_in_scope as $var_id => $type) {
+            if ($type->isMixed() && isset($context->vars_in_scope[$var_id])) {
+                $mixed_vars[$var_id] = $type->possibly_undefined || $type->possibly_undefined_from_try;
+            }
+        }
+
+        $cond_clauses = FormulaGenerator::getFormula(
+            $cond_object_id,
+            $cond_object_id,
+            $cond,
+            $context->self,
+            $statements_analyzer,
+            $codebase,
+        );
+
+        if (count($cond_clauses) > 200) {
+            $cond_clauses = [];
+        }
+
+        $if_clauses = [];
+        foreach ($cond_clauses as $clause) {
+            $mixed_vars = array_diff_key($mixed_vars, $clause->possibilities);
+
+            $if_clauses[] = $clause->forgetItemsOfMixedVars($mixed_vars, $cond_object_id);
+        }
+
+        // the negation is that of the condition, not of what is left of it
+        $get_negated_clauses = static fn(): array => array_map(
+            static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars($mixed_vars, $cond_object_id),
+            FormulaGenerator::getNegatedFormula(
+                Algebra::simplifyCNF($cond_clauses),
+                $cond,
+                $cond_object_id,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+                true,
+            ),
+        );
+
+        return [$if_clauses, $get_negated_clauses];
+    }
+
+    /**
      * The context the code after a leaving if starts from is taken before its condition, so it misses what the calls of
      * the condition did: the properties and memoized calls an impure call forgets, and the properties a callee sets
      * (recorded as assigned at offset 0). The variables the condition assigns itself are derived again from it
@@ -674,6 +702,47 @@ final class IfElseAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * A class that doesn't exist is only known to be there in the block run when `class_exists()` (or the like)
+     * is true, and after the if where the condition is false; after an if whose other branches leave, it is
+     * known where the condition is true
+     *
+     * @throws ScopeAnalysisException
+     */
+    private static function analyzeCondition(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\If_ $stmt,
+        Context $context,
+        Codebase $codebase,
+        IfScope $if_scope,
+        int $branch_point,
+    ): IfConditionalScope {
+        $phantom_classes_before_cond = $context->phantom_classes;
+
+        $if_conditional_scope = IfConditionalAnalyzer::analyze(
+            $statements_analyzer,
+            $stmt->cond,
+            $context,
+            $codebase,
+            $if_scope,
+            $branch_point,
+        );
+
+        $context->phantom_classes = [
+            ...$phantom_classes_before_cond,
+            ...GuardedClasses::unknownWhenResult($stmt->cond, false, $codebase),
+        ];
+
+        if ($stmt->else) {
+            $if_scope->phantom_classes_of_if_block = [
+                ...$phantom_classes_before_cond,
+                ...GuardedClasses::unknownWhenResult($stmt->cond, true, $codebase),
+            ];
+        }
+
+        return $if_conditional_scope;
     }
 
     /**

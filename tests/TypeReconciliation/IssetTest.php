@@ -81,6 +81,133 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullsafeCallCoalescedWithAFalsyValueKeepsTheReceiverNullableWhereItIsFalsy' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public function m(): bool {
+                            return rand() > 0;
+                        }
+                    }
+
+                    function f(?A $a): void {
+                        if ($a?->m() ?? false) {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+
+                        if (!($a?->m() ?? false)) {
+                            /** @psalm-check-type-exact $a = A|null */
+                        } else {
+                            /** @psalm-check-type-exact $a = A */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nullsafePropertyCoalescedWithAFalsyValueKeepsTheReceiverNullableWhereItIsFalsy' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public bool $p = true;
+                    }
+
+                    function f(?A $a): void {
+                        if ($a?->p ?? false) {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+
+                        if (!($a?->p ?? false)) {
+                            /** @psalm-check-type-exact $a = A|null */
+                        } else {
+                            /** @psalm-check-type-exact $a = A */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nullsafeCallCoalescedWithAnEmptyStringOrAZeroKeepsTheReceiverNullableWhereItIsFalsy' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public function name(): string {
+                            return 'a';
+                        }
+
+                        public function ratio(): float {
+                            return 0.5;
+                        }
+
+                        /** @return list<int> */
+                        public function items(): array {
+                            return [1];
+                        }
+                    }
+
+                    function emptyString(?A $a): void {
+                        if ($a?->name() ?? '') {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+                    }
+
+                    function zeroString(?A $a): void {
+                        if ($a?->name() ?? '0') {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+                    }
+
+                    function zeroFloat(?A $a): void {
+                        if ($a?->ratio() ?? 0.0) {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+                    }
+
+                    function emptyArray(?A $a): void {
+                        if ($a?->items() ?? []) {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nullsafeCallCoalescedWithATruthyStringKeepsTheReceiverNullable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public function name(): string {
+                            return 'a';
+                        }
+                    }
+
+                    function f(?A $a): void {
+                        if ($a?->name() ?? 'x') {
+                            /** @psalm-check-type-exact $a = A|null */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainType'],
+                'php_version' => '8.1',
+            ],
             'variableAssignedByAnArgumentOfTheLeftCallOfACoalesceIsSetOnTheRight' => [
                 'code' => <<<'PHP'
                     <?php
@@ -580,6 +707,38 @@ final class IssetTest extends TestCase
 
                         return $arr;
                     }',
+            ],
+            'unsetOfTheOffsetAnIssetCheckedInALoopMakesANonEmptyArrayPossiblyEmpty' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string, int> $first */
+                    function removeInALoop(array $first): void {
+                        foreach (["bad", "worse"] as $key) {
+                            if (isset($first[$key])) {
+                                unset($first[$key]);
+                            }
+                        }
+
+                        if (empty($first)) {
+                            echo "empty";
+                        }
+                    }',
+            ],
+            'typeOfAnArrayAfterAnUnsetOfTheOffsetAnIssetChecked' => [
+                'code' => '<?php
+                    /** @var non-empty-array<string, int> $data */
+                    $data = ["a" => 1];
+
+                    /** @var string $key */
+                    $key = "a";
+
+                    if (isset($data[$key])) {
+                        unset($data[$key]);
+                    }
+
+                    $after = $data;',
+                'assertions' => [
+                    '$after===' => 'array<string, int>',
+                ],
             ],
             'arrayAccessAfterOneIsset' => [
                 'code' => '<?php
@@ -1186,9 +1345,23 @@ final class IssetTest extends TestCase
                     }
 
                     /**
+                     * @psalm-suppress MixedArrayAccess
                      * @psalm-suppress MixedArgument
                      */
                     echo $payload["b"];',
+            ],
+            'noMixedMethodCallAfterIssetInAndCondition' => [
+                'code' => '<?php
+                    $data = file_get_contents("php://input");
+                    /** @psalm-suppress MixedAssignment */
+                    $payload = json_decode($data, true);
+
+                    if (isset($payload["a"]) && rand(0, 1)) {
+                        /**
+                         * @psalm-suppress MixedArgument
+                         */
+                        echo $payload["b"];
+                    }',
             ],
             'implicitIssetWithStringKeyOnArrayDoesntChangeArrayType' => [
                 'code' => '<?php
@@ -1681,6 +1854,57 @@ final class IssetTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'nullsafeCallCoalescedWithAFalsyValueNarrowsTheReceiver' => [
+                'code' => '<?php
+                    class Checker {
+                        public function isValid(): bool {
+                            return (bool) rand(0, 1);
+                        }
+
+                        public function count(): int {
+                            return rand(0, 3);
+                        }
+                    }
+
+                    class Holder {
+                        public function __construct(private ?Checker $checker = null) {}
+
+                        public function fromProperty(): Checker {
+                            if ($this->checker?->isValid() ?? false) {
+                                return $this->checker;
+                            }
+
+                            throw new RuntimeException();
+                        }
+
+                        public function fromParameter(?Checker $checker): Checker {
+                            if ($checker?->isValid() ?? null) {
+                                return $checker;
+                            }
+
+                            throw new RuntimeException();
+                        }
+
+                        public function fromZero(?Checker $checker): Checker {
+                            if ($checker?->count() ?? 0) {
+                                return $checker;
+                            }
+
+                            throw new RuntimeException();
+                        }
+
+                        public function negated(?Checker $checker): Checker {
+                            if (!($checker?->isValid() ?? false)) {
+                                throw new RuntimeException();
+                            }
+
+                            return $checker;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'comparisonOfAnItemWithAUnionKeyKeepsTheTypesOfItemsOfOtherTypes' => [
                 'code' => <<<'PHP'
@@ -2510,6 +2734,25 @@ final class IssetTest extends TestCase
                 'error_message' => 'RedundantCondition',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'nullsafeCallCoalescedWithATruthyValueDoesNotNarrowTheReceiver' => [
+                'code' => '<?php
+                    class Checker {
+                        public function isValid(): bool {
+                            return (bool) rand(0, 1);
+                        }
+                    }
+
+                    function check(?Checker $checker): Checker {
+                        if ($checker?->isValid() ?? true) {
+                            return $checker;
+                        }
+
+                        throw new RuntimeException();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

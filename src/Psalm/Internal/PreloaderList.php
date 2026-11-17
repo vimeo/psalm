@@ -1060,6 +1060,7 @@ final class PreloaderList {
         \Psalm\Internal\TypeVisitor\TypeVariableResolver::class,
         \Psalm\Internal\Type\ArrayType::class,
         \Psalm\Internal\Type\AssertionReconciler::class,
+        \Psalm\Internal\Type\AtomicParts::class,
         \Psalm\Internal\Type\ClosedInheritanceToUnion::class,
         \Psalm\Internal\Type\Comparator\ArrayTypeComparator::class,
         \Psalm\Internal\Type\Comparator\AtomicTypeComparator::class,
