@@ -4333,7 +4333,8 @@ final class AssertionFinder
                     new Union([$array_atomic]),
                 )]);
 
-                // only an int finds no other key than itself: '0' finds the key 0, null the key ''
+                // only an int finds no other key than itself: '0' finds the key 0, null the key ''. A string that
+                // keys of T can be is still narrowed, though '0' may have found the int key 0
                 if (Type::intersectUnionTypes($key_of_type, $first_var_type, $source->getCodebase()) !== null
                     && array_all(
                         $first_var_type->getAtomicTypes(),
