@@ -774,14 +774,13 @@ final class LanguageServer extends Dispatcher
                 },
                 array_filter(
                     array_map(static function (IssueData $issue_data) use (&$issue_baseline, $config): IssueData {
-                        if ($config->isSuppressible($issue_data->type)
-                            && BaselineMatcher::consume(
-                                $issue_baseline,
-                                $issue_data->file_name,
-                                $issue_data->type,
-                                $issue_data->selected_text,
-                            )
-                        ) {
+                        if (BaselineMatcher::consume(
+                            $config,
+                            $issue_baseline,
+                            $issue_data->file_name,
+                            $issue_data->type,
+                            $issue_data->selected_text,
+                        )) {
                             $issue_data->severity = IssueData::SEVERITY_INFO;
                         }
 
