@@ -113,6 +113,8 @@ final class ProjectBootstrap
         ?string $find_references_to,
         bool $run_taint_analysis,
     ): ProjectAnalyzer {
+        $find_unused_code = self::shouldFindUnusedCode($options, $config);
+
         $project_analyzer = new ProjectAnalyzer(
             $config,
             $providers,
@@ -130,7 +132,7 @@ final class ProjectBootstrap
             $config,
             $project_analyzer,
             $find_references_to,
-            self::shouldFindUnusedCode($options, $config),
+            $find_unused_code,
             isset($options['find-unused-variables']),
             $run_taint_analysis,
         );
