@@ -537,10 +537,9 @@ final class Psalm
             exit(1);
         }
 
-        // the coverage is reported with two decimals
+        // the coverage is reported with two decimals; the same pattern as for minTypeCoverage in config.xsd
         if (is_string($options['min-type-coverage'])
-            && preg_match('/^\d+(\.\d{1,2})?\z/', $options['min-type-coverage'])
-            && (float) $options['min-type-coverage'] <= 100
+            && preg_match('/^([0-9]{1,2}(\.[0-9]{1,2})?|100(\.0{1,2})?)\z/', $options['min-type-coverage'])
         ) {
             return (float) $options['min-type-coverage'];
         }

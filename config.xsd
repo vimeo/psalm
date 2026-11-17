@@ -814,10 +814,10 @@
     </xs:simpleType>
 
     <xs:simpleType name="TypeCoveragePercentageType">
-        <xs:restriction base="xs:decimal">
-            <xs:minInclusive value="0"/>
-            <xs:maxInclusive value="100"/>
-            <xs:fractionDigits value="2"/>
+        <!-- a percentage from 0 to 100 with at most two decimals, the same pattern as for the command line option;
+             a string, so that whitespace isn't collapsed -->
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]{1,2}(\.[0-9]{1,2})?|100(\.0{1,2})?"/>
         </xs:restriction>
     </xs:simpleType>
 

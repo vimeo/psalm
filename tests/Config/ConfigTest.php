@@ -1362,19 +1362,32 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         );
     }
 
-    public function testMinTypeCoverageAboveOneHundredIsAConfigError(): void
+    #[DataProvider('provideInvalidMinTypeCoverage')]
+    public function testInvalidMinTypeCoverageIsAConfigError(string $min_type_coverage): void
     {
         $this->expectException(ConfigException::class);
         $this->expectExceptionMessage("attribute 'minTypeCoverage'");
         Config::loadFromXML(
             dirname(__DIR__, 2),
             '<?xml version="1.0"?>
-            <psalm minTypeCoverage="101">
+            <psalm minTypeCoverage="' . $min_type_coverage . '">
                 <projectFiles>
                     <directory name="src" />
                 </projectFiles>
             </psalm>',
         );
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function provideInvalidMinTypeCoverage(): iterable
+    {
+        yield 'above 100' => ['100.01'];
+        yield 'three decimals' => ['95.555'];
+        yield 'three decimals with a trailing zero' => ['95.500'];
+        yield 'whitespace' => [' 95'];
     }
 
     public function testImpossibleIssue(): void
