@@ -6,6 +6,7 @@ namespace Psalm\Internal\Cli;
 
 use Closure;
 use JsonException;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -274,6 +275,15 @@ final class OverlayCommand
     ): Engine {
         $codebase = $project_analyzer->getCodebase();
         $config = $project_analyzer->getConfig();
+
+        // a read-only cache keeps what it computes in memory: a cold one would parse the project into it
+        if (self::hasColdCache($codebase)) {
+            throw new OverlayFailure(
+                OverlayFailure::REFERENCES_NOT_RECORDED,
+                'The cache has nothing for this config and this version of Psalm: run `psalm --record-references`'
+                    . ' with them first',
+            );
+        }
 
         $cache = $codebase->file_reference_provider->cache;
         $index = $cache ? ReferenceIndex::load($cache) : null;
@@ -585,6 +595,14 @@ final class OverlayCommand
         }
 
         return false;
+    }
+
+    private static function hasColdCache(Codebase $codebase): bool
+    {
+        return $codebase->statements_provider->parser_cache_provider?->isCold() === true
+            || $codebase->file_storage_provider->cache?->isCold() === true
+            || $codebase->classlike_storage_provider->cache?->isCold() === true
+            || $codebase->file_reference_provider->cache?->isCold() === true;
     }
 
     private static function absolute(string $path, string $cwd): string

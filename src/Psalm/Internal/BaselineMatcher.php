@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
+use Psalm\Config;
+
 use function array_search;
 use function array_splice;
 use function count;
@@ -23,15 +25,20 @@ final class BaselineMatcher
      * takes is used up
      *
      * @param array<string, array<string, array{o: int, s: array<int, string>}>> $issue_baseline
-     * @param string $file_name relative to the project root, as the baseline spells it
-     * @psalm-capabilities write-refs
+     * @param string $file_name relative to the project root, with either separator
+     * @psalm-capabilities read-props|write-refs
      */
     public static function consume(
+        Config $config,
         array &$issue_baseline,
         string $file_name,
         string $type,
         string $selected_text,
     ): bool {
+        if (!$config->isSuppressible($type)) {
+            return false;
+        }
+
         $file = str_replace('\\', '/', $file_name);
 
         if (!isset($issue_baseline[$file][$type]) || $issue_baseline[$file][$type]['o'] <= 0) {

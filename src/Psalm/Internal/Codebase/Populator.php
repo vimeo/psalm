@@ -99,6 +99,9 @@ final class Populator
     {
         $this->progress->debug('ClassLikeStorage is populating' . "\n");
 
+        // before the members of the classes inherit their internal namespaces
+        $this->classlikes->markUnshippedCodeInternal();
+
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
             $this->populateClassLikeStorage($class_storage);
         }
@@ -619,11 +622,11 @@ final class Populator
                     continue;
                 }
 
-                $storage->pseudo_methods[$method_name] ??= $pseudo_method;
-
-                if (isset($parent_interface_storage->declaring_pseudo_method_ids[$method_name])) {
+                if (!isset($storage->pseudo_methods[$method_name])) {
+                    $storage->pseudo_methods[$method_name] = $pseudo_method;
                     $storage->declaring_pseudo_method_ids[$method_name]
-                        ??= $parent_interface_storage->declaring_pseudo_method_ids[$method_name];
+                        = $parent_interface_storage->declaring_pseudo_method_ids[$method_name]
+                            ?? new MethodIdentifier($parent_interface_storage->name, $method_name);
                 }
             }
         }
@@ -695,6 +698,7 @@ final class Populator
             foreach ($storage->properties as $property) {
                 if (!$property->is_static) {
                     $property->readonly = true;
+                    $property->readonly_public_set = false;
                     $property->allow_private_mutation = false;
                 }
             }
@@ -712,6 +716,7 @@ final class Populator
                 foreach ($storage->properties as $property) {
                     if (!$property->is_static) {
                         $property->readonly = true;
+                        $property->readonly_public_set = false;
                     }
                 }
             }
@@ -927,17 +932,17 @@ final class Populator
                         }
                     }
 
-                    if (!$is_own_method) {
-                        continue;
-                    }
-
-                    // tell the declaring class it's overridden downstream
+                    // tell the declaring class it's overridden downstream, by a method of this class or of a trait
                     $declaring_method_storage->overridden_downstream = true;
                     $declaring_method_storage->overridden_somewhere = true;
 
                     if ($declaring_method_storage->mutation_free_assumed) {
                         $declaring_method_storage->capabilities = Capabilities::ALL;
                         $declaring_method_storage->mutation_free_assumed = false;
+                    }
+
+                    if (!$is_own_method) {
+                        continue;
                     }
 
                     if ($declaring_method_storage->throws
@@ -1145,25 +1150,26 @@ final class Populator
     {
         $fq_class_name_lc = strtolower($storage->name);
 
+        // a plugin can add a `@method` without its declaring id
         foreach ($parent_storage->pseudo_methods as $method_name => $pseudo_method) {
-            if (!$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)) {
-                $storage->pseudo_methods[$method_name] ??= $pseudo_method;
-
-                if (isset($parent_storage->declaring_pseudo_method_ids[$method_name])) {
-                    $storage->declaring_pseudo_method_ids[$method_name]
-                        ??= $parent_storage->declaring_pseudo_method_ids[$method_name];
-                }
+            if (!isset($storage->pseudo_methods[$method_name])
+                && !$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)
+            ) {
+                $storage->pseudo_methods[$method_name] = $pseudo_method;
+                $storage->declaring_pseudo_method_ids[$method_name]
+                    = $parent_storage->declaring_pseudo_method_ids[$method_name]
+                        ?? new MethodIdentifier($parent_storage->name, $method_name);
             }
         }
 
         foreach ($parent_storage->pseudo_static_methods as $method_name => $pseudo_method) {
-            if (!$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)) {
-                $storage->pseudo_static_methods[$method_name] ??= $pseudo_method;
-
-                if (isset($parent_storage->declaring_pseudo_static_method_ids[$method_name])) {
-                    $storage->declaring_pseudo_static_method_ids[$method_name]
-                        ??= $parent_storage->declaring_pseudo_static_method_ids[$method_name];
-                }
+            if (!isset($storage->pseudo_static_methods[$method_name])
+                && !$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)
+            ) {
+                $storage->pseudo_static_methods[$method_name] = $pseudo_method;
+                $storage->declaring_pseudo_static_method_ids[$method_name]
+                    = $parent_storage->declaring_pseudo_static_method_ids[$method_name]
+                        ?? new MethodIdentifier($parent_storage->name, $method_name);
             }
         }
     }

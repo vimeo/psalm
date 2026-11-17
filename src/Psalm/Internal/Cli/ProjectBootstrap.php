@@ -22,13 +22,9 @@ use Psalm\Progress\Progress;
 use Psalm\Report\ReportOptions;
 
 use function array_key_exists;
-use function fwrite;
 use function in_array;
 use function is_numeric;
 use function is_string;
-
-use const PHP_EOL;
-use const STDERR;
 
 /**
  * The config, the providers and a configured ProjectAnalyzer, as `psalm` builds them from its options. Overlay
@@ -151,13 +147,13 @@ final class ProjectBootstrap
      * The baseline that applies to a run: the one `--use-baseline` names or the config's, unless `--ignore-baseline`
      *
      * @return array<string,array<string,array{o:int, s: list<string>}>>
+     * @throws ProjectBootstrapException if the option is not a path or the file is not a baseline
      */
     public static function readBaseline(array $options, Config $config): array
     {
         if (isset($options['use-baseline'])) {
             if (!is_string($options['use-baseline'])) {
-                fwrite(STDERR, '--use-baseline must be a string' . PHP_EOL);
-                exit(1);
+                throw new ProjectBootstrapException('--use-baseline must be a string');
             }
 
             $config->error_baseline = $options['use-baseline'];
@@ -172,6 +168,7 @@ final class ProjectBootstrap
 
     /**
      * @return array<string,array<string,array{o:int, s: list<string>}>>
+     * @throws ProjectBootstrapException if the file is missing or not a baseline, with what to do about it
      */
     public static function readBaselineFile(string $baseline_file_path): array
     {
@@ -181,9 +178,12 @@ final class ProjectBootstrap
                 $baseline_file_path,
             );
         } catch (ConfigException $exception) {
-            fwrite(STDERR, 'Could not read the baseline: ' . $exception->getMessage()
-                . '. Create it with --set-baseline=' . $baseline_file_path . PHP_EOL);
-            exit(1);
+            throw new ProjectBootstrapException(
+                'Could not read the baseline: ' . $exception->getMessage()
+                    . '. Create it with --set-baseline=' . $baseline_file_path,
+                0,
+                $exception,
+            );
         }
     }
 

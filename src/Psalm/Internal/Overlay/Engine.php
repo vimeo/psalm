@@ -277,7 +277,7 @@ final class Engine
             $overlay_issues,
             $contents,
             $this->baseline,
-            static fn(string $type): bool => $config->isSuppressible($type),
+            $config,
         );
 
         return Protocol::envelope(

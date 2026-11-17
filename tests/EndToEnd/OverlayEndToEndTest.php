@@ -31,6 +31,7 @@ use function fclose;
 use function file_put_contents;
 use function function_exists;
 use function getenv;
+use function glob;
 use function hash_file;
 use function implode;
 use function is_dir;
@@ -59,6 +60,7 @@ use function unlink;
 use function usleep;
 use function var_export;
 
+use const GLOB_ONLYDIR;
 use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
 
@@ -791,6 +793,55 @@ final class OverlayEndToEndTest extends TestCase
             }
             function helper(int $i): ' . $return_type . ' { return ' . ($return_type === 'int' ? '$i' : '(string) $i')
             . '; }';
+    }
+
+    public function testAColdCacheIsNotRecorded(): void
+    {
+        $this->writeFiles(['A.php' => self::A, 'B.php' => self::B]);
+        $this->recordReferences();
+        // what another version of Psalm finds: no parser cache of its own
+        $parser_caches = glob($this->project . '/cache/*/php-parser', GLOB_ONLYDIR);
+        $this->assertNotFalse($parser_caches);
+        $this->assertCount(1, $parser_caches);
+        self::removeDirectory($parser_caches[0]);
+
+        $this->assertSame(
+            ['references_not_recorded', 'The cache has nothing for this config and this version of Psalm: run '
+                . '`psalm --record-references` with them first'],
+            $this->failure(['--overlay=src/A.php=src/A.php']),
+        );
+    }
+
+    public function testAMissingBaselineIsAConfigFailure(): void
+    {
+        $this->writeFiles(['A.php' => self::A, 'B.php' => self::B]);
+        $this->recordReferences();
+
+        $this->assertSame(
+            ['config', 'Could not read the baseline: missing.xml does not exist or is not readable. '
+                . 'Create it with --set-baseline=missing.xml'],
+            $this->failure(['--overlay=src/A.php=src/A.php', '--use-baseline=missing.xml']),
+        );
+    }
+
+    /**
+     * @param list<string> $arguments
+     * @return array{string, string} the kind and the message of the error the command answers with exit code 255
+     */
+    private function failure(array $arguments): array
+    {
+        $process = self::newProcess(
+            [PHP_BINARY, $this->psalm, '--output-format=json', '--no-progress', '--threads=1', ...$arguments],
+            $this->project,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(255, $process->getExitCode(), $process->getErrorOutput() . $process->getOutput());
+        /** @var array{error: array{kind: string, message: string}} $answer */
+        $answer = json_decode($process->getOutput(), true, 512, JSON_THROW_ON_ERROR);
+
+        return [$answer['error']['kind'], $answer['error']['message']];
     }
 
     /**

@@ -1,8 +1,4 @@
 //// expect: no-errors
-//// psalm-divergence: Psalm types the empty construction ArrayCollection<never, never>
-////       and keeps that type after the assignment to the property, so the lambda
-////       parameter is checked against never (ParadoxicalCondition) instead of the
-////       variable taking DateTime as its upper bound.
 //// note: an empty construction assigned to an `ArrayCollection<int, DateTime>`
 ////       property, then handed a lambda whose param is typed DateTime. The typed
 ////       lambda param constrains the variable from above; the empty `dict[]`

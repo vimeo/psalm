@@ -7,6 +7,7 @@ namespace Psalm\Tests\Overlay;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\Overlay\IssueDiff;
+use Psalm\Tests\TestConfig;
 
 use function array_map;
 use function str_repeat;
@@ -35,7 +36,7 @@ final class IssueDiffTest extends TestCase
             $overlay,
             [self::FILE => $contents],
             $baseline,
-            static fn(): bool => true,
+            new TestConfig(),
         );
 
         $this->assertSame(
@@ -46,6 +47,23 @@ final class IssueDiffTest extends TestCase
                 $new_issues,
             ),
         );
+    }
+
+    public function testTheBaselineDoesNotCoverAnUnsuppressibleIssue(): void
+    {
+        $config = new TestConfig();
+        $config->addUnsuppressibleIssue('InvalidReturnStatement');
+        $old = str_repeat('x', 100);
+
+        $new_issues = IssueDiff::getNewIssues(
+            [],
+            [self::issue('InvalidReturnStatement', 'new', 80, 'b')],
+            [self::FILE => [$old, $old]],
+            ['src/A.php' => ['InvalidReturnStatement' => ['o' => 1, 's' => ['b']]]],
+            $config,
+        );
+
+        $this->assertSame(['error'], array_map(static fn(array $issue): string => $issue['severity'], $new_issues));
     }
 
     /**

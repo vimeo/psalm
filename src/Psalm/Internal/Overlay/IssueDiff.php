@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Overlay;
 
-use Closure;
+use Psalm\Config;
 use Psalm\Internal\BaselineMatcher;
 
 use function array_keys;
@@ -66,7 +66,7 @@ final class IssueDiff
      * @param list<IssueArray> $overlay
      * @param array<string, array{string, string}> $contents path of an overlaid file => [contents, overlay]
      * @param array<string, array<string, array{o: int, s: array<int, string>}>> $baseline
-     * @param Closure[_](string): bool $is_suppressible whether the baseline may cover an issue type
+     * @param Config $config the types it lets the baseline cover
      * @return list<IssueArray>
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
@@ -75,7 +75,7 @@ final class IssueDiff
         array $overlay,
         array $contents,
         array $baseline,
-        Closure $is_suppressible,
+        Config $config,
     ): array {
         $file_paths = array_keys($contents);
         foreach ([...$base, ...$overlay] as $issue) {
@@ -161,9 +161,7 @@ final class IssueDiff
             $issue = $overlay[$i];
             $type = $issue['type'];
 
-            if ($is_suppressible($type)
-                && BaselineMatcher::consume($baseline, $issue['file_name'], $type, $issue['selected_text'])
-            ) {
+            if (BaselineMatcher::consume($config, $baseline, $issue['file_name'], $type, $issue['selected_text'])) {
                 $issue['severity'] = 'info';
             }
 

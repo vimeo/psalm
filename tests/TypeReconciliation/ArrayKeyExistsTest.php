@@ -688,6 +688,368 @@ final class ArrayKeyExistsTest extends TestCase
                         }
                     }',
             ],
+            'arrayKeyExistsRemovesNullFromANullableArray' => [
+                'code' => '<?php
+                    /** @return array<string, list<string>>|null */
+                    function config(): ?array {
+                        return random_int(0, 1) === 1 ? ["SN" => ["a"]] : null;
+                    }
+
+                    function hasSn(string $sn): bool {
+                        $cfg = config();
+                        /** @psalm-suppress PossiblyNullArgument */
+                        if (array_key_exists("SN", $cfg)) {
+                            /** @psalm-check-type-exact $cfg = array{SN: list<string>, ...<string, list<string>>} */;
+                            return in_array($sn, $cfg["SN"], true);
+                        }
+
+                        return false;
+                    }',
+            ],
+            'arrayKeyExistsRemovesFalseAndNullFromTheArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array{SN?: int}|false|null $cfg
+                     * @psalm-suppress PossiblyNullArgument
+                     * @psalm-suppress PossiblyFalseArgument
+                     */
+                    function f($cfg): void {
+                        if (key_exists("SN", $cfg)) {
+                            /** @psalm-check-type-exact $cfg = array{SN: int} */;
+                        }
+                    }',
+            ],
+            'arrayKeyExistsOfAVariableKeyMakesTheArrayNonEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int>|null $cfg
+                     * @psalm-suppress PossiblyNullArgument
+                     */
+                    function f(?array $cfg, string $key): void {
+                        if (array_key_exists($key, $cfg)) {
+                            /** @psalm-check-type-exact $cfg = non-empty-array<string, int> */;
+                        }
+                    }
+
+                    /** @param array<string, int> $cfg */
+                    function g(array $cfg, string $key): void {
+                        if (array_key_exists($key, $cfg)) {
+                            /** @psalm-check-type-exact $cfg = non-empty-array<string, int> */;
+                        }
+                    }',
+            ],
+            'arrayKeyExistsRemovesNullFromANestedArrayAndAPropertyArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a?: array<string, int>|null} $x
+                     * @psalm-suppress PossiblyUndefinedArrayOffset
+                     * @psalm-suppress PossiblyNullArgument
+                     */
+                    function f(array $x): void {
+                        if (array_key_exists("SN", $x["a"])) {
+                            /** @psalm-check-type-exact $x = array{a: array{SN: int, ...<string, int>}} */;
+                        }
+                    }
+
+                    final class C {
+                        /** @var array<string, int>|null */
+                        public ?array $p = null;
+
+                        /** @psalm-suppress PossiblyNullArgument */
+                        public function m(): void {
+                            if (array_key_exists("SN", $this->p)) {
+                                /** @psalm-check-type-exact $this->p = array{SN: int, ...<string, int>} */;
+                            }
+                        }
+                    }',
+            ],
+            'arrayKeyExistsKeepsNullWhereItIsFalseOrOred' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int>|null $cfg
+                     * @psalm-suppress PossiblyNullArgument
+                     */
+                    function f(?array $cfg): void {
+                        if (!array_key_exists("SN", $cfg)) {
+                            /** @psalm-check-type-exact $cfg = array<string, int>|null */;
+                        }
+
+                        if (array_key_exists("SN", $cfg) || rand(0, 1)) {
+                            /** @psalm-check-type-exact $cfg = array<string, int>|null */;
+                        }
+                    }',
+            ],
+            'arrayKeyExistsMakesAnOffsetOfUnknownTypeAnArray' => [
+                'code' => '<?php
+                    function f(array $content): void {
+                        /** @psalm-suppress MixedArgument */
+                        if (!array_key_exists("_defaults", $content["services"])) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $content = array{services: array{_defaults: mixed, ...<array-key, mixed>}, ...<array-key, mixed>} */;
+                        $defaults = $content["services"]["_defaults"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'arrayKeyExistsMakesAnOffsetOfUnknownTypeArrayAccessibleBeforePhp8' => [
+                'code' => '<?php
+                    function f(array $content): void {
+                        /** @psalm-suppress MixedArgument */
+                        if (!array_key_exists("_defaults", $content["services"])) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $content = array{services: ArrayAccess|array{_defaults: mixed, ...<array-key, mixed>}, ...<array-key, mixed>} */;
+                        $defaults = $content["services"]["_defaults"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '7.4',
+            ],
+            'arrayKeyExistsOfAnIntOrVariableKeyMakesAnOffsetOfUnknownTypeArrayAccessibleBeforePhp8' => [
+                'code' => '<?php
+                    /** @psalm-suppress MixedArgument */
+                    function f(array $a, string $key): void {
+                        if (!array_key_exists(3, $a["x"]) || !array_key_exists($key, $a["y"])) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $a = array{x: ArrayAccess|array{3: mixed, ...<array-key, mixed>}, y: ArrayAccess|non-empty-array<array-key, mixed>, ...<array-key, mixed>} */;
+                        echo (string) $a["x"][3];
+                        echo (string) $a["y"][$key];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'issetAfterAFailedArrayKeyExistsCheckStillMakesAMixedArrayAccessible' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $config
+                     * @psalm-suppress MixedArgument
+                     */
+                    function f($config): void {
+                        if (array_key_exists("driver", $config) && $config["driver"] === null) {
+                            return;
+                        }
+
+                        if (isset($config["driver"]) && $config["driver"] === "file") {
+                            echo (string) $config["path"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayKeyExistsLeavesAnOffsetThatCanOnlyBeNullAsItIs' => [
+                'code' => '<?php
+                    /** @param list<string> $rows */
+                    function f(array $rows): void {
+                        $u = ["x" => null];
+                        foreach ($rows as $_) {
+                            /** @psalm-suppress PossiblyNullArgument */
+                            if (array_key_exists("a", $u["x"])) {
+                                echo "y";
+                            } else {
+                                $u["x"] = ["a" => 1];
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayKeyExistsKeepsTheTemplateOfTheArrayAnOffsetIsIn' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    /**
+                     * @template T of array<string, array<string, int>>
+                     * @param T $t
+                     */
+                    function f(array $t): void {
+                        if (array_key_exists("k", $t["a"])) {
+                            takesInt($t["a"]["k"]);
+                        }
+
+                        if (isset($t["a"]["k"])) {
+                            takesInt($t["a"]["k"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayKeyExistsKeepsTheOffsetsOfANonEmptyArray' => [
+                'code' => '<?php
+                    function f(array &$variables, bool $b): void {
+                        $variables["image"] = ["#theme" => "image"];
+                        if ($b) {
+                            $variables["image"]["#uri"] = "x";
+                        } else {
+                            $variables["image"]["#uri"] = "y";
+                        }
+
+                        if (array_key_exists("alt", $variables)) {
+                            $variables["image"]["#alt"] = (string) $variables["alt"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'issetMakesATemplateOfAnyTypeArrayAccessible' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $t
+                     */
+                    function f($t): void {
+                        if (isset($t["a"])) {
+                            echo (string) $t["a"];
+                        }
+
+                        echo (string) ($t["z"] ?? 1);
+                    }',
+            ],
+            'arrayKeyExistsLeavesAnOffsetOfAnArrayAccessAsItIs' => [
+                'code' => '<?php
+                    /** @param ArrayAccess<string, array<string, int>> $o */
+                    function f(ArrayAccess $o): void {
+                        if (array_key_exists("k", $o["a"])) {
+                            $w = $o["a"];
+                            /** @psalm-check-type-exact $w = array<string, int>|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayKeyExistsRemovesAStringFromAnOffsetBeforePhp8' => [
+                'code' => '<?php
+                    /** @param array<string, array<string, int>|string> $o */
+                    function f(array $o): void {
+                        /** @psalm-suppress PossiblyInvalidArgument */
+                        if (array_key_exists("k", $o["a"])) {
+                            /** @psalm-check-type-exact $o = array{a: array{k: int, ...<string, int>}, ...<string, array<string, int>|string>} */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'arrayKeyExistsKeepsTheTypeOfANestedArrayFilledInALoop' => [
+                'code' => '<?php
+                    /** @param list<list<string>> $rows */
+                    function f(array $rows): void {
+                        $unmerged = [];
+                        foreach ($rows as $i => $row) {
+                            foreach ($row as $j => $_) {
+                                if (!array_key_exists($i, $unmerged) || !array_key_exists($j, $unmerged[$i])) {
+                                    $unmerged[$i][$j] = ["a"];
+                                }
+                                $unmerged[$i][$j][] = "b";
+                            }
+                        }
+                        /** @psalm-check-type-exact $unmerged = array<int<0, max>, array<int<0, max>, list{0: "a"|"b", 1?: "b", ...<"b">}>> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayKeyExistsKeepsTheTypeOfANestedArrayFilledInALoopBeforePhp8' => [
+                'code' => '<?php
+                    /** @param list<list<string>> $rows */
+                    function f(array $rows): void {
+                        $unmerged = [];
+                        foreach ($rows as $i => $row) {
+                            foreach ($row as $j => $_) {
+                                if (!array_key_exists($i, $unmerged) || !array_key_exists($j, $unmerged[$i])) {
+                                    $unmerged[$i][$j] = ["a"];
+                                }
+                                $unmerged[$i][$j][] = "b";
+                            }
+                        }
+                        /** @psalm-check-type-exact $unmerged = array<int<0, max>, array<int<0, max>, list{0: "a"|"b", 1?: "b", ...<"b">}>> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'arrayKeyExistsKeepsTheKnownTypeOfANestedArrayBeforePhp8' => [
+                'code' => '<?php
+                    /** @param array<int, array<int, list<string>>> $a */
+                    function f(array $a, int $i, int $j): void {
+                        if (!array_key_exists($i, $a) || !array_key_exists($j, $a[$i])) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $a = non-empty-array<int, array<int, list<string>>> */;
+                        $a[$i][$j][] = "x";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'arrayKeyExistsMakesAnArrayOrArrayAccessAnArrayFromPhp8' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int>|ArrayAccess<string, int> $a
+                     */
+                    function f($a): void {
+                        if (array_key_exists("k", $a)) {
+                            /** @psalm-check-type-exact $a = array{k: int, ...<string, int>} */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyInvalidArgument'],
+                'php_version' => '8.0',
+            ],
+            'arrayKeyExistsKeepsAnArrayAccessOfAKnownTypeBeforePhp8' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int>|ArrayAccess<string, int> $a
+                     */
+                    function f($a): void {
+                        if (array_key_exists("k", $a)) {
+                            /** @psalm-check-type-exact $a = ArrayAccess<string, int>|array{k: mixed, ...<string, int>} */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyInvalidArgument'],
+                'php_version' => '7.4',
+            ],
+            'arrayKeyExistsRemovesNullAfterANegatedCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int>|null $a
+                     * @psalm-suppress PossiblyNullArgument
+                     */
+                    function f(?array $a): int {
+                        if (!array_key_exists("x", $a)) {
+                            return 0;
+                        }
+
+                        /** @psalm-check-type-exact $a = array{x: int, ...<string, int>} */;
+                        return $a["x"];
+                    }
+
+                    /**
+                     * @param array<string, int>|null $a
+                     * @psalm-suppress PossiblyNullArgument
+                     */
+                    function g(?array $a): int {
+                        if (!array_key_exists("x", $a)) {
+                            return 0;
+                        } else {
+                            /** @psalm-check-type-exact $a = array{x: int, ...<string, int>} */;
+                            return $a["x"];
+                        }
+                    }',
+            ],
         ];
     }
 

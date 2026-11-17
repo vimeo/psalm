@@ -43,6 +43,12 @@ final class FileReferenceCacheProvider
         $this->cache->consolidate();
     }
 
+    /** @see Cache::isCold() */
+    public function isCold(): bool
+    {
+        return $this->cache->isCold();
+    }
+
     public function getCachedFileReferences(): ?array
     {
         return $this->cache->getItem(self::REFERENCE_CACHE_NAME);

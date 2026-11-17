@@ -61,6 +61,310 @@ final class SwitchTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalBreakOfAnExitingCaseKeepsTheTypeOfAVarDefinedBeforeTheSwitch' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $a): void {
+                        $x = 1;
+                        switch ($a) {
+                            case 2:
+                                if (rand()) {
+                                    $x = 'a';
+                                    break;
+                                }
+
+                                throw new Exception();
+                            default:
+                                $x = 2;
+                        }
+
+                        /** @psalm-check-type-exact $x = 'a'|2 */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalBreakBeforeACaseThatDefinesTheVarAndADefaultThatThrows' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $a): void {
+                        $x = 1;
+                        switch ($a) {
+                            case 2:
+                                if (rand()) {
+                                    $x = 'a';
+                                    break;
+                                }
+
+                                throw new Exception();
+                            case 1:
+                                $x = 2;
+                                break;
+                            default:
+                                throw new Exception();
+                        }
+
+                        /** @psalm-check-type-exact $x = 'a'|2 */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalBreakWithoutAssignmentKeepsTheTypeBeforeTheSwitch' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $a): void {
+                        $x = 1;
+                        switch ($a) {
+                            case 2:
+                                if (rand()) {
+                                    break;
+                                }
+
+                                throw new Exception();
+                            case 1:
+                                $x = 2;
+                                break;
+                            default:
+                                throw new Exception();
+                        }
+
+                        /** @psalm-check-type-exact $x = 1|2 */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalBreaksOfTwoExitingCasesBeforeTheDefaultThatDefinesTheVar' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $a): void {
+                        $x = 1;
+                        switch ($a) {
+                            case 2:
+                                if (rand()) {
+                                    $x = 'b';
+                                    break;
+                                }
+
+                                throw new Exception();
+                            case 3:
+                                if (rand()) {
+                                    $x = 'a';
+                                    break;
+                                }
+
+                                throw new Exception();
+                            default:
+                                $x = 2;
+                        }
+
+                        /** @psalm-check-type-exact $x = 'a'|'b'|2 */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalBreakOfAnExitingCaseInALoopKeepsTheVarOfTheFirstPass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $a): void {
+                        foreach ([1, 2] as $i) {
+                            switch ($i) {
+                                case 1:
+                                    if (rand()) {
+                                        $b = 1;
+                                        break;
+                                    }
+
+                                    throw new Exception();
+                                default:
+                                    $b = 2;
+                            }
+
+                            /** @psalm-check-type-exact $b = 1|2 */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalBreaksOfACaseThatEndsInAThrowMergeTheTypes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $n): void {
+                        switch ($n) {
+                            case 1:
+                                $b = 10;
+                                break;
+                            case 2:
+                                if (rand()) {
+                                    $b = 20;
+                                    break;
+                                }
+
+                                throw new Exception();
+                            default:
+                                throw new Exception();
+                        }
+
+                        /** @psalm-check-type-exact $b = 10|20 */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalBreakOfAnExitingCaseBeforeTheCaseThatDefinesTheVar' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $n): void {
+                        switch ($n) {
+                            case 2:
+                                if (rand()) {
+                                    $b = 20;
+                                    break;
+                                }
+
+                                throw new Exception();
+                            case 1:
+                                $b = 10;
+                                break;
+                            default:
+                                throw new Exception();
+                        }
+
+                        /** @psalm-check-type-exact $b = 10|20 */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalBreakThenThrowDefinesVar' => [
+                'code' => '<?php
+                    function foo(int $a): int {
+                        switch ($a) {
+                            case 1:
+                                $b = 10;
+                                break;
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    $b = 20;
+                                    break;
+                                }
+                                throw new Exception("x");
+                            default:
+                                throw new Exception("y");
+                        }
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'conditionalBreakFallingIntoThrowDefinesVar' => [
+                'code' => '<?php
+                    function foo(int $a): int {
+                        switch ($a) {
+                            case 1:
+                                $b = 10;
+                                break;
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    $b = 20;
+                                    break;
+                                }
+                            default:
+                                throw new Exception("y");
+                        }
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'conditionalBreakInFirstCaseDefinesVar' => [
+                'code' => '<?php
+                    function foo(int $a): int {
+                        switch ($a) {
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    $b = 20;
+                                    break;
+                                }
+                                throw new Exception("x");
+                            case 1:
+                                $b = 10;
+                                break;
+                            default:
+                                throw new Exception("y");
+                        }
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'conditionalBreakOnTrueSwitch' => [
+                'code' => '<?php
+                    function foo(int $a): int {
+                        switch (true) {
+                            case $a === 1:
+                                $b = 10;
+                                break;
+                            case $a === 2:
+                                if (rand(1, 10) === 5) {
+                                    $b = 20;
+                                    break;
+                                }
+                            default:
+                                throw new Exception("y");
+                        }
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'caseConditionReassigningAVariableIsNotNarrowedByAnEarlierCase' => [
+                'code' => '<?php
+                    function f(string $type): void {
+                        switch (true) {
+                            case false !== $pos = strpos($type, "<"):
+                                echo substr($type, $pos + 1, -1);
+                                break;
+                            case false !== $pos = strrpos($type, "["):
+                                /** @psalm-check-type-exact $pos = int */
+                                echo substr($type, 0, $pos);
+                                break;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'caseConditionReassigningAVariableKeepsTheEarlierCasesOfOtherVariables' => [
+                'code' => '<?php
+                    function f(?int $a, string $type): void {
+                        switch (true) {
+                            case $a === null:
+                                break;
+                            case false !== $pos = strpos($type, "<"):
+                                /** @psalm-check-type-exact $a = int */
+                                echo $a + $pos;
+                                break;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'switchTrueCaseThatCanMatch' => [
                 'code' => '<?php
                     class Foo {}
@@ -1190,6 +1494,263 @@ final class SwitchTypeTest extends TestCase
                         return -1;
                     }',
             ],
+            'issetOfVarFromLaterCaseEndingInConditionalThrow' => [
+                'code' => '<?php
+                    function f(string $s, bool $flag): void {
+                        switch ($s) {
+                            case "D":
+                                echo "d";
+                                break;
+                            case "A":
+                                $rec = 1;
+                                if ($flag) {
+                                    throw new RuntimeException("x");
+                                }
+                                break;
+                        }
+                        if (isset($rec)) {
+                            echo $rec === 1 ? "one" : "other";
+                        }
+                    }',
+            ],
+            'issetOfVarPossiblyAssignedInLaterCaseEndingInConditionalThrow' => [
+                'code' => '<?php
+                    function f(string $s, bool $flag, bool $x): void {
+                        switch ($s) {
+                            case "D":
+                                break;
+                            case "A":
+                                if ($x) {
+                                    $rec = 1;
+                                }
+                                if ($flag) {
+                                    throw new RuntimeException("x");
+                                }
+                                break;
+                        }
+                        if (isset($rec)) {
+                            echo "set";
+                        }
+                    }',
+            ],
+            'issetOfVarsFromTwoCasesEndingInConditionalThrow' => [
+                'code' => '<?php
+                    function f(string $s, bool $flag): void {
+                        switch ($s) {
+                            case "A":
+                                $a = 1;
+                                if ($flag) {
+                                    throw new RuntimeException("x");
+                                }
+                                break;
+                            case "B":
+                                $b = 1;
+                                if ($flag) {
+                                    throw new RuntimeException("x");
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                        if (isset($a) || isset($b)) {
+                            echo "set";
+                        }
+                    }',
+            ],
+            'issetOfVarFromNestedSwitchInLaterCaseEndingInConditionalThrow' => [
+                'code' => '<?php
+                    function f(string $s, string $u, bool $flag): void {
+                        switch ($s) {
+                            case "D":
+                                break;
+                            case "A":
+                                switch ($u) {
+                                    case "x":
+                                        break;
+                                    case "y":
+                                        $rec = 1;
+                                        break;
+                                }
+                                if ($flag) {
+                                    throw new RuntimeException("x");
+                                }
+                                break;
+                        }
+                        if (isset($rec)) {
+                            echo "set";
+                        }
+                    }',
+            ],
+            'issetOfVarFromNestedSwitchCaseEndingInConditionalThrow' => [
+                'code' => '<?php
+                    function f(string $s, string $u, bool $flag): void {
+                        switch ($s) {
+                            case "D":
+                                break;
+                            case "A":
+                                switch ($u) {
+                                    case "y":
+                                        $rec = 1;
+                                        if ($flag) {
+                                            throw new RuntimeException("x");
+                                        }
+                                        break;
+                                    case "x":
+                                        break;
+                                }
+                                break;
+                        }
+                        if (isset($rec)) {
+                            echo "set";
+                        }
+                    }',
+            ],
+            'issetOfVarFromCaseAfterDefaultEndingInConditionalThrow' => [
+                'code' => '<?php
+                    function f(string $s, bool $flag): void {
+                        switch ($s) {
+                            default:
+                                break;
+                            case "A":
+                                $rec = 1;
+                                if ($flag) {
+                                    throw new RuntimeException("x");
+                                }
+                                break;
+                        }
+                        if (isset($rec)) {
+                            echo "set";
+                        }
+                    }',
+            ],
+            'breakTwoOutOfNestedSwitchKeepsItsValueAfterTheOuterSwitch' => [
+                'code' => '<?php
+                    /** @var string */
+                    $s = (string) rand(0, 1);
+                    /** @var string */
+                    $u = (string) rand(0, 1);
+                    switch ($s) {
+                        case "A":
+                            switch ($u) {
+                                case "x":
+                                    $q = 1;
+                                    break 2;
+                            }
+                            $q = 2;
+                            break;
+                        default:
+                            $q = 3;
+                    }',
+                'assertions' => [
+                    '$q===' => '1|2|3',
+                ],
+            ],
+            'breakTwoOutOfEveryCaseOfNestedSwitch' => [
+                'code' => '<?php
+                    /** @var string */
+                    $s = (string) rand(0, 1);
+                    /** @var string */
+                    $u = (string) rand(0, 1);
+                    switch ($s) {
+                        case "A":
+                            switch ($u) {
+                                case "x":
+                                    $q = 1;
+                                    break 2;
+                                default:
+                                    $q = 2;
+                                    break 2;
+                            }
+                            break;
+                        default:
+                            $q = 3;
+                    }',
+                'assertions' => [
+                    '$q===' => '1|2|3',
+                ],
+            ],
+            'breakTwoOutOfNestedSwitchStaysInTheLoop' => [
+                'code' => '<?php
+                    /** @var string */
+                    $s = (string) rand(0, 1);
+                    /** @var string */
+                    $u = (string) rand(0, 1);
+                    $q = null;
+                    while (true) {
+                        switch ($s) {
+                            case "A":
+                                switch ($u) {
+                                    case "x":
+                                        break 2;
+                                }
+                                exit;
+                        }
+                        $q = 1;
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }',
+                'assertions' => [
+                    '$q===' => '1',
+                ],
+            ],
+            'breakOutOfNestedSwitchCaseThatEndsWithBreakTwo' => [
+                'code' => '<?php
+                    function f(string $s, string $u, bool $c): void {
+                        switch ($s) {
+                            case "A":
+                                switch ($u) {
+                                    case "x":
+                                        if ($c) {
+                                            $q = 1;
+                                            break;
+                                        }
+                                        break 2;
+                                    default:
+                                        $q = 2;
+                                }
+                                echo $q;
+                                break;
+                        }
+                    }',
+            ],
+            'breakInLoopKeepsWhatTheVarWasCheckedForWhenTheCaseChangesItBeforeReturning' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(?int $a, string $s, bool $c, array $l): void {
+                        $b = $a !== null;
+                        foreach ($l as $_) {
+                            switch ($s) {
+                                case "A":
+                                    if ($c) {
+                                        break;
+                                    }
+                                    $a = null;
+                                    return;
+                            }
+                        }
+                        if ($b) {
+                            echo $a + 1;
+                        }
+                    }',
+            ],
+            'breakKeepsWhatTheVarWasCheckedForWhenTheCaseChangesItBeforeReturning' => [
+                'code' => '<?php
+                    function f(?int $a, string $s, bool $c): void {
+                        $b = $a !== null;
+                        switch ($s) {
+                            case "A":
+                                if ($c) {
+                                    break;
+                                }
+                                $a = null;
+                                return;
+                        }
+                        if ($b) {
+                            echo $a + 1;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1200,6 +1761,356 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'varFromBreakTwoOutOfNestedSwitchIsUndefinedAfterIt' => [
+                'code' => '<?php
+                    function f(string $s, string $u): void {
+                        switch ($s) {
+                            case "A":
+                                switch ($u) {
+                                    case "x":
+                                        $q = 1;
+                                        break 2;
+                                }
+                                echo $q;
+                                break;
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
+            'varFromCaseThatThrowsOrBreaksTwoIsUndefinedAfterNestedSwitch' => [
+                'code' => '<?php
+                    function f(string $s, string $u, bool $c): void {
+                        switch ($s) {
+                            case "A":
+                                switch ($u) {
+                                    case "x":
+                                        $q = 1;
+                                        if ($c) {
+                                            throw new RuntimeException();
+                                        }
+                                        break 2;
+                                }
+                                echo $q;
+                                break;
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
+            'breakTwoOutOfNestedSwitchForgetsWhatTheVarWasCheckedFor' => [
+                'code' => '<?php
+                    function f(?int $a, string $s, string $u): void {
+                        $b = $a !== null;
+                        switch ($s) {
+                            case "A":
+                                switch ($u) {
+                                    default:
+                                        $a = null;
+                                        break 2;
+                                }
+                        }
+                        if ($b) {
+                            echo $a + 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+            ],
+            'breakTwoOutOfLoopInCaseForgetsWhatTheVarWasCheckedFor' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(?int $a, string $s, string $u, array $l): void {
+                        $b = $a !== null;
+                        switch ($s) {
+                            case "A":
+                                foreach ($l as $_) {
+                                    switch ($u) {
+                                        default:
+                                            $a = null;
+                                            break 2;
+                                    }
+                                }
+                        }
+                        if ($b) {
+                            echo $a + 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+            ],
+            'breakBeforeReturnForgetsWhatTheVarWasCheckedFor' => [
+                'code' => '<?php
+                    function f(?int $a, string $s, bool $c): void {
+                        $b = $a !== null;
+                        switch ($s) {
+                            case "A":
+                                if ($c) {
+                                    $a = null;
+                                    break;
+                                }
+                                return;
+                        }
+                        if ($b) {
+                            echo $a + 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+            ],
+            'breakTwoOutOfLoopAfterBreakForgetsWhatTheVarWasCheckedFor' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(?int $a, string $s, bool $c, array $l): void {
+                        $b = $a !== null;
+                        foreach ($l as $_) {
+                            switch ($s) {
+                                case "A":
+                                    if ($c) {
+                                        break;
+                                    }
+                                    $a = null;
+                                    break 2;
+                            }
+                        }
+                        if ($b) {
+                            echo $a + 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+            ],
+            'continueTwoAfterBreakForgetsWhatTheVarWasCheckedFor' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(?int $a, string $s, bool $c, array $l): void {
+                        $b = $a !== null;
+                        foreach ($l as $_) {
+                            switch ($s) {
+                                case "A":
+                                    if ($c) {
+                                        break;
+                                    }
+                                    $a = null;
+                                    continue 2;
+                            }
+                        }
+                        if ($b) {
+                            echo $a + 1;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+            ],
+            'varFromBreakTwoOutOfLoopIsUndefinedAfterTheSwitch' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(array $l, string $s): void {
+                        foreach ($l as $_) {
+                            switch ($s) {
+                                case "x":
+                                    $q = 1;
+                                    break 2;
+                            }
+                            echo $q;
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
+            'varFromBreakTwoOutOfLoopIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(array $l, string $s): void {
+                        foreach ($l as $_) {
+                            switch ($s) {
+                                case "x":
+                                    $q = 1;
+                                    break 2;
+                            }
+                        }
+                        echo $q;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varFromContinueTwoOutOfSwitchIsPossiblyUndefinedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(array $l, string $s): void {
+                        foreach ($l as $_) {
+                            switch ($s) {
+                                case "x":
+                                    $q = 1;
+                                    continue 2;
+                            }
+                        }
+                        echo $q;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varFromCaseEndingInBreakTwoIsUndefinedAfterNestedSwitch' => [
+                'code' => '<?php
+                    function f(string $s, string $u, bool $c): void {
+                        switch ($s) {
+                            case "A":
+                                switch ($u) {
+                                    case "x":
+                                        if ($c) {
+                                            break;
+                                        }
+                                        $r = 1;
+                                        break 2;
+                                    default:
+                                }
+                                echo $r;
+                                break;
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
+            'varFromConditionalBreakIsPossiblyUndefinedAfterSwitch' => [
+                'code' => '<?php
+                    function f(string $s, bool $c): void {
+                        switch ($s) {
+                            case "A":
+                                if ($c) {
+                                    $q = 1;
+                                    break;
+                                }
+                                break;
+                        }
+                        echo $q;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varFromLaterCaseEndingInConditionalThrowIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(string $s, bool $flag): int {
+                        switch ($s) {
+                            case "D":
+                                break;
+                            case "A":
+                                $rec = 1;
+                                if ($flag) {
+                                    throw new RuntimeException("x");
+                                }
+                                break;
+                        }
+                        return $rec;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varAssignedOnlyBeforeTheThrowOfLaterCaseIsUndefined' => [
+                'code' => '<?php
+                    function f(string $s, bool $flag): int {
+                        switch ($s) {
+                            case "D":
+                                break;
+                            case "A":
+                                if ($flag) {
+                                    $thrown = 1;
+                                    throw new RuntimeException((string) $thrown);
+                                }
+                                break;
+                        }
+                        return $thrown;
+                    }',
+                'error_message' => 'UndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:32 - Cannot find',
+            ],
+            'oneBreakOfACaseThatEndsInAThrowLacksTheVar' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $n): int {
+                        switch ($n) {
+                            case 2:
+                                if (rand()) {
+                                    $b = 1;
+                                    break;
+                                }
+
+                                if (rand()) {
+                                    break;
+                                }
+
+                                throw new Exception();
+                            default:
+                                $b = 5;
+                        }
+
+                        return $b;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:12',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalBreakWithoutSettingVarThenThrow' => [
+                'code' => '<?php
+                    function foo(int $a): int {
+                        switch ($a) {
+                            case 1:
+                                $b = 10;
+                                break;
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    break;
+                                }
+                                throw new Exception("x");
+                            default:
+                                throw new Exception("y");
+                        }
+
+                        return $b;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'conditionalBreakThenFallThroughToNonThrowingCase' => [
+                'code' => '<?php
+                    function foo(int $a): int {
+                        switch ($a) {
+                            case 1:
+                                $b = 10;
+                                break;
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    $b = 20;
+                                    break;
+                                }
+                            default:
+                                echo "y";
+                        }
+
+                        return $b;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'conditionalBreakThenEndInFirstCaseOtherCaseDoesNotSet' => [
+                'code' => '<?php
+                    function foo(int $a): int {
+                        switch ($a) {
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    $b = 20;
+                                    break;
+                                }
+                                throw new Exception("x");
+                            case 1:
+                                break;
+                            default:
+                                throw new Exception("y");
+                        }
+
+                        return $b;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'caseConditionAssigningAnotherVariableStillContradictsAnEarlierCase' => [
+                'code' => '<?php
+                    function f(?int $a, string $type): void {
+                        switch (true) {
+                            case $a === null:
+                                break;
+                            case false !== ($pos = strpos($type, "<")) && $a === null:
+                                echo $pos;
+                                break;
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'switchTrueCaseThatCannotMatch' => [
                 'code' => '<?php
                     class Foo {}
@@ -1367,7 +2278,7 @@ final class SwitchTypeTest extends TestCase
                     }',
                 'error_message' => 'InvalidReturnType',
             ],
-            'SKIPPED-switchManyGetClassWithRepetitionWithProperLineNumber' => [
+            'SKIPPED-switchManyGetClassWithRepetitionWithProperLineNumber' => [ // #13922
                 'code' => '<?php
                     class A {}
                     class B extends A {}

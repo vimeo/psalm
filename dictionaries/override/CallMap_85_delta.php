@@ -3,6 +3,11 @@
 return array (
   'added' => 
   array (
+    'curl_multi_get_handles' => 
+    array (
+      0 => 'list<CurlHandle>',
+      'multi_handle' => 'CurlMultiHandle',
+    ),
   ),
   'changed' => 
   array (

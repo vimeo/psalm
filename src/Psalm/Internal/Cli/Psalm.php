@@ -483,6 +483,12 @@ final class Psalm
                 );
             }
 
+            try {
+                $baseline = ProjectBootstrap::readBaseline($options, $config);
+            } catch (ProjectBootstrapException $exception) {
+                OverlayExitGuard::fail('config', $exception->getMessage());
+            }
+
             OverlayCommand::run(
                 $options,
                 $argv,
@@ -490,7 +496,7 @@ final class Psalm
                 $project_analyzer,
                 $rebootstrap,
                 $include_collector,
-                ProjectBootstrap::readBaseline($options, $config),
+                $baseline,
             );
         }
 
@@ -1294,7 +1300,12 @@ final class Psalm
         }
 
         if (!$issue_baseline && $baseline_file_path && !isset($options['ignore-baseline'])) {
-            $issue_baseline = ProjectBootstrap::readBaselineFile($baseline_file_path);
+            try {
+                $issue_baseline = ProjectBootstrap::readBaselineFile($baseline_file_path);
+            } catch (ProjectBootstrapException $exception) {
+                fwrite(STDERR, $exception->getMessage() . PHP_EOL);
+                exit(1);
+            }
         }
 
         if ($paths_to_check !== null) {
@@ -1438,6 +1449,9 @@ final class Psalm
                 Look for unused code. Options are 'auto' or 'always'. If no value is specified, default is 'auto'.
                 Unused code detection is already on by default (see the findUnusedCode config option)
 
+            --find-unused-variables
+                Look for unused variables
+
             --find-unused-psalm-suppress
                 Finds all @psalm-suppress annotations that aren’t used, including those on
                 classes, interfaces, traits and enums. @psalm-suppress of Tainted* issues is
@@ -1450,7 +1464,7 @@ final class Psalm
             --no-suggestions
                 Hide suggestions
 
-            --taint-analysis
+            --taint-analysis, --track-tainted-input, --security-analysis
                 Run Psalm in taint analysis mode – see https://psalm.dev/docs/security_analysis for more info
 
             --dump-taint-graph=OUTPUT_PATH
@@ -1490,6 +1504,9 @@ final class Psalm
                 Changes the output format.
                 Available formats:
                     $outputFormats
+
+            --pretty-print
+                Pretty-print JSON output
 
             --no-progress
                 Disable the progress indicator.
@@ -1575,6 +1592,9 @@ final class Psalm
             --debug-by-line
                 Debug information on a line-by-line level
 
+            --debug-performance
+                Show performance information
+
             --debug-emitted-issues
                 Print a php backtrace to stderr when emitting issues.
 
@@ -1592,6 +1612,9 @@ final class Psalm
 
             --alter
                 Run Psalter
+
+            --refactor
+                Run Psalm Refactor
 
             --review
                 Run the psalm-review tool

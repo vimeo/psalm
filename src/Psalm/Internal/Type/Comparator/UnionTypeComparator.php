@@ -17,6 +17,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
@@ -24,9 +25,12 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -35,6 +39,7 @@ use function array_pop;
 use function array_push;
 use function array_reverse;
 use function array_unique;
+use function array_values;
 use function assert;
 use function count;
 use function implode;
@@ -89,7 +94,16 @@ final class UnionTypeComparator
         $container_literals = null;
         $other_container_parts = [];
 
-        $input_atomic_types = array_reverse(self::getTypeParts($codebase, $input_type));
+        // key-of<T> and value-of<T> are within their bound, but only key-of<T> and value-of<T> are within them
+        $input_atomic_types = array_reverse(self::getTypeParts(
+            $codebase,
+            $input_type,
+            !self::hasTemplateKeyOrValueOf($container_type),
+        ));
+
+        // every input part no container part accepts is examined before the comparison fails, so that the result
+        // does not depend on the order of the input parts
+        $failed_parts = [];
 
         while ($input_type_part = array_pop($input_atomic_types)) {
             if ($input_type_part instanceof TNull && $ignore_null) {
@@ -137,12 +151,11 @@ final class UnionTypeComparator
             $all_to_string_cast = true;
             $some_to_string_cast = false;
 
-            $all_type_coerced = null;
-            $all_type_coerced_from_mixed = null;
             $all_type_coerced_from_as_mixed = null;
 
             $some_type_coerced = false;
             $some_type_coerced_from_mixed = false;
+            $some_type_coerced_from_scalar = false;
 
             $some_missing_shape_fields = null;
 
@@ -349,11 +362,8 @@ final class UnionTypeComparator
                             : false;
                     }
 
-                    if ($union_comparison_result
-                        && $atomic_comparison_result->type_coerced_from_scalar !== null
-                    ) {
-                        $union_comparison_result->type_coerced_from_scalar
-                            = $atomic_comparison_result->type_coerced_from_scalar;
+                    if ($atomic_comparison_result->type_coerced_from_scalar) {
+                        $some_type_coerced_from_scalar = true;
                     }
 
                     if ($is_atomic_contained_by
@@ -391,20 +401,6 @@ final class UnionTypeComparator
                         $some_type_coerced_from_mixed = true;
                     }
 
-                    if ($atomic_comparison_result->type_coerced !== true || $all_type_coerced === false) {
-                        $all_type_coerced = false;
-                    } else {
-                        $all_type_coerced = true;
-                    }
-
-                    if ($atomic_comparison_result->type_coerced_from_mixed !== true
-                        || $all_type_coerced_from_mixed === false
-                    ) {
-                        $all_type_coerced_from_mixed = false;
-                    } else {
-                        $all_type_coerced_from_mixed = true;
-                    }
-
                     if ($atomic_comparison_result->type_coerced_from_as_mixed !== true
                         || $all_type_coerced_from_as_mixed === false
                     ) {
@@ -440,9 +436,7 @@ final class UnionTypeComparator
                         }
                     }
 
-                    $all_type_coerced_from_mixed = false;
                     $all_type_coerced_from_as_mixed = false;
-                    $all_type_coerced = false;
                 }
             }
 
@@ -468,8 +462,6 @@ final class UnionTypeComparator
 
                 $type_match_found = true;
                 $all_to_string_cast = false;
-                $all_type_coerced = false;
-                $all_type_coerced_from_mixed = false;
                 $all_type_coerced_from_as_mixed = false;
             } elseif ($union_comparison_result && $alternative_bounds && !$unconditional_match) {
                 // every accepting alternative constrained a type variable, so
@@ -498,76 +490,89 @@ final class UnionTypeComparator
                 ) {
                     $union_comparison_result->to_string_cast = true;
                 }
-
-                if ($all_type_coerced) {
-                    $union_comparison_result->type_coerced = true;
-                }
-
-                if ($all_type_coerced_from_mixed) {
-                    $union_comparison_result->type_coerced_from_mixed = true;
-
-                    if (($input_type->from_template_default && $input_type->from_docblock)
-                        || $all_type_coerced_from_as_mixed
-                    ) {
-                        $union_comparison_result->type_coerced_from_as_mixed = true;
-                    }
-                }
             }
 
             if (!$type_match_found) {
-                if ($union_comparison_result) {
-                    $remaining_types_coerced = true;
-
-                    if ($some_type_coerced && $some_to_string_cast && $input_atomic_types) {
-                        foreach ($input_atomic_types as $remaining_input_type) {
-                            $remaining_comparison_result = new TypeComparisonResult();
-                            $remaining_type_contained = self::isContainedBy(
-                                $codebase,
-                                new Union([$remaining_input_type]),
-                                $container_type,
-                                $ignore_null,
-                                $ignore_false,
-                                $remaining_comparison_result,
-                                $allow_interface_equality,
-                                $allow_float_int_equality,
-                            );
-
-                            if (!$remaining_type_contained
-                                && $remaining_comparison_result->type_coerced !== true
-                            ) {
-                                $remaining_types_coerced = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    if ($some_type_coerced && (!$some_to_string_cast || $remaining_types_coerced)) {
-                        $union_comparison_result->type_coerced = true;
-                    } elseif ($some_to_string_cast) {
-                        $union_comparison_result->type_coerced = false;
-                    }
-
-                    if ($some_type_coerced_from_mixed) {
-                        $union_comparison_result->type_coerced_from_mixed = true;
-
-                        if (($input_type->from_template_default && $input_type->from_docblock)
-                            || $all_type_coerced_from_as_mixed
-                        ) {
-                            $union_comparison_result->type_coerced_from_as_mixed = true;
-                        }
-                    }
-
-                    if (!$scalar_type_match_found) {
-                        $union_comparison_result->scalar_type_match_found = false;
-                    }
-
-                    if ($some_missing_shape_fields && !$some_type_coerced && !$scalar_type_match_found) {
-                        $union_comparison_result->missing_shape_fields = $some_missing_shape_fields;
-                    }
+                if (!$union_comparison_result) {
+                    return false;
                 }
 
-                return false;
+                $failed_parts[] = [
+                    'coerced' => $some_type_coerced,
+                    'to_string_cast' => $some_to_string_cast,
+                    'coerced_from_mixed' => $some_type_coerced_from_mixed,
+                    'coerced_from_scalar' => $some_type_coerced_from_scalar,
+                    'coerced_from_as_mixed' => $some_type_coerced_from_mixed
+                        && (($input_type->from_template_default && $input_type->from_docblock)
+                            || $all_type_coerced_from_as_mixed),
+                    'scalar_match' => $scalar_type_match_found,
+                    'missing_shape_fields' => $some_missing_shape_fields && !$some_type_coerced
+                        && !$scalar_type_match_found
+                            ? $some_missing_shape_fields
+                            : null,
+                ];
             }
+        }
+
+        if ($failed_parts && $union_comparison_result) {
+            $all_coerced = true;
+            $any_to_string_cast = false;
+            $all_coerced_from_mixed = true;
+            $all_coerced_from_as_mixed = true;
+            $all_coerced_from_scalar = true;
+            $any_scalar_match = false;
+            $all_scalar_match = true;
+            $missing_shape_fields = [];
+            $all_miss_shape_fields = true;
+
+            foreach ($failed_parts as $failed_part) {
+                $all_coerced = $all_coerced && $failed_part['coerced'];
+                $any_to_string_cast = $any_to_string_cast || $failed_part['to_string_cast'];
+                $all_coerced_from_mixed = $all_coerced_from_mixed && $failed_part['coerced_from_mixed'];
+                $all_coerced_from_as_mixed = $all_coerced_from_as_mixed && $failed_part['coerced_from_as_mixed'];
+                $all_coerced_from_scalar = $all_coerced_from_scalar && $failed_part['coerced_from_scalar'];
+                $any_scalar_match = $any_scalar_match || $failed_part['scalar_match'];
+
+                // a part that only fails because it is mixed says nothing about the scalar match of the others
+                $all_scalar_match = $all_scalar_match
+                    && ($failed_part['scalar_match'] || $failed_part['coerced_from_mixed']);
+
+                if ($failed_part['missing_shape_fields'] !== null) {
+                    $missing_shape_fields = array_merge($missing_shape_fields, $failed_part['missing_shape_fields']);
+                } else {
+                    $all_miss_shape_fields = false;
+                }
+            }
+
+            if ($all_coerced) {
+                $union_comparison_result->type_coerced = true;
+            } elseif ($any_to_string_cast) {
+                $union_comparison_result->type_coerced = false;
+            }
+
+            if ($all_coerced_from_mixed) {
+                $union_comparison_result->type_coerced_from_mixed = true;
+
+                if ($all_coerced_from_as_mixed) {
+                    $union_comparison_result->type_coerced_from_as_mixed = true;
+                }
+            }
+
+            $union_comparison_result->type_coerced_from_scalar = $all_coerced_from_scalar;
+
+            if (!$any_scalar_match || !$all_scalar_match) {
+                $union_comparison_result->scalar_type_match_found = false;
+            }
+
+            if ($all_miss_shape_fields && $missing_shape_fields) {
+                $missing_shape_fields = array_values(array_unique($missing_shape_fields));
+                sort($missing_shape_fields);
+                $union_comparison_result->missing_shape_fields = $missing_shape_fields;
+            }
+        }
+
+        if ($failed_parts) {
+            return false;
         }
 
         return true;
@@ -830,8 +835,8 @@ final class UnionTypeComparator
             return true;
         }
 
-        foreach (self::getTypeParts($codebase, $type1) as $type1_part) {
-            foreach (self::getTypeParts($codebase, $type2) as $type2_part) {
+        foreach (self::getTypeParts($codebase, $type1, true) as $type1_part) {
+            foreach (self::getTypeParts($codebase, $type2, true) as $type2_part) {
                 //special case for TIntRange because it can contain a part of another TIntRange.
                 //For example int<0,10> and int<5, 15> can be identical but none contain the other
                 if ($type1_part instanceof TIntRange && $type2_part instanceof TIntRange) {
@@ -859,14 +864,43 @@ final class UnionTypeComparator
     }
 
     /**
+     * @psalm-pure
+     */
+    private static function hasTemplateKeyOrValueOf(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateKeyOf || $atomic_type instanceof TTemplateValueOf) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param bool $expand_template_key_or_value_of whether key-of<T> and value-of<T> stand for their bound
      * @return list<Atomic>
      */
     private static function getTypeParts(
         Codebase $codebase,
         Union $union_type,
+        bool $expand_template_key_or_value_of = false,
     ): array {
         $atomic_types = [];
         foreach ($union_type->getAtomicTypes() as $atomic_type) {
+            if ($expand_template_key_or_value_of
+                && ($atomic_type instanceof TTemplateKeyOf || $atomic_type instanceof TTemplateValueOf)
+            ) {
+                $bound = $atomic_type instanceof TTemplateKeyOf
+                    ? TKeyOf::getArrayKeyType($atomic_type->as)
+                    : TValueOf::getValueType($atomic_type->as, $codebase);
+
+                if ($bound !== null) {
+                    array_push($atomic_types, ...self::getTypeParts($codebase, $bound, true));
+                    continue;
+                }
+            }
+
             if (!$atomic_type instanceof TTypeAlias && !$atomic_type instanceof TClassConstant) {
                 $atomic_types[] = $atomic_type;
                 continue;
