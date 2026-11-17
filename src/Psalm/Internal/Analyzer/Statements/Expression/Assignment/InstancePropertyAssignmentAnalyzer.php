@@ -1017,6 +1017,8 @@ final class InstancePropertyAssignmentAnalyzer
             return [];
         }
 
+        $lhs_type = TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $lhs_type);
+
         $lhs_var_id = ExpressionIdentifier::getVarId(
             $stmt->var,
             $statements_analyzer->getFQCLN(),

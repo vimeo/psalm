@@ -1553,6 +1553,8 @@ final class NewAnalyzer extends CallAnalyzer
     ): ?Union {
         $new_types = [];
 
+        $stmt_class_type = TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $stmt_class_type);
+
         foreach ($stmt_class_type->getAtomicTypes() as $lhs_type_part) {
             if ($lhs_type_part instanceof TTemplateParam) {
                 $as = self::getNewType(

@@ -76,7 +76,9 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Reconciler;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
@@ -84,9 +86,9 @@ use UnexpectedValueException;
 
 use function array_filter;
 use function array_map;
-use function array_merge;
 use function array_shift;
 use function array_slice;
+use function array_values;
 use function assert;
 use function count;
 use function explode;
@@ -1390,6 +1392,44 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         return $inferable;
     }
 
+    /**
+     * The types a template, or key-of<T> or value-of<T>, is called as: its bound
+     *
+     * @return list<Atomic>
+     */
+    private static function getTemplateCalledTypes(
+        StatementsAnalyzer $statements_analyzer,
+        TTemplateParam|TTemplateKeyOf|TTemplateValueOf $template,
+    ): array {
+        if (!$template instanceof TTemplateParam) {
+            return array_values(TypeExpander::expandTemplateKeyOfAndValueOf(
+                $statements_analyzer->getCodebase(),
+                new Union([$template]),
+            )->getAtomicTypes());
+        }
+
+        $as_types = array_values($template->as->getAtomicTypes());
+
+        // a type template the enclosing function-like inherits its purity from
+        // (`@psalm-purity-from-template T`): calling it is deferred to the callers
+        if (!in_array(
+            $template->param_name,
+            CallPurityResolver::getEnclosingPurityTemplates($statements_analyzer),
+            true,
+        )) {
+            return $as_types;
+        }
+
+        // the call is still checked and typed like a call of the closure it is bound to
+        return array_map(
+            static fn(Atomic $as_type_part): Atomic => $as_type_part instanceof TClosure
+                || $as_type_part instanceof TCallable
+                ? $as_type_part->setPurity(Capabilities::NONE)
+                : $as_type_part,
+            $as_types,
+        );
+    }
+
     private static function getAnalyzeNamedExpression(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
@@ -1447,26 +1487,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             while ($var_atomic_types) {
                 $var_type_part = array_shift($var_atomic_types);
 
-                if ($var_type_part instanceof TTemplateParam) {
-                    // a type template the enclosing function-like inherits its purity from
-                    // (`@psalm-purity-from-template T`): calling it is deferred to the callers
-                    if (in_array(
-                        $var_type_part->param_name,
-                        CallPurityResolver::getEnclosingPurityTemplates($statements_analyzer),
-                        true,
-                    )) {
-                        // the call is still checked and typed like a call of the closure it is bound to
-                        foreach ($var_type_part->as->getAtomicTypes() as $as_type_part) {
-                            $var_atomic_types[] = $as_type_part instanceof TClosure
-                                || $as_type_part instanceof TCallable
-                                ? $as_type_part->setPurity(Capabilities::NONE)
-                                : $as_type_part;
-                        }
-
-                        continue;
-                    }
-
-                    $var_atomic_types = array_merge($var_atomic_types, $var_type_part->as->getAtomicTypes());
+                if ($var_type_part instanceof TTemplateParam
+                    || $var_type_part instanceof TTemplateKeyOf
+                    || $var_type_part instanceof TTemplateValueOf
+                ) {
+                    $var_atomic_types = [
+                        ...$var_atomic_types,
+                        ...self::getTemplateCalledTypes($statements_analyzer, $var_type_part),
+                    ];
                     continue;
                 }
 

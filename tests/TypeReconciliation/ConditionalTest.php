@@ -1295,12 +1295,12 @@ final class ConditionalTest extends TestCase
                         if ($id === null || !str_contains($id, "::")) {
                             return "";
                         }
-                        /** @psalm-check-type-exact $id = string */;
+                        /** @psalm-check-type-exact $id = non-empty-string */;
 
                         if ($name === null || !isFilled($name)) {
                             return "";
                         }
-                        /** @psalm-check-type-exact $name = string */;
+                        /** @psalm-check-type-exact $name = non-empty-string */;
 
                         return $id . $name;
                     }',
@@ -4059,15 +4059,249 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'negatedInstanceofOfANonFinalClassKeepsIt' => [
+            'exhaustedInstanceofChecksOfFinalClassesLeaveNoValue' => [
                 'code' => '<?php
-                    class Open {}
+                    final class A {}
+                    final class B {}
 
-                    function f(Open $o): void {
-                        if (!$o instanceof Open) {
-                            /** @psalm-check-type-exact $o = Open */
+                    function f(A|B $o): int {
+                        if ($o instanceof A) {
+                            return 1;
+                        }
+                        if ($o instanceof B) {
+                            return 2;
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'exhaustedInstanceofChecksOfOpenClassesAndInterfacesLeaveNoValue' => [
+                'code' => '<?php
+                    class A {}
+                    class B {}
+                    interface I {}
+
+                    function f(A|B $o): int {
+                        if ($o instanceof A) {
+                            return 1;
+                        }
+                        if ($o instanceof B) {
+                            return 2;
+                        }
+                    }
+
+                    function g(I $o): int {
+                        if ($o instanceof I) {
+                            return 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'equalityAssertionOfANegatedCallHoldsWhereTheNegationIsFalse' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true =int $x */
+                    function isFive(mixed $x): bool {
+                        return $x === 5;
+                    }
+
+                    function returnIfNot(int|string $x): void {
+                        if (!isFive($x)) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function elseOfNot(int|string $x): void {
+                        if (!isFive($x)) {
+                            /** @psalm-check-type-exact $x = int|string */;
+                        } else {
+                            /** @psalm-check-type-exact $x = int */;
+                        }
+                    }
+
+                    function returnIfNotOr(int|string $x, bool $b): void {
+                        if (!isFive($x) || $b) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function returnIfNotAnd(int|string $x, bool $b): void {
+                        if (!(isFive($x) && $b)) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function ternaryOfNot(int|string $x): void {
+                        $y = !isFive($x) ? 0 : $x;
+                        /** @psalm-check-type-exact $y = int */;
+                    }
+
+                    function whileNot(int|string $x): void {
+                        while (!isFive($x)) {
+                            $x = rand(0, 1) ? 1 : "a";
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function returnIfFalse(int|string $x): void {
+                        if (isFive($x) === false) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function returnIfFalseOnTheLeft(int|string $x): void {
+                        if (false === isFive($x)) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function returnIfNotTrue(int|string $x, bool $b): void {
+                        if (isFive($x) !== true || $b) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function returnIfLooselyFalse(int|string $x): void {
+                        if (isFive($x) == false) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function matchTrue(int|string $x): int {
+                        return match (true) {
+                            !isFive($x) => 0,
+                            default => $x,
+                        };
+                    }
+
+                    function switchTrue(int|string $x): void {
+                        switch (true) {
+                            case !isFive($x):
+                                return;
+                            default:
+                                /** @psalm-check-type-exact $x = int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'equalityAssertionOfANegatedCallInAnElseIfOnlyHoldsAfterIt' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true =int $x */
+                    function isFive(mixed $x): bool {
+                        return $x === 5;
+                    }
+
+                    function f(int|string $x, bool $b): void {
+                        if ($b) {
+                        } elseif (!isFive($x)) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int|string */;
+                    }
+
+                    function g(int|string $x, bool $b): void {
+                        if ($b) {
+                            return;
+                        } elseif (!isFive($x)) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'negatedReflectionClassChecksKeepTheirTypes' => [
+                'code' => '<?php
+                    interface I {}
+                    class P {}
+
+                    /** @param ReflectionClass<object> $r */
+                    function implementsI(ReflectionClass $r): void {
+                        if (!$r->implementsInterface(I::class)) {
+                            /** @psalm-check-type-exact $r = ReflectionClass<object> */;
+                            throw new Exception();
+                        }
+                        /** @psalm-check-type-exact $r = ReflectionClass<I> */;
+                    }
+
+                    /** @param ReflectionClass<I> $r */
+                    function alreadyImplementsI(ReflectionClass $r): void {
+                        if (!$r->implementsInterface(I::class)) {
+                            /** @psalm-check-type-exact $r = ReflectionClass<I> */;
+                        }
+                    }
+
+                    /** @param ReflectionClass<P> $r */
+                    function alreadySubclassOfP(ReflectionClass $r): void {
+                        if (!$r->isSubclassOf(P::class)) {
+                            /** @psalm-check-type-exact $r = ReflectionClass<P> */;
+                        }
+                    }
+
+                    /** @param ReflectionClass<P> $r */
+                    function alreadyInstanceOfP(ReflectionClass $r, P $p): void {
+                        if (!$r->isInstance($p)) {
+                            /** @psalm-check-type-exact $p = P */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'negatedInstanceofOfThisInATraitKeepsThisForTheOtherClasses' => [
+                'code' => '<?php
+                    interface HasA {
+                        public function a(): int;
+                    }
+
+                    trait T {
+                        public int $calls = 0;
+
+                        public function f(): int {
+                            if (!$this instanceof HasA) {
+                                $this->calls++;
+                                return 0;
+                            }
+                            return $this->a();
+                        }
+                    }
+
+                    class A implements HasA {
+                        use T;
+
+                        public function a(): int {
+                            return 1;
+                        }
+                    }
+
+                    class B {
+                        use T;
+                    }',
+            ],
+            'negatedLateStaticIsAKeepsTheClassItself' => [
+                'code' => '<?php
+                    class Open {
+                        public function f(Open|int $o): void {
+                            if (!is_a($o, static::class)) {
+                                /** @psalm-check-type-exact $o = Open|int */;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'exhaustedNullChecksLeaveNoValue' => [
                 'code' => '<?php
@@ -6315,6 +6549,29 @@ final class ConditionalTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:30 - Type Code for $code',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'negatedInstanceofOfAnOpenClassOfItself' => [
+                'code' => '<?php
+                    class Open {}
+
+                    function f(Open $o): void {
+                        if (!$o instanceof Open) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:30 - Type Open for $o',
+            ],
+            'negatedInstanceofOfADocblockClassOfItself' => [
+                'code' => '<?php
+                    final class Fin {}
+
+                    /** @param Fin $o */
+                    function f($o): void {
+                        if (!$o instanceof Fin) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:30 - Docblock-defined type Fin for $o',
             ],
             'identicalKeyedArraysOfDisjointTypes' => [
                 'code' => '<?php

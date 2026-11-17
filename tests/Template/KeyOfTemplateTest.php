@@ -345,6 +345,107 @@ final class KeyOfTemplateTest extends TestCase
                         throw new Exception();
                     }',
             ],
+            'keyOfTemplateInArithmetic' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<int, string>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     */
+                    function f(array $array, $k): int {
+                        $r = $k * 2;
+                        /** @psalm-check-type-exact $r = int */;
+                        return $r;
+                    }',
+            ],
+            'keyOfTemplateIncremented' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<int, string>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     */
+                    function f(array $array, $k): int {
+                        $k++;
+                        return $k;
+                    }',
+            ],
+            'keyOfTemplateConcatenated' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array{a: int, b: int}
+                     * @param T $array
+                     * @param key-of<T> $k
+                     */
+                    function f(array $array, $k): string {
+                        $r = $k . "x";
+                        /** @psalm-check-type-exact $r = "ax"|"bx" */;
+                        return $r;
+                    }',
+            ],
+            'keyOfTemplateCastToString' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<int, string>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     */
+                    function f(array $array, $k): string {
+                        return (string) $k;
+                    }',
+            ],
+            'keyOfTemplateAsOffsetOfAnotherArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<int, string>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     * @param array<int, string> $other
+                     * @return array<int, string>
+                     */
+                    function f(array $array, $k, array $other): array {
+                        echo $other[$k] ?? "";
+                        $other[$k] = "x";
+                        return $other;
+                    }',
+            ],
+            'keyOfTemplateStringOffset' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     */
+                    function f(array $array, $k): string {
+                        return $k[0];
+                    }',
+            ],
+            'templateBoundedByKeyOfTemplateConcatenated' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @template K of key-of<T>
+                     * @param T $array
+                     * @param K $k
+                     */
+                    function f(array $array, $k): string {
+                        return $k . "x";
+                    }',
+            ],
+            'keyOfClassTemplateInArithmetic' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<int, string>
+                     */
+                    final class C {
+                        /**
+                         * @param key-of<T> $k
+                         */
+                        public function next($k): int {
+                            return $k + 1;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -454,6 +555,18 @@ final class KeyOfTemplateTest extends TestCase
                     }
                 ',
                 'error_message' => 'MismatchingDocblockReturnType',
+            ],
+            'keyOfTemplateWithStringKeysInArithmetic' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $array
+                     * @param key-of<T> $k
+                     */
+                    function f(array $array, $k): void {
+                        echo $k * 2;
+                    }',
+                'error_message' => 'Cannot perform a numeric operation with a non-numeric type string',
             ],
         ];
     }

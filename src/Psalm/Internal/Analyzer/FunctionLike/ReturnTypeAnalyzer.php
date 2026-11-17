@@ -770,7 +770,12 @@ final class ReturnTypeAnalyzer
                         );
                     }
                 } else {
-                    if ($function instanceof Function_
+                    if ($function instanceof Closure
+                        && $function->getAttribute(ClassAnalyzer::PROPERTY_HOOK_ATTRIBUTE) !== null
+                    ) {
+                        // a property hook returns the type of its property, which other hooks and writes share
+                        $check_for_less_specific_type = false;
+                    } elseif ($function instanceof Function_
                         || $function instanceof Closure
                         || $function instanceof ArrowFunction
                         || $function->isPrivate()
