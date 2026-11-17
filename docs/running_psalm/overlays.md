@@ -110,7 +110,9 @@ The envelope, the issues in it and the server's answers can gain keys without a 
 
 Up to `--threads` requests run at once, and answers may come out of order. The id of a request must not be the id of another one that has no answer yet: such a request is answered with `invalid_request`. After files change on disk, send `projectChanged`.
 
-When the snapshot process cannot start (a config error, for example), every request is answered with the kind of the failure (`config`), and the server tries again after a few seconds, or at once after `projectChanged`. Without pcntl the server answers every request with `unsupported`.
+When the snapshot process cannot start (a config error or a baseline it cannot read, for example), every request is answered with the kind of the failure (`config`), and the server tries again after a few seconds, or at once after `projectChanged`. Without pcntl the server answers every request with `unsupported`.
+
+The snapshot reads the cache for as long as it runs. `psalm --clear-cache` and `psalm --consolidate-cache` wait until it stops, and say so on standard error.
 
 From PHP, `Psalm\Overlay\OverlaySession` starts the server and talks to it. Psalm does not load into your process.
 
