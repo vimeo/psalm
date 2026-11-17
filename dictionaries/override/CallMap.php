@@ -12954,7 +12954,7 @@ return array (
     0 => 'list<mixed>|null',
     'stream' => 'resource',
     'format' => 'string',
-    '&...vars=' => 'mixed',
+    '&...w vars=' => 'mixed',
   ),
   'fscanf\'1' => 
   array (
@@ -26878,7 +26878,7 @@ return array (
   array (
     0 => 'false|string',
     'timezoneId' => 'string',
-    '&isSystemId=' => 'bool',
+    '&w isSystemId=' => 'bool',
   ),
   'intltz_get_display_name' => 
   array (
@@ -26920,8 +26920,8 @@ return array (
     'timezone' => 'IntlTimeZone',
     'timestamp' => 'float',
     'local' => 'bool',
-    '&rawOffset' => 'int',
-    '&dstOffset' => 'int',
+    '&w rawOffset' => 'int',
+    '&w dstOffset' => 'int',
   ),
   'intltz_get_raw_offset' => 
   array (
@@ -38913,7 +38913,7 @@ return array (
     '&w encrypted_keys' => 'array<array-key, mixed>',
     'public_key' => 'list<OpenSSLAsymmetricKey>',
     'cipher_algo' => 'string',
-    '&iv=' => 'string',
+    '&w iv=' => 'string',
   ),
   'openssl_sign' => 
   array (
@@ -44334,7 +44334,7 @@ return array (
     0 => 'false|resource',
     'command' => 'array<array-key, mixed>|string',
     'descriptor_spec' => 'array<array-key, mixed>',
-    '&pipes' => 'array<array-key, resource>',
+    '&w pipes' => 'array<array-key, resource>',
     'cwd=' => 'null|string',
     'env_vars=' => 'array<array-key, mixed>|null',
     'options=' => 'array<array-key, mixed>|null',
@@ -56186,7 +56186,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>|int|null',
     'format' => 'string',
-    '&...vars=' => 'float|int|string',
+    '&...w vars=' => 'float|int|string',
   ),
   'splfileobject::fseek' => 
   array (
@@ -56939,7 +56939,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>|int|null',
     'format' => 'string',
-    '&...vars=' => 'float|int|string',
+    '&...w vars=' => 'float|int|string',
   ),
   'spltempfileobject::fseek' => 
   array (
@@ -58049,7 +58049,7 @@ return array (
     0 => 'int|list<float|int|null|string>|null',
     'string' => 'string',
     'format' => 'string',
-    '&...vars=' => 'float|int|null|string',
+    '&...w vars=' => 'float|int|null|string',
   ),
   'ssdeep_fuzzy_compare' => 
   array (
