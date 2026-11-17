@@ -41,7 +41,9 @@ use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
@@ -168,6 +170,50 @@ final class TypeExpander
             : null;
 
         return $fleshed_out_type;
+    }
+
+    /**
+     * The type with key-of<T> and value-of<T> replaced by their bound, the keys or values of T's `as`, also in the
+     * `as` of a template param, for the operations that read a template param through its `as`
+     */
+    public static function expandTemplateKeyOfAndValueOf(Codebase $codebase, Union $type): Union
+    {
+        $builder = null;
+
+        foreach ($type->getAtomicTypes() as $atomic_key => $atomic) {
+            if ($atomic instanceof TTemplateParam) {
+                $as = self::expandTemplateKeyOfAndValueOf($codebase, $atomic->as);
+
+                if ($as !== $atomic->as) {
+                    $builder ??= $type->getBuilder();
+                    $builder->removeType($atomic_key);
+                    $builder->addType($atomic->replaceAs($as));
+                }
+
+                continue;
+            }
+
+            if (!$atomic instanceof TTemplateKeyOf && !$atomic instanceof TTemplateValueOf) {
+                continue;
+            }
+
+            $bound = $atomic instanceof TTemplateKeyOf
+                ? TKeyOf::getArrayKeyType($atomic->as)
+                : TValueOf::getValueType($atomic->as, $codebase);
+
+            if ($bound === null) {
+                continue;
+            }
+
+            $builder ??= $type->getBuilder();
+            $builder->removeType($atomic_key);
+
+            foreach (self::expandTemplateKeyOfAndValueOf($codebase, $bound)->getAtomicTypes() as $bound_atomic) {
+                $builder->addType($bound_atomic);
+            }
+        }
+
+        return $builder ? $builder->freeze() : $type;
     }
 
     /**
