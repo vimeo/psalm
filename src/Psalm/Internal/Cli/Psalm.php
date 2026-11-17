@@ -1501,7 +1501,7 @@ final class Psalm
                 Runs Psalm without using cached representations of unchanged methods.
 
             --record-references
-                Also write which files depend on which into the cache (a full run with a cache only)
+                Experimental. Also write which files depend on which into the cache (a full run with a cache only)
 
             --no-file-cache
                 Runs Psalm without using caching every single file for later diffing.

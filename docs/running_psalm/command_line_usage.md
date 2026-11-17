@@ -38,7 +38,7 @@ Only full runs are checked: the option can't be combined with file paths, `--set
 
 ## Reference index
 
-`--record-references` makes a full run also write a reference index into the cache: which files depend on which, and the size and content hash of every file the run depended on. It needs a cache and no path arguments.
+`--record-references` makes a full run also write a reference index into the cache: which files depend on which, and the size and content hash of every file the run depended on. It needs a cache and no path arguments. The option is experimental: it and the index may change in any release.
 
 ## Shepherd
 
