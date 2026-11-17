@@ -5298,6 +5298,62 @@ final class ConditionalTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedAssignment'],
             ],
+            'mixedVarWrittenAtAnOffsetInATernaryBranchStaysMixed' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    is_array($u) && rand(0, 1) ? ($u["a"] = 1) : null;
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarWrittenAtAnOffsetInTheElseOfATernaryStaysMixed' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    !is_array($u) ? null : ($u["a"] = 1);
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarWrittenAtAnOffsetInAMatchArmStaysMixed' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    match (true) {
+                        is_array($u) && rand(0, 1) => $u["a"] = 1,
+                        default => null,
+                    };
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'mixedVarAssignedInATernaryBranchStaysUnioned' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    is_array($u) ? ($u = 5) : null;
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => '5|mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'mixedPropertyWrittenAtANestedOffsetAfterIssetInAndConditionStaysMixed' => [
                 'code' => '<?php
                     final class K {
@@ -6222,6 +6278,35 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'mixedOffsetReadAfterATernaryWritingAnOffsetOfAMixedVar' => [
+                'code' => '<?php
+                    /** @param mixed $u */
+                    function f($u): void {
+                        is_array($u) && rand(0, 1) ? ($u["a"] = 1) : null;
+
+                        if (!empty($u["a"])) {
+                            echo (string) $u["a"];
+                        }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+            ],
+            'mixedOffsetReadAfterAMatchArmWritingAnOffsetOfAMixedVar' => [
+                'code' => '<?php
+                    /** @param mixed $u */
+                    function f($u): void {
+                        match (true) {
+                            is_array($u) && rand(0, 1) => $u["a"] = 1,
+                            default => null,
+                        };
+
+                        if (!empty($u["a"])) {
+                            echo (string) $u["a"];
+                        }
+                    }',
+                'error_message' => 'MixedArrayAccess',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'mixedOffsetReadAfterAnElseWritingAnOffsetOfAMixedVar' => [
                 'code' => '<?php
                     /** @param mixed $u */
