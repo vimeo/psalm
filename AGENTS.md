@@ -12,6 +12,7 @@ Domain skills (load them before touching the area):
 - `hack-conformance`: HHVM oracle harness, Hack coeffect facts, type-variable rules
 - `psalm-repro`: scratch-project repros, comparing against master/old releases, timing and memory
 - `merge-6x-into-master`: the 6.x → master merge procedure
+- `maintainer-merge`: merging PRs, tagging plugin releases, `actions.md` task lists
 - `pr-description`: the PR description format, and reformatting existing descriptions
 - `plugin-api-bc`: a failing BC check, the roave XML, and the psalm-plugin-api PR
 
@@ -72,28 +73,6 @@ These come first, before every other rule here:
   was *added*, which is not a BC issue) are check bugs: fix them in
   `.roave-backward-compatibility-check.xml` in the same PR. Never leave the check red as
   "expected".
-
-## Merging and releasing (maintainers with merge rights)
-
-- In any repo of github.com/psalm (plugins, codeception-psalm-module, psalm-plugin-api,
-  …), review the diff yourself, wait for green CI, merge, and **tag a release** of every
-  plugin you changed (fixture/CI/dependency-only changes too), following each repo's
-  versioning. This includes PRs whose maintainer of record is someone else. It does not
-  extend to third-party orgs (php-stubs, …).
-- Never use `--admin` to bypass red required checks unless asked for that specific PR.
-- Shipping a plugin whose users see InvalidDocblock errors from broken upstream stubs is
-  fine: users report them upstream. Don't hold releases for upstream stub fixes.
-
-### Task lists (`actions.md`, `actions_2.md`: untracked, in the repo root)
-
-- PRs in the **Merge** section have already been reviewed by whoever wrote the list.
-  Follow the file's bugbot gating, then merge them all into one temporary branch, check
-  it contains each PR's current head, and fast-forward push it to `origin/master`
-  **yourself in the main session**. Don't relay the push authorization to a subagent.
-- **Modify** section PRs are not authorized for merge: make the changes in the current
-  chat and open the PR in Brave (see the platform table).
-- If the auto-mode classifier denies the master push ("Merge Without Review"), stop and
-  ask for approval rather than retrying.
 
 ## Agents and subagents
 
