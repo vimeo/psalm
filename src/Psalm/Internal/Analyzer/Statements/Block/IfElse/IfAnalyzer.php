@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -27,6 +28,7 @@ use Psalm\Node\VirtualArg;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
+use UnexpectedValueException;
 
 use function array_any;
 use function array_combine;
@@ -47,6 +49,7 @@ use function preg_match;
 use function preg_quote;
 use function spl_object_id;
 use function str_ends_with;
+use function strtolower;
 
 /**
  * @internal
@@ -583,8 +586,7 @@ final class IfAnalyzer
                 && !isset($assigned_in_conditional_var_ids[$var_id])
                 && (!$type->possibly_undefined || $outer_context->vars_in_scope[$var_id]->possibly_undefined)
                 && UnionTypeComparator::isContainedBy($codebase, $type, $outer_context->vars_in_scope[$var_id])
-                && (!isset($possibly_assigned_var_ids[$var_id])
-                    || !self::mayAssignAsAWhole($branch_nodes, $var_id, $statements_analyzer))
+                && !self::mayAssignAsAWhole($branch_nodes, $var_id, $statements_analyzer)
             ) {
                 // a mixed var that this branch only narrowed, or wrote at some of its offsets, is still just mixed:
                 // merging the narrowed type back in would only produce a `mixed|Foo` union
@@ -637,10 +639,11 @@ final class IfAnalyzer
     }
 
     /**
-     * Whether the code may assign the variable as a whole, in nested blocks too: an assignment to it (`$a = `,
-     * `$a .= `, `[$a] = `, `$a++`), a foreach, static or global declaration of it, `unset($a)`, or passing it by
-     * reference to a closure or to a call made as a statement or assigned (`f($a);`, `$n = f($a)`): what a call in
-     * a condition writes through a reference is not recorded as an assignment either
+     * Whether the statements may assign the variable as a whole, in nested blocks too: an assignment to it
+     * (`$a = `, `$a .= `, `[$a] = `, `$a++`), a foreach, static or global declaration of it, `unset($a)`, or
+     * passing it by reference to a call or a closure (any argument of a call whose parameters are not known). The
+     * condition of the branch itself is left out: what a call there writes through a reference is not recorded as
+     * an assignment
      *
      * @param array<PhpParser\Node> $nodes
      */
@@ -671,18 +674,17 @@ final class IfAnalyzer
                 && ExpressionIdentifier::getExtendedVarId($expr, $fq_class_name, $statements_analyzer) === $var_id;
         };
 
-        $passes_target = static fn(PhpParser\Node\Expr $expr): bool => $expr instanceof PhpParser\Node\Expr\CallLike
-            && array_any(
-                $expr->getRawArgs(),
-                static fn(PhpParser\Node $arg): bool => $arg instanceof PhpParser\Node\Arg && $is_target($arg->value),
-            );
-
         return (new PhpParser\NodeFinder())->findFirst(
-            $nodes,
+            array_filter($nodes, static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Stmt),
             static fn(PhpParser\Node $node): bool => match (true) {
+                $node instanceof PhpParser\Node\Expr\CallLike => array_any(
+                    $node->getRawArgs(),
+                    static fn(PhpParser\Node $arg, int $offset): bool => $arg instanceof PhpParser\Node\Arg
+                        && $is_target($arg->value)
+                        && self::mayBeByReference($node, $arg, $offset, $statements_analyzer),
+                ),
                 $node instanceof PhpParser\Node\Expr\Assign,
-                $node instanceof PhpParser\Node\Expr\AssignOp => $is_target($node->var) || $passes_target($node->expr),
-                $node instanceof PhpParser\Node\Stmt\Expression => $passes_target($node->expr),
+                $node instanceof PhpParser\Node\Expr\AssignOp,
                 $node instanceof PhpParser\Node\Expr\AssignRef,
                 $node instanceof PhpParser\Node\Expr\PreInc,
                 $node instanceof PhpParser\Node\Expr\PreDec,
@@ -703,5 +705,79 @@ final class IfAnalyzer
                 default => false,
             },
         ) !== null;
+    }
+
+    /**
+     * Whether the argument may be passed by reference: only the parameters of a named function are looked up
+     */
+    private static function mayBeByReference(
+        PhpParser\Node\Expr\CallLike $call,
+        PhpParser\Node\Arg $arg,
+        int $offset,
+        StatementsAnalyzer $statements_analyzer,
+    ): bool {
+        if (!$call instanceof PhpParser\Node\Expr\FuncCall || !$call->name instanceof PhpParser\Node\Name) {
+            return true;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $original_function_id = $call->name->toString();
+        $function_id = $call->name instanceof PhpParser\Node\Name\FullyQualified
+            ? $original_function_id
+            : $codebase->functions->getFullyQualifiedFunctionNameFromString(
+                $original_function_id,
+                $statements_analyzer,
+            );
+
+        if (!$codebase->functions->functionExists($statements_analyzer, strtolower($function_id))) {
+            $function_id = $original_function_id;
+        }
+
+        $lc_function_id = strtolower($function_id);
+
+        $param_lists = [];
+
+        if (InternalCallMapHandler::inCallMap($function_id)
+            && !$codebase->functions->hasStubbedFunction($lc_function_id)
+        ) {
+            foreach (InternalCallMapHandler::getCallablesFromCallMap($function_id) ?? [] as $callable) {
+                $param_lists[] = $callable->params ?? [];
+            }
+        } else {
+            try {
+                $param_lists[] = $codebase->functions->getStorage($statements_analyzer, $lc_function_id)->params;
+            } catch (UnexpectedValueException) {
+                return true;
+            }
+        }
+
+        if (!$param_lists) {
+            return true;
+        }
+
+        foreach ($param_lists as $params) {
+            if ($arg->name !== null) {
+                foreach ($params as $param) {
+                    if ($param->name === $arg->name->name && $param->by_ref) {
+                        return true;
+                    }
+                }
+
+                continue;
+            }
+
+            $param = $params[$offset] ?? null;
+
+            if ($param === null && $params) {
+                $last_param = $params[count($params) - 1];
+                $param = $last_param->is_variadic ? $last_param : null;
+            }
+
+            if ($param === null || $param->by_ref) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

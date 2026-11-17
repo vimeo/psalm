@@ -5165,6 +5165,27 @@ final class ConditionalTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedAssignment'],
             ],
+            'mixedVarPassedByValueInTheBranchStaysMixed' => [
+                'code' => '<?php
+                    function takes(array $a): void {}
+
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (is_array($u)) {
+                        $u["a"] = count($u);
+
+                        if (rand(0, 1)) {
+                            takes($u);
+                        }
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'mixedVarPassedToACallInTheBranchStaysUnioned' => [
                 'code' => '<?php
                     /** @var mixed $u */
@@ -5995,6 +6016,46 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'mixedVarWrittenByReferenceInTheConditionOfANestedIfStaysUnioned' => [
+                'code' => '<?php
+                    /** @param-out string|false $s */
+                    function readIt(mixed &$s): bool {
+                        $s = rand(0, 1) ? "a" : false;
+                        return true;
+                    }
+
+                    function f(mixed $s, bool $c): void {
+                        if ($c) {
+                            if (!readIt($s)) {
+                                throw new RuntimeException();
+                            }
+                        }
+
+                        echo strlen($s);
+                    }',
+                'error_message' => 'PossiblyFalseArgument',
+                'error_levels' => ['MixedArgument'],
+                'php_version' => '8.0',
+            ],
+            'mixedVarWrittenByReferenceInANestedExpressionStaysUnioned' => [
+                'code' => '<?php
+                    /** @param-out string|false $s */
+                    function readIt(mixed &$s): bool {
+                        $s = rand(0, 1) ? "a" : false;
+                        return true;
+                    }
+
+                    function f(mixed $s, bool $c): void {
+                        if ($c) {
+                            echo readIt($s) ? "ok" : "ko";
+                        }
+
+                        echo strlen($s);
+                    }',
+                'error_message' => 'PossiblyFalseArgument',
+                'error_levels' => ['MixedArgument'],
+                'php_version' => '8.0',
+            ],
             'mixedOffsetAssignedAsAWholeInIfStaysUnioned' => [
                 'code' => '<?php
                     /** @return mixed */
