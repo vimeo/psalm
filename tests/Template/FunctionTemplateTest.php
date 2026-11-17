@@ -2876,7 +2876,7 @@ final class FunctionTemplateTest extends TestCase
                     '$cars===' => 'list<Car>',
                 ],
             ],
-            'conditionalReturnOnArgumentOnlyCoercedToTheBoundKeepsItsOverlap' => [
+            'conditionalReturnOnArgumentOnlyCoercedToTheBoundKeepsTheBoundPartsItContains' => [
                 'code' => '<?php
                     /** @return array|scalar */
                     function arrayOrScalar() {
@@ -2896,7 +2896,7 @@ final class FunctionTemplateTest extends TestCase
                 ],
                 'ignored_issues' => ['ArgumentTypeCoercion', 'PossiblyInvalidArgument'],
             ],
-            'templateBoundByArgumentOnlyCoercedToTheBoundKeepsItsOverlap' => [
+            'templateBoundByArgumentOnlyCoercedToTheBoundKeepsTheStringItContains' => [
                 'code' => '<?php
                     /**
                      * @template T of string|array<string>
@@ -2966,7 +2966,7 @@ final class FunctionTemplateTest extends TestCase
                 ],
                 'ignored_issues' => ['ArgumentTypeCoercion', 'PossiblyInvalidArgument', 'InvalidScalarArgument'],
             ],
-            'templateUpperBoundByCallableParamOnlyCoercedToTheBoundKeepsItsOverlap' => [
+            'templateUpperBoundByCallableParamOnlyCoercedToTheBoundKeepsTheBoundPartsItContains' => [
                 'code' => '<?php
                     /**
                      * @template T of string|array<string>
