@@ -5211,6 +5211,27 @@ final class CallableTest extends TestCase
                     }',
                 'error_message' => 'expects a public callable',
             ],
+            'emptyStringIsNotCallable' => [
+                'code' => '<?php
+                    function takesCallable(callable $c): void {}
+
+                    takesCallable("");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'zeroStringIsNotCallable' => [
+                'code' => '<?php
+                    function takesCallable(callable $c): void {}
+
+                    takesCallable("0");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'numericStringIsNotCallable' => [
+                'code' => '<?php
+                    function takesCallable(callable $c): void {}
+
+                    takesCallable("1e3");',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }

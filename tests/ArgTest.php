@@ -604,6 +604,56 @@ final class ArgTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nonEmptyScalarParamAcceptsTruthyScalars' => [
+                'code' => '<?php
+                    /** @param non-empty-scalar $n */
+                    function takesNonEmpty($n): void {}
+
+                    /**
+                     * @param non-empty-scalar $n
+                     * @param non-falsy-string $s
+                     * @param positive-int $i
+                     */
+                    function f($n, $s, $i): void {
+                        takesNonEmpty("a");
+                        takesNonEmpty("00");
+                        takesNonEmpty(-1);
+                        takesNonEmpty(1.5);
+                        takesNonEmpty(true);
+                        takesNonEmpty($n);
+                        takesNonEmpty($s);
+                        takesNonEmpty($i);
+                    }',
+            ],
+            'emptyScalarParamAcceptsFalsyScalars' => [
+                'code' => '<?php
+                    /** @param empty-scalar $e */
+                    function takesEmpty($e): void {}
+
+                    /** @param empty-scalar $e */
+                    function f($e): void {
+                        takesEmpty("");
+                        takesEmpty("0");
+                        takesEmpty(0);
+                        takesEmpty(0.0);
+                        takesEmpty(false);
+                        takesEmpty($e);
+                    }',
+            ],
+            'scalarParamAcceptsEmptyAndNonEmptyScalars' => [
+                'code' => '<?php
+                    /** @param scalar $s */
+                    function takesScalar($s): void {}
+
+                    /**
+                     * @param non-empty-scalar $n
+                     * @param empty-scalar $e
+                     */
+                    function f($n, $e): void {
+                        takesScalar($n);
+                        takesScalar($e);
+                    }',
+            ],
         ];
     }
 
@@ -1386,6 +1436,81 @@ final class ArgTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'nonEmptyScalarParamRejectsEmptyString' => [
+                'code' => '<?php
+                    /** @param non-empty-scalar $n */
+                    function takesNonEmpty($n): void {}
+
+                    takesNonEmpty("");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'nonEmptyScalarParamRejectsZero' => [
+                'code' => '<?php
+                    /** @param non-empty-scalar $n */
+                    function takesNonEmpty($n): void {}
+
+                    takesNonEmpty(0);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'nonEmptyScalarParamRejectsEmptyScalar' => [
+                'code' => '<?php
+                    /** @param non-empty-scalar $n */
+                    function takesNonEmpty($n): void {}
+
+                    /** @param empty-scalar $e */
+                    function f($e): void {
+                        takesNonEmpty($e);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'nonEmptyScalarParamCoercesScalar' => [
+                'code' => '<?php
+                    /** @param non-empty-scalar $n */
+                    function takesNonEmpty($n): void {}
+
+                    function f(int $i): void {
+                        takesNonEmpty($i);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'emptyScalarParamRejectsNonEmptyString' => [
+                'code' => '<?php
+                    /** @param empty-scalar $e */
+                    function takesEmpty($e): void {}
+
+                    takesEmpty("a");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'emptyScalarParamRejectsNonZeroInt' => [
+                'code' => '<?php
+                    /** @param empty-scalar $e */
+                    function takesEmpty($e): void {}
+
+                    takesEmpty(1);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'emptyScalarParamRejectsNonEmptyScalar' => [
+                'code' => '<?php
+                    /** @param empty-scalar $e */
+                    function takesEmpty($e): void {}
+
+                    /** @param non-empty-scalar $n */
+                    function f($n): void {
+                        takesEmpty($n);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'emptyScalarParamCoercesScalar' => [
+                'code' => '<?php
+                    /** @param empty-scalar $e */
+                    function takesEmpty($e): void {}
+
+                    /** @param scalar $s */
+                    function f($s): void {
+                        takesEmpty($s);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
             ],
         ];
     }
