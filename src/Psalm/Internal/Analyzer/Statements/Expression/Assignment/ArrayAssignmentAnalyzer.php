@@ -185,6 +185,8 @@ final class ArrayAssignmentAnalyzer
                     || isset($vars_before_read[$child_var_id])
                     || !isset($context->vars_in_scope[$child_var_id])
                     || !$context->vars_in_scope[$child_var_id]->hasType('null')
+                    // an object isn't replaced by the array the write creates from null
+                    || $context->vars_in_scope[$child_var_id]->hasObjectType()
                 ) {
                     continue;
                 }

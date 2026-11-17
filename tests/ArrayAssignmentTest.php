@@ -3333,6 +3333,19 @@ final class ArrayAssignmentTest extends TestCase
                     }',
                 'error_message' => 'UndefinedVariable',
             ],
+            'nullableObjectWrittenThroughUnderMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $m
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f($m, ?ArrayObject $o): int {
+                        $m["a"] = ["b" => $o];
+                        $m["a"]["b"]["c"] = 1;
+                        return $m["a"]["b"]->count();
+                    }',
+                'error_message' => 'PossiblyNullReference - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25',
+            ],
             'missingKeyReadAfterNestedAssignmentUnderMixed' => [
                 'code' => '<?php
                     /**
