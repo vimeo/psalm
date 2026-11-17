@@ -5232,6 +5232,14 @@ final class CallableTest extends TestCase
                     takesCallable("1e3");',
                 'error_message' => 'InvalidArgument',
             ],
+            'numericStringIsNotACallableForABuiltin' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): void {
+                        usort($a, "123");
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
         ];
     }
 }

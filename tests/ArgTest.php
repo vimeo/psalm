@@ -1501,6 +1501,52 @@ final class ArgTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument',
             ],
+            'trueParamRejectsEmptyScalar' => [
+                'code' => '<?php
+                    function takesTrue(true $t): void {}
+
+                    /** @param empty-scalar $e */
+                    function f($e): void {
+                        takesTrue($e);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'positiveIntParamRejectsEmptyScalar' => [
+                'code' => '<?php
+                    /** @param positive-int $i */
+                    function takesPositive(int $i): void {}
+
+                    /** @param empty-scalar $e */
+                    function f($e): void {
+                        takesPositive($e);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'nonFalsyStringParamRejectsEmptyScalar' => [
+                'code' => '<?php
+                    /** @param non-falsy-string $s */
+                    function takesNonFalsy(string $s): void {}
+
+                    /** @param empty-scalar $e */
+                    function f($e): void {
+                        takesNonFalsy($e);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'trueParamCoercesNonEmptyScalar' => [
+                'code' => '<?php
+                    function takesTrue(true $t): void {}
+
+                    /** @param non-empty-scalar $n */
+                    function f($n): void {
+                        takesTrue($n);
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'emptyScalarParamCoercesScalar' => [
                 'code' => '<?php
                     /** @param empty-scalar $e */

@@ -342,6 +342,12 @@ final class ScalarTypeComparator
             return false;
         }
 
+        if (($input_type_part instanceof TEmptyScalar && $container_type_part->isTruthy())
+            || ($input_type_part instanceof TNonEmptyScalar && $container_type_part->isFalsy())
+        ) {
+            return false;
+        }
+
         if ($container_type_part instanceof TScalar) {
             return true;
         }
