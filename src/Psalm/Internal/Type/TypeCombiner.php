@@ -970,6 +970,7 @@ final class TypeCombiner
             $existing_type = $combination->value_types[$type_key] ?? null;
 
             if (($existing_type instanceof TTemplateKeyOf || $existing_type instanceof TTemplateValueOf)
+                && $existing_type->defining_class === $type->defining_class
                 && !$existing_type->as->equals($type->as)
             ) {
                 $type = new ($type::class)(
