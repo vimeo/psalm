@@ -1079,16 +1079,13 @@ final class IssueBuffer
         }
 
         // a taint analysis run in GitHub Actions that writes a SARIF report exits successfully, so that a following
-        // step can upload the report; every other combination exits with an error when issues were found
-        if ($error_count
+        // step can upload the report; every other combination exits with an error when issues were found or the
+        // type coverage is below the minimum
+        if (($error_count || $type_coverage_message !== null)
             && !($codebase->taint_flow_graph
                 && self::hasSarifReport($project_analyzer->generated_report_options)
                 && isset($_SERVER['GITHUB_WORKFLOW']))
         ) {
-            exit(2);
-        }
-
-        if ($type_coverage_message !== null) {
             exit(2);
         }
 

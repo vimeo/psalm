@@ -488,9 +488,43 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
     }
 
     /**
-     * @param list<string> $args
+     * @param array<string, string|false> $env
      */
-    private function runPsalmOnAProjectWithTypeCoverage(string $attributes, array $args): Process
+    #[DataProvider('provideTaintRunWithASarifReport')]
+    public function testTypeCoverageBelowTheMinimumOfATaintRunWithASarifReport(array $env, int $exit_code): void
+    {
+        $report = self::$tmpDir . '/report.sarif';
+
+        try {
+            $process = $this->runPsalmOnAProjectWithTypeCoverage(
+                'minTypeCoverage="95"',
+                ['--taint-analysis', '--report=' . $report, '--output-format=json'],
+                $env,
+            );
+
+            $this->assertSame($exit_code, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+            $this->assertSame('Type coverage 77.77% is below the minimum of 95.00%' . PHP_EOL, $process->getErrorOutput());
+        } finally {
+            @unlink($report);
+        }
+    }
+
+    /**
+     * @return iterable<string, array{array<string, string|false>, int}>
+     * @psalm-pure
+     */
+    public static function provideTaintRunWithASarifReport(): iterable
+    {
+        // like for issues, so that a following step can upload the report
+        yield 'in GitHub Actions' => [['GITHUB_WORKFLOW' => 'CI'], 0];
+        yield 'elsewhere' => [['GITHUB_WORKFLOW' => false], 2];
+    }
+
+    /**
+     * @param list<string> $args
+     * @param array<string, string|false> $env
+     */
+    private function runPsalmOnAProjectWithTypeCoverage(string $attributes, array $args, array $env = []): Process
     {
         @unlink(self::$tmpDir . '/src/FileWithErrors.php');
         file_put_contents(
@@ -507,7 +541,7 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $process = self::newProcess(
             [PHP_BINARY, $this->psalm, '--no-progress', '--no-cache', ...$args],
             self::$tmpDir,
-            self::agentEnvVarsToUnset(),
+            [...self::agentEnvVarsToUnset(), ...$env],
         );
         $process->run();
 
