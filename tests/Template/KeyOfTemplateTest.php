@@ -83,6 +83,21 @@ final class KeyOfTemplateTest extends TestCase
                     }
                 ',
             ],
+            'typeCheckAfterArrayKeyExistsOnTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     */
+                    function f(int $key, $array): void {
+                        if (array_key_exists($key, $array)) {
+                            if ($key === 0) {
+                                echo "first";
+                            }
+                        }
+                    }
+                ',
+            ],
             'arrayKeyExistsOnTemplateKeepsKeyType' => [
                 'code' => '<?php
                     /**

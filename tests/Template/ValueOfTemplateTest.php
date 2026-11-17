@@ -59,6 +59,21 @@ final class ValueOfTemplateTest extends TestCase
                     }
                 ',
             ],
+            'typeCheckAfterInArrayOnTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     */
+                    function f(string $value, $array): void {
+                        if (in_array($value, $array, true)) {
+                            if ($value === "") {
+                                echo "empty";
+                            }
+                        }
+                    }
+                ',
+            ],
             'inArrayOnTemplateKeepsValueType' => [
                 'code' => '<?php
                     /**
