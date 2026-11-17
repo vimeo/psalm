@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Storage;
 
+use Override;
 use Psalm\CodeLocation;
 use Psalm\Internal\Codebase\ClassLikes;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
@@ -15,7 +16,7 @@ use Psalm\Type\Atomic\TLiteralString;
  * @psalm-immutable
  * @api
  */
-final class EnumCaseStorage
+final class EnumCaseStorage implements HasAttributesInterface
 {
     use UnserializeMemoryUsageSuppressionTrait;
 
@@ -50,5 +51,15 @@ final class EnumCaseStorage
         }
 
         return $case_value;
+    }
+
+    /**
+     * @return list<AttributeStorage>
+     * @psalm-mutation-free
+     */
+    #[Override]
+    public function getAttributeStorages(): array
+    {
+        return $this->attributes;
     }
 }

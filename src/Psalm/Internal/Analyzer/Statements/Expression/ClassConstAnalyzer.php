@@ -993,20 +993,19 @@ final class ClassConstAnalyzer
         $constants = [];
         foreach ($class_storage->constants as $const_name => $const_storage) {
             if ($const_storage->attributes) {
-                $constants[$const_name] = [$const_storage, $const_storage->attributes, $const_storage->location];
+                $constants[$const_name] = [$const_storage, $const_storage->attributes];
             }
         }
 
         foreach ($class_storage->enum_cases as $case_name => $case_storage) {
             if ($case_storage->attributes) {
-                $constants[$case_name] = [null, $case_storage->attributes, $case_storage->stmt_location];
+                $constants[$case_name] = [null, $case_storage->attributes];
             }
         }
 
-        foreach ($constants as $const_name => [$const_storage, $attributes, $location]) {
+        foreach ($constants as $const_name => [$const_storage, $attributes]) {
             foreach ($attributes as $attribute) {
                 if ($attribute->fq_class_name !== 'Override'
-                    || $location === null
                     || self::overridesConstant($class_storage, $const_name, $const_storage, $codebase)
                 ) {
                     continue;

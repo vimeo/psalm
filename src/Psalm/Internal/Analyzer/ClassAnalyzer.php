@@ -588,7 +588,18 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\EnumCase) {
-                AttributesAnalyzer::reportPlaceholders($this, $stmt->attrGroups, $this->getSuppressedIssues());
+                $case_storage = $storage->enum_cases[$stmt->name->name] ?? null;
+
+                if ($case_storage !== null) {
+                    AttributesAnalyzer::analyze(
+                        $this,
+                        $class_context,
+                        $case_storage,
+                        $stmt->attrGroups,
+                        Attribute::TARGET_CLASS_CONSTANT,
+                        $storage->suppressed_issues + $this->getSuppressedIssues(),
+                    );
+                }
             }
         }
 

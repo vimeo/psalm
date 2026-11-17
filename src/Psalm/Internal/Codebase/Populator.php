@@ -1652,8 +1652,9 @@ final class Populator
                 $aliased_constant_name_lc = strtolower($constant_name);
                 $aliased_constant_name = $constant_name;
             }
-            // the class's own declaration wins over the constant of the trait; the constants of the parents are not
-            // in yet, and a constant of the trait that was copied earlier is declared outside the class
+            // The class's own declaration wins over the constant of the trait. A plain isset() can't tell it from
+            // an inherited one: when a storage is populated again (the Populator resets `populated`), constants
+            // already holds the copies of the parent and of the trait from the first run.
             $own_location = ($storage->constants[$aliased_constant_name] ?? null)?->location;
             if ($own_location !== null
                 && $storage->stmt_location !== null
