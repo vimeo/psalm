@@ -1688,6 +1688,49 @@ final class Context
     }
 
     /**
+     * Forgets what is known of the items and properties of what a property holds, and of what depends on them, after
+     * a call wrote some of them. Those bound to variables by reference stay bound to them
+     */
+    public function forgetPropertyDescendents(string $property_id): void
+    {
+        $this->forgetNullArrayOffsets($property_id);
+        $this->removeVarFromConflictingClauses($property_id);
+
+        // `$a[$this->p]` too
+        $descendent_pattern = '/' . preg_quote($property_id, '/') . '[\]\[\-]/';
+
+        foreach (array_keys($this->vars_in_scope) as $var_id) {
+            if (preg_match($descendent_pattern, $var_id) === 1) {
+                $this->forgetWrittenVar($var_id);
+            }
+        }
+    }
+
+    /**
+     * Forgets a var a call wrote as removeMutableObjectVars() does: forgotten, not unset (Context::update() tells the
+     * two apart)
+     */
+    private function forgetWrittenVar(string $var_id): void
+    {
+        $this->forgetPropertyBoundByReference($var_id, false);
+        $this->vars_possibly_in_scope[$var_id] = true;
+        $this->parent_remove_vars[$var_id] = ++self::$clause_removal_count;
+    }
+
+    /**
+     * Forgets what is known of a property (`$a->p`), and of what it holds, after a call may have written items or
+     * properties of what it holds. One known to hold an object still holds it
+     */
+    public function forgetPropertyOfHeldObject(string $property_id): void
+    {
+        $this->forgetPropertyDescendents($property_id);
+
+        if (isset($this->vars_in_scope[$property_id]) && !$this->vars_in_scope[$property_id]->isObjectType()) {
+            $this->forgetWrittenVar($property_id);
+        }
+    }
+
+    /**
      * Forgets a property (or an item of it) a call may have written. One bound to variables by reference stays bound
      * to them, and now holds whatever it is declared to hold
      */
