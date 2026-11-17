@@ -1616,6 +1616,37 @@ final class ArrayAssignmentTest extends TestCase
                     /** @psalm-suppress MixedMethodCall */
                     $a->offsetExists("baz");',
             ],
+            'literalKeyAssignmentOnMixedKeepsTheArrayLikeOtherKeys' => [
+                'code' => '<?php
+                    final class P {
+                        /** @var mixed */
+                        public $p;
+                    }
+
+                    $a = json_decode("[]");
+                    $a["x"] = 1;
+
+                    $b = json_decode("[]");
+                    $b["x"]["y"] = 1;
+
+                    $c = json_decode("[]");
+                    $c[uniqid()] = 1;
+
+                    $n = rand(0, 1) ? json_decode("[]") : null;
+                    $n["x"] = 1;
+
+                    $o = new P();
+                    $o->p["x"] = 1;
+                    $p = $o->p;',
+                'assertions' => [
+                    '$a===' => 'array{x: 1}|mixed',
+                    '$b===' => 'array{x: array{y: 1}|mixed}|mixed',
+                    '$c===' => 'mixed|non-empty-array<non-empty-string, 1>',
+                    '$n===' => 'array{x: 1}|mixed',
+                    '$p===' => 'array{x: 1}|mixed',
+                ],
+                'ignored_issues' => ['MixedArrayAssignment', 'MixedArrayAccess', 'MixedAssignment'],
+            ],
             'implementsArrayAccessInheritingDocblock' => [
                 'code' => '<?php
                     /**
@@ -3648,6 +3679,19 @@ final class ArrayAssignmentTest extends TestCase
                         return $cache[$locale][$locale];
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalKeyAssignmentOnMixedPassedAsString' => [
+                'code' => '<?php
+                    function takesString(string $_s): void {}
+
+                    /** @param mixed $m */
+                    function f($m): void {
+                        /** @psalm-suppress MixedArrayAssignment */
+                        $m["x"] = 1;
+                        /** @psalm-suppress MixedArgument */
+                        takesString($m);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
             'mergeWithDeeplyNestedArray' => [
                 'code' => '<?php

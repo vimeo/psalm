@@ -507,7 +507,6 @@ final class ArrayAssignmentAnalyzer
                 $array_assignment_type,
                 $codebase,
                 true,
-                false,
             );
         }
 
