@@ -1362,6 +1362,21 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         );
     }
 
+    public function testMinTypeCoverageAboveOneHundredIsAConfigError(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage("attribute 'minTypeCoverage'");
+        Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm minTypeCoverage="101">
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+            </psalm>',
+        );
+    }
+
     public function testImpossibleIssue(): void
     {
         $this->expectExceptionMessage('This element is not expected');

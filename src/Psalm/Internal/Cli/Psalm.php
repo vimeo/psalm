@@ -144,6 +144,7 @@ final class Psalm
         'init',
         'init-ci',
         'memory-limit:',
+        'min-type-coverage:',
         'monochrome',
         'no-diff',
         'force-jit',
@@ -324,6 +325,11 @@ final class Psalm
         }
 
         $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? null);
+
+        if ($paths_to_check !== null && isset($options['min-type-coverage'])) {
+            fwrite(STDERR, 'Cannot check the minimum type coverage when checking specific files' . PHP_EOL);
+            exit(1);
+        }
 
         if ($config->resolve_from_config_file) {
             $current_dir = $config->base_dir;
@@ -514,6 +520,36 @@ final class Psalm
     }
 
     /**
+     * @param list<string> $args
+     * @return float|null null if the option isn't given
+     */
+    private static function parseMinTypeCoverageOption(mixed $value, array $args): ?float
+    {
+        // CliUtils::getOptions() leaves out an occurrence without a value, which must not turn the check off
+        $without_value = in_array(
+            'min-type-coverage',
+            CliUtils::getLongOptionsWithoutValue($args, self::SHORT_OPTIONS, self::LONG_OPTIONS),
+            true,
+        );
+
+        if ($value === null && !$without_value) {
+            return null;
+        }
+
+        // the coverage is reported with two decimals
+        if (!$without_value
+            && is_string($value)
+            && preg_match('/^\d+(\.\d{1,2})?$/', $value)
+            && (float) $value <= 100
+        ) {
+            return (float) $value;
+        }
+
+        fwrite(STDERR, '--min-type-coverage expects a percentage from 0 to 100 with at most two decimals' . PHP_EOL);
+        exit(1);
+    }
+
+    /**
      * @psalm-capabilities read-globals
      */
     private static function initOutputFormat(array $options): string
@@ -655,7 +691,10 @@ final class Psalm
             . PHP_EOL;
     }
 
-    /** @param list<ClassLoader> $autoloaders */
+    /**
+     * @param list<ClassLoader> $autoloaders
+     * @param list<string> $args
+     */
     private static function loadConfig(
         ?string $path_to_config,
         string $current_dir,
@@ -663,6 +702,7 @@ final class Psalm
         array $autoloaders,
         bool $run_taint_analysis,
         array $options,
+        array $args,
     ): Config {
         $config = CliUtils::initializeConfig(
             $path_to_config,
@@ -685,6 +725,10 @@ final class Psalm
 
             $config->level = $config_level;
         }
+
+        $config->min_type_coverage = self::parseMinTypeCoverageOption($options['min-type-coverage'] ?? null, $args)
+            ?? $config->min_type_coverage;
+
         return $config;
     }
 
@@ -1184,7 +1228,7 @@ final class Psalm
     }
 
     /**
-     * @param array<int, string> $args
+     * @param list<string> $args
      * @param list<ClassLoader> $autoloaders
      * @return array{Config,?string}
      */
@@ -1222,6 +1266,7 @@ final class Psalm
                 $autoloaders,
                 $run_taint_analysis,
                 $options,
+                $args,
             );
         }
         return [$config, $init_source_dir];
@@ -1578,6 +1623,10 @@ final class Psalm
 
             --stats
                 Shows a breakdown of Psalm’s ability to infer types in the codebase
+
+            --min-type-coverage=PERCENTAGE
+                Exit with status 2 when Psalm infers types for less than PERCENTAGE (0 to 100) of the codebase.
+                Checked on full runs only. Overrides the minTypeCoverage config option
 
         Reports:
             --report=PATH

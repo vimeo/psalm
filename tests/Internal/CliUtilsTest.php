@@ -299,6 +299,28 @@ final class CliUtilsTest extends TestCase
         ];
     }
 
+    /**
+     * @param list<string> $args
+     * @param list<string> $expected
+     */
+    #[DataProvider('provideLongOptionsWithoutValue')]
+    public function testLongOptionsWithoutValue(array $args, array $expected): void
+    {
+        self::assertSame($expected, CliUtils::getLongOptionsWithoutValue($args, ['c:'], ['issues:', 'no-cache']));
+    }
+
+    /**
+     * @return iterable<string, array{list<string>, list<string>}>
+     * @psalm-pure
+     */
+    public static function provideLongOptionsWithoutValue(): iterable
+    {
+        yield 'an empty value after a value' => [['--issues=x', '--issues='], ['issues']];
+        yield 'the last argument' => [['--no-cache', '--issues'], ['issues']];
+        yield 'the value of another option' => [['-c', '--issues'], []];
+        yield 'a path after the terminator' => [['--', '--issues'], []];
+    }
+
     public function testEverythingAfterTheTerminatorIsAPath(): void
     {
         $dir = (string)tempnam(sys_get_temp_dir(), 'CliUtilsTest_');

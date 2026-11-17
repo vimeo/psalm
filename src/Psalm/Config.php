@@ -525,6 +525,9 @@ final class Config
 
     public float $long_scan_warning = 10.0;
 
+    /** The percentage of the type coverage below which a full run fails, validated by config.xsd */
+    public ?float $min_type_coverage = null;
+
     /**
      * @var string[]
      */
@@ -1359,6 +1362,10 @@ final class Config
         if (isset($config_xml['longScanWarning'])) {
             $attribute_text = (float)$config_xml['longScanWarning'];
             $config->long_scan_warning = $attribute_text;
+        }
+
+        if (isset($config_xml['minTypeCoverage'])) {
+            $config->min_type_coverage = (float) $config_xml['minTypeCoverage'];
         }
 
         if (isset($config_xml['inferPropertyTypesFromConstructor'])) {

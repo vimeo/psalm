@@ -1072,6 +1072,12 @@ final class IssueBuffer
         // runs), so cached taint sinks/sources keep matching after the analysis is reused from cache.
         $project_analyzer->persistCustomTaints();
 
+        $type_coverage_message = self::checkMinTypeCoverage($codebase, $is_full);
+
+        if ($type_coverage_message !== null) {
+            fwrite(STDERR, $type_coverage_message . PHP_EOL);
+        }
+
         // a taint analysis run in GitHub Actions that writes a SARIF report exits successfully, so that a following
         // step can upload the report; every other combination exits with an error when issues were found
         if ($error_count
@@ -1079,6 +1085,10 @@ final class IssueBuffer
                 && self::hasSarifReport($project_analyzer->generated_report_options)
                 && isset($_SERVER['GITHUB_WORKFLOW']))
         ) {
+            exit(2);
+        }
+
+        if ($type_coverage_message !== null) {
             exit(2);
         }
 
@@ -1104,6 +1114,50 @@ final class IssueBuffer
         }
 
         return false;
+    }
+
+    /**
+     * @internal
+     * @return string|null why the run fails the minimum type coverage, null if it passes or doesn't check it
+     * @psalm-capabilities read-props|write-props|write-refs
+     */
+    public static function checkMinTypeCoverage(Codebase $codebase, bool $is_full): ?string
+    {
+        $min_type_coverage = $codebase->config->min_type_coverage;
+
+        // only a full run measures the coverage of the whole project; a diff run counts the unchanged files from
+        // the cache
+        if (!$is_full || $min_type_coverage === null) {
+            return null;
+        }
+
+        return self::getTypeCoverageBelowMinimumMessage(
+            $codebase->analyzer->getTotalTypeCoverage($codebase),
+            $min_type_coverage,
+        );
+    }
+
+    /**
+     * @internal
+     * @param array{int, int} $type_coverage the counts of mixed and of non-mixed expressions
+     * @psalm-pure
+     */
+    public static function getTypeCoverageBelowMinimumMessage(array $type_coverage, float $min_type_coverage): ?string
+    {
+        [$mixed_count, $nonmixed_count] = $type_coverage;
+        $total = $mixed_count + $nonmixed_count;
+
+        // without expressions there is no type that Psalm couldn't infer
+        if ($total === 0 || 100 * $nonmixed_count / $total >= $min_type_coverage) {
+            return null;
+        }
+
+        // rounded down, so that a coverage below the minimum never prints as reaching it
+        return sprintf(
+            'Type coverage %s%% is below the minimum of %s%%',
+            number_format(intdiv(10_000 * $nonmixed_count, $total) / 100, 2),
+            number_format($min_type_coverage, 2),
+        );
     }
 
     private static function printAlterSummary(
