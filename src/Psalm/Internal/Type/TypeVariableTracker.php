@@ -45,6 +45,14 @@ final class TypeVariableTracker
     private array $bounds = [];
 
     /**
+     * The recording order of each position that recorded bounds, kept from its first time so a loop body analyzed
+     * again doesn't move its bounds after the ones that follow it
+     *
+     * @var array<string, int>
+     */
+    private array $position_orders = [];
+
+    /**
      * Mints a fresh type variable name, registering its bound storage.
      *
      * @psalm-external-mutation-free
@@ -86,10 +94,18 @@ final class TypeVariableTracker
         ?CodeLocation $pos,
         array $suppressed_issues = [],
     ): void {
+        $recorded_order = 0;
+
+        if ($pos !== null) {
+            $position_key = $pos->file_path . ':' . $pos->raw_file_start . ':' . $pos->raw_file_end;
+            $recorded_order = $this->position_orders[$position_key] ??= count($this->position_orders) + 1;
+        }
+
         foreach ($lower as [$name, $bound]) {
             if (isset($this->bounds[$name])) {
                 $bound->pos = $pos;
                 $bound->suppressed_issues = $suppressed_issues;
+                $bound->recorded_order = $recorded_order;
                 $this->bounds[$name]->lower_bounds[] = $bound;
             }
         }
@@ -98,6 +114,7 @@ final class TypeVariableTracker
             if (isset($this->bounds[$name])) {
                 $bound->pos = $pos;
                 $bound->suppressed_issues = $suppressed_issues;
+                $bound->recorded_order = $recorded_order;
                 $this->bounds[$name]->upper_bounds[] = $bound;
             }
         }
@@ -210,6 +227,7 @@ final class TypeVariableTracker
     ): void {
         $all_bounds = $this->bounds;
         $this->bounds = [];
+        $this->position_orders = [];
 
         foreach ($all_bounds as $bounds) {
             self::reconcileLowerBoundsWithUpperBounds(
@@ -290,6 +308,11 @@ final class TypeVariableTracker
                         + $relevant_lower_bound->suppressed_issues
                         + $upper_bound->suppressed_issues;
 
+                    // a value passed after the requirement was set (`$this->p = new Coll(); $this->p->add($v)`) is
+                    // reported where it's passed, as the eager template model rejected it there
+                    $lower_bound_is_later = $relevant_lower_bound->pos !== null
+                        && $relevant_lower_bound->recorded_order > $upper_bound->recorded_order;
+
                     if ($union_comparison_result->type_coerced_from_mixed) {
                         // a value that entered the variable as mixed (e.g. `new Box($mixed)`)
                         // and is then required to be something concrete by an argument,
@@ -313,6 +336,7 @@ final class TypeVariableTracker
                         self::reportMixedCoercion(
                             $relevant_lower_bound,
                             $upper_bound,
+                            $lower_bound_is_later,
                             $fallback_location,
                             $bound_suppressed_issues,
                         );
@@ -322,11 +346,15 @@ final class TypeVariableTracker
 
                     $has_issue = true;
 
-                    // argument requirements point at the call site; return
-                    // types and constraints point at where the value entered
-                    $pos = $upper_bound->from_argument_requirement
+                    // argument requirements point at the call site, unless the
+                    // value was passed after them; return types and constraints
+                    // point at where the value entered
+                    $pos = $upper_bound->from_argument_requirement && !$lower_bound_is_later
                         ? ($upper_bound->pos ?? $relevant_lower_bound->pos ?? $fallback_location)
                         : ($relevant_lower_bound->pos ?? $upper_bound->pos ?? $fallback_location);
+
+                    $from_argument = ($lower_bound_is_later && $relevant_lower_bound->from_argument_value)
+                        || $upper_bound->from_argument_requirement;
 
                     $message = 'Type ' . $relevant_lower_bound->type->getId()
                         . ' should be a subtype of ' . $upper_bound->type->getId();
@@ -336,7 +364,7 @@ final class TypeVariableTracker
                     // is expected) is reported as the coercion the eager template
                     // model reported in that position, so the same suppression
                     // covers it
-                    if ($union_comparison_result->type_coerced && $upper_bound->from_argument_requirement) {
+                    if ($union_comparison_result->type_coerced && $from_argument) {
                         $issue = new ArgumentTypeCoercion($message, $pos);
                     } elseif ($union_comparison_result->type_coerced
                         && $upper_bound->property_requirement_id !== null
@@ -460,22 +488,25 @@ final class TypeVariableTracker
 
     /**
      * Reports a lower bound that only reached a requirement through mixed, as
-     * the coercion issue matching the position that imposed the requirement.
+     * the coercion issue matching the later of the two positions.
      *
      * @param array<string> $suppressed_issues
      */
     private static function reportMixedCoercion(
         TemplateBound $lower_bound,
         TemplateBound $upper_bound,
+        bool $lower_bound_is_later,
         CodeLocation $fallback_location,
         array $suppressed_issues,
     ): void {
-        $pos = $upper_bound->pos ?? $lower_bound->pos ?? $fallback_location;
+        $pos = $lower_bound_is_later
+            ? ($lower_bound->pos ?? $fallback_location)
+            : ($upper_bound->pos ?? $lower_bound->pos ?? $fallback_location);
 
         $message = 'Type ' . $lower_bound->type->getId()
             . ' should be a subtype of ' . $upper_bound->type->getId();
 
-        if ($upper_bound->from_argument_requirement) {
+        if (($lower_bound_is_later && $lower_bound->from_argument_value) || $upper_bound->from_argument_requirement) {
             $issue = new MixedArgumentTypeCoercion($message, $pos);
         } elseif ($upper_bound->from_return_requirement) {
             $issue = new MixedReturnTypeCoercion($message, $pos);
