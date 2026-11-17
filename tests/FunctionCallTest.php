@@ -3718,7 +3718,7 @@ final class FunctionCallTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
-            'streamGetMetaDataShapeOnPhp8' => [
+            'streamGetMetaDataShapeOnPhp85' => [
                 'code' => <<<'PHP'
                     <?php
                     $stream = fopen('php://memory', 'r+');
@@ -3728,7 +3728,7 @@ final class FunctionCallTest extends TestCase
                     $meta = stream_get_meta_data($stream);
                     PHP,
                 'assertions' => [
-                    '$meta===' => 'array{base64?: bool, blocked?: bool, charset?: string, crypto?: array{cipher_bits: int, cipher_name: string, cipher_version: string, protocol: string}, eof?: bool, mediatype?: string, mode: string, seekable: bool, stream_type: string, timed_out?: bool, unread_bytes: int, uri?: string, wrapper_data?: mixed, wrapper_type?: string, ...<array-key, string>}',
+                    '$meta===' => 'array{base64?: bool, blocked?: bool, charset?: string, crypto?: array{cipher_bits: int, cipher_name: string, cipher_version: string, protocol: string}, eof?: bool, mediatype?: string, mode: string, seekable: bool, stream_type: string, timed_out?: bool, unread_bytes: int, uri?: string, wrapper_data?: mixed, wrapper_type?: string}',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.5',
@@ -5371,6 +5371,16 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'PossiblyUndefinedArrayOffset',
                 'error_levels' => [],
                 'php_version' => '8.5',
+            ],
+            'streamGetMetaDataUnknownKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param resource $stream */
+                    function f($stream): void {
+                        $uri = stream_get_meta_data($stream)['uir'];
+                    }
+                    PHP,
+                'error_message' => 'InvalidArrayOffset',
             ],
         ];
     }
