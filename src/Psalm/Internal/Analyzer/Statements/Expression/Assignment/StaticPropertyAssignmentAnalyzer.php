@@ -30,7 +30,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
-use function in_array;
 use function strcspn;
 use function strpos;
 use function strtolower;
@@ -340,7 +339,7 @@ final class StaticPropertyAssignmentAnalyzer
      * `self::$p`, `static::$p`, `parent::$p` and `Foo::$p` can name the same property: what is known of the others
      * does not hold after one of them is written
      */
-    private static function forgetAliasesOfStaticProperty(
+    public static function forgetAliasesOfStaticProperty(
         Codebase $codebase,
         Context $context,
         string $var_id,
@@ -373,23 +372,54 @@ final class StaticPropertyAssignmentAnalyzer
                 continue;
             }
 
-            if (self::mayBeTheSameClass($codebase, $assigned_class, $other_class)) {
+            if (self::mayBeTheSameProperty($codebase, $context, $assigned_class, $other_class, $property_id)) {
                 $context->remove($other_id);
             }
         }
     }
 
-    private static function mayBeTheSameClass(Codebase $codebase, string $first, string $second): bool
-    {
-        $relative = ['self', 'static', 'parent'];
+    private static function mayBeTheSameProperty(
+        Codebase $codebase,
+        Context $context,
+        string $first,
+        string $second,
+        string $property_name,
+    ): bool {
+        $first_class = self::resolveRelativeClass($context, $first);
+        $second_class = self::resolveRelativeClass($context, $second);
 
-        if (in_array(strtolower($first), $relative, true) || in_array(strtolower($second), $relative, true)) {
+        if ($first_class === null || $second_class === null) {
             return true;
         }
 
-        return strtolower($first) === strtolower($second)
-            || ($codebase->classOrInterfaceExists($first)
-                && $codebase->classOrInterfaceExists($second)
-                && ($codebase->classExtends($first, $second) || $codebase->classExtends($second, $first)));
+        if (Context::getStaticPropertyDeclaringClass($codebase, $first_class, $property_name)
+            === Context::getStaticPropertyDeclaringClass($codebase, $second_class, $property_name)
+        ) {
+            return true;
+        }
+
+        // `static` can also be a descendant of the class the code is in, with a property of its own
+        return (strtolower($first) === 'static' && self::classExtends($codebase, $second_class, $first_class))
+            || (strtolower($second) === 'static' && self::classExtends($codebase, $first_class, $second_class));
+    }
+
+    private static function classExtends(Codebase $codebase, string $class, string $possible_parent): bool
+    {
+        return $codebase->classOrInterfaceExists($class)
+            && $codebase->classOrInterfaceExists($possible_parent)
+            && $codebase->classExtends($class, $possible_parent);
+    }
+
+    /**
+     * @return ?string null when the class that `self`, `static` or `parent` stands for is unknown
+     * @psalm-capabilities read-props
+     */
+    private static function resolveRelativeClass(Context $context, string $class): ?string
+    {
+        return match (strtolower($class)) {
+            'self', 'static' => $context->self,
+            'parent' => $context->parent,
+            default => $class,
+        };
     }
 }

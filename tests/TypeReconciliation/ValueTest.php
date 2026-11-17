@@ -29,6 +29,187 @@ final class ValueTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'looseComparisonOfAnObjectOrAStringWithAStringKeepsTheObject' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Plain {}
+
+                    function anObject(object|string $x): void {
+                        if ($x == 'a') {
+                            /** @psalm-check-type-exact $x = 'a'|object */
+                        }
+                    }
+
+                    function withoutToString(Plain|string $x): void {
+                        if ($x == 'a') {
+                            /** @psalm-check-type-exact $x = 'a' */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'looseInequalityWithAStringKeepsTheStringableObjectInTheElseBranch' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public function __toString(): string {
+                            return 'a';
+                        }
+                    }
+
+                    function f(A|string $x): void {
+                        if ($x != 'a') {
+                            /** @psalm-check-type-exact $x = A|string */
+                        } else {
+                            /** @psalm-check-type-exact $x = 'a'|A */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'looseEqualityWithAStringKeepsAStringableObject' => [
+                'code' => '<?php
+                    final class A {
+                        public function __toString(): string {
+                            return "a";
+                        }
+                    }
+
+                    /** @var A|"a" $foo */
+                    $foo = new A();
+
+                    if ($foo == "a") {
+                        $result = $foo;
+                    } else {
+                        $result = null;
+                    }',
+                'assertions' => [
+                    '$result' => 'A|null|string',
+                ],
+            ],
+            'strictEqualityWithAStringDropsAStringableObject' => [
+                'code' => '<?php
+                    final class A {
+                        public function __toString(): string {
+                            return "a";
+                        }
+                    }
+
+                    /** @var A|"a" $foo */
+                    $foo = new A();
+
+                    if ($foo === "a") {
+                        $result = $foo;
+                    } else {
+                        $result = null;
+                    }',
+                'assertions' => [
+                    '$result' => 'null|string',
+                ],
+            ],
+            'stringThatIsNeitherEmptyNorZeroIsNonFalsyInEveryOrder' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function emptyFirst(string $s): void {
+                        if ($s !== '' && $s !== '0') {
+                            /** @psalm-check-type-exact $s = non-falsy-string */
+                        }
+                    }
+
+                    function zeroFirst(string $s): void {
+                        if ($s !== '0' && $s !== '') {
+                            /** @psalm-check-type-exact $s = non-falsy-string */
+                        }
+                    }
+
+                    function earlyReturnsZeroFirst(string $s): void {
+                        if ('0' === $s) {
+                            return;
+                        }
+
+                        if ('' === $s) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $s = non-falsy-string */
+                    }
+
+                    function earlyReturnsEmptyFirst(string $s): void {
+                        if ('' === $s) {
+                            return;
+                        }
+
+                        if ('0' === $s) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $s = non-falsy-string */
+                    }
+
+                    function onlyZeroExcluded(string $s): void {
+                        if ($s !== '0') {
+                            /** @psalm-check-type-exact $s = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonEmptyStringKnownBeforeTheOtherConditionsIsKeptOnMixed' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function f(mixed $v, bool $b): string {
+                        if (is_string($v) && $v !== "" && $b) {
+                            return $v;
+                        }
+
+                        return "x";
+                    }
+
+                    /** @return non-empty-string */
+                    function g(mixed $v): string {
+                        if (!is_string($v) || $v === "") {
+                            return "x";
+                        }
+
+                        return $v;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nonEmptyStringNotZeroIsNonFalsy' => [
+                'code' => '<?php
+                    /** @var non-empty-string $s */
+                    $s = $_GET["s"];
+                    if ($s === "0") { throw new Exception(""); }',
+                'assertions' => [
+                    '$s===' => 'non-falsy-string',
+                ],
+            ],
+            'nonEmptyStringLooselyNotZeroIsNonFalsy' => [
+                'code' => '<?php
+                    /** @var non-empty-string $s */
+                    $s = $_GET["s"];
+                    if ($s == "0") { throw new Exception(""); }',
+                'assertions' => [
+                    '$s===' => 'non-falsy-string',
+                ],
+            ],
+            'nonEmptyStringNotAnotherLiteralStaysNonEmpty' => [
+                'code' => '<?php
+                    /** @var non-empty-string $s */
+                    $s = $_GET["s"];
+                    if ($s === "a") { throw new Exception(""); }',
+                'assertions' => [
+                    '$s===' => 'non-empty-string',
+                ],
+            ],
             'whileCountUpdate' => [
                 'code' => '<?php
                     $array = [1, 2, 3];
@@ -931,6 +1112,293 @@ final class ValueTest extends TestCase
                     '$a===' => '5',
                 ],
             ],
+            'iterableMayBeAList' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param iterable<T|null> $value
+                     * @return ($value is list ? list<T> : ($value is array ? array<T> : iterable<T>))
+                     */
+                    function allNotNull(iterable $value): iterable {
+                        throw new RuntimeException();
+                    }
+
+                    /** @return iterable<int|null> */
+                    function g(): iterable {
+                        return [1, 2];
+                    }
+
+                    $x = allNotNull(g());
+                    PHP,
+                'assertions' => [
+                    '$x===' => 'iterable<array-key|mixed, int>|list<int>',
+                ],
+            ],
+            'callableIdenticalToStringIsCallableString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(callable $c, string $s): void {
+                        if ($c === $s) { // 'strlen'
+                            /** @psalm-check-type-exact $c = callable-string */
+                            /** @psalm-check-type-exact $s = callable-string */
+                        }
+                    }
+                    PHP,
+            ],
+            'callableIdenticalToArrayIsCallableArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(callable $c, array $a): void {
+                        if ($c === $a) { // [new ArrayObject(), 'count']
+                            /** @psalm-check-type-exact $c = callable-array{0: class-string|object, 1: non-empty-string} */
+                        }
+                    }
+                    PHP,
+            ],
+            'callableIdenticalToObjectIsCallableObject' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(callable $c, object $o): void {
+                        if ($c === $o) { // fn() => 1
+                            /** @psalm-check-type-exact $c = callable-object */
+                            /** @psalm-check-type-exact $o = callable-object */
+                        }
+                    }
+                    PHP,
+            ],
+            'numericIdenticalToStringIsNumericString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param numeric $n */
+                    function f($n, string $s): void {
+                        if ($n === $s) { // '1'
+                            /** @psalm-check-type-exact $n = numeric-string */
+                            /** @psalm-check-type-exact $s = numeric-string */
+                        }
+                    }
+                    PHP,
+            ],
+            'iterableIdenticalToObjectIsTraversable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable<int> $it */
+                    function f(iterable $it, object $o): void {
+                        if ($it === $o) { // new ArrayIterator([1])
+                            /** @psalm-check-type-exact $it = Traversable<array-key, int> */
+                            /** @psalm-check-type-exact $o = Traversable<mixed, int> */
+                        }
+                    }
+                    PHP,
+            ],
+            'iterableIdenticalToCallableIsCallableArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(iterable $it, callable $c): void {
+                        if ($it === $c) { // [new ArrayObject(), 'count']
+                            /** @psalm-check-type-exact $c = callable-array{0: class-string|object, 1: non-empty-string} */
+                        }
+                    }
+                    PHP,
+            ],
+            'iterableAndScalarMayBeCallable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param scalar $sc
+                     * @param array-key $k
+                     */
+                    function f(iterable $it, $sc, $k): void {
+                        if (is_callable($it)) {} // [new ArrayObject(), 'count']
+                        if (is_callable($sc)) { // 'strlen'
+                            /** @psalm-check-type-exact $sc = callable-string */
+                        }
+                        if (is_callable($k)) { // 'strlen'
+                            /** @psalm-check-type-exact $k = callable-string */
+                        }
+                    }
+                    PHP,
+            ],
+            'scalarIdenticalToCallableIsCallableString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param scalar $sc
+                     * @param array-key $k
+                     */
+                    function f($sc, $k, callable $c): void {
+                        if ($sc === $c) { // 'strlen'
+                            /** @psalm-check-type-exact $sc = callable-string */
+                        }
+                        if ($k === $c) { // 'strlen'
+                            /** @psalm-check-type-exact $k = callable-string */
+                        }
+                    }
+                    PHP,
+            ],
+            'callableInArrayOfStringsIsCallableString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $names */
+                    function f(callable $c, array $names): void {
+                        if (in_array($c, $names, true)) { // 'strlen'
+                            /** @psalm-check-type-exact $c = callable-string */
+                        }
+                    }
+                    PHP,
+            ],
+            'unionsWithOverlappingCompoundTypesAreIntersected' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param callable|int $c
+                     * @param string|array $s
+                     */
+                    function f($c, $s): void {
+                        if ($c === $s) { // 'strlen' or [new ArrayObject(), 'count']
+                            /** @psalm-check-type-exact $c = callable-array{0: class-string|object, 1: non-empty-string}|callable-string */
+                        }
+                    }
+                    PHP,
+            ],
+            'callableIdenticalToLiteralString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(callable $c): void {
+                        if ($c === 'strlen') {
+                            /** @psalm-check-type-exact $c = 'strlen' */
+                        }
+                    }
+                    PHP,
+            ],
+            'numericIdenticalToLiteralNumericString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param numeric $n */
+                    function f($n): void {
+                        if ($n === '1') {
+                            /** @psalm-check-type-exact $n = '1' */
+                        }
+                    }
+                    PHP,
+            ],
+            'nonEmptyScalarIdenticalToCallableIsCallableString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param non-empty-scalar $sc */
+                    function f($sc, callable $c): void {
+                        if ($sc === $c) { // 'strlen'
+                            /** @psalm-check-type-exact $sc = callable-string */
+                        }
+                    }
+                    PHP,
+            ],
+            'callableMayBeIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return callable */
+                    function c() {
+                        return 'strlen';
+                    }
+
+                    $c = c();
+
+                    if (!is_iterable($c)) { // [new ArrayObject(), 'count']
+                        throw new RuntimeException();
+                    }
+                    PHP,
+                'assertions' => [
+                    '$c===' => 'callable-array{0: class-string|object, 1: non-empty-string}',
+                ],
+            ],
+            'arrayOfStringsMayBeCallable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array<int, lowercase-string> */
+                    function a(): array {
+                        return [];
+                    }
+
+                    $a = a();
+
+                    if (!is_callable($a)) { // ['myclass', 'method']
+                        throw new RuntimeException();
+                    }
+                    PHP,
+                'assertions' => [
+                    '$a===' => 'callable-array{0: non-empty-lowercase-string, 1: non-empty-lowercase-string}',
+                ],
+            ],
+            'callableInstanceOfClosureKeepsItsSignature' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param callable(int): void $c */
+                    function f(callable $c): void {
+                        if ($c instanceof Closure) {
+                            /** @psalm-check-type-exact $c = Closure(int):void */
+                        }
+                    }
+                    PHP,
+            ],
+            'pureIterableInArrayOfObjectsKeepsItsPurity' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return iterable[pure]<int, string> */
+                    function a(): iterable {
+                        return [];
+                    }
+
+                    /** @return list<object> */
+                    function objects(): array {
+                        return [];
+                    }
+
+                    $a = a();
+
+                    if (!in_array($a, objects(), true)) {
+                        throw new RuntimeException();
+                    }
+                    PHP,
+                'assertions' => [
+                    '$a===' => 'Traversable[pure]<int, string>',
+                ],
+            ],
+            'pureIterableThatIsAnObjectKeepsItsPurity' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return iterable[pure]<int, string> */
+                    function a(): iterable {
+                        return [];
+                    }
+
+                    $a = a();
+
+                    if (!is_object($a)) {
+                        throw new RuntimeException();
+                    }
+                    PHP,
+                'assertions' => [
+                    '$a===' => 'Traversable[pure]<int, string>',
+                ],
+            ],
+            'callableArrayHasAClassOrObjectAndAMethodName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array<int, mixed> */
+                    function a(): array {
+                        return [];
+                    }
+
+                    $a = a();
+
+                    if (!is_callable($a)) { // [new ArrayObject(), 'count']
+                        throw new RuntimeException();
+                    }
+                    PHP,
+                'assertions' => [
+                    '$a===' => 'callable-array{0: class-string|object, 1: non-empty-string}',
+                ],
+            ],
         ];
     }
 
@@ -1164,6 +1632,110 @@ final class ValueTest extends TestCase
                         sayHello($name);
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'callableNeverIdenticalToNumericString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param numeric-string $s */
+                    function f(callable $c, $s): void {
+                        if ($c === $s) {}
+                    }
+                    PHP,
+                'error_message' => 'does not contain',
+            ],
+            'numericNeverIdenticalToCallableString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param numeric $n
+                     * @param callable-string $s
+                     */
+                    function f($n, $s): void {
+                        if ($n === $s) {}
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'iterableNeverIdenticalToString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(iterable $it, string $s): void {
+                        if ($it === $s) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'numericNeverIdenticalToLiteralNonNumericString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param numeric $n */
+                    function f($n): void {
+                        if ($n === 'abc') {}
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'numericNeverIdenticalToCallable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param numeric $n */
+                    function f($n, callable $c): void {
+                        if ($n === $c) {}
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'arrayOfIntsIsNeverCallable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<int, int> $a */
+                    function f(array $a): void {
+                        if (is_callable($a)) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'arrayOfEmptyStringsIsNeverCallable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<int, ''> $a */
+                    function f(array $a): void {
+                        if (is_callable($a)) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'callableNeverIdenticalToFinalNonInvokableObject' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class F {}
+
+                    function f(callable $c, F $o): void {
+                        if ($c === $o) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'callableNeverInstanceOfFinalNonInvokableClass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class F {}
+
+                    function f(callable $c): void {
+                        if ($c instanceof F) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'callableNeverIdenticalToFunctionOfAnotherSignature' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param callable(int): int $c */
+                    function f(callable $c): void {
+                        if ($c === 'strrev') {}
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
             ],
         ];
     }

@@ -204,7 +204,12 @@ Setting this to `false` means that function calls will cause Psalm to forget wha
   allowStringToStandInForClass="[bool]"
 >
 ```
-When `true`, strings can be used as classes, meaning `$some_string::someMethod()` is allowed. If `false`, only class constant strings (of the form `Foo\Bar::class`) can stand in for classes, otherwise an `InvalidStringClass` issue is emitted. Defaults to `false`.
+When `true`, string literals naming existing, compatible classes are accepted in `class-string`
+arguments and return values, dynamic class expressions, and comparisons against class strings.
+When `false`, prefer `Foo\Bar::class` to a literal class name. Class expressions and
+comparisons emit `InvalidStringClass`; type-checked class-string arguments and returns
+emit the usual type diagnostics. Ordinary strings outside class-name contexts are unaffected.
+Defaults to `false`.
 
 #### disableSuppressAll
 
@@ -291,7 +296,7 @@ When `true`, Psalm infers property types from assignments seen in straightforwar
   findUnusedVariablesAndParams="[bool]"
 >
 ```
-When `true`, Psalm will attempt to find all unused variables, the equivalent of running with `--find-unused-variables`. Defaults to `false`.
+When `true`, Psalm will attempt to find all unused variables, the equivalent of running with `--find-unused-variables`. If not given, it takes the value of `findUnusedCode` when that is set; otherwise it is `true` at `errorLevel="1"` (unless `reportMixedIssues="false"`) and `false` at the other levels.
 
 #### findUnusedCode
 ```xml
@@ -304,6 +309,38 @@ When `true`, Psalm will attempt to find all unused code (including unused variab
 Unused-code detection is based on a graph of references between code elements, resolved by reachability from the program's entry points (the public API, top-level code, free functions, and code outside of the project directories). As a result, a class, method, property or constant that is referenced only by other unused code — including cycles of otherwise unreferenced code — is reported as unused. Suppressing an unused-code issue (e.g. `@psalm-suppress UnusedClass`) only silences the report for that symbol; it does not turn the symbol into an entry point, so code that only it references is still reported.
 
 This is enabled by default since Psalm 6, so unused code issues are reported even without passing `--find-unused-code` (or `--find-dead-code`). Set `findUnusedCode="false"` to turn it off.
+
+#### markAllNonInternalCodeAsApi
+```xml
+<psalm
+  markAllNonInternalCodeAsApi="[bool]"
+>
+```
+**For libraries only.** When `true`, unused-code detection treats every class that isn't marked `@internal` or `@psalm-internal` as if it were marked [`@api`](../annotating_code/supported_annotations.md#api-psalm-api), except for its members that are marked internal. Other checks, like `ClassMustBeFinal`, are not affected. Defaults to `false`.
+
+```php
+<?php
+namespace Lib;
+
+class Client {                           // ClassMustBeFinal, but no UnusedClass
+    public function send(): void {       // no issue
+        $this->encode();
+    }
+    private function encode(): void {}   // no issue, used by an API method
+    private function unused(): void {}   // UnusedMethod
+    /** @internal */
+    public function reset(): void {}     // PossiblyUnusedMethod
+}
+
+/** @internal */
+final class Helper {}                    // UnusedClass
+```
+
+The code the library doesn't ship, such as its tests, [is internal](../annotating_code/supported_annotations.md#psalm-internal) without the annotation.
+
+**This breaks unused-code detection for internal code that isn't marked `@internal`**: Psalm treats it as public API, so it is never reported as unused, and neither is any code that only it uses. Mark every class and member that isn't meant for users of the library with `@internal` (or `@psalm-internal`) before enabling this.
+
+Don't enable it in applications: almost all of their code is internal, so it would turn off most of unused-code detection. Code that a framework calls (controllers, commands, …) is already marked as used by the framework's Psalm plugin; mark any other such code with `@api` instead.
 
 #### forceJit
 ```xml
