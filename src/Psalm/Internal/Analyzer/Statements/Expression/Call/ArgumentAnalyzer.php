@@ -2156,8 +2156,7 @@ final class ArgumentAnalyzer
         // (see getParameterOffset() / getForMethodArgumentById()), not by its position in this call,
         // so a named argument resolves to the same node as the equivalent positional one (and as the
         // method body's parameter node). When the caller has no storage it is resolved from the cased
-        // method id; only a genuinely storage-less callable falls back to getForCallableArg(), which
-        // has no declared parameter to key on and so uses the call offset.
+        // method id; only a genuinely storage-less callable falls back to getForCallableArg().
         // a call of parent::/self:: going into the body of the method analyzed for the class of `$this`
         /** @var string|null $body_class set by StaticCallAnalyzer */
         $body_class = $expr->getAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE);
