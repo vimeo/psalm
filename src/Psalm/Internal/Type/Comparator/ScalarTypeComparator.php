@@ -342,7 +342,7 @@ final class ScalarTypeComparator
             return false;
         }
 
-        if ($container_type_part instanceof TScalar && $input_type_part instanceof Scalar) {
+        if ($container_type_part instanceof TScalar) {
             return true;
         }
 
