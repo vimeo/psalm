@@ -117,6 +117,14 @@ final class IssueBuffer
     private static array $recorded_issues = [];
 
     /**
+     * The issues raised while collecting them, before the config or a suppression filters them, keyed by
+     * getIssueLocationKey()
+     *
+     * @var list<array<string, true>>
+     */
+    private static array $raised_issue_keys = [];
+
+    /**
      * @var array<string, array<int, int>>
      */
     private static array $unused_suppressions = [];
@@ -159,6 +167,13 @@ final class IssueBuffer
     {
         ++self::$accepted_issue_count;
         $e->group_key ??= self::$issue_group;
+
+        $raised_issue_keys = array_pop(self::$raised_issue_keys);
+
+        if ($raised_issue_keys !== null) {
+            $raised_issue_keys[self::getIssueLocationKey($e::getIssueType(), $e)] = true;
+            self::$raised_issue_keys[] = $raised_issue_keys;
+        }
 
         $config = Config::getInstance();
         $project_analyzer = ProjectAnalyzer::getInstance();
@@ -1358,6 +1373,48 @@ final class IssueBuffer
         self::$recorded_issues[self::$recording_level] = [];
 
         return $recorded_issues;
+    }
+
+    /**
+     * Start collecting the issues raised, whether they are reported or not
+     *
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public static function startCollectingRaisedIssues(): void
+    {
+        self::$raised_issue_keys[] = [];
+    }
+
+    /**
+     * @return array<string, true> the getIssueLocationKey() of the issues raised since startCollectingRaisedIssues(),
+     *                             which an enclosing collection gets too
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public static function stopCollectingRaisedIssues(): array
+    {
+        $raised_issue_keys = array_pop(self::$raised_issue_keys);
+
+        if ($raised_issue_keys === null) {
+            throw new UnexpectedValueException('Not currently collecting raised issues');
+        }
+
+        $enclosing_raised_issue_keys = array_pop(self::$raised_issue_keys);
+
+        if ($enclosing_raised_issue_keys !== null) {
+            self::$raised_issue_keys[] = $enclosing_raised_issue_keys + $raised_issue_keys;
+        }
+
+        return $raised_issue_keys;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public static function getIssueLocationKey(string $issue_type, CodeIssue $e): string
+    {
+        [$from, $to] = $e->code_location->getSelectionBounds();
+
+        return $issue_type . ':' . $e->getFilePath() . ':' . $from . '-' . $to;
     }
 
     /**

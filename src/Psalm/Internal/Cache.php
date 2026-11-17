@@ -490,13 +490,25 @@ final class Cache
     }
 
     /**
-     * Drops the item from memory, so that the next saveItem() with the same hash isn't skipped as a duplicate.
+     * Drops the item from memory, the consolidated copy included, so that the next saveItem() with the same hash
+     * isn't skipped as a duplicate.
      *
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public function forgetItem(string $key): void
     {
         unset($this->cache[$key], $this->consolidated[$key]);
+    }
+
+    /**
+     * Drops the copy of the item that this process holds in the array, which the caller may have changed in place.
+     * The copy on disk is left alone and is read again on demand.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function evictItem(string $key): void
+    {
+        unset($this->cache[$key]);
     }
 
     /** @param T $item */

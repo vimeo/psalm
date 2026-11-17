@@ -10,6 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalysisResult;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
@@ -151,7 +152,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
             && $class_type->isNullable()
             && !$class_type->ignore_nullable_issues
             && !($stmt->name->name === 'offsetGet' && $context->inside_isset)
-            && $receiver_state !== NullsafeChainState::ShortCircuit
+            && !$receiver_state->isNullOnlyByShortCircuit()
         ) {
             IssueBuffer::maybeAdd(
                 new PossiblyNullReference(
@@ -206,6 +207,16 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         $result = new AtomicMethodCallAnalysisResult();
 
+        $method_var_id = !$stmt->isFirstClassCallable()
+            && !$stmt->getArgs()
+            && $lhs_var_id
+            && $stmt->name instanceof PhpParser\Node\Identifier
+            ? $lhs_var_id . '->' . strtolower($stmt->name->name) . '()'
+            : null;
+
+        // a memoized call returns what the same call returned before, even if it may change what it returns next
+        $memoized_type = $method_var_id !== null ? $context->vars_in_scope[$method_var_id] ?? null : null;
+
         $possible_new_class_types = [];
         foreach ($lhs_types as $lhs_type_part) {
             AtomicMethodCallAnalyzer::analyze(
@@ -230,20 +241,22 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];
             }
         }
-        if (!$stmt->isFirstClassCallable()
-            && !$stmt->getArgs()
-            && $lhs_var_id && $stmt->name instanceof PhpParser\Node\Identifier
-        ) {
+
+        MethodCallPurityAnalyzer::keepPropertiesNotWrittenForEveryReceiverType($codebase, $context, $result);
+
+        if ($method_var_id !== null) {
             // the initialization and mutation passes skip the purity analysis that decides it,
             // so they rely on what the normal pass of this call found
             $was_memoizable = ($context->collect_initializations || $context->collect_mutations)
                 && $stmt->getAttribute('memoizable', false);
 
             if ($codebase->config->memoize_method_calls || $result->can_memoize || $was_memoizable) {
-                $method_var_id = $lhs_var_id . '->' . strtolower($stmt->name->name) . '()';
-
                 if (isset($context->vars_in_scope[$method_var_id])) {
                     $result->return_type = $context->vars_in_scope[$method_var_id];
+                } elseif ($memoized_type !== null) {
+                    // forgotten by the call itself
+                    $result->return_type = $memoized_type;
+                    $context->vars_in_scope[$method_var_id] = $memoized_type;
                 } elseif ($result->return_type !== null) {
                     // forgotten by calls that may mutate the receiver, unless the class is immutable
                     $context->vars_in_scope[$method_var_id] = $result->return_type->setProperties([
@@ -284,7 +297,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
             if ($result->has_valid_method_call_type || $result->has_mixed_method_call) {
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidMethodCall(
-                        'Cannot call method on possible ' . $invalid_class_type . ' variable ' . $lhs_var_id,
+                        'Cannot call method on possible ' . $invalid_class_type . ' variable '
+                            . ExpressionIdentifier::getNameForMessage($lhs_var_id, $stmt->var),
                         new CodeLocation($source, $stmt->name),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -292,7 +306,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new InvalidMethodCall(
-                        'Cannot call method on ' . $invalid_class_type . ' variable ' . $lhs_var_id,
+                        'Cannot call method on ' . $invalid_class_type . ' variable '
+                            . ExpressionIdentifier::getNameForMessage($lhs_var_id, $stmt->var),
                         new CodeLocation($source, $stmt->name),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -395,7 +410,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         // `$a?->b->c()` short-circuits the whole chain, so null from the nullsafe hop survives the call
         if ($receiver_state !== NullsafeChainState::None && $class_type->isNullable()) {
-            $receiver_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
+            $receiver_state->afterLink($stmt_type)->markOn($stmt);
 
             if ($stmt_type && !$stmt_type->isNullable()) {
                 $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
@@ -477,7 +492,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 throw new AssertionError("We must have some types here!");
             }
 
-            $context->removeVarFromConflictingClauses($lhs_var_id, null, $statements_analyzer);
+            // narrowed, not written: the enclosing scopes keep their clauses about it
+            $context->clauses = Context::filterClauses($lhs_var_id, $context->clauses, null, $statements_analyzer);
 
             $class_type = $class_type->getBuilder()->setTypes($types);
             $class_type->from_docblock = false;
