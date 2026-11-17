@@ -26,7 +26,6 @@ use Psalm\Type\Reconciler;
 
 use function array_any;
 use function array_combine;
-use function array_diff;
 use function array_diff_key;
 use function array_filter;
 use function array_key_exists;
@@ -62,11 +61,12 @@ final class ElseIfAnalyzer
     ): array {
         $elseif_cond_id = spl_object_id($elseif->cond);
 
-        $mixed_var_ids = [];
+        // whether each mixed variable may be unset
+        $mixed_vars = [];
 
         foreach ($elseif_context->vars_in_scope as $var_id => $type) {
             if ($type->hasMixed()) {
-                $mixed_var_ids[] = $var_id;
+                $mixed_vars[$var_id] = $type->possibly_undefined || $type->possibly_undefined_from_try;
             }
         }
 
@@ -86,14 +86,14 @@ final class ElseIfAnalyzer
         $elseif_clauses = [];
 
         foreach ($cond_clauses as $clause) {
-            $mixed_var_ids = array_diff($mixed_var_ids, array_keys($clause->possibilities));
+            $mixed_vars = array_diff_key($mixed_vars, $clause->possibilities);
 
-            $elseif_clauses[] = $clause->forgetItemsOfMixedVars($mixed_var_ids, $elseif_cond_id);
+            $elseif_clauses[] = $clause->forgetItemsOfMixedVars($mixed_vars, $elseif_cond_id);
         }
 
         // the negation is that of the condition, not of what is left of it
         $get_negated_clauses = static fn(): array => array_map(
-            static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars($mixed_var_ids, $elseif_cond_id),
+            static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars($mixed_vars, $elseif_cond_id),
             FormulaGenerator::getNegatedFormula(
                 Algebra::simplifyCNF($cond_clauses),
                 $elseif->cond,

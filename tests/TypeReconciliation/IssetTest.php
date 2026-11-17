@@ -1980,6 +1980,26 @@ final class IssetTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
             ],
+            'nonEmptyOffsetOfSetMixedItemKeepsTheArrayType' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function hooks() { return []; }
+
+                    $result = hooks();
+                    if ($result) {
+                        foreach ($result as $hook => $_) {
+                            $result[$hook]["type"] = "module";
+                            if (!empty($result[$hook]["base hook"])) {
+                                $result[$hook]["incomplete"] = true;
+                            }
+                        }
+                        $r = $result;
+                    }',
+                'assertions' => [
+                    '$r===' => 'non-empty-array<array-key, mixed>|non-empty-mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess', 'MixedArrayOffset', 'MixedArrayAssignment'],
+            ],
             'issetOfAnotherOffsetOfMixedVariableIsNotRedundant' => [
                 'code' => '<?php
                     /** @param mixed $data */

@@ -25,8 +25,8 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
-use function array_diff;
 use function array_diff_assoc;
+use function array_diff_key;
 use function array_fill_keys;
 use function array_filter;
 use function array_intersect;
@@ -100,22 +100,23 @@ final class TernaryAnalyzer
             $if_clauses = [];
         }
 
-        $mixed_var_ids = [];
+        // whether each mixed variable may be unset
+        $mixed_vars = [];
 
         foreach ($if_context->vars_in_scope as $var_id => $type) {
             if ($type->isMixed() && isset($context->vars_in_scope[$var_id])) {
-                $mixed_var_ids[] = $var_id;
+                $mixed_vars[$var_id] = $type->possibly_undefined || $type->possibly_undefined_from_try;
             }
         }
 
         foreach ($context->vars_possibly_in_scope as $var_id => $_) {
             if (!isset($context->vars_in_scope[$var_id])) {
-                $mixed_var_ids[] = $var_id;
+                $mixed_vars[$var_id] = true;
             }
         }
 
         $forget_items_of_mixed_vars = static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars(
-            array_diff($mixed_var_ids, array_keys($c->possibilities)),
+            array_diff_key($mixed_vars, $c->possibilities),
             $cond_object_id,
         );
 

@@ -257,18 +257,22 @@ final class Clause implements Stringable
 
     /**
      * What is assigned to an offset or a property of a mixed variable is not tracked, so a clause on one says nothing
-     * of it. Where the clause only holds if the variable is set, it says that instead.
+     * of it. Where the variable may be unset and the clause only holds if it is set, it says that instead.
      *
-     * @param array<string> $mixed_var_ids
+     * @param array<string, bool> $mixed_vars whether each mixed variable may be unset
      */
-    public function forgetItemsOfMixedVars(array $mixed_var_ids, int $cond_object_id): self
+    public function forgetItemsOfMixedVars(array $mixed_vars, int $cond_object_id): self
     {
         $possibilities = [];
 
         foreach ($this->possibilities as $key => $assertions) {
-            foreach ($mixed_var_ids as $mixed_var_id) {
+            foreach ($mixed_vars as $mixed_var_id => $may_be_unset) {
                 if (!preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
                     continue;
+                }
+
+                if (!$may_be_unset) {
+                    return new self([], $cond_object_id, $cond_object_id, true);
                 }
 
                 foreach ($assertions as $assertion) {

@@ -29,6 +29,7 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_diff;
+use function array_diff_key;
 use function array_fill_keys;
 use function array_filter;
 use function array_intersect_key;
@@ -149,11 +150,12 @@ final class IfElseAnalyzer
             );
         }
 
-        $mixed_var_ids = [];
+        // whether each mixed variable may be unset
+        $mixed_vars = [];
 
         foreach ($if_context->vars_in_scope as $var_id => $type) {
             if ($type->isMixed() && isset($context->vars_in_scope[$var_id])) {
-                $mixed_var_ids[] = $var_id;
+                $mixed_vars[$var_id] = $type->possibly_undefined || $type->possibly_undefined_from_try;
             }
         }
 
@@ -177,9 +179,9 @@ final class IfElseAnalyzer
 
         $if_clauses_handled = [];
         foreach ($if_clauses as $clause) {
-            $mixed_var_ids = array_diff($mixed_var_ids, array_keys($clause->possibilities));
+            $mixed_vars = array_diff_key($mixed_vars, $clause->possibilities);
 
-            $if_clauses_handled[] = $clause->forgetItemsOfMixedVars($mixed_var_ids, $cond_object_id);
+            $if_clauses_handled[] = $clause->forgetItemsOfMixedVars($mixed_vars, $cond_object_id);
         }
 
         $if_clauses = $if_clauses_handled;
@@ -266,7 +268,7 @@ final class IfElseAnalyzer
 
         try {
             $if_scope->negated_clauses = array_map(
-                static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars($mixed_var_ids, $cond_object_id),
+                static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars($mixed_vars, $cond_object_id),
                 FormulaGenerator::getNegatedFormula(
                     Algebra::simplifyCNF($cond_clauses),
                     $stmt->cond,

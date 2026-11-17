@@ -21,9 +21,8 @@ use Psalm\IssueBuffer;
 use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
-use function array_diff;
+use function array_diff_key;
 use function array_filter;
-use function array_keys;
 use function array_map;
 use function array_values;
 use function count;
@@ -56,11 +55,12 @@ final class DoAnalyzer
 
         $first_iteration_issues = self::analyzeDoNaively($statements_analyzer, $stmt, $do_context, $loop_scope);
 
-        $mixed_var_ids = [];
+        // whether each mixed variable may be unset
+        $mixed_vars = [];
 
         foreach ($do_context->vars_in_scope as $var_id => $type) {
             if ($type->hasMixed()) {
-                $mixed_var_ids[] = $var_id;
+                $mixed_vars[$var_id] = $type->possibly_undefined || $type->possibly_undefined_from_try;
             }
         }
 
@@ -122,7 +122,7 @@ final class DoAnalyzer
         try {
             $negated_while_clauses = array_map(
                 static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars(
-                    array_diff($mixed_var_ids, array_keys($c->possibilities)),
+                    array_diff_key($mixed_vars, $c->possibilities),
                     $cond_id,
                 ),
                 FormulaGenerator::getNegatedFormula(
