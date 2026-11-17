@@ -218,6 +218,16 @@ final class Psalm
 
         CliUtils::rejectUnrecognisedOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
 
+        $min_type_coverage = self::parseMinTypeCoverageOption(
+            $options['min-type-coverage'] ?? null,
+            // CliUtils::getOptions() leaves out an occurrence without a value, which must not turn the check off
+            in_array(
+                'min-type-coverage',
+                CliUtils::getLongOptionsWithoutValue($args, self::SHORT_OPTIONS, self::LONG_OPTIONS),
+                true,
+            ),
+        );
+
         CliUtils::setMemoryLimit($options);
 
         self::syncShortOptions($options);
@@ -289,6 +299,8 @@ final class Psalm
         if (isset($options['no-cache'])) {
             $config->cache_directory = null;
         }
+
+        $config->min_type_coverage = $min_type_coverage ?? $config->min_type_coverage;
 
         $config->setIncludeCollector($include_collector);
 
@@ -520,18 +532,11 @@ final class Psalm
     }
 
     /**
-     * @param list<string> $args
+     * @param bool $without_value whether an occurrence of the option has no value
      * @return float|null null if the option isn't given
      */
-    private static function parseMinTypeCoverageOption(mixed $value, array $args): ?float
+    private static function parseMinTypeCoverageOption(mixed $value, bool $without_value): ?float
     {
-        // CliUtils::getOptions() leaves out an occurrence without a value, which must not turn the check off
-        $without_value = in_array(
-            'min-type-coverage',
-            CliUtils::getLongOptionsWithoutValue($args, self::SHORT_OPTIONS, self::LONG_OPTIONS),
-            true,
-        );
-
         if ($value === null && !$without_value) {
             return null;
         }
@@ -691,10 +696,7 @@ final class Psalm
             . PHP_EOL;
     }
 
-    /**
-     * @param list<ClassLoader> $autoloaders
-     * @param list<string> $args
-     */
+    /** @param list<ClassLoader> $autoloaders */
     private static function loadConfig(
         ?string $path_to_config,
         string $current_dir,
@@ -702,7 +704,6 @@ final class Psalm
         array $autoloaders,
         bool $run_taint_analysis,
         array $options,
-        array $args,
     ): Config {
         $config = CliUtils::initializeConfig(
             $path_to_config,
@@ -725,10 +726,6 @@ final class Psalm
 
             $config->level = $config_level;
         }
-
-        $config->min_type_coverage = self::parseMinTypeCoverageOption($options['min-type-coverage'] ?? null, $args)
-            ?? $config->min_type_coverage;
-
         return $config;
     }
 
@@ -1228,7 +1225,7 @@ final class Psalm
     }
 
     /**
-     * @param list<string> $args
+     * @param array<int, string> $args
      * @param list<ClassLoader> $autoloaders
      * @return array{Config,?string}
      */
@@ -1266,7 +1263,6 @@ final class Psalm
                 $autoloaders,
                 $run_taint_analysis,
                 $options,
-                $args,
             );
         }
         return [$config, $init_source_dir];
