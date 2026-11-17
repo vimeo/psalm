@@ -61,7 +61,7 @@ With `--output-format=json` a failure prints `{"protocol":1,"error":{"kind":"...
 
 Psalm analyses the overlaid files, the files their changes can reach, and lists them in `analyzed_files`. A change inside a method body reaches the overlaid file, the classes inheriting from it, the users of its traits and the files including it. A changed visibility also reaches the callers of that member. Another change to existing declarations (a type, a parameter, a default value) also reaches the files that depend on the overlaid file according to the reference index. Added or removed declarations reach every project file. Passes over the whole project (unused code and `ClassMustBeFinal`, taint analysis, purity suggestions) do not run. Those the configuration runs are listed in `not_checked`, unless the request asks for `"whole_project": true`.
 
-`--record-references` makes the normal run write a reference index into the cache. Overlay analysis needs it, and refuses an index when the contents of a project file, the config, `composer.lock` or the baseline differ from what it recorded. Record with the baseline options the overlay runs use (`--use-baseline`, `--ignore-baseline`):
+`--record-references` makes the normal run write a reference index into the cache. Overlay analysis needs it, and refuses an index when the contents of a project file, the config, `composer.lock` or the baseline differ from what it recorded. It never writes to the cache, so it also refuses a cache that has nothing for its config and its version of Psalm (`references_not_recorded`), rather than parse the whole project into memory. Record with the baseline options the overlay runs use (`--use-baseline`, `--ignore-baseline`):
 
 ```bash
 vendor/bin/psalm --overlay=src/A.php=/tmp/A.php
