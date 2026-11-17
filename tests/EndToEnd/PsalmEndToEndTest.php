@@ -27,6 +27,7 @@ use function unlink;
 
 use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
+use const PHP_EOL;
 
 /**
  * Tests some of the most important use cases of the psalm command,
@@ -406,7 +407,7 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $process = $this->runPsalmOnAProjectWithTypeCoverage($attributes, [...$args, '--output-format=json']);
 
         $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $this->assertSame("Type coverage 77.77% is below the minimum of 95.00%\n", $process->getErrorOutput());
+        $this->assertSame('Type coverage 77.77% is below the minimum of 95.00%' . PHP_EOL, $process->getErrorOutput());
         $this->assertSame("[]\n", $process->getOutput());
     }
 
@@ -463,7 +464,7 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $process = $this->runPsalmOnAProjectWithTypeCoverage('', $args);
 
         $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $this->assertSame($message . "\n", $process->getErrorOutput());
+        $this->assertSame($message . PHP_EOL, $process->getErrorOutput());
     }
 
     /**
