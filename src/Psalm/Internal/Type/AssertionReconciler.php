@@ -740,6 +740,10 @@ final class AssertionReconciler extends Reconciler
 
             if ($intersection_type) {
                 $new_type = $intersection_type;
+            } elseif ($new_type_part instanceof TNull) {
+                $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+
+                return Type::getNever();
             }
         }
 
