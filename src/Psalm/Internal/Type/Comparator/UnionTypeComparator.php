@@ -94,7 +94,12 @@ final class UnionTypeComparator
         $container_literals = null;
         $other_container_parts = [];
 
-        $input_atomic_types = array_reverse(self::getTypeParts($codebase, $input_type));
+        // key-of<T> and value-of<T> are within their bound, but only key-of<T> and value-of<T> are within them
+        $input_atomic_types = array_reverse(self::getTypeParts(
+            $codebase,
+            $input_type,
+            !self::hasTemplateKeyOrValueOf($container_type),
+        ));
 
         // every input part no container part accepts is examined before the comparison fails, so that the result
         // does not depend on the order of the input parts
@@ -830,8 +835,8 @@ final class UnionTypeComparator
             return true;
         }
 
-        foreach (self::getTypeParts($codebase, $type1) as $type1_part) {
-            foreach (self::getTypeParts($codebase, $type2) as $type2_part) {
+        foreach (self::getTypeParts($codebase, $type1, true) as $type1_part) {
+            foreach (self::getTypeParts($codebase, $type2, true) as $type2_part) {
                 //special case for TIntRange because it can contain a part of another TIntRange.
                 //For example int<0,10> and int<5, 15> can be identical but none contain the other
                 if ($type1_part instanceof TIntRange && $type2_part instanceof TIntRange) {
@@ -859,21 +864,39 @@ final class UnionTypeComparator
     }
 
     /**
+     * @psalm-pure
+     */
+    private static function hasTemplateKeyOrValueOf(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateKeyOf || $atomic_type instanceof TTemplateValueOf) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param bool $expand_template_key_or_value_of whether key-of<T> and value-of<T> stand for their bound
      * @return list<Atomic>
      */
     private static function getTypeParts(
         Codebase $codebase,
         Union $union_type,
+        bool $expand_template_key_or_value_of = false,
     ): array {
         $atomic_types = [];
         foreach ($union_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TTemplateKeyOf || $atomic_type instanceof TTemplateValueOf) {
+            if ($expand_template_key_or_value_of
+                && ($atomic_type instanceof TTemplateKeyOf || $atomic_type instanceof TTemplateValueOf)
+            ) {
                 $bound = $atomic_type instanceof TTemplateKeyOf
                     ? TKeyOf::getArrayKeyType($atomic_type->as)
                     : TValueOf::getValueType($atomic_type->as, $codebase);
 
                 if ($bound !== null) {
-                    array_push($atomic_types, ...self::getTypeParts($codebase, $bound));
+                    array_push($atomic_types, ...self::getTypeParts($codebase, $bound, true));
                     continue;
                 }
             }

@@ -84,6 +84,22 @@ final class ValueOfTemplateTest extends TestCase
                         return array_values($array);
                     }',
             ],
+            'valueOfTemplatePassedToUnionOfItsBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int|string>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     */
+                    function f(array $array, $v): void {
+                        takesIntOrString($v);
+                    }
+
+                    function takesIntOrString(int|string $v): void {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'valueOfTemplateNarrowedByIdentity' => [
                 'code' => '<?php
                     /** @param 3 $i */
