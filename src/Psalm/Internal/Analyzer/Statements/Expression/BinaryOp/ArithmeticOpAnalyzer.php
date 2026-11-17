@@ -18,6 +18,7 @@ use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitFloatToIntCast;
 use Psalm\Issue\InvalidOperand;
@@ -95,6 +96,11 @@ final class ArithmeticOpAnalyzer
         $left_type = $nodes->getType($left);
         $right_type = $nodes->getType($right);
         $config = Config::getInstance();
+
+        if ($codebase) {
+            $left_type = $left_type ? TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $left_type) : null;
+            $right_type = $right_type ? TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $right_type) : null;
+        }
 
         if ($left_type && $left_type->isNever()) {
             $left_type = $right_type;
