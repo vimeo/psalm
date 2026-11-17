@@ -1425,6 +1425,44 @@ final class CapabilitiesTest extends TestCase
                         return "hello $n" . (string) $n;
                     }',
             ],
+            'noToStringInStrictOrNonStringSearch' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<string> $names
+                     * @param array<int> $ids
+                     * @param list<Name> $known
+                     * @return list<array-key>
+                     */
+                    function find(Name $name, array $names, array $ids, array $known, string $s): array {
+                        return in_array($name, $known, true) || in_array($name, $ids) || in_array($s, ["name"])
+                            ? array_keys($names, $name, true)
+                            : [];
+                    }',
+            ],
+            'pureToStringInEchoPrintAndStringArguments' => [
+                'code' => '<?php
+                    final class Name {
+                        /** @psalm-pure */
+                        public function __toString(): string {
+                            return "name";
+                        }
+                    }
+
+                    /** @psalm-capabilities io */
+                    function show(Name $name, Name|int $maybe): void {
+                        echo $name, $maybe;
+                        print $name;
+                        echo strlen($name), sprintf("%s", $name), in_array($name, ["name"]) ? "y" : "n";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.0',
+            ],
             'pureInvoke' => [
                 'code' => '<?php
                     final class Inc {
@@ -5208,6 +5246,157 @@ final class CapabilitiesTest extends TestCase
                         return (string) $n;
                     }',
                 'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInEcho' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-capabilities io */
+                    function show(Name $name): void {
+                        echo $name;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInEchoOfUnion' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-capabilities io */
+                    function show(Name|int $name): void {
+                        echo $name;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInPrint' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-capabilities io */
+                    function show(Name $name): void {
+                        print $name;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInSprintfArgument' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function format(Name $name): string {
+                        return sprintf("%s", $name);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInLooseInArray' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function isKnown(Name $name): bool {
+                        return in_array($name, ["name"]);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInInArrayNotKnownToBeStrict' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function isKnown(Name $name, bool $strict): bool {
+                        return in_array(needle: $name, haystack: ["name"], strict: $strict);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInLooseArraySearch' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<string> $names
+                     */
+                    function find(Name $name, array $names): int|string|false {
+                        return array_search($name, $names);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInLooseArrayKeys' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<string> $names
+                     * @return list<array-key>
+                     */
+                    function find(Name $name, array $names): array {
+                        return array_keys($names, $name);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInLooseInArrayOfScalars' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<scalar> $values
+                     */
+                    function has(Name $name, array $values): bool {
+                        return in_array($name, $values);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInLooseInArrayOfTemplatedStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @template T of string
+                     * @param array<T> $values
+                     */
+                    function has(Name $name, array $values): bool {
+                        return in_array($name, $values);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInBuiltinStringArgument' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function size(Name $name): int {
+                        return strlen($name);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => ['ImplicitToStringCast'],
             ],
             'impureInvoke' => [
                 'code' => '<?php

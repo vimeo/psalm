@@ -66,6 +66,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
@@ -1233,6 +1234,10 @@ final class ArgumentAnalyzer
                 $in_call_map,
                 $argument_name,
                 $unpack ? $unpacked_argument_offset : null,
+                $param_type->isString()
+                    || $union_comparison_results->to_string_cast === true
+                    // a builtin taking a stringable-object (sprintf) converts it
+                    || ($in_call_map && self::hasStringableObject($param_type)),
             );
 
             if ($function_param->assert_untainted) {
@@ -2065,6 +2070,20 @@ final class ArgumentAnalyzer
         }
     }
 
+    /**
+     * @psalm-pure
+     */
+    private static function hasStringableObject(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TObjectWithProperties && isset($atomic_type->methods['__tostring'])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static function processTaintedness(
         StatementsAnalyzer $statements_analyzer,
         string $cased_method_id,
@@ -2081,13 +2100,16 @@ final class ArgumentAnalyzer
         bool $in_call_map,
         ?string $argument_name = null,
         ?int $unpacked_argument_offset = null,
+        bool $converts_to_string = false,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
+        $string_param = $function_param->type && $function_param->type->isString();
+
+        if (!$input_type->isString() && ($string_param || ($converts_to_string && $input_type->hasObjectType()))) {
             // the argument check reports a bad argument itself, but the implicit __toString call is signalled
             // whether or not a data-flow graph is built
-            $input_type = CastAnalyzer::castStringAttempt(
+            $string_type = CastAnalyzer::castStringAttempt(
                 $statements_analyzer,
                 $context,
                 $input_type,
@@ -2095,6 +2117,16 @@ final class ArgumentAnalyzer
                 false,
                 false,
             );
+
+            // a string parameter takes the whole value as a string; any other only converts its objects, and what
+            // else the value may be keeps its own flow
+            if ($string_param) {
+                $input_type = $string_type;
+            } else {
+                $input_type = $input_type->setParentNodes($input_type->isObjectType()
+                    ? $string_type->parent_nodes
+                    : [...$input_type->parent_nodes, ...$string_type->parent_nodes]);
+            }
         }
 
         if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {

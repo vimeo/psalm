@@ -8,7 +8,6 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -49,19 +48,6 @@ final class EchoAnalyzer
             $expr_type = $statements_analyzer->node_data->getType($expr);
 
             if ($statements_analyzer->taint_flow_graph) {
-                if ($expr_type && $expr_type->hasObjectType()) {
-                    // only the data-flow path is wanted: the argument check below reports an object that can't be
-                    // a string, whether or not a graph is built
-                    $expr_type = $expr_type->setParentNodes(CastAnalyzer::castStringAttempt(
-                        $statements_analyzer,
-                        $context,
-                        $expr_type,
-                        $expr,
-                        false,
-                        false,
-                    )->parent_nodes);
-                }
-
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
                 $echo_param_sink = DataFlowNode::getForCallableArg(

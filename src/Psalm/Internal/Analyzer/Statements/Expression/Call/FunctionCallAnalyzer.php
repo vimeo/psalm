@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CloneAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
@@ -64,21 +65,29 @@ use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
+use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Reconciler;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
@@ -109,6 +118,16 @@ use function strtolower;
  */
 final class FunctionCallAnalyzer extends CallAnalyzer
 {
+    /**
+     * Builtins comparing their needle loosely to the values of their haystack, unless their third argument (strict)
+     * is true: [haystack offset, needle offset]
+     */
+    private const LOOSE_SEARCH_ARGS = [
+        'in_array' => [[1, 'haystack'], [0, 'needle']],
+        'array_search' => [[1, 'haystack'], [0, 'needle']],
+        'array_keys' => [[0, 'array'], [1, 'filter_value']],
+    ];
+
     /**
      * @psalm-suppress ComplexMethod
      */
@@ -530,6 +549,19 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $function_call_info,
             $context,
         );
+
+        if ($function_call_info->in_call_map
+            && $function_call_info->function_id !== null
+            && isset(self::LOOSE_SEARCH_ARGS[$function_call_info->function_id])
+            && !$stmt->isFirstClassCallable()
+        ) {
+            self::chargeLooseSearchNeedleToString(
+                $statements_analyzer,
+                $stmt,
+                $context,
+                ...self::LOOSE_SEARCH_ARGS[$function_call_info->function_id],
+            );
+        }
 
         if ($function_call_info->function_storage) {
             $function_storage = $function_call_info->function_storage;
@@ -1951,6 +1983,120 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         $context->clauses = $simplified_clauses;
+    }
+
+    /**
+     * A search compared loosely to strings converts an object needle with its __toString
+     *
+     * @param array{int, string} $haystack_param
+     * @param array{int, string} $needle_param
+     */
+    private static function chargeLooseSearchNeedleToString(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        Context $context,
+        array $haystack_param,
+        array $needle_param,
+    ): void {
+        $haystack_arg = self::getSearchArg($stmt, ...$haystack_param);
+        $needle_arg = self::getSearchArg($stmt, ...$needle_param);
+        $strict_arg = self::getSearchArg($stmt, 2, 'strict');
+
+        if (!$haystack_arg || !$needle_arg) {
+            return;
+        }
+
+        if ($strict_arg && $statements_analyzer->node_data->getType($strict_arg->value)?->isTrue()) {
+            return;
+        }
+
+        $needle_type = $statements_analyzer->node_data->getType($needle_arg->value);
+
+        if (!$needle_type || !$needle_type->hasObjectType()) {
+            return;
+        }
+
+        $haystack_type = $statements_analyzer->node_data->getType($haystack_arg->value);
+
+        if ($haystack_type) {
+            $compared_to_strings = false;
+
+            foreach ($haystack_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TKeyedArray) {
+                    $atomic_type = $atomic_type->getGenericArrayType();
+                }
+
+                if (!$atomic_type instanceof TArray || self::mayBeString($atomic_type->type_params[1])) {
+                    $compared_to_strings = true;
+                }
+            }
+
+            if (!$compared_to_strings) {
+                return;
+            }
+        }
+
+        CastAnalyzer::castStringAttempt(
+            $statements_analyzer,
+            $context,
+            $needle_type,
+            $needle_arg->value,
+            false,
+            false,
+        );
+    }
+
+    /**
+     * Whether a value of $type may be a string, unless it is known to be something else
+     *
+     * @psalm-pure
+     */
+    private static function mayBeString(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam) {
+                if (self::mayBeString($atomic_type->as)) {
+                    return true;
+                }
+
+                continue;
+            }
+
+            if (!$atomic_type->isObjectType()
+                && !$atomic_type instanceof TInt
+                && !$atomic_type instanceof TFloat
+                && !$atomic_type instanceof TBool
+                && !$atomic_type instanceof TNull
+                && !$atomic_type instanceof TArray
+                && !$atomic_type instanceof TKeyedArray
+                && !$atomic_type instanceof TIterable
+                && !$atomic_type instanceof TResource
+                && !$atomic_type instanceof TClosedResource
+                && !$atomic_type instanceof TNever
+                && !$atomic_type instanceof TVoid
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function getSearchArg(
+        PhpParser\Node\Expr\FuncCall $stmt,
+        int $offset,
+        string $name,
+    ): ?PhpParser\Node\Arg {
+        foreach ($stmt->getArgs() as $i => $arg) {
+            if ($arg->name ? $arg->name->name === $name : $i === $offset) {
+                return $arg;
+            }
+        }
+
+        return null;
     }
 
     private static function checkFunctionCallPurity(

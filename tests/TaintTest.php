@@ -14210,6 +14210,44 @@ final class TaintTest extends TestCase
                     echo $unsafe;',
                 'error_message' => 'TaintedHtml',
             ],
+            'printToStringMagic' => [
+                'code' => '<?php
+                    class MyClass {
+                        public function __toString() {
+                            return $_GET["blah"];
+                        }
+                    }
+                    $unsafe = new MyClass();
+                    print $unsafe;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'stringArgumentOfAnObjectOrArrayKeepsTheTaintsOfTheArray' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string {
+                            return "name";
+                        }
+                    }
+                    /** @param Name|array<string> $value */
+                    function f($value): void {
+                        echo mb_convert_encoding($value, "UTF-8");
+                    }
+                    f($_GET["value"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'castToStringMagicInUnion' => [
+                'code' => '<?php
+                    class MyClass {
+                        public function __toString() {
+                            return $_GET["blah"];
+                        }
+                    }
+                    function f(MyClass|int $unsafe): void {
+                        echo $unsafe;
+                    }
+                    f(new MyClass());',
+                'error_message' => 'TaintedHtml',
+            ],
             'castToStringViaArgument' => [
                 'code' => '<?php
                     class MyClass {
