@@ -10,6 +10,7 @@ use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Cache;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -243,10 +244,10 @@ final class CacheTest extends TestCase
         $file_provider = new FakeFileProvider();
         $providers = new Providers(
             $file_provider,
-            new ParserCacheProvider($config, '', false),
-            new FileStorageCacheProvider($config, '', false),
-            new ClassLikeStorageCacheProvider($config, '', false),
-            new FileReferenceCacheProvider($config, '', false),
+            new ParserCacheProvider($config, '', CacheMode::Memory),
+            new FileStorageCacheProvider($config, '', CacheMode::Memory),
+            new ClassLikeStorageCacheProvider($config, '', CacheMode::Memory),
+            new FileReferenceCacheProvider($config, '', CacheMode::Memory),
             new ProjectCacheProvider(),
         );
 
@@ -278,13 +279,13 @@ final class CacheTest extends TestCase
     }
 
     #[DataProvider('provideSaveItemRetention')]
-    public function testSaveItemRetention(bool $persistent, bool $array_cache, bool $retained): void
+    public function testSaveItemRetention(CacheMode $mode, bool $array_cache, bool $retained): void
     {
         $config = $this->newConfig();
         $config->array_cache = $array_cache;
 
         /** @var Cache<string> $cache */
-        $cache = new Cache($config, 'test', [], $persistent);
+        $cache = new Cache($config, 'test', [], $mode);
         $cache->saveItem('key', 'item', 'hash');
 
         $in_memory = new ReflectionProperty(Cache::class, 'cache');
@@ -293,14 +294,14 @@ final class CacheTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{bool, bool, bool}>
+     * @return iterable<string, array{CacheMode, bool, bool}>
      * @psalm-pure
      */
     public static function provideSaveItemRetention(): iterable
     {
-        yield 'persistent with array cache' => [true, true, true];
-        yield 'persistent without array cache' => [true, false, false];
-        yield 'not persistent without array cache' => [false, false, true];
+        yield 'persistent with array cache' => [CacheMode::Persistent, true, true];
+        yield 'persistent without array cache' => [CacheMode::Persistent, false, false];
+        yield 'not persistent without array cache' => [CacheMode::Memory, false, true];
     }
 
     /** Callers such as ParserCacheProvider keep the previous file contents as the hash to compare them */
@@ -752,12 +753,11 @@ final class CacheTest extends TestCase
     public function testReadOnlyCacheCreatesNothing(): void
     {
         $config = $this->newConfig();
-        $config->cache_read_only = true;
 
-        self::assertSame($this->cache_directory, $config->getCacheDirectory());
+        self::assertSame($this->cache_directory, CacheMode::ReadOnly->getDirectory($config));
 
         /** @var Cache<string> $cache */
-        $cache = new Cache($config, 'test');
+        $cache = new Cache($config, 'test', [], CacheMode::ReadOnly);
         $cache->saveItem(self::KEY, 'contents', 'hash');
         $cache->consolidate();
 
@@ -770,10 +770,7 @@ final class CacheTest extends TestCase
         $this->newCache()->saveItem(self::KEY, 'written', 'hash');
         $files_before = scandir($this->entryDirectory());
 
-        $config = $this->newConfig();
-        $config->cache_read_only = true;
-        /** @var Cache<string> $cache */
-        $cache = new Cache($config, 'test');
+        $cache = $this->newReadOnlyCache();
 
         self::assertSame('written', $cache->getItem(self::KEY, 'hash'));
 
@@ -846,10 +843,9 @@ final class CacheTest extends TestCase
     private function newReadOnlyCache(bool $array_cache = true): Cache
     {
         $config = $this->newConfig();
-        $config->cache_read_only = true;
         $config->array_cache = $array_cache;
 
-        return new Cache($config, 'test');
+        return new Cache($config, 'test', [], CacheMode::ReadOnly);
     }
 
     /**

@@ -277,13 +277,6 @@ final class Config
 
     public bool $array_cache = true;
 
-    /**
-     * Read the cache and never write it: no directory, lock file or entry is created, saved items stay in memory
-     *
-     * @internal
-     */
-    public bool $cache_read_only = false;
-
     private bool $cache_directory_initialized = false;
 
     /**
@@ -3148,7 +3141,7 @@ final class Config
             return null;
         }
 
-        if ($this->cache_directory_initialized || $this->cache_read_only) {
+        if ($this->cache_directory_initialized) {
             return $this->cache_directory;
         }
 

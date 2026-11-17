@@ -36,6 +36,7 @@ use Psalm\ErrorBaseline;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\BaselineMatcher;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Composer;
 use Psalm\Internal\LanguageServer\Provider\InMemoryProjectCacheProvider;
 use Psalm\Internal\LanguageServer\Server\TextDocument as ServerTextDocument;
@@ -225,10 +226,10 @@ final class LanguageServer extends Dispatcher
         if ($inMemory) {
             $providers = new Providers(
                 new FileProvider,
-                new ParserCacheProvider($config, Composer::getLockFile($base_dir), false),
-                new FileStorageCacheProvider($config, Composer::getLockFile($base_dir), false),
-                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($base_dir), false),
-                new FileReferenceCacheProvider($config, Composer::getLockFile($base_dir), false),
+                new ParserCacheProvider($config, Composer::getLockFile($base_dir), CacheMode::Memory),
+                new FileStorageCacheProvider($config, Composer::getLockFile($base_dir), CacheMode::Memory),
+                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($base_dir), CacheMode::Memory),
+                new FileReferenceCacheProvider($config, Composer::getLockFile($base_dir), CacheMode::Memory),
                 new InMemoryProjectCacheProvider,
             );
         } else {

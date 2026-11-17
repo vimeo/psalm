@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
 use Psalm\Internal\Cache;
+use Psalm\Internal\CacheMode;
 use Psalm\Storage\ClassLikeStorage;
 use UnexpectedValueException;
 
@@ -26,7 +27,7 @@ final class ClassLikeStorageCacheProvider
     /** @var Cache<ClassLikeStorage> */
     private readonly Cache $cache;
 
-    public function __construct(Config $config, string $composerLock, bool $persistent = true)
+    public function __construct(Config $config, string $composerLock, CacheMode $mode = CacheMode::Persistent)
     {
         $storage_dir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'Storage' . DIRECTORY_SEPARATOR;
 
@@ -53,7 +54,7 @@ final class ClassLikeStorageCacheProvider
             $dependencies []= filemtime($dependent_file_path);
         }
 
-        $this->cache = new Cache($config, 'classlike_cache', $dependencies, $persistent);
+        $this->cache = new Cache($config, 'classlike_cache', $dependencies, $mode);
     }
 
     public function consolidate(): void
