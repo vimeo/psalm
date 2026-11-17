@@ -28,7 +28,7 @@ echoVar($_GET["text"]);
 
 ## Escaping by flags
 
-What `json_encode()`, `htmlspecialchars()` and `htmlentities()` escape depends on their flags. Psalm only reads flags from constant expressions: int literals, builtin constants (in a namespace, `\JSON_HEX_TAG` or one imported with `use const`), class constants, and `|`, `&` and ternaries of them. It never reads them from a type, which a `@var` or a compiled-out `assert()` can get wrong. The decoders give back the taints the escapes removed:
+What `json_encode()`, `htmlspecialchars()` and `htmlentities()` escape depends on their flags, which Psalm only reads from constant expressions (int literals, builtin constants, class constants, and `|`, `&` and ternaries of them), never from a type. In a namespace, write `\JSON_HEX_TAG` or import it with `use const`. The decoders give back what the escapes removed:
 
 ```php
 <?php
@@ -54,9 +54,9 @@ function show(int $flags, int $three): void
 }
 ```
 
-`json_encode()` always keeps the `has_quotes` taint, as the `"` delimiting a JSON string ends a double-quoted attribute: a function that only puts JSON in a `<script>` can declare `@psalm-taint-escape has_quotes`.
+`json_encode()` always keeps `has_quotes`, as the `"` around a JSON string ends a double-quoted attribute: a function that only puts JSON in a `<script>` can declare `@psalm-taint-escape has_quotes`.
 
-A class constant is only read when Psalm knows the class that runs: a project class declared once, unconditionally, under its own name, in code where no `class_alias()` call has an alias Psalm can't tell. `static::` is only read on a natively final class or constant.
+A class constant is only read from a project class declared once, unconditionally, under its own name, while no scanned `class_alias()` call has an alias Psalm can't tell. `static::` is only read on a natively final class or constant.
 
 ## Types
 
