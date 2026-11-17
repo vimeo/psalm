@@ -59,6 +59,27 @@ final class ValueOfTemplateTest extends TestCase
                     }
                 ',
             ],
+            'useAfterInArrayOnTemplate' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @template T of array
+                     * @param T $array
+                     */
+                    function f(Foo $o, string $s, $array): int {
+                        if (in_array($o, $array, true) && in_array($s, $array, true)) {
+                            echo $s[0];
+                            return $o->m();
+                        }
+                        return 0;
+                    }
+                ',
+            ],
             'typeCheckAfterInArrayOnTemplate' => [
                 'code' => '<?php
                     /**
