@@ -20,6 +20,7 @@ use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Node\Stmt\VirtualExpression;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
@@ -343,8 +344,21 @@ final class TernaryAnalyzer
         foreach ($assign_all as $var_id => $_) {
             if (isset($if_context->vars_in_scope[$var_id])
                 && isset($t_else_context->vars_in_scope[$var_id])
-                && !(self::keepsOuterMixedType($statements_analyzer, $context, $if_context, $var_id)
-                    && self::keepsOuterMixedType($statements_analyzer, $context, $t_else_context, $var_id))
+                && !(self::keepsOuterMixedType(
+                    $statements_analyzer,
+                    $context,
+                    $if_context,
+                    $var_id,
+                    $stmt->if,
+                    $assigned_in_conditional_var_ids,
+                ) && self::keepsOuterMixedType(
+                    $statements_analyzer,
+                    $context,
+                    $t_else_context,
+                    $var_id,
+                    $stmt->else,
+                    $assigned_in_conditional_var_ids + $else_rederived_var_ids,
+                ))
             ) {
                 $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $if_context->vars_in_scope[$var_id],
@@ -367,6 +381,7 @@ final class TernaryAnalyzer
             $else_start_assigned_var_ids,
             $assigned_in_conditional_var_ids,
             $assigned_in_conditional_var_ids + $else_rederived_var_ids,
+            $stmt,
         );
 
         $context->vars_possibly_in_scope = [
@@ -410,6 +425,7 @@ final class TernaryAnalyzer
         array $else_start_assigned_var_ids,
         array $if_condition_assigned_var_ids,
         array $else_condition_assigned_var_ids,
+        PhpParser\Node\Expr\Ternary $stmt,
     ): void {
         $redef_var_ifs = array_keys($if_context->getRedefinedVars($context->vars_in_scope));
         $redef_var_else = array_keys($t_else_context->getRedefinedVars($context->vars_in_scope));
@@ -434,13 +450,21 @@ final class TernaryAnalyzer
 
         //these vars were changed in both branches
         foreach ($redef_all as $redef_var_id) {
-            if (self::keepsOuterMixedType($statements_analyzer, $context, $if_context, $redef_var_id)
-                && self::keepsOuterMixedType($statements_analyzer, $context, $t_else_context, $redef_var_id)
-            ) {
-                continue;
-            }
-
-            if (isset($if_narrowed_var_ids[$redef_var_id], $else_narrowed_var_ids[$redef_var_id])) {
+            if (self::keepsOuterMixedType(
+                $statements_analyzer,
+                $context,
+                $if_context,
+                $redef_var_id,
+                $stmt->if,
+                $if_condition_assigned_var_ids,
+            ) && self::keepsOuterMixedType(
+                $statements_analyzer,
+                $context,
+                $t_else_context,
+                $redef_var_id,
+                $stmt->else,
+                $else_condition_assigned_var_ids,
+            ) || isset($if_narrowed_var_ids[$redef_var_id], $else_narrowed_var_ids[$redef_var_id])) {
                 $context->vars_in_scope[$redef_var_id] = $context->vars_in_scope[$redef_var_id]
                     ->addParentNodes($if_context->vars_in_scope[$redef_var_id]->parent_nodes)
                     ->addParentNodes($t_else_context->vars_in_scope[$redef_var_id]->parent_nodes);
@@ -456,13 +480,20 @@ final class TernaryAnalyzer
 
         //these vars were changed in the if and existed before
         foreach ($redef_var_ifs as $redef_var_ifs_id) {
-            if (!isset($context->vars_in_scope[$redef_var_ifs_id])
-                || self::keepsOuterMixedType($statements_analyzer, $context, $if_context, $redef_var_ifs_id)
-            ) {
+            if (!isset($context->vars_in_scope[$redef_var_ifs_id])) {
                 continue;
             }
 
-            if (isset($if_narrowed_var_ids[$redef_var_ifs_id])) {
+            if (isset($if_narrowed_var_ids[$redef_var_ifs_id])
+                || self::keepsOuterMixedType(
+                    $statements_analyzer,
+                    $context,
+                    $if_context,
+                    $redef_var_ifs_id,
+                    $stmt->if,
+                    $if_condition_assigned_var_ids,
+                )
+            ) {
                 $context->vars_in_scope[$redef_var_ifs_id] = $context->vars_in_scope[$redef_var_ifs_id]
                     ->addParentNodes($if_context->vars_in_scope[$redef_var_ifs_id]->parent_nodes);
 
@@ -477,13 +508,20 @@ final class TernaryAnalyzer
 
         //these vars were changed in the else and existed before
         foreach ($redef_var_else as $redef_var_else_id) {
-            if (!isset($context->vars_in_scope[$redef_var_else_id])
-                || self::keepsOuterMixedType($statements_analyzer, $context, $t_else_context, $redef_var_else_id)
-            ) {
+            if (!isset($context->vars_in_scope[$redef_var_else_id])) {
                 continue;
             }
 
-            if (isset($else_narrowed_var_ids[$redef_var_else_id])) {
+            if (isset($else_narrowed_var_ids[$redef_var_else_id])
+                || self::keepsOuterMixedType(
+                    $statements_analyzer,
+                    $context,
+                    $t_else_context,
+                    $redef_var_else_id,
+                    $stmt->else,
+                    $else_condition_assigned_var_ids,
+                )
+            ) {
                 $context->vars_in_scope[$redef_var_else_id] = $context->vars_in_scope[$redef_var_else_id]
                     ->addParentNodes($t_else_context->vars_in_scope[$redef_var_else_id]->parent_nodes);
 
@@ -498,27 +536,39 @@ final class TernaryAnalyzer
     }
 
     /**
-     * A mixed variable that a branch only narrowed (never wrote) is still just mixed after the ternary: merging the
-     * narrowed type back in would only produce a `mixed|Foo` union, as IfAnalyzer avoids
+     * A mixed variable that a branch only narrowed, or wrote at some of its offsets, is still just mixed after the
+     * ternary: merging the narrowed type back in would only produce a `mixed|Foo` union, as IfAnalyzer avoids
+     *
+     * @param array<string, mixed> $condition_assigned_var_ids
      */
     private static function keepsOuterMixedType(
         StatementsAnalyzer $statements_analyzer,
         Context $outer_context,
         Context $branch_context,
         string $var_id,
+        ?PhpParser\Node\Expr $branch,
+        array $condition_assigned_var_ids,
     ): bool {
-        return isset($outer_context->vars_in_scope[$var_id], $branch_context->vars_in_scope[$var_id])
-            && $outer_context->vars_in_scope[$var_id]->hasMixed()
-            // the branch context starts as a copy of the outer one, which can have assigned the variable earlier
-            && ($branch_context->assigned_var_ids[$var_id] ?? null)
-                === ($outer_context->assigned_var_ids[$var_id] ?? null)
+        if (!isset($outer_context->vars_in_scope[$var_id], $branch_context->vars_in_scope[$var_id])) {
+            return false;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $outer_type = $outer_context->vars_in_scope[$var_id];
+        $branch_type = $branch_context->vars_in_scope[$var_id];
+
+        // the branch context starts as a copy of the outer one, which can have assigned the variable earlier
+        if (($branch_context->assigned_var_ids[$var_id] ?? null) === ($outer_context->assigned_var_ids[$var_id] ?? null)
             && isset($branch_context->possibly_assigned_var_ids[$var_id])
                 === isset($outer_context->possibly_assigned_var_ids[$var_id])
-            && UnionTypeComparator::isContainedBy(
-                $statements_analyzer->getCodebase(),
-                $branch_context->vars_in_scope[$var_id],
-                $outer_context->vars_in_scope[$var_id],
-            );
+        ) {
+            return $outer_type->hasMixed() && UnionTypeComparator::isContainedBy($codebase, $branch_type, $outer_type);
+        }
+
+        return $branch !== null
+            && !isset($condition_assigned_var_ids[$var_id])
+            && IfAnalyzer::isNarrowedMixed($codebase, $branch_type, $outer_type)
+            && !IfAnalyzer::mayAssignAsAWhole([new VirtualExpression($branch)], $var_id, $statements_analyzer);
     }
 
     /**

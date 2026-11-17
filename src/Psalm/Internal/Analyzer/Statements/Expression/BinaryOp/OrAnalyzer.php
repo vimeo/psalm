@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Exception\ScopeAnalysisException;
@@ -26,6 +27,7 @@ use Psalm\Node\Stmt\VirtualIf;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 
 use function array_diff_key;
 use function array_filter;
@@ -123,7 +125,11 @@ final class OrAnalyzer
                     // the left operand always runs: what it assigns replaces what the variable held before
                     $context->vars_in_scope[$var_id] = $type;
                 } elseif (isset($context->vars_in_scope[$var_id])) {
-                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                    $context->vars_in_scope[$var_id] = self::getNarrowedMixed(
+                        $codebase,
+                        $type,
+                        $context->vars_in_scope[$var_id],
+                    ) ?? Type::combineUnionTypes(
                         $context->vars_in_scope[$var_id],
                         $type,
                         $codebase,
@@ -364,7 +370,10 @@ final class OrAnalyzer
         if (!($stmt->right instanceof PhpParser\Node\Expr\Exit_)) {
             foreach ($right_context->vars_in_scope as $var_id => $type) {
                 if (isset($context->vars_in_scope[$var_id])) {
-                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                    $context->vars_in_scope[$var_id] = (isset($right_assigned_var_ids[$var_id])
+                        ? null
+                        : self::getNarrowedMixed($codebase, $type, $context->vars_in_scope[$var_id])
+                    ) ?? Type::combineUnionTypes(
                         $context->vars_in_scope[$var_id],
                         $type,
                         $codebase,
@@ -415,7 +424,10 @@ final class OrAnalyzer
                         $codebase,
                     );
                 } elseif (isset($if_body_context->vars_in_scope[$var_id])) {
-                    $if_body_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                    $if_body_context->vars_in_scope[$var_id] = (isset($right_assigned_var_ids[$var_id])
+                        ? null
+                        : self::getNarrowedMixed($codebase, $type, $if_body_context->vars_in_scope[$var_id])
+                    ) ?? Type::combineUnionTypes(
                         $type,
                         $if_body_context->vars_in_scope[$var_id],
                         $codebase,
@@ -454,5 +466,15 @@ final class OrAnalyzer
         ];
 
         return true;
+    }
+
+    /**
+     * The type a mixed variable keeps when an operand only narrowed it, null when the types are to be combined
+     */
+    private static function getNarrowedMixed(Codebase $codebase, Union $operand_type, Union $type): ?Union
+    {
+        return IfAnalyzer::isNarrowedMixed($codebase, $operand_type, $type)
+            ? $type->addParentNodes($operand_type->parent_nodes)
+            : null;
     }
 }

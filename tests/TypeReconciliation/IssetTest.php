@@ -1345,9 +1345,23 @@ final class IssetTest extends TestCase
                     }
 
                     /**
+                     * @psalm-suppress MixedArrayAccess
                      * @psalm-suppress MixedArgument
                      */
                     echo $payload["b"];',
+            ],
+            'noMixedMethodCallAfterIssetInAndCondition' => [
+                'code' => '<?php
+                    $data = file_get_contents("php://input");
+                    /** @psalm-suppress MixedAssignment */
+                    $payload = json_decode($data, true);
+
+                    if (isset($payload["a"]) && rand(0, 1)) {
+                        /**
+                         * @psalm-suppress MixedArgument
+                         */
+                        echo $payload["b"];
+                    }',
             ],
             'implicitIssetWithStringKeyOnArrayDoesntChangeArrayType' => [
                 'code' => '<?php
