@@ -115,8 +115,6 @@ use function is_string;
 use function json_decode;
 use function libxml_clear_errors;
 use function libxml_get_errors;
-use function libxml_get_external_entity_loader;
-use function libxml_set_external_entity_loader;
 use function libxml_use_internal_errors;
 use function ltrim;
 use function max;
@@ -351,11 +349,6 @@ final class Config
      * @var array<string, string>
      */
     private array $stub_files = [];
-
-    /**
-     * @var list<string>
-     */
-    private array $included_files = [];
 
     public bool $hide_external_errors = false;
 
@@ -872,13 +865,9 @@ final class Config
 
     /**
      * @param non-empty-string $file_contents
-     * @param-out list<string> $included_files the files XInclude pulled in, or tried to
      */
-    private static function loadDomDocument(
-        string $base_dir,
-        string $file_contents,
-        ?array &$included_files = null,
-    ): DOMDocument {
+    private static function loadDomDocument(string $base_dir, string $file_contents): DOMDocument
+    {
         $dom_document = new DOMDocument();
 
         // there's no obvious way to set xml:base for a document when loading it from string
@@ -887,29 +876,7 @@ final class Config
         chdir($base_dir);
 
         $dom_document->loadXML($file_contents, LIBXML_NONET);
-
-        $included_files = [];
-        $previous_loader = function_exists('libxml_get_external_entity_loader')
-            ? libxml_get_external_entity_loader()
-            : null;
-        libxml_set_external_entity_loader(
-            static function (?string $_public_id, string $system_id) use (&$included_files): ?string {
-                // the loader replaces the one that applies LIBXML_NONET
-                if (str_contains($system_id, '://') && !str_starts_with($system_id, 'file://')) {
-                    return null;
-                }
-
-                $included_files[] = $system_id;
-
-                return $system_id;
-            },
-        );
-
-        try {
-            $dom_document->xinclude(LIBXML_NOWARNING | LIBXML_NONET);
-        } finally {
-            libxml_set_external_entity_loader($previous_loader);
-        }
+        $dom_document->xinclude(LIBXML_NOWARNING | LIBXML_NONET);
 
         /** @psalm-suppress PossiblyFalseArgument */
         chdir($oldpwd);
@@ -1133,7 +1100,7 @@ final class Config
     ): self {
         $config = new static();
 
-        $dom_document = self::loadDomDocument($base_dir, $file_contents, $config->included_files);
+        $dom_document = self::loadDomDocument($base_dir, $file_contents);
 
         if (null !== $config_path) {
             self::processConfigDeprecations(
@@ -3561,21 +3528,13 @@ final class Config
 
     /**
      * @return array<string, string>
+     * @internal
      */
     public function getPreloadedStubFiles(): array
     {
         return $this->preloaded_stub_files;
     }
 
-    /**
-     * The files the config pulled in through XInclude
-     *
-     * @return list<string>
-     */
-    public function getIncludedFiles(): array
-    {
-        return $this->included_files;
-    }
     public function getPhpVersion(): ?string
     {
         return $this->getPhpVersionFromConfig() ?? $this->getPHPVersionFromComposerJson();
