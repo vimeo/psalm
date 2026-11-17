@@ -1966,6 +1966,20 @@ final class IssetTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
             ],
+            'coalesceOfOffsetOfPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        echo $data["a"] ?? "x";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
             'issetOfAnotherOffsetOfMixedVariableIsNotRedundant' => [
                 'code' => '<?php
                     /** @param mixed $data */
