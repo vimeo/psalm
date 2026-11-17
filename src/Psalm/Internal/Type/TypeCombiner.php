@@ -52,8 +52,10 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeVariable;
@@ -957,6 +959,26 @@ final class TypeCombiner
                 }
 
                 return null;
+            }
+
+            $combination->value_types[$type_key] = $type;
+
+            return null;
+        }
+
+        if ($type instanceof TTemplateKeyOf || $type instanceof TTemplateValueOf) {
+            $existing_type = $combination->value_types[$type_key] ?? null;
+
+            if (($existing_type instanceof TTemplateKeyOf || $existing_type instanceof TTemplateValueOf)
+                && $existing_type->defining_class === $type->defining_class
+                && !$existing_type->as->equals($type->as)
+            ) {
+                $type = new ($type::class)(
+                    $type->param_name,
+                    $type->defining_class,
+                    Type::combineUnionTypes($type->as, $existing_type->as, $codebase, false, false),
+                    $type->from_docblock,
+                );
             }
 
             $combination->value_types[$type_key] = $type;

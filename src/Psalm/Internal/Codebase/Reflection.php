@@ -241,6 +241,10 @@ final class Reflection
                     $reflection_method_name,
                 );
 
+                // so that classlikes extending this one inherit it too
+                $storage->inheritable_method_ids[$reflection_method_name]
+                    = $storage->declaring_method_ids[$reflection_method_name];
+
                 $this->codebase->methods->setAppearingMethodId(
                     $class_name,
                     $reflection_method_name,

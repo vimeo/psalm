@@ -5718,6 +5718,19 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureFunctionCall',
             ],
+            'passingSuperGlobalByReferenceReadsIt' => [
+                'code' => '<?php
+                    /** @psalm-capabilities write-refs */
+                    function byRef(array &$a): void {
+                        $a = [];
+                    }
+
+                    /** @psalm-capabilities write-globals */
+                    function f(): void {
+                        byRef($_SESSION);
+                    }',
+                'error_message' => 'ImpureGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:31 - The context is write-globals but superglobal $_SESSION requires read-globals',
+            ],
             'writingBoundGlobalNeedsWriteGlobals' => [
                 'code' => '<?php
                     /** @psalm-capabilities read-globals */
