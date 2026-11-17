@@ -157,23 +157,6 @@ final class ArrayAssignmentAnalyzer
 
         $root_type = $statements_analyzer->node_data->getType($root_array_expr) ?? Type::getMixed();
 
-        if ($root_type->hasMixed()) {
-            ExpressionAnalyzer::analyze(
-                $statements_analyzer,
-                $stmt->var,
-                $context,
-                true,
-            );
-
-            if ($stmt->dim) {
-                ExpressionAnalyzer::analyze(
-                    $statements_analyzer,
-                    $stmt->dim,
-                    $context,
-                );
-            }
-        }
-
         $current_type = $root_type;
 
         $current_dim = $stmt->dim;

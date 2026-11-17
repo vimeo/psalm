@@ -1461,6 +1461,27 @@ final class ArrayAssignmentTest extends TestCase
                         return $a;
                     }',
             ],
+            'nestedKeyAddedToKeyedArrayUnderMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $element
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f(&$element): void {
+                        $element["upload"] = ["#name" => "n", "#type" => "file"];
+                        $element["upload"]["#attached"]["ds"] = "y";
+                    }',
+            ],
+            'nestedAssignmentUnderMixedIsNotARead' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $m
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f($m): void {
+                        $m["a"]["b"]["c"] = 1;
+                    }',
+            ],
             'mixedArrayCoercion' => [
                 'code' => '<?php
                     /** @param int[] $arg */
@@ -3201,6 +3222,41 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'undefinedOuterOffsetOfNestedAssignmentUnderMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $m
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f($m): void {
+                        $m[$k]["a"]["b"] = 1;
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
+            'undefinedInnerOffsetOfNestedAssignmentUnderMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $m
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f($m): void {
+                        $m["a"]["b"][$k] = 1;
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
+            'missingKeyReadAfterNestedAssignmentUnderMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $element
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f(&$element): void {
+                        $element["upload"] = ["#name" => "n", "#type" => "file"];
+                        $element["upload"]["#attached"]["ds"] = "y";
+                        echo $element["upload"]["#missing"];
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:30 - Cannot access value on variable $element[\'upload\'] using offset value of \'#missing\', expecting \'#name\', \'#type\' or \'#attached',
+            ],
             'possiblyInvalidArrayOffsetWhenAssigningInALoop' => [
                 'code' => '<?php
                     /**
