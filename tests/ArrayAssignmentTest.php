@@ -1482,6 +1482,28 @@ final class ArrayAssignmentTest extends TestCase
                         $m["a"]["b"]["c"] = 1;
                     }',
             ],
+            'nestedAppendUnderMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $m
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f($m): void {
+                        $m[]["b"] = 1;
+                        $m["x"][] = 2;
+                    }',
+            ],
+            'nestedKeyAddedByDestructuringUnderMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $e
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f($e): void {
+                        $e["upload"] = ["#name" => "n"];
+                        [$e["upload"]["#attached"]["ds"]] = ["y"];
+                    }',
+            ],
             'mixedArrayCoercion' => [
                 'code' => '<?php
                     /** @param int[] $arg */
