@@ -1341,6 +1341,48 @@ final class ReferenceTest extends TestCase
                     '$w===' => "'a'|1",
                 ],
             ],
+            'referenceBoundInConditionToAnOffsetOfUnknownKeyMayBeNull' => [
+                'code' => '<?php
+                    /** @param null $n */
+                    function takesNull($n): void {}
+
+                    /** @param array<string, int> $cache */
+                    function f(array $cache, string $k): int {
+                        if (null === $x = &$cache[$k]) {
+                            takesNull($x);
+                            $x = 5;
+                        }
+                        return $x;
+                    }',
+            ],
+            'referenceToStaticPropertyItemOfUnknownKeyBoundInConditionMayBeNull' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var array<string, list<int>> */
+                        private static array $cache = [];
+
+                        /** @return list<int> */
+                        public static function get(string $k): array {
+                            if (null === $x = &self::$cache[$k]) {
+                                $x = [1, 2];
+                            }
+                            return $x;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyInvalidPropertyAssignmentValue'],
+            ],
+            'referenceBoundInAStatementToAnOffsetOfUnknownKeyIsTakenAsSet' => [
+                'code' => '<?php
+                    /** @param array<string, int> $arr */
+                    function f(array $arr): array {
+                        foreach ($arr as $k => $_) {
+                            $r = &$arr[$k];
+                            $r += 1;
+                        }
+                        return $arr;
+                    }',
+            ],
             'referenceBoundInConditionIsNarrowedByNotIdenticalNull' => [
                 'code' => '<?php
                     /** @param array<string, list<int>|null> $arr */

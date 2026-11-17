@@ -1501,11 +1501,17 @@ final class AssignmentAnalyzer
         }
 
         $rhs_type = $context->vars_in_scope[$rhs_var_id];
-        $rhs_possibly_undefined = $rhs_type->possibly_undefined || $rhs_type->possibly_undefined_from_try;
+        $rhs_possibly_undefined = $rhs_type->possibly_undefined || $rhs_type->possibly_undefined_from_try
+            // an offset of unknown key is taken as set, as a read of it is, but not by a binding whose value is
+            // tested, like `null === $x = &$cache[$k]`, which checks whether the binding created it
+            || ($from_stmt === null
+                && $stmt->expr instanceof ArrayDimFetch
+                && !$rhs_was_set
+                && !self::isOffsetSet($statements_analyzer, $stmt->expr));
 
         // binding a reference to a variable or an offset that is not set creates it as null (a superglobal read
         // is taken as defined)
-        if ($rhs_type->possibly_undefined || $rhs_type->possibly_undefined_from_try) {
+        if ($rhs_possibly_undefined) {
             $rhs_type = $rhs_type->setPossiblyUndefined(false, false);
 
             $context->vars_in_scope[$rhs_var_id] = $rhs_type->isNullable()
