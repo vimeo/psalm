@@ -7,8 +7,13 @@ namespace Psalm\Tests;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use PhpParser\Node\Expr\ArrowFunction;
+use PhpParser\Node\Expr\Closure;
+use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Class_;
+use PhpParser\Node\Stmt\Function_;
+use PhpParser\NodeFinder;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -250,6 +255,52 @@ final class CodebaseTest extends TestCase
         self::assertSame('f', $class_storage->properties['prop']->custom_metadata['e']);
         self::assertSame('h', $class_storage->methods['m']->params[0]->custom_metadata['g']);
         self::assertSame('j', $file_storage->custom_metadata['i']);
+    }
+
+    /**
+     * @param class-string<FunctionLike> $function_like_class
+     */
+    #[DataProvider('functionLikesWithSignatureTypes')]
+    #[Test]
+    public function signatureTypesOfFunctionLikesAreNameResolved(string $function_like_class): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Psalm\CurrentTest;
+
+                use Some\Vendor\Param;
+                use Some\Vendor\Result;
+
+                function f(Param $p): Result { return new Result(); }
+                $c = function (Param $p): Result { return new Result(); };
+                $a = fn (Param $p): Result => new Result();',
+        );
+
+        $statements = $this->codebase->getStatementsForFile('somefile.php');
+
+        $function_like = (new NodeFinder())->findFirstInstanceOf($statements, $function_like_class);
+
+        self::assertInstanceOf($function_like_class, $function_like);
+
+        $param_type = $function_like->getParams()[0]->type;
+        $return_type = $function_like->getReturnType();
+
+        self::assertInstanceOf(Name::class, $param_type);
+        self::assertInstanceOf(Name::class, $return_type);
+        self::assertSame('Some\\Vendor\\Param', $param_type->getAttribute('resolvedName'));
+        self::assertSame('Some\\Vendor\\Result', $return_type->getAttribute('resolvedName'));
+    }
+
+    /**
+     * @return iterable<string, array{class-string<FunctionLike>}>
+     * @psalm-pure
+     */
+    public static function functionLikesWithSignatureTypes(): iterable
+    {
+        yield 'function' => [Function_::class];
+        yield 'closure' => [Closure::class];
+        yield 'arrow function' => [ArrowFunction::class];
     }
 
     /**

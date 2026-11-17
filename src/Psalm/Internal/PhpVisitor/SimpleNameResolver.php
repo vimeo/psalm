@@ -101,8 +101,10 @@ final class SimpleNameResolver extends NodeVisitorAbstract
             }
         }
 
-        if ($node instanceof Stmt\ClassMethod
+        if ($node instanceof Stmt\Function_
+                  || $node instanceof Stmt\ClassMethod
                   || $node instanceof Expr\Closure
+                  || $node instanceof Expr\ArrowFunction
         ) {
             $this->resolveSignature($node);
         } elseif ($node instanceof Expr\StaticCall
@@ -170,7 +172,7 @@ final class SimpleNameResolver extends NodeVisitorAbstract
     }
 
     /**
-     * @param Stmt\Function_|Stmt\ClassMethod|Expr\Closure $node
+     * @param Stmt\Function_|Stmt\ClassMethod|Expr\Closure|Expr\ArrowFunction $node
      */
     private function resolveSignature(PhpParser\NodeAbstract $node): void
     {
