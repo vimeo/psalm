@@ -88230,7 +88230,7 @@ return array (
   ),
   'stream_get_meta_data' => 
   array (
-    0 => 'array{blocked: bool, crypto?: array{cipher_bits: int, cipher_name: string, cipher_version: string, protocol: string}, eof: bool, mediatype: string, mode: string, seekable: bool, stream_type: string, timed_out: bool, unread_bytes: int, uri: string, wrapper_data: mixed, wrapper_type: string}',
+    0 => 'array{base64?: bool, blocked?: bool, charset?: string, crypto?: array{cipher_bits: int, cipher_name: string, cipher_version: string, protocol: string}, eof?: bool, mediatype?: string, mode: string, seekable: bool, stream_type: string, timed_out?: bool, unread_bytes: int, uri?: string, wrapper_data?: mixed, wrapper_type?: string, ...<array-key, string>}',
     'fp' => 'resource',
     -2 => 'none',
   ),
