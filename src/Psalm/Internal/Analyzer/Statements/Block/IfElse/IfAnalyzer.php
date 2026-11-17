@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Block\IfElse;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
@@ -579,14 +580,10 @@ final class IfAnalyzer
             ) {
                 unset($possibly_redefined_vars[$var_id]);
             } elseif (isset($outer_context->vars_in_scope[$var_id])
-                && $outer_context->vars_in_scope[$var_id]->hasMixed()
                 && !isset($assigned_in_conditional_var_ids[$var_id])
-                && (!$type->possibly_undefined || $outer_context->vars_in_scope[$var_id]->possibly_undefined)
-                && UnionTypeComparator::isContainedBy($codebase, $type, $outer_context->vars_in_scope[$var_id])
+                && self::isNarrowedMixed($codebase, $type, $outer_context->vars_in_scope[$var_id])
                 && !self::mayAssignAsAWhole($branch_nodes, $var_id, $statements_analyzer)
             ) {
-                // a mixed var that this branch only narrowed, or wrote at some of its offsets, is still just mixed:
-                // merging the narrowed type back in would only produce a `mixed|Foo` union
                 $possibly_redefined_vars[$var_id] = $outer_context->vars_in_scope[$var_id]
                     ->addParentNodes($type->parent_nodes);
             }
@@ -636,6 +633,18 @@ final class IfAnalyzer
     }
 
     /**
+     * Whether the type a branch leaves a mixed variable with only narrows it, as when the branch only checked it or
+     * wrote at some of its offsets: the variable is still just mixed after the branch, and merging the narrowed type
+     * back in would only produce a `mixed|Foo` union
+     */
+    public static function isNarrowedMixed(Codebase $codebase, Union $branch_type, Union $outer_type): bool
+    {
+        return $outer_type->hasMixed()
+            && (!$branch_type->possibly_undefined || $outer_type->possibly_undefined)
+            && UnionTypeComparator::isContainedBy($codebase, $branch_type, $outer_type);
+    }
+
+    /**
      * Whether the statements may assign the variable as a whole, in nested blocks too: an assignment to it
      * (`$a = `, `$a .= `, `[$a] = `, `$a = &$b`, `$b = &$a`, `$a++`), a foreach, static or global declaration of
      * it, `unset($a)`, or passing it by reference to a call or a closure. The condition of the branch itself is
@@ -643,7 +652,7 @@ final class IfAnalyzer
      *
      * @param array<PhpParser\Node> $nodes
      */
-    private static function mayAssignAsAWhole(
+    public static function mayAssignAsAWhole(
         array $nodes,
         string $var_id,
         StatementsAnalyzer $statements_analyzer,

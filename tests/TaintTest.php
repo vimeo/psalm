@@ -6325,6 +6325,36 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInAnElseReachesTheReadAfterTheIf' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $u */
+                    function f($u): void {
+                        if (!is_array($u) || rand(0, 1)) {
+                            echo 1;
+                        } else {
+                            $u["a"] = $_GET["x"];
+                        }
+
+                        /** @psalm-suppress MixedArrayAccess */
+                        echo (string) $u["a"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInASwitchCaseReachesTheReadAfterTheSwitch' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $u */
+                    function f($u): void {
+                        switch (true) {
+                            case is_array($u) && rand(0, 1):
+                                $u["a"] = $_GET["x"];
+                                break;
+                        }
+
+                        /** @psalm-suppress MixedArrayAccess */
+                        echo (string) $u["a"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAssignedBeforeABreakInTheElseReachesTheReadAfterTheIf' => [
                 'code' => '<?php // --taint-analysis
                     /** @param list<string> $list */
