@@ -143,6 +143,21 @@ final class Php84Test extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'getHookOfANullablePropertyMayReturnANonNullValue' => [
+                'code' => '<?php
+                    interface Logger {}
+
+                    final class H {
+                        public function __construct(private Logger $logger) {}
+
+                        public ?Logger $current {
+                            get => $this->logger;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'propertyHookOfTemplatedClass' => [
                 'code' => '<?php
                     /** @template T */
