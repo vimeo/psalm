@@ -306,6 +306,13 @@ final class Config
     private ?string $configured_php_version = null;
 
     /**
+     * The PHP version given on the command line (or by the tests), which overrides phpVersion and composer.json
+     *
+     * @var array{string, 'cli'|'tests'}|null
+     */
+    private ?array $php_version_override = null;
+
+    /**
      * @var array<int, string>
      */
     private array $file_extensions = ['php'];
@@ -1230,6 +1237,11 @@ final class Config
 
         if (isset($config_xml['phpVersion'])) {
             $config->configured_php_version = (string) $config_xml['phpVersion'];
+            try {
+                ProjectAnalyzer::getPhpVersionId($config->configured_php_version);
+            } catch (UnexpectedValueException $e) {
+                throw new ConfigException('phpVersion: ' . $e->getMessage(), 0, $e);
+            }
         }
 
         if (isset($config_xml['autoloader'])) {
@@ -3500,6 +3512,45 @@ final class Config
     public function getPhpVersionFromConfig(): ?string
     {
         return $this->configured_php_version;
+    }
+
+    /**
+     * Sets the PHP version given on the command line (or by the tests), which overrides phpVersion and composer.json
+     *
+     * @internal
+     * @param 'cli'|'tests' $source
+     * @throws UnexpectedValueException if it is not a version, or not one Psalm supports
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function setPhpVersionOverride(string $version, string $source = 'cli'): void
+    {
+        ProjectAnalyzer::getPhpVersionId($version);
+        $this->php_version_override = [$version, $source];
+    }
+
+    /**
+     * The PHP version to analyse for, and where it comes from: the command line, else phpVersion, else composer.json,
+     * else the PHP that runs Psalm
+     *
+     * @internal
+     * @return array{int, 'cli'|'tests'|'config'|'composer'|'runtime'}
+     */
+    public function getAnalysisPhpVersion(): array
+    {
+        if ($this->php_version_override !== null) {
+            return [ProjectAnalyzer::getPhpVersionId($this->php_version_override[0]), $this->php_version_override[1]];
+        }
+
+        if ($this->configured_php_version !== null) {
+            return [ProjectAnalyzer::getPhpVersionId($this->configured_php_version), 'config'];
+        }
+
+        $composer_version = $this->getPHPVersionFromComposerJson();
+        if ($composer_version !== null) {
+            return [ProjectAnalyzer::getPhpVersionId($composer_version), 'composer'];
+        }
+
+        return [PHP_VERSION_ID, 'runtime'];
     }
 
     /**

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal\Cli;
 
 use AssertionError;
-use Psalm\Config;
 use Psalm\Exception\UnsupportedIssueToFixException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CliUtils;
@@ -288,6 +287,58 @@ final class Psalter
             $current_dir = $config->base_dir;
             chdir($current_dir);
         }
+
+        $plugins = [];
+
+        if (isset($options['plugin'])) {
+            $plugins = $options['plugin'];
+
+            if (!is_array($plugins)) {
+                $plugins = [$plugins];
+            }
+        }
+
+        /** @var string $plugin_path */
+        foreach ($plugins as $plugin_path) {
+            $config->addPluginPath($plugin_path);
+        }
+
+        CliUtils::initPhpVersion($options, $config);
+
+        if (array_key_exists('issues', $options)) {
+            if (!is_string($options['issues']) || !$options['issues']) {
+                fwrite(STDERR, 'Expecting a comma-separated list of issues' . PHP_EOL);
+                exit(1);
+            }
+
+            $issues = explode(',', $options['issues']);
+
+            $keyed_issues = [];
+
+            foreach ($issues as $issue) {
+                $keyed_issues[$issue] = true;
+            }
+        } else {
+            $keyed_issues = [];
+        }
+
+        $find_unused_code = array_key_exists('find-unused-code', $options);
+
+        foreach ($keyed_issues as $issue_name => $_) {
+            // MissingParamType requires the scanning of all files to inform possible params
+            if (str_contains($issue_name, 'Unused')
+                || $issue_name === 'MissingParamType'
+                || $issue_name === 'UnnecessaryVarAnnotation'
+                || $issue_name === 'all'
+            ) {
+                $find_unused_code = true;
+                break;
+            }
+        }
+
+        if ($find_unused_code) {
+            $config->find_unused_code = true;
+        }
         
         $in_ci = CliUtils::runningInCI();
 
@@ -353,25 +404,6 @@ final class Psalter
             $config->debug_emitted_issues = true;
         }
 
-        if (array_key_exists('issues', $options)) {
-            if (!is_string($options['issues']) || !$options['issues']) {
-                fwrite(STDERR, 'Expecting a comma-separated list of issues' . PHP_EOL);
-                exit(1);
-            }
-
-            $issues = explode(',', $options['issues']);
-
-            $keyed_issues = [];
-
-            foreach ($issues as $issue) {
-                $keyed_issues[$issue] = true;
-            }
-        } else {
-            $keyed_issues = [];
-        }
-
-        CliUtils::initPhpVersion($options, $config, $project_analyzer);
-
         if (isset($options['codeowner'])) {
             $codeowner_files = self::loadCodeowners($providers, $current_dir);
 
@@ -418,35 +450,6 @@ final class Psalter
             }
 
             ParsedDocblock::addNewLineBetweenAnnotations($doc_block_add_new_line_before_return);
-        }
-
-        $plugins = [];
-
-        if (isset($options['plugin'])) {
-            $plugins = $options['plugin'];
-
-            if (!is_array($plugins)) {
-                $plugins = [$plugins];
-            }
-        }
-
-        /** @var string $plugin_path */
-        foreach ($plugins as $plugin_path) {
-            Config::getInstance()->addPluginPath($plugin_path);
-        }
-
-        $find_unused_code = array_key_exists('find-unused-code', $options);
-
-        foreach ($keyed_issues as $issue_name => $_) {
-            // MissingParamType requires the scanning of all files to inform possible params
-            if (str_contains($issue_name, 'Unused')
-                || $issue_name === 'MissingParamType'
-                || $issue_name === 'UnnecessaryVarAnnotation'
-                || $issue_name === 'all'
-            ) {
-                $find_unused_code = true;
-                break;
-            }
         }
 
         if ($find_unused_code) {

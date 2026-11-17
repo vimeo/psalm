@@ -22,7 +22,6 @@ use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Issue\ClassMustBeFinal;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidFalsableReturnType;
@@ -1229,6 +1228,17 @@ final class ProjectAnalyzer
      */
     public function setPhpVersion(string $version, string $source): void
     {
+        $this->codebase->analysis_php_version_id = self::getPhpVersionId($version);
+        $this->codebase->php_version_source = $source;
+    }
+
+    /**
+     * @return int the version as PHP_VERSION_ID, without the release
+     * @throws UnexpectedValueException if it is not a version, or not one Psalm supports
+     * @psalm-pure
+     */
+    public static function getPhpVersionId(string $version): int
+    {
         if (!preg_match('/' . self::PHP_VERSION_REGEX . '/', $version)) {
             throw new UnexpectedValueException('Expecting a version number in the format x.y or x.y.z');
         }
@@ -1243,18 +1253,7 @@ final class ProjectAnalyzer
 
         [$php_major_version, $php_minor_version] = explode('.', $version);
 
-        $php_major_version = (int) $php_major_version;
-        $php_minor_version = (int) $php_minor_version;
-
-        $analysis_php_version_id = $php_major_version * 10_000 + $php_minor_version * 100;
-
-        if ($this->codebase->analysis_php_version_id !== $analysis_php_version_id) {
-            // reset parser when php version changes
-            StatementsProvider::clearParser();
-        }
-
-        $this->codebase->analysis_php_version_id = $analysis_php_version_id;
-        $this->codebase->php_version_source = $source;
+        return (int) $php_major_version * 10_000 + (int) $php_minor_version * 100;
     }
 
     /**

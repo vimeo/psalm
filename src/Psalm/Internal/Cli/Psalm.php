@@ -373,6 +373,8 @@ final class Psalm
 
         self::configureShepherd($config, $options, $plugins);
 
+        ProjectBootstrap::applyAnalysisOptions($options, $config, $plugins, $run_taint_analysis);
+
         if (isset($options['clear-cache'])) {
             self::clearCache($config);
         }
@@ -409,14 +411,12 @@ final class Psalm
             $threads,
             $scanThreads,
             $progress,
-            $plugins,
             $find_references_to,
-            $run_taint_analysis,
         );
 
         $start_time = microtime(true);
 
-        if ($config->run_taint_analysis || $run_taint_analysis) {
+        if ($config->run_taint_analysis) {
             $is_diff = false;
         }
 

@@ -12,7 +12,6 @@ use Psalm\Config\Creator;
 use Psalm\Exception\ConfigCreationException;
 use Psalm\Exception\ConfigException;
 use Psalm\Exception\ConfigNotFoundException;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Cli\Psalm;
 use Psalm\Internal\Cli\Psalter;
 use Psalm\Internal\Cli\Refactor;
@@ -762,33 +761,26 @@ final class CliUtils
         }
     }
 
-    public static function initPhpVersion(array $options, Config $config, ProjectAnalyzer $project_analyzer): void
+    /** Passes --php-version to the config, which resolves the version to analyse for */
+    public static function initPhpVersion(array $options, Config $config): void
     {
-        $source = null;
-
-        if (isset($options['php-version'])) {
-            if (!is_string($options['php-version'])) {
-                fwrite(STDERR, 'Expecting a version number in the format x.y' . PHP_EOL);
-                exit(1);
-            }
-            $version = $options['php-version'];
-            $source = 'cli';
-        } elseif ($version = $config->getPhpVersionFromConfig()) {
-            $source = 'config';
-        } elseif ($version = $config->getPHPVersionFromComposerJson()) {
-            $source = 'composer';
+        if (!isset($options['php-version'])) {
+            return;
         }
 
-        if ($version !== null && $source !== null) {
-            try {
-                $project_analyzer->setPhpVersion($version, $source);
-            } catch (UnexpectedValueException $e) {
-                fwrite(
-                    STDERR,
-                    $e->getMessage() . PHP_EOL,
-                );
-                exit(1);
-            }
+        if (!is_string($options['php-version'])) {
+            fwrite(STDERR, 'Expecting a version number in the format x.y' . PHP_EOL);
+            exit(1);
+        }
+
+        try {
+            $config->setPhpVersionOverride($options['php-version']);
+        } catch (UnexpectedValueException $e) {
+            fwrite(
+                STDERR,
+                $e->getMessage() . PHP_EOL,
+            );
+            exit(1);
         }
     }
 

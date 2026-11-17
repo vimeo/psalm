@@ -517,6 +517,8 @@ Set the php version Psalm should assume when checking and/or fixing the project.
 
 This can be overridden on the command-line using the `--php-version=` flag which takes the highest precedence over both the `phpVersion` setting and the version derived from `composer.json`.
 
+`psalm`, `psalter`, `psalm-refactor` and the language server all analyse for this version.
+
 #### skipChecksOnUnresolvableIncludes
 ```xml
 <psalm

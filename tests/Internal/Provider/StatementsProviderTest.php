@@ -97,8 +97,6 @@ final class StatementsProviderTest extends TestCase
         $this->provider->getStatementsForFile(self::vendorFilePath(), 8_01_00, false);
         $enum = $this->provider->getStatementsForFile(self::vendorFilePath(), 8_01_00, false);
 
-        // as ProjectAnalyzer::setPhpVersion() does
-        StatementsProvider::clearParser();
         $stmts = $this->provider->getStatementsForFile(self::vendorFilePath(), 8_00_00, false);
 
         // enums don't exist before PHP 8.1

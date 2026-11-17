@@ -1387,8 +1387,6 @@
       <code><![CDATA[!$path_to_check]]></code>
       <code><![CDATA[$config->error_baseline]]></code>
       <code><![CDATA[$path_to_config]]></code>
-      <code><![CDATA[$version = $config->getPHPVersionFromComposerJson()]]></code>
-      <code><![CDATA[$version = $config->getPhpVersionFromConfig()]]></code>
       <code><![CDATA[strpos(__NAMESPACE__, 'HumbugBox')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
@@ -2254,8 +2252,6 @@
       <code><![CDATA[$existing_file_contents]]></code>
       <code><![CDATA[$existing_statements]]></code>
       <code><![CDATA[$file_changes]]></code>
-      <code><![CDATA[self::$parser->parse($file_contents, $error_handler)]]></code>
-      <code><![CDATA[self::$parser->parse($file_contents, $error_handler)]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Scanner/DocblockParser.php">
