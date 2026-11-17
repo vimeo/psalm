@@ -626,59 +626,16 @@ final class MethodCallPurityAnalyzer
             );
 
             // nothing is known of the properties of a receiver without a var id
-            $mutations = $lhs_var_id !== null ? $method_storage->this_property_mutations : [];
-
-            foreach ($mutations as $name => $writes_property) {
-                $mutation_var_id = $lhs_var_id . '->' . $name;
-                $item_mutations = $method_storage->this_property_item_mutations[$name] ?? [];
-
-                if (!$writes_property && $item_mutations && !isset($item_mutations[''])) {
-                    // only properties of the object the property holds are written: it still holds that object
-                    foreach ($item_mutations as $sub_path => $writes_last) {
-                        self::resetPropertyOfHeldObject(
-                            $codebase,
-                            $context,
-                            $mutation_var_id,
-                            self::getDeclaredPropertyType($codebase, $class_storage, $name, $class_template_params),
-                            explode('->', $sub_path),
-                            $writes_last,
-                        );
-                    }
-
-                    continue;
-                }
-
-                // the call is analysed once for each type of a receiver of several
-                if (!array_key_exists($mutation_var_id, $result->property_types_before_call)) {
-                    $result->property_types_before_call[$mutation_var_id]
-                        = $context->vars_in_scope[$mutation_var_id] ?? null;
-                }
-
-                $existing_type = $result->property_types_before_call[$mutation_var_id];
-
-                $context->forgetNullArrayOffsets($mutation_var_id);
-                $context->forgetPropertyDescendents($mutation_var_id);
-
-                $this_property_didnt_exist = $lhs_var_id === '$this'
-                    && isset($context->vars_in_scope[$mutation_var_id])
-                    && !isset($class_storage->declaring_property_ids[$name]);
-
-                if ($this_property_didnt_exist) {
-                    unset($context->vars_in_scope[$mutation_var_id]);
-                } elseif (!$writes_property && $existing_type !== null && $existing_type->isObjectType()) {
-                    // writing items or properties of an object leaves the property holding the same object
-                    self::setPropertyTypeAfterCall($context, $result, $mutation_var_id, $existing_type);
-                } else {
-                    $new_type = self::getDeclaredPropertyType($codebase, $class_storage, $name, $class_template_params)
-                        ?? Type::getMixed();
-
-                    if (!$writes_property && $existing_type !== null) {
-                        $new_type = self::getTypeAfterItemWrites($codebase, $existing_type, $new_type);
-                    }
-
-                    self::setPropertyTypeAfterCall($context, $result, $mutation_var_id, $new_type);
-                    $context->possibly_assigned_var_ids[$mutation_var_id] = true;
-                }
+            if ($lhs_var_id !== null) {
+                self::resetWrittenProperties(
+                    $codebase,
+                    $context,
+                    $result,
+                    $lhs_var_id,
+                    $method_storage,
+                    $class_storage,
+                    $class_template_params,
+                );
             }
         } else {
             if (!$config->remember_property_assignments_after_call) {
@@ -702,6 +659,74 @@ final class MethodCallPurityAnalyzer
         if ($context->inside_conditional && $lhs_var_id !== null) {
             foreach ($method_storage->this_property_mutations ?? [] as $name => $_) {
                 $context->assigned_var_ids[$lhs_var_id . '->' . $name] ??= 0;
+            }
+        }
+    }
+
+    /**
+     * Resets what is known of the properties of the receiver the method writes, and of what they hold
+     *
+     * @param array<string, array<string, Union>> $class_template_params
+     */
+    private static function resetWrittenProperties(
+        Codebase $codebase,
+        Context $context,
+        AtomicMethodCallAnalysisResult $result,
+        string $lhs_var_id,
+        MethodStorage $method_storage,
+        ClassLikeStorage $class_storage,
+        array $class_template_params,
+    ): void {
+        foreach ($method_storage->this_property_mutations ?? [] as $name => $writes_property) {
+            $mutation_var_id = $lhs_var_id . '->' . $name;
+            $item_mutations = $method_storage->this_property_item_mutations[$name] ?? [];
+
+            if (!$writes_property && $item_mutations && !isset($item_mutations[''])) {
+                // only properties of the object the property holds are written: it still holds that object
+                foreach ($item_mutations as $sub_path => $writes_last) {
+                    self::resetPropertyOfHeldObject(
+                        $codebase,
+                        $context,
+                        $mutation_var_id,
+                        self::getDeclaredPropertyType($codebase, $class_storage, $name, $class_template_params),
+                        explode('->', $sub_path),
+                        $writes_last,
+                    );
+                }
+
+                continue;
+            }
+
+            // the call is analysed once for each type of a receiver of several
+            if (!array_key_exists($mutation_var_id, $result->property_types_before_call)) {
+                $result->property_types_before_call[$mutation_var_id]
+                    = $context->vars_in_scope[$mutation_var_id] ?? null;
+            }
+
+            $existing_type = $result->property_types_before_call[$mutation_var_id];
+
+            $context->forgetNullArrayOffsets($mutation_var_id);
+            $context->forgetPropertyDescendents($mutation_var_id);
+
+            $this_property_didnt_exist = $lhs_var_id === '$this'
+                && isset($context->vars_in_scope[$mutation_var_id])
+                && !isset($class_storage->declaring_property_ids[$name]);
+
+            if ($this_property_didnt_exist) {
+                unset($context->vars_in_scope[$mutation_var_id]);
+            } elseif (!$writes_property && $existing_type !== null && $existing_type->isObjectType()) {
+                // writing items or properties of an object leaves the property holding the same object
+                self::setPropertyTypeAfterCall($context, $result, $mutation_var_id, $existing_type);
+            } else {
+                $new_type = self::getDeclaredPropertyType($codebase, $class_storage, $name, $class_template_params)
+                    ?? Type::getMixed();
+
+                if (!$writes_property && $existing_type !== null) {
+                    $new_type = self::getTypeAfterItemWrites($codebase, $existing_type, $new_type);
+                }
+
+                self::setPropertyTypeAfterCall($context, $result, $mutation_var_id, $new_type);
+                $context->possibly_assigned_var_ids[$mutation_var_id] = true;
             }
         }
     }
@@ -967,8 +992,6 @@ final class MethodCallPurityAnalyzer
 
     /**
      * What a property of the objects a property is known to hold is declared to hold, if writing it cannot run code
-     *
-     * @psalm-capabilities read-props
      */
     private static function getDeclaredPlainPropertyType(
         Codebase $codebase,
