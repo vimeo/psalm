@@ -2273,6 +2273,16 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'scalarKeywordTypeWithGenericParamsInNamespace' => [
+                'code' => '<?php
+                    namespace N;
+
+                    /** @param non-empty-scalar<int> $a */
+                    function f($a): void {
+                        echo gettype($a);
+                    }',
+                'error_message' => 'Cannot create generic object with reserved word',
+            ],
             'spaceInsideTypeName' => [
                 'code' => '<?php
                     /**
