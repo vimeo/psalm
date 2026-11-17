@@ -2853,6 +2853,43 @@ final class MethodCallTest extends TestCase
                         $s->attach($o);
                     }',
             ],
+            'splObjectStorageDataParamsAreNamedInfo' => [
+                'code' => '<?php
+                    /** @param SplObjectStorage<object, string> $s */
+                    function f(SplObjectStorage $s, object $o): void {
+                        $s->attach($o, info: "a");
+                        $s->offsetSet($o, info: "b");
+                        $s->setInfo(info: "c");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'splObjectStorageOverrideKeepsInfoParamName' => [
+                'code' => '<?php
+                    /**
+                     * @extends SplObjectStorage<object, string>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class Storage extends SplObjectStorage {
+                        /**
+                         * @param string $info
+                         * @psalm-capabilities read-props|write-this-props
+                         */
+                        public function setInfo($info): void {
+                            parent::setInfo($info);
+                        }
+
+                        /**
+                         * @param object $object
+                         * @param string|null $info
+                         * @psalm-capabilities read-props|write-this-props
+                         */
+                        public function offsetSet($object, $info = null): void {
+                            parent::offsetSet($object, $info);
+                        }
+                    }',
+            ],
             'allowIteratorToBeNull' => [
                 'code' => '<?php
                     /**
@@ -3312,6 +3349,23 @@ final class MethodCallTest extends TestCase
                         $s->attach($o, $g);
                     }',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:40 - Argument 2 of SplObjectStorage::attach expects list<string>|null, but parent type array<array-key, mixed> provided',
+            ],
+            'splObjectStorageOverrideRenamingInfoParam' => [
+                'code' => '<?php
+                    /**
+                     * @extends SplObjectStorage<object, string>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class Storage extends SplObjectStorage {
+                        /**
+                         * @param string $data
+                         * @psalm-capabilities read-props|write-this-props
+                         */
+                        public function setInfo($data): void {
+                            parent::setInfo($data);
+                        }
+                    }',
+                'error_message' => 'ParamNameMismatch',
             ],
             'methodAssertionOnMethodCallingTheAssertingMethodNotMemoized' => [
                 'code' => '<?php
