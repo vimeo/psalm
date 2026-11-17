@@ -740,7 +740,6 @@ final class TaintTest extends TestCase
 
         self::assertEqualsCanonicalizing(
             [
-                ['somefile.php', 10, 'TaintedHtml'],
                 ['somefile.php', 10, 'TaintedTextWithQuotes'],
                 ['somefile.php', 11, 'TaintedHtml'],
                 ['somefile.php', 11, 'TaintedTextWithQuotes'],
@@ -748,7 +747,6 @@ final class TaintTest extends TestCase
                 ['somefile.php', 13, 'TaintedTextWithQuotes'],
                 ['somefile.php', 16, 'TaintedHtml'],
                 ['somefile.php', 16, 'TaintedTextWithQuotes'],
-                ['somefile.php', 17, 'TaintedHtml'],
                 ['somefile.php', 17, 'TaintedTextWithQuotes'],
                 ['somefile.php', 18, 'TaintedHtml'],
                 ['somefile.php', 18, 'TaintedTextWithQuotes'],
@@ -758,7 +756,6 @@ final class TaintTest extends TestCase
                 ['somefile.php', 20, 'TaintedTextWithQuotes'],
                 ['somefile.php', 21, 'TaintedHtml'],
                 ['somefile.php', 21, 'TaintedTextWithQuotes'],
-                ['somefile.php', 23, 'TaintedTextWithQuotes'],
                 ['somefile.php', 25, 'TaintedTextWithQuotes'],
                 ['somefile.php', 26, 'TaintedTextWithQuotes'],
                 ['somefile.php', 27, 'TaintedTextWithQuotes'],
@@ -780,6 +777,96 @@ final class TaintTest extends TestCase
                 static fn(IssueData $issue): array => [basename($issue->file_name), $issue->line_from, $issue->type],
                 $issues,
             ),
+        );
+    }
+
+    /**
+     * A variable of a function-like holds constant flags when every write to it assigns a constant expression; any
+     * other write (a reference, a by-reference argument, a loop, `$$name`...) makes its bits unknown.
+     */
+    public function testVariablesOfConstantFlagsEscape(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            final class K {
+                public const FLAGS = JSON_HEX_TAG | JSON_HEX_AMP;
+            }
+
+            function by_ref(int &$i): void {
+                $i = 0;
+            }
+
+            function f(bool $c): void {
+                $flags = JSON_HEX_TAG | JSON_HEX_AMP;
+                echo json_encode($_GET["a"], $flags);
+                $branches = $c ? JSON_HEX_TAG | JSON_HEX_AMP : JSON_HEX_TAG | JSON_HEX_AMP | JSON_PRETTY_PRINT;
+                echo json_encode($_GET["b"], $branches);
+                $chained = $flags | JSON_THROW_ON_ERROR;
+                echo json_encode($_GET["c"], $chained);
+                $constant = K::FLAGS;
+                echo json_encode($_GET["d"], $constant);
+                $quotes = ENT_QUOTES;
+                echo htmlspecialchars((string) $_GET["e"], $quotes);
+            }
+
+            function g(bool $c, array $a, stdClass $o): void {
+                $reassigned = JSON_HEX_TAG | JSON_HEX_AMP;
+                if ($c) {
+                    $reassigned = 0;
+                }
+                echo json_encode($_GET["f"], $reassigned);
+                $passed = JSON_HEX_TAG | JSON_HEX_AMP;
+                by_ref($passed);
+                echo json_encode($_GET["g"], $passed);
+                $referenced = JSON_HEX_TAG | JSON_HEX_AMP;
+                $reference = &$referenced;
+                $reference = 0;
+                echo json_encode($_GET["h"], $referenced);
+                $used = JSON_HEX_TAG | JSON_HEX_AMP;
+                $closure = function () use (&$used): void {
+                    $used = 0;
+                };
+                $closure();
+                echo json_encode($_GET["i"], $used);
+                $xored = JSON_HEX_TAG | JSON_HEX_AMP;
+                $xored ^= JSON_HEX_TAG;
+                echo json_encode($_GET["j"], $xored);
+                $looped = JSON_HEX_TAG | JSON_HEX_AMP;
+                foreach ($a as $looped) {}
+                echo json_encode($_GET["l"], $looped);
+                $given = JSON_HEX_TAG | JSON_HEX_AMP;
+                $o->m($given);
+                echo json_encode($_GET["m"], $given);
+                if ($c) {
+                    $maybe = JSON_HEX_TAG | JSON_HEX_AMP;
+                }
+                echo json_encode($_GET["n"], $maybe);
+            }
+
+            function h(string $name, int $flags = JSON_HEX_TAG | JSON_HEX_AMP): void {
+                echo json_encode($_GET["o"], $flags);
+                static $static = JSON_HEX_TAG | JSON_HEX_AMP;
+                echo json_encode($_GET["p"], $static);
+                $dynamic = JSON_HEX_TAG | JSON_HEX_AMP;
+                $$name = 0;
+                echo json_encode($_GET["k"], $dynamic);
+            }
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => str_starts_with($issue->type, 'Tainted')
+                && ($issue->type === 'TaintedHtml' || $issue->line_from === 20),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [28, 31, 35, 41, 44, 47, 50, 54, 58, 60, 63],
+            array_map(static fn(IssueData $issue): int => $issue->line_from, $issues),
         );
     }
 

@@ -28,7 +28,7 @@ echoVar($_GET["text"]);
 
 ## Escaping by flags
 
-What `json_encode()`, `htmlspecialchars()` and `htmlentities()` escape depends on their flags, which Psalm only reads from constant expressions (int literals, builtin constants, class constants, and `|`, `&` and ternaries of them), never from a type. In a namespace, write `\JSON_HEX_TAG` or import it with `use const`. The decoders give back what the escapes removed:
+What `json_encode()`, `htmlspecialchars()` and `htmlentities()` escape depends on their flags, which Psalm only reads from constant expressions (int literals, builtin constants, class constants, variables only ever assigned such expressions, and `|`, `&` and ternaries of them), never from a type. In a namespace, write `\JSON_HEX_TAG` or import it with `use const`. The decoders give back what the escapes removed:
 
 ```php
 <?php
@@ -42,6 +42,8 @@ final class Json
 function show(int $flags, int $three): void
 {
     echo json_encode($_GET['a'], Json::FLAGS); // TaintedTextWithQuotes, but no TaintedHtml
+    $hex = JSON_HEX_TAG | JSON_HEX_AMP;
+    echo json_encode($_GET['a'], $hex); // TaintedTextWithQuotes, but no TaintedHtml
     echo json_encode($_GET['a'], $flags | JSON_HEX_TAG | JSON_HEX_AMP); // TaintedTextWithQuotes
     echo json_encode($_GET['a'], $three); // TaintedHtml
     echo json_decode(json_encode($_GET['a'], Json::FLAGS)); // TaintedHtml

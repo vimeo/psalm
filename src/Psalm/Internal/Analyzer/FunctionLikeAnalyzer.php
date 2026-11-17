@@ -2606,6 +2606,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * @psalm-mutation-free
+     */
+    public function getFunctionNode(): Closure|Function_|ClassMethod|ArrowFunction
+    {
+        return $this->function;
+    }
+
+    /**
      * The storage this analyzer was created with (the one of the function-like being analysed).
      *
      * @psalm-mutation-free

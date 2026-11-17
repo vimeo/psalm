@@ -1525,13 +1525,13 @@ final class FunctionCallReturnTypeFetcher
      * The taints a call removes because of the arguments it is given (`@psalm-taint-escape ($escape is true ? "html" :
      * null)`): a condition the arguments can't decide removes nothing
      *
-     * @param array<PhpParser\Node\Arg> $args
+     * @param array<PhpParser\Node\Arg> $args the arguments of a PHP call, if any: an unpacked one removes nothing
      */
     public static function getConditionallyRemovedTaints(
         Codebase $codebase,
         FunctionLikeStorage $storage,
         TemplateResult $template_result,
-        array $args,
+        array $args = [],
     ): int {
         // the parameters an unpacked argument gives are inferred from all of its items, of which it may lack those
         // after the first: `json_encode(...$args)` may be without the flags of the second item
