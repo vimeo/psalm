@@ -121,7 +121,6 @@ final class TernaryAnalyzer
             $cond_object_id,
         );
 
-        // the negation is that of the condition, not of what is left of it
         $cond_clauses = $if_clauses;
 
         $if_clauses = array_map($forget_items_of_mixed_vars, $if_clauses);
@@ -165,10 +164,9 @@ final class TernaryAnalyzer
         }
 
         try {
-            $if_scope->negated_clauses = array_map(
-                $forget_items_of_mixed_vars,
-                FormulaGenerator::getNegatedFormula(
-                    Algebra::simplifyCNF($cond_clauses),
+            $if_scope->negated_clauses = [
+                ...FormulaGenerator::getNegatedFormula(
+                    $if_clauses,
                     $stmt->cond,
                     $cond_object_id,
                     $context->self,
@@ -176,7 +174,16 @@ final class TernaryAnalyzer
                     $codebase,
                     true,
                 ),
-            );
+                ...FormulaGenerator::getNegatedSetMixedVarClauses(
+                    $cond_clauses,
+                    $mixed_vars,
+                    $stmt->cond,
+                    $cond_object_id,
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                ),
+            ];
         } catch (ComplicatedExpressionException) {
             $if_scope->negated_clauses = [];
         }

@@ -115,17 +115,24 @@ final class DoAnalyzer
             cache: false,
         );
 
+        $cond_clauses = $while_clauses;
+
+        // a clause on an offset or property of a mixed variable says nothing, but its negation is not true either
+        $while_clauses = array_map(
+            static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars(
+                array_diff_key($mixed_vars, $c->possibilities),
+                $cond_id,
+            ),
+            $while_clauses,
+        );
+
         if (!$while_clauses) {
             $while_clauses = [new Clause([], $cond_id, $cond_id, true)];
         }
 
         try {
-            $negated_while_clauses = array_map(
-                static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars(
-                    array_diff_key($mixed_vars, $c->possibilities),
-                    $cond_id,
-                ),
-                FormulaGenerator::getNegatedFormula(
+            $negated_while_clauses = [
+                ...FormulaGenerator::getNegatedFormula(
                     $while_clauses,
                     $stmt->cond,
                     $cond_id,
@@ -133,7 +140,16 @@ final class DoAnalyzer
                     $statements_analyzer,
                     $codebase,
                 ),
-            );
+                ...FormulaGenerator::getNegatedSetMixedVarClauses(
+                    $cond_clauses,
+                    $mixed_vars,
+                    $stmt->cond,
+                    $cond_id,
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                ),
+            ];
         } catch (ComplicatedExpressionException) {
             $negated_while_clauses = [];
         }

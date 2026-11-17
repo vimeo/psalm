@@ -2024,6 +2024,29 @@ final class IssetTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
             ],
+            'issetOfOffsetsOfSetMixedVariableNarrowsItAfterTheReturn' => [
+                'code' => '<?php
+                    function f(array $trace): ?string {
+                        $i = count($trace);
+                        $line = $trace[$i];
+
+                        if (!isset($line["object"]) && !isset($line["class"])) {
+                            return null;
+                        }
+
+                        if (!isset($line["class"], $trace[$i - 2]["function"])
+                            || !str_starts_with((string) $line["class"], "X")
+                        ) {
+                            return "a";
+                        }
+
+                        $test = $line["args"][0] ?? null;
+                        return is_string($test) ? $test : null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'issetOfIntOffsetSetsPossiblyUndefinedMixedVariable' => [
                 'code' => '<?php
                     /** @return mixed */

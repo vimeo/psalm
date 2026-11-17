@@ -30,7 +30,6 @@ use function array_diff_key;
 use function array_filter;
 use function array_key_exists;
 use function array_keys;
-use function array_map;
 use function array_merge;
 use function array_reduce;
 use function array_unique;
@@ -91,18 +90,25 @@ final class ElseIfAnalyzer
             $elseif_clauses[] = $clause->forgetItemsOfMixedVars($mixed_vars, $elseif_cond_id);
         }
 
-        // the negation is that of the condition, not of what is left of it
-        $get_negated_clauses = static fn(): array => array_map(
-            static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars($mixed_vars, $elseif_cond_id),
-            FormulaGenerator::getNegatedFormula(
-                Algebra::simplifyCNF($cond_clauses),
+        $get_negated_clauses = static fn(): array => [
+            ...FormulaGenerator::getNegatedFormula(
+                Algebra::simplifyCNF($elseif_clauses),
                 $elseif->cond,
                 $elseif_cond_id,
                 $else_context->self,
                 $statements_analyzer,
                 $codebase,
             ),
-        );
+            ...FormulaGenerator::getNegatedSetMixedVarClauses(
+                $cond_clauses,
+                $mixed_vars,
+                $elseif->cond,
+                $elseif_cond_id,
+                $else_context->self,
+                $statements_analyzer,
+                $codebase,
+            ),
+        ];
 
         return [$elseif_clauses, $get_negated_clauses];
     }

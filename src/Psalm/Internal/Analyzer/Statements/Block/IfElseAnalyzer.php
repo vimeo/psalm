@@ -38,7 +38,6 @@ use function array_fill_keys;
 use function array_filter;
 use function array_intersect_key;
 use function array_keys;
-use function array_map;
 use function array_merge;
 use function array_slice;
 use function array_unique;
@@ -603,11 +602,9 @@ final class IfElseAnalyzer
             $if_clauses[] = $clause->forgetItemsOfMixedVars($mixed_vars, $cond_object_id);
         }
 
-        // the negation is that of the condition, not of what is left of it
-        $get_negated_clauses = static fn(): array => array_map(
-            static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars($mixed_vars, $cond_object_id),
-            FormulaGenerator::getNegatedFormula(
-                Algebra::simplifyCNF($cond_clauses),
+        $get_negated_clauses = static fn(): array => [
+            ...FormulaGenerator::getNegatedFormula(
+                Algebra::simplifyCNF($if_clauses),
                 $cond,
                 $cond_object_id,
                 $context->self,
@@ -615,7 +612,16 @@ final class IfElseAnalyzer
                 $codebase,
                 true,
             ),
-        );
+            ...FormulaGenerator::getNegatedSetMixedVarClauses(
+                $cond_clauses,
+                $mixed_vars,
+                $cond,
+                $cond_object_id,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+            ),
+        ];
 
         return [$if_clauses, $get_negated_clauses];
     }

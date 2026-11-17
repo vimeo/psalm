@@ -873,6 +873,58 @@ final class FormulaGenerator
     }
 
     /**
+     * Where the negation of a condition only holds if a mixed variable that may be unset is set
+     * (`if (!isset($a["k"])) return;`), clauses saying it is set: the negation of a clause on its offset is otherwise
+     * unknown
+     *
+     * @param list<Clause> $cond_clauses the clauses of the condition, with those on mixed variables
+     * @param array<string, bool> $mixed_vars whether each mixed variable may be unset
+     * @return list<Clause>
+     */
+    public static function getNegatedSetMixedVarClauses(
+        array $cond_clauses,
+        array $mixed_vars,
+        PhpParser\Node\Expr $conditional,
+        int $conditional_object_id,
+        ?string $this_class_name,
+        FileSource $source,
+        ?Codebase $codebase,
+    ): array {
+        if (!in_array(true, $mixed_vars, true)) {
+            return [];
+        }
+
+        try {
+            $negated_clauses = self::getNegatedFormula(
+                Algebra::simplifyCNF($cond_clauses),
+                $conditional,
+                $conditional_object_id,
+                $this_class_name,
+                $source,
+                $codebase,
+                true,
+            );
+        } catch (ComplicatedExpressionException) {
+            return [];
+        }
+
+        $set_clauses = [];
+
+        foreach ($negated_clauses as $clause) {
+            $set_clause = $clause->forgetItemsOfMixedVars(
+                array_diff_key($mixed_vars, $clause->possibilities),
+                $conditional_object_id,
+            );
+
+            if ($set_clause !== $clause && !$set_clause->wedge) {
+                $set_clauses[] = $set_clause;
+            }
+        }
+
+        return $set_clauses;
+    }
+
+    /**
      * Whether the condition negates an expression whose formula has an assertion the negation drops
      */
     private static function hasLossyNegation(
