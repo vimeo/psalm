@@ -4146,6 +4146,50 @@ final class ConditionalTest extends TestCase
                             $x = rand(0, 1) ? 1 : "a";
                         }
                         /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function returnIfFalse(int|string $x): void {
+                        if (isFive($x) === false) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function returnIfFalseOnTheLeft(int|string $x): void {
+                        if (false === isFive($x)) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function returnIfNotTrue(int|string $x, bool $b): void {
+                        if (isFive($x) !== true || $b) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function returnIfLooselyFalse(int|string $x): void {
+                        if (isFive($x) == false) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $x = int */;
+                    }
+
+                    function matchTrue(int|string $x): int {
+                        return match (true) {
+                            !isFive($x) => 0,
+                            default => $x,
+                        };
+                    }
+
+                    function switchTrue(int|string $x): void {
+                        switch (true) {
+                            case !isFive($x):
+                                return;
+                            default:
+                                /** @psalm-check-type-exact $x = int */;
+                        }
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],

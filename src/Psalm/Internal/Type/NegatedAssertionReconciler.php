@@ -356,21 +356,17 @@ final class NegatedAssertionReconciler extends Reconciler
                 return $original_var_type;
             }
 
-            if ($key !== '$this'
-                || !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
-            ) {
-                if ($key && $code_location && !$is_equality) {
-                    self::triggerIssueForImpossible(
-                        $existing_var_type,
-                        $old_var_type_string,
-                        $key,
-                        $assertion,
-                        false,
-                        $negated,
-                        $code_location,
-                        $suppressed_issues,
-                    );
-                }
+            if ($key && $code_location && !$is_equality) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    $assertion,
+                    false,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues,
+                );
             }
 
             $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;

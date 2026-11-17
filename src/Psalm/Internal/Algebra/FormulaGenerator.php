@@ -30,6 +30,7 @@ use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
@@ -821,7 +822,7 @@ final class FormulaGenerator
                     return self::getFormula(
                         $conditional_object_id,
                         $conditional_object_id,
-                        new VirtualBooleanNot($conditional),
+                        new VirtualBooleanNot(self::replaceComparedBools($conditional, $source)),
                         $this_class_name,
                         $source,
                         $codebase,
@@ -875,6 +876,20 @@ final class FormulaGenerator
                 || self::hasLossyNegation($conditional->right, $this_class_name, $source, $codebase, $negated);
         }
 
+        $compared_bool = self::getComparedBool($conditional, $source);
+
+        if ($compared_bool !== null) {
+            [$operand, $operand_negated] = $compared_bool;
+
+            return self::hasLossyNegation(
+                $operand,
+                $this_class_name,
+                $source,
+                $codebase,
+                $negated !== $operand_negated,
+            );
+        }
+
         if (!$negated) {
             return false;
         }
@@ -896,6 +911,109 @@ final class FormulaGenerator
         }
 
         return false;
+    }
+
+    /**
+     * The condition with each comparison of a bool with `true` or `false` replaced by that bool or its negation
+     */
+    private static function replaceComparedBools(
+        PhpParser\Node\Expr $conditional,
+        FileSource $source,
+    ): PhpParser\Node\Expr {
+        if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
+            $expr = self::replaceComparedBools($conditional->expr, $source);
+
+            return $expr === $conditional->expr
+                ? $conditional
+                : new VirtualBooleanNot($expr, $conditional->getAttributes());
+        }
+
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+        ) {
+            $left = self::replaceComparedBools($conditional->left, $source);
+            $right = self::replaceComparedBools($conditional->right, $source);
+
+            if ($left === $conditional->left && $right === $conditional->right) {
+                return $conditional;
+            }
+
+            return $conditional instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                || $conditional instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+                ? new VirtualBooleanAnd($left, $right, $conditional->getAttributes())
+                : new VirtualBooleanOr($left, $right, $conditional->getAttributes());
+        }
+
+        $compared_bool = self::getComparedBool($conditional, $source);
+
+        if ($compared_bool === null) {
+            return $conditional;
+        }
+
+        [$operand, $operand_negated] = $compared_bool;
+        $operand = self::replaceComparedBools($operand, $source);
+
+        return $operand_negated ? new VirtualBooleanNot($operand, $conditional->getAttributes()) : $operand;
+    }
+
+    /**
+     * The bool that a comparison with `true` or `false` tests, and whether it tests its negation
+     * (`f() === false`, also `switch (true) { case !f(): }`)
+     *
+     * @return array{PhpParser\Node\Expr, bool}|null
+     */
+    private static function getComparedBool(PhpParser\Node\Expr $conditional, FileSource $source): ?array
+    {
+        if (!$conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            && !$conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+            && !$conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
+            && !$conditional instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
+        ) {
+            return null;
+        }
+
+        foreach ([[$conditional->left, $conditional->right], [$conditional->right, $conditional->left]] as $sides) {
+            [$constant, $operand] = $sides;
+
+            if (!$constant instanceof PhpParser\Node\Expr\ConstFetch) {
+                continue;
+            }
+
+            $constant_name = strtolower($constant->name->getFirst());
+
+            if ($constant_name !== 'true' && $constant_name !== 'false') {
+                continue;
+            }
+
+            $operand_type = self::getNodeData($source)?->getType($operand);
+
+            if ($operand_type === null || !self::isBoolType($operand_type)) {
+                return null;
+            }
+
+            $is_equality = $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal;
+
+            return [$operand, ($constant_name === 'false') === $is_equality];
+        }
+
+        return null;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function isBoolType(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TBool) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static function hasAssigningRightSide(
