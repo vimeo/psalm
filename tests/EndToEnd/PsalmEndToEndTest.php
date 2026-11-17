@@ -429,7 +429,7 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $process = $this->runPsalmOnAProjectWithTypeCoverage($attributes, ['--output-format=json', ...$args]);
 
         $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $this->assertSame('', $process->getErrorOutput());
+        $this->assertStringNotContainsString('Type coverage', $process->getErrorOutput());
     }
 
     /**
@@ -440,6 +440,7 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
     {
         yield 'option overrides config' => ['minTypeCoverage="95"', ['--min-type-coverage=77.77']];
         yield 'partial run with the config attribute' => ['minTypeCoverage="95"', ['src/Untyped.php']];
+        yield 'creating the baseline' => ['minTypeCoverage="95"', ['--set-baseline=psalm-baseline.xml']];
     }
 
     /**

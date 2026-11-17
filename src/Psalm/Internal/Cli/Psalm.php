@@ -328,6 +328,11 @@ final class Psalm
             }
         }
 
+        // creating or updating the baseline is maintenance, so it doesn't check the type coverage
+        if (isset($options['set-baseline']) || isset($options['update-baseline'])) {
+            $config->min_type_coverage = null;
+        }
+
         $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? null);
 
         if ($paths_to_check !== null && isset($options['min-type-coverage'])) {
