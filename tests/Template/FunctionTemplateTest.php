@@ -2876,6 +2876,81 @@ final class FunctionTemplateTest extends TestCase
                     '$cars===' => 'list<Car>',
                 ],
             ],
+            'conditionalReturnOnArgumentOnlyCoercedToTheBoundKeepsItsOverlap' => [
+                'code' => '<?php
+                    /** @return array|scalar */
+                    function arrayOrScalar() {
+                        return "";
+                    }
+
+                    /** @return array|int */
+                    function arrayOrInt() {
+                        return [];
+                    }
+
+                    $from_scalar = substr_replace(arrayOrScalar(), "x", 0, 1);
+                    $from_int = substr_replace(arrayOrInt(), "x", 0, 1);',
+                'assertions' => [
+                    '$from_scalar===' => 'array<array-key, string>|string',
+                    '$from_int===' => 'array<array-key, string>',
+                ],
+                'ignored_issues' => ['ArgumentTypeCoercion', 'PossiblyInvalidArgument'],
+            ],
+            'templateBoundByArgumentOnlyCoercedToTheBoundKeepsItsOverlap' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     * @return T
+                     */
+                    function identity($value) {
+                        return $value;
+                    }
+
+                    /** @return array|scalar */
+                    function arrayOrScalar() {
+                        return "";
+                    }
+
+                    $value = identity(arrayOrScalar());',
+                'assertions' => [
+                    '$value===' => 'array<array-key, mixed>|string',
+                ],
+                'ignored_issues' => ['ArgumentTypeCoercion'],
+            ],
+            'templateUpperBoundByCallableParamOnlyCoercedToTheBoundKeepsItsOverlap' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string|array<string>
+                     * @param callable(T): void $callback
+                     * @return T
+                     */
+                    function fromCallback(callable $callback) {
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     * @param callable(T): void $callback
+                     * @return T
+                     */
+                    function withCallback($value, callable $callback) {
+                        return $value;
+                    }
+
+                    /**
+                     * @param callable(array|scalar): void $callback
+                     * @param string|array<string> $string_or_array
+                     */
+                    function takesArrayOrScalar(callable $callback, string $string, $string_or_array): void {
+                        $from_callback = fromCallback($callback);
+                        /** @psalm-check-type-exact $from_callback = array<array-key, mixed>|string */
+
+                        withCallback($string, $callback);
+                        withCallback($string_or_array, $callback);
+                    }',
+            ],
         ];
     }
 
