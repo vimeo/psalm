@@ -138,8 +138,8 @@ final class WebmozartAssertLibraryStubTypesTest extends LibraryStubsTestCase
                         return Assert::allNotNull($i);
                     }
 
-                    /** @param iterable<int|null> $i */
-                    function g(iterable $i): int {
+                    /** @param Traversable<int|null> $i */
+                    function g(Traversable $i): int {
                         return count(Assert::allNotNull($i));
                     }',
                 [

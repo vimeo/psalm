@@ -40,10 +40,12 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TDecimalIntString;
+use Psalm\Type\Atomic\TEmptyNumeric;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
@@ -940,6 +942,16 @@ final class AssertionReconciler extends Reconciler
 
                 if ($matching_atomic_type) {
                     $matching_atomic_types[] = $matching_atomic_type;
+                } else {
+                    $matching_atomic_types = [
+                        ...$matching_atomic_types,
+                        ...self::filterAtomicPartsWithAnother(
+                            $existing_type_part,
+                            $new_type_part,
+                            $codebase,
+                            $any_scalar_type_match_found,
+                        ),
+                    ];
                 }
             }
             unset($existing_type_part);
@@ -951,6 +963,53 @@ final class AssertionReconciler extends Reconciler
         }
 
         return null;
+    }
+
+    /**
+     * The matching types of the parts of two types neither of which contains the other: e.g. callable filtered with
+     * string is a callable-string
+     *
+     * @return list<Atomic>
+     */
+    private static function filterAtomicPartsWithAnother(
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+        Codebase $codebase,
+        bool &$any_scalar_type_match_found,
+    ): array {
+        $type_1_parts = AtomicParts::split($type_1_atomic, $type_2_atomic, $codebase);
+        $type_2_parts = $type_1_parts === null ? AtomicParts::split($type_2_atomic, $type_1_atomic, $codebase) : null;
+
+        if ($type_1_parts === null && $type_2_parts === null) {
+            return [];
+        }
+
+        $matching_atomic_types = [];
+
+        foreach ($type_1_parts ?? [$type_1_atomic] as $type_1_part) {
+            foreach ($type_2_parts ?? [$type_2_atomic] as $type_2_part) {
+                $matching_atomic_type = self::filterAtomicWithAnother(
+                    $type_1_part,
+                    $type_2_part,
+                    $codebase,
+                    $any_scalar_type_match_found,
+                );
+
+                $matching_atomic_types = [
+                    ...$matching_atomic_types,
+                    ...($matching_atomic_type !== null
+                        ? [$matching_atomic_type]
+                        : self::filterAtomicPartsWithAnother(
+                            $type_1_part,
+                            $type_2_part,
+                            $codebase,
+                            $any_scalar_type_match_found,
+                        )),
+                ];
+            }
+        }
+
+        return $matching_atomic_types;
     }
 
     /**
@@ -1830,6 +1889,7 @@ final class AssertionReconciler extends Reconciler
         ]);
 
         $compatible_string_type = self::getCompatibleStringType(
+            $statements_analyzer->getCodebase(),
             $existing_var_type,
             $existing_var_atomic_types,
             $assertion_type,
@@ -1880,6 +1940,7 @@ final class AssertionReconciler extends Reconciler
 
             if ($existing_var_atomic_type instanceof TTemplateParam) {
                 $compatible_string_type = self::getCompatibleStringType(
+                    $statements_analyzer->getCodebase(),
                     $existing_var_type,
                     $existing_var_atomic_type->as->getAtomicTypes(),
                     $assertion_type,
@@ -2135,19 +2196,31 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * @param array<string, Atomic> $existing_var_atomic_types
-     * @psalm-pure
      */
     private static function getCompatibleStringType(
+        Codebase $codebase,
         Union $existing_var_type,
         array $existing_var_atomic_types,
         TLiteralString $assertion_type,
         bool $is_loose_equality,
         bool $is_php8,
     ): ?Union {
+        $value = $assertion_type->value;
+
         foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
             if ($existing_var_atomic_type instanceof TMixed
                 || $existing_var_atomic_type instanceof TScalar
                 || $existing_var_atomic_type instanceof TArrayKey
+                // e.g. '1'
+                || ($existing_var_atomic_type instanceof TNumeric
+                    && is_numeric($value)
+                    && (!$existing_var_atomic_type instanceof TEmptyNumeric || $value === '0'))
+                // the name of a function is never numeric, e.g. 'strlen'
+                || ($existing_var_atomic_type::class === TCallable::class
+                    && $value !== ''
+                    && !is_numeric($value)
+                    && (($existing_var_atomic_type->params === null && $existing_var_atomic_type->return_type === null)
+                        || AtomicTypeComparator::isContainedBy($codebase, $assertion_type, $existing_var_atomic_type)))
             ) {
                 // Since PHP 8, an int is only loosely equal to a numeric string (`switch` compares loosely), so an
                 // array key loosely equal to a string that isn't numeric is that string

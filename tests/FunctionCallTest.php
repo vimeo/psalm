@@ -3183,7 +3183,7 @@ final class FunctionCallTest extends TestCase
                     assert(array_is_list($c));
                     ',
                 'assertions' => [
-                    '$c===' => 'callable-list{array-key, mixed}',
+                    '$c===' => 'callable-list{class-string|object, non-empty-string}',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
