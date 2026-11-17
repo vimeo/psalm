@@ -91,10 +91,12 @@ final class MagicConstAnalyzer
                 $statements_analyzer->node_data->setType($stmt, Type::getString($source->getCorrectlyCasedMethodId()));
             } elseif ($source instanceof ClosureAnalyzer && ($hook_id = $source->getPropertyHookId()) !== null) {
                 // `A::$property::get`, and `$property::get` for __FUNCTION__
+                $property_offset = strpos($hook_id, '::$');
+                $is_function = $stmt instanceof PhpParser\Node\Scalar\MagicConst\Function_;
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    Type::getString($stmt instanceof PhpParser\Node\Scalar\MagicConst\Function_
-                        ? substr($hook_id, strpos($hook_id, '::') + 2)
+                    Type::getString($is_function && $property_offset !== false
+                        ? substr($hook_id, $property_offset + 2)
                         : $hook_id),
                 );
             } else {
