@@ -1139,7 +1139,7 @@ final class IssueBuffer
         // in hundredths of a percent, the coverage rounded down, so that a coverage below the minimum never prints
         // as reaching it; the minimum has at most two decimals
         $coverage = intdiv(10_000 * $nonmixed_count, $total);
-        $minimum = (int) round($min_type_coverage * 100);
+        $minimum = (int) round($min_type_coverage * 100.0);
 
         if ($coverage >= $minimum) {
             return null;
