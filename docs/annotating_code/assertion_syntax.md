@@ -123,6 +123,11 @@ function foo($y) : void {
   } else {
     // $y is float
   }
+
+  if (!equalsFive($y)) {
+    return;
+  }
+  // $y is int
 }
 ```
 

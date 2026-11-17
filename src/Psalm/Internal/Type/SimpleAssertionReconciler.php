@@ -43,7 +43,6 @@ use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
-use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
@@ -1747,10 +1746,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 $params = $type->type_params;
                 $params[0] = self::refineArrayKey($params[0]);
 
-                $object_types[] = new TGenericObject(
-                    'Traversable',
-                    $params,
-                );
+                $object_types[] = AtomicParts::getTraversable($type, $params);
 
                 $redundant = false;
             } else {
@@ -1939,6 +1935,26 @@ final class SimpleAssertionReconciler extends Reconciler
                 $iterable_types[] = $type;
             } elseif ($type instanceof TObject) {
                 $iterable_types[] = new TNamedObject('Traversable');
+                $redundant = false;
+            } elseif (($parts = AtomicParts::split($type, new TIterable(), $codebase)) !== null) {
+                // e.g. the iterable callables are the callable-arrays and the Traversable objects
+                $parts_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+                $iterable_parts = self::reconcileIterable(
+                    $assertion,
+                    $codebase,
+                    new Union($parts),
+                    null,
+                    $negated,
+                    null,
+                    $suppressed_issues,
+                    $parts_failed_reconciliation,
+                    $is_equality,
+                );
+
+                if (!$iterable_parts->isNever()) {
+                    $iterable_types = [...$iterable_types, ...array_values($iterable_parts->getAtomicTypes())];
+                }
+
                 $redundant = false;
             } else {
                 $redundant = false;
@@ -2345,7 +2361,7 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($type->hasTraversableInterface($codebase)) {
                 $traversable_types[] = $type;
             } elseif ($type instanceof TIterable) {
-                $traversable_types[] = new TGenericObject('Traversable', $type->type_params);
+                $traversable_types[] = AtomicParts::getTraversable($type, $type->type_params);
                 $redundant = false;
             } elseif ($type instanceof TObject) {
                 $traversable_types[] = new TNamedObject('Traversable');
@@ -2731,7 +2747,20 @@ final class SimpleAssertionReconciler extends Reconciler
 
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
-        if ($existing_var_type->hasMixed() || $existing_var_type->hasTemplate()) {
+        // a template is kept only where its bound says what it is
+        $is_any_type = $existing_var_type->hasMixed();
+
+        foreach ($existing_var_atomic_types as $type) {
+            if ($type instanceof TTemplateParam) {
+                $is_any_type = $is_any_type || $type->as->hasMixed();
+            } elseif ($type instanceof TNamedObject) {
+                foreach ($type->extra_types as $extra_type) {
+                    $is_any_type = $is_any_type || $extra_type instanceof TTemplateParam;
+                }
+            }
+        }
+
+        if ($is_any_type) {
             return new Union([
                 new TNonEmptyArray([Type::getArrayKey(), Type::getMixed()]),
                 new TNamedObject('ArrayAccess'),
@@ -2892,8 +2921,12 @@ final class SimpleAssertionReconciler extends Reconciler
                 $callable_types[] = $type;
                 $redundant = false;
             } elseif ($type instanceof TArray) {
-                $type = TKeyedArray::makeCallable($type->type_params);
-                $callable_types[] = $type;
+                $callable_array = self::getCallableArray($codebase, $type);
+
+                if ($callable_array !== null) {
+                    $callable_types[] = $callable_array;
+                }
+
                 $redundant = false;
             } elseif ($type instanceof TKeyedArray && count($type->properties) === 2) {
                 $type = TKeyedArray::makeCallable($type->properties);
@@ -2919,6 +2952,26 @@ final class SimpleAssertionReconciler extends Reconciler
                 $redundant = false;
 
                 $callable_types[] = $type;
+            } elseif (($parts = AtomicParts::split($type, new TCallable(), $codebase)) !== null) {
+                // e.g. the callable scalars are the callable-strings
+                $parts_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+                $callable_parts = self::reconcileCallable(
+                    $assertion,
+                    $codebase,
+                    new Union($parts),
+                    null,
+                    $negated,
+                    null,
+                    $suppressed_issues,
+                    $parts_failed_reconciliation,
+                    $is_equality,
+                );
+
+                if (!$callable_parts->isNever()) {
+                    $callable_types = [...$callable_types, ...array_values($callable_parts->getAtomicTypes())];
+                }
+
+                $redundant = false;
             } elseif ($candidate_callable = CallableTypeComparator::getCallableFromAtomic(
                 $codebase,
                 $type,
@@ -2953,6 +3006,41 @@ final class SimpleAssertionReconciler extends Reconciler
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
         return Type::getNever();
+    }
+
+    /**
+     * The callable arrays (a class or an object, and a method name) among those of an array type, if any
+     */
+    private static function getCallableArray(Codebase $codebase, TArray $type): ?TKeyedArray
+    {
+        $callable_array = Atomic::create('callable-array');
+        assert($callable_array instanceof TKeyedArray);
+
+        if (Type::intersectUnionTypes($type->type_params[0], Type::getInt(), $codebase) === null) {
+            return null;
+        }
+
+        $properties = [];
+
+        foreach ($callable_array->properties as $offset => $property) {
+            $item = Type::intersectUnionTypes($type->type_params[1], $property, $codebase)
+                // e.g. a literal-string, which may be the name of a class though Psalm has no type for both
+                ?? Type::intersectUnionTypes(
+                    $type->type_params[1],
+                    $offset === 0
+                        ? new Union([new TObject(), new TNonEmptyString()])
+                        : Type::getNonEmptyString(),
+                    $codebase,
+                );
+
+            if ($item === null || $item->isNever()) {
+                return null;
+            }
+
+            $properties[$offset] = $item;
+        }
+
+        return TKeyedArray::makeCallable($properties);
     }
 
     /**

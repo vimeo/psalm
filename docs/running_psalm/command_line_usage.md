@@ -20,8 +20,21 @@ Run with `--help` to see a list of options that Psalm supports.
 
 Psalm exits with status `0` when it successfully completed and found no issues,
 `1` when there was a problem running Psalm and `2` when it completed
-successfully but found some issues. Any exit status apart from those indicate
-some internal problem.
+successfully but found issues or the [type coverage](#minimum-type-coverage) is
+below the minimum. Any exit status apart from those indicates some internal problem.
+
+## Minimum type coverage
+
+`--min-type-coverage` (or the [`minTypeCoverage`](configuration.md#mintypecoverage) config attribute) makes Psalm exit with status `2` when the type coverage is below the given percentage:
+
+```bash
+./vendor/bin/psalm --min-type-coverage=95
+# STDERR: Type coverage 93.41% is below the minimum of 95.00%
+```
+
+Type coverage is the number in Psalm's summary line and on [Shepherd](#shepherd): the share of expressions whose inferred type is not `mixed`. Files in a `<directory ignoreTypeStats="true">` aren't counted.
+
+Only full runs are checked: the option can't be combined with file paths, `--set-baseline` or `--update-baseline`, and the config attribute is skipped on such runs.
 
 ## Shepherd
 

@@ -5,9 +5,16 @@ declare(strict_types=1);
 namespace Psalm\Tests\Loop;
 
 use Override;
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
+use function sort;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -879,6 +886,454 @@ final class DoTest extends TestCase
         ];
     }
 
+    private const FIRST_ITERATION_CODE = <<<'PHP'
+        <?php
+        function castFirst(): void {
+            $x = new stdClass();
+            do {
+                echo (string) $x;
+                $x = 'a';
+            } while (rand(0, 1));
+        }
+
+        function callFirst(): void {
+            $x = 5;
+            do {
+                echo $x();
+                $x = static fn(): int => 1;
+            } while (rand(0, 1));
+        }
+
+        /** @param list<string> $l */
+        function offsetFirst(array $l): void {
+            $i = new stdClass();
+            do {
+                echo $l[$i];
+                $i = 0;
+            } while (rand(0, 1));
+        }
+
+        function inANestedDo(): void {
+            $x = new stdClass();
+            do {
+                do {
+                    echo (string) $x;
+                } while (rand(0, 1));
+                $x = 'a';
+            } while (rand(0, 1));
+        }
+
+        function inALoopBody(): void {
+            while (rand(0, 1)) {
+                $x = new stdClass();
+                do {
+                    echo (string) $x;
+                    $x = 'a';
+                } while (rand(0, 1));
+            }
+        }
+
+        function readBeforeTheAssignment(): void {
+            do {
+                if (rand(0, 1)) {
+                    echo $w;
+                }
+                $w = 1;
+            } while (rand(0, 1));
+        }
+
+        /** @param list<string> $existing */
+        function impossibleInTheFirstIteration(array $existing): string {
+            $counter = 0;
+            do {
+                $id = rand(0, 1) . ($counter === 0 ? '' : '-' . (string) $counter);
+                $counter++;
+            } while (in_array($id, $existing, true));
+            return $id;
+        }
+
+        function impossibleInTheFirstIterationAndInvalidLater(): void {
+            $s = null;
+            do {
+                if ($s !== null) {
+                    echo (string) $s;
+                }
+                $s = new stdClass();
+            } while (rand(0, 1));
+        }
+
+        final class C {
+            public ?C $n = null;
+            public int $v = 0;
+        }
+
+        function inAChainOfFetches(C $c): void {
+            $x = null;
+            do {
+                echo $x->n->n->v;
+                $x = $c;
+            } while (rand(0, 1));
+        }
+
+        function inAClosureCapturingByReference(): void {
+            $x = new stdClass();
+            do {
+                $f = static function () use (&$x): void {
+                    echo (string) $x;
+                };
+                $x = 'a';
+                $f();
+            } while (rand(0, 1));
+        }
+
+        function inAnArrowFunction(): void {
+            $x = new stdClass();
+            do {
+                $f = static fn(): string => (string) $x;
+                $x = 'a';
+                if (rand(0, 1)) {
+                    echo $f();
+                }
+            } while (rand(0, 1));
+        }
+
+        function inTheArgumentOfAnAnonymousClass(): void {
+            $x = new stdClass();
+            do {
+                $o = new class ((string) $x) {
+                    public function __construct(string $_s) {}
+                };
+                $x = 'a';
+            } while (rand(0, 1));
+        }
+
+        final class Row {
+            public int $id = 0;
+        }
+
+        function inABranchOnlyTakenAfterTheFirstIteration(): void {
+            $first = true;
+            $last = null;
+            do {
+                if (!$first) {
+                    echo $last->id;
+                }
+                $first = false;
+                $last = new Row();
+            } while (rand(0, 1));
+        }
+
+        function inAnOperandOnlyEvaluatedAfterTheFirstIteration(int $count): void {
+            $last = null;
+            do {
+                echo $count > 1 ? $last->id : 0;
+                $last = new Row();
+                $count++;
+            } while (rand(0, 1));
+        }
+
+        function afterAContinueInTheFirstIteration(): void {
+            $first = true;
+            $last = null;
+            do {
+                if ($first) {
+                    $first = false;
+                    $last = new Row();
+                    continue;
+                }
+                echo $last->id;
+                $last = new Row();
+            } while (rand(0, 1));
+        }
+
+        /** @param list<int> $l */
+        function afterAContinueOfANestedLoopOrAReturnOfAClosure(array $l): void {
+            $x = new stdClass();
+            do {
+                foreach ($l as $i) {
+                    if ($i) {
+                        continue;
+                    }
+                }
+                $f = static function (): int {
+                    return 1;
+                };
+                echo (string) $x;
+                $x = 'a';
+            } while (rand(0, 1));
+        }
+
+        function afterAContinueInATry(): void {
+            $first = true;
+            $last = null;
+            do {
+                try {
+                    if ($first) {
+                        $first = false;
+                        $last = new Row();
+                        continue;
+                    }
+                    echo $last->id;
+                    $last = new Row();
+                } finally {
+                    echo 1;
+                }
+            } while (rand(0, 1));
+        }
+
+        function inTheArgumentOfANullsafeCall(): void {
+            $o = null;
+            $x = new stdClass();
+            do {
+                $o?->format((string) $x);
+                $x = 'a';
+                $o = new DateTime();
+            } while (rand(0, 1));
+        }
+
+        function afterAThrowOrABreak(bool $ok): void {
+            $x = new stdClass();
+            do {
+                if (!$ok) {
+                    throw new Exception();
+                }
+                if (rand(0, 1)) {
+                    break;
+                }
+                echo (string) $x;
+                $x = 'a';
+            } while (rand(0, 1));
+        }
+
+        function inTheFirstConditionOfAMatch(): void {
+            $x = new stdClass();
+            do {
+                echo match (true) {
+                    (string) $x === 'a' => 1,
+                    default => 2,
+                };
+                $x = 'a';
+            } while (rand(0, 1));
+        }
+
+        function inTheSecondConditionOfTheFirstMatchArm(): void {
+            $c = true;
+            $x = new stdClass();
+            do {
+                echo match (true) {
+                    $c, (string) $x === 'a' => 1,
+                    default => 2,
+                };
+                $c = (bool) rand(0, 1);
+                $x = 'a';
+            } while (rand(0, 1));
+        }
+
+        function afterAContinueOrABreakInANestedDo(): void {
+            $c = true;
+            $x = new stdClass();
+            do {
+                do {
+                    if ($c) {
+                        $c = false;
+                        continue;
+                    }
+                    echo (string) $x;
+                } while (rand(0, 1));
+                do {
+                    if (rand(0, 1)) {
+                        break;
+                    }
+                    echo (string) $x;
+                } while (rand(0, 1));
+                $x = 'a';
+            } while (rand(0, 1));
+        }
+
+        final class Chain {
+            public function next(): Chain {
+                return $this;
+            }
+
+            public function take(string $_s): void {}
+
+            public static function make(string $_s): void {}
+        }
+
+        function inANullsafeChain(): void {
+            $c = null;
+            $x = new stdClass();
+            do {
+                $c?->next()->take((string) $x);
+                $c?->next()::make((string) $x);
+                $x = 'a';
+                $c = new Chain();
+            } while (rand(0, 1));
+        }
+
+        function inTheConditionOfANestedDoItsBodyMayLeave(): void {
+            $x = new stdClass();
+            do {
+                do {
+                    if (rand(0, 1)) {
+                        break;
+                    }
+                } while ((string) $x === 'a');
+                $x = 'a';
+            } while (rand(0, 1));
+        }
+        PHP;
+
+    public function testDoWhileFirstIterationIssuesAreDefinite(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->addFile($file_path, self::FIRST_ITERATION_CODE);
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                [5, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [13, 'InvalidFunctionCall', 'Cannot treat type 5 as callable'],
+                [
+                    22,
+                    'InvalidArrayOffset',
+                    'Cannot access value on variable $l using a stdClass offset, expecting array-key',
+                ],
+                [31, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [41, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [50, 'PossiblyUndefinedVariable', 'Possibly undefined variable $w, first seen on line 52'],
+                [70, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [84, 'NullPropertyFetch', 'Cannot get property on null variable $x'],
+                [84, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $x->n of type C|null'],
+                [
+                    84,
+                    'PossiblyNullPropertyFetch',
+                    'Cannot get property on possibly null variable $x->n->n of type C|null',
+                ],
+                [93, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
+                [103, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [114, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [130, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
+                [140, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
+                [155, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
+                [172, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [187, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
+                [199, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
+                [214, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [223, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [235, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
+                [252, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
+                [258, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
+                [278, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
+                [279, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
+                [292, 'PossiblyInvalidCast', 'stdClass cannot be cast to string'],
+            ],
+            self::getIssues($file_path),
+        );
+    }
+
+    public function testDoWhileFirstIterationIssuesAreReportedWhenPossibleIssuesAreNot(): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        foreach (['PossiblyInvalidCast', 'PossiblyInvalidFunctionCall', 'PossiblyInvalidArrayOffset'] as $issue_type) {
+            $this->testConfig->setCustomErrorLevel($issue_type, Config::REPORT_SUPPRESS);
+        }
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->addFile($file_path, self::FIRST_ITERATION_CODE);
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                [5, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [13, 'InvalidFunctionCall', 'Cannot treat type 5 as callable'],
+                [
+                    22,
+                    'InvalidArrayOffset',
+                    'Cannot access value on variable $l using a stdClass offset, expecting array-key',
+                ],
+                [31, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [41, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [50, 'PossiblyUndefinedVariable', 'Possibly undefined variable $w, first seen on line 52'],
+                [70, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [84, 'NullPropertyFetch', 'Cannot get property on null variable $x'],
+                [84, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $x->n of type C|null'],
+                [
+                    84,
+                    'PossiblyNullPropertyFetch',
+                    'Cannot get property on possibly null variable $x->n->n of type C|null',
+                ],
+                [103, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [114, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [130, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
+                [140, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
+                [155, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
+                [172, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [187, 'PossiblyNullPropertyFetch', 'Cannot get property on possibly null variable $last of type Row|null'],
+                [214, 'InvalidCast', 'stdClass cannot be cast to string'],
+                [223, 'InvalidCast', 'stdClass cannot be cast to string'],
+            ],
+            self::getIssues($file_path),
+        );
+    }
+
+    public function testDoWhileIssuesOfAnIncludedFileStayPossible(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $included_file_path = self::$src_dir_path . 'included.php';
+
+        $this->addFile(
+            $included_file_path,
+            <<<'PHP'
+                <?php
+                $f = function () use (&$x): void {
+                    echo (string) $x;
+                };
+                PHP,
+        );
+        $this->addFile(
+            $file_path,
+            <<<'PHP'
+                <?php
+                $x = new stdClass();
+                do {
+                    require __DIR__ . '/included.php';
+                    $x = 'a';
+                    $f();
+                } while (rand(0, 1));
+                PHP,
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [[3, 'PossiblyInvalidCast', 'stdClass cannot be cast to string']],
+            self::getIssues($included_file_path),
+        );
+    }
+
+    /**
+     * @return list<array{int, string, string}>
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function getIssues(string $file_path): array
+    {
+        $issues = array_map(
+            static fn(IssueData $issue): array => [$issue->line_from, $issue->type, $issue->message],
+            IssueBuffer::getIssuesDataForFile($file_path),
+        );
+
+        sort($issues);
+
+        return $issues;
+    }
+
     /**
      * @psalm-pure
      */
@@ -901,7 +1356,8 @@ final class DoTest extends TestCase
                         } while (rand(0, 1));
                     }
                     PHP,
-                'error_message' => 'PossiblyNullPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:14',
+                'error_message' => 'NullPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:14 - '
+                    . 'Cannot get property on null variable $a',
             ],
             'doWhileAnonymousClassPropertyNotSetInConstructor' => [
                 'code' => <<<'PHP'

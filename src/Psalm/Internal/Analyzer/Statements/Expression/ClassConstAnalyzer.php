@@ -519,6 +519,8 @@ final class ClassConstAnalyzer
             return true;
         }
 
+        $lhs_type = TypeExpander::expandTemplateKeyOfAndValueOf($statements_analyzer->getCodebase(), $lhs_type);
+
         // ::class retrieves a class name; it is not a use of a string literal
         // instead of ::class. In particular, do not report a class-string made by Foo::class.
         if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {

@@ -6280,6 +6280,51 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'superGlobalPassedByReferenceIsTainted' => [
+                'code' => '<?php // --taint-analysis
+                    function show(array &$a): void {
+                        echo (string) $a["x"];
+                    }
+
+                    function f(): void {
+                        show($_GET);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintOfAnObjectAssignedInABlockNestedInABranchReachesTheCallAfterTheIf' => [
+                'code' => '<?php // --taint-analysis
+                    final class Foo {
+                        public function get(): string {
+                            return (string) $_GET["a"];
+                        }
+                    }
+
+                    /** @param mixed $x */
+                    function f($x, bool $c, bool $d): void {
+                        if ($c) {
+                            if ($d) {
+                                $x = new Foo();
+                            }
+                        }
+
+                        /** @psalm-suppress MixedMethodCall */
+                        echo $x->get();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarReachesTheReadAfterTheIf' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $u */
+                    function f($u): void {
+                        if (is_array($u) && rand(0, 1)) {
+                            $u["a"] = $_GET["x"];
+                        }
+
+                        /** @psalm-suppress MixedArrayAccess */
+                        echo (string) $u["a"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintAssignedBeforeABreakInTheElseReachesTheReadAfterTheIf' => [
                 'code' => '<?php // --taint-analysis
                     /** @param list<string> $list */

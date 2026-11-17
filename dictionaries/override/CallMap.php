@@ -5047,6 +5047,11 @@ return array (
     'multi_handle' => 'CurlMultiHandle',
     '&w still_running' => 'int',
   ),
+  'curl_multi_get_handles' => 
+  array (
+    0 => 'list<CurlHandle>',
+    'multi_handle' => 'CurlMultiHandle',
+  ),
   'curl_multi_getcontent' => 
   array (
     0 => 'null|string',
@@ -28309,7 +28314,7 @@ return array (
   ),
   'ldap_free_result' => 
   array (
-    0 => 'bool',
+    0 => 'true',
     'result' => 'LDAP\\Result',
   ),
   'ldap_get_attributes' => 
@@ -51626,6 +51631,7 @@ return array (
     'host' => 'string',
     'service=' => 'null|string',
     'hints=' => 'array<array-key, mixed>',
+    '&w error_code=' => 'int|null',
   ),
   'socket_bind' => 
   array (
@@ -51646,7 +51652,7 @@ return array (
   ),
   'socket_cmsg_space' => 
   array (
-    0 => 'int|null',
+    0 => 'int',
     'level' => 'int',
     'type' => 'int',
     'num=' => 'int',
