@@ -42,6 +42,12 @@ final class ParserCacheProvider
         $this->stmtCache->consolidate();
     }
 
+    /** @see Cache::isCold() */
+    public function isCold(): bool
+    {
+        return $this->stmtCache->isCold();
+    }
+
     /**
      * @return array{list<PhpParser\Node\Stmt>, list<PhpParser\Error>}|null
      */

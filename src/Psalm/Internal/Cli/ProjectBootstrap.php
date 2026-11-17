@@ -147,13 +147,13 @@ final class ProjectBootstrap
      * The baseline that applies to a run: the one `--use-baseline` names or the config's, unless `--ignore-baseline`
      *
      * @return array<string,array<string,array{o:int, s: list<string>}>>
+     * @throws ProjectBootstrapException if the option is not a path or the file is not a baseline
      */
     public static function readBaseline(array $options, Config $config): array
     {
         if (isset($options['use-baseline'])) {
             if (!is_string($options['use-baseline'])) {
-                fwrite(STDERR, '--use-baseline must be a string' . PHP_EOL);
-                exit(1);
+                throw new ProjectBootstrapException('--use-baseline must be a string');
             }
 
             $config->error_baseline = $options['use-baseline'];

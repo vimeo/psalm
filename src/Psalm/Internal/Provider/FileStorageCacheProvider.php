@@ -61,6 +61,12 @@ final class FileStorageCacheProvider
     {
         $this->cache->consolidate();
     }
+
+    /** @see Cache::isCold() */
+    public function isCold(): bool
+    {
+        return $this->cache->isCold();
+    }
     
     public function writeToCache(FileStorage $storage, string $file_contents): void
     {

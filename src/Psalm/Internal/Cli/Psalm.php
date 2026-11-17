@@ -468,6 +468,12 @@ final class Psalm
 
             InternalCallMapHandler::getCallMap();
 
+            try {
+                $baseline = ProjectBootstrap::readBaseline($options, $config);
+            } catch (ProjectBootstrapException $exception) {
+                OverlayExitGuard::fail('config', $exception->getMessage());
+            }
+
             OverlayCommand::run(
                 $options,
                 $argv,
@@ -475,7 +481,7 @@ final class Psalm
                 $project_analyzer,
                 $rebootstrap,
                 $include_collector,
-                ProjectBootstrap::readBaseline($options, $config),
+                $baseline,
             );
         }
 
