@@ -67,6 +67,7 @@ use UnexpectedValueException;
 
 use function array_all;
 use function array_any;
+use function array_key_first;
 use function array_keys;
 use function array_map;
 use function array_reduce;
@@ -1249,6 +1250,7 @@ final class ArgumentsAnalyzer
             $args = array_reverse($args, true);
         }
 
+        // the parameters each argument is checked against, keyed by their offset
         $arg_function_params = [];
         $matched_args = [];
         // names given as named arguments to the variadic parameter: positional ones are not duplicates of them
@@ -1308,11 +1310,11 @@ final class ArgumentsAnalyzer
                             continue;
                         }
 
-                        $arg_function_params[$argument_offset][] = $function_params[$i];
+                        $arg_function_params[$argument_offset][$i] = $function_params[$i];
                     }
                 } elseif ($last_param && $last_param->is_variadic) {
                     // what the arguments before consumed already is every parameter: the rest goes to the variadic
-                    $arg_function_params[$argument_offset][] = $last_param;
+                    $arg_function_params[$argument_offset][$param_offset] = $last_param;
                 }
 
                 if (($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
@@ -1381,7 +1383,7 @@ final class ArgumentsAnalyzer
             } elseif ($arg->name && (!$function_storage || $function_storage->allow_named_arg_calls)) {
                 $named_args_was_used = true;
 
-                foreach ($function_params as $candidate_param) {
+                foreach ($function_params as $candidate_offset => $candidate_param) {
                     if ($candidate_param->name === $arg->name->name || $candidate_param->is_variadic) {
                         if ($candidate_param->name === $arg->name->name) {
                             if (($candidate_param->is_variadic
@@ -1406,7 +1408,12 @@ final class ArgumentsAnalyzer
                             }
                         }
 
-                        $arg_function_params[$argument_offset] = [$candidate_param];
+                        // like a positional argument, one collected by the variadic parameter is numbered after
+                        // the arguments before it
+                        $param_offset = $candidate_param->is_variadic
+                            ? max($candidate_offset, $param_offsets[$argument_offset])
+                            : $candidate_offset;
+                        $arg_function_params[$argument_offset] = [$param_offset => $candidate_param];
                         break;
                     }
                 }
@@ -1424,10 +1431,10 @@ final class ArgumentsAnalyzer
                 }
             } elseif ($function_param_count > $param_offsets[$argument_offset]) {
                 $param = $function_params[$param_offsets[$argument_offset]];
-                $arg_function_params[$argument_offset] = [$param];
+                $arg_function_params[$argument_offset] = [$param_offsets[$argument_offset] => $param];
                 $matched_args[$param->name] = true;
             } elseif ($last_param && $last_param->is_variadic) {
-                $arg_function_params[$argument_offset] = [$last_param];
+                $arg_function_params[$argument_offset] = [$param_offsets[$argument_offset] => $last_param];
                 $matched_args[$last_param->name] = true;
             }
         }
@@ -1437,7 +1444,9 @@ final class ArgumentsAnalyzer
                 continue;
             }
 
-            if ($arg_function_params[$argument_offset][0]->by_ref
+            $first_param_offset = array_key_first($arg_function_params[$argument_offset]);
+
+            if ($arg_function_params[$argument_offset][$first_param_offset]->by_ref
                 && $method_id !== 'extract'
             ) {
                 if (self::handlePossiblyMatchingByRefParam(
@@ -1447,7 +1456,7 @@ final class ArgumentsAnalyzer
                     $cased_method_id,
                     $last_param,
                     $function_params,
-                    $argument_offset,
+                    $first_param_offset,
                     $arg,
                     $context,
                     $template_result,
@@ -1463,7 +1472,7 @@ final class ArgumentsAnalyzer
 
             $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
 
-            foreach ($arg_function_params[$argument_offset] as $i => $function_param) {
+            foreach ($arg_function_params[$argument_offset] as $param_offset => $function_param) {
                 if (ArgumentAnalyzer::checkArgumentMatches(
                     $statements_analyzer,
                     $cased_method_id,
@@ -1473,8 +1482,8 @@ final class ArgumentsAnalyzer
                     $code_location,
                     $function_storage,
                     $function_param,
-                    $param_offsets[$argument_offset] + $i,
-                    $i,
+                    $param_offset,
+                    $param_offset - $param_offsets[$argument_offset],
                     $function_storage->allow_named_arg_calls ?? true,
                     $arg,
                     $arg_value_type,
