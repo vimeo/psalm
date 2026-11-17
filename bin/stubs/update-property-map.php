@@ -107,7 +107,7 @@ foreach ($files as $file) {
         }
         foreach ($classSynopsis->xpath('//docbook:fieldsynopsis') as $item) {
             assert($item instanceof SimpleXMLElement);
-            $property = strtolower((string) $item->varname);
+            $property = (string) $item->varname;
             if (isset($classes[$class][$property])) {
                 continue;
             }

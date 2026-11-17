@@ -872,8 +872,8 @@ function join($separator, array $array = []): string
  * @return (
  *     $string is lowercase-string
  *         ? (
- *             $limit is int<min, -2>
- *                 ? list<empty>
+ *             $limit is negative-int
+ *                 ? list<lowercase-string>
  *                 : (
  *                     $limit is int<0, 1>
  *                         ? list{lowercase-string}
@@ -889,8 +889,8 @@ function join($separator, array $array = []): string
  *                 )
  *         )
  *         : (
- *             $limit is int<min, -2>
- *                 ? list<empty>
+ *             $limit is negative-int
+ *                 ? list<string>
  *                 : (
  *                     $limit is int<0, 1>
  *                         ? list{string}
@@ -909,7 +909,7 @@ function join($separator, array $array = []): string
  *
  * @psalm-flow ($string) -(array-assignment)-> return
  */
-function explode(string $separator, string $string, int $limit = -1) : array {}
+function explode(string $separator, string $string, int $limit = 9223372036854775807) : array {}
 
 /**
  * @psalm-pure

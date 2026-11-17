@@ -454,6 +454,25 @@ final class ScalarTypeComparator
             return false;
         }
 
+        if ($codebase->config->allow_string_standin_for_class
+            && $input_type_part::class === TLiteralString::class
+        ) {
+            if ($container_type_part instanceof TLiteralClassString) {
+                return $input_type_part->value === $container_type_part->value;
+            }
+
+            if ($container_type_part instanceof TClassString
+                && !$container_type_part instanceof TTemplateParamClass
+            ) {
+                return ClassLikeStringComparator::canLiteralNameBeClassString(
+                    $codebase,
+                    $input_type_part,
+                    $container_type_part,
+                    $allow_interface_equality,
+                );
+            }
+        }
+
         if (($container_type_part instanceof TClassString || $container_type_part instanceof TLiteralClassString)
             && ($input_type_part instanceof TClassString || $input_type_part instanceof TLiteralClassString)
         ) {

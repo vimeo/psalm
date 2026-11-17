@@ -34,14 +34,7 @@ final class MethodCallProhibitionAnalyzer
         $codebase = $statements_analyzer->getCodebase();
         $codebase_methods = $codebase->methods;
 
-        if (CliOutput::isCliOnlyMethod($codebase, $method_id)) {
-            CliOutput::checkCall(
-                $statements_analyzer,
-                $context,
-                'method ' . $codebase_methods->getCasedMethodId($method_id) . '()',
-                $code_location,
-            );
-        }
+        CliOutput::checkMethodCall($statements_analyzer, $context, $method_id, $code_location);
 
         $method_id = $codebase_methods->getDeclaringMethodId($method_id);
 

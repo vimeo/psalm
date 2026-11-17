@@ -173,7 +173,7 @@ final class GetObjectVarsTest extends TestCase
             ],
         ];
 
-        yield 'SKIPPED-dynamicProperties' => [
+        yield 'dynamicProperties' => [
             'code' => '<?php
                 class a {
                     public function __construct(public string $t) {}
@@ -183,11 +183,13 @@ final class GetObjectVarsTest extends TestCase
                 $a->b = "test";
                 $test = get_object_vars($a);',
             'assertions' => [
-                '$test===' => "array{t: 'test'}",
+                '$test===' => 'array{t: string, ...<string, mixed>}',
             ],
+            'ignored_issues' => ['UndefinedPropertyAssignment'],
+            'php_version' => '8.0',
         ];
 
-        yield 'SKIPPED-dynamicProperties82' => [
+        yield 'SKIPPED-dynamicProperties82' => [ // #8119
             'code' => '<?php
                 #[AllowDynamicProperties]
                 class a {
@@ -198,13 +200,13 @@ final class GetObjectVarsTest extends TestCase
                 $a->b = "test";
                 $test = get_object_vars($a);',
             'assertions' => [
-                '$test===' => "array{t: 'test'}",
+                '$test===' => 'array{t: string, ...<string, mixed>}',
             ],
             'ignored_issues' => [],
             'php_version' => '8.2',
         ];
 
-        yield 'SKIPPED-noDynamicProperties82' => [
+        yield 'noDynamicProperties82' => [
             'code' => '<?php
                 class a {
                     public function __construct(public string $t) {}
@@ -213,7 +215,7 @@ final class GetObjectVarsTest extends TestCase
                 $a = new a("test");
                 $test = get_object_vars($a);',
             'assertions' => [
-                '$test===' => "array{t: 'test'}",
+                '$test===' => 'array{t: string, ...<string, mixed>}',
             ],
             'ignored_issues' => [],
             'php_version' => '8.2',
