@@ -148,7 +148,7 @@ final class AnalysisIdentity
         $directories = [];
         $files = glob($cache_directory . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . self::FILE_NAME);
         foreach ($files === false ? [] : $files as $file) {
-            $contents = @file_get_contents($file);
+            $contents = is_file($file) ? file_get_contents($file) : false;
             /** @var mixed $identity */
             $identity = $contents !== false ? json_decode($contents, true) : null;
             if (is_array($identity)
@@ -289,7 +289,9 @@ final class AnalysisIdentity
 
     private static function getVendorDirectory(string $base_dir): string
     {
-        $composer_json = @file_get_contents(Composer::getJsonFilePath($base_dir));
+        // a missing file is not an error: error handlers see a warning even when it is suppressed
+        $composer_json_path = Composer::getJsonFilePath($base_dir);
+        $composer_json = is_file($composer_json_path) ? file_get_contents($composer_json_path) : false;
         /** @var mixed $composer */
         $composer = $composer_json !== false ? json_decode($composer_json, true) : null;
         /** @var mixed $vendor_dir */
