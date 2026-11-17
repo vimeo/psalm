@@ -1186,6 +1186,7 @@ final class IssetTest extends TestCase
                     }
 
                     /**
+                     * @psalm-suppress MixedArrayAccess
                      * @psalm-suppress MixedArgument
                      */
                     echo $payload["b"];',
