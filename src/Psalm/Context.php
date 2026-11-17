@@ -558,14 +558,12 @@ final class Context
 
         foreach ($this->vars_in_scope as $var_id => $_) {
             $reference = ReflectionReference::fromArrayElement($this->vars_in_scope, $var_id);
+            $slot_var_id = $reference === null ? $var_id : ($slots[$reference->getId()] ??= $var_id);
 
-            if ($reference === null) {
+            if ($slot_var_id === $var_id) {
                 $vars_in_scope[$var_id] = $this->vars_in_scope[$var_id];
-            } elseif (isset($slots[$reference->getId()])) {
-                $vars_in_scope[$var_id] = &$vars_in_scope[$slots[$reference->getId()]];
             } else {
-                $vars_in_scope[$var_id] = $this->vars_in_scope[$var_id];
-                $slots[$reference->getId()] = $var_id;
+                $vars_in_scope[$var_id] = &$vars_in_scope[$slot_var_id];
             }
         }
 
