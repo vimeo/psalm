@@ -17,6 +17,7 @@ use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TDependentGetDebugType;
 use Psalm\Type\Atomic\TDependentGetType;
+use Psalm\Type\Atomic\TEmptyScalar;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -30,6 +31,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonDecimalIntString;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
+use Psalm\Type\Atomic\TNonEmptyScalar;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
@@ -324,7 +326,29 @@ final class ScalarTypeComparator
             return false;
         }
 
-        if ($container_type_part instanceof TScalar && $input_type_part instanceof Scalar) {
+        if ($container_type_part instanceof TEmptyScalar || $container_type_part instanceof TNonEmptyScalar) {
+            $wants_empty = $container_type_part instanceof TEmptyScalar;
+
+            if ($wants_empty ? $input_type_part->isFalsy() : $input_type_part->isTruthy()) {
+                return true;
+            }
+
+            if ($atomic_comparison_result
+                && !($wants_empty ? $input_type_part->isTruthy() : $input_type_part->isFalsy())
+            ) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
+        }
+
+        if (($input_type_part instanceof TEmptyScalar && $container_type_part->isTruthy())
+            || ($input_type_part instanceof TNonEmptyScalar && $container_type_part->isFalsy())
+        ) {
+            return false;
+        }
+
+        if ($container_type_part instanceof TScalar) {
             return true;
         }
 

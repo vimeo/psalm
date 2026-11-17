@@ -279,7 +279,10 @@ final class ForeachAnalyzer
         );
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
-            $iterator_type = TypeVariableResolver::resolveTopLevel($stmt_expr_type, $codebase);
+            $iterator_type = TypeExpander::expandTemplateKeyOfAndValueOf(
+                $codebase,
+                TypeVariableResolver::resolveTopLevel($stmt_expr_type, $codebase),
+            );
         } elseif ($var_id && $context->hasVariable($var_id)) {
             $iterator_type = $context->vars_in_scope[$var_id];
         } else {
