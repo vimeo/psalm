@@ -157,6 +157,29 @@ final class ArrayAssignmentAnalyzer
 
         $root_type = $statements_analyzer->node_data->getType($root_array_expr) ?? Type::getMixed();
 
+        if ($root_type->hasMixed()) {
+            // like a write, the fetch creates the offsets missing along the arrays
+            $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+            $context->inside_by_ref_offset = true;
+
+            ExpressionAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->var,
+                $context,
+                true,
+            );
+
+            $context->inside_by_ref_offset = $was_inside_by_ref_offset;
+
+            if ($stmt->dim) {
+                ExpressionAnalyzer::analyze(
+                    $statements_analyzer,
+                    $stmt->dim,
+                    $context,
+                );
+            }
+        }
+
         $current_type = $root_type;
 
         $current_dim = $stmt->dim;

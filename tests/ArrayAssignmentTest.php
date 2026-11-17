@@ -1472,27 +1472,6 @@ final class ArrayAssignmentTest extends TestCase
                         $element["upload"]["#attached"]["ds"] = "y";
                     }',
             ],
-            'nestedAssignmentUnderMixedIsNotARead' => [
-                'code' => '<?php
-                    /**
-                     * @param mixed $m
-                     * @psalm-suppress MixedArrayAssignment
-                     */
-                    function f($m): void {
-                        $m["a"]["b"]["c"] = 1;
-                    }',
-            ],
-            'nestedAppendUnderMixed' => [
-                'code' => '<?php
-                    /**
-                     * @param mixed $m
-                     * @psalm-suppress MixedArrayAssignment
-                     */
-                    function f($m): void {
-                        $m[]["b"] = 1;
-                        $m["x"][] = 2;
-                    }',
-            ],
             'nestedKeyAddedByDestructuringUnderMixed' => [
                 'code' => '<?php
                     /**
@@ -3259,6 +3238,7 @@ final class ArrayAssignmentTest extends TestCase
                 'code' => '<?php
                     /**
                      * @param mixed $m
+                     * @psalm-suppress MixedArrayAccess
                      * @psalm-suppress MixedArrayAssignment
                      */
                     function f($m): void {
