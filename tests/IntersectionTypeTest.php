@@ -237,6 +237,14 @@ final class IntersectionTypeTest extends TestCase
                     /** @param object{last4: string}&Card $card */
                     function test(object $card): string {
                         return $card->fluent()->last4;
+                    }
+
+                    /**
+                     * @template T of object{last4: string}&Card
+                     * @param T $card
+                     */
+                    function viaTemplate(object $card): string {
+                        return $card->fluent()->last4;
                     }',
             ],
             'methodOfTheSecondClassOfAnObjectShapeIntersection' => [
