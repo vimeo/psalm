@@ -377,6 +377,9 @@ abstract class CallAnalyzer
 
                 if ($documenting_method_storage->template_types) {
                     $method_storage = $documenting_method_storage;
+
+                    // the inherited parameter types refer to the templates of the documenting method, bound by the call
+                    $template_result->template_types += $documenting_method_storage->template_types;
                 }
             }
 

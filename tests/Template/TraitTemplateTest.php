@@ -827,6 +827,54 @@ final class TraitTemplateTest extends TestCase
                         }
                     }',
             ],
+            'insteadofTraitMethodWithoutDocblockBindsTheMethodTemplateOfTheParent' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Query {}
+
+                    trait Original
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T, Query<T>): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void {}
+                    }
+
+                    trait Replacement
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    class Base
+                    {
+                        use Original;
+                    }
+
+                    final class Box extends Base
+                    {
+                        use Original, Replacement {
+                            Replacement::each insteadof Original;
+                        }
+                    }
+
+                    function takesStdClass(stdClass $_s): void {}
+
+                    /** @param Query<stdClass> $_q */
+                    function takesQuery(Query $_q): void {}
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function ($item, $query): void {
+                            takesStdClass($item);
+                            takesQuery($query);
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
