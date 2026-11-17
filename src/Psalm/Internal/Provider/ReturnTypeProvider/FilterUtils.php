@@ -807,7 +807,6 @@ final class FilterUtils
 
         $can_fail = false;
         $filter_types = array();
-        // null is filtered as an empty string
         switch ($filter_int_used) {
             case FILTER_VALIDATE_FLOAT:
                 if (!self::isRangeValid(
