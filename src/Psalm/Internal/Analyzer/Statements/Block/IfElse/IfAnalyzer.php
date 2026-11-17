@@ -652,27 +652,8 @@ final class IfAnalyzer
         string $var_id,
         StatementsAnalyzer $statements_analyzer,
     ): bool {
-        $fq_class_name = $statements_analyzer->getFQCLN();
-
-        $is_target = static function (?PhpParser\Node\Expr $expr) use (
-            &$is_target,
-            $var_id,
-            $fq_class_name,
-            $statements_analyzer,
-        ): bool {
-            if ($expr instanceof PhpParser\Node\Expr\List_ || $expr instanceof PhpParser\Node\Expr\Array_) {
-                foreach ($expr->items as $item) {
-                    if ($item && $is_target($item->value)) {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-
-            return $expr !== null
-                && ExpressionIdentifier::getExtendedVarId($expr, $fq_class_name, $statements_analyzer) === $var_id;
-        };
+        $is_target = static fn(?PhpParser\Node\Expr $expr): bool
+            => self::isTarget($expr, $var_id, $statements_analyzer);
 
         return (new PhpParser\NodeFinder())->findFirst(
             array_filter($nodes, static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Stmt),
@@ -705,6 +686,32 @@ final class IfAnalyzer
                 default => false,
             },
         ) !== null;
+    }
+
+    /**
+     * Whether the expression is the variable, or a list() destructuring into it
+     */
+    private static function isTarget(
+        ?PhpParser\Node\Expr $expr,
+        string $var_id,
+        StatementsAnalyzer $statements_analyzer,
+    ): bool {
+        if ($expr instanceof PhpParser\Node\Expr\List_ || $expr instanceof PhpParser\Node\Expr\Array_) {
+            foreach ($expr->items as $item) {
+                if ($item && self::isTarget($item->value, $var_id, $statements_analyzer)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return $expr !== null
+            && ExpressionIdentifier::getExtendedVarId(
+                $expr,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            ) === $var_id;
     }
 
     /**
