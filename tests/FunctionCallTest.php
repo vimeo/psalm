@@ -3705,6 +3705,14 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'intltzGetCanonicalIdOnlyWritesIsSystemIdOnPhp74' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $is_system = 'unknown';
+                    intltz_get_canonical_id('Europe/Paris', $is_system);
+                    PHP,
+                'assertions' => ['$is_system===' => 'bool'],
+            ],
             'opensslSealOnlyWritesIv' => [
                 'code' => <<<'PHP'
                     <?php
