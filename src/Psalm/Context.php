@@ -1706,6 +1706,23 @@ final class Context
     }
 
     /**
+     * Forgets what is known of a property of an object a property holds (`$a->p->q`), after a call assigned it
+     * ($assigned) or wrote items of it. One known to hold an object of which only items or properties were written
+     * still holds it
+     */
+    public function forgetPropertyOfHeldObject(string $property_id, bool $assigned): void
+    {
+        $this->forgetNullArrayOffsets($property_id);
+        $this->forgetPropertyDescendents($property_id);
+
+        if (isset($this->vars_in_scope[$property_id])
+            && ($assigned || !$this->vars_in_scope[$property_id]->isObjectType())
+        ) {
+            $this->forgetPropertyBoundByReference($property_id, false);
+        }
+    }
+
+    /**
      * Forgets a property (or an item of it) a call may have written. One bound to variables by reference stays bound
      * to them, and now holds whatever it is declared to hold
      */

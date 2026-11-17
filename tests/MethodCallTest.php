@@ -1049,6 +1049,78 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'otherPropertiesOfAHeldObjectAreKeptAfterAMethodWritingOneOfThem' => [
+                'code' => '<?php
+                    final class Leaf {
+                        public int $n = 0;
+                        public int $m = 0;
+                    }
+
+                    final class Ctx {
+                        public ?string $joinSql = null;
+                        /** @var array<string, string> */
+                        public array $aliases = [];
+                        public int $counter = 0;
+                        public Leaf $leaf;
+
+                        public function __construct() { $this->leaf = new Leaf(); }
+                    }
+
+                    final class Persister {
+                        public function __construct(public Ctx $ctx) {}
+
+                        public function alias(string $c): string {
+                            $a = "t" . $this->ctx->counter++;
+                            $this->ctx->aliases[$c] = $a;
+                            $this->ctx->leaf->n = 1;
+                            return $a;
+                        }
+
+                        public function build(string $c): string {
+                            $this->ctx->joinSql = "";
+                            $this->ctx->aliases["x"] = "a";
+                            $this->ctx->leaf->n = 2;
+                            $this->ctx->leaf->m = 2;
+                            $this->alias($c);
+                            $this->ctx->joinSql .= " JOIN";
+
+                            $aliases = $this->ctx->aliases;
+                            /** @psalm-check-type-exact $aliases = array<string, string> */
+                            $n = $this->ctx->leaf->n;
+                            /** @psalm-check-type-exact $n = int */
+                            $m = $this->ctx->leaf->m;
+                            /** @psalm-check-type-exact $m = 2 */
+
+                            return $this->ctx->joinSql;
+                        }
+                    }',
+            ],
+            'nullsafeCallOnAReceiverOfSeveralTypesKeepsWhatAPropertyMayHold' => [
+                'code' => '<?php
+                    final class RA {
+                        public int|string $p = 0;
+                        public int $other = 0;
+
+                        public function reset(): void { $this->other = 0; }
+                    }
+
+                    final class RB {
+                        public int|string $p = 0;
+
+                        public function reset(): void { $this->p = 0; }
+                    }
+
+                    function f(RB|RA|null $x): void {
+                        if ($x !== null && is_string($x->p)) {
+                            $x?->reset();
+                            $p = $x->p;
+                            /** @psalm-check-type-exact $p = int|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
             'propertyItemsOfAnotherObjectAreKeptAfterAMethodWritingThemOnAFreshReceiver' => [
                 'code' => '<?php
                     final class W {

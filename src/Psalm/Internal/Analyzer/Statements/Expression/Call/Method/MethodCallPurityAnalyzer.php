@@ -42,9 +42,12 @@ use Psalm\Type\Union;
 use function array_key_exists;
 use function array_pop;
 use function array_values;
+use function count;
 use function preg_match;
 use function str_starts_with;
+use function strrpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -362,7 +365,7 @@ final class MethodCallPurityAnalyzer
         ?TemplateResult $template_result = null,
         array $class_template_params = [],
     ): void {
-        $result->analysed_receiver_types++;
+        $result->analysed_receiver_classes[] = [$class_storage, $class_template_params];
 
         // a plugin may know what this call of the method requires, e.g. from its arguments
         $provided_capabilities = self::getProvidedCapabilities(
@@ -624,6 +627,16 @@ final class MethodCallPurityAnalyzer
 
             foreach ($mutations as $name => $writes_property) {
                 $mutation_var_id = $lhs_var_id . '->' . $name;
+                $item_mutations = $method_storage->this_property_item_mutations[$name] ?? [];
+
+                if (!$writes_property && $item_mutations && !isset($item_mutations[''])) {
+                    // only properties of the object the property holds are written: it still holds that object
+                    foreach ($item_mutations as $sub_path => $writes_last) {
+                        $context->forgetPropertyOfHeldObject($mutation_var_id . '->' . $sub_path, $writes_last);
+                    }
+
+                    continue;
+                }
 
                 // the call is analysed once for each type of a receiver of several
                 if (!array_key_exists($mutation_var_id, $result->property_types_before_call)) {
@@ -646,21 +659,8 @@ final class MethodCallPurityAnalyzer
                     // writing items or properties of an object leaves the property holding the same object
                     self::setPropertyTypeAfterCall($context, $result, $mutation_var_id, $existing_type);
                 } else {
-                    $new_type = AssignmentAnalyzer::getExpandedPropertyType(
-                        $codebase,
-                        $class_storage->name,
-                        $name,
-                        $class_storage,
-                    ) ?? Type::getMixed();
-
-                    // of the receiver: `T` of a `Box<int>` is `int`
-                    if ($class_template_params) {
-                        $new_type = TemplateInferredTypeReplacer::replace(
-                            $new_type,
-                            new TemplateResult([], $class_template_params),
-                            $codebase,
-                        );
-                    }
+                    $new_type = self::getDeclaredPropertyType($codebase, $class_storage, $name, $class_template_params)
+                        ?? Type::getMixed();
 
                     if (!$writes_property && $existing_type !== null) {
                         $new_type = self::getTypeAfterItemWrites($codebase, $existing_type, $new_type);
@@ -718,22 +718,70 @@ final class MethodCallPurityAnalyzer
      * Of a receiver of several types, a property the method of some of them does not write keeps what it held
      */
     public static function keepPropertiesNotWrittenForEveryReceiverType(
+        Codebase $codebase,
         Context $context,
         AtomicMethodCallAnalysisResult $result,
     ): void {
-        foreach ($result->property_types_after_call as $property_id => $type_after_call) {
-            if ($result->property_writer_counts[$property_id] >= $result->analysed_receiver_types) {
+        foreach ($result->property_types_after_call as $property_id => $type) {
+            if ($result->property_writer_counts[$property_id] >= count($result->analysed_receiver_classes)) {
                 continue;
             }
 
             $type_before_call = $result->property_types_before_call[$property_id] ?? null;
 
-            if ($type_before_call === null) {
-                unset($context->vars_in_scope[$property_id]);
-            } else {
-                $context->vars_in_scope[$property_id] = Type::combineUnionTypes($type_after_call, $type_before_call);
+            if ($type_before_call !== null) {
+                $context->vars_in_scope[$property_id] = Type::combineUnionTypes($type, $type_before_call);
+
+                continue;
             }
+
+            // what it held is what any of the receiver types declares it to hold
+            $name = substr($property_id, (int) strrpos($property_id, '->') + 2);
+
+            foreach ($result->analysed_receiver_classes as [$class_storage, $template_params]) {
+                $declared_type = self::getDeclaredPropertyType($codebase, $class_storage, $name, $template_params);
+
+                if ($declared_type === null) {
+                    unset($context->vars_in_scope[$property_id]);
+
+                    continue 2;
+                }
+
+                $type = Type::combineUnionTypes($type, $declared_type);
+            }
+
+            $context->vars_in_scope[$property_id] = $type;
         }
+    }
+
+    /**
+     * The type a property of the receiver is declared to hold, with the template types of the receiver (`T` of a
+     * `Box<int>` is `int`)
+     *
+     * @param array<string, array<string, Union>> $class_template_params
+     */
+    private static function getDeclaredPropertyType(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        string $name,
+        array $class_template_params,
+    ): ?Union {
+        $declared_type = AssignmentAnalyzer::getExpandedPropertyType(
+            $codebase,
+            $class_storage->name,
+            $name,
+            $class_storage,
+        );
+
+        if ($declared_type === null || !$class_template_params) {
+            return $declared_type;
+        }
+
+        return TemplateInferredTypeReplacer::replace(
+            $declared_type,
+            new TemplateResult([], $class_template_params),
+            $codebase,
+        );
     }
 
     /**
@@ -753,9 +801,10 @@ final class MethodCallPurityAnalyzer
         $kept_types = [];
 
         foreach ($declared_type->getAtomicTypes() as $declared_atomic) {
-            if (($may_become_array && ($declared_atomic instanceof TArray
-                    || $declared_atomic instanceof TKeyedArray
-                    || $declared_atomic instanceof TIterable))
+            if (($may_become_array
+                    && ($declared_atomic instanceof TArray
+                        || $declared_atomic instanceof TKeyedArray
+                        || $declared_atomic instanceof TIterable))
                 || UnionTypeComparator::canExpressionTypesBeIdentical(
                     $codebase,
                     $type_before,

@@ -64,6 +64,15 @@ final class MethodStorage extends FunctionLikeStorage
     public ?array $this_property_mutations = null;
 
     /**
+     * Of the properties of `$this` the body writes only items or properties of what they hold, what it writes: by
+     * property name, the path of properties under it (`''` for its own items, `'a->b'` for `$this->p->a->b`), true
+     * when it assigns what the path leads to, false when it only writes items of it
+     *
+     * @var array<string, array<string, bool>>
+     */
+    public array $this_property_item_mutations = [];
+
+    /**
      * Whether the body changes nothing but properties of `$this` and local variables: it calls nothing (except to
      * build the exception it throws), so $this_property_mutations is all it writes outside of itself
      */

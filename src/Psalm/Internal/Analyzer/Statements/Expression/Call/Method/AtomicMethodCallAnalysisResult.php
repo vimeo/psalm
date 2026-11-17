@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type\Union;
 
 /**
@@ -92,6 +93,10 @@ final class AtomicMethodCallAnalysisResult
      */
     public array $property_writer_counts = [];
 
-    /** For how many types of the receiver the purity of the call was analysed */
-    public int $analysed_receiver_types = 0;
+    /**
+     * The types of the receiver the purity of the call was analysed for, with their template types
+     *
+     * @var list<array{ClassLikeStorage, array<string, array<string, Union>>}>
+     */
+    public array $analysed_receiver_classes = [];
 }

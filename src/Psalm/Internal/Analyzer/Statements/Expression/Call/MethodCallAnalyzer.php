@@ -242,7 +242,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
             }
         }
 
-        MethodCallPurityAnalyzer::keepPropertiesNotWrittenForEveryReceiverType($context, $result);
+        MethodCallPurityAnalyzer::keepPropertiesNotWrittenForEveryReceiverType($codebase, $context, $result);
 
         if ($method_var_id !== null) {
             // the initialization and mutation passes skip the purity analysis that decides it,
