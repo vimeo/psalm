@@ -401,6 +401,25 @@ final class ValueOfTemplateTest extends TestCase
                         return clone $v;
                     }',
             ],
+            'valueOfTemplateClassFetched' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    /**
+                     * @template T of array<string, Foo>
+                     * @param T $array
+                     * @param value-of<T> $v
+                     * @return class-string<Foo>
+                     */
+                    function f(array $array, $v): string {
+                        $c = $v::class;
+                        /** @psalm-check-type-exact $c = class-string<Foo> */;
+                        return $c;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'valueOfTemplateCloned' => [
                 'code' => '<?php
                     final class Foo {}
