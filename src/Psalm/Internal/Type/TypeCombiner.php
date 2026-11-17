@@ -992,6 +992,11 @@ final class TypeCombiner
             }
 
             if (isset($combination->named_object_types[$type_key])) {
+                if (!$type->is_static) {
+                    $combination->named_object_types[$type_key]
+                        = $combination->named_object_types[$type_key]->setIsStatic(false);
+                }
+
                 return null;
             }
 

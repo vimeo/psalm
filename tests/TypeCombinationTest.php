@@ -10,6 +10,7 @@ use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TNamedObject;
 
 use function array_reverse;
 
@@ -41,6 +42,17 @@ final class TypeCombinationTest extends TestCase
             $expected,
             TypeCombiner::combine(array_reverse($converted_types))->getId(),
         );
+    }
+
+    public function testStaticIsKeptOnlyWhenEveryCombinedObjectIsStatic(): void
+    {
+        $static = new TNamedObject('Exception', true);
+        $plain = new TNamedObject('Exception');
+
+        $this->assertSame('Exception', TypeCombiner::combine([$static, $plain])->getId());
+        $this->assertSame('Exception', TypeCombiner::combine([$plain, $static])->getId());
+        $this->assertSame('Exception', TypeCombiner::combine([$static, $plain, $static])->getId());
+        $this->assertSame('Exception&static', TypeCombiner::combine([$static, $static])->getId());
     }
 
     /**
