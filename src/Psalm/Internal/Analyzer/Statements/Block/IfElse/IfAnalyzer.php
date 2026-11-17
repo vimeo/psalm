@@ -658,10 +658,13 @@ final class IfAnalyzer
             $statements_analyzer,
         ): bool {
             if ($expr instanceof PhpParser\Node\Expr\List_ || $expr instanceof PhpParser\Node\Expr\Array_) {
-                return array_any(
-                    $expr->items,
-                    static fn(?PhpParser\Node\ArrayItem $item): bool => $item !== null && $is_target($item->value),
-                );
+                foreach ($expr->items as $item) {
+                    if ($item && $is_target($item->value)) {
+                        return true;
+                    }
+                }
+
+                return false;
             }
 
             return $expr !== null
@@ -670,7 +673,7 @@ final class IfAnalyzer
 
         $passes_target = static fn(PhpParser\Node\Expr $expr): bool => $expr instanceof PhpParser\Node\Expr\CallLike
             && array_any(
-                $expr->args,
+                $expr->getRawArgs(),
                 static fn(PhpParser\Node $arg): bool => $arg instanceof PhpParser\Node\Arg && $is_target($arg->value),
             );
 
