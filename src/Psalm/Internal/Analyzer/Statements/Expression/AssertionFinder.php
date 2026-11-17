@@ -175,7 +175,9 @@ final class AssertionFinder
             );
         }
 
-        if ($conditional instanceof PhpParser\Node\Expr\Assign) {
+        if ($conditional instanceof PhpParser\Node\Expr\Assign
+            || $conditional instanceof PhpParser\Node\Expr\AssignRef
+        ) {
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $conditional->var,
                 $this_class_name,
@@ -2373,7 +2375,9 @@ final class AssertionFinder
         );
 
         if ($var_name) {
-            if ($base_conditional instanceof PhpParser\Node\Expr\Assign) {
+            if ($base_conditional instanceof PhpParser\Node\Expr\Assign
+                || $base_conditional instanceof PhpParser\Node\Expr\AssignRef
+            ) {
                 $var_name = '=' . $var_name;
             }
 
@@ -3137,7 +3141,10 @@ final class AssertionFinder
             $source,
         );
 
-        if ($var_name && $base_conditional instanceof PhpParser\Node\Expr\Assign) {
+        if ($var_name
+            && ($base_conditional instanceof PhpParser\Node\Expr\Assign
+                || $base_conditional instanceof PhpParser\Node\Expr\AssignRef)
+        ) {
             $var_name = '=' . $var_name;
         }
 
@@ -4064,6 +4071,7 @@ final class AssertionFinder
             );
 
             while ($operand instanceof PhpParser\Node\Expr\Assign
+                || $operand instanceof PhpParser\Node\Expr\AssignRef
                 || $operand instanceof PhpParser\Node\Expr\PreInc
                 || $operand instanceof PhpParser\Node\Expr\PreDec
             ) {

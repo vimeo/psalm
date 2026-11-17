@@ -1650,6 +1650,14 @@ final class AssignmentAnalyzer
             $context->byref_constraints[$lhs_var_id] = $context->byref_constraints[$rhs_var_id];
         }
 
+        unset($context->cond_referenced_var_ids[$lhs_var_id]);
+        $context->assigned_var_ids[$lhs_var_id] = (int) $stmt->var->getAttribute('startFilePos');
+        $context->possibly_assigned_var_ids[$lhs_var_id] = true;
+
+        if (!$stmt->var instanceof ArrayDimFetch) {
+            $context->fully_assigned_var_ids[$lhs_var_id] = true;
+        }
+
         $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
         if (!$stmt->var instanceof ArrayDimFetch
             && !$stmt->var instanceof PropertyFetch
