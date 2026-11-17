@@ -1518,7 +1518,10 @@ final class ArgumentsAnalyzer
                     continue;
                 }
 
-                if ($in_call_map && $argument_offset === 1 && strtolower($cased_method_id) === 'curl_setopt_array') {
+                if ($in_call_map
+                    && array_key_first($arg_function_params[$argument_offset]) === 1
+                    && strtolower($cased_method_id) === 'curl_setopt_array'
+                ) {
                     self::addCurlOptionArraySinks(
                         $statements_analyzer->taint_flow_graph,
                         $codebase,
@@ -1529,8 +1532,14 @@ final class ArgumentsAnalyzer
                     continue;
                 }
 
-                foreach ($arg_function_params[$argument_offset] as $function_param) {
-                    $sinks = self::getArgumentSinks($cased_method_id, $argument_offset, $args, $function_param->sinks);
+                foreach ($arg_function_params[$argument_offset] as $param_offset => $function_param) {
+                    $sinks = self::getArgumentSinks(
+                        $cased_method_id,
+                        $param_offset,
+                        $args,
+                        $function_params,
+                        $function_param->sinks,
+                    );
 
                     if ($sinks || $function_param->value_sinks) {
                         if (!$function_storage) {
@@ -1543,7 +1552,7 @@ final class ArgumentsAnalyzer
                                 : DataFlowNode::getForMethodArgumentById(
                                     $codebase->methods,
                                     $cased_method_id,
-                                    $argument_offset,
+                                    $param_offset,
                                     $code_location,
                                     $function_param,
                                 ))
@@ -1554,7 +1563,7 @@ final class ArgumentsAnalyzer
                                             ? 'magic-method'
                                             : 'callable-object'),
                                     $cased_method_id,
-                                    $argument_offset,
+                                    $param_offset,
                                     $code_location,
                                     $sinks,
                                 );
@@ -1564,7 +1573,7 @@ final class ArgumentsAnalyzer
                                 DataFlowNode::getParameterOffset(
                                     $function_storage,
                                     $function_param,
-                                    $argument_offset,
+                                    $param_offset,
                                 ),
                                 $function_storage,
                                 $code_location,
@@ -1580,7 +1589,7 @@ final class ArgumentsAnalyzer
                                 DataFlowNode::getParameterOffset(
                                     $function_storage,
                                     $function_param,
-                                    $argument_offset,
+                                    $param_offset,
                                 ),
                                 $function_storage,
                                 null,
@@ -2850,19 +2859,29 @@ final class ArgumentsAnalyzer
     ];
 
     /**
-     * The sinks of the argument at $argument_offset of a call of $function_id. The value given to curl_setopt()
-     * is the sink of its option (see CURL_OPTION_SINKS). An option the analysis can't tell may be any of them.
+     * The sinks of the argument passed as the parameter at $param_offset of a call of $function_id. The value given
+     * to curl_setopt() is the sink of its option (see CURL_OPTION_SINKS). An option the analysis can't tell may be
+     * any of them.
      *
      * @param array<int, PhpParser\Node\Arg> $args
+     * @param array<int, FunctionLikeParameter> $function_params
      * @psalm-capabilities read-props
      */
-    private static function getArgumentSinks(string $function_id, int $argument_offset, array $args, int $sinks): int
-    {
-        if ($argument_offset !== 2 || strtolower($function_id) !== 'curl_setopt' || !isset($args[1])) {
+    private static function getArgumentSinks(
+        string $function_id,
+        int $param_offset,
+        array $args,
+        array $function_params,
+        int $sinks,
+    ): int {
+        if ($param_offset !== 2
+            || strtolower($function_id) !== 'curl_setopt'
+            || !($option_arg = self::getArgForParam($args, $function_params, 'option'))
+        ) {
             return $sinks;
         }
 
-        $option = $args[1]->value;
+        $option = $option_arg->value;
 
         if (!$option instanceof PhpParser\Node\Expr\ConstFetch) {
             return self::CURL_ANY_OPTION_SINKS;
