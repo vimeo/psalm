@@ -31,6 +31,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -282,19 +283,27 @@ final class MethodCallReturnTypeFetcher
 
                 $config = Config::getInstance();
 
-                // only check the type locally if it's defined externally
+                // only check the type locally if it's defined externally, reporting its issues at one call
                 if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
-                    /** @psalm-suppress UnusedMethodCall Actually generates issues */
-                    $return_type_candidate->check(
-                        $statements_analyzer,
-                        new CodeLocation($statements_analyzer, $stmt),
-                        $statements_analyzer->getSuppressedIssues(),
-                        $context->phantom_classes,
-                        true,
-                        false,
-                        false,
-                        $context,
+                    $issue_group = IssueBuffer::setIssueGroup(
+                        $return_type_location->file_path . ':' . $return_type_location->raw_file_start,
                     );
+
+                    try {
+                        /** @psalm-suppress UnusedMethodCall Actually generates issues */
+                        $return_type_candidate->check(
+                            $statements_analyzer,
+                            new CodeLocation($statements_analyzer, $stmt),
+                            $statements_analyzer->getSuppressedIssues(),
+                            $context->phantom_classes,
+                            true,
+                            false,
+                            false,
+                            $context,
+                        );
+                    } finally {
+                        IssueBuffer::setIssueGroup($issue_group);
+                    }
                 }
             } else {
                 $result->returns_by_ref =
@@ -1003,12 +1012,18 @@ final class MethodCallReturnTypeFetcher
         StatementsAnalyzer $statements_analyzer,
     ): array {
         $params = $codebase->methods->getMethodParams($method_id);
+        $callable_id = strtolower((string) ($codebase->methods->getDeclaringMethodId($method_id) ?? $method_id));
 
         // a signature return type without a docblock one inherits the docblock return type of the parent, as a
         // call does
         if ($method_storage->return_type !== null && $method_storage->has_docblock_return_type) {
             return [
-                new TClosure($params, $method_storage->return_type, $method_storage->capabilities),
+                new TClosure(
+                    $params,
+                    $method_storage->return_type,
+                    $method_storage->capabilities,
+                    callable_id: $callable_id,
+                ),
                 $method_storage->template_types ?? [],
             ];
         }
@@ -1025,6 +1040,7 @@ final class MethodCallReturnTypeFetcher
                 $params,
                 $codebase->methods->getMethodReturnType($codebase, $method_id, $self_class, $statements_analyzer),
                 $method_storage->capabilities,
+                callable_id: $callable_id,
             ),
             ($documenting_method_id !== null
                 ? $codebase->methods->getStorage($documenting_method_id)->template_types
@@ -1041,7 +1057,7 @@ final class MethodCallReturnTypeFetcher
      */
     public static function getFirstClassCallableType(
         Codebase $codebase,
-        PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $stmt,
+        PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall|null $stmt,
         TClosure $closure,
         TemplateResult $template_result,
         array $method_template_types,
@@ -1050,8 +1066,10 @@ final class MethodCallReturnTypeFetcher
         ?string $parent_class,
         bool $final,
         bool $expand_generic = false,
+        bool $keep_method_templates = false,
     ): Union {
-        $keep_method_templates = $stmt->getAttribute(self::CALL_ARGUMENT_ATTRIBUTE) === true;
+        $keep_method_templates = $keep_method_templates
+            || $stmt?->getAttribute(self::CALL_ARGUMENT_ATTRIBUTE) === true;
         $bounds_result = new TemplateResult([], []);
         $bounds_result->lower_bounds = $template_result->lower_bounds;
 

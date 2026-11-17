@@ -14,6 +14,7 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Exception\UnpopulatedClasslikeException;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Issue\InvalidReturnStatement;
 use Psalm\Issue\InvalidReturnType;
 use Psalm\IssueBuffer;
@@ -233,7 +234,8 @@ final class CodebaseTest extends TestCase
         $this->analyzeFile('somefile.php', new Context);
 
         $fixtureNamespace = 'Psalm\\CurrentTest\\';
-        $this->codebase->classlike_storage_provider->remove($fixtureNamespace . 'C');
+        // drops the storages from memory only, the cache has to still hold them
+        ClassLikeStorageProvider::deleteAll();
         $this->codebase->exhumeClassLikeStorage($fixtureNamespace . 'C', 'somefile.php');
 
         $class_storage = $this->codebase->classlike_storage_provider->get($fixtureNamespace . 'C');
