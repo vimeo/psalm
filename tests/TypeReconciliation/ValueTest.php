@@ -1282,6 +1282,37 @@ final class ValueTest extends TestCase
                     }
                     PHP,
             ],
+            'nonEmptyScalarMayBeIdenticalToTruthyScalars' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param non-empty-scalar $n
+                     * @param scalar $s
+                     */
+                    function f($n, $s): void {
+                        if ($n === 'a') {}
+                        if ($n === 1) {}
+                        if ($n === true) {}
+                        if ($n === $s) {}
+                    }
+                    PHP,
+            ],
+            'emptyScalarMayBeIdenticalToFalsyScalars' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param empty-scalar $e
+                     * @param scalar $s
+                     */
+                    function f($e, $s): void {
+                        if ($e === '') {}
+                        if ($e === '0') {}
+                        if ($e === 0) {}
+                        if ($e === false) {}
+                        if ($e === $s) {}
+                    }
+                    PHP,
+            ],
             'nonEmptyScalarIdenticalToCallableIsCallableString' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1733,6 +1764,66 @@ final class ValueTest extends TestCase
                     /** @param callable(int): int $c */
                     function f(callable $c): void {
                         if ($c === 'strrev') {}
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'nonEmptyScalarNeverIdenticalToEmptyString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param non-empty-scalar $n */
+                    function f($n): void {
+                        if ($n === '') {}
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'nonEmptyScalarNeverIdenticalToZero' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param non-empty-scalar $n */
+                    function f($n): void {
+                        if ($n === 0) {}
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'nonEmptyScalarNeverIdenticalToFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param non-empty-scalar $n */
+                    function f($n): void {
+                        if ($n === false) {}
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'emptyScalarNeverIdenticalToNonEmptyString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param empty-scalar $e */
+                    function f($e): void {
+                        if ($e === 'a') {}
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'emptyScalarNeverIdenticalToTrue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param empty-scalar $e */
+                    function f($e): void {
+                        if ($e === true) {}
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'emptyScalarNeverIdenticalToCallable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param empty-scalar $e */
+                    function f($e, callable $c): void {
+                        if ($e === $c) {}
                     }
                     PHP,
                 'error_message' => 'DocblockTypeContradiction',
