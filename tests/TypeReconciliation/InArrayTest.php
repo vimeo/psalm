@@ -65,6 +65,29 @@ final class InArrayTest extends TestCase
                         }
                     }',
             ],
+            'negatedInArrayOfLiteralListOrCall' => [
+                'code' => '<?php
+                    final class A {
+                        public const NAMES = [\'a\', \'b\', \'c\', \'d\', \'e\', \'f\', \'g\', \'h\', \'i\', \'j\', \'k\', \'l\'];
+                    }
+
+                    function known(string $s): bool {
+                        return $s !== \'\';
+                    }
+
+                    function getName(): string {
+                        return \'\';
+                    }
+
+                    $name = getName();
+
+                    if (!in_array($name, A::NAMES, true) || !known($name)) {
+                        exit;
+                    }',
+                'assertions' => [
+                    '$name===' => '\'a\'|\'b\'|\'c\'|\'d\'|\'e\'|\'f\'|\'g\'|\'h\'|\'i\'|\'j\'|\'k\'|\'l\'',
+                ],
+            ],
             'inTwoDifferentArraysOfTheSameType' => [
                 'code' => '<?php
                     class User {}
