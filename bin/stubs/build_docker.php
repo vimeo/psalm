@@ -561,9 +561,10 @@ function pieStep(array $pieInstalls): string
             . implode(' ', [$pie['package'] . ':' . $version, ...$pie['options']]);
     }
     $pieVersion = PIE_VERSION;
-    // PIE downloads through the GitHub API, whose unauthenticated rate limit the shared runners exhaust
+    // PIE downloads through the GitHub API with Composer, whose unauthenticated rate limit the
+    // shared runners exhaust; Composer reads its credentials from COMPOSER_AUTH
     return "\nRUN --mount=type=secret,id=github_token \\\n"
-        . "    if [ -s /run/secrets/github_token ]; then export GITHUB_TOKEN=\"\$(cat /run/secrets/github_token)\"; fi && \\\n"
+        . "    if [ -s /run/secrets/github_token ]; then export COMPOSER_AUTH=\"{\\\"github-oauth\\\":{\\\"github.com\\\":\\\"\$(cat /run/secrets/github_token)\\\"}}\"; fi && \\\n"
         . "    case \"\$(uname -m)\" in aarch64) arch=ARM64 ;; *) arch=X64 ;; esac && \\\n"
         . "    curl -fsSL --retry 5 --retry-delay 2 -o /usr/local/bin/pie https://github.com/php/pie/releases/download/$pieVersion/pie-Linux-\$arch && \\\n"
         . "    chmod +x /usr/local/bin/pie && \\\n"
