@@ -478,7 +478,7 @@ final class Psalm
                     $project_analyzer,
                     $rebootstrap,
                     $include_collector,
-                    ProjectBootstrap::readBaseline($options, $config),
+                    static fn(): array => ProjectBootstrap::readBaseline($options, $config),
                     $threads,
                 );
             }

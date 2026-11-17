@@ -566,6 +566,27 @@ final class OverlayEndToEndTest extends TestCase
         $this->stopServer($server, $input);
     }
 
+    public function testServerAnswersConfigForABaselineItCannotRead(): void
+    {
+        $this->skipWithoutServer();
+        $this->writeFiles(['A.php' => self::A, 'B.php' => self::B]);
+        $this->recordReferences();
+
+        [$server, $input] = $this->startServer(
+            [PHP_BINARY, $this->psalm, '--overlay-server', '--use-baseline=missing.xml'],
+        );
+        $analyzed = $this->ask($server, $input, ['id' => 1, 'method' => 'analyze', 'params' => [
+            'overlays' => [['path' => 'src/A.php', 'contents' => self::A]],
+        ]]);
+
+        $this->assertSame('config', $analyzed['error']['data']['kind'] ?? null);
+        $this->assertStringContainsString(
+            'Could not read the baseline: missing.xml does not exist or is not readable.',
+            json_encode($analyzed, JSON_THROW_ON_ERROR),
+        );
+        $this->stopServer($server, $input);
+    }
+
     public function testNotCheckedListsWhatTheConfigRuns(): void
     {
         file_put_contents($this->project . '/psalm.xml', str_replace(

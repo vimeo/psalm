@@ -166,7 +166,7 @@ final class OverlayCommand
      * @param array<int, string> $argv
      * @param string $cwd where the server started: relative overlay paths are relative to it
      * @param Closure(): ProjectAnalyzer $rebootstrap
-     * @param array<string, array<string, array{o: int, s: array<int, string>}>> $baseline
+     * @param Closure(): array<string, array<string, array{o: int, s: array<int, string>}>> $read_baseline
      * @param positive-int $threads
      */
     public static function serve(
@@ -175,14 +175,16 @@ final class OverlayCommand
         ProjectAnalyzer $project_analyzer,
         Closure $rebootstrap,
         IncludeCollector $include_collector,
-        array $baseline,
+        Closure $read_baseline,
         int $threads,
     ): never {
         $engine = null;
         $failure = null;
 
         try {
-            $engine = self::createEngine($project_analyzer, $rebootstrap, $include_collector, $baseline);
+            $engine = self::createEngine($project_analyzer, $rebootstrap, $include_collector, $read_baseline());
+        } catch (ProjectBootstrapException $e) {
+            $failure = new OverlayFailure(OverlayFailure::CONFIG, $e->getMessage());
         } catch (OverlayFailure $e) {
             $failure = $e;
         }
