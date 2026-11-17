@@ -664,9 +664,10 @@ final class IfAnalyzer
                         && $is_target($arg->value)
                         && self::mayBeByReference($node, $arg, $offset, $statements_analyzer),
                 ),
+                // an alias of it may be written whole too
+                $node instanceof PhpParser\Node\Expr\AssignRef => $is_target($node->var) || $is_target($node->expr),
                 $node instanceof PhpParser\Node\Expr\Assign,
                 $node instanceof PhpParser\Node\Expr\AssignOp,
-                $node instanceof PhpParser\Node\Expr\AssignRef,
                 $node instanceof PhpParser\Node\Expr\PreInc,
                 $node instanceof PhpParser\Node\Expr\PreDec,
                 $node instanceof PhpParser\Node\Expr\PostInc,
@@ -742,6 +743,13 @@ final class IfAnalyzer
 
         $lc_function_id = strtolower($function_id);
 
+        // a plugin may give it other parameters
+        if ($codebase->functions->params_provider->has($lc_function_id)
+            || $codebase->functions->dynamic_storage_provider->has($lc_function_id)
+        ) {
+            return true;
+        }
+
         $param_lists = [];
 
         if (InternalCallMapHandler::inCallMap($function_id)
@@ -763,18 +771,20 @@ final class IfAnalyzer
         }
 
         foreach ($param_lists as $params) {
-            if ($arg->name !== null) {
-                foreach ($params as $param) {
-                    if ($param->name === $arg->name->name && $param->by_ref) {
-                        return true;
+            $param = null;
+
+            if ($arg->name === null) {
+                $param = $params[$offset] ?? null;
+            } else {
+                foreach ($params as $named_param) {
+                    if ($named_param->name === $arg->name->name) {
+                        $param = $named_param;
+                        break;
                     }
                 }
-
-                continue;
             }
 
-            $param = $params[$offset] ?? null;
-
+            // what matches no parameter is collected by a variadic one
             if ($param === null && $params) {
                 $last_param = $params[count($params) - 1];
                 $param = $last_param->is_variadic ? $last_param : null;

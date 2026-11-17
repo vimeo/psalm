@@ -5186,6 +5186,25 @@ final class ConditionalTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedAssignment'],
             ],
+            'mixedVarPassedByNameToAVariadicByReferenceParamStaysUnioned' => [
+                'code' => '<?php
+                    function setAll(mixed &...$v): void {}
+
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (is_array($u)) {
+                        $u["a"] = 1;
+                        setAll(x: $u);
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'array{a: 1, ...<array-key, mixed>}|mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'mixedVarPassedToACallInTheBranchStaysUnioned' => [
                 'code' => '<?php
                     /** @var mixed $u */
@@ -6035,6 +6054,41 @@ final class ConditionalTest extends TestCase
                     }',
                 'error_message' => 'PossiblyFalseArgument',
                 'error_levels' => ['MixedArgument'],
+                'php_version' => '8.0',
+            ],
+            'mixedVarWrittenThroughAnAliasInTheBranchStaysUnioned' => [
+                'code' => '<?php
+                    function f(mixed $s, bool $c): void {
+                        if ($c) {
+                            assert(is_array($s));
+                            $s["a"] = 1;
+                            $r = &$s;
+                            $r = false;
+                        }
+
+                        echo strlen($s);
+                    }',
+                'error_message' => 'PossiblyFalseArgument',
+                'error_levels' => ['MixedArgument', 'UnusedVariable'],
+                'php_version' => '8.0',
+            ],
+            'mixedVarWrittenThroughAnAliasInANestedBlockStaysUnioned' => [
+                'code' => '<?php
+                    function f(mixed $s, bool $c): void {
+                        if ($c) {
+                            assert(is_array($s));
+                            $s["a"] = 1;
+
+                            if (rand(0, 1)) {
+                                $r = &$s;
+                                $r = false;
+                            }
+                        }
+
+                        echo strlen($s);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => ['MixedArgument', 'UnusedVariable'],
                 'php_version' => '8.0',
             ],
             'mixedVarWrittenByReferenceInANestedExpressionStaysUnioned' => [
