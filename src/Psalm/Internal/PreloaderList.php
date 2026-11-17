@@ -758,6 +758,7 @@ final class PreloaderList {
         \Psalm\Internal\Analyzer\TypeAnalyzer::class,
         \Psalm\Internal\BaselineMatcher::class,
         \Psalm\Internal\Cache::class,
+        \Psalm\Internal\CacheMode::class,
         \Psalm\Internal\Clause::class,
         \Psalm\Internal\CliUtils::class,
         \Psalm\Internal\Cli\IdeDetector::class,

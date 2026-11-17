@@ -3652,6 +3652,80 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'procOpenOnlyWritesPipes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $pipes = null;
+                    $process = proc_open('ls', [1 => ['pipe', 'w']], $pipes);
+                    PHP,
+                'assertions' => ['$pipes===' => 'array<array-key, resource>'],
+            ],
+            'procOpenOnlyWritesPipesOnPhp80' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $pipes = 'not an array';
+                    $process = proc_open(['ls'], [1 => ['pipe', 'w']], $pipes);
+                    PHP,
+                'assertions' => ['$pipes===' => 'array<array-key, resource>'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'splFileObjectFscanfOnlyWritesVars' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(SplFileObject $file, SplTempFileObject $temp): void {
+                        $hours = [];
+                        $file->fscanf('%d', $hours);
+                        /** @psalm-check-type-exact $hours = float|int|string */
+                        $minutes = [];
+                        $temp->fscanf('%d', $minutes);
+                        /** @psalm-check-type-exact $minutes = float|int|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'intltzOnlyWritesOutParams' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $tz = intltz_get_gmt();
+                        $raw = null;
+                        $dst = null;
+                        intltz_get_offset($tz, 0.0, false, $raw, $dst);
+                        /** @psalm-check-type-exact $raw = int */
+                        /** @psalm-check-type-exact $dst = int */
+                        $is_system = 'unknown';
+                        intltz_get_canonical_id('Europe/Paris', $is_system);
+                        /** @psalm-check-type-exact $is_system = bool */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'intltzGetCanonicalIdOnlyWritesIsSystemIdOnPhp74' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $is_system = 'unknown';
+                    intltz_get_canonical_id('Europe/Paris', $is_system);
+                    PHP,
+                'assertions' => ['$is_system===' => 'bool'],
+            ],
+            'opensslSealOnlyWritesIv' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(OpenSSLAsymmetricKey $key): void {
+                        $iv = null;
+                        openssl_seal('data', $sealed, $keys, [$key], 'aes-256-cbc', $iv);
+                        /** @psalm-check-type-exact $iv = string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'socketAddrinfoLookupTakesAnErrorCodeOnPhp86' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3686,6 +3760,52 @@ final class FunctionCallTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedArgument'],
                 'php_version' => '8.6',
+            ],
+            'streamGetMetaDataOnlyAlwaysSetsModeSeekableStreamTypeAndUnreadBytes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param resource $stream */
+                    function f($stream): void {
+                        $meta = stream_get_meta_data($stream);
+                        $mode = $meta['mode'];
+                        $seekable = $meta['seekable'];
+                        $stream_type = $meta['stream_type'];
+                        $unread_bytes = $meta['unread_bytes'];
+                        $uri = $meta['uri'] ?? null;
+                        $wrapper_type = isset($meta['wrapper_type']) ? $meta['wrapper_type'] : null;
+                        $timed_out = $meta['timed_out'] ?? false;
+                        $mediatype = $meta['mediatype'] ?? null;
+                        $charset = $meta['charset'] ?? null;
+                        $base64 = $meta['base64'] ?? false;
+                        /** @psalm-check-type-exact $mode = string */
+                        /** @psalm-check-type-exact $seekable = bool */
+                        /** @psalm-check-type-exact $stream_type = string */
+                        /** @psalm-check-type-exact $unread_bytes = int */
+                        /** @psalm-check-type-exact $uri = string|null */
+                        /** @psalm-check-type-exact $wrapper_type = string|null */
+                        /** @psalm-check-type-exact $timed_out = bool */
+                        /** @psalm-check-type-exact $mediatype = string|null */
+                        /** @psalm-check-type-exact $charset = string|null */
+                        /** @psalm-check-type-exact $base64 = bool */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'streamGetMetaDataShapeOnPhp85' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $stream = fopen('php://memory', 'r+');
+                    if ($stream === false) {
+                        exit;
+                    }
+                    $meta = stream_get_meta_data($stream);
+                    PHP,
+                'assertions' => [
+                    '$meta===' => 'array{base64?: bool, blocked?: bool, charset?: string, crypto?: array{cipher_bits: int, cipher_name: string, cipher_version: string, protocol: string}, eof?: bool, mediatype?: string, mode: string, seekable: bool, stream_type: string, timed_out?: bool, unread_bytes: int, uri?: string, wrapper_data?: mixed, wrapper_type?: string}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
             ],
         ];
     }
@@ -5301,6 +5421,40 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'streamGetMetaDataUriIsNotAlwaysSet' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $stream = popen('echo x', 'r');
+                    if ($stream === false) {
+                        exit;
+                    }
+                    $uri = stream_get_meta_data($stream)['uri'];
+                    PHP,
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'streamGetMetaDataTimedOutIsNotAlwaysSet' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $stream = fopen('data:,hi', 'r');
+                    if ($stream === false) {
+                        exit;
+                    }
+                    $timed_out = stream_get_meta_data($stream)['timed_out'];
+                    PHP,
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'streamGetMetaDataUnknownKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param resource $stream */
+                    function f($stream): void {
+                        $uri = stream_get_meta_data($stream)['uir'];
+                    }
+                    PHP,
+                'error_message' => 'InvalidArrayOffset',
             ],
         ];
     }

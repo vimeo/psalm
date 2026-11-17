@@ -20,6 +20,7 @@ use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -101,7 +102,8 @@ final class AtomicParts
                 new TBool($from_docblock),
             ],
             TNonEmptyScalar::class => [
-                new TInt($from_docblock),
+                new TIntRange(null, -1, $from_docblock),
+                new TIntRange(1, null, $from_docblock),
                 new TFloat($from_docblock),
                 new TNonFalsyString($from_docblock),
                 new TTrue($from_docblock),

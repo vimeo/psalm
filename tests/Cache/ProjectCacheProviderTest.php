@@ -6,6 +6,7 @@ namespace Psalm\Tests\Cache;
 
 use Override;
 use Psalm\Config;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
@@ -71,8 +72,7 @@ final class ProjectCacheProviderTest extends TestCase
     {
         $config = new TestConfig();
         $config->cache_directory = $this->cache_directory;
-        $config->cache_read_only = true;
 
-        return new ProjectCacheProvider();
+        return new ProjectCacheProvider(CacheMode::ReadOnly);
     }
 }

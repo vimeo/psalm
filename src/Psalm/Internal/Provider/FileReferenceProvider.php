@@ -19,6 +19,8 @@ use function array_unique;
 use function array_values;
 use function strtolower;
 
+use const ARRAY_FILTER_USE_KEY;
+
 /**
  * Used to determine which files reference other files, necessary for using the --diff
  * option from the command line.
@@ -371,7 +373,12 @@ final class FileReferenceProvider
                 return false;
             }
 
-            self::$mixed_counts = $mixed_counts;
+            // the counts of a file deleted or renamed since the cache was written are never replaced
+            self::$mixed_counts = array_filter(
+                $mixed_counts,
+                $this->file_provider->fileExists(...),
+                ARRAY_FILTER_USE_KEY,
+            );
 
             $classlike_files = $this->cache->getCachedClassLikeFiles();
 

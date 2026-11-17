@@ -277,13 +277,6 @@ final class Config
 
     public bool $array_cache = true;
 
-    /**
-     * Read the cache and never write it: no directory, lock file or entry is created, saved items stay in memory
-     *
-     * @internal
-     */
-    public bool $cache_read_only = false;
-
     private bool $cache_directory_initialized = false;
 
     /**
@@ -531,6 +524,12 @@ final class Config
     public int $max_shaped_array_size = 100;
 
     public float $long_scan_warning = 10.0;
+
+    /**
+     * The type coverage in percent below which a full run fails, with at most two decimals: from the minTypeCoverage
+     * attribute, the --min-type-coverage option, or set through the API
+     */
+    public ?float $min_type_coverage = null;
 
     /**
      * @var string[]
@@ -1366,6 +1365,10 @@ final class Config
         if (isset($config_xml['longScanWarning'])) {
             $attribute_text = (float)$config_xml['longScanWarning'];
             $config->long_scan_warning = $attribute_text;
+        }
+
+        if (isset($config_xml['minTypeCoverage'])) {
+            $config->min_type_coverage = (float) $config_xml['minTypeCoverage'];
         }
 
         if (isset($config_xml['inferPropertyTypesFromConstructor'])) {
@@ -3138,7 +3141,7 @@ final class Config
             return null;
         }
 
-        if ($this->cache_directory_initialized || $this->cache_read_only) {
+        if ($this->cache_directory_initialized) {
             return $this->cache_directory;
         }
 
