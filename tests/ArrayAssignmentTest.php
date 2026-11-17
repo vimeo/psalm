@@ -1483,6 +1483,40 @@ final class ArrayAssignmentTest extends TestCase
                         $element["upload"]["#attached"]["ds"]["file"]["el"] = "y";
                     }',
             ],
+            'deeplyNestedConstantKeyAddedToKeyedArrayUnderMixed' => [
+                'code' => '<?php
+                    final class K {
+                        const A = "att";
+                        const B = "ds";
+
+                        /**
+                         * @param mixed $element
+                         * @psalm-suppress MixedArrayAssignment
+                         */
+                        public static function f(&$element): void {
+                            $element["upload"] = ["#name" => "n"];
+                            $element["upload"][self::A][self::B]["file"]["el"] = "y";
+                        }
+                    }',
+            ],
+            'nestedKeyUnderUnknownOffsetOfKeyedArrayUnderMixed' => [
+                'code' => '<?php
+                    final class T {}
+
+                    /**
+                     * @param mixed $form
+                     * @param list<int|string> $ids
+                     * @psalm-suppress MixedArrayAccess
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f($form, array $ids): void {
+                        $form["links"] = ["#empty" => new T(), "#attributes" => ["id" => "s"]];
+                        foreach ($ids as $id) {
+                            $form["links"][$id]["#attributes"]["class"][] = "draggable";
+                            $form["links"][$id]["#weight"] = 1;
+                        }
+                    }',
+            ],
             'nestedKeyAddedToKeyedArrayUnderMixedHasItsType' => [
                 'code' => '<?php
                     /** @return mixed */
