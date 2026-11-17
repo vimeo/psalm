@@ -32,6 +32,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -56,8 +57,11 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
@@ -836,6 +840,15 @@ abstract class Type
             } elseif ($type_2_mixed) {
                 $combined_type = $type_1->getBuilder();
                 $intersection_performed = true;
+            } elseif (($template_of_intersection = self::intersectTemplateKeyOrValueOf(
+                $type_1,
+                $type_2,
+                $codebase,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+            )) !== null) {
+                $combined_type = new MutableUnion([$template_of_intersection]);
+                $intersection_performed = true;
             } else {
                 $combined_type = null;
                 foreach ($type_1->getAtomicTypes() as $type_1_atomic) {
@@ -977,6 +990,92 @@ abstract class Type
         }
 
         return $array_atomic->setTypeParams([$key_intersection, $value_intersection]);
+    }
+
+    /**
+     * e.g. int|string and value-of<T> (T of array) are value-of<T>, T narrowed to array<array-key, int|string>
+     */
+    private static function intersectTemplateKeyOrValueOf(
+        Union $type_1,
+        Union $type_2,
+        Codebase $codebase,
+        bool $allow_interface_equality,
+        bool $allow_float_int_equality,
+    ): TTemplateKeyOf|TTemplateValueOf|null {
+        if ($type_1->isSingle() && !self::hasTemplateKeyOrValueOf($type_2)) {
+            $template_of = $type_1->getSingleAtomic();
+            $other_type = $type_2;
+        } elseif ($type_2->isSingle() && !self::hasTemplateKeyOrValueOf($type_1)) {
+            $template_of = $type_2->getSingleAtomic();
+            $other_type = $type_1;
+        } else {
+            return null;
+        }
+
+        if (!$template_of instanceof TTemplateKeyOf && !$template_of instanceof TTemplateValueOf) {
+            return null;
+        }
+
+        $template = $template_of->as->isSingle() ? $template_of->as->getSingleAtomic() : null;
+
+        if (!$template instanceof TTemplateParam) {
+            return null;
+        }
+
+        $key_type = TKeyOf::getArrayKeyType($template->as);
+        $value_type = TValueOf::getValueType($template->as, $codebase);
+
+        if ($key_type === null || $value_type === null) {
+            return null;
+        }
+
+        $narrowed_type = self::intersectUnionTypes(
+            $template_of instanceof TTemplateKeyOf ? $key_type : $value_type,
+            $other_type,
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+
+        if ($narrowed_type === null || $narrowed_type->isNever()) {
+            return null;
+        }
+
+        if ($narrowed_type->getId() === ($template_of instanceof TTemplateKeyOf ? $key_type : $value_type)->getId()) {
+            return $template_of;
+        }
+
+        $narrowed_template = new Union([$template->replaceAs(new Union([new TArray(
+            $template_of instanceof TTemplateKeyOf ? [$narrowed_type, $value_type] : [$key_type, $narrowed_type],
+        )]))]);
+
+        return $template_of instanceof TTemplateKeyOf
+            ? new TTemplateKeyOf(
+                $template_of->param_name,
+                $template_of->defining_class,
+                $narrowed_template,
+                $template_of->from_docblock,
+            )
+            : new TTemplateValueOf(
+                $template_of->param_name,
+                $template_of->defining_class,
+                $narrowed_template,
+                $template_of->from_docblock,
+            );
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function hasTemplateKeyOrValueOf(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateKeyOf || $atomic_type instanceof TTemplateValueOf) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
