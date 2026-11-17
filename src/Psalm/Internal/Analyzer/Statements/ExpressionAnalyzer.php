@@ -98,7 +98,13 @@ final class ExpressionAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if (self::handleExpression(
+        $if_body_context = $context->if_body_context;
+
+        if ($if_body_context && !self::passesIfBodyContext($stmt, $context->inside_negation)) {
+            $context->if_body_context = null;
+        }
+
+        $handled = self::handleExpression(
             $statements_analyzer,
             $stmt,
             $context,
@@ -107,7 +113,11 @@ final class ExpressionAnalyzer
             $from_stmt,
             $template_result,
             $assigned_to_reference,
-        ) === false) {
+        );
+
+        $context->if_body_context = $if_body_context;
+
+        if ($handled === false) {
             return false;
         }
 
@@ -187,6 +197,41 @@ final class ExpressionAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Whether the operands of an expression of the condition all hold where it does, so that what they assign or
+     * narrow reaches the if body: those of an `&&`, of an `||` under a `!`, of a comparison to `true`, not those of a
+     * `xor`, of a negated `&&` or of a call argument
+     *
+     * @psalm-mutation-free
+     */
+    private static function passesIfBodyContext(PhpParser\Node\Expr $stmt, bool $inside_negation): bool
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+        ) {
+            return !$inside_negation;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+        ) {
+            return self::isTrueConst($stmt->left) || self::isTrueConst($stmt->right);
+        }
+
+        return $stmt instanceof PhpParser\Node\Expr\BooleanNot
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function isTrueConst(PhpParser\Node\Expr $expr): bool
+    {
+        return $expr instanceof PhpParser\Node\Expr\ConstFetch
+            && strtolower($expr->name->toString()) === 'true';
     }
 
     /**
@@ -405,8 +450,16 @@ final class ExpressionAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                 );
 
-                // Analyze as if it were a normal assignment and just pretend the reference doesn't exist
-                return self::analyzeAssignment($statements_analyzer, $stmt, $context, $from_stmt);
+                // Analyze as if it were a normal assignment and just pretend the reference doesn't exist, but for the
+                // offset it binds, which PHP creates
+                $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+                $context->inside_by_ref_offset = $stmt->expr instanceof PhpParser\Node\Expr\ArrayDimFetch;
+
+                try {
+                    return self::analyzeAssignment($statements_analyzer, $stmt, $context, $from_stmt);
+                } finally {
+                    $context->inside_by_ref_offset = $was_inside_by_ref_offset;
+                }
             }
 
             return true;
