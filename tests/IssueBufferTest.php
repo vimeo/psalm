@@ -184,6 +184,34 @@ final class IssueBufferTest extends TestCase
     }
 
     /**
+     * @param array{int, int} $type_coverage
+     */
+    #[DataProvider('providerTypeCoverageAndMinimum')]
+    public function testTypeCoverageBelowTheMinimumIsReported(
+        array $type_coverage,
+        float $min_type_coverage,
+        ?string $message,
+    ): void {
+        self::assertSame($message, IssueBuffer::getTypeCoverageBelowMinimumMessage($type_coverage, $min_type_coverage));
+    }
+
+    /**
+     * @return iterable<string, array{array{int, int}, float, ?string}>
+     * @psalm-pure
+     */
+    public static function providerTypeCoverageAndMinimum(): iterable
+    {
+        yield 'equal to the minimum' => [[5, 95], 95.0, null];
+        // 64.07 * 100 is just below 6407
+        yield 'equal to a minimum with decimals' => [[3_593, 6_407], 64.07, null];
+        yield 'just below a minimum with decimals' => [[3_594, 6_406], 64.07, 'Type coverage 64.06% is below the minimum of 64.07%'];
+        yield 'just below, rounded down' => [[5_001, 94_999], 95.0, 'Type coverage 94.99% is below the minimum of 95.00%'];
+        // computed with floats, 100 * 23 / 125 * 100 is just below 1840, which would print 18.39%
+        yield 'two decimals without float error' => [[102, 23], 95.0, 'Type coverage 18.40% is below the minimum of 95.00%'];
+        yield 'no expressions' => [[0, 0], 95.0, null];
+    }
+
+    /**
      * The issues of a group that two workers send, in either order, leave the one at the earliest location: by file
      * path, then line, then column. An issue of another type or message, or of no group, stays.
      */

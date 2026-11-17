@@ -526,6 +526,12 @@ final class Config
     public float $long_scan_warning = 10.0;
 
     /**
+     * The type coverage in percent below which a full run fails, with at most two decimals: from the minTypeCoverage
+     * attribute, the --min-type-coverage option, or set through the API
+     */
+    public ?float $min_type_coverage = null;
+
+    /**
      * @var string[]
      */
     public array $plugin_paths = [];
@@ -1359,6 +1365,10 @@ final class Config
         if (isset($config_xml['longScanWarning'])) {
             $attribute_text = (float)$config_xml['longScanWarning'];
             $config->long_scan_warning = $attribute_text;
+        }
+
+        if (isset($config_xml['minTypeCoverage'])) {
+            $config->min_type_coverage = (float) $config_xml['minTypeCoverage'];
         }
 
         if (isset($config_xml['inferPropertyTypesFromConstructor'])) {
