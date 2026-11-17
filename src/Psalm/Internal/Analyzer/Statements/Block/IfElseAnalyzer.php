@@ -151,47 +151,16 @@ final class IfElseAnalyzer
             );
         }
 
-        $mixed_var_ids = [];
-
-        foreach ($if_context->vars_in_scope as $var_id => $type) {
-            if ($type->isMixed() && isset($context->vars_in_scope[$var_id])) {
-                $mixed_var_ids[] = $var_id;
-            }
-        }
-
         $cond_object_id = spl_object_id($stmt->cond);
 
-        $if_clauses = FormulaGenerator::getFormula(
-            $cond_object_id,
-            $cond_object_id,
-            $stmt->cond,
-            $context->self,
+        $if_clauses = self::getConditionClauses(
             $statements_analyzer,
+            $stmt->cond,
+            $cond_object_id,
+            $if_context,
+            $context,
             $codebase,
         );
-
-        if (count($if_clauses) > 200) {
-            $if_clauses = [];
-        }
-
-        $if_clauses_handled = [];
-        foreach ($if_clauses as $clause) {
-            $keys = array_keys($clause->possibilities);
-            $mixed_var_ids = array_diff($mixed_var_ids, $keys);
-
-            foreach ($keys as $key) {
-                foreach ($mixed_var_ids as $mixed_var_id) {
-                    if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                        $clause = new Clause([], $cond_object_id, $cond_object_id, true);
-                        break 2;
-                    }
-                }
-            }
-
-            $if_clauses_handled[] = $clause;
-        }
-
-        $if_clauses = $if_clauses_handled;
 
         $entry_clauses = $context->clauses;
 
@@ -594,6 +563,61 @@ final class IfElseAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * The clauses of the condition, with those on the offsets or properties of a variable that is mixed in the body
+     * replaced by an empty wedge
+     *
+     * @return list<Clause>
+     */
+    private static function getConditionClauses(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $cond,
+        int $cond_object_id,
+        Context $if_context,
+        Context $context,
+        Codebase $codebase,
+    ): array {
+        $mixed_var_ids = [];
+
+        foreach ($if_context->vars_in_scope as $var_id => $type) {
+            if ($type->isMixed() && isset($context->vars_in_scope[$var_id])) {
+                $mixed_var_ids[] = $var_id;
+            }
+        }
+
+        $if_clauses = FormulaGenerator::getFormula(
+            $cond_object_id,
+            $cond_object_id,
+            $cond,
+            $context->self,
+            $statements_analyzer,
+            $codebase,
+        );
+
+        if (count($if_clauses) > 200) {
+            $if_clauses = [];
+        }
+
+        $if_clauses_handled = [];
+        foreach ($if_clauses as $clause) {
+            $keys = array_keys($clause->possibilities);
+            $mixed_var_ids = array_diff($mixed_var_ids, $keys);
+
+            foreach ($keys as $key) {
+                foreach ($mixed_var_ids as $mixed_var_id) {
+                    if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
+                        $clause = new Clause([], $cond_object_id, $cond_object_id, true);
+                        break 2;
+                    }
+                }
+            }
+
+            $if_clauses_handled[] = $clause;
+        }
+
+        return $if_clauses_handled;
     }
 
     /**
