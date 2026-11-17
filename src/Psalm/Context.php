@@ -1700,25 +1700,30 @@ final class Context
 
         foreach (array_keys($this->vars_in_scope) as $var_id) {
             if (preg_match($descendent_pattern, $var_id) === 1) {
-                $this->forgetPropertyBoundByReference($var_id, false);
+                $this->forgetWrittenVar($var_id);
             }
         }
     }
 
+    private function forgetWrittenVar(string $var_id): void
+    {
+        $this->forgetPropertyBoundByReference($var_id, false);
+        // forgotten, not unset: Context::update() tells the two apart
+        $this->vars_possibly_in_scope[$var_id] = true;
+        $this->parent_remove_vars[$var_id] = ++self::$clause_removal_count;
+    }
+
     /**
-     * Forgets what is known of a property of an object a property holds (`$a->p->q`), after a call assigned it
-     * ($assigned) or wrote items of it. One known to hold an object of which only items or properties were written
-     * still holds it
+     * Forgets what is known of a property (`$a->p`), and of what it holds, after a call may have written items or
+     * properties of what it holds. One known to hold an object still holds it
      */
-    public function forgetPropertyOfHeldObject(string $property_id, bool $assigned): void
+    public function forgetPropertyOfHeldObject(string $property_id): void
     {
         $this->forgetNullArrayOffsets($property_id);
         $this->forgetPropertyDescendents($property_id);
 
-        if (isset($this->vars_in_scope[$property_id])
-            && ($assigned || !$this->vars_in_scope[$property_id]->isObjectType())
-        ) {
-            $this->forgetPropertyBoundByReference($property_id, false);
+        if (isset($this->vars_in_scope[$property_id]) && !$this->vars_in_scope[$property_id]->isObjectType()) {
+            $this->forgetWrittenVar($property_id);
         }
     }
 

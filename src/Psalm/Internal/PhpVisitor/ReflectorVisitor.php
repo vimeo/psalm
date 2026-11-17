@@ -477,10 +477,14 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
         if ($node instanceof PhpParser\Node\Stmt\Unset_) {
             foreach ($node->vars as $var) {
-                // unsetting a whole property leaves it uninitialized: it is not assigned
+                // unsetting a whole property of `$this` leaves it uninitialized: it is not assigned
                 if ($var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
                     $this->recordThisPropertyMutation($var);
                     $this->recordStaticPropertyMutation($var);
+                } elseif ($var instanceof PhpParser\Node\Expr\PropertyFetch
+                    && !$var->var instanceof PhpParser\Node\Expr\Variable
+                ) {
+                    $this->recordThisPropertyMutation($var);
                 }
             }
         }

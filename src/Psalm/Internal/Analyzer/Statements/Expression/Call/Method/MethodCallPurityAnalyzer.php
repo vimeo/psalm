@@ -33,9 +33,11 @@ use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -43,6 +45,7 @@ use function array_key_exists;
 use function array_pop;
 use function array_values;
 use function count;
+use function explode;
 use function preg_match;
 use function str_starts_with;
 use function strrpos;
@@ -632,7 +635,14 @@ final class MethodCallPurityAnalyzer
                 if (!$writes_property && $item_mutations && !isset($item_mutations[''])) {
                     // only properties of the object the property holds are written: it still holds that object
                     foreach ($item_mutations as $sub_path => $writes_last) {
-                        $context->forgetPropertyOfHeldObject($mutation_var_id . '->' . $sub_path, $writes_last);
+                        self::resetPropertyOfHeldObject(
+                            $codebase,
+                            $context,
+                            $mutation_var_id,
+                            self::getDeclaredPropertyType($codebase, $class_storage, $name, $class_template_params),
+                            explode('->', $sub_path),
+                            $writes_last,
+                        );
                     }
 
                     continue;
@@ -902,6 +912,114 @@ final class MethodCallPurityAnalyzer
         }
 
         return $preserved;
+    }
+
+    /**
+     * Resets what is known of a property of an object a property holds (`$a->p->q`, $path being `['q']`) after a
+     * call assigned it ($assigned) or wrote items or properties of what it holds. Where writing a property on the way
+     * may run code, which may write any property of its object, all that is known of that object is forgotten
+     *
+     * @param ?Union $declared_type what the property is declared to hold
+     * @param non-empty-list<string> $path
+     */
+    private static function resetPropertyOfHeldObject(
+        Codebase $codebase,
+        Context $context,
+        string $property_id,
+        ?Union $declared_type,
+        array $path,
+        bool $assigned,
+    ): void {
+        foreach ($path as $name) {
+            $declared_type = self::getDeclaredPlainPropertyType(
+                $codebase,
+                $context->vars_in_scope[$property_id] ?? $declared_type,
+                $name,
+            );
+
+            if ($declared_type === null) {
+                $context->forgetPropertyOfHeldObject($property_id);
+
+                return;
+            }
+
+            $property_id .= '->' . $name;
+        }
+
+        $context->forgetNullArrayOffsets($property_id);
+        $context->forgetPropertyDescendents($property_id);
+
+        $type_before = $context->vars_in_scope[$property_id] ?? null;
+
+        if (!$assigned && $type_before !== null) {
+            if ($type_before->isObjectType()) {
+                // writing items or properties of an object leaves the property holding the same object
+                return;
+            }
+
+            $declared_type = self::getTypeAfterItemWrites($codebase, $type_before, $declared_type);
+        }
+
+        // assigned rather than forgotten, so that it holds this type after the branches of a condition too
+        $context->vars_in_scope[$property_id] = $declared_type;
+        $context->possibly_assigned_var_ids[$property_id] = true;
+    }
+
+    /**
+     * What a property of the objects a property is known to hold is declared to hold, if writing it cannot run code
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getDeclaredPlainPropertyType(
+        Codebase $codebase,
+        ?Union $object_type,
+        string $name,
+    ): ?Union {
+        if ($object_type === null) {
+            return null;
+        }
+
+        $declared_type = null;
+
+        foreach ($object_type->getAtomicTypes() as $atomic) {
+            // a property of null cannot be written
+            if ($atomic instanceof TNull) {
+                continue;
+            }
+
+            if (!$atomic instanceof TNamedObject
+                || $atomic instanceof TGenericObject
+                || $atomic->getIntersectionTypes() !== []
+                || !$codebase->classlike_storage_provider->has($atomic->value)
+            ) {
+                return null;
+            }
+
+            $class_storage = $codebase->classlike_storage_provider->get($atomic->value);
+
+            if (isset($class_storage->declaring_method_ids['__set'])
+                || self::getPlainProperty($codebase, $class_storage, $name) === null
+            ) {
+                return null;
+            }
+
+            $property_type = AssignmentAnalyzer::getExpandedPropertyType(
+                $codebase,
+                $class_storage->name,
+                $name,
+                $class_storage,
+            );
+
+            if ($property_type === null) {
+                return null;
+            }
+
+            $declared_type = $declared_type === null
+                ? $property_type
+                : Type::combineUnionTypes($declared_type, $property_type);
+        }
+
+        return $declared_type;
     }
 
     /**

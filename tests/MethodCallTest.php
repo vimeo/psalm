@@ -1095,6 +1095,77 @@ final class MethodCallTest extends TestCase
                         }
                     }',
             ],
+            'propertyOfAHeldObjectIsForgottenAfterAMethodWritingItInABranchOrUnsettingIt' => [
+                'code' => '<?php
+                    final class Ctx {
+                        public ?string $x = null;
+                        public ?string $y = null;
+                        /** @var array<string, int> */
+                        public array $items = [];
+                    }
+
+                    final class Holder {
+                        public function __construct(public Ctx $ctx) {}
+
+                        public function setX(): void { $this->ctx->x = null; }
+                        public function addItem(): void { $this->ctx->items["k"] = 1; }
+                        public function unsetX(): void { unset($this->ctx->x); }
+                    }
+
+                    function branch(Holder $h, bool $b): void {
+                        $h->ctx->x = "a";
+                        $h->ctx->items["k"] = 5;
+
+                        if ($b) {
+                            $h->setX();
+                            $h->addItem();
+                        }
+
+                        $x = $h->ctx->x;
+                        /** @psalm-check-type-exact $x = null|string */
+                        $k = $h->ctx->items["k"];
+                        /** @psalm-check-type-exact $k = int */
+                    }
+
+                    function unsetting(Holder $h): void {
+                        $h->ctx->x = "a";
+                        $h->ctx->y = "a";
+                        $h->unsetX();
+                        $x = $h->ctx->x;
+                        /** @psalm-check-type-exact $x = null|string */
+                        $y = $h->ctx->y;
+                        /** @psalm-check-type-exact $y = "a" */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'allPropertiesOfAHeldObjectWithAMagicSetterAreForgottenAfterAMethodWritingOneOfThem' => [
+                'code' => '<?php
+                    final class Ctx {
+                        public ?string $x = null;
+                        public ?string $y = null;
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void { $this->y = null; }
+                    }
+
+                    final class Holder {
+                        public function __construct(public Ctx $ctx) {}
+
+                        public function setX(): void { $this->ctx->x = "b"; }
+                    }
+
+                    function f(Holder $h): void {
+                        $h->ctx->y = "a";
+                        $h->setX();
+                        $y = $h->ctx->y;
+                        /** @psalm-check-type-exact $y = null|string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafeCallOnAReceiverOfSeveralTypesKeepsWhatAPropertyMayHold' => [
                 'code' => '<?php
                     final class RA {
