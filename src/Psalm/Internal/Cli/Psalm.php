@@ -218,15 +218,7 @@ final class Psalm
 
         CliUtils::rejectUnrecognisedOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
 
-        $min_type_coverage = self::parseMinTypeCoverageOption(
-            $options['min-type-coverage'] ?? null,
-            // CliUtils::getOptions() leaves out an occurrence without a value, which must not turn the check off
-            in_array(
-                'min-type-coverage',
-                CliUtils::getLongOptionsWithoutValue($args, self::SHORT_OPTIONS, self::LONG_OPTIONS),
-                true,
-            ),
-        );
+        $min_type_coverage = self::parseMinTypeCoverageOption($options);
 
         CliUtils::setMemoryLimit($options);
 
@@ -532,22 +524,25 @@ final class Psalm
     }
 
     /**
-     * @param bool $without_value whether an occurrence of the option has no value
      * @return float|null null if the option isn't given
      */
-    private static function parseMinTypeCoverageOption(mixed $value, bool $without_value): ?float
+    private static function parseMinTypeCoverageOption(array $options): ?float
     {
-        if ($value === null && !$without_value) {
+        if (!isset($options['min-type-coverage'])) {
             return null;
         }
 
+        if (is_array($options['min-type-coverage'])) {
+            fwrite(STDERR, 'Only one --min-type-coverage can be given' . PHP_EOL);
+            exit(1);
+        }
+
         // the coverage is reported with two decimals
-        if (!$without_value
-            && is_string($value)
-            && preg_match('/^\d+(\.\d{1,2})?$/', $value)
-            && (float) $value <= 100
+        if (is_string($options['min-type-coverage'])
+            && preg_match('/^\d+(\.\d{1,2})?\z/', $options['min-type-coverage'])
+            && (float) $options['min-type-coverage'] <= 100
         ) {
-            return (float) $value;
+            return (float) $options['min-type-coverage'];
         }
 
         fwrite(STDERR, '--min-type-coverage expects a percentage from 0 to 100 with at most two decimals' . PHP_EOL);

@@ -278,34 +278,17 @@ final class CliUtils
     }
 
     /**
-     * The long options that require a value but were given without one, as "--name=" or as the last argument:
-     * getOptions() leaves them out, like getopt() does
-     *
-     * @param list<string> $args the arguments, without the script name
-     * @param list<string> $short_options
-     * @param list<string> $long_options
-     * @return list<string> their names, like "threads", once per occurrence
-     * @psalm-capabilities read-props|write-this-props|write-refs
-     */
-    public static function getLongOptionsWithoutValue(array $args, array $short_options, array $long_options): array
-    {
-        return self::parseOptions($args, $short_options, $long_options)[2];
-    }
-
-    /**
      * @param list<string> $args
      * @param list<string> $short_options
      * @param list<string> $long_options
-     * @return array{array<string, false|list<false|string>|string>, list<string>, list<string>} the options like
-     *      getopt() returns them, the options that aren't in $short_options and $long_options, like "-z", and
-     *      the long options that require a value but were given without one, like "threads"
+     * @return array{array<string, false|list<false|string>|string>, list<string>} the options like getopt()
+     *      returns them, and the options that aren't in $short_options and $long_options, like "-z"
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function parseOptions(array $args, array $short_options, array $long_options): array
     {
         $options = [];
         $unrecognised = [];
-        $without_value = [];
 
         for ($i = 0, $count = count($args); $i < $count; ++$i) {
             $arg = $args[$i];
@@ -334,9 +317,6 @@ final class CliUtils
                     $unrecognised[] = '--' . $name;
                 } elseif ($value === '') {
                     // getopt() drops an option given as --name=
-                    if ($arity === ':') {
-                        $without_value[] = $name;
-                    }
                     continue;
                 } elseif ($arity === '') {
                     self::addOption($options, $name, false);
@@ -346,8 +326,6 @@ final class CliUtils
                     self::addOption($options, $name, $value);
                 } elseif (isset($args[$i + 1])) {
                     self::addOption($options, $name, $args[++$i]);
-                } else {
-                    $without_value[] = $name;
                 }
 
                 continue;
@@ -380,7 +358,7 @@ final class CliUtils
             }
         }
 
-        return [$options, $unrecognised, $without_value];
+        return [$options, $unrecognised];
     }
 
     /**

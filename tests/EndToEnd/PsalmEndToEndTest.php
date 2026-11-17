@@ -13,7 +13,6 @@ use function assert;
 use function basename;
 use function file_get_contents;
 use function file_put_contents;
-use function in_array;
 use function json_decode;
 use function mkdir;
 use function preg_replace;
@@ -427,21 +426,10 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
     #[DataProvider('provideTypeCoverageNotChecked')]
     public function testTypeCoverageNotBelowTheMinimumOrNotCheckedPasses(string $attributes, array $args): void
     {
-        $flag_shaped_path = self::$tmpDir . '/--min-type-coverage';
+        $process = $this->runPsalmOnAProjectWithTypeCoverage($attributes, ['--output-format=json', ...$args]);
 
-        if (in_array('--', $args, true)) {
-            // the path after "--" looks like the option
-            file_put_contents($flag_shaped_path, "<?php\n");
-        }
-
-        try {
-            $process = $this->runPsalmOnAProjectWithTypeCoverage($attributes, ['--output-format=json', ...$args]);
-
-            $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-            $this->assertSame('', $process->getErrorOutput());
-        } finally {
-            @unlink($flag_shaped_path);
-        }
+        $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertSame('', $process->getErrorOutput());
     }
 
     /**
@@ -452,7 +440,6 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
     {
         yield 'option overrides config' => ['minTypeCoverage="95"', ['--min-type-coverage=77.77']];
         yield 'partial run with the config attribute' => ['minTypeCoverage="95"', ['src/Untyped.php']];
-        yield 'a path after the terminator' => ['', ['--', '--min-type-coverage']];
     }
 
     /**
@@ -478,9 +465,10 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         yield 'three decimals' => [['--min-type-coverage=95.555'], $message];
         yield 'above 100' => [['--min-type-coverage=100.01'], $message];
         yield 'not a number' => [['--min-type-coverage=abc'], $message];
-        yield 'empty value' => [['--min-type-coverage='], $message];
-        yield 'without a value' => [['--min-type-coverage'], $message];
-        yield 'empty value after a valid one' => [['--min-type-coverage=0', '--min-type-coverage='], $message];
+        yield 'repeated' => [
+            ['--min-type-coverage=90', '--min-type-coverage=95'],
+            'Only one --min-type-coverage can be given',
+        ];
         yield 'paths' => [
             ['--min-type-coverage=95', 'src/Untyped.php'],
             'Cannot check the minimum type coverage when checking specific files',
