@@ -98,6 +98,8 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
@@ -1363,6 +1365,10 @@ final class AssignmentAnalyzer
             )
             : null;
         $rhs_was_set = $pre_rhs_var_id !== null && isset($context->vars_in_scope[$pre_rhs_var_id]);
+        // the fetch takes the item as set: what was known of it before is lost
+        $rhs_was_possibly_undefined = $rhs_was_set
+            && ($context->vars_in_scope[$pre_rhs_var_id]->possibly_undefined
+                || $context->vars_in_scope[$pre_rhs_var_id]->possibly_undefined_from_try);
 
         $was_inside_by_ref_offset = $context->inside_by_ref_offset;
         $context->inside_by_ref_offset = $stmt->expr instanceof ArrayDimFetch;
@@ -1502,9 +1508,10 @@ final class AssignmentAnalyzer
 
         $rhs_type = $context->vars_in_scope[$rhs_var_id];
         $rhs_possibly_undefined = $rhs_type->possibly_undefined || $rhs_type->possibly_undefined_from_try
-            // an offset of unknown key is taken as set, as a read of it is, but not by a binding whose value is
-            // tested, like `null === $x = &$cache[$k]`, which checks whether the binding created it
-            || ($from_stmt === null
+            || $rhs_was_possibly_undefined
+            // an offset of unknown key is taken as set, as a read of it is, but not by a binding in a condition,
+            // like `null === $x = &$cache[$k]`, which checks whether the binding created it
+            || ($context->inside_conditional
                 && $stmt->expr instanceof ArrayDimFetch
                 && !$rhs_was_set
                 && !self::isOffsetSet($statements_analyzer, $stmt->expr));
@@ -1632,8 +1639,8 @@ final class AssignmentAnalyzer
                     );
                 }
 
-                // binding creates the item as null when it is not set (the reference's type only gets null above,
-                // for an item known to be possibly unset, as a read of the item does)
+                // binding creates the item as null when it is not set (the reference's type only gets null above
+                // for an item known to be possibly unset, or of unknown key in a condition)
                 if ($stmt->expr instanceof ArrayDimFetch
                     && ($rhs_possibly_undefined
                         || (!$rhs_was_set && !self::isOffsetSet($statements_analyzer, $stmt->expr)))
@@ -1921,20 +1928,25 @@ final class AssignmentAnalyzer
             return false;
         }
 
-        if ($key_type->isSingleIntLiteral()) {
-            $key = $key_type->getSingleIntLiteral()->value;
-        } elseif ($key_type->isSingleStringLiteral()) {
-            $key = $key_type->getSingleStringLiteral()->value;
-        } else {
-            return false;
+        $keys = [];
+
+        foreach ($key_type->getAtomicTypes() as $key_atomic_type) {
+            if (!$key_atomic_type instanceof TLiteralInt && !$key_atomic_type instanceof TLiteralString) {
+                return false;
+            }
+
+            $keys[] = $key_atomic_type->value;
         }
 
         foreach ($array_type->getAtomicTypes() as $atomic_type) {
-            if (!$atomic_type instanceof TKeyedArray
-                || !isset($atomic_type->properties[$key])
-                || $atomic_type->properties[$key]->possibly_undefined
-            ) {
+            if (!$atomic_type instanceof TKeyedArray) {
                 return false;
+            }
+
+            foreach ($keys as $key) {
+                if (!isset($atomic_type->properties[$key]) || $atomic_type->properties[$key]->possibly_undefined) {
+                    return false;
+                }
             }
         }
 

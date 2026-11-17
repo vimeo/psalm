@@ -1372,6 +1372,57 @@ final class ReferenceTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['PossiblyInvalidPropertyAssignmentValue'],
             ],
+            'referenceBoundInConditionToAnOffsetKnownToBeUnsetMayBeNull' => [
+                'code' => '<?php
+                    /** @param null $n */
+                    function takesNull($n): void {}
+
+                    /** @param array<string, int> $a */
+                    function f(array $a, string $k): int {
+                        if (!isset($a[$k])) {
+                            if (null === $x = &$a[$k]) {
+                                takesNull($x);
+                                $x = 1;
+                            }
+                            return $x;
+                        }
+                        return 0;
+                    }',
+            ],
+            'referenceBoundInAStatementToAnOffsetKnownToBeUnsetMayBeNull' => [
+                'code' => '<?php
+                    /** @param array<string, int> $a */
+                    function f(array $a, string $k): int {
+                        if (!array_key_exists($k, $a)) {
+                            $x = &$a[$k];
+                            if (null === $x) {
+                                $x = 1;
+                            }
+                            return $x;
+                        }
+                        return 0;
+                    }',
+            ],
+            'referenceBoundInConditionToAnOffsetOfRequiredLiteralKeysIsSet' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a: int, b: int} $s
+                     * @param "a"|"b" $k
+                     */
+                    function f(array $s, string $k): int {
+                        if (($x = &$s[$k]) > 0) {
+                            return $x;
+                        }
+                        return $x;
+                    }',
+            ],
+            'referenceBoundToAnOffsetOfUnknownKeyOutsideAConditionIsTakenAsSet' => [
+                'code' => '<?php
+                    /** @param array<string, int> $a */
+                    function f(array $a, string $k): int {
+                        return $x = &$a[$k];
+                    }',
+            ],
             'referenceBoundInAStatementToAnOffsetOfUnknownKeyIsTakenAsSet' => [
                 'code' => '<?php
                     /** @param array<string, int> $arr */
