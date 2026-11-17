@@ -28,6 +28,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
+use ReflectionReference;
 use RuntimeException;
 
 use function array_diff_key;
@@ -540,6 +541,33 @@ final class Context
          */
         public ?string $self = null,
     ) {
+    }
+
+    /**
+     * A copied array shares its PHP references with the original: give the clone its own slots, linked to each other
+     * as they were in the original.
+     */
+    public function __clone()
+    {
+        if (!$this->references_in_scope) {
+            return;
+        }
+
+        $vars_in_scope = [];
+        $slots = [];
+
+        foreach ($this->vars_in_scope as $var_id => $_) {
+            $reference = ReflectionReference::fromArrayElement($this->vars_in_scope, $var_id);
+            $slot_var_id = $reference === null ? $var_id : ($slots[$reference->getId()] ??= $var_id);
+
+            if ($slot_var_id === $var_id) {
+                $vars_in_scope[$var_id] = $this->vars_in_scope[$var_id];
+            } else {
+                $vars_in_scope[$var_id] = &$vars_in_scope[$slot_var_id];
+            }
+        }
+
+        $this->vars_in_scope = $vars_in_scope;
     }
 
     /**
