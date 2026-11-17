@@ -21,14 +21,14 @@ Run with `--help` to see a list of options that Psalm supports.
 Psalm exits with status `0` when it successfully completed and found no issues,
 `1` when there was a problem running Psalm and `2` when it completed
 successfully but found some issues, or a [type coverage](#minimum-type-coverage)
-below the minimum. Any exit status apart from those indicate some internal problem.
+below the minimum. Any exit status apart from those indicates some internal problem.
 
 ## Minimum type coverage
 
 ```bash
 vendor/bin/psalm --min-type-coverage=95                      # exit status 2 when the type coverage is below 95%
 vendor/bin/psalm --min-type-coverage=95 --output-format=json  # the same, the JSON report is unchanged
-vendor/bin/psalm --min-type-coverage=95 src/Foo.php          # exit status 1: only a full run measures the project
+vendor/bin/psalm --min-type-coverage=95 src/Foo.php          # exit status 1: the option can't be combined with file paths
 ```
 
 Below the minimum, Psalm writes this to STDERR with any `--output-format` and exits with status `2`:
@@ -41,10 +41,16 @@ The minimum is a percentage from 0 to 100 with at most two decimals. The coverag
 so 94.999% prints as `94.99%`. The option overrides the [`minTypeCoverage`](configuration.md#mintypecoverage)
 config attribute.
 
+Runs with `--set-baseline` or `--update-baseline` don't check the minimum. Runs with file paths
+(`psalm src/Foo.php`) skip the config attribute, which isn't an error. Like for issues, a taint analysis run in
+GitHub Actions that writes a SARIF report prints the message but exits with status `0`, so that a following step
+can upload the report.
+
 Type coverage is the number in the summary line (`Psalm was able to infer types for 93.4127% of the codebase`)
-and the one [Shepherd](#shepherd) tracks: the share of the expressions Psalm analyzes whose inferred type is not
-`mixed`. It is not declaration coverage (parameters, properties and return types with a declared type), which is
-what `pest --type-coverage` measures.
+and the one [Shepherd](#shepherd) tracks: the share of the counted expressions whose inferred type is not `mixed`.
+Psalm counts assignments to variables and properties, returned values, call arguments, the objects that methods
+are called on, arithmetic operations, string concatenations, and array and property fetches. Variable reads and
+literals aren't counted.
 
 ```php
 /** @param mixed $a */
@@ -57,7 +63,15 @@ function f($a, int $b): int
 // type coverage: 3 of 4 expressions, 75.00%
 ```
 
-`--stats` lists the coverage of each file. Files in a `<directory ignoreTypeStats="true">` are not counted.
+`--stats` lists the coverage of each file. It also lists the files of a directory with `ignoreTypeStats="true"`,
+but they aren't counted in the total:
+
+```xml
+<projectFiles>
+  <directory name="src" />
+  <directory name="generated" ignoreTypeStats="true" />
+</projectFiles>
+```
 
 ## Shepherd
 

@@ -738,17 +738,7 @@ Only used in multithreaded mode, defaults to 10 seconds.
 >
 ```
 
-The lowest [type coverage](command_line_usage.md#minimum-type-coverage) a full run may have, a percentage from 0 to 100 with at most two decimals. By default there is no minimum.
-Below it, Psalm writes `Type coverage 93.41% is below the minimum of 95.00%` to STDERR and exits with status `2`.
-Runs on specific files (`psalm src/Foo.php`) don't check it. `--min-type-coverage` on the command line overrides it.
-
-Files in a directory with `ignoreTypeStats="true"` are analyzed, but not counted:
-```xml
-<projectFiles>
-  <directory name="src" />
-  <directory name="generated" ignoreTypeStats="true" />
-</projectFiles>
-```
+Fails a full run whose [type coverage](command_line_usage.md#minimum-type-coverage) is below this percentage. By default there is no minimum.
 
 #### restrictReturnTypes
 

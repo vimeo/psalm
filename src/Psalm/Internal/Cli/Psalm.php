@@ -1620,8 +1620,8 @@ final class Psalm
                 Shows a breakdown of Psalm’s ability to infer types in the codebase
 
             --min-type-coverage=PERCENTAGE
-                Exit with status 2 when Psalm infers types for less than PERCENTAGE (0 to 100) of the codebase.
-                Checked on full runs only. Overrides the minTypeCoverage config option
+                Exit with status 2 when Psalm infers types for less than PERCENTAGE of the codebase (0 to 100,
+                at most two decimals). Cannot be combined with file paths. Overrides the minTypeCoverage config option
 
         Reports:
             --report=PATH
