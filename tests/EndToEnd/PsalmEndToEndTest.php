@@ -363,6 +363,25 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame('', $process->getErrorOutput());
     }
 
+    public function testRefactorAcceptsMemoryLimitOption(): void
+    {
+        $process = self::newProcess(
+            [
+                PHP_BINARY,
+                __DIR__ . '/../../psalm-refactor',
+                '--memory-limit=1G',
+                '--help',
+            ],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(0, $process->getExitCode(), $process->getErrorOutput());
+        $this->assertSame('', $process->getErrorOutput());
+        $this->assertStringContainsString('--memory-limit=LIMIT', $process->getOutput());
+    }
+
     /**
      * @param list<string> $args
      */
