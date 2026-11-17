@@ -1003,7 +1003,7 @@ final class FormulaGenerator
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function isBoolType(Union $type): bool
     {
