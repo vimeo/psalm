@@ -1535,6 +1535,17 @@ final class ArgTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument',
             ],
+            'zeroRangeParamRejectsNonEmptyScalar' => [
+                'code' => '<?php
+                    /** @param int<0, 0> $z */
+                    function takesZero(int $z): void {}
+
+                    /** @param non-empty-scalar $n */
+                    function f($n): void {
+                        takesZero($n);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'trueParamCoercesNonEmptyScalar' => [
                 'code' => '<?php
                     function takesTrue(true $t): void {}
