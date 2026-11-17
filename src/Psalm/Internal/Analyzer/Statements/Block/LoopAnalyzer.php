@@ -311,6 +311,7 @@ final class LoopAnalyzer
             $propagation_passes = 0;
             $feeding_var_ids = $assignment_mapper->getFeedingVarIds();
             $max_propagation_passes = count($feeding_var_ids);
+            $previously_changed_feeding_var_ids = [];
             $widening_bounds = null;
             $force_pass = false;
 
@@ -610,17 +611,21 @@ final class LoopAnalyzer
 
                 // the passes counted from the assignment map don't cover every chain of copies (`$a = $b; $b = $c;
                 // $c = "s";`): a type still changing in the last pass is carried to the variables it goes into by
-                // one more pass. A chain goes through each of these variables at most once.
-                if ($i + 1 === $max_passes
-                    && $propagation_passes < $max_propagation_passes
-                    && self::hasChangedFeedingVar(
+                // one more pass. Along a chain, each pass changes a variable the previous one didn't: a variable
+                // that keeps changing on its own (`$e[$k] = [$e[$k] ?? null]`) would never settle.
+                if ($i + 1 === $max_passes && $propagation_passes < $max_propagation_passes) {
+                    $changed_feeding_var_ids = self::getChangedFeedingVarIds(
                         $feeding_var_ids,
                         $vars_at_iteration_start,
                         self::getVarsStartingNextIteration($continue_context, $loop_scope, $post_expressions),
-                    )
-                ) {
-                    ++$max_passes;
-                    ++$propagation_passes;
+                    );
+
+                    if (array_diff_key($changed_feeding_var_ids, $previously_changed_feeding_var_ids)) {
+                        ++$max_passes;
+                        ++$propagation_passes;
+                    }
+
+                    $previously_changed_feeding_var_ids = $changed_feeding_var_ids;
                 }
 
                 if ($i + 1 === $max_passes
@@ -2061,13 +2066,16 @@ final class LoopAnalyzer
      * @param array<string, true> $feeding_var_ids
      * @param array<string, Union> $vars_at_start
      * @param array<string, Union> $vars_at_end
+     * @return array<string, true>
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
-    private static function hasChangedFeedingVar(
+    private static function getChangedFeedingVarIds(
         array $feeding_var_ids,
         array $vars_at_start,
         array $vars_at_end,
-    ): bool {
+    ): array {
+        $changed_var_ids = [];
+
         foreach ($feeding_var_ids as $var_id => $_) {
             if (!isset($vars_at_end[$var_id])) {
                 continue;
@@ -2079,11 +2087,11 @@ final class LoopAnalyzer
                     $vars_at_start[$var_id],
                 )
             ) {
-                return true;
+                $changed_var_ids[$var_id] = true;
             }
         }
 
-        return false;
+        return $changed_var_ids;
     }
 
     /**
