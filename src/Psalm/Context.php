@@ -1705,10 +1705,13 @@ final class Context
         }
     }
 
+    /**
+     * Forgets a var a call wrote, as removeMutableObjectVars() does: one forgotten in a branch is not forgotten after
+     * it, whatever a later branch does
+     */
     private function forgetWrittenVar(string $var_id): void
     {
         $this->forgetPropertyBoundByReference($var_id, false);
-        // forgotten, not unset: Context::update() tells the two apart
         $this->vars_possibly_in_scope[$var_id] = true;
         $this->parent_remove_vars[$var_id] = ++self::$clause_removal_count;
     }

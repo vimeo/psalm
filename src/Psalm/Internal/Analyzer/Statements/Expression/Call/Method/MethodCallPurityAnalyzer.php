@@ -1020,8 +1020,9 @@ final class MethodCallPurityAnalyzer
 
             $class_storage = $codebase->classlike_storage_provider->get($atomic->value);
 
+            // as for a write of the caller, a hook a subclass may add is not considered
             if (isset($class_storage->declaring_method_ids['__set'])
-                || self::getPlainProperty($codebase, $class_storage, $name) === null
+                || self::getPlainProperty($codebase, $class_storage, $name, false) === null
             ) {
                 return null;
             }
@@ -1048,12 +1049,14 @@ final class MethodCallPurityAnalyzer
     /**
      * A declared property of the objects of this class whose reads and writes cannot run code
      *
+     * @param bool $in_subclasses also in those of its subclasses, which may redeclare it with a hook
      * @psalm-capabilities read-props
      */
     private static function getPlainProperty(
         Codebase $codebase,
         ClassLikeStorage $class_storage,
         string $name,
+        bool $in_subclasses = true,
     ): ?PropertyStorage {
         $declaring_class = $class_storage->declaring_property_ids[$name] ?? null;
         $property = $declaring_class !== null && $codebase->classlike_storage_provider->has($declaring_class)
@@ -1064,7 +1067,8 @@ final class MethodCallPurityAnalyzer
             || $property->hook_get !== null
             || $property->hook_set !== null
             // a subclass may redeclare the property with a hook
-            || (!$class_storage->final
+            || ($in_subclasses
+                && !$class_storage->final
                 && $property->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
                 && $codebase->analysis_php_version_id >= 8_04_00)
         ) {

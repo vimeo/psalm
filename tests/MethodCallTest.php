@@ -1140,6 +1140,59 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'otherPropertiesOfAHeldObjectOfANonFinalClassAreKeptAfterAMethodWritingOneOfThemInPhp84' => [
+                'code' => '<?php
+                    class Ctx {
+                        public ?string $joinSql = null;
+                        /** @var array<string, string> */
+                        public array $aliases = [];
+                    }
+
+                    final class Persister {
+                        public function __construct(public Ctx $ctx) {}
+
+                        public function alias(string $c): void { $this->ctx->aliases[$c] = "t"; }
+
+                        public function build(string $c): string {
+                            $this->ctx->joinSql = "";
+                            $this->alias($c);
+                            $this->ctx->joinSql .= " JOIN";
+                            return $this->ctx->joinSql;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'allPropertiesOfAHeldObjectWithASetHookAreForgottenAfterAMethodWritingIt' => [
+                'code' => '<?php
+                    final class Ctx {
+                        public ?string $y = null;
+
+                        public ?string $x = null {
+                            set(?string $value) {
+                                $this->x = $value;
+                                $this->y = null;
+                            }
+                        }
+                    }
+
+                    final class Holder {
+                        public function __construct(public Ctx $ctx) {}
+
+                        public function setX(): void { $this->ctx->x = "b"; }
+                    }
+
+                    function f(Holder $h): void {
+                        $h->ctx->y = "a";
+                        $h->setX();
+                        $y = $h->ctx->y;
+                        /** @psalm-check-type-exact $y = null|string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'allPropertiesOfAHeldObjectWithAMagicSetterAreForgottenAfterAMethodWritingOneOfThem' => [
                 'code' => '<?php
                     final class Ctx {
