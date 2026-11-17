@@ -795,14 +795,13 @@ final class IssueBuffer
             // Set severity for issues in baseline to INFO
             foreach ($issues_data as $file_path => $file_issues) {
                 foreach ($file_issues as $key => $issue_data) {
-                    if ($codebase->config->isSuppressible($issue_data->type)
-                        && BaselineMatcher::consume(
-                            $issue_baseline,
-                            $issue_data->file_name,
-                            $issue_data->type,
-                            $issue_data->selected_text,
-                        )
-                    ) {
+                    if (BaselineMatcher::consume(
+                        $codebase->config,
+                        $issue_baseline,
+                        $issue_data->file_name,
+                        $issue_data->type,
+                        $issue_data->selected_text,
+                    )) {
                         $issue_data->severity = IssueData::SEVERITY_INFO;
                     }
 
