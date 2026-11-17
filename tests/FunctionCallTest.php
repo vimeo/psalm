@@ -1415,6 +1415,46 @@ final class FunctionCallTest extends TestCase
                     '$elements' => 'non-empty-list<string>',
                 ],
             ],
+            'pathinfoOfStringMayLackDirname' => [
+                'code' => '<?php
+                    /** @var string $path */
+                    $info = pathinfo($path);',
+                'assertions' => [
+                    '$info===' => 'array{basename: string, dirname?: string, extension?: string, filename: string}',
+                ],
+            ],
+            'pathinfoOfEmptyStringMayLackDirname' => [
+                'code' => '<?php
+                    $info = pathinfo("");',
+                'assertions' => [
+                    '$info===' => 'array{basename: string, dirname?: string, extension?: string, filename: string}',
+                ],
+            ],
+            'pathinfoOfNonEmptyStringHasDirname' => [
+                'code' => '<?php
+                    /** @var non-empty-string $path */
+                    $info = pathinfo($path);
+                    $dir = $info["dirname"];',
+                'assertions' => [
+                    '$info===' => 'array{basename: string, dirname: string, extension?: string, filename: string}',
+                    '$dir===' => 'string',
+                ],
+            ],
+            'pathinfoOfLiteralPathHasDirname' => [
+                'code' => '<?php
+                    $dir = pathinfo("a/b.c")["dirname"];',
+                'assertions' => [
+                    '$dir===' => 'string',
+                ],
+            ],
+            'pathinfoOfStringWithFlagReturnsString' => [
+                'code' => '<?php
+                    /** @var string $path */
+                    $dir = pathinfo($path, PATHINFO_DIRNAME);',
+                'assertions' => [
+                    '$dir===' => 'string',
+                ],
+            ],
             'explodeWithPositiveLimit' => [
                 'code' => '<?php
                     /** @var string $string */
@@ -5029,6 +5069,13 @@ final class FunctionCallTest extends TestCase
                         }
 
                         return "";
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'pathinfoDirnamePossiblyUndefined' => [
+                'code' => '<?php
+                    function dir_of(string $s) : string {
+                        return pathinfo($s)["dirname"];
                     }',
                 'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
