@@ -20,24 +20,35 @@ use const DIRECTORY_SEPARATOR;
 
 final class ProjectCacheProviderTest extends TestCase
 {
+    /** One directory for the class, a cache directory under it for each test */
+    private static string $cache_root;
+
     private string $cache_directory;
+
+    #[Override]
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+
+        self::$cache_root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'psalm-project-cache-test-'
+            . uniqid('', true);
+    }
+
+    #[Override]
+    public static function tearDownAfterClass(): void
+    {
+        Config::removeCacheDirectory(self::$cache_root);
+
+        parent::tearDownAfterClass();
+    }
 
     #[Override]
     public function setUp(): void
     {
         parent::setUp();
 
-        $this->cache_directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'psalm-project-cache-test-'
-            . uniqid('', true);
-        mkdir($this->cache_directory);
-    }
-
-    #[Override]
-    public function tearDown(): void
-    {
-        Config::removeCacheDirectory($this->cache_directory);
-
-        parent::tearDown();
+        $this->cache_directory = self::$cache_root . DIRECTORY_SEPARATOR . uniqid('', true);
+        mkdir($this->cache_directory, 0o777, true);
     }
 
     public function testAReadOnlyCacheRecordsNoSuccessfulRun(): void
