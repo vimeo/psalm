@@ -39,6 +39,7 @@ final class FileStorageCacheProvider
             $storage_dir . 'MethodStorage.php',
             $storage_dir . 'PropertyStorage.php',
             $storage_dir . 'PropertyHookStorage.php',
+            $storage_dir . 'EnumCaseStorage.php',
             $storage_dir . 'FunctionLikeParameter.php',
         ];
 
