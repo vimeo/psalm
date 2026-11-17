@@ -611,8 +611,9 @@ final class LoopAnalyzer
 
                 // the passes counted from the assignment map don't cover every chain of copies (`$a = $b; $b = $c;
                 // $c = "s";`): a type still changing in the last pass is carried to the variables it goes into by
-                // one more pass. Along a chain, each pass changes a variable the previous one didn't: a variable
-                // that keeps changing on its own (`$e[$k] = [$e[$k] ?? null]`) would never settle.
+                // one more pass. Along a chain, the variables a pass changes aren't those the previous one changed:
+                // the same ones changing again keep changing on their own (`$e[$k] = [$e[$k] ?? null]`) and would
+                // never settle.
                 if ($i + 1 === $max_passes && $propagation_passes < $max_propagation_passes) {
                     $changed_feeding_var_ids = self::getChangedFeedingVarIds(
                         $feeding_var_ids,
@@ -620,7 +621,9 @@ final class LoopAnalyzer
                         self::getVarsStartingNextIteration($continue_context, $loop_scope, $post_expressions),
                     );
 
-                    if (array_diff_key($changed_feeding_var_ids, $previously_changed_feeding_var_ids)) {
+                    if ($changed_feeding_var_ids
+                        && $changed_feeding_var_ids != $previously_changed_feeding_var_ids
+                    ) {
                         ++$max_passes;
                         ++$propagation_passes;
                     }

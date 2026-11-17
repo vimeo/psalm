@@ -217,6 +217,47 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'whileChainsOfDifferentLengthsMeetingOnOneVariableAreAnalysedUntilTheyReachTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = 0;
+                        $q = 0;
+                        $r = 0;
+                        $y = 0;
+                        $z = 0;
+                        while (rand(0, 1)) {
+                            $w = 1;
+                            $z = $a;
+                            $a = rand(0, 1) ? $y : $q;
+                            $q = $r;
+                            $r = "s";
+                            $y = 1.5;
+                        }
+                        /** @psalm-check-type-exact $z = 0|1.5|'s' */;
+                    }
+                    PHP,
+            ],
+            'whileChainReachingAVariableThatGrowsOnItsOwnIsAnalysedUntilItReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = [];
+                        $b = 0;
+                        $c = 0;
+                        $z = [];
+                        while (rand(0, 1)) {
+                            $w = 1;
+                            $z = $a;
+                            $a = [$a, $b];
+                            $b = $c;
+                            $c = "s";
+                        }
+                        $z1 = $z[1] ?? 0;
+                        /** @psalm-check-type-exact $z1 = 0|'s' */;
+                    }
+                    PHP,
+            ],
             'whileChainThroughNestedForeachValuesIsAnalysedUntilItReachesTheFirst' => [
                 'code' => <<<'PHP'
                     <?php
