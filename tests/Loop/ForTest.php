@@ -23,6 +23,22 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'forChainThroughNestedForeachValuesIsAnalysedUntilItReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        for (; rand(0, 1);) {
+                            foreach ([$b] as $a) {}
+                            foreach ([$c] as $b) {}
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 0|'s' */;
+                    }
+                    PHP,
+            ],
             'preIncrementInAConditionThatHoldsOnlyForTheFirstValueExitsWithTheNextOne' => [
                 'code' => '<?php
                     for ($try = 8; ++$try < 10;) {

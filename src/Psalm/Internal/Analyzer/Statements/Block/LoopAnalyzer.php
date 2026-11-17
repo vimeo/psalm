@@ -308,6 +308,13 @@ final class LoopAnalyzer
             $max_passes = $assignment_depth;
             $data_flow_pass_added = false;
             $widening_passes = 0;
+            $propagation_passes = 0;
+            // only what the loop assigns changes from one pass to the next
+            $feeding_var_ids = array_intersect_key(
+                $assignment_mapper->getFeedingVarIds(),
+                $assignment_mapper->getAssignedVarIds(),
+            );
+            $max_propagation_passes = count($feeding_var_ids);
             $widening_bounds = null;
             $force_pass = false;
 
@@ -603,6 +610,21 @@ final class LoopAnalyzer
                     } else {
                         $widening_passes = 4;
                     }
+                }
+
+                // the passes counted from the assignment map don't cover every chain of copies (`$a = $b; $b = $c;
+                // $c = "s";`): a type still changing in the last pass is carried to the variables it goes into by
+                // one more pass. A chain goes through each of these variables at most once.
+                if ($i + 1 === $max_passes
+                    && $propagation_passes < $max_propagation_passes
+                    && self::hasChangedFeedingVar(
+                        $feeding_var_ids,
+                        $vars_at_iteration_start,
+                        self::getVarsStartingNextIteration($continue_context, $loop_scope, $post_expressions),
+                    )
+                ) {
+                    ++$max_passes;
+                    ++$propagation_passes;
                 }
 
                 if ($i + 1 === $max_passes
@@ -2042,6 +2064,38 @@ final class LoopAnalyzer
     /**
      * Types that read the same may still differ: closures made from different functions or methods do
      *
+     * @psalm-pure
+     */
+    /**
+     * @param array<string, true> $feeding_var_ids
+     * @param array<string, Union> $vars_at_start
+     * @param array<string, Union> $vars_at_end
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function hasChangedFeedingVar(
+        array $feeding_var_ids,
+        array $vars_at_start,
+        array $vars_at_end,
+    ): bool {
+        foreach ($feeding_var_ids as $var_id => $_) {
+            if (!isset($vars_at_end[$var_id])) {
+                continue;
+            }
+
+            if (!isset($vars_at_start[$var_id])
+                || self::differ(
+                    Type::combineUnionTypes($vars_at_start[$var_id], $vars_at_end[$var_id]),
+                    $vars_at_start[$var_id],
+                )
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @psalm-pure
      */
     private static function differ(Union $type, Union $other_type): bool

@@ -8,6 +8,8 @@ use Override;
 use PhpParser;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 
+use function array_diff_key;
+use function array_flip;
 use function array_map;
 use function is_string;
 
@@ -35,6 +37,13 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     private array $defined_var_ids = [];
 
     /**
+     * The variables whose value goes into another one (by an assignment, a foreach or a reference)
+     *
+     * @var array<string, true>
+     */
+    private array $feeding_var_ids = [];
+
+    /**
      * @psalm-mutation-free
      */
     public function __construct(protected ?string $this_class_name)
@@ -45,8 +54,16 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     public function enterNode(PhpParser\Node $node): ?int
     {
         if ($node instanceof PhpParser\Node\Expr\AssignRef) {
+            $right_var_id = ExpressionIdentifier::getRootVarId($node->expr, $this->this_class_name);
+
             foreach ($this->getAssignedRootVarIds($node->var) as $var_id) {
                 $this->defined_var_ids[$var_id] = true;
+
+                // what is written to either of them goes into the other one
+                if ($right_var_id !== null && $right_var_id !== $var_id) {
+                    $this->feeding_var_ids[$right_var_id] = true;
+                    $this->feeding_var_ids[$var_id] = true;
+                }
             }
 
             return null;
@@ -55,9 +72,17 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
         if ($node instanceof PhpParser\Node\Expr\Assign) {
             $right_var_id = ExpressionIdentifier::getRootVarId($node->expr, $this->this_class_name);
 
-            foreach ($this->getAssignedRootVarIds($node->var) as $left_var_id) {
+            $left_var_ids = $this->getAssignedRootVarIds($node->var);
+
+            foreach ($left_var_ids as $left_var_id) {
                 $this->assignment_map[$left_var_id][$right_var_id ?? 'isset'] = true;
             }
+
+            // `$a = [$b]`, `$a[$k] = 1`
+            $this->feeding_var_ids += array_diff_key(
+                self::getReadVarIds([$node->expr, $node->var]),
+                array_flip($left_var_ids),
+            );
 
             // what the sides change themselves (`$x = $counts['one']++`, `$a[$i++] = 1`) is in the map too
             $inner_visitor = new self($this->this_class_name);
@@ -70,6 +95,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             }
 
             $this->defined_var_ids += $inner_visitor->defined_var_ids;
+            $this->feeding_var_ids += $inner_visitor->feeding_var_ids;
 
             return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
         }
@@ -119,6 +145,8 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
                 }
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Foreach_) {
+            $this->feeding_var_ids += self::getReadVarIds([$node->expr]);
+
             foreach ([$node->keyVar, $node->valueVar] as $target) {
                 if ($target) {
                     foreach ($this->getAssignedRootVarIds($target) as $var_id) {
@@ -168,11 +196,36 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     }
 
     /**
+     * @param list<PhpParser\Node\Expr> $exprs
+     * @return array<string, true>
+     */
+    private static function getReadVarIds(array $exprs): array
+    {
+        $var_ids = [];
+
+        foreach ((new PhpParser\NodeFinder)->findInstanceOf($exprs, PhpParser\Node\Expr\Variable::class) as $var) {
+            if (is_string($var->name)) {
+                $var_ids['$' . $var->name] = true;
+            }
+        }
+
+        return $var_ids;
+    }
+
+    /**
      * @return array<string, array<string, bool>>
      */
     public function getAssignmentMap(): array
     {
         return $this->assignment_map;
+    }
+
+    /**
+     * @return array<string, true>
+     */
+    public function getFeedingVarIds(): array
+    {
+        return $this->feeding_var_ids;
     }
 
     /**

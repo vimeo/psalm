@@ -217,6 +217,105 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'whileChainThroughNestedForeachValuesIsAnalysedUntilItReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            foreach ([$b] as $a) {}
+                            foreach ([$c] as $b) {}
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 0|'s' */;
+                    }
+                    PHP,
+            ],
+            'whileChainThroughNestedForeachKeysIsAnalysedUntilItReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            foreach ([$b => 1] as $a => $_) {}
+                            foreach ([$c => 1] as $b => $_) {}
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 0|'s' */;
+                    }
+                    PHP,
+            ],
+            'whileChainThroughAReferenceIsAnalysedUntilItReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            $z = 1;
+                            $a = $b;
+                            $r = &$c;
+                            $b = $r;
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 0|'s' */;
+                    }
+                    PHP,
+            ],
+            'whileChainNotStartingAtTheFirstAssignmentIsAnalysedUntilItReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            $z = 1;
+                            $a = $b;
+                            $b = $c;
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 0|'s' */;
+                    }
+                    PHP,
+            ],
+            'whileChainThroughArrayLiteralsIsAnalysedUntilItReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = [];
+                        $b = [];
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            $a = [$b];
+                            $b = [$c];
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = list{0?: list{0?: 0|'s'}} */;
+                    }
+                    PHP,
+            ],
+            'whileCounterCopiedAlongAChainIsStillWidened' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $i = 0;
+                        $j = 0;
+                        $k = 0;
+                        while (rand(0, 1)) {
+                            $k = $j;
+                            $j = $i;
+                            $i++;
+                        }
+                        /** @psalm-check-type-exact $k = int<0, max> */;
+                    }
+                    PHP,
+            ],
             'whileBodyStartingWithAForeachIsAnalysedUntilTheLastAssignmentReachesTheFirst' => [
                 'code' => <<<'PHP'
                     <?php
