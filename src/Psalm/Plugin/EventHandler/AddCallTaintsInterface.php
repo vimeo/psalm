@@ -8,6 +8,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveCallTaintsEvent;
 
 /**
  * @api
+ * @psalm-mutable
  */
 interface AddCallTaintsInterface
 {

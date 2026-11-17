@@ -144,6 +144,7 @@ final class TaintedCallTest extends DeferredAnalyzerTestCase
         ];
         yield 'source' => ['echo call_through("input");', 'TaintedHtml'];
         yield 'static method' => ['call_through("Page::show", (string) $_GET["x"]);', 'TaintedHtml'];
+        yield 'builtin without a stub' => ['call_through("shell_exec", (string) $_GET["x"]);', 'TaintedShell'];
         yield 'specialized call taking the taint' => [
             'call_through("specialized", "safe");
             echo call_through("specialized", (string) $_GET["x"]);',
@@ -168,6 +169,7 @@ final class TaintedCallTest extends DeferredAnalyzerTestCase
         ];
         yield 'call event of a wired call' => ['echo call_through("clean", (string) $_GET["x"]);'];
         yield 'call event of a PHP call' => ['echo clean((string) $_GET["x"]);'];
+        yield 'method of an unknown class' => ['call_through("Unknown::show", (string) $_GET["x"]);'];
     }
 
     private function analyze(string $code): void

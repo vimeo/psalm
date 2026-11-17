@@ -3097,6 +3097,10 @@ final class Codebase
 
         if (MethodIdentifier::isValidMethodIdReference($function_id)) {
             $method_id = MethodIdentifier::wrap($function_id);
+            if (!$this->classlike_storage_provider->has($method_id->fq_class_name)) {
+                return null;
+            }
+
             $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
             if ($declaring_method_id === null) {
                 return null;
@@ -3151,7 +3155,16 @@ final class Codebase
             }
         }
 
-        return null;
+        if (!InternalCallMapHandler::inCallMap($function_id)) {
+            return null;
+        }
+
+        // a builtin without a stub: its call map entry gives its sinks and flows
+        try {
+            return $this->functions->getStorageForSymbolLookup($function_id, $call_location->file_path);
+        } catch (InvalidArgumentException | UnexpectedValueException) {
+            return null;
+        }
     }
 
     /**
