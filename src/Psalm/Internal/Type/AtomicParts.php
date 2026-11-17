@@ -32,6 +32,7 @@ use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Union;
 
 /**
  * The disjoint types that a type standing for values of several kinds is made of, so that it can be intersected with
@@ -62,11 +63,11 @@ final class AtomicParts
                 return null;
             }
 
-            $closure = new TClosure($type->params, $type->return_type, $type->purity, [], [], $from_docblock);
-
             if ($other instanceof TNamedObject) {
                 // a Closure of the signature of the callable
-                return $other->value === 'Closure' ? [$closure] : null;
+                return $other->value === 'Closure'
+                    ? [new TClosure($type->params, $type->return_type, $type->purity, [], [], $from_docblock)]
+                    : null;
             }
 
             return [
@@ -115,22 +116,39 @@ final class AtomicParts
     }
 
     /**
+     * The object half of an iterable, of its key and value types (or the given ones) and its purity
+     *
+     * @param array{Union, Union}|null $type_params
+     */
+    public static function getTraversable(TIterable $type, ?array $type_params = null): TNamedObject
+    {
+        $from_docblock = $type->from_docblock;
+        $is_impure = $type->purity->getId() === Type::getImpure()->getId();
+
+        if (!$type->has_docblock_params && $type_params === null && $is_impure) {
+            return new TNamedObject('Traversable', false, false, $type->extra_types, $from_docblock);
+        }
+
+        $type_params ??= $type->type_params;
+
+        // the purity of the iterable is the last template of Traversable
+        return new TGenericObject(
+            'Traversable',
+            $is_impure ? $type_params : [...$type_params, $type->purity],
+            false,
+            false,
+            $type->extra_types,
+            $from_docblock,
+        );
+    }
+
+    /**
      * @return non-empty-list<Atomic>
      */
     private static function splitIterable(TIterable $type, Codebase $codebase): array
     {
         $from_docblock = $type->from_docblock;
-        // the purity of the iterable is the last template of Traversable
-        $traversable = $type->has_docblock_params || $type->purity->getId() !== Type::getImpure()->getId()
-            ? new TGenericObject(
-                'Traversable',
-                [...$type->type_params, $type->purity],
-                false,
-                false,
-                $type->extra_types,
-                $from_docblock,
-            )
-            : new TNamedObject('Traversable', false, false, $type->extra_types, $from_docblock);
+        $traversable = self::getTraversable($type);
 
         $array_key = Type::intersectUnionTypes($type->type_params[0], Type::getArrayKey(), $codebase);
 

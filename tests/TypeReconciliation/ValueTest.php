@@ -1326,7 +1326,7 @@ final class ValueTest extends TestCase
                     }
                     PHP,
                 'assertions' => [
-                    '$a===' => 'callable-array{0: lowercase-string, 1: non-empty-lowercase-string}',
+                    '$a===' => 'callable-array{0: non-empty-lowercase-string, 1: non-empty-lowercase-string}',
                 ],
             ],
             'callableInstanceOfClosureKeepsItsSignature' => [
@@ -1356,6 +1356,24 @@ final class ValueTest extends TestCase
                     $a = a();
 
                     if (!in_array($a, objects(), true)) {
+                        throw new RuntimeException();
+                    }
+                    PHP,
+                'assertions' => [
+                    '$a===' => 'Traversable[pure]<int, string>',
+                ],
+            ],
+            'pureIterableThatIsAnObjectKeepsItsPurity' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return iterable[pure]<int, string> */
+                    function a(): iterable {
+                        return [];
+                    }
+
+                    $a = a();
+
+                    if (!is_object($a)) {
                         throw new RuntimeException();
                     }
                     PHP,
@@ -1661,6 +1679,16 @@ final class ValueTest extends TestCase
                 'code' => <<<'PHP'
                     <?php
                     /** @param array<int, int> $a */
+                    function f(array $a): void {
+                        if (is_callable($a)) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'arrayOfEmptyStringsIsNeverCallable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<int, ''> $a */
                     function f(array $a): void {
                         if (is_callable($a)) {}
                     }

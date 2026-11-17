@@ -43,7 +43,6 @@ use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
-use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
@@ -1747,10 +1746,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 $params = $type->type_params;
                 $params[0] = self::refineArrayKey($params[0]);
 
-                $object_types[] = new TGenericObject(
-                    'Traversable',
-                    $params,
-                );
+                $object_types[] = AtomicParts::getTraversable($type, $params);
 
                 $redundant = false;
             } else {
@@ -2365,7 +2361,7 @@ final class SimpleAssertionReconciler extends Reconciler
             if ($type->hasTraversableInterface($codebase)) {
                 $traversable_types[] = $type;
             } elseif ($type instanceof TIterable) {
-                $traversable_types[] = new TGenericObject('Traversable', $type->type_params);
+                $traversable_types[] = AtomicParts::getTraversable($type, $type->type_params);
                 $redundant = false;
             } elseif ($type instanceof TObject) {
                 $traversable_types[] = new TNamedObject('Traversable');
@@ -3018,7 +3014,9 @@ final class SimpleAssertionReconciler extends Reconciler
                 // e.g. a literal-string, which may be the name of a class though Psalm has no type for both
                 ?? Type::intersectUnionTypes(
                     $type->type_params[1],
-                    $offset === 0 ? new Union([new TObject(), new TString()]) : Type::getString(),
+                    $offset === 0
+                        ? new Union([new TObject(), new TNonEmptyString()])
+                        : Type::getNonEmptyString(),
                     $codebase,
                 );
 
