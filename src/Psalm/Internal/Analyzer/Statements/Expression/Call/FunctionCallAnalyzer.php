@@ -42,6 +42,7 @@ use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Internal\TypeVisitor\AmbiguousTemplateRemover;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\DeprecatedFunction;
+use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidFunctionCall;
@@ -496,7 +497,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     clone $context,
                     $callee_function_name,
                     [new PhpParser\Node\VariadicPlaceholder($stmt->getAttributes())],
-                );
+                ) ?? Type::getClosure();
 
                 $stmt_type = $stmt_type === null
                     ? $callee_closure_type
@@ -1546,7 +1547,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $call_context,
                 $function_name,
                 $callee_args,
-            );
+            ) ?? Type::getMixed();
 
             $return_type = $return_type === null
                 ? $callee_return_type
@@ -1586,7 +1587,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
     /**
      * The type of call $stmt as a call of the function named $function_name with $args, whose issues are not
-     * reported
+     * reported but those about the function itself
      *
      * @param list<PhpParser\Node\Arg|PhpParser\Node\VariadicPlaceholder> $args
      */
@@ -1596,7 +1597,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         Context $context,
         string $function_name,
         array $args,
-    ): Union {
+    ): ?Union {
         $callee_stmt = new VirtualFuncCall(
             new VirtualFullyQualified($function_name, $stmt->name->getAttributes()),
             $args,
@@ -1607,10 +1608,16 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         self::analyze($statements_analyzer, $callee_stmt, $context);
 
-        IssueBuffer::clearRecordingLevel();
+        $issues = IssueBuffer::clearRecordingLevel();
         IssueBuffer::stopRecording();
 
-        return $statements_analyzer->node_data->getType($callee_stmt) ?? Type::getMixed();
+        foreach ($issues as $issue) {
+            if ($issue instanceof ForbiddenCode || $issue instanceof DeprecatedFunction) {
+                IssueBuffer::bubbleUp($issue);
+            }
+        }
+
+        return $statements_analyzer->node_data->getType($callee_stmt);
     }
 
     /**
@@ -1759,23 +1766,43 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
-        return $callable->replaceTemplateTypesWithArgTypes($bounds_result, $codebase);
+        $callable = $callable->replaceTemplateTypesWithArgTypes($bounds_result, $codebase);
+
+        if ($callable->params === null) {
+            return $callable;
+        }
+
+        return $callable->replace(
+            array_map(
+                static fn(FunctionLikeParameter $param): FunctionLikeParameter => $param->out_type
+                    ? $param->setOutType(
+                        TemplateInferredTypeReplacer::replace($param->out_type, $bounds_result, $codebase),
+                    )
+                    : $param,
+                $callable->params,
+            ),
+            $callable->return_type,
+        );
     }
 
     /**
-     * The parameters a call of either of two callables is checked against: those they have in common, and where they
-     * differ, a parameter of any type, by reference if either is
+     * The parameters a call of either of two callables with $args is checked against: those they have in common, and
+     * where they differ, a parameter of either type, by reference if either is; none when the arguments are named and
+     * the names differ
      *
      * @param ?array<int, FunctionLikeParameter> $params
      * @param ?array<int, FunctionLikeParameter> $other_params
+     * @param array<PhpParser\Node\Arg> $args
      * @return ?list<FunctionLikeParameter>
-     * @psalm-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
-    private static function mergeParams(?array $params, ?array $other_params): ?array
+    private static function mergeParams(?array $params, ?array $other_params, array $args): ?array
     {
         if ($params === null || $other_params === null) {
             return null;
         }
+
+        $has_named_args = array_filter($args, static fn(PhpParser\Node\Arg $arg): bool => $arg->name !== null) !== [];
 
         $params = array_values($params);
         $other_params = array_values($other_params);
@@ -1798,9 +1825,38 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $named_param = $param ?? $other_param;
                 assert($named_param !== null);
 
+                $type = null;
+                $out_type = null;
+
+                if ($param !== null && $other_param !== null) {
+                    if ($has_named_args && $param->name !== $other_param->name) {
+                        return null;
+                    }
+
+                    if ($param->type !== null
+                        && $other_param->type !== null
+                        && $param->is_variadic === $other_param->is_variadic
+                    ) {
+                        $type = Type::combineUnionTypes($param->type, $other_param->type);
+                    }
+
+                    $param_out_type = $param->out_type ?? $param->type;
+                    $other_param_out_type = $other_param->out_type ?? $other_param->type;
+
+                    if ($param->by_ref
+                        && $other_param->by_ref
+                        && $param_out_type !== null
+                        && $other_param_out_type !== null
+                    ) {
+                        $out_type = Type::combineUnionTypes($param_out_type, $other_param_out_type);
+                    }
+                }
+
                 $merged_params[] = new FunctionLikeParameter(
                     $named_param->name,
                     $param?->by_ref || $other_param?->by_ref,
+                    $type,
+                    out_type: $out_type,
                     is_optional: $param === null
                         || $other_param === null
                         || $param->is_optional
@@ -1966,7 +2022,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                     $function_call_info->function_params = $callable_callee_count === 0
                         ? $var_type_part->params
-                        : self::mergeParams($function_call_info->function_params, $var_type_part->params);
+                        : self::mergeParams(
+                            $function_call_info->function_params,
+                            $var_type_part->params,
+                            $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+                        );
 
                     $callable_callee_count++;
 

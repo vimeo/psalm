@@ -3681,9 +3681,12 @@ final class CallableTest extends TestCase
                         protected function runLoop(): void {}
                     }',
             ],
-            'callUnionOfFunctionNamesChecksTheArgumentsAgainstNone' => [
+            'callUnionOfFunctionNamesChecksTheArgumentsAgainstAnyOfThem' => [
                 'code' => '<?php
-                    /** @param non-empty-string $from */
+                    /**
+                     * @param non-empty-string $from
+                     * @param string|Closure(array<array-key, string>):string $to
+                     */
                     function f(string $from, string|\Closure $to, string $s): ?string {
                         if ($to instanceof \Closure) {
                             $replace = "preg_replace_callback";
@@ -3732,7 +3735,7 @@ final class CallableTest extends TestCase
                     '$r===' => 'bool|int<0, max>',
                 ],
             ],
-            'callUnionOfClosuresWithDifferentParamsChecksTheArgumentsAgainstNone' => [
+            'callUnionOfClosuresWithDifferentParamsChecksTheArgumentsAgainstEither' => [
                 'code' => '<?php
                     $fn = rand(0, 1) ? fn(int $i): int => $i : fn(string $s): string => $s;
                     $r = $fn(1);',
@@ -3790,6 +3793,40 @@ final class CallableTest extends TestCase
                     '$r===' => 'int|string',
                 ],
             ],
+            'callUnionOfFunctionNamesAssignsAPropertyByReference' => [
+                'code' => '<?php
+                    final class P {
+                        /** @var mixed */
+                        public $m;
+                    }
+
+                    $p = new P();
+                    $fn = rand(0, 1) ? "preg_match" : "preg_match_all";
+                    $fn("/a/", "x", $p->m);
+                    $m = $p->m;',
+                'assertions' => [
+                    '$m===' => 'array<array-key, list<string>|string>',
+                ],
+            ],
+            'callUnionOfFunctionNamesWithDifferentParamNamesTakesNamedArguments' => [
+                'code' => '<?php
+                    $fn = rand(0, 1) ? "str_pad" : "str_repeat";
+                    $fn(string: "a", times: 3);
+
+                    $fn = rand(0, 1) ? "str_repeat" : "str_pad";
+                    $fn(string: "a", times: 3);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'firstClassCallableOfUnionWithAnUnknownFunctionName' => [
+                'code' => '<?php
+                    $fn = rand(0, 1) ? "strlen" : "doesNotExist";
+                    $c = $fn(...);',
+                'assertions' => [
+                    '$c===' => 'Closure[impure]|Closure[pure](string):int<0, max>',
+                ],
+            ],
         ];
     }
 
@@ -3811,6 +3848,27 @@ final class CallableTest extends TestCase
                     $fn = rand(0, 1) ? "strlen" : "trim";
                     $fn();',
                 'error_message' => 'TooFewArguments',
+            ],
+            'callUnionOfFunctionNamesChecksTheArgumentsAgainstNoneOfThem' => [
+                'code' => '<?php
+                    $fn = rand(0, 1) ? "strlen" : "abs";
+                    $fn([]);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'callUnionOfFunctionNamesWithMixedArgument' => [
+                'code' => '<?php
+                    /** @param mixed $m */
+                    function f(bool $b, $m): void {
+                        $fn = $b ? "pow" : "fmod";
+                        $fn($m, 2);
+                    }',
+                'error_message' => 'MixedArgument',
+            ],
+            'callUnionOfFunctionNamesReportsTheForbiddenOne' => [
+                'code' => '<?php
+                    $fn = rand(0, 1) ? "var_dump" : "print_r";
+                    $fn("x");',
+                'error_message' => 'ForbiddenCode',
             ],
             'callUnionOfFunctionNamesInPureContextChecksThePurityOfEach' => [
                 'code' => '<?php
