@@ -20,8 +20,44 @@ Run with `--help` to see a list of options that Psalm supports.
 
 Psalm exits with status `0` when it successfully completed and found no issues,
 `1` when there was a problem running Psalm and `2` when it completed
-successfully but found some issues. Any exit status apart from those indicate
-some internal problem.
+successfully but found some issues, or a [type coverage](#minimum-type-coverage)
+below the minimum. Any exit status apart from those indicate some internal problem.
+
+## Minimum type coverage
+
+```bash
+vendor/bin/psalm --min-type-coverage=95                      # exit status 2 when the type coverage is below 95%
+vendor/bin/psalm --min-type-coverage=95 --output-format=json  # the same, the JSON report is unchanged
+vendor/bin/psalm --min-type-coverage=95 src/Foo.php          # exit status 1: only a full run measures the project
+```
+
+Below the minimum, Psalm writes this to STDERR with any `--output-format` and exits with status `2`:
+
+```
+Type coverage 93.41% is below the minimum of 95.00%
+```
+
+The minimum is a percentage from 0 to 100 with at most two decimals. The coverage in the message is rounded down,
+so 94.999% prints as `94.99%`. The option overrides the [`minTypeCoverage`](configuration.md#mintypecoverage)
+config attribute.
+
+Type coverage is the number in the summary line (`Psalm was able to infer types for 93.4127% of the codebase`)
+and the one [Shepherd](#shepherd) tracks: the share of the expressions Psalm analyzes whose inferred type is not
+`mixed`. It is not declaration coverage (parameters, properties and return types with a declared type), which is
+what `pest --type-coverage` measures.
+
+```php
+/** @param mixed $a */
+function f($a, int $b): int
+{
+    $c = $a;      // 1 expression, mixed
+    $d = $b + 1;  // 2 expressions (the sum and the assignment), inferred
+    return $d;    // 1 expression, inferred
+}
+// type coverage: 3 of 4 expressions, 75.00%
+```
+
+`--stats` lists the coverage of each file. Files in a `<directory ignoreTypeStats="true">` are not counted.
 
 ## Shepherd
 
