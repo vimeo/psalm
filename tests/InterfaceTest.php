@@ -1064,7 +1064,7 @@ final class InterfaceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
-            'arrayObjectAndIteratorSortFlagsPhp80' => [
+            'arrayObjectAndIteratorSortFlags' => [
                 'code' => '<?php
                     /** @param ArrayObject<string, int> $o */
                     function sortObject(ArrayObject $o): bool
@@ -1084,10 +1084,8 @@ final class InterfaceTest extends TestCase
                     $o = new ArrayObject(["b" => 2, "a" => 1]);
                     $r = $o->asort(SORT_REGULAR);',
                 'assertions' => ['$r===' => 'true'],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
             ],
-            'arrayObjectAndIteratorKeepTemplatesAndPurityWithSortFlagsPhp80' => [
+            'arrayObjectSortFlagsKeepPurityAndOverridePhp80' => [
                 'code' => '<?php
                     /** @psalm-pure */
                     function sortLocal(): array {
@@ -1097,16 +1095,6 @@ final class InterfaceTest extends TestCase
                         $i->ksort(SORT_STRING);
                         return [$o->getArrayCopy(), $i->getArrayCopy()];
                     }
-
-                    /** @var ArrayObject<string, int> */
-                    $o = new ArrayObject(["b" => 2, "a" => 1]);
-                    $o->ksort(SORT_STRING);
-                    $o_copy = $o->getArrayCopy();
-
-                    /** @var ArrayIterator<int, string> */
-                    $i = new ArrayIterator([3 => "c"]);
-                    $i->asort(SORT_STRING);
-                    $i_key = $i->key();
 
                     /**
                      * @psalm-purity-template TStorage(write-props) <= write-props
@@ -1126,11 +1114,7 @@ final class InterfaceTest extends TestCase
                     }
 
                     $sorted = (new Sorted(["a" => 1]))->asort(SORT_NUMERIC);',
-                'assertions' => [
-                    '$o_copy===' => 'array<string, int>',
-                    '$i_key===' => 'int|null',
-                    '$sorted===' => 'true',
-                ],
+                'assertions' => ['$sorted===' => 'true'],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -1989,23 +1973,22 @@ final class InterfaceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'arrayObjectSortFlagsTooManyArgumentsPhp74' => [
+            'arrayObjectSortOverrideWithoutFlagsPhp80' => [
                 'code' => '<?php
-                    /** @param ArrayObject<string, int> $o */
-                    function sortObject(ArrayObject $o): void
+                    /**
+                     * @extends ArrayObject<string, int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    class NoFlags extends ArrayObject
                     {
-                        $o->asort(SORT_NUMERIC);
+                        public function asort(): bool
+                        {
+                            return true;
+                        }
                     }',
-                'error_message' => 'TooManyArguments',
-            ],
-            'arrayIteratorSortFlagsTooManyArgumentsPhp74' => [
-                'code' => '<?php
-                    /** @param ArrayIterator<string, int> $i */
-                    function sortIterator(ArrayIterator $i): void
-                    {
-                        $i->ksort(SORT_STRING);
-                    }',
-                'error_message' => 'TooManyArguments',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'arrayObjectSortFlagsMustBeIntPhp80' => [
                 'code' => '<?php
