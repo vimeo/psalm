@@ -20,19 +20,9 @@ final class ClassLikeStorageCacheProvider
     /** @var Cache<ClassLikeStorage> */
     private readonly Cache $cache;
 
-    /** @param ?string $identity_directory the directory of the analysis identity to open, by default the config's */
-    public function __construct(
-        Config $config,
-        string $composerLock,
-        CacheMode $mode = CacheMode::Persistent,
-        ?string $identity_directory = null,
-    ) {
-        $this->cache = new Cache($config, 'classlike_cache', [$composerLock], $mode, $identity_directory);
-    }
-
-    public function consolidate(): void
+    public function __construct(Config $config, string $composerLock, CacheMode $mode = CacheMode::Persistent)
     {
-        $this->cache->consolidate();
+        $this->cache = new Cache($config, 'classlike_cache', [$composerLock], $mode);
     }
 
     public function writeToCache(ClassLikeStorage $storage, string $file_path, string $file_contents): void

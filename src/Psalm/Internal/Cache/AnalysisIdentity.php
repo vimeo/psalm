@@ -8,6 +8,7 @@ use FilesystemIterator;
 use Psalm\Config;
 use Psalm\Internal\Cache;
 use Psalm\Internal\Composer;
+use RecursiveCallbackFilterIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RuntimeException;
@@ -48,6 +49,7 @@ use function random_bytes;
 use function realpath;
 use function rename;
 use function sort;
+use function str_starts_with;
 use function strtolower;
 use function trim;
 
@@ -82,6 +84,9 @@ final class AnalysisIdentity
         'Storage/FunctionLikeParameter.php',
         'Internal/Provider/StatementsProvider.php',
     ];
+
+    /** Directories of dependencies inside a plugin directory, which are not the plugin's own code */
+    private const SKIPPED_PLUGIN_DIRECTORIES = ['vendor' => true, 'node_modules' => true];
 
     /**
      * @param array{
@@ -221,9 +226,10 @@ final class AnalysisIdentity
     }
 
     /**
-     * The files of the plugins. A plugin in a directory of its own inside the project counts with every PHP file of
-     * that directory, as its hooks may be in other files than its entry file; elsewhere (in the project root, a
-     * directory of project files, the vendor directory or outside the project) only its entry file counts.
+     * The files of the plugins: each entry file, and for a plugin in a directory of its own inside the project, every
+     * PHP file of that directory too, as its hooks may be in other files (dependency and hidden directories aside).
+     * A plugin directory that is the project root, is inside the vendor directory, or is or contains a directory of
+     * project files counts with its entry file only.
      *
      * @return list<string>
      */
@@ -252,13 +258,22 @@ final class AnalysisIdentity
                     static fn(string $project_dir): bool => Path::isBasePath($directory, $project_dir),
                 );
 
+            $sources[$file] = $file;
             if (!$own_directory) {
-                $sources[$file] = $file;
                 continue;
             }
 
             $iterator = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
+                new RecursiveCallbackFilterIterator(
+                    new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
+                    static fn(SplFileInfo|string $entry): bool => !$entry instanceof SplFileInfo
+                        || !$entry->isDir()
+                        || !isset(self::SKIPPED_PLUGIN_DIRECTORIES[$entry->getFilename()])
+                            && !str_starts_with($entry->getFilename(), '.'),
+                ),
+                RecursiveIteratorIterator::LEAVES_ONLY,
+                // a directory the process cannot read is left out, not a reason to stop
+                RecursiveIteratorIterator::CATCH_GET_CHILD,
             );
             /** @var SplFileInfo $source */
             foreach ($iterator as $source) {

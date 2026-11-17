@@ -66,10 +66,12 @@ Psalm itself, `composer.lock` and the plugin files. A run never reads data store
 the same answer with a cache as without one. The `identity.json` file of each directory lists the components its
 fingerprint was made from.
 
-A plugin in a directory of its own inside the project (like `tools/psalm/`) counts with every PHP file of that
-directory. A plugin in the project root, in a directory of project files or outside the project counts with its entry
-file only: when such a plugin has its hooks in other files, run Psalm with `--no-cache` (or `--clear-cache`) after
-changing them.
+A plugin counts with its entry file and, when that file is in a directory of its own inside the project (like
+`tools/psalm/`, or a subdirectory of the project files such as `src/Psalm/`), with every PHP file of that directory,
+except its `vendor`, `node_modules` and hidden directories. Editing any of these files makes the next run a cold one.
+A plugin whose directory is the project root, is in the vendor directory, is outside the project, or is or contains a
+directory of project files counts with its entry file only: when such a plugin has its hooks in other files, run Psalm
+with `--no-cache` (or `--clear-cache`) after changing them.
 
 Running them together (e.g. `--threads=8 --diff`) will result in the fastest possible Psalm run.
 

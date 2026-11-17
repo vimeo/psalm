@@ -10,15 +10,19 @@ use Psalm\Internal\Cache\AnalysisIdentity;
 use Psalm\Tests\TestCase;
 use Symfony\Component\Process\Process;
 
+use function chmod;
 use function file_put_contents;
+use function function_exists;
 use function is_array;
 use function json_decode;
 use function mkdir;
+use function posix_getuid;
 use function sys_get_temp_dir;
 use function uniqid;
 
 use const DIRECTORY_SEPARATOR;
 use const PHP_BINARY;
+use const PHP_OS_FAMILY;
 
 final class AnalysisIdentityTest extends TestCase
 {
@@ -53,16 +57,20 @@ final class AnalysisIdentityTest extends TestCase
         mkdir($this->project . '/src', 0o777, true);
     }
 
-    public function testThePhpComponentIsTheVersionWhateverItsSource(): void
+    public function testTheIdentityHasTheVersionToAnalyseForWhateverItsSource(): void
     {
-        $configured = $this->config('phpVersion="8.0"');
-        $given = $this->config();
-        $given->setPhpVersionOverride('8.0');
-        $other = $this->config();
+        $configured = $this->config('phpVersion="8.2"');
+        $given = $this->config('phpVersion="8.2"');
+        $given->setPhpVersionOverride('8.2');
+        $tests = $this->config('phpVersion="8.2"');
+        $tests->setPhpVersionOverride('8.2', 'tests');
+        $other = $this->config('phpVersion="8.2"');
         $other->setPhpVersionOverride('7.4');
 
-        $this->assertSame($this->component($configured, 'php'), $this->component($given, 'php'));
-        $this->assertNotSame($this->component($given, 'php'), $this->component($other, 'php'));
+        $fingerprint = AnalysisIdentity::of($configured)->getFingerprint();
+        $this->assertSame($fingerprint, AnalysisIdentity::of($given)->getFingerprint());
+        $this->assertSame($fingerprint, AnalysisIdentity::of($tests)->getFingerprint());
+        $this->assertNotSame($fingerprint, AnalysisIdentity::of($other)->getFingerprint());
     }
 
     public function testTheDepsComponentIsTheLockFileOfTheProject(): void
@@ -111,6 +119,42 @@ final class AnalysisIdentityTest extends TestCase
         file_put_contents($this->project . '/other.php', "<?php\n// changed\n");
 
         $this->assertSame($before, $this->component($this->config('', $config), 'plugins'));
+    }
+
+    public function testThePluginsComponentLeavesOutTheDependenciesOfAPluginDirectory(): void
+    {
+        $this->writePluginDirectory();
+        foreach (['vendor', 'node_modules', '.git'] as $directory) {
+            mkdir($this->project . '/tools/' . $directory . '/package', 0o777, true);
+            file_put_contents($this->project . '/tools/' . $directory . '/package/Code.php', "<?php\n");
+        }
+        $config = '<plugins><plugin filename="tools/Plugin.php"/></plugins>';
+        $before = $this->component($this->config('', $config), 'plugins');
+
+        foreach (['vendor', 'node_modules', '.git'] as $directory) {
+            file_put_contents($this->project . '/tools/' . $directory . '/package/Code.php', "<?php\n// changed\n");
+        }
+
+        $this->assertSame($before, $this->component($this->config('', $config), 'plugins'));
+    }
+
+    public function testAnUnreadableDirectoryOfAPluginDirectoryIsLeftOut(): void
+    {
+        if (PHP_OS_FAMILY === 'Windows' || (function_exists('posix_getuid') && posix_getuid() === 0)) {
+            $this->markTestSkipped('permissions do not keep this process from reading a directory');
+        }
+        $this->writePluginDirectory();
+        mkdir($this->project . '/tools/locked');
+        chmod($this->project . '/tools/locked', 0o000);
+
+        try {
+            $config = $this->config('', '<plugins><plugin filename="tools/Plugin.php"/></plugins>');
+            $plugins = $this->component($config, 'plugins');
+        } finally {
+            chmod($this->project . '/tools/locked', 0o755);
+        }
+
+        $this->assertNotSame('', $plugins);
     }
 
     public function testThePluginsComponentCoversAPluginClassComposerDoesNotMap(): void

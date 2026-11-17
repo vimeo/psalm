@@ -66,6 +66,7 @@ final class ConfigFingerprint
         'shepherd_endpoint' => 'where the Shepherd report goes',
         'min_type_coverage' => 'a threshold checked after the analysis',
         'analysis_identity' => 'the identity itself, once taken',
+        'php_version_override' => 'the version it gives is the php component, whatever its source',
     ];
 
     public static function of(Config $config): string

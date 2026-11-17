@@ -58,9 +58,9 @@ final class PropertyHookStorageCacheTest extends TestCase
             $file_storage = new FileStorage($path);
 
             // Seed the storages of the older engine, including the file entry that would otherwise skip scanning.
-            $old_classes = new Cache($config, 'classlike_cache', [''], CacheMode::Persistent, $old_identity);
+            $old_classes = new Cache($config, '', [], CacheMode::Persistent, $old_identity . '/classlike_cache/old');
             $old_classes->saveItem($path . "\0contract", $storage, hash('xxh128', $code));
-            $old_files = new Cache($config, 'file_cache', [''], CacheMode::Persistent, $old_identity);
+            $old_files = new Cache($config, '', [], CacheMode::Persistent, $old_identity . '/file_cache/old');
             $old_files->saveItem($path, $file_storage, hash('xxh128', $code));
             $old_classes = $old_files = null;
 

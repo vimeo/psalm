@@ -14,20 +14,16 @@ use Psalm\Exception\ConfigCreationException;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Cache;
 use Psalm\Internal\CacheMode;
 use Psalm\Internal\CliUtils;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\ReferenceMapGenerator;
-use Psalm\Internal\Composer;
 use Psalm\Internal\ErrorHandler;
 use Psalm\Internal\Fork\PsalmRestarter;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Preloader;
-use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileProvider;
-use Psalm\Internal\Provider\FileReferenceCacheProvider;
-use Psalm\Internal\Provider\FileStorageCacheProvider;
-use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\IssueBuffer;
@@ -65,6 +61,7 @@ use function gc_collect_cycles;
 use function gc_disable;
 use function getcwd;
 use function getenv;
+use function glob;
 use function implode;
 use function ini_get;
 use function is_array;
@@ -90,6 +87,7 @@ use function trim;
 use function wordwrap;
 
 use const DIRECTORY_SEPARATOR;
+use const GLOB_ONLYDIR;
 use const JSON_THROW_ON_ERROR;
 use const LC_CTYPE;
 use const PHP_EOL;
@@ -372,18 +370,19 @@ final class Psalm
             ? $options['find-references-to']
             : null;
 
-        ProjectBootstrap::applyAnalysisOptions($options, $config, $plugins, $run_taint_analysis);
-
+        // clearing needs no analysis options, so an unsupported PHP version does not keep the cache from being cleared
         if (isset($options['clear-cache'])) {
             self::clearCache($config);
         }
 
-        if (isset($options['consolidate-cache'])) {
-            self::consolidateCache($config, $current_dir);
-        }
-
         if (isset($options['clear-global-cache'])) {
             self::clearGlobalCache($config);
+        }
+
+        ProjectBootstrap::applyAnalysisOptions($options, $config, $plugins, $run_taint_analysis);
+
+        if (isset($options['consolidate-cache'])) {
+            self::consolidateCache($config);
         }
 
         $providers = ProjectBootstrap::initProviders($options, $config, $current_dir);
@@ -951,19 +950,21 @@ final class Psalm
     }
 
 
-    /** Consolidates the caches of every analysis identity this Psalm can read, whatever options made them */
-    private static function consolidateCache(Config $config, string $current_dir): never
+    /**
+     * Consolidates every cache of every analysis identity this Psalm can read, whatever options and dependencies made
+     * them: the caches are opened where they are, never created
+     */
+    private static function consolidateCache(Config $config): never
     {
         $cache_directory = $config->getCacheDirectory();
 
         if ($cache_directory !== null) {
-            $lock = Composer::getLockFile($current_dir);
             $identity = $config->getAnalysisIdentity();
             foreach ($identity->getDirectoriesWithTheSameEngine($cache_directory) as $directory) {
-                (new ParserCacheProvider($config, $lock, CacheMode::Persistent, $directory))->consolidate();
-                (new FileStorageCacheProvider($config, $lock, CacheMode::Persistent, $directory))->consolidate();
-                (new ClassLikeStorageCacheProvider($config, $lock, CacheMode::Persistent, $directory))->consolidate();
-                (new FileReferenceCacheProvider($config, $lock, CacheMode::Persistent, $directory))->consolidate();
+                $caches = glob($directory . DIRECTORY_SEPARATOR . '*' . DIRECTORY_SEPARATOR . '*', GLOB_ONLYDIR);
+                foreach ($caches === false ? [] : $caches as $cache) {
+                    (new Cache($config, '', [], CacheMode::Persistent, $cache))->consolidate();
+                }
             }
         }
         echo 'Cache consolidated' . PHP_EOL;

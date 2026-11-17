@@ -231,6 +231,50 @@ final class CacheIdentityEndToEndTest extends TestCase
         $this->assertCount(4, $this->glob($identities[0] . '/*/*/consolidated'));
     }
 
+    public function testConsolidateCacheConsolidatesTheCachesMadeWithAnotherLockFile(): void
+    {
+        $this->writeConfig();
+        $this->writeDeprecatedClassUse();
+
+        file_put_contents($this->project . '/composer.lock', '{"packages":[]}');
+        $this->psalm([]);
+        file_put_contents($this->project . '/composer.lock', '{"packages": []}');
+        $this->psalm([]);
+        $caches = $this->glob($this->project . '/cache/*/*/*/*', GLOB_ONLYDIR);
+        $this->assertCount(2, $this->identityDirectories());
+
+        $consolidate = $this->process(['--consolidate-cache']);
+
+        $this->assertSame(0, $consolidate->getExitCode(), $consolidate->getErrorOutput());
+        // no cache is created, and each one that the analyses made is consolidated where it is
+        $this->assertSame($caches, $this->glob($this->project . '/cache/*/*/*/*', GLOB_ONLYDIR));
+        foreach ($caches as $cache) {
+            $this->assertFileExists($cache . '/consolidated');
+        }
+    }
+
+    public function testAChangedPluginEntryFileOfAnotherExtensionIsSeen(): void
+    {
+        $this->writeConfig('', '<plugins><plugin filename="tools/Deprecator.inc"/></plugins>');
+        $this->writeDeprecatedClassUse();
+        mkdir($this->project . '/tools');
+        $this->writePlugin(true, $this->project . '/tools/Deprecator.inc');
+
+        $this->psalm([]);
+        $this->writePlugin(false, $this->project . '/tools/Deprecator.inc');
+
+        $this->assertWarmIsCold([]);
+    }
+
+    public function testAConfigThatCannotBeAnalysedCanBeCleared(): void
+    {
+        $this->writeConfig('phpVersion="9.9"');
+
+        $clear = $this->process(['--clear-cache']);
+
+        $this->assertSame(0, $clear->getExitCode(), $clear->getErrorOutput());
+    }
+
     public function testRunsWithAnotherThreadCountReadTheSameCache(): void
     {
         $this->writeConfig();
@@ -356,11 +400,11 @@ final class CacheIdentityEndToEndTest extends TestCase
         file_put_contents($this->project . '/src/b.php', "<?php\n\nnew \\App\\A();\n");
     }
 
-    private function writePlugin(bool $deprecates): void
+    private function writePlugin(bool $deprecates, ?string $path = null): void
     {
         @mkdir($this->project . '/plugins');
         file_put_contents(
-            $this->project . '/plugins/Deprecator.php',
+            $path ?? $this->project . '/plugins/Deprecator.php',
             <<<PHP
                 <?php
 

@@ -24,20 +24,9 @@ final class ParserCacheProvider
      */
     private readonly Cache $stmtCache;
 
-    /** @param ?string $identity_directory the directory of the analysis identity to open, by default the config's */
-    public function __construct(
-        Config $config,
-        string $composerLock,
-        CacheMode $mode = CacheMode::Persistent,
-        ?string $identity_directory = null,
-    ) {
-        $this->stmtCache = new Cache(
-            $config,
-            self::PARSER_CACHE_DIRECTORY,
-            [$composerLock],
-            $mode,
-            $identity_directory,
-        );
+    public function __construct(Config $config, string $composerLock, CacheMode $mode = CacheMode::Persistent)
+    {
+        $this->stmtCache = new Cache($config, self::PARSER_CACHE_DIRECTORY, [$composerLock], $mode);
     }
 
     public function consolidate(): void

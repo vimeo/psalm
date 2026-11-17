@@ -9,6 +9,7 @@ use Override;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use Psalm\Config;
 use Psalm\Internal\Cache;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Provider\FileStorageCacheProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\RuntimeCaches;
@@ -384,7 +385,13 @@ final class CacheConsolidationTest extends TestCase
 
         $writer = new FileStorageCacheProvider($config, '');
         $writer->writeToCache(new FileStorage($file_path), 'contents');
-        $writer->consolidate();
+        // the writer's shared lock would keep the consolidation below from taking its exclusive one
+        unset($writer);
+        $directories = glob($this->cache_directory . '/*/*/file_cache/*', GLOB_ONLYDIR);
+        $this->assertNotFalse($directories);
+        $this->assertCount(1, $directories);
+        (new Cache($config, '', [], CacheMode::Persistent, $directories[0]))->consolidate();
+        $this->assertFileExists($directories[0] . '/consolidated');
 
         $provider = new FileStorageProvider(new FileStorageCacheProvider($config, ''));
         $this->assertTrue($provider->has($file_path, 'contents'));
