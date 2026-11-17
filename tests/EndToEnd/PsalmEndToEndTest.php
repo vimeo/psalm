@@ -521,6 +521,14 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
             ['--min-type-coverage=95', '--', 'src/Untyped.php'],
             'Cannot check the minimum type coverage when checking specific files',
         ];
+        yield 'creating the baseline' => [
+            ['--min-type-coverage=95', '--set-baseline=psalm-baseline.xml'],
+            'Cannot check the minimum type coverage when creating or updating the baseline',
+        ];
+        yield 'updating the baseline' => [
+            ['--min-type-coverage=95', '--update-baseline'],
+            'Cannot check the minimum type coverage when creating or updating the baseline',
+        ];
     }
 
     /**

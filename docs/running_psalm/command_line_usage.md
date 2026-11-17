@@ -41,10 +41,10 @@ The minimum is a percentage from 0 to 100 with at most two decimals. The coverag
 so 94.999% prints as `94.99%`. The option overrides the [`minTypeCoverage`](configuration.md#mintypecoverage)
 config attribute.
 
-Runs with `--set-baseline` or `--update-baseline` don't check the minimum. Runs with file paths
-(`psalm src/Foo.php`) skip the config attribute, which isn't an error. Like for issues, a taint analysis run in
-GitHub Actions that writes a SARIF report prints the message but exits with status `0`, so that a following step
-can upload the report.
+Runs with `--set-baseline` or `--update-baseline` don't check the config attribute and reject the option. Runs with
+file paths (`psalm src/Foo.php`) skip the config attribute, which isn't an error. Like for issues, a taint analysis
+run in GitHub Actions that writes a SARIF report prints the message but exits with status `0`, so that a following
+step can upload the report.
 
 Type coverage is the number in the summary line (`Psalm was able to infer types for 93.4127% of the codebase`)
 and the one [Shepherd](#shepherd) tracks: the share of the counted expressions whose inferred type is not `mixed`.

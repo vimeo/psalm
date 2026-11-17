@@ -330,6 +330,14 @@ final class Psalm
 
         // creating or updating the baseline is maintenance, so it doesn't check the type coverage
         if (isset($options['set-baseline']) || isset($options['update-baseline'])) {
+            if ($min_type_coverage !== null) {
+                fwrite(
+                    STDERR,
+                    'Cannot check the minimum type coverage when creating or updating the baseline' . PHP_EOL,
+                );
+                exit(1);
+            }
+
             $config->min_type_coverage = null;
         }
 
@@ -1621,7 +1629,8 @@ final class Psalm
 
             --min-type-coverage=PERCENTAGE
                 Exit with status 2 when Psalm infers types for less than PERCENTAGE of the codebase (0 to 100,
-                at most two decimals). Cannot be combined with file paths. Overrides the minTypeCoverage config option
+                at most two decimals). Cannot be combined with file paths, --set-baseline or --update-baseline.
+                Overrides the minTypeCoverage config option
 
         Reports:
             --report=PATH
