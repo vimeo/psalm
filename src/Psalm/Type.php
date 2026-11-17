@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use LogicException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Type\AtomicParts;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -852,16 +853,14 @@ abstract class Type
                 $combined_type = null;
                 foreach ($type_1->getAtomicTypes() as $type_1_atomic) {
                     foreach ($type_2->getAtomicTypes() as $type_2_atomic) {
-                        $intersection_atomic = self::intersectAtomicTypes(
+                        foreach (self::intersectAtomicTypesOrParts(
                             $type_1_atomic,
                             $type_2_atomic,
                             $codebase,
                             $intersection_performed,
                             $allow_interface_equality,
                             $allow_float_int_equality,
-                        );
-
-                        if (null !== $intersection_atomic) {
+                        ) as $intersection_atomic) {
                             if (null === $combined_type) {
                                 $combined_type = new MutableUnion([$intersection_atomic]);
                             } else {
@@ -1077,6 +1076,61 @@ abstract class Type
         }
 
         return false;
+    }
+
+    /**
+     * The intersection of two atomic types, or of their parts when neither contains the other: e.g. callable and
+     * string are a callable-string
+     *
+     * @return list<Atomic>
+     */
+    private static function intersectAtomicTypesOrParts(
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+        Codebase $codebase,
+        bool &$intersection_performed,
+        bool $allow_interface_equality,
+        bool $allow_float_int_equality,
+    ): array {
+        $intersection_atomic = self::intersectAtomicTypes(
+            $type_1_atomic,
+            $type_2_atomic,
+            $codebase,
+            $intersection_performed,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+
+        if ($intersection_atomic !== null) {
+            return [$intersection_atomic];
+        }
+
+        $type_1_parts = AtomicParts::split($type_1_atomic, $type_2_atomic, $codebase);
+        $type_2_parts = $type_1_parts === null ? AtomicParts::split($type_2_atomic, $type_1_atomic, $codebase) : null;
+
+        if ($type_1_parts === null && $type_2_parts === null) {
+            return [];
+        }
+
+        $intersection_atomics = [];
+
+        foreach ($type_1_parts ?? [$type_1_atomic] as $type_1_part) {
+            foreach ($type_2_parts ?? [$type_2_atomic] as $type_2_part) {
+                $intersection_atomics = [
+                    ...$intersection_atomics,
+                    ...self::intersectAtomicTypesOrParts(
+                        $type_1_part,
+                        $type_2_part,
+                        $codebase,
+                        $intersection_performed,
+                        $allow_interface_equality,
+                        $allow_float_int_equality,
+                    ),
+                ];
+            }
+        }
+
+        return $intersection_atomics;
     }
 
     private static function intersectAtomicTypes(

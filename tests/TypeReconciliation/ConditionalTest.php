@@ -5093,6 +5093,200 @@ final class ConditionalTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedAssignment'],
             ],
+            'mixedVarWrittenAtANestedOffsetAfterIssetInAndConditionStaysMixed' => [
+                'code' => '<?php
+                    /** @var mixed $schema */
+                    $schema = $_GET["s"];
+
+                    if (isset($schema["primary key"]) && rand(0, 1)) {
+                        $schema["primary key"][rand(0, 5)] = 1;
+                    }
+
+                    $after = $schema;
+                    $checked = null;
+
+                    if (!empty($schema["primary key"])) {
+                        $checked = $schema;
+                    }',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                    '$checked===' => 'mixed|null',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess', 'MixedArrayAssignment'],
+            ],
+            'mixedVarWrittenAtAnOffsetInIfStaysMixed' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (is_array($u)) {
+                        $u["a"] = 1;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarAppendedToInIfStaysMixed' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (is_array($u)) {
+                        $u[] = 1;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarWrittenAtAnOffsetInElseifStaysMixed' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (rand(0, 1)) {
+                        echo 0;
+                    } elseif (is_array($u) && rand(0, 1)) {
+                        $u["a"] = 1;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedPropertyWrittenAtANestedOffsetAfterIssetInAndConditionStaysMixed' => [
+                'code' => '<?php
+                    final class K {
+                        /** @var mixed */
+                        public $p;
+                    }
+
+                    $k = new K();
+
+                    if (isset($k->p["pk"]) && rand(0, 1)) {
+                        $k->p["pk"][rand(0, 5)] = 1;
+                    }
+
+                    $after = $k->p;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedArrayAssignment', 'MixedAssignment'],
+            ],
+            'partlyMixedVarWrittenAtAnOffsetInIfKeepsItsOtherPart' => [
+                'code' => '<?php
+                    /** @var int|mixed $u */
+                    $u = $_GET["u"];
+
+                    if (is_array($u)) {
+                        $u["a"] = 1;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'int|mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarAssignedInABlockNestedInTheBranchStaysUnioned' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (is_array($u)) {
+                        if (rand(0, 1)) {
+                            $u = 5;
+                        }
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => '5|array<array-key, mixed>|mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarPassedByValueInTheBranchStaysMixed' => [
+                'code' => '<?php
+                    function takes(array $a): void {}
+
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (is_array($u)) {
+                        $u["a"] = count($u);
+
+                        if (rand(0, 1)) {
+                            takes($u);
+                        }
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarPassedByValueToAMethodInTheBranchStaysMixed' => [
+                'code' => '<?php
+                    final class Service {
+                        public function take(array $a): void {}
+                    }
+
+                    $service = new Service();
+
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (is_array($u)) {
+                        $u["a"] = 1;
+                        $service->take($u);
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarPassedToACallInTheBranchStaysUnioned' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (is_array($u)) {
+                        $u["a"] = 1;
+                        preg_match("/a/", "a", $u);
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after===' => 'array<array-key, string>|mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedVarWrittenAtAnOffsetThenAssignedStaysUnioned' => [
+                'code' => '<?php
+                    /** @var mixed $u */
+                    $u = $_GET["u"];
+
+                    if (is_array($u)) {
+                        $u["a"] = 1;
+                        $u = 5;
+                    }
+
+                    $after = $u;',
+                'assertions' => [
+                    '$after' => 'int|mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'unionVarStillNarrowedAfterAndConditionWithInstanceof' => [
                 'code' => '<?php
                     /** @var \Countable|string $u */
@@ -5891,6 +6085,147 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'mixedVarWrittenByReferenceInTheConditionOfANestedIfStaysUnioned' => [
+                'code' => '<?php
+                    /** @param-out string|false $s */
+                    function readIt(mixed &$s): bool {
+                        $s = rand(0, 1) ? "a" : false;
+                        return true;
+                    }
+
+                    function f(mixed $s, bool $c): void {
+                        if ($c) {
+                            if (!readIt($s)) {
+                                throw new RuntimeException();
+                            }
+                        }
+
+                        echo strlen($s);
+                    }',
+                'error_message' => 'PossiblyFalseArgument',
+                'error_levels' => ['MixedArgument'],
+                'php_version' => '8.0',
+            ],
+            'mixedVarWrittenThroughAnAliasInTheBranchStaysUnioned' => [
+                'code' => '<?php
+                    function f(mixed $s, bool $c): void {
+                        if ($c) {
+                            assert(is_array($s));
+                            $s["a"] = 1;
+                            $r = &$s;
+                            $r = false;
+                        }
+
+                        echo strlen($s);
+                    }',
+                'error_message' => 'PossiblyFalseArgument',
+                'error_levels' => ['MixedArgument', 'UnusedVariable'],
+                'php_version' => '8.0',
+            ],
+            'mixedVarWrittenThroughAnAliasInANestedBlockStaysUnioned' => [
+                'code' => '<?php
+                    function f(mixed $s, bool $c): void {
+                        if ($c) {
+                            assert(is_array($s));
+                            $s["a"] = 1;
+
+                            if (rand(0, 1)) {
+                                $r = &$s;
+                                $r = false;
+                            }
+                        }
+
+                        echo strlen($s);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => ['MixedArgument', 'UnusedVariable'],
+                'php_version' => '8.0',
+            ],
+            'mixedVarWrittenByReferenceInANestedExpressionStaysUnioned' => [
+                'code' => '<?php
+                    /** @param-out string|false $s */
+                    function readIt(mixed &$s): bool {
+                        $s = rand(0, 1) ? "a" : false;
+                        return true;
+                    }
+
+                    function f(mixed $s, bool $c): void {
+                        if ($c) {
+                            echo readIt($s) ? "ok" : "ko";
+                        }
+
+                        echo strlen($s);
+                    }',
+                'error_message' => 'PossiblyFalseArgument',
+                'error_levels' => ['MixedArgument'],
+                'php_version' => '8.0',
+            ],
+            'mixedOffsetAssignedAsAWholeInIfStaysUnioned' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function cast(mixed $v) {
+                        return $v;
+                    }
+
+                    /** @return array<string, string> */
+                    function casts(): array {
+                        return [];
+                    }
+
+                    /** @param array<string, mixed> $attributes */
+                    function f(array $attributes): void {
+                        foreach (casts() as $key => $value) {
+                            $attributes[$key] = cast($attributes[$key]);
+
+                            if (isset($attributes[$key]) && $value === "date") {
+                                $attributes[$key] = "s";
+                            }
+
+                            if (isset($attributes[$key]) && $value === "custom") {
+                                echo $attributes[$key]->format("x");
+                            }
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidMethodCall',
+                'error_levels' => ['MixedAssignment', 'MixedMethodCall', 'MixedArgument'],
+                'php_version' => '8.0',
+            ],
+            'mixedVarUnsetInIfAndAssignedInANestedBlockIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(mixed $u): void {
+                        if (is_array($u)) {
+                            unset($u);
+
+                            if (rand(0, 1)) {
+                                $u = 1;
+                            }
+                        }
+
+                        echo $u;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => ['MixedArgument'],
+                'php_version' => '8.0',
+            ],
+            'mixedVarUnsetInElseifAndAssignedInANestedBlockIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(mixed $u): void {
+                        if (rand(0, 1)) {
+                            echo 0;
+                        } elseif (is_array($u)) {
+                            unset($u);
+
+                            if (rand(0, 1)) {
+                                $u = 1;
+                            }
+                        }
+
+                        echo $u;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => ['MixedArgument'],
+                'php_version' => '8.0',
+            ],
             'looseNullInequalityOfNonFalsyStringIsRedundant' => [
                 'code' => '<?php
                     /** @param non-falsy-string $s */

@@ -10,6 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalysisResult;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
@@ -240,6 +241,9 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];
             }
         }
+
+        MethodCallPurityAnalyzer::keepPropertiesNotWrittenForEveryReceiverType($codebase, $context, $result);
+
         if ($method_var_id !== null) {
             // the initialization and mutation passes skip the purity analysis that decides it,
             // so they rely on what the normal pass of this call found

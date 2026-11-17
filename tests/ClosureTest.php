@@ -976,7 +976,7 @@ final class ClosureTest extends TestCase
 
                     $f = function (string $k) use (&$list): int {
                         if (!$list[$k] instanceof C) {
-                            $list[$k] = new C();
+                            $list = [$k => new C()];
                         }
 
                         return 0;

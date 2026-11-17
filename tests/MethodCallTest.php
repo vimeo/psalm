@@ -768,6 +768,667 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'propertyItemIsForgottenAfterAMethodWritingItOnThis' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @var array<string, int> */
+                        public array $map = [];
+
+                        public function g(): void {
+                            $this->map["a"] = 1;
+                            $this->reset();
+
+                            if ($this->map["a"] === 1) {}
+                        }
+
+                        public function reset(): void {
+                            $this->map["a"] = 2;
+                        }
+                    }',
+            ],
+            'propertyItemsAreForgottenAfterAMethodWritingThem' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @var array<string, int> */
+                        public array $map = [];
+                        /** @var array<string, array<string, int>> */
+                        public array $nested = [];
+                        /** @var list<int> */
+                        public array $list = [];
+
+                        public function assignProperty(): void { $this->map = ["a" => 2]; }
+                        public function assignItem(): void { $this->map["a"] = 2; }
+                        public function assignNestedItem(): void { $this->nested["a"]["b"] = 2; }
+                        public function addToItem(): void { $this->map["a"] += 1; }
+                        public function incrementItem(): void { $this->map["a"]++; }
+                        public function destructureIntoItem(): void { [$this->map["a"]] = [2]; }
+                        public function destructureIntoProperty(): void { [$this->map] = [["a" => 2]]; }
+                        public function iterateIntoItem(): void { foreach ([2] as $this->map["a"]) {} }
+                        public function unsetItem(): void { unset($this->map["a"]); }
+                        public function append(): void { $this->list[] = 2; }
+                    }
+
+                    $foo = new Foo();
+
+                    $foo->map["a"] = 1;
+                    $foo->assignProperty();
+                    $a = $foo->map["a"];
+
+                    $foo->map["a"] = 1;
+                    $foo->assignItem();
+                    $b = $foo->map["a"];
+
+                    $foo->nested["a"]["b"] = 1;
+                    $foo->assignNestedItem();
+                    $c = $foo->nested["a"]["b"];
+
+                    $foo->map["a"] = 1;
+                    $foo->addToItem();
+                    $d = $foo->map["a"];
+
+                    $foo->map["a"] = 1;
+                    $foo->incrementItem();
+                    $e = $foo->map["a"];
+
+                    $foo->map["a"] = 1;
+                    $foo->destructureIntoItem();
+                    $f = $foo->map["a"];
+
+                    $foo->map["a"] = 1;
+                    $foo->destructureIntoProperty();
+                    $g = $foo->map["a"];
+
+                    $foo->map["a"] = 1;
+                    $foo->iterateIntoItem();
+                    $h = $foo->map["a"];
+
+                    $foo->map["a"] = 1;
+                    $foo->unsetItem();
+                    $i = $foo->map;
+
+                    $foo->list = [1];
+                    $foo->append();
+                    $j = $foo->list;',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                    '$d===' => 'int',
+                    '$e===' => 'int',
+                    '$f===' => 'int',
+                    '$g===' => 'int',
+                    '$h===' => 'int',
+                    '$i===' => 'array<string, int>',
+                    '$j===' => 'list<int>',
+                ],
+            ],
+            'nullablePropertyStaysNonNullAfterAMethodWritingAnItemOfIt' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @var array<string, int>|null */
+                        public ?array $map = null;
+
+                        public function add(): void { $this->map["a"] = 2; }
+
+                        public function remove(): void {
+                            if ($this->map !== null) {
+                                unset($this->map["a"]);
+                            }
+                        }
+                    }
+
+                    $foo = new Foo();
+                    $foo->map = ["a" => 1];
+                    $foo->add();
+                    $a = $foo->map;
+
+                    $foo->map = null;
+                    $foo->remove();
+                    $b = $foo->map;',
+                'assertions' => [
+                    '$a===' => 'array<string, int>',
+                    '$b===' => 'array<string, int>|null',
+                ],
+            ],
+            'falsablePropertyStaysNonFalseAfterAMethodWritingAnItemOfIt' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @var array<string, int>|false */
+                        public $map = false;
+
+                        /** @var array<string, int>|bool */
+                        public $boolMap = false;
+
+                        public function add(): void {
+                            if ($this->map !== false) {
+                                $this->map["a"] = 2;
+                            }
+                        }
+
+                        public function addToBoolMap(): void {
+                            if (is_array($this->boolMap)) {
+                                $this->boolMap["a"] = 2;
+                            }
+                        }
+
+                        /** @var array<string, int>|true */
+                        public $trueMap = true;
+
+                        public function addToTrueMap(): void {
+                            if (is_array($this->trueMap)) {
+                                $this->trueMap["a"] = 2;
+                            }
+                        }
+
+                        /** @var array<string, int>|int */
+                        public $intMap = 0;
+
+                        /** @var iterable<string, int>|null */
+                        public $iterableMap = null;
+
+                        public function addToIterableMap(): void {
+                            if ($this->iterableMap === null) {
+                                $this->iterableMap["a"] = 2;
+                            }
+                        }
+
+                        public function addToIntMap(): void {
+                            if (is_array($this->intMap)) {
+                                $this->intMap["a"] = 2;
+                            }
+                        }
+                    }
+
+                    $foo = new Foo();
+                    $foo->map = ["a" => 1];
+                    $foo->add();
+                    $a = $foo->map;
+
+                    $foo->boolMap = ["a" => 1];
+                    $foo->addToBoolMap();
+                    $b = $foo->boolMap;
+
+                    $foo->boolMap = true;
+                    $foo->addToBoolMap();
+                    $c = $foo->boolMap;
+
+                    $foo->trueMap = ["a" => 1];
+                    $foo->addToTrueMap();
+                    $d = $foo->trueMap;
+
+                    $foo->intMap = ["a" => 1];
+                    $foo->addToIntMap();
+                    $e = $foo->intMap;
+
+                    $foo->iterableMap = null;
+                    $foo->addToIterableMap();
+                    $f = $foo->iterableMap;',
+                'assertions' => [
+                    '$a===' => 'array<string, int>',
+                    '$b===' => 'array<string, int>',
+                    '$c===' => 'array<string, int>|bool',
+                    '$d===' => 'array<string, int>',
+                    '$e===' => 'array<string, int>',
+                    '$f===' => 'iterable<string, int>|null',
+                ],
+            ],
+            'propertyOfAReceiverOfSeveralTypesMayHoldWhatTheCallLeavesItForAnyOfThem' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var array{value: T} */
+                        public array $items;
+
+                        /** @param T $v */
+                        public function __construct($v) { $this->items = ["value" => $v]; }
+
+                        public function touch(): void { $this->items["value"] = $this->items["value"]; }
+                    }
+
+                    final class A {
+                        /** @var array{v: int} */
+                        public array $map = ["v" => 0];
+
+                        public function reset(): void { $this->map = ["v" => 0]; }
+                    }
+
+                    final class B {
+                        /** @var array{v: string} */
+                        public array $map = ["v" => ""];
+
+                        public function reset(): void { $this->map = ["v" => ""]; }
+                    }
+
+                    /** @param Box<int>|Box<string> $box */
+                    function generic(Box $box): void {
+                        $box->touch();
+                        $a = $box->items;
+                        /** @psalm-check-type-exact $a = array{value: int|string} */
+                    }
+
+                    function plain(A|B $x): void {
+                        $x->reset();
+                        $b = $x->map;
+                        /** @psalm-check-type-exact $b = array{v: int|string} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyKeepsWhatItHeldForAReceiverTypeWhoseMethodDoesNotWriteIt' => [
+                'code' => '<?php
+                    final class A {
+                        public int|string $p = 0;
+                        public int $other = 0;
+
+                        public function reset(): void { $this->other = 0; }
+                    }
+
+                    final class B {
+                        public int $p = 0;
+
+                        public function reset(): void { $this->p = 0; }
+                    }
+
+                    function ab(A|B $x): void {
+                        if (is_string($x->p)) {
+                            $x->reset();
+                            $a = $x->p;
+                            /** @psalm-check-type-exact $a = int|string */
+                        }
+                    }
+
+                    function ba(B|A $x): void {
+                        if (is_string($x->p)) {
+                            $x->reset();
+                            $b = $x->p;
+                            /** @psalm-check-type-exact $b = int|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'otherPropertiesOfAHeldObjectAreKeptAfterAMethodWritingOneOfThem' => [
+                'code' => '<?php
+                    final class Leaf {
+                        public int $n = 0;
+                        public int $m = 0;
+                    }
+
+                    final class Ctx {
+                        public ?string $joinSql = null;
+                        /** @var array<string, string> */
+                        public array $aliases = [];
+                        public int $counter = 0;
+                        public Leaf $leaf;
+
+                        public function __construct() { $this->leaf = new Leaf(); }
+                    }
+
+                    final class Persister {
+                        public function __construct(public Ctx $ctx) {}
+
+                        public function alias(string $c): string {
+                            $a = "t" . $this->ctx->counter++;
+                            $this->ctx->aliases[$c] = $a;
+                            $this->ctx->leaf->n = 1;
+                            return $a;
+                        }
+
+                        public function build(string $c): string {
+                            $this->ctx->joinSql = "";
+                            $this->ctx->aliases["x"] = "a";
+                            $this->ctx->leaf->n = 2;
+                            $this->ctx->leaf->m = 2;
+                            $this->alias($c);
+                            $this->ctx->joinSql .= " JOIN";
+
+                            $aliases = $this->ctx->aliases;
+                            /** @psalm-check-type-exact $aliases = array<string, string> */
+                            $n = $this->ctx->leaf->n;
+                            /** @psalm-check-type-exact $n = int */
+                            $m = $this->ctx->leaf->m;
+                            /** @psalm-check-type-exact $m = 2 */
+
+                            return $this->ctx->joinSql;
+                        }
+                    }',
+            ],
+            'propertyOfAHeldObjectIsForgottenAfterAMethodWritingItInABranchOrUnsettingIt' => [
+                'code' => '<?php
+                    final class Ctx {
+                        public ?string $x = null;
+                        public ?string $y = null;
+                        /** @var array<string, int> */
+                        public array $items = [];
+                    }
+
+                    final class Holder {
+                        public function __construct(public Ctx $ctx) {}
+
+                        public function setX(): void { $this->ctx->x = null; }
+                        public function addItem(): void { $this->ctx->items["k"] = 1; }
+                        public function unsetX(): void { unset($this->ctx->x); }
+                    }
+
+                    function branch(Holder $h, bool $b): void {
+                        $h->ctx->x = "a";
+                        $h->ctx->items["k"] = 5;
+
+                        if ($b) {
+                            $h->setX();
+                            $h->addItem();
+                        }
+
+                        $x = $h->ctx->x;
+                        /** @psalm-check-type-exact $x = null|string */
+                        $k = $h->ctx->items["k"];
+                        /** @psalm-check-type-exact $k = int */
+                    }
+
+                    function unsetting(Holder $h): void {
+                        $h->ctx->x = "a";
+                        $h->ctx->y = "a";
+                        $h->unsetX();
+                        $x = $h->ctx->x;
+                        /** @psalm-check-type-exact $x = null|string */
+                        $y = $h->ctx->y;
+                        /** @psalm-check-type-exact $y = "a" */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyOfAHeldObjectIsForgottenWhenAnotherReceiverTypeReplacesTheObject' => [
+                'code' => '<?php
+                    final class OA { public int $q = 0; }
+                    final class OB { public string $q = ""; }
+
+                    final class A {
+                        public function __construct(public OA $p) {}
+
+                        public function m(): void { $this->p = new OA(); }
+                    }
+
+                    final class B {
+                        public function __construct(public OB $p) {}
+
+                        public function m(): void { $this->p->q = "z"; }
+                    }
+
+                    function ab(A|B $x): void {
+                        $x->m();
+                        $q = $x->p->q;
+                        /** @psalm-check-type-exact $q = int|string */
+                    }
+
+                    function ba(B|A $x): void {
+                        $x->m();
+                        $q = $x->p->q;
+                        /** @psalm-check-type-exact $q = int|string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'otherPropertiesOfAHeldObjectOfANonFinalClassAreKeptAfterAMethodWritingOneOfThemInPhp84' => [
+                'code' => '<?php
+                    class Ctx {
+                        public ?string $joinSql = null;
+                        /** @var array<string, string> */
+                        public array $aliases = [];
+                    }
+
+                    final class Persister {
+                        public function __construct(public Ctx $ctx) {}
+
+                        public function alias(string $c): void { $this->ctx->aliases[$c] = "t"; }
+
+                        public function build(string $c): string {
+                            $this->ctx->joinSql = "";
+                            $this->alias($c);
+                            $this->ctx->joinSql .= " JOIN";
+                            return $this->ctx->joinSql;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'allPropertiesOfAHeldObjectWithASetHookAreForgottenAfterAMethodWritingIt' => [
+                'code' => '<?php
+                    final class Ctx {
+                        public ?string $y = null;
+
+                        public ?string $x = null {
+                            set(?string $value) {
+                                $this->x = $value;
+                                $this->y = null;
+                            }
+                        }
+                    }
+
+                    final class Holder {
+                        public function __construct(public Ctx $ctx) {}
+
+                        public function setX(): void { $this->ctx->x = "b"; }
+                    }
+
+                    function f(Holder $h): void {
+                        $h->ctx->y = "a";
+                        $h->setX();
+                        $y = $h->ctx->y;
+                        /** @psalm-check-type-exact $y = null|string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'allPropertiesOfAHeldObjectWithAMagicSetterAreForgottenAfterAMethodWritingOneOfThem' => [
+                'code' => '<?php
+                    final class Ctx {
+                        public ?string $x = null;
+                        public ?string $y = null;
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void { $this->y = null; }
+                    }
+
+                    final class Holder {
+                        public function __construct(public Ctx $ctx) {}
+
+                        public function setX(): void { $this->ctx->x = "b"; }
+                    }
+
+                    function f(Holder $h): void {
+                        $h->ctx->y = "a";
+                        $h->setX();
+                        $y = $h->ctx->y;
+                        /** @psalm-check-type-exact $y = null|string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeCallOnAReceiverOfSeveralTypesKeepsWhatAPropertyMayHold' => [
+                'code' => '<?php
+                    final class RA {
+                        public int|string $p = 0;
+                        public int $other = 0;
+
+                        public function reset(): void { $this->other = 0; }
+                    }
+
+                    final class RB {
+                        public int|string $p = 0;
+
+                        public function reset(): void { $this->p = 0; }
+                    }
+
+                    function f(RB|RA|null $x): void {
+                        if ($x !== null && is_string($x->p)) {
+                            $x?->reset();
+                            $p = $x->p;
+                            /** @psalm-check-type-exact $p = int|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
+                'php_version' => '8.0',
+            ],
+            'propertyItemsOfAnotherObjectAreKeptAfterAMethodWritingThemOnAFreshReceiver' => [
+                'code' => '<?php
+                    final class W {
+                        /** @var array<string, int> */
+                        public array $items = [];
+
+                        public function add(): void { $this->items["k"] = 1; }
+                    }
+
+                    final class Z {
+                        /** @var array<string, int> */
+                        public array $items = [];
+                    }
+
+                    function makeW(): W { return new W(); }
+
+                    function f(Z $z): void {
+                        if (isset($z->items["k"]) && $z->items["k"] === 5) {
+                            makeW()->add();
+                            $a = $z->items["k"];
+                            /** @psalm-check-type-exact $a = 5 */
+                        }
+                    }',
+            ],
+            'offsetDependingOnAPropertyIsForgottenAfterAMethodWritingIt' => [
+                'code' => '<?php
+                    final class H {
+                        public string $k = "a";
+
+                        public function setK(): void { $this->k = "b"; }
+                    }
+
+                    /** @param array<string, int|null> $arr */
+                    function f(H $h, array $arr): int {
+                        if ($arr[$h->k] !== null) {
+                            $h->setK();
+
+                            if ($arr[$h->k] !== null) {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'propertyOfAPropertyIsForgottenAfterAMethodWritingIt' => [
+                'code' => '<?php
+                    class Bar {
+                        public int $x = 0;
+                    }
+
+                    final class SubBar extends Bar {}
+
+                    final class Foo {
+                        public Bar $bar;
+
+                        public function __construct() { $this->bar = new Bar(); }
+
+                        public function setBarX(): void { $this->bar->x = 2; }
+                    }
+
+                    $foo = new Foo();
+                    $foo->bar = new SubBar();
+                    $foo->bar->x = 1;
+                    $foo->setBarX();
+                    $a = $foo->bar->x;
+                    $b = $foo->bar;',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'SubBar',
+                ],
+            ],
+            'propertyOfAGenericReceiverKeepsItsTemplateTypesAfterAMethodWritingIt' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @var array{value: T} */
+                        public array $items;
+
+                        /** @param T $v */
+                        public function __construct($v) { $this->items = ["value" => $v]; }
+
+                        /** @param T $v */
+                        public function setItem($v): void { $this->items["value"] = $v; }
+
+                        /** @param T $v */
+                        public function setProperty($v): void { $this->items = ["value" => $v]; }
+                    }
+
+                    /** @param Box<int> $box */
+                    function item(Box $box): int {
+                        $box->setItem(1);
+                        return $box->items["value"];
+                    }
+
+                    /** @param Box<int> $box */
+                    function property(Box $box): int {
+                        $box->setProperty(1);
+                        return $box->items["value"];
+                    }',
+            ],
+            'propertyItemStaysBoundByReferenceAfterAMethodWritingAnotherItem' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @var array{a: int|string, b: int} */
+                        public array $map = ["a" => 0, "b" => 0];
+
+                        public function incB(): void { $this->map["b"]++; }
+                    }
+
+                    function f(Box $box): int {
+                        $x =& $box->map["a"];
+                        $box->incB();
+                        $x = 3;
+                        return $box->map["a"];
+                    }',
+            ],
+            'propertyIsNotAssignedByAConstructorUnsettingAnItemOfIt' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @var array<string, int> */
+                        public array $map;
+
+                        public function __construct() { unset($this->map["a"]); }
+                    }
+
+                    function f(Foo $foo): array {
+                        if (!isset($foo->map)) {
+                            return [];
+                        }
+
+                        return $foo->map;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PropertyNotSetInConstructor'],
+            ],
+            'staticPropertyItemIsForgottenAfterAMethodUnsettingIt' => [
+                'code' => '<?php
+                    final class Foo {
+                        /** @var array<string, int> */
+                        public static array $map = [];
+
+                        public static function unsetItem(): void { unset(self::$map["a"]); }
+                    }
+
+                    Foo::$map = ["a" => 1];
+                    Foo::unsetItem();
+                    $a = Foo::$map;',
+                'assertions' => [
+                    '$a===' => 'array<string, int>',
+                ],
+            ],
             'methodCallOnATemplateBoundedByAnotherTemplate' => [
                 'code' => '<?php
                     interface Document {
