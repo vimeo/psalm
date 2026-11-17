@@ -772,6 +772,59 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'overrideWithItsOwnDocblockDoesNotTakeATemplateOfTheOverriddenMethod' => [
+                'code' => '<?php
+                    interface LocatorInterface {
+                        /**
+                         * @template TFirst as bool
+                         * @param TFirst $first
+                         * @return (TFirst is true ? string : array)
+                         */
+                        public function locate(string $name, bool $first = true);
+                    }
+
+                    final class Locator implements LocatorInterface {
+                        /**
+                         * @return ($first is true ? string : list<string>)
+                         */
+                        #[Override]
+                        public function locate(string $name, bool $first = true): string|array {
+                            return $first ? $name : [$name];
+                        }
+                    }
+
+                    $many = (new Locator())->locate("a", false);',
+                'assertions' => [
+                    '$many===' => 'list<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideWithoutADocblockTakesTheTemplateOfTheOverriddenMethod' => [
+                'code' => '<?php
+                    interface LocatorInterface {
+                        /**
+                         * @template TFirst as bool
+                         * @param TFirst $first
+                         * @return (TFirst is true ? string : list<string>)
+                         */
+                        public function locate(string $name, bool $first = true);
+                    }
+
+                    final class Locator implements LocatorInterface {
+                        #[Override]
+                        public function locate(string $name, bool $first = true): string|array {
+                            return $first ? $name : [$name];
+                        }
+                    }
+
+                    $many = (new Locator())->locate("a", false);',
+                'assertions' => [
+                    '$many===' => 'list<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'staticTypeArgumentMatchesInheritedReturnType' => [
                 'code' => '<?php
                     /** @template T */

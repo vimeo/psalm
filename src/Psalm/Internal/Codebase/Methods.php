@@ -48,12 +48,14 @@ use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_any;
 use function array_pop;
 use function assert;
 use function count;
 use function explode;
 use function in_array;
 use function reset;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -483,6 +485,16 @@ final class Methods
                         $source ? $source->getCodebase() : ProjectAnalyzer::getInstance()->getCodebase(),
                         $inherited_type,
                         $param->signature_type,
+                    )
+                ) {
+                    continue;
+                }
+
+                // a template of the overridden method is not one of this method, whose docblock declares its own
+                if (!$is_from_documenting_method
+                    && array_any(
+                        $inherited_type->getTemplateTypes(),
+                        static fn(TTemplateParam $template): bool => str_starts_with($template->defining_class, 'fn-'),
                     )
                 ) {
                     continue;
