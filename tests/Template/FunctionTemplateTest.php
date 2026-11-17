@@ -2918,6 +2918,54 @@ final class FunctionTemplateTest extends TestCase
                 ],
                 'ignored_issues' => ['ArgumentTypeCoercion'],
             ],
+            'templateBoundByArgumentOnlyCoercedToTheBoundKeepsTheBoundPartsItContains' => [
+                'code' => '<?php
+                    interface I {}
+                    class A {}
+
+                    /**
+                     * @template T of I|string
+                     * @param T $value
+                     * @return T
+                     */
+                    function identity($value) {
+                        return $value;
+                    }
+
+                    /** @return A|string */
+                    function aOrString() {
+                        return "";
+                    }
+
+                    /** @return object|string */
+                    function objectOrString() {
+                        return "";
+                    }
+
+                    /**
+                     * @template T of int|array
+                     * @param T $value
+                     * @return T
+                     */
+                    function intOrArray($value) {
+                        return $value;
+                    }
+
+                    /** @return float|array */
+                    function floatOrArray() {
+                        return [];
+                    }
+
+                    $from_a = identity(aOrString());
+                    $from_object = identity(objectOrString());
+                    $from_float = intOrArray(floatOrArray());',
+                'assertions' => [
+                    '$from_a===' => 'string',
+                    '$from_object===' => 'I|string',
+                    '$from_float===' => 'array<array-key, mixed>',
+                ],
+                'ignored_issues' => ['ArgumentTypeCoercion', 'PossiblyInvalidArgument', 'InvalidScalarArgument'],
+            ],
             'templateUpperBoundByCallableParamOnlyCoercedToTheBoundKeepsItsOverlap' => [
                 'code' => '<?php
                     /**

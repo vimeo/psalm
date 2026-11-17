@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Methods;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\KeyedArrayComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -1448,8 +1449,8 @@ final class TemplateStandinTypeReplacer
     }
 
     /**
-     * Keeps the parts of the input that can be of the bound: a part only coerced to it, e.g. a scalar for a
-     * string|array bound, is narrowed to the values it shares with the bound (a string).
+     * Keeps the parts of the input that can be of the bound: a part only coerced to it is narrowed to the parts
+     * of the bound it contains, e.g. a scalar for a string|array bound to a string.
      *
      * @param array<array-key, mixed> $matching_input_keys
      */
@@ -1468,10 +1469,16 @@ final class TemplateStandinTypeReplacer
 
             $input_type->removeType($atomic_key);
 
-            $bounded_input_type = Type::intersectUnionTypes(new Union([$input_atomic_type]), $bound, $codebase);
-
-            if ($bounded_input_type) {
-                $bounded_input_types = [...$bounded_input_types, ...array_values($bounded_input_type->getAtomicTypes())];
+            foreach ($bound->getAtomicTypes() as $bound_atomic_type) {
+                if (AtomicTypeComparator::isContainedBy(
+                    $codebase,
+                    $bound_atomic_type,
+                    $input_atomic_type,
+                    false,
+                    false,
+                )) {
+                    $bounded_input_types[] = $bound_atomic_type;
+                }
             }
         }
 
