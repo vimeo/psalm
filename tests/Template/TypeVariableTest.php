@@ -1622,6 +1622,28 @@ final class TypeVariableTest extends TestCase
                 'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:13:38 - Type array<array-key, mixed> should be a subtype of array<int',
             ],
+            'argumentRequirementThenCoercedPropertyWrite' => [
+                // a value assigned to a property after the requirement is
+                // reported as the property coercion, not the argument one
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public $v) {}
+                    }
+
+                    /** @param Box<non-empty-string> $b */
+                    function takes(Box $b): void {}
+
+                    /** @param non-empty-string $n */
+                    function fill(string $n, string $s): void {
+                        $b = new Box($n);
+                        takes($b);
+                        $b->v = $s;
+                    }',
+                'error_message' => 'PropertyTypeCoercion - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:15:33 - Type string should be a subtype of non-empty-string',
+            ],
             'argumentRequirementThenInvalidWrite' => [
                 'code' => '<?php
                     /** @param SplObjectStorage<object, array<int, string>> $s */

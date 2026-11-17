@@ -308,10 +308,13 @@ final class TypeVariableTracker
                         + $relevant_lower_bound->suppressed_issues
                         + $upper_bound->suppressed_issues;
 
-                    // a value passed after the requirement was set (`$this->p = new Coll(); $this->p->add($v)`) is
-                    // reported where it's passed, as the eager template model rejected it there
+                    // a value passed or assigned after the requirement was set
+                    // (`$this->p = new Coll(); $this->p->add($v)`) is reported
+                    // there, as the issue the eager template model reported there
                     $lower_bound_is_later = $relevant_lower_bound->pos !== null
-                        && $relevant_lower_bound->recorded_order > $upper_bound->recorded_order;
+                        && $relevant_lower_bound->recorded_order > $upper_bound->recorded_order
+                        && ($relevant_lower_bound->from_argument_value
+                            || $relevant_lower_bound->property_value_id !== null);
 
                     if ($union_comparison_result->type_coerced_from_mixed) {
                         // a value that entered the variable as mixed (e.g. `new Box($mixed)`)
@@ -353,8 +356,9 @@ final class TypeVariableTracker
                         ? ($upper_bound->pos ?? $relevant_lower_bound->pos ?? $fallback_location)
                         : ($relevant_lower_bound->pos ?? $upper_bound->pos ?? $fallback_location);
 
-                    $from_argument = ($lower_bound_is_later && $relevant_lower_bound->from_argument_value)
-                        || $upper_bound->from_argument_requirement;
+                    [$from_argument, $property_id] = $lower_bound_is_later
+                        ? [$relevant_lower_bound->from_argument_value, $relevant_lower_bound->property_value_id]
+                        : [$upper_bound->from_argument_requirement, $upper_bound->property_requirement_id];
 
                     $message = 'Type ' . $relevant_lower_bound->type->getId()
                         . ' should be a subtype of ' . $upper_bound->type->getId();
@@ -366,10 +370,8 @@ final class TypeVariableTracker
                     // covers it
                     if ($union_comparison_result->type_coerced && $from_argument) {
                         $issue = new ArgumentTypeCoercion($message, $pos);
-                    } elseif ($union_comparison_result->type_coerced
-                        && $upper_bound->property_requirement_id !== null
-                    ) {
-                        $issue = new PropertyTypeCoercion($message, $pos, $upper_bound->property_requirement_id);
+                    } elseif ($union_comparison_result->type_coerced && $property_id !== null) {
+                        $issue = new PropertyTypeCoercion($message, $pos, $property_id);
                     } else {
                         $issue = new IncompatibleTypeParameters($message, $pos);
                     }
@@ -506,7 +508,11 @@ final class TypeVariableTracker
         $message = 'Type ' . $lower_bound->type->getId()
             . ' should be a subtype of ' . $upper_bound->type->getId();
 
-        if (($lower_bound_is_later && $lower_bound->from_argument_value) || $upper_bound->from_argument_requirement) {
+        if ($lower_bound_is_later) {
+            $issue = $lower_bound->from_argument_value
+                ? new MixedArgumentTypeCoercion($message, $pos)
+                : new MixedPropertyTypeCoercion($message, $pos, (string) $lower_bound->property_value_id);
+        } elseif ($upper_bound->from_argument_requirement) {
             $issue = new MixedArgumentTypeCoercion($message, $pos);
         } elseif ($upper_bound->from_return_requirement) {
             $issue = new MixedReturnTypeCoercion($message, $pos);
