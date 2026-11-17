@@ -731,6 +731,15 @@ Specifies the maximum scan and analysis duration for individual files; files whi
 
 Only used in multithreaded mode, defaults to 10 seconds.  
 
+#### minTypeCoverage
+```xml
+<psalm
+  minTypeCoverage="95"
+>
+```
+
+Fails a full run whose [type coverage](command_line_usage.md#minimum-type-coverage) is below this percentage. By default there is no minimum.
+
 #### restrictReturnTypes
 
 ```xml
