@@ -54,6 +54,14 @@ final class NodeDataProvider implements NodeTypeProvider
      */
     private SplObjectStorage $evaluated;
 
+    /**
+     * Array fetches whose offset was checked in this pass: a fetch that is read and written (`$a[$k]++`) is
+     * analyzed twice, and its offset is reported once
+     *
+     * @var SplObjectStorage<Expr, true>
+     */
+    private SplObjectStorage $offset_checked;
+
     /** @var SplObjectStorage<If_, true> */
     private SplObjectStorage $impossible_implicit_elses;
 
@@ -71,6 +79,7 @@ final class NodeDataProvider implements NodeTypeProvider
         $this->node_literal_prefixes = new SplObjectStorage();
         $this->written_by_reference = new SplObjectStorage();
         $this->evaluated = new SplObjectStorage();
+        $this->offset_checked = new SplObjectStorage();
         $this->impossible_implicit_elses = new SplObjectStorage();
     }
 
@@ -260,6 +269,24 @@ final class NodeDataProvider implements NodeTypeProvider
 
     public function clearNodeOfTypeAndAssertions(Expr $node): void
     {
-        unset($this->node_types[$node], $this->node_assertions[$node], $this->node_literal_prefixes[$node]);
+        unset(
+            $this->node_types[$node],
+            $this->node_assertions[$node],
+            $this->node_literal_prefixes[$node],
+            $this->offset_checked[$node],
+        );
+    }
+
+    public function markOffsetChecked(Expr $node): void
+    {
+        $this->offset_checked[$node] = true;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    public function isOffsetChecked(Expr $node): bool
+    {
+        return isset($this->offset_checked[$node]);
     }
 }
