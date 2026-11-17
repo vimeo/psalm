@@ -9,6 +9,8 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
@@ -24,6 +26,7 @@ use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\IssueBuffer;
@@ -37,6 +40,7 @@ use Psalm\Type\Union;
 use function count;
 use function in_array;
 use function is_string;
+use function str_contains;
 use function strtolower;
 
 /**
@@ -52,6 +56,10 @@ final class StaticCallAnalyzer extends CallAnalyzer
     ): bool {
         NullsafeChainState::reset($stmt);
         MethodCallPurityAnalyzer::resetReturnsThis($stmt);
+
+        if (self::analyzeParentPropertyHookCall($statements_analyzer, $stmt, $context)) {
+            return true;
+        }
 
         $method_id = null;
 
@@ -293,7 +301,10 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $context->inside_general_use = true;
             ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context);
             $context->inside_general_use = $was_inside_general_use;
-            $lhs_type = $statements_analyzer->node_data->getType($stmt->class) ?? Type::getMixed();
+            $lhs_type = TypeExpander::expandTemplateKeyOfAndValueOf(
+                $codebase,
+                $statements_analyzer->node_data->getType($stmt->class) ?? Type::getMixed(),
+            );
         }
 
         if (!$lhs_type) {
@@ -327,7 +338,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $stmt,
                 $context,
                 $lhs_type_part,
-                $lhs_type->ignore_nullable_issues || $class_state === NullsafeChainState::ShortCircuit,
+                $lhs_type->ignore_nullable_issues || $class_state->isNullOnlyByShortCircuit(),
                 $moved_call,
                 $has_mock,
                 $has_existing_method,
@@ -339,7 +350,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
         if ($class_state !== NullsafeChainState::None) {
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
-            $class_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
+            $class_state->afterLink($stmt_type)->markOn($stmt);
 
             if ($stmt_type && !$stmt_type->isNullable()) {
                 $statements_analyzer->node_data->setType(
@@ -375,6 +386,97 @@ final class StaticCallAnalyzer extends CallAnalyzer
         return true;
     }
 
+    /**
+     * `parent::$property::get()` and `parent::$property::set($value)`, in a hook of that property, run the hook
+     * of the parent class, or read and write the property where it has none.
+     */
+    private static function analyzeParentPropertyHookCall(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\StaticCall $stmt,
+        Context $context,
+    ): bool {
+        $property_fetch = $stmt->class;
+
+        if (!$property_fetch instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            || !$property_fetch->class instanceof PhpParser\Node\Name
+            || $property_fetch->class->toLowerString() !== 'parent'
+            || !$property_fetch->name instanceof PhpParser\Node\VarLikeIdentifier
+            || !$stmt->name instanceof PhpParser\Node\Identifier
+            || $stmt->isFirstClassCallable()
+            || !isset($context->vars_in_scope['$this'])
+        ) {
+            return false;
+        }
+
+        $hook_name = $stmt->name->toLowerString();
+
+        if ($hook_name !== 'get' && $hook_name !== 'set') {
+            return false;
+        }
+
+        // only a hook of that property can call the parent hook, closures of its body included
+        $source = $statements_analyzer->getSource();
+
+        while ($source instanceof ClosureAnalyzer && $source->getPropertyHookId() === null) {
+            $source = $source->getSource();
+
+            if ($source instanceof StatementsAnalyzer) {
+                $source = $source->getSource();
+            }
+        }
+
+        if (!$source instanceof ClosureAnalyzer
+            || !str_contains((string) $source->getPropertyHookId(), '::$' . $property_fetch->name->name . '::')
+        ) {
+            return false;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        // in a hook a trait declares, the parent is the one of the class using the trait
+        $parent_fq_class_name = $context->self !== null && $codebase->classlike_storage_provider->has($context->self)
+            ? $codebase->classlike_storage_provider->get($context->self)->parent_class
+            : $statements_analyzer->getParentFQCLN();
+
+        if ($parent_fq_class_name === null) {
+            return false;
+        }
+
+        $property_id = $parent_fq_class_name . '::$' . $property_fetch->name->name;
+        $is_get = $hook_name === 'get';
+
+        if (!$codebase->properties->propertyExists($codebase, $property_id, $is_get, $statements_analyzer, $context)) {
+            return false;
+        }
+
+        foreach ($stmt->getArgs() as $arg) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
+                return false;
+            }
+        }
+
+        $property_type = $is_get
+            ? $codebase->properties->getPropertyType($property_id, false, $statements_analyzer, $context)
+            : null;
+
+        $statements_analyzer->node_data->setType(
+            $stmt,
+            $is_get
+                ? ($property_type !== null
+                    ? TypeExpander::expandUnion(
+                        $codebase,
+                        $property_type,
+                        $parent_fq_class_name,
+                        $context->self,
+                        $parent_fq_class_name,
+                    )
+                    : Type::getMixed())
+                : Type::getVoid(),
+        );
+
+        return true;
+    }
+
     public static function taintReturnType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
@@ -398,41 +500,45 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $node_location,
         ) ? $node_location : null;
 
+        $codebase = $statements_analyzer->getCodebase();
+
+        // the return of the body the call runs, keyed like the nodes of its parameters: that of the class the
+        // method is analyzed as one of, not the class the call names, which may inherit it
+        $get_return_node = null;
+
         if (!$method_storage) {
             $method_source = DataFlowNode::getForCallableReturn(
                 'builtin',
                 $cased_method_id,
             );
         } else {
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+            $cased_body_method_id = $declaring_method_id && $codebase->methods->hasStorage($declaring_method_id)
+                ? FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $method_id)
+                : $cased_method_id;
+
             /** @var string|null $body_class set above */
             $body_class = $stmt->getAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE);
-            $declaring_method_id = is_string($body_class)
-                ? $statements_analyzer->getCodebase()->methods->getDeclaringMethodId($method_id)
-                : null;
             $body_suffix = is_string($body_class) && $declaring_method_id
                 ? InheritedMethodTaints::getBodySuffix($statements_analyzer, $body_class, $declaring_method_id)
                 : null;
 
-            $method_source = $body_suffix !== null && $declaring_method_id
-                ? InheritedMethodTaints::withMethodSuffix(
-                    $declaring_method_id,
+            $get_return_node = static fn(?CodeLocation $location, int $taints = 0): DataFlowNode
+                => InheritedMethodTaints::withMethodSuffix(
+                    $declaring_method_id ?? $method_id,
                     $body_suffix,
                     static fn(): DataFlowNode => DataFlowNode::getForMethodReturn(
-                        $statements_analyzer->getCodebase()->methods->getCasedMethodId($declaring_method_id),
+                        $cased_body_method_id,
                         $method_storage,
-                        $specialization_location,
+                        $location,
+                        $taints,
                     ),
-                )
-                : DataFlowNode::getForMethodReturn(
-                    $cased_method_id,
-                    $method_storage,
-                    $specialization_location,
                 );
+
+            $method_source = $get_return_node($specialization_location);
         }
 
         $graph->addNode($method_source);
-
-        $codebase = $statements_analyzer->getCodebase();
 
         $conditionally_removed_taints = $method_storage && $template_result
             ? FunctionCallReturnTypeFetcher::getConditionallyRemovedTaints(
@@ -495,11 +601,10 @@ final class StaticCallAnalyzer extends CallAnalyzer
         }
 
         if ($method_storage
+            && $get_return_node
             && $method_storage->taint_source_types
         ) {
-            $method_node = DataFlowNode::getForMethodReturn(
-                $cased_method_id,
-                $method_storage,
+            $method_node = $get_return_node(
                 null,
                 $method_storage->taint_source_types
                     & ~($method_storage->signature_return_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0),

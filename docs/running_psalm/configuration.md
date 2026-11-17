@@ -310,6 +310,38 @@ Unused-code detection is based on a graph of references between code elements, r
 
 This is enabled by default since Psalm 6, so unused code issues are reported even without passing `--find-unused-code` (or `--find-dead-code`). Set `findUnusedCode="false"` to turn it off.
 
+#### markAllNonInternalCodeAsApi
+```xml
+<psalm
+  markAllNonInternalCodeAsApi="[bool]"
+>
+```
+**For libraries only.** When `true`, unused-code detection treats every class that isn't marked `@internal` or `@psalm-internal` as if it were marked [`@api`](../annotating_code/supported_annotations.md#api-psalm-api), except for its members that are marked internal. Other checks, like `ClassMustBeFinal`, are not affected. Defaults to `false`.
+
+```php
+<?php
+namespace Lib;
+
+class Client {                           // ClassMustBeFinal, but no UnusedClass
+    public function send(): void {       // no issue
+        $this->encode();
+    }
+    private function encode(): void {}   // no issue, used by an API method
+    private function unused(): void {}   // UnusedMethod
+    /** @internal */
+    public function reset(): void {}     // PossiblyUnusedMethod
+}
+
+/** @internal */
+final class Helper {}                    // UnusedClass
+```
+
+The code the library doesn't ship, such as its tests, [is internal](../annotating_code/supported_annotations.md#psalm-internal) without the annotation.
+
+**This breaks unused-code detection for internal code that isn't marked `@internal`**: Psalm treats it as public API, so it is never reported as unused, and neither is any code that only it uses. Mark every class and member that isn't meant for users of the library with `@internal` (or `@psalm-internal`) before enabling this.
+
+Don't enable it in applications: almost all of their code is internal, so it would turn off most of unused-code detection. Code that a framework calls (controllers, commands, …) is already marked as used by the framework's Psalm plugin; mark any other such code with `@api` instead.
+
 #### forceJit
 ```xml
 <psalm
@@ -698,6 +730,15 @@ Please note that changing this setting might introduce unwanted side effects and
 Specifies the maximum scan and analysis duration for individual files; files which take longer than the specified amount of seconds (as a floating point, so values smaller than one second are also accepted) will print out a warning to CLI (the scan will **not** be interrupted).  
 
 Only used in multithreaded mode, defaults to 10 seconds.  
+
+#### minTypeCoverage
+```xml
+<psalm
+  minTypeCoverage="95"
+>
+```
+
+Fails a full run whose [type coverage](command_line_usage.md#minimum-type-coverage) is below this percentage. By default there is no minimum.
 
 #### restrictReturnTypes
 

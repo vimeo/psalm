@@ -118,6 +118,14 @@ final class IssueBuffer
     private static array $recorded_issues = [];
 
     /**
+     * The issues raised while collecting them, before the config or a suppression filters them, keyed by
+     * getIssueLocationKey()
+     *
+     * @var list<array<string, true>>
+     */
+    private static array $raised_issue_keys = [];
+
+    /**
      * @var array<string, array<int, int>>
      */
     private static array $unused_suppressions = [];
@@ -160,6 +168,13 @@ final class IssueBuffer
     {
         ++self::$accepted_issue_count;
         $e->group_key ??= self::$issue_group;
+
+        $raised_issue_keys = array_pop(self::$raised_issue_keys);
+
+        if ($raised_issue_keys !== null) {
+            $raised_issue_keys[self::getIssueLocationKey($e::getIssueType(), $e)] = true;
+            self::$raised_issue_keys[] = $raised_issue_keys;
+        }
 
         $config = Config::getInstance();
         $project_analyzer = ProjectAnalyzer::getInstance();
@@ -1057,9 +1072,24 @@ final class IssueBuffer
         // runs), so cached taint sinks/sources keep matching after the analysis is reused from cache.
         $project_analyzer->persistCustomTaints();
 
+        $min_type_coverage = $codebase->config->min_type_coverage;
+
+        // a run of specific files doesn't measure the type coverage of the whole project
+        $type_coverage_message = $is_full && $min_type_coverage !== null
+            ? self::getTypeCoverageBelowMinimumMessage(
+                $codebase->analyzer->getTotalTypeCoverage($codebase),
+                $min_type_coverage,
+            )
+            : null;
+
+        if ($type_coverage_message !== null) {
+            fwrite(STDERR, $type_coverage_message . PHP_EOL);
+        }
+
         // a taint analysis run in GitHub Actions that writes a SARIF report exits successfully, so that a following
-        // step can upload the report; every other combination exits with an error when issues were found
-        if ($error_count
+        // step can upload the report; every other combination exits with an error when issues were found or the
+        // type coverage is below the minimum
+        if (($error_count || $type_coverage_message !== null)
             && !($codebase->taint_flow_graph
                 && self::hasSarifReport($project_analyzer->generated_report_options)
                 && isset($_SERVER['GITHUB_WORKFLOW']))
@@ -1089,6 +1119,37 @@ final class IssueBuffer
         }
 
         return false;
+    }
+
+    /**
+     * @internal
+     * @param array{int, int} $type_coverage the counts of mixed and of non-mixed expressions
+     * @psalm-pure
+     */
+    public static function getTypeCoverageBelowMinimumMessage(array $type_coverage, float $min_type_coverage): ?string
+    {
+        [$mixed_count, $nonmixed_count] = $type_coverage;
+        $total = $mixed_count + $nonmixed_count;
+
+        // without expressions there is no type that Psalm couldn't infer
+        if ($total === 0) {
+            return null;
+        }
+
+        // in hundredths of a percent, the coverage rounded down, so that a coverage below the minimum never prints
+        // as reaching it; the minimum has at most two decimals
+        $coverage = intdiv(10_000 * $nonmixed_count, $total);
+        $minimum = (int) round($min_type_coverage * 100.0);
+
+        if ($coverage >= $minimum) {
+            return null;
+        }
+
+        return sprintf(
+            'Type coverage %s%% is below the minimum of %s%%',
+            number_format($coverage / 100, 2),
+            number_format($minimum / 100, 2),
+        );
     }
 
     private static function printAlterSummary(
@@ -1375,6 +1436,48 @@ final class IssueBuffer
         self::$recorded_issues[self::$recording_level] = [];
 
         return $recorded_issues;
+    }
+
+    /**
+     * Start collecting the issues raised, whether they are reported or not
+     *
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public static function startCollectingRaisedIssues(): void
+    {
+        self::$raised_issue_keys[] = [];
+    }
+
+    /**
+     * @return array<string, true> the getIssueLocationKey() of the issues raised since startCollectingRaisedIssues(),
+     *                             which an enclosing collection gets too
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public static function stopCollectingRaisedIssues(): array
+    {
+        $raised_issue_keys = array_pop(self::$raised_issue_keys);
+
+        if ($raised_issue_keys === null) {
+            throw new UnexpectedValueException('Not currently collecting raised issues');
+        }
+
+        $enclosing_raised_issue_keys = array_pop(self::$raised_issue_keys);
+
+        if ($enclosing_raised_issue_keys !== null) {
+            self::$raised_issue_keys[] = $enclosing_raised_issue_keys + $raised_issue_keys;
+        }
+
+        return $raised_issue_keys;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public static function getIssueLocationKey(string $issue_type, CodeIssue $e): string
+    {
+        [$from, $to] = $e->code_location->getSelectionBounds();
+
+        return $issue_type . ':' . $e->getFilePath() . ':' . $from . '-' . $to;
     }
 
     /**

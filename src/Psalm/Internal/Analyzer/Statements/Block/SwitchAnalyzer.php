@@ -16,6 +16,7 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 use SplFixedArray;
 
+use function array_intersect_key;
 use function array_merge;
 use function count;
 use function in_array;
@@ -91,6 +92,9 @@ final class SwitchAnalyzer
                     $last_case_exit_type = 'continue';
                 } elseif (in_array(ScopeAnalyzer::ACTION_LEAVE_SWITCH, $case_actions, true)) {
                     $last_case_exit_type = 'break';
+                } elseif ($case_actions) {
+                    // `break 2` or more out of an enclosing structure: the case never reaches the end of the switch
+                    $last_case_exit_type = 'leave';
                 }
             } elseif (count($case_actions) !== 1) {
                 $last_case_exit_type = 'hybrid';
@@ -112,7 +116,7 @@ final class SwitchAnalyzer
 
             /** @var string */
             $case_exit_type = $case_exit_types[$i];
-            if ($case_exit_type !== 'return_throw') {
+            if ($case_exit_type !== 'return_throw' && $case_exit_type !== 'leave') {
                 $all_options_returned = false;
             }
 
@@ -181,6 +185,10 @@ final class SwitchAnalyzer
         // only update vars if there is a default or all possible cases accounted for
         // if the default has a throw/return/continue, that should be handled above
         if ($all_options_matched) {
+            foreach ($switch_scope->unknown_offsets as $var_id => $_) {
+                unset($context->vars_in_scope[$var_id], $context->vars_possibly_in_scope[$var_id]);
+            }
+
             if ($switch_scope->new_vars_in_scope) {
                 $context->vars_in_scope = array_merge($context->vars_in_scope, $switch_scope->new_vars_in_scope);
             }
@@ -228,6 +236,13 @@ final class SwitchAnalyzer
             $context->assigned_var_ids += $switch_scope->new_assigned_var_ids;
         }
 
+        // the offsets read on every way out of the cases, and, when a value may match no case, on the way past them
+        if ($switch_scope->null_array_offsets_read !== null) {
+            $context->null_array_offsets_read = $all_options_matched
+                ? $switch_scope->null_array_offsets_read
+                : array_intersect_key($context->null_array_offsets_read, $switch_scope->null_array_offsets_read);
+        }
+
         $context->vars_possibly_in_scope = [
             ...$context->vars_possibly_in_scope,
             ...$switch_scope->new_vars_possibly_in_scope,
@@ -235,5 +250,9 @@ final class SwitchAnalyzer
 
         //a switch can't return in all options without a default
         $context->has_returned = $all_options_returned && $has_default;
+
+        if ($context->has_returned && $context->case_scope && in_array('leave', $case_exit_types->toArray(), true)) {
+            $context->case_scope->has_nested_switch_leaving_it = true;
+        }
     }
 }

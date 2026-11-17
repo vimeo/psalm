@@ -251,6 +251,59 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'selfOfATraitAssertionIsTheClassUsingTheTraitEverywhere' => [
+                'code' => '<?php
+                    trait Comparable {
+                        /** @psalm-assert-if-true self $other */
+                        public function equals(object $other): bool {
+                            return $other instanceof self;
+                        }
+
+                        /** @psalm-assert-if-true list<self> $others */
+                        public function allEqual(array $others): bool {
+                            return true;
+                        }
+
+                        /** @psalm-assert-if-true self $other */
+                        public static function isOne(object $other): bool {
+                            return $other instanceof self;
+                        }
+
+                        /** @psalm-assert self $other */
+                        public function mustBe(object $other): void {}
+                    }
+
+                    class Foo {
+                        use Comparable;
+                    }
+
+                    class Bar extends Foo {}
+
+                    /** @param list<object> $xs */
+                    function check(Bar $bar, object $a, array $xs, object $b, object $c, object $d): void {
+                        if ($bar->equals($a)) {
+                            /** @psalm-check-type-exact $a = Foo */
+                            echo 1;
+                        }
+
+                        if ($bar->allEqual($xs)) {
+                            /** @psalm-check-type-exact $xs = list<Foo> */
+                            echo 2;
+                        }
+
+                        if (Bar::isOne($b)) {
+                            /** @psalm-check-type-exact $b = Foo */
+                            echo 3;
+                        }
+
+                        $bar->mustBe($c);
+                        /** @psalm-check-type-exact $c = Foo */
+                        echo 4;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal', 'UnusedParam'],
+                'php_version' => '8.1',
+            ],
             'assertObjectShapeOnObject' => [
                 'code' => '<?php
                     /** @psalm-assert object{a: int} $obj */
@@ -490,6 +543,36 @@ final class AssertAnnotationTest extends TestCase
                 'assertions' => [
                     '$name===' => "'parent'|'self'|'static'|class-string|null",
                 ],
+            ],
+            'assertIfTrueSelfInATraitMeansTheClassUsingIt' => [
+                'code' => '<?php
+                    interface Comparable {
+                        public function equals(Comparable $object): bool;
+                    }
+
+                    trait ComparableTrait {
+                        /** @psalm-assert-if-true self $object */
+                        public function equals(Comparable $object): bool {
+                            return get_class($this) === get_class($object);
+                        }
+                    }
+
+                    class Foo implements Comparable {
+                        use ComparableTrait;
+
+                        public ?string $baz = null;
+
+                        public function update(Comparable $object): void {
+                            if (!$this->equals($object)) {
+                                throw new LogicException();
+                            }
+
+                            $this->baz = $object->baz;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.0',
             ],
             'assertArrayKeyExistsWithNamedArgumentsNarrowsTheArrayOfItsParameter' => [
                 'code' => '<?php
@@ -2273,6 +2356,165 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }
                 ?>',
+            ],
+            'assertIfTrueSelfStaticPropertyOutsideTheClass' => [
+                'code' => '<?php
+                    final class S {
+                        public static ?string $s = null;
+                        /** @psalm-assert-if-true !null self::$s */
+                        public static function has(): bool { return self::$s !== null; }
+                    }
+                    function direct(): int {
+                        if (S::has()) { return strlen(S::$s); }
+                        return 0;
+                    }',
+            ],
+            'assertIfTrueSelfStaticPropertyThroughSubclass' => [
+                'code' => '<?php
+                    class A {
+                        public static ?string $s = null;
+                        /** @psalm-assert-if-true !null self::$s */
+                        public static function has(): bool { return self::$s !== null; }
+                    }
+                    final class B extends A {}
+                    function f(): int {
+                        if (B::has()) { return strlen(B::$s) + strlen(A::$s); }
+                        return 0;
+                    }',
+            ],
+            'assertIfTrueSelfStaticPropertyThroughSubclassInsideIt' => [
+                'code' => '<?php
+                    class A {
+                        public static ?string $s = null;
+                        /** @psalm-assert-if-true !null self::$s */
+                        public static function has(): bool { return self::$s !== null; }
+                    }
+                    final class B extends A {
+                        public static function f(): int {
+                            if (self::has()) { return strlen(self::$s); }
+                            return 0;
+                        }
+                        public static function g(): int {
+                            if (B::has()) { return strlen(self::$s); }
+                            return 0;
+                        }
+                    }',
+            ],
+            'assertIfTrueStaticStaticPropertyOnStaticTypedObject' => [
+                'code' => '<?php
+                    class S {
+                        public static ?string $s = null;
+                        /** @psalm-assert-if-true !null static::$s */
+                        public function has(): bool { return static::$s !== null; }
+                        final public function __construct() {}
+                        public static function make(): static { return new static(); }
+                        public function f(): int {
+                            $o = static::make();
+                            if ($o->has()) { return strlen(static::$s); }
+                            return 0;
+                        }
+                    }',
+            ],
+            'assertIfTrueStaticStaticPropertyOutsideTheClass' => [
+                'code' => '<?php
+                    class S {
+                        public static ?string $s = null;
+                        /** @psalm-assert-if-true !null static::$s */
+                        public static function has(): bool { return static::$s !== null; }
+                    }
+                    function direct(): int {
+                        if (S::has()) { return strlen(S::$s); }
+                        return 0;
+                    }',
+            ],
+            'assertIfFalseSelfStaticPropertyOutsideTheClass' => [
+                'code' => '<?php
+                    final class S {
+                        public static ?string $s = null;
+                        /** @psalm-assert-if-false null self::$s */
+                        public static function has(): bool { return self::$s !== null; }
+                    }
+                    function negated(): int {
+                        if (!S::has()) { return 0; }
+                        return strlen(S::$s);
+                    }',
+            ],
+            'assertSelfStaticPropertyOutsideTheClass' => [
+                'code' => '<?php
+                    final class S {
+                        public static ?string $s = null;
+                        /** @psalm-assert !null self::$s */
+                        public static function init(): void { self::$s = "a"; }
+                    }
+                    function f(): int {
+                        S::init();
+                        return strlen(S::$s);
+                    }',
+            ],
+            'assertSelfStaticPropertyOfConstructorOutsideTheClass' => [
+                'code' => '<?php
+                    final class S {
+                        public static ?string $s = null;
+                        /** @psalm-assert !null self::$s */
+                        public function __construct() { self::$s = "a"; }
+                    }
+                    function f(): int {
+                        new S();
+                        return strlen(S::$s);
+                    }',
+            ],
+            'assertIfTrueSelfStaticPropertyOnFinalObject' => [
+                'code' => '<?php
+                    final class S {
+                        public static ?string $s = null;
+                        /** @psalm-assert-if-true !null static::$s */
+                        public function has(): bool { return self::$s !== null; }
+                    }
+                    function f(S $o): int {
+                        if ($o->has()) { return strlen(S::$s); }
+                        return 0;
+                    }',
+            ],
+            'assertIfTrueParentStaticPropertyOutsideTheClass' => [
+                'code' => '<?php
+                    class A {
+                        public static ?string $s = null;
+                    }
+                    final class B extends A {
+                        /** @psalm-assert-if-true !null parent::$s */
+                        public static function has(): bool { return parent::$s !== null; }
+                    }
+                    function f(): int {
+                        if (B::has()) { return strlen(A::$s); }
+                        return 0;
+                    }',
+            ],
+            'assertIfTrueSelfStaticPropertyOfTraitOutsideTheClass' => [
+                'code' => '<?php
+                    trait T {
+                        public static ?string $s = null;
+                        /** @psalm-assert-if-true !null self::$s */
+                        public static function has(): bool { return self::$s !== null; }
+                    }
+                    final class S {
+                        use T;
+                    }
+                    function f(): int {
+                        if (S::has()) { return strlen(S::$s); }
+                        return 0;
+                    }',
+            ],
+            'assertIfTrueStaticStaticPropertyOnForwardingCall' => [
+                'code' => '<?php
+                    class S {
+                        public static ?string $s = null;
+                        /** @psalm-assert-if-true !null static::$s */
+                        public static function has(): bool { return static::$s !== null; }
+                        public static function f(): int {
+                            if (static::has()) { return strlen(static::$s); }
+                            return 0;
+                        }
+                    }',
             ],
             'implicitComplexAssertionNoCrash' => [
                 'code' => '<?php
@@ -4238,6 +4480,67 @@ final class AssertAnnotationTest extends TestCase
                         exceptionIfEmpty($arr);
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'assertIfTrueSelfStaticPropertyIsNotOfTheCallerClass' => [
+                'code' => '<?php
+                    final class S {
+                        public static ?string $s = null;
+                        /** @psalm-assert-if-true !null self::$s */
+                        public static function has(): bool { return self::$s !== null; }
+                    }
+                    final class Other {
+                        public static ?string $s = null;
+                        public static function f(): int {
+                            if (S::has()) { return strlen(self::$s); }
+                            return 0;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'assertSelfStaticPropertyIsNotOfTheCallerClass' => [
+                'code' => '<?php
+                    final class S {
+                        public static ?string $s = null;
+                        /** @psalm-assert !null self::$s */
+                        public static function init(): void { self::$s = "a"; }
+                    }
+                    final class Other {
+                        public static ?string $s = null;
+                        public static function f(): int {
+                            S::init();
+                            return strlen(self::$s);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'assertIfTrueSelfStaticPropertyIsNotARedeclaredOne' => [
+                'code' => '<?php
+                    class A {
+                        public static ?string $s = null;
+                        /** @psalm-assert-if-true !null self::$s */
+                        public static function has(): bool { return self::$s !== null; }
+                    }
+                    final class B extends A {
+                        public static ?string $s = null;
+                        public static function f(): int {
+                            if (self::has()) { return strlen(self::$s); }
+                            return 0;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'assertIfTrueStaticStaticPropertyOnObjectOfOpenClass' => [
+                'code' => '<?php
+                    class S {
+                        public static ?string $s = null;
+                        /** @psalm-assert-if-true !null static::$s */
+                        public function has(): bool { return static::$s !== null; }
+                    }
+                    function f(S $o): int {
+                        if ($o->has()) { return strlen(S::$s); }
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
             ],
             'negatedInstanceofOfAClosedClassEliminatesItsInheritors' => [
                 'code' => '<?php

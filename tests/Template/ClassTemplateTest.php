@@ -1361,7 +1361,7 @@ final class ClassTemplateTest extends TestCase
                     '$c===' => "C<`_0:'hello'>",
                 ],
             ],
-            'SKIPPED-templateDefaultConstant' => [
+            'templateDefaultConstant' => [
                 'code' => '<?php
                     const FOO = "bar";
 
@@ -1382,10 +1382,10 @@ final class ClassTemplateTest extends TestCase
 
                     $e = new E();',
                 'assertions' => [
-                    '$e===' => 'E<string(bar)>',
+                    '$e===' => "E<`_0:'bar'>",
                 ],
             ],
-            'SKIPPED-templateDefaultClassMemberConstant' => [
+            'templateDefaultClassMemberConstant' => [
                 'code' => '<?php
                     class D {
                         const FOO = "bar";
@@ -1408,7 +1408,7 @@ final class ClassTemplateTest extends TestCase
 
                     $e = new E();',
                 'assertions' => [
-                    '$e===' => 'E<string(bar)>',
+                    '$e===' => "E<`_0:'bar'>",
                 ],
             ],
             'templateDefaultClassConstant' => [
@@ -2010,7 +2010,7 @@ final class ClassTemplateTest extends TestCase
                         }
                     }',
             ],
-            'SKIPPED-templatedInterfaceIntersectionFirst' => [
+            'SKIPPED-templatedInterfaceIntersectionFirst' => [ // #13930
                 'code' => '<?php
                     /** @psalm-template T */
                     interface IParent {
@@ -3289,7 +3289,7 @@ final class ClassTemplateTest extends TestCase
                     /** @var Foo<Enum::TYPE_ONE> $foo */
                     $foo = new Foo();',
             ],
-            'SKIPPED-extendedPropertyTypeParameterised' => [
+            'extendedPropertyTypeParameterised' => [
                 'code' => '<?php
                     namespace App;
 

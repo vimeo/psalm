@@ -21,6 +21,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpureMethodCall;
@@ -107,7 +108,7 @@ final class CastAnalyzer
 
                 $type = self::castIntAttempt(
                     $statements_analyzer,
-                    $maybe_type,
+                    TypeExpander::expandTemplateKeyOfAndValueOf($statements_analyzer->getCodebase(), $maybe_type),
                     $stmt->expr,
                     true,
                 );
@@ -134,7 +135,7 @@ final class CastAnalyzer
 
                 $type = self::castFloatAttempt(
                     $statements_analyzer,
-                    $maybe_type,
+                    TypeExpander::expandTemplateKeyOfAndValueOf($statements_analyzer->getCodebase(), $maybe_type),
                     $stmt->expr,
                     true,
                 );
@@ -211,38 +212,16 @@ final class CastAnalyzer
                 return false;
             }
 
-            $permissible_atomic_types = [];
-            $all_permissible = false;
+            $type = Type::getObject();
 
             if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
-                $stmt_expr_type = TypeVariableResolver::resolveTopLevel(
-                    $stmt_expr_type,
-                    $statements_analyzer->getCodebase(),
-                );
+                $stmt_expr_type = self::resolveOperandType($stmt_expr_type, $statements_analyzer->getCodebase());
 
                 if ($stmt_expr_type->isObjectType()) {
                     self::handleRedundantCast($stmt_expr_type, $statements_analyzer, $stmt);
                 }
 
-                $all_permissible = true;
-
-                foreach ($stmt_expr_type->getAtomicTypes() as $type) {
-                    if ($type instanceof Scalar) {
-                        $objWithProps = new TObjectWithProperties(['scalar' => new Union([$type])]);
-                        $permissible_atomic_types[] = $objWithProps;
-                    } elseif ($type instanceof TKeyedArray) {
-                        $permissible_atomic_types[] = new TObjectWithProperties($type->properties);
-                    } else {
-                        $all_permissible = false;
-                        break;
-                    }
-                }
-            }
-
-            if ($permissible_atomic_types && $all_permissible) {
-                $type = TypeCombiner::combine($permissible_atomic_types);
-            } else {
-                $type = Type::getObject();
+                $type = self::getObjectCastType($stmt_expr_type);
             }
 
             if ($statements_analyzer->data_flow_graph) {
@@ -263,10 +242,7 @@ final class CastAnalyzer
             $all_permissible = false;
 
             if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
-                $stmt_expr_type = TypeVariableResolver::resolveTopLevel(
-                    $stmt_expr_type,
-                    $statements_analyzer->getCodebase(),
-                );
+                $stmt_expr_type = self::resolveOperandType($stmt_expr_type, $statements_analyzer->getCodebase());
 
                 if ($stmt_expr_type->isArray()) {
                     self::handleRedundantCast($stmt_expr_type, $statements_analyzer, $stmt);
@@ -368,6 +344,18 @@ final class CastAnalyzer
         );
 
         return false;
+    }
+
+    /**
+     * A bare class-template type variable stands for the shape inferred at its construction site, and key-of<T> and
+     * value-of<T> for their bound: that is what is being cast
+     */
+    private static function resolveOperandType(Union $type, Codebase $codebase): Union
+    {
+        return TypeExpander::expandTemplateKeyOfAndValueOf(
+            $codebase,
+            TypeVariableResolver::resolveTopLevel($type, $codebase),
+        );
     }
 
     public static function castIntAttempt(
@@ -772,9 +760,7 @@ final class CastAnalyzer
         // what an invalid cast of an array gives, which only matters for the result type
         $array_strings = [];
 
-        // a bare class-template type variable stands for the shape inferred at
-        // its construction site; that shape is what is being cast
-        $stmt_type = TypeVariableResolver::resolveTopLevel($stmt_type, $codebase);
+        $stmt_type = self::resolveOperandType($stmt_type, $codebase);
 
         $atomic_types = $stmt_type->getAtomicTypes();
 
@@ -1313,6 +1299,33 @@ final class CastAnalyzer
         }
 
         return $result_type->setParentNodes($parent_nodes);
+    }
+
+    /**
+     * What `(object) $x` is: an array, a scalar or null always becomes an stdClass, which has the properties of a
+     * single shaped array
+     *
+     * @psalm-pure
+     */
+    public static function getObjectCastType(Union $operand_type): Union
+    {
+        $std_class = ['stdclass' => new TNamedObject('stdClass')];
+        $object_types = [];
+
+        foreach ($operand_type->getAtomicTypes() as $type) {
+            if ($type instanceof Scalar) {
+                $object_types[] = new TObjectWithProperties(['scalar' => new Union([$type])], [], $std_class);
+            } elseif ($type instanceof TKeyedArray) {
+                $object_types[] = new TObjectWithProperties($type->properties, [], $std_class);
+            } elseif ($type instanceof TArray || $type instanceof TNull) {
+                $object_types[] = new TNamedObject('stdClass');
+            } else {
+                return Type::getObject();
+            }
+        }
+
+        // the properties of one shape would be wrong for the other parts of a union
+        return new Union(count($object_types) === 1 ? $object_types : [new TNamedObject('stdClass')]);
     }
 
     /**

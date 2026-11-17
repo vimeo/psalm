@@ -184,6 +184,253 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'scalarAndMixedKeywordTypesInNamespace' => [
+                'code' => '<?php
+                    namespace N;
+
+                    /**
+                     * @param non-empty-scalar $a
+                     * @param empty-scalar $b
+                     * @param non-empty-mixed $c
+                     */
+                    function f($a, $b, $c): void {
+                        /** @psalm-check-type-exact $a = non-empty-scalar */
+                        /** @psalm-check-type-exact $b = empty-scalar */
+                        /** @psalm-check-type-exact $c = non-empty-mixed */
+                        echo gettype($a), gettype($b), gettype($c);
+                    }',
+            ],
+            'uppercaseStringKeywordTypesInNamespace' => [
+                'code' => '<?php
+                    namespace N;
+
+                    /**
+                     * @param uppercase-string $a
+                     * @param non-empty-uppercase-string $b
+                     */
+                    function f($a, $b): void {
+                        /** @psalm-check-type-exact $a = string */
+                        /** @psalm-check-type-exact $b = non-empty-string */
+                        echo $a, $b;
+                    }',
+            ],
+            'scalarAndMixedKeywordTypesNestedInNamespace' => [
+                'code' => '<?php
+                    namespace N;
+
+                    final class A {
+                        /** @var array<string, non-empty-scalar> */
+                        public array $values = [];
+
+                        /** @return list<non-empty-mixed> */
+                        public function all(): array {
+                            return array_values($this->values);
+                        }
+                    }
+
+                    $a = new A();
+                    $values = $a->values;
+                    $all = $a->all();
+                    echo count($values), count($all);',
+                'assertions' => [
+                    '$values===' => 'array<string, non-empty-scalar>',
+                    '$all===' => 'list<non-empty-mixed>',
+                ],
+            ],
+            'spacesInTypesThatAreNotNames' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    /**
+                     * @param array{a: int, b: string|int, \'c d\': ?Foo} $a
+                     * @param callable(Foo $x, string ...$rest): void $b
+                     * @param Closure(int): (int|string) $c
+                     * @param array<int, string> $d
+                     * @param array< int , string > $e
+                     */
+                    function f(array $a, callable $b, Closure $c, array $d, array $e): void {
+                        echo count($a), count($d), count($e);
+                        $b(new Foo());
+                        $c(1);
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $x
+                     * @return (T is null ? int : string)
+                     */
+                    function g($x) {
+                        return $x === null ? 1 : "a";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'spacesInTheTextOfAnInlineTagAfterAType' => [
+                'code' => '<?php
+                    /**
+                     * @return non-empty-string {@see the list of names}
+                     */
+                    function f(): string {
+                        return "a";
+                    }
+
+                    /** @return bool {@link https://example.com the docs} */
+                    function g(): bool {
+                        return true;
+                    }
+
+                    $a = f();
+                    $b = g();
+                    echo $a, (int) $b;',
+                'assertions' => [
+                    '$a===' => 'non-empty-string',
+                    '$b===' => 'bool',
+                ],
+            ],
+            'intMaskOfGlobalConstantsInNamespace' => [
+                'code' => '<?php
+                    namespace Abc;
+
+                    use const E_ALL;
+
+                    /** @param int-mask<E_ALL, \\E_WARNING> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }
+
+                    takesFlags(E_ALL);
+                ',
+            ],
+            'intMaskOfAConstantOfTheNamespaceTakesPrecedenceOverTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    const E_ERROR = 4;
+
+                    /**
+                     * @param int-mask<E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        /** @psalm-check-type-exact $y = 0|4 */
+                        echo $y;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'intMaskOfConstantsImportedWithUseConst' => [
+                'code' => '<?php
+                    namespace Bar {
+                        const E_ERROR = 4;
+                        const FLAG_A = 8;
+                    }
+
+                    namespace Foo {
+                        use const Bar\E_ERROR;
+                        use const Bar\FLAG_A as AA;
+
+                        /** @param int-mask<E_ERROR> $y */
+                        function f(int $y): void {
+                            echo $y;
+                        }
+
+                        /** @param int-mask<AA, E_ERROR> $y */
+                        function g(int $y): void {
+                            echo $y;
+                        }
+
+                        f(4);
+                        g(12);
+                    }',
+            ],
+            'intMaskOfAnImportedGlobalConstant' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    use const PHP_INT_MAX;
+
+                    /**
+                     * @param int-mask<PHP_INT_MAX> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }
+
+                    takesMask(0);',
+            ],
+            'intMaskOfGlobalConstantsFromANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<E_ERROR, E_WARNING> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }
+
+                    takesMask(E_ERROR);',
+            ],
+            'selfAndStaticOfAGlobalTagAreTheClassOfTheMethod' => [
+                'code' => '<?php
+                    final class K {
+                        public function me(): int {
+                            return 1;
+                        }
+
+                        /**
+                         * @global static $k
+                         * @global self $s
+                         */
+                        public function g(): int {
+                            global $k, $s;
+
+                            /** @psalm-check-type-exact $k = K&static */
+                            /** @psalm-check-type-exact $s = K */
+
+                            return $k->me() + $s->me();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'staticOfAGlobalTagIsTheClassOfTheMethodAfterACallThatMayWriteTheGlobal' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @return static */
+                        public function me() {
+                            return $this;
+                        }
+
+                        /** @global static $q */
+                        public function c(): Foo {
+                            global $q;
+
+                            $q->c();
+                            $x = $q->me();
+
+                            /** @psalm-check-type-exact $x = Foo&static */
+
+                            return $x;
+                        }
+                    }',
+            ],
+            'globalDocblockStaticTypeDoesNotCrashAMethodCall' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @global static $bar
+                         * @return void
+                         */
+                        public function instance() {
+                            global $bar;
+
+                            $bar->instance();
+                        }
+                    }',
+            ],
             'optionalShapeKeysNamedLikeScalarAliases' => [
                 'code' => '<?php
                     /** @var array{double?: string, integer?: int, boolean?: bool, real?: float} $a */
@@ -2026,6 +2273,147 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'scalarKeywordTypeWithGenericParamsInNamespace' => [
+                'code' => '<?php
+                    namespace N;
+
+                    /** @param non-empty-scalar<int> $a */
+                    function f($a): void {
+                        echo gettype($a);
+                    }',
+                'error_message' => 'Cannot create generic object with reserved word',
+            ],
+            'spaceInsideTypeName' => [
+                'code' => '<?php
+                    /**
+                     * @return array<s t r i n g>
+                     */
+                    function f() {
+                        return ["hello"];
+                    }',
+                'error_message' => 'Unexpected space after s, in a type name',
+            ],
+            'missingCommaBetweenGenericParams' => [
+                'code' => '<?php
+                    /**
+                     * @return array<int string>
+                     */
+                    function f() {
+                        return [];
+                    }',
+                'error_message' => 'Unexpected space after int, in a type name',
+            ],
+            'missingCommaInAShape' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a: int string} $a
+                     */
+                    function f(array $a): void {}',
+                'error_message' => 'Unexpected space after int, in a type name',
+            ],
+            'missingCommaInACallableSignature' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(int string): void $a
+                     */
+                    function f(callable $a): void {}',
+                'error_message' => 'Unexpected space after int, in a type name',
+            ],
+            'spaceInsideNamespacedTypeName' => [
+                'code' => '<?php
+                    /**
+                     * @param array<Foo\\Bar Baz> $a
+                     */
+                    function f(array $a): void {}',
+                'error_message' => 'Unexpected space after Foo\\Bar, in a type name',
+            ],
+            'missingCommaBeforeAnInlineTag' => [
+                'code' => '<?php
+                    /**
+                     * @return array<int string> {@see g()}
+                     */
+                    function f() {
+                        return [];
+                    }',
+                'error_message' => 'Unexpected space after int, in a type name',
+            ],
+            'intMaskOfAConstantImportedWithUseConstIsNotTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Bar {
+                        const E_ERROR = 4;
+                    }
+
+                    namespace Foo {
+                        use const Bar\E_ERROR;
+
+                        /** @param int-mask<E_ERROR> $y */
+                        function f(int $y): void {
+                            echo $y;
+                        }
+
+                        f(1);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:27 - '
+                    . 'Argument 1 of Foo\f expects 0|4, but 1 provided',
+            ],
+            'intMaskOfANonIntegerConstantOfTheNamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    const NAME = "x";
+
+                    /** @param int-mask<NAME> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'intMaskOfNonIntegerGlobalConstantInNamespace' => [
+                'code' => '<?php
+                    namespace Abc;
+
+                    /** @param int-mask<PHP_VERSION> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'intMaskOfAPartiallyQualifiedConstantDoesNotFallBackToTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<Sub\\E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'UndefinedConstant',
+            ],
+            'intMaskOfAQualifiedConstantDoesNotFallBackToTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<\\Foo\\E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'UndefinedConstant',
+            ],
+            'intMaskOfAnUndefinedConstantFromANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<NOT_A_CONSTANT> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'UndefinedConstant',
+            ],
             'removedSelfAccessingCallableWithParamsIsInvalid' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2560,7 +2948,7 @@ final class AnnotationTest extends TestCase
                     }',
                 'error_message' => 'InvalidDocblock',
             ],
-            'SKIPPED-noCrashOnInvalidClassTemplateAsType' => [
+            'SKIPPED-noCrashOnInvalidClassTemplateAsType' => [ // #13928
                 'code' => '<?php
                     /**
                      * @template T as ' . '
@@ -2568,7 +2956,7 @@ final class AnnotationTest extends TestCase
                     class A {}',
                 'error_message' => 'InvalidDocblock',
             ],
-            'SKIPPED-noCrashOnInvalidFunctionTemplateAsType' => [
+            'SKIPPED-noCrashOnInvalidFunctionTemplateAsType' => [ // #13928
                 'code' => '<?php
                     /**
                      * @template T as ' . '
@@ -2901,6 +3289,68 @@ final class AnnotationTest extends TestCase
                     /** @var string $title */
                     global $title;',
                 'error_message' => 'InvalidGlobal',
+            ],
+            'assertionWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert * $x
+                     */
+                    function f(int $x): void {
+                        echo $x;
+                    }',
+                'error_message' => 'Invalid @psalm-assert union type: Type is empty',
+            ],
+            'assertionWithOnlyANegationInPlaceOfTheType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert ! $x
+                     */
+                    function f(int $x): void {
+                        echo $x;
+                    }',
+                'error_message' => 'Invalid @psalm-assert union type: Type is empty',
+            ],
+            'selfOutWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-self-out *
+                         */
+                        public function a(): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'thisOutWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-this-out *
+                         */
+                        public function a(): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'ifThisIsWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-if-this-is *
+                         */
+                        public function a(): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'returnTypeWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-return      * @return list<int>
+                         */
+                        public static function a(): array {
+                            return [];
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock',
             ],
             'keyOfImportedTypeAliasOfANonArrayIsInvalid' => [
                 'code' => '<?php

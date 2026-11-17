@@ -78,7 +78,6 @@ final class VariableFetchAnalyzer
         bool $from_global = false,
         bool $assigned_to_reference = false,
     ): bool {
-        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();
 
         if ($stmt->name === 'this') {
@@ -337,44 +336,48 @@ final class VariableFetchAnalyzer
 
             if ($first_appearance && !$context->inside_isset && !$context->inside_unset) {
                 if ($context->is_global) {
+                    $issue = new PossiblyUndefinedGlobalVariable(
+                        'Possibly undefined global variable ' . $var_name . ', first seen on line ' .
+                            $first_appearance->getLineNumber(),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $var_name,
+                    );
+
                     if ($codebase->alter_code) {
-                        if (isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedGlobalVariable'])) {
+                        if ($codebase->shouldFixIssue($issue, $statements_analyzer->getSuppressedIssues())) {
                             $branch_point = $statements_analyzer->getBranchPoint($var_name);
 
-                            if ($branch_point) {
+                            if ($branch_point !== null) {
                                 $statements_analyzer->addVariableInitialization($var_name, $branch_point);
                             }
                         }
                     } else {
                         IssueBuffer::maybeAdd(
-                            new PossiblyUndefinedGlobalVariable(
-                                'Possibly undefined global variable ' . $var_name . ', first seen on line ' .
-                                    $first_appearance->getLineNumber(),
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                $var_name,
-                            ),
+                            $issue,
                             $statements_analyzer->getSuppressedIssues(),
                             (bool) $statements_analyzer->getBranchPoint($var_name),
                         );
                     }
-                } elseif ($codebase->alter_code
-                    && isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedVariable'])
-                ) {
-                    $branch_point = $statements_analyzer->getBranchPoint($var_name);
-
-                    if ($branch_point) {
-                        $statements_analyzer->addVariableInitialization($var_name, $branch_point);
-                    }
                 } else {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyUndefinedVariable(
-                            'Possibly undefined variable ' . $var_name . ', first seen on line ' .
-                                $first_appearance->getLineNumber(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                        (bool) $statements_analyzer->getBranchPoint($var_name),
+                    $issue = new PossiblyUndefinedVariable(
+                        'Possibly undefined variable ' . $var_name . ', first seen on line ' .
+                            $first_appearance->getLineNumber(),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     );
+
+                    if ($codebase->shouldFixIssue($issue, $statements_analyzer->getSuppressedIssues())) {
+                        $branch_point = $statements_analyzer->getBranchPoint($var_name);
+
+                        if ($branch_point !== null) {
+                            $statements_analyzer->addVariableInitialization($var_name, $branch_point);
+                        }
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            $issue,
+                            $statements_analyzer->getSuppressedIssues(),
+                            (bool) $statements_analyzer->getBranchPoint($var_name),
+                        );
+                    }
                 }
 
                 if ($codebase->store_node_types
@@ -441,41 +444,62 @@ final class VariableFetchAnalyzer
             self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
 
             $context->vars_in_scope[$var_name] = $stmt_type;
-            // the value that is read is defined, whatever the variable is (an isset() asks about the variable)
+            // the value that is read is defined, whatever the variable is (an isset() asks about the variable), and
+            // reading an undefined variable gives null (an item assigned to one creates the array)
             $statements_analyzer->node_data->setType(
                 $stmt,
-                $context->inside_isset ? $stmt_type : $stmt_type->setPossiblyUndefined(false),
+                $context->inside_isset
+                    ? $stmt_type
+                    : ($stmt_type->possibly_undefined
+                        && !$stmt_type->possibly_undefined_from_try
+                        && !$array_assignment
+                        && !$stmt_type->isNullable()
+                        && !$stmt_type->hasMixed()
+                        ? $stmt_type->setPossiblyUndefined(false)->getBuilder()->addType(new TNull())->freeze()
+                        : $stmt_type->setPossiblyUndefined(false)),
             );
 
-            // a variable a loop defines, where an iteration starts (see LoopAnalyzer)
+            // a variable some branches or a loop's previous iterations define
             if ($stmt_type->possibly_undefined
                 && !$stmt_type->possibly_undefined_from_try
                 && !$context->inside_isset
                 && !$context->inside_unset
-                // passed by reference, which defines it
-                && (!$context->inside_assignment || $array_assignment)
-                && ($first_appearance = $statements_analyzer->getFirstAppearance($var_name))
-                && !$codebase->alter_code
+                // assigning it by reference defines it
+                && !$assigned_to_reference
             ) {
-                IssueBuffer::maybeAdd(
-                    $context->is_global
-                        ? new PossiblyUndefinedGlobalVariable(
-                            'Possibly undefined global variable ' . $var_name . ', first seen on line '
-                                . $first_appearance->getLineNumber(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $var_name,
-                        )
-                        : new PossiblyUndefinedVariable(
-                            'Possibly undefined variable ' . $var_name . ', first seen on line '
-                                . $first_appearance->getLineNumber(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        ),
-                    $statements_analyzer->getSuppressedIssues(),
-                    (bool) $statements_analyzer->getBranchPoint($var_name),
-                );
+                // extract() defines variables without a first appearance
+                $first_appearance = $statements_analyzer->getFirstAppearance($var_name);
+                $first_seen = $first_appearance ? ', first seen on line ' . $first_appearance->getLineNumber() : '';
+
+                $issue = $context->is_global
+                    ? new PossiblyUndefinedGlobalVariable(
+                        'Possibly undefined global variable ' . $var_name . $first_seen,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $var_name,
+                    )
+                    : new PossiblyUndefinedVariable(
+                        'Possibly undefined variable ' . $var_name . $first_seen,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    );
+
+                if ($codebase->alter_code) {
+                    if ($codebase->shouldFixIssue($issue, $statements_analyzer->getSuppressedIssues())) {
+                        $branch_point = $statements_analyzer->getBranchPoint($var_name);
+
+                        if ($branch_point !== null) {
+                            $statements_analyzer->addVariableInitialization($var_name, $branch_point);
+                        }
+                    }
+                } else {
+                    IssueBuffer::maybeAdd(
+                        $issue,
+                        $statements_analyzer->getSuppressedIssues(),
+                        (bool) $statements_analyzer->getBranchPoint($var_name),
+                    );
+                }
             }
 
-            if ($stmt_type->possibly_undefined_from_try && !$context->inside_isset) {
+            if ($stmt_type->possibly_undefined_from_try && !$context->inside_isset && !$assigned_to_reference) {
                 if ($context->is_global) {
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedGlobalVariable(
@@ -720,16 +744,26 @@ final class VariableFetchAnalyzer
     }
 
     /**
-     * The value that is read from a superglobal is defined, whatever the superglobal is (an isset() asks about it),
-     * but $http_response_header, which only exists after a network request, may not be
+     * The value that is read from a superglobal is defined (an isset() asks about it), see isReadAsSetSuperGlobal()
      *
      * @psalm-capabilities read-props
      */
     private static function getReadSuperGlobalType(Union $type, string $var_name, Context $context): Union
     {
-        return $context->inside_isset || $var_name === '$http_response_header'
+        return $context->inside_isset || !self::isReadAsSetSuperGlobal($var_name)
             ? $type
             : $type->setPossiblyUndefined(false);
+    }
+
+    /**
+     * Whether the superglobal is taken as set wherever it is used: all of them but $http_response_header, which
+     * only exists after a network request
+     *
+     * @psalm-pure
+     */
+    public static function isReadAsSetSuperGlobal(string $var_id): bool
+    {
+        return $var_id !== '$http_response_header' && self::isSuperGlobal($var_id);
     }
 
     /**

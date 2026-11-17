@@ -468,6 +468,8 @@ final class Config
 
     public bool $find_unused_code = true;
 
+    public bool $mark_all_non_internal_code_as_api = false;
+
     public bool $find_unused_variables = false;
 
     public bool $find_unused_psalm_suppress = false;
@@ -522,6 +524,12 @@ final class Config
     public int $max_shaped_array_size = 100;
 
     public float $long_scan_warning = 10.0;
+
+    /**
+     * The type coverage in percent below which a full run fails, with at most two decimals: from the minTypeCoverage
+     * attribute, the --min-type-coverage option, or set through the API
+     */
+    public ?float $min_type_coverage = null;
 
     /**
      * @var string[]
@@ -1151,6 +1159,7 @@ final class Config
             'allowInternalNamedArgumentsCalls' => 'allow_internal_named_arg_calls',
             'allowNamedArgumentCalls' => 'allow_named_arg_calls',
             'findUnusedPsalmSuppress' => 'find_unused_psalm_suppress',
+            'markAllNonInternalCodeAsApi' => 'mark_all_non_internal_code_as_api',
             'findUnusedBaselineEntry' => 'find_unused_baseline_entry',
             'findUnusedIssueHandlerSuppression' => 'find_unused_issue_handler_suppression',
             'reportInfo' => 'report_info',
@@ -1356,6 +1365,10 @@ final class Config
         if (isset($config_xml['longScanWarning'])) {
             $attribute_text = (float)$config_xml['longScanWarning'];
             $config->long_scan_warning = $attribute_text;
+        }
+
+        if (isset($config_xml['minTypeCoverage'])) {
+            $config->min_type_coverage = (float) $config_xml['minTypeCoverage'];
         }
 
         if (isset($config_xml['inferPropertyTypesFromConstructor'])) {
@@ -2872,7 +2885,8 @@ final class Config
                 static fn(string $classlike): bool => $codebase->classlike_storage_provider->has($classlike),
             ) || array_any(
                 $functions,
-                static fn(string $function): bool => $codebase->functions->isDeclaredInCode($function),
+                static fn(string $function): bool
+                    => $codebase->functions->isDeclaredInCode($function, $codebase->scanner),
             )) {
                 $library_stubs[] = $library_stub;
                 // the real definitions of the class-likes, which the stub then refines like a class the scan found

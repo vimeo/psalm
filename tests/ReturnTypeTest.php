@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralString;
 
+use function array_column;
 use function mb_internal_encoding;
+use function sort;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -23,6 +27,50 @@ final class ReturnTypeTest extends TestCase
     {
         // PHP-Parser rejects void parameters before Psalm analyzes the body.
         $this->testInvalidCode('<?php function f(void $p): void {}', 'ParseError');
+    }
+
+    public function testAVariableLeftWithoutValueByADeadAssignmentKeepsTheEndOfTheBodyReachable(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return never */
+                function boom() {
+                    throw new Exception();
+                }
+
+                function f(int $x): int {
+                    if (is_string($x)) {
+                        $y = $x;
+                    }
+                    if (rand(0, 1)) {
+                        return 1;
+                    }
+                }
+
+                function g(): int {
+                    try {
+                        $z = boom();
+                    } catch (Exception $e) {}
+                    if (rand(0, 1)) {
+                        return 1;
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $types = array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type');
+        sort($types);
+
+        self::assertSame(
+            ['InvalidReturnType', 'InvalidReturnType', 'NoValue', 'NoValue', 'TypeDoesNotContainType'],
+            $types,
+        );
     }
 
     public function testUnicodeEscapeOfADocblockStringLiteralIsNotTheInternalEncoding(): void
@@ -49,6 +97,52 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'doWhileBodyAlwaysReturning' => [
+                'code' => '<?php
+                    function f(int $i): string {
+                        do {
+                            if ($i > 0) {
+                                return "a";
+                            }
+                            return "b";
+                        } while (false);
+                    }',
+            ],
+            'doWhileBodyAlwaysThrowing' => [
+                'code' => '<?php
+                    function f(): string {
+                        do {
+                            throw new Exception();
+                        } while (false);
+                    }',
+            ],
+            'nestedDoWhileBodiesAlwaysReturning' => [
+                'code' => '<?php
+                    function f(): string {
+                        do {
+                            do {
+                                return "a";
+                            } while (false);
+                        } while (false);
+                    }',
+            ],
+            'foreachOverANonEmptyLiteralArrayAlwaysReturning' => [
+                'code' => '<?php
+                    function f(): string {
+                        foreach ([1, 2] as $_x) {
+                            return "a";
+                        }
+                    }',
+            ],
+            'foreachOverANonEmptyArrayAlwaysReturning' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string, int> $a */
+                    function f(array $a): int {
+                        foreach ($a as $x) {
+                            return $x;
+                        }
+                    }',
+            ],
             'switchBreakWithFallthroughDefaultStillReturns' => [
                 'code' => '<?php
                     function afterSwitch(int $value): int {
@@ -262,7 +356,7 @@ final class ReturnTypeTest extends TestCase
 
                     $t = (new D())->render();',
                 'assertions' => ['$t===' => 'string'],
-                'ignored_issues' => [],
+                'ignored_issues' => ['ImplementedReturnTypeMismatch'],
                 'php_version' => '8.1',
             ],
             'narrowerNativeReturnTypeWinsOverInheritedStringableDocblock' => [
@@ -280,7 +374,7 @@ final class ReturnTypeTest extends TestCase
 
                     $u = (new F())->render();',
                 'assertions' => ['$u===' => 'string'],
-                'ignored_issues' => [],
+                'ignored_issues' => ['ImplementedReturnTypeMismatch'],
                 'php_version' => '8.1',
             ],
             'nativeStringableReturnTypeKeepsStringableOverInheritedStringOrStringable' => [
@@ -1550,7 +1644,7 @@ final class ReturnTypeTest extends TestCase
                     $obj = (object)returnsInt();
                 ',
                 'assertions' => [
-                    '$obj' => 'object{scalar:int}',
+                    '$obj' => 'object{scalar:int}&stdClass',
                 ],
             ],
             'infersObjectShapeOfCastArray' => [
@@ -1565,7 +1659,7 @@ final class ReturnTypeTest extends TestCase
                     $obj = (object)returnsArray();
                 ',
                 'assertions' => [
-                    '$obj' => 'object{a:int}',
+                    '$obj' => 'object{a:int}&stdClass',
                 ],
             ],
             'mixedAssignmentWithUnderscore' => [
@@ -2339,6 +2433,171 @@ final class ReturnTypeTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'objectCastOfAShapedArrayKeepsItsProperties' => [
+                'code' => '<?php
+                    /**
+                     * @return object{a: int}
+                     */
+                    function test(): object {
+                        return (object) ["a" => 1];
+                    }',
+            ],
+            'objectCastOfAShapedArrayOrAScalarIsAStdClass' => [
+                'code' => '<?php
+                    /** @var array{a: int}|int $values */
+                    $values = 1;
+                    $object = (object) $values;',
+                'assertions' => [
+                    '$object' => 'stdClass',
+                ],
+            ],
+            'objectCastOfAShapedArrayOrNullIsAStdClass' => [
+                'code' => '<?php
+                    /** @var array{a: int}|null $values */
+                    $values = null;
+                    $object = (object) $values;',
+                'assertions' => [
+                    '$object===' => 'stdClass',
+                ],
+            ],
+            'objectCastOfAShapedArrayIsAnArgumentOfItsClassAndOfObject' => [
+                'code' => '<?php
+                    function takesStdClass(stdClass $o): void {}
+                    function takesObject(object $o): void {}
+                    /** @param object{a: int} $o */
+                    function takesShape($o): void {}
+                    /**
+                     * @template T of object
+                     * @param T $o
+                     * @return T
+                     */
+                    function identity($o) {
+                        return $o;
+                    }
+
+                    $o = (object) ["a" => 1];
+                    takesStdClass($o);
+                    takesObject($o);
+                    takesShape($o);
+                    $same = identity($o);',
+                'assertions' => [
+                    '$same===' => 'object{a:1}&stdClass',
+                ],
+            ],
+            'objectCastOfAnUnshapedArrayIsAStdClass' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $values */
+                    function f(array $values): stdClass {
+                        return (object) $values;
+                    }
+
+                    function g(array $values): stdClass {
+                        return (object) $values;
+                    }
+
+                    /** @param list<int> $values */
+                    function h(array $values): stdClass {
+                        return (object) $values;
+                    }
+
+                    function i(?array $values): stdClass {
+                        return (object) $values;
+                    }
+
+                    function j(): stdClass {
+                        return (object) [];
+                    }
+
+                    function k(): stdClass {
+                        return (object) null;
+                    }',
+            ],
+            'objectCastOfAnArrayOrAnObjectIsAnObject' => [
+                'code' => '<?php
+                    /** @param array<string, int>|object $value */
+                    function f($value): void {
+                        $object = (object) $value;
+                    }
+
+                    /** @var mixed $mixed */
+                    $mixed = 1;
+                    $object = (object) $mixed;',
+                'assertions' => [
+                    '$object===' => 'object',
+                ],
+            ],
+            'objectCastOfAnInlineArrayInAnArrayFilterCallback' => [
+                'code' => '<?php
+                    $e = array_filter([(object) ["a" => 1], null], fn($i) => $i);',
+                'assertions' => [
+                    '$e===' => 'array<int<0, 1>, object{a:1}&stdClass>',
+                ],
+            ],
+            'objectCastOfAScalarIsAStdClass' => [
+                'code' => '<?php
+                    function fromInt(): stdClass {
+                        return (object) 1;
+                    }',
+            ],
+            'objectCastOfAShapedArrayIsAStdClass' => [
+                'code' => '<?php
+                    function test(): stdClass {
+                        return (object) ["string" => "string"];
+                    }',
+            ],
+            'overridableMethodThatThrowsAfterAnotherStatementKeepsItsDeclaredReturnType' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    abstract class Base {
+                        /** @return string */
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+            ],
+            'overridableStaticMethodThatThrowsAfterAnotherStatementKeepsItsDeclaredReturnType' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    abstract class Base {
+                        /** @return string */
+                        public static function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+            ],
+            'traitMethodOfAnOverridableClassThatThrowsAfterAnotherStatementKeepsTheReturnTypeOfTheInterface' => [
+                'code' => '<?php
+                    final class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    interface I {
+                        /** @return string */
+                        public function doSomething();
+                    }
+
+                    trait T {
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }
+
+                    class C implements I {
+                        use T;
+                    }',
+            ],
             'finalClassOverridesAGenericStaticReturnType' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2405,6 +2664,36 @@ final class ReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'functionEndingAfterExhaustiveTypeChecksNeedsNoReturn' => [
+                'code' => '<?php
+                    function h(int|string $x): int {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'methodEndingAfterExhaustiveTypeChecksNeedsNoReturn' => [
+                'code' => '<?php
+                    final class C {
+                        public function get(int|string $x): int {
+                            if (is_int($x)) {
+                                return 1;
+                            }
+                            if (is_string($x)) {
+                                return 2;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -2415,6 +2704,122 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'doWhileBodyContinuingToAFalseCondition' => [
+                'code' => '<?php
+                    function f(int $i): string {
+                        do {
+                            if ($i > 0) {
+                                continue;
+                            }
+                            return "a";
+                        } while (false);
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'doWhileBodyBreaking' => [
+                'code' => '<?php
+                    function f(int $i): string {
+                        do {
+                            if ($i > 0) {
+                                break;
+                            }
+                            return "a";
+                        } while (false);
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'foreachOverAPossiblyEmptyListAlwaysReturning' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(array $l): int {
+                        foreach ($l as $x) {
+                            return $x;
+                        }
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'foreachOverAShapeWithOnlyOptionalKeysAlwaysReturning' => [
+                'code' => '<?php
+                    /** @param array{a?: int} $a */
+                    function f(array $a): int {
+                        foreach ($a as $x) {
+                            return $x;
+                        }
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'foreachOverAPossiblyEmptyIteratorAlwaysReturning' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int>|ArrayIterator<int, int> $l */
+                    function f($l): int {
+                        foreach ($l as $x) {
+                            return $x;
+                        }
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'foreachOverANonEmptyArrayLeftByGoto' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        foreach ([1] as $_x) {
+                            if ($b) {
+                                goto end;
+                            }
+                            return 1;
+                        }
+                        end:
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'doWhileLeftByGoto' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        do {
+                            if ($b) {
+                                goto end;
+                            }
+                            return 1;
+                        } while ($b);
+                        end:
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'foreachOverANonEmptyListBreakingOutOfTwoLoops' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $l */
+                    function f(array $l): int {
+                        foreach ($l as $x) {
+                            foreach ($l as $_y) {
+                                break 2;
+                            }
+                            return $x;
+                        }
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'objectCastOfAnArrayIsNotAnotherClass' => [
+                'code' => '<?php
+                    function takesArrayObject(ArrayObject $o): void {}
+
+                    takesArrayObject((object) ["a" => 1]);',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'methodOfAnAnonymousClassThatThrowsAfterAnotherStatementIsInvalid' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    $o = new class {
+                        /** @return string */
+                        public function f() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("x");
+                        }
+                    };',
+                'error_message' => 'InvalidReturnType',
+            ],
             'switchWithADefaultInTheMiddleThatFallsThroughIntoACaseThatDoesNotEnd' => [
                 'code' => '<?php
                     function classify(int $x): int {
@@ -3284,6 +3689,88 @@ final class ReturnTypeTest extends TestCase
                     PHP,
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'finalMethodThatAlwaysThrowsAfterAnotherStatementIsNever' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    class Base {
+                        /** @return string */
+                        final public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'finalStaticMethodThatAlwaysThrowsAfterAnotherStatementIsNever' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    class Base {
+                        /** @return string */
+                        final public static function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'traitMethodOfAFinalClassThatAlwaysThrowsIsNeverForTheReturnTypeOfTheInterface' => [
+                'code' => '<?php
+                    final class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    interface I {
+                        /** @return string */
+                        public function doSomething();
+                    }
+
+                    trait T {
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }
+
+                    final class C implements I {
+                        use T;
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'traitMethodOfAFinalClassThatAlwaysThrowsIsNeverForTheReturnTypeOfTheParent' => [
+                'code' => '<?php
+                    final class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    class P {
+                        /** @return string */
+                        public function doSomething() {
+                            return "a";
+                        }
+                    }
+
+                    trait T {
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }
+
+                    final class C extends P {
+                        use T;
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
             'finalClassOverridesAGenericStaticReturnTypeWithAnotherType' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3381,6 +3868,86 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
                 'error_message' => '__toString methods must return a string, 5 returned',
+            ],
+            'functionEndingAfterALoopOfExhaustiveTypeChecksNeedsAReturn' => [
+                'code' => '<?php
+                    function f(int|string $x, array $a): int {
+                        foreach ($a as $_) {
+                            if (is_int($x)) {
+                                return 1;
+                            }
+                            if (is_string($x)) {
+                                return 2;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => ['RedundantCondition', 'MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'functionEndingAfterAnIssetOfAnOptionalPropertyNeedsAReturn' => [
+                'code' => '<?php
+                    /** @param object{bar?: string} $foo */
+                    function f(object $foo): string {
+                        if (isset($foo->bar)) {
+                            return $foo->bar;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'methodEndingAfterAnIssetOfAnUninitializedPropertyNeedsAReturn' => [
+                'code' => '<?php
+                    final class A {
+                        public string $p;
+
+                        public function get(): string {
+                            if (isset($this->p)) {
+                                return $this->p;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => ['MissingConstructor', 'RedundantPropertyInitializationCheck'],
+            ],
+            'functionEndingAfterADestructuredEmptyArrayNeedsAReturn' => [
+                'code' => '<?php
+                    function f(): int {
+                        [$a] = [];
+                        if (rand(0, 1)) {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => ['UnusedVariable'],
+            ],
+            'codeAfterExhaustiveTypeChecksIsAnalyzed' => [
+                'code' => '<?php
+                    function f(int|string $x): int {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                        return undefined_function();
+                    }',
+                'error_message' => 'UndefinedFunction',
+                'error_levels' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'functionEndingAfterExhaustiveDocblockTypeChecksNeedsAReturn' => [
+                'code' => '<?php
+                    /** @param int|string $x */
+                    function f($x): int {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => ['RedundantConditionGivenDocblockType'],
             ],
         ];
     }

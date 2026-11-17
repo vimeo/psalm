@@ -155,6 +155,9 @@ final class ClassConstAnalyzer
                 if ($stmt->name instanceof PhpParser\Node\Identifier) {
                     if ((!$context->inside_class_exists || $stmt->name->name !== 'class')
                         && !isset($context->phantom_classes[strtolower($fq_class_name)])
+                        // PHP allows the name of a class that is missing, such as in the message about it
+                        && ($stmt->name->name !== 'class'
+                            || !isset($context->negated_phantom_classes[strtolower($fq_class_name)]))
                     ) {
                         if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                             $statements_analyzer,
@@ -515,6 +518,8 @@ final class ClassConstAnalyzer
         if ($lhs_type === null) {
             return true;
         }
+
+        $lhs_type = TypeExpander::expandTemplateKeyOfAndValueOf($statements_analyzer->getCodebase(), $lhs_type);
 
         // ::class retrieves a class name; it is not a use of a string literal
         // instead of ::class. In particular, do not report a class-string made by Foo::class.
