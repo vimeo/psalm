@@ -8,6 +8,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\AtomicParts;
+use Psalm\Internal\Type\StringRefinement;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\Capabilities;
@@ -1082,6 +1083,17 @@ final class AtomicTypeComparator
             // A type variable can be identical to anything; its constraints
             // are reconciled at the end of the surrounding function-like.
             return true;
+        }
+
+        // the name of a function is never numeric
+        if (($type1_part instanceof TCallableString
+                && $type2_part instanceof TString
+                && (StringRefinement::getImplied($type2_part) & StringRefinement::NUMERIC) !== 0)
+            || ($type2_part instanceof TCallableString
+                && $type1_part instanceof TString
+                && (StringRefinement::getImplied($type1_part) & StringRefinement::NUMERIC) !== 0)
+        ) {
+            return false;
         }
 
         if ($type1_part instanceof TIterable && $type2_part instanceof TNamedObject) {

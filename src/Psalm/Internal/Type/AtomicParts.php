@@ -70,14 +70,21 @@ final class AtomicParts
                     : null;
             }
 
-            return [
+            $string_and_array = [
                 new TCallableString($from_docblock),
                 Atomic::create('callable-array', null, [], [], null, null, null, $from_docblock),
-                new TCallableObject(
-                    $from_docblock,
-                    $type->params !== null || $type->return_type !== null ? $type : null,
-                ),
             ];
+
+            // as with a class, whether a Traversable may be invokable is up to the comparators
+            return $other instanceof TIterable
+                ? $string_and_array
+                : [
+                    ...$string_and_array,
+                    new TCallableObject(
+                        $from_docblock,
+                        $type->params !== null || $type->return_type !== null ? $type : null,
+                    ),
+                ];
         }
 
         return match ($type::class) {

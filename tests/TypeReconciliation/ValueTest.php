@@ -1191,12 +1191,12 @@ final class ValueTest extends TestCase
                     }
                     PHP,
             ],
-            'iterableIdenticalToCallableIsCallableArrayOrTraversable' => [
+            'iterableIdenticalToCallableIsCallableArray' => [
                 'code' => <<<'PHP'
                     <?php
                     function f(iterable $it, callable $c): void {
-                        if ($it === $c) { // [new ArrayObject(), 'count'], or an invokable Traversable
-                            /** @psalm-check-type-exact $c = Traversable|callable-array{0: class-string|object, 1: non-empty-string} */
+                        if ($it === $c) { // [new ArrayObject(), 'count']
+                            /** @psalm-check-type-exact $c = callable-array{0: class-string|object, 1: non-empty-string} */
                         }
                     }
                     PHP,
@@ -1303,12 +1303,12 @@ final class ValueTest extends TestCase
 
                     $c = c();
 
-                    if (!is_iterable($c)) { // [new ArrayObject(), 'count'], or an invokable Traversable
+                    if (!is_iterable($c)) { // [new ArrayObject(), 'count']
                         throw new RuntimeException();
                     }
                     PHP,
                 'assertions' => [
-                    '$c===' => 'Traversable|callable-array{0: class-string|object, 1: non-empty-string}',
+                    '$c===' => 'callable-array{0: class-string|object, 1: non-empty-string}',
                 ],
             ],
             'arrayOfStringsMayBeCallable' => [
@@ -1671,6 +1671,16 @@ final class ValueTest extends TestCase
                     /** @param numeric $n */
                     function f($n): void {
                         if ($n === 'abc') {}
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'numericNeverIdenticalToCallable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param numeric $n */
+                    function f($n, callable $c): void {
+                        if ($n === $c) {}
                     }
                     PHP,
                 'error_message' => 'DocblockTypeContradiction',
