@@ -107,7 +107,7 @@ class SomePlugin implements \Psalm\Plugin\EventHandler\AfterStatementAnalysisInt
 - `PropertyExistenceProviderInterface` - can be used to override Psalm's builtin property existence checks for one or more classes.
 - `PropertyTypeProviderInterface` - can be used to override Psalm's builtin property type lookup for one or more classes.
 - `PropertyVisibilityProviderInterface` - can be used to override Psalm's builtin property visibility checks for one or more classes.
-- `AddCallTaintsInterface` and `RemoveCallTaintsInterface` - can be used to add taints to, or remove taints from, an argument going into a call or what a call returns, given the function-like called, the position and the type of the argument (see [Wiring calls into the taint graph](#wiring-calls-into-the-taint-graph)).
+- `AddCallTaintsInterface` and `RemoveCallTaintsInterface` - can be used to add or remove the taints of an argument going into a call, or of what a call returns, from the function-like called and the argument's offset and type (see [Wiring calls into the taint graph](#wiring-calls-into-the-taint-graph)).
 - `DynamicFunctionStorageProviderInterface` - can be used to override signature for one or more functions. It means you can define variadic param list. Infer return type by input args. Define function templates. Also check out `Psalm\Plugin\DynamicFunctionStorage` to find out what api it brings for you to change function's definition.
 
 Here are a couple of example plugins:
@@ -131,50 +131,73 @@ You can also specify an absolute path to your plugin:
 
 ### Wiring calls into the taint graph
 
-A plugin analyzing calls that PHP code doesn't make can make taint analysis follow them, as it follows those of PHP
-code. A template calling a PHP function, or a configuration naming the method a framework calls, are examples.
-`Codebase::addTaintedCall()` wires such a call and returns the node of what it returns (null without taint analysis,
-or if the function-like has no storage):
+`Codebase::addTaintedCall()` makes taint analysis follow a call PHP code doesn't make (a template calling a function,
+a configuration naming a method), wired as Psalm wires a PHP call of it. It returns the node of what the call returns
+(null without taint analysis). A plugin providing the return type of `call_through('function_name', ...$args)`:
 
 ```php
-public function addTaintedCall(
-    string $function_id,          // 'ns\function_name' or 'Class::method'
-    array $argument_nodes,        // list<list<DataFlowNode>>: the nodes each argument comes from, by position
-    array $argument_types,        // array<int, Union>: the types of the arguments, by position
-    CodeLocation $call_location,
-    ?StatementsSource $source = null, // when given, nothing is wired while its taints aren't tracked
-): ?DataFlowNode
+$node = $codebase->addTaintedCall(
+    'show',                     // 'ns\function_name' or 'Class::method'
+    $argument_nodes,            // list<list<DataFlowNode>>: the nodes of each argument, by position
+    $argument_types,            // array<int, Union>: the types of the arguments, by position
+    $event->getCodeLocation(),
+    $source,                    // nothing is wired while its taints aren't tracked
+);
+
+return $node === null ? $type : $type->addParentNodes([$node->id => $node]);
 ```
 
-The call is wired as a PHP call of the function-like is:
+```php
+function show(string $s): void {
+    echo $s; // TaintedHtml
+}
 
-- each argument goes into the parameter taking it: into its body, and into the sinks of its `@psalm-taint-sink`. The
-  variadic parameter takes the arguments after it;
-- an argument given to a parameter with a conditional sink (`@psalm-taint-sink ($kind is "sql" ? "sql" : "html")
-  $value`) goes into a sink of the taints the types of the arguments resolve it to. A literal type decides a
-  condition, and an argument without a type leaves both branches;
-- the call returns what the body returns, what its `@psalm-flow` and its `@psalm-taint-source` give, without what it
-  escapes (`@psalm-taint-escape`), including what a conditional escape resolved by the types of the arguments
-  escapes;
-- a call of a function-like whose calls Psalm tells apart (`@psalm-taint-specialize`, see
-  [Taint Flow](../../security_analysis/taint_flow.md)) takes and returns only what is its own;
-- `AddCallTaintsInterface` and `RemoveCallTaintsInterface` handlers decide what each argument, and what the call
-  returns, take and lose. Psalm dispatches their `AddRemoveCallTaintsEvent` for the arguments and returns of the
-  calls of PHP code too, so one handler covers both. Unlike `AddRemoveTaintsEvent`, it has no expression: it gives the
-  function-like called, the position and the type of the argument (no position for what the call returns), and a
-  location.
+/** @psalm-taint-sink ($kind is "sql" ? "sql" : null) $value */
+function query(string $kind, string $value): void {}
 
-A method call goes to the body of the method only, not to the methods overriding it: wire a call of each of them for
-the call to go to them too. By-reference parameters, the callables given to callable parameters, and keyed stores
-(`@psalm-flow ($value) -> Store::$data[$key]`) aren't wired.
+/** @psalm-taint-escape ($escape is true ? "html" : null) */
+function maybe_escape(string $s, bool $escape): string {
+    return $s;
+}
 
-To make an expression's value come from the call, add the returned node to its type:
+/** @psalm-taint-specialize */
+function specialized(string $s): string {
+    return $s;
+}
+
+call_through("show", (string) $_GET["a"]);
+call_through("query", "sql", (string) $_GET["b"]);                // TaintedSql
+call_through("query", "other", (string) $_GET["c"]);              // no issue
+echo call_through("maybe_escape", (string) $_GET["d"], false);    // TaintedHtml
+echo call_through("maybe_escape", (string) $_GET["e"], true);     // TaintedTextWithQuotes, no TaintedHtml
+call_through("specialized", (string) $_GET["f"]);
+echo call_through("specialized", "safe");                         // no issue
+```
+
+Not wired: the overrides of a method (wire a call of each), by-reference parameters, callables given to callable
+parameters, and keyed stores (`@psalm-flow ($value) -> Store::$data[$key]`).
+
+`AddCallTaintsInterface` and `RemoveCallTaintsInterface` handlers add or remove the taints of an argument going into a
+call, or of what a call returns. Unlike `AddRemoveTaintsEvent`, their `AddRemoveCallTaintsEvent` has no expression: it
+gives the function-like called, the argument offset (null for what the call returns), its type and a location. Psalm
+dispatches it for PHP calls and for `addTaintedCall()` alike:
 
 ```php
-$node = $codebase->addTaintedCall('render', [$value_type ? array_values($value_type->parent_nodes) : []], [], $location);
-if ($node !== null) {
-    $type = $type->addParentNodes([$node->id => $node]);
+public static function removeCallTaints(AddRemoveCallTaintsEvent $event): int
+{
+    return strtolower($event->getFunctionId()) === 'clean' && $event->getArgumentOffset() === 0
+        ? TaintKind::INPUT_HTML
+        : 0;
 }
+```
+
+```php
+function clean(string $s): string {
+    return $s;
+}
+
+echo clean((string) $_GET["g"]);                     // TaintedTextWithQuotes, no TaintedHtml
+echo call_through("clean", (string) $_GET["h"]);     // TaintedTextWithQuotes, no TaintedHtml
 ```
 
 ### Using Xdebug
