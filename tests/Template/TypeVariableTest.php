@@ -76,16 +76,47 @@ final class TypeVariableTest extends TestCase
                 /** @param list<string> $ids */
                 function f(array $ids, mixed $m): void {
                     $q = new SplPriorityQueue();
-                    $order = 10;
+                    $order = PHP_INT_MAX;
                     foreach ($ids as $id) {
-                        while (rand(0, 1)) {
-                            $q->insert($id, [$m, --$order]);
+                        foreach ($ids as $id2) {
+                            $q->insert($id . $id2, [$m, --$order]);
                         }
                     }
                     sortIt($q);
                 }',
             'expected_issues' => [
-                'MixedArgumentTypeCoercion 14: Type list{mixed, int<min, 9>} should be a subtype of list{int, int}',
+                'MixedArgumentTypeCoercion 14: Type list{mixed, int} should be a subtype of list{int, int}',
+            ],
+        ];
+
+        yield 'constructionAnalysedForEachReceiverType' => [
+            'code' => '<?php
+                /** @template T */
+                final class Box {
+                    /** @param T $v */
+                    public function __construct(public mixed $v) {}
+                }
+
+                /** @param Box<int> $_b */
+                function takesBoxOfInt(Box $_b): void {}
+
+                final class TakesIntCallback {
+                    /** @param Closure(int): void $_c */
+                    public function m(Closure $_c): void {}
+                }
+
+                final class TakesStringCallback {
+                    /** @param Closure(string): void $_c */
+                    public function m(Closure $_c): void {}
+                }
+
+                function f(TakesIntCallback|TakesStringCallback $x): void {
+                    $x->m(function ($v): void {
+                        takesBoxOfInt(new Box($v));
+                    });
+                }',
+            'expected_issues' => [
+                'IncompatibleTypeParameters 23: Type string should be a subtype of int',
             ],
         ];
 
@@ -2186,6 +2217,29 @@ final class TypeVariableTest extends TestCase
                         takesString($g());
                     }',
                 'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'constructionWrappingItsOwnResultInALoop' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+                    }
+
+                    /** @param Box<int> $_b */
+                    function takesBoxOfInt(Box $_b): void {}
+
+                    /** @param list<int> $xs */
+                    function f(array $xs): void {
+                        $b = new Box(1);
+                        foreach ($xs as $_) {
+                            $b = new Box($b);
+                        }
+                        takesBoxOfInt($b);
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:39',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],

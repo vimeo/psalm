@@ -23,7 +23,6 @@ use WeakMap;
 
 use function array_filter;
 use function array_map;
-use function array_slice;
 use function array_unique;
 use function array_values;
 use function count;
@@ -67,9 +66,10 @@ final class TypeVariableTracker
     /**
      * Mints the type variable a template of a construction site is carried as.
      * An analysis of a site analysed before (a loop pass, a closure analysed
-     * once more) gets the same variable, with the bounds of the site replaced:
-     * the types an earlier analysis left mention it, and get the bounds the
-     * last analysis records.
+     * once more) gets the same variable, which gets the bounds of both: the
+     * types an earlier analysis left mention it, and get the bounds the next
+     * ones record. Those of a discarded analysis are dropped with it
+     * (discardBoundsRecordedBetween()).
      *
      * @param list<TemplateBound> $lower_bounds
      * @param list<TemplateBound> $upper_bounds
@@ -85,7 +85,7 @@ final class TypeVariableTracker
 
         if ($name !== null && isset($this->bounds[$name])) {
             $bounds = $this->bounds[$name];
-            $bounds->replaceInitialBounds($lower_bounds, $upper_bounds);
+            $bounds->addInitialBounds($lower_bounds, $upper_bounds);
 
             return new TTypeVariable($name, $bounds);
         }
@@ -166,8 +166,7 @@ final class TypeVariableTracker
      * Drops the bounds recorded between two calls to snapshotBounds() (or since
      * the first one, without the second), by analyses whose results are
      * discarded: a loop pass followed by another one, a trial analysis. The
-     * bounds of the construction sites stay, as the last analysis of a site
-     * sets them.
+     * analysis kept after them analyses the same construction sites again.
      *
      * @param array<string, array{list<TemplateBound>, list<TemplateBound>}> $from
      * @param array<string, array{list<TemplateBound>, list<TemplateBound>}>|null $to
@@ -178,23 +177,10 @@ final class TypeVariableTracker
             $kept_ids = self::getBoundIds($from[$name] ?? [[], []]);
             $discarded_ids = $to === null ? null : self::getBoundIds($to[$name] ?? [[], []]);
 
-            $is_kept = static fn(TemplateBound $bound): bool => isset($kept_ids[spl_object_id($bound)])
-                || ($discarded_ids !== null && !isset($discarded_ids[spl_object_id($bound)]));
-
-            $bounds->lower_bounds = [
-                ...array_slice($bounds->lower_bounds, 0, $bounds->initial_lower_bound_count),
-                ...array_filter(
-                    array_slice($bounds->lower_bounds, $bounds->initial_lower_bound_count),
-                    $is_kept,
-                ),
-            ];
-            $bounds->upper_bounds = [
-                ...array_slice($bounds->upper_bounds, 0, $bounds->initial_upper_bound_count),
-                ...array_filter(
-                    array_slice($bounds->upper_bounds, $bounds->initial_upper_bound_count),
-                    $is_kept,
-                ),
-            ];
+            $bounds->filterBounds(
+                static fn(TemplateBound $bound): bool => isset($kept_ids[spl_object_id($bound)])
+                    || ($discarded_ids !== null && !isset($discarded_ids[spl_object_id($bound)])),
+            );
         }
     }
 
