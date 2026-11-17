@@ -232,8 +232,8 @@ final class LoopAnalyzer
             $pre_loop_context = clone $loop_context;
 
             $type_variable_tracker = $statements_analyzer->type_variable_tracker;
-            $bound_counts_before_loop = $type_variable_tracker->getBoundCounts();
-            $bound_counts_at_kept_pass_start = $bound_counts_before_loop;
+            $bounds_before_loop = $type_variable_tracker->snapshotBounds();
+            $bounds_at_kept_pass_start = $bounds_before_loop;
 
             IssueBuffer::startRecording();
 
@@ -463,7 +463,7 @@ final class LoopAnalyzer
                 $vars_at_iteration_start = $continue_context->vars_in_scope;
 
                 $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
-                $bound_counts_at_kept_pass_start = $type_variable_tracker->getBoundCounts();
+                $bounds_at_kept_pass_start = $type_variable_tracker->snapshotBounds();
                 IssueBuffer::startRecording();
 
                 // what a pass computed of the condition (the assertions of its operands too) and of the body is no
@@ -629,8 +629,8 @@ final class LoopAnalyzer
             // last pass records them again with the types the loop leaves. They stay until then, as the last pass
             // reads them before recording its own (a value taken from a collection a previous iteration filled).
             $type_variable_tracker->discardBoundsRecordedBetween(
-                $bound_counts_before_loop,
-                $bound_counts_at_kept_pass_start,
+                $bounds_before_loop,
+                $bounds_at_kept_pass_start,
             );
 
             if ($recorded_issues) {

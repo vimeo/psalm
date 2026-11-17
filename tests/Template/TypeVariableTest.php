@@ -169,6 +169,93 @@ final class TypeVariableTest extends TestCase
                 'MixedArgumentTypeCoercion 11: Type list{mixed, 1} should be a subtype of list{int, int}',
             ],
         ];
+
+        yield 'constructedInAPassCheckedInTheNextOne' => [
+            'code' => $sort . '
+                /** @param list<string> $ids */
+                function f(array $ids, mixed $m): void {
+                    $q = null;
+                    foreach ($ids as $id) {
+                        if ($q !== null) {
+                            sortIt($q);
+                        }
+                        $q = new SplPriorityQueue();
+                        $q->insert($id, [$m, 1]);
+                    }
+                }',
+            'expected_issues' => [
+                'MixedArgumentTypeCoercion 10: Type list{mixed, 1} should be a subtype of list{int, int}',
+            ],
+        ];
+
+        yield 'constructedInADoWhileIterationCheckedInTheNextOne' => [
+            'code' => $sort . '
+                function f(mixed $m): void {
+                    $q = null;
+                    do {
+                        if ($q !== null) {
+                            sortIt($q);
+                        }
+                        $q = new SplPriorityQueue();
+                        $q->insert("a", [$m, 1]);
+                    } while (rand(0, 1));
+                }',
+            'expected_issues' => [
+                'MixedArgumentTypeCoercion 9: Type list{mixed, 1} should be a subtype of list{int, int}',
+            ],
+        ];
+
+        yield 'constructedInAClosureAssigningByReference' => [
+            'code' => $sort . '
+                function f(mixed $m): void {
+                    $q = null;
+                    $construct = function () use (&$q, $m): void {
+                        $q = new SplPriorityQueue();
+                        $q->insert("a", [$m, 1]);
+                    };
+                    $construct();
+                    if ($q !== null) {
+                        sortIt($q);
+                    }
+                }',
+            'expected_issues' => [
+                'MixedArgumentTypeCoercion 13: Type list{mixed, 1} should be a subtype of list{int, int}',
+            ],
+        ];
+
+        yield 'closurePassedAsArgument' => [
+            'code' => $sort . '
+                /** @param list<string> $ids */
+                function f(array $ids, mixed $m): void {
+                    $q = new SplPriorityQueue();
+                    usort($ids, function (string $a, string $_b) use ($q, $m): int {
+                        $q->insert($a, [$m, 1]);
+                        return 0;
+                    });
+                    sortIt($q);
+                }',
+            'expected_issues' => [
+                'MixedArgumentTypeCoercion 12: Type list{mixed, 1} should be a subtype of list{int, int}',
+            ],
+        ];
+
+        yield 'constructorArgumentsOfLoopPasses' => [
+            'code' => '<?php
+                /** @param ArrayIterator<int, string> $_it */
+                function takesStrings(ArrayIterator $_it): void {}
+
+                /** @param list<string> $ids */
+                function f(array $ids): void {
+                    $order = PHP_INT_MAX;
+                    foreach ($ids as $_) {
+                        $it = new ArrayIterator([--$order]);
+                        takesStrings($it);
+                    }
+                }',
+            'expected_issues' => [
+                'IncompatibleTypeParameters 10: Type int should be a subtype of string',
+            ],
+        ];
     }
 
     /**

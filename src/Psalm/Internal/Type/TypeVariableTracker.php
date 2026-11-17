@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
+use PhpParser\Node\Expr\New_;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -18,14 +19,16 @@ use Psalm\Issue\PropertyTypeCoercion;
 use Psalm\IssueBuffer;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
+use WeakMap;
 
 use function array_filter;
 use function array_map;
-use function array_splice;
+use function array_slice;
 use function array_unique;
 use function array_values;
 use function count;
 use function implode;
+use function spl_object_id;
 use function usort;
 
 /**
@@ -46,15 +49,55 @@ final class TypeVariableTracker
     private array $bounds = [];
 
     /**
-     * Mints a fresh type variable name, registering its bound storage.
+     * The variable minted for each template of each construction site.
      *
-     * @psalm-external-mutation-free
+     * @var WeakMap<New_, array<string, string>>
      */
-    public function addVariable(TypeVariableBounds $bounds): string
+    private WeakMap $site_variables;
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function __construct()
     {
+        /** @var WeakMap<New_, array<string, string>> */
+        $this->site_variables = new WeakMap();
+    }
+
+    /**
+     * Mints the type variable a template of a construction site is carried as.
+     * An analysis of a site analysed before (a loop pass, a closure analysed
+     * once more) gets the same variable, with the bounds of the site replaced:
+     * the types an earlier analysis left mention it, and get the bounds the
+     * last analysis records.
+     *
+     * @param list<TemplateBound> $lower_bounds
+     * @param list<TemplateBound> $upper_bounds
+     */
+    public function mintVariable(
+        New_ $site,
+        string $template_name,
+        array $lower_bounds,
+        array $upper_bounds,
+    ): TTypeVariable {
+        $site_variables = $this->site_variables[$site] ?? [];
+        $name = $site_variables[$template_name] ?? null;
+
+        if ($name !== null && isset($this->bounds[$name])) {
+            $bounds = $this->bounds[$name];
+            $bounds->replaceInitialBounds($lower_bounds, $upper_bounds);
+
+            return new TTypeVariable($name, $bounds);
+        }
+
+        $bounds = new TypeVariableBounds($lower_bounds, $upper_bounds);
         $name = '`_' . count($this->bounds);
         $this->bounds[$name] = $bounds;
-        return $name;
+
+        $site_variables[$template_name] = $name;
+        $this->site_variables[$site] = $site_variables;
+
+        return new TTypeVariable($name, $bounds);
     }
 
     /**
@@ -105,50 +148,70 @@ final class TypeVariableTracker
     }
 
     /**
-     * How many lower and upper bounds each variable has so far, to drop later
-     * the ones an analysis whose results are discarded records.
+     * The bounds each variable has so far, to drop later the ones an analysis
+     * whose results are discarded records.
      *
-     * @return array<string, array{int, int}>
+     * @return array<string, array{list<TemplateBound>, list<TemplateBound>}>
      * @psalm-mutation-free
      */
-    public function getBoundCounts(): array
+    public function snapshotBounds(): array
     {
         return array_map(
-            static fn(TypeVariableBounds $bounds): array => [
-                count($bounds->lower_bounds),
-                count($bounds->upper_bounds),
-            ],
+            static fn(TypeVariableBounds $bounds): array => [$bounds->lower_bounds, $bounds->upper_bounds],
             $this->bounds,
         );
     }
 
     /**
-     * Drops the bounds recorded between two calls to getBoundCounts() (or since
+     * Drops the bounds recorded between two calls to snapshotBounds() (or since
      * the first one, without the second), by analyses whose results are
-     * discarded: a loop pass followed by another one, a trial analysis. A
-     * variable minted in between keeps the bounds it was minted with, as the
-     * types it is in can outlive these analyses.
+     * discarded: a loop pass followed by another one, a trial analysis. The
+     * bounds of the construction sites stay, as the last analysis of a site
+     * sets them.
      *
-     * @param array<string, array{int, int}> $from
-     * @param array<string, array{int, int}>|null $to
+     * @param array<string, array{list<TemplateBound>, list<TemplateBound>}> $from
+     * @param array<string, array{list<TemplateBound>, list<TemplateBound>}>|null $to
      */
     public function discardBoundsRecordedBetween(array $from, ?array $to = null): void
     {
         foreach ($this->bounds as $name => $bounds) {
-            [$lower_from, $upper_from] = $from[$name]
-                ?? [$bounds->initial_lower_bound_count, $bounds->initial_upper_bound_count];
-            [$lower_to, $upper_to] = $to === null
-                ? [count($bounds->lower_bounds), count($bounds->upper_bounds)]
-                : $to[$name] ?? [$lower_from, $upper_from];
+            $kept_ids = self::getBoundIds($from[$name] ?? [[], []]);
+            $discarded_ids = $to === null ? null : self::getBoundIds($to[$name] ?? [[], []]);
 
-            if ($lower_to > $lower_from) {
-                array_splice($bounds->lower_bounds, $lower_from, $lower_to - $lower_from);
-            }
+            $is_kept = static fn(TemplateBound $bound): bool => isset($kept_ids[spl_object_id($bound)])
+                || ($discarded_ids !== null && !isset($discarded_ids[spl_object_id($bound)]));
 
-            if ($upper_to > $upper_from) {
-                array_splice($bounds->upper_bounds, $upper_from, $upper_to - $upper_from);
-            }
+            $bounds->lower_bounds = [
+                ...array_slice($bounds->lower_bounds, 0, $bounds->initial_lower_bound_count),
+                ...array_filter(
+                    array_slice($bounds->lower_bounds, $bounds->initial_lower_bound_count),
+                    $is_kept,
+                ),
+            ];
+            $bounds->upper_bounds = [
+                ...array_slice($bounds->upper_bounds, 0, $bounds->initial_upper_bound_count),
+                ...array_filter(
+                    array_slice($bounds->upper_bounds, $bounds->initial_upper_bound_count),
+                    $is_kept,
+                ),
+            ];
         }
+    }
+
+    /**
+     * @param array{list<TemplateBound>, list<TemplateBound>} $bounds
+     * @return array<int, true>
+     * @psalm-pure
+     */
+    private static function getBoundIds(array $bounds): array
+    {
+        $ids = [];
+
+        foreach ([...$bounds[0], ...$bounds[1]] as $bound) {
+            $ids[spl_object_id($bound)] = true;
+        }
+
+        return $ids;
     }
 
     /**
@@ -258,6 +321,8 @@ final class TypeVariableTracker
     ): void {
         $all_bounds = $this->bounds;
         $this->bounds = [];
+        /** @var WeakMap<New_, array<string, string>> */
+        $this->site_variables = new WeakMap();
 
         foreach ($all_bounds as $bounds) {
             self::reconcileLowerBoundsWithUpperBounds(
