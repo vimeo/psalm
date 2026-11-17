@@ -351,6 +351,7 @@ final class MethodCallReturnTypeFetcher
     ): Union {
         $result_added_taints = 0;
         $result_removed_taints = 0;
+        $call_added_taints = 0;
         $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
 
         // the event of taintMethodCallResult() is about the receiver; this one is about the call
@@ -392,6 +393,7 @@ final class MethodCallReturnTypeFetcher
             $template_result,
             $result_added_taints,
             $result_removed_taints,
+            $call_added_taints,
         );
 
         // what is sent to a generator becomes the value of its yield expressions (what it gives back, see
@@ -478,6 +480,7 @@ final class MethodCallReturnTypeFetcher
         ?TemplateResult $template_result = null,
         int $result_added_taints = 0,
         int $result_removed_taints = 0,
+        int $result_source_taints = 0,
     ): void {
         if (!($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
             || !$declaring_method_id
@@ -858,6 +861,12 @@ final class MethodCallReturnTypeFetcher
             $return_type_candidate = $return_type_candidate->setParentNodes([
                 $call_result_node->id => $call_result_node,
             ]);
+
+            // what a handler adds to the call is there whatever the call is given
+            $result_source_taints &= ~$removed_taints;
+            if ($result_source_taints !== 0) {
+                $taint_flow_graph->addSource($call_result_node->setTaints($result_source_taints));
+            }
         }
     }
 

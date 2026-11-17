@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Example\Plugin;
 
 use Override;
+use Psalm\Plugin\EventHandler\AddCallTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveCallTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
@@ -14,15 +15,20 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 use function array_values;
+use function str_ends_with;
 use function strtolower;
 
 /**
  * `call_through('function_name', ...$args)` calls the function-like it names with the other arguments, as a template
- * engine would: Codebase::addTaintedCall() wires it. What `clean()` is given loses its HTML taints, whoever calls it.
+ * engine would: Codebase::addTaintedCall() wires it. What `clean()` is given loses its HTML taints, whoever calls it,
+ * what a `dirty()` function or method returns has them, and what a `retclean()` one returns loses them.
  *
  * @psalm-suppress UnusedClass
  */
-final class TaintedCallPlugin implements FunctionReturnTypeProviderInterface, RemoveCallTaintsInterface
+final class TaintedCallPlugin implements
+    FunctionReturnTypeProviderInterface,
+    AddCallTaintsInterface,
+    RemoveCallTaintsInterface
 {
     /**
      * @return list<lowercase-string>
@@ -77,10 +83,31 @@ final class TaintedCallPlugin implements FunctionReturnTypeProviderInterface, Re
      * @psalm-mutation-free
      */
     #[Override]
+    public static function addCallTaints(AddRemoveCallTaintsEvent $event): int
+    {
+        return self::isReturnOf($event, 'dirty') ? TaintKind::INPUT_HTML : 0;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    #[Override]
     public static function removeCallTaints(AddRemoveCallTaintsEvent $event): int
     {
-        return strtolower($event->getFunctionId()) === 'clean' && $event->getArgumentOffset() === 0
+        return (strtolower($event->getFunctionId()) === 'clean' && $event->getArgumentOffset() === 0)
+            || self::isReturnOf($event, 'retclean')
             ? TaintKind::INPUT_HTML
             : 0;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function isReturnOf(AddRemoveCallTaintsEvent $event, string $name): bool
+    {
+        $function_id = strtolower($event->getFunctionId());
+
+        return $event->getArgumentOffset() === null
+            && ($function_id === $name || str_ends_with($function_id, '::' . $name));
     }
 }

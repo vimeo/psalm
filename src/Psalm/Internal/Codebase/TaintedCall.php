@@ -8,6 +8,8 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
+use Psalm\Internal\Provider\AddRemoveTaints\JsonEncodeTainter;
 use Psalm\Plugin\EventHandler\Event\AddRemoveCallTaintsEvent;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
@@ -16,6 +18,7 @@ use Psalm\Type\Union;
 use function array_key_exists;
 use function array_keys;
 use function count;
+use function strtolower;
 
 /**
  * A call of a function-like wired into the taint graph from the nodes of its arguments, without PHP code: what
@@ -160,14 +163,38 @@ final class TaintedCall
         // the other calls, the last call deciding for all
         $call_node = DataFlowNode::getForAssignment('call to ' . $cased_function_id, $call_location);
         $graph->addNode($call_node);
-        $graph->addPath(
-            $return_node,
-            $call_node,
-            'arg',
-            $added_taints,
-            $removed_taints
-                | FunctionCallReturnTypeFetcher::getConditionallyRemovedTaints($codebase, $storage, $template_result),
+        $removed_taints |= FunctionCallReturnTypeFetcher::getConditionallyRemovedTaints(
+            $codebase,
+            $storage,
+            $template_result,
         );
+
+        $handler_added_taints = $added_taints;
+
+        // the builtins whose escapes the handlers of a PHP call read from its flags: the decoders give back taints to
+        // the flows of the call only
+        $builtin_id = strtolower($cased_function_id);
+        if ($builtin_id === 'json_encode') {
+            $removed_taints |= JsonEncodeTainter::getRemovedTaints(
+                count($argument_nodes) > 1,
+                $argument_types[1] ?? null,
+            );
+        } else {
+            [$builtin_added_taints, $builtin_removed_taints] = HtmlFunctionTainter::getWiredCallTaints(
+                $codebase->analysis_php_version_id,
+                $builtin_id,
+                count($argument_nodes),
+                $argument_types,
+            );
+            $added_taints |= $builtin_added_taints;
+            $removed_taints |= $builtin_removed_taints;
+        }
+        $graph->addPath($return_node, $call_node, 'arg', $added_taints, $removed_taints);
+
+        // what a handler adds to the call is there whatever the call is given
+        if (($handler_added_taints & ~$removed_taints) !== 0) {
+            $graph->addSource($call_node->setTaints($handler_added_taints & ~$removed_taints));
+        }
 
         return $call_node;
     }

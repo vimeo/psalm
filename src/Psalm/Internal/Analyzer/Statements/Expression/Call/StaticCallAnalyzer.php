@@ -577,6 +577,13 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $conditionally_removed_taints | $removed_taints,
             );
 
+            // what a handler adds to the call is there whatever the call is given
+            $source_taints = $call_added_taints & ~($conditionally_removed_taints | $removed_taints);
+            $source_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+            if ($source_taints !== 0 && $source_graph) {
+                $source_graph->addSource($assignment_node->setTaints($source_taints));
+            }
+
             $return_type_candidate = $return_type_candidate->addParentNodes([$assignment_node->id => $assignment_node]);
         } else {
             $return_type_candidate = $return_type_candidate->setParentNodes([$method_source->id => $method_source]);

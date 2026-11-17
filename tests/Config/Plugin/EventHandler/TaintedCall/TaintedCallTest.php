@@ -88,6 +88,34 @@ final class TaintedCallTest extends DeferredAnalyzerTestCase
                 echo $s;
             }
         }
+
+        function dirty(string $s): string {
+            return $s;
+        }
+
+        function retclean(string $s): string {
+            return $s;
+        }
+
+        final class Handled {
+            public static function dirty(string $s): string {
+                return $s;
+            }
+
+            public static function retclean(string $s): string {
+                return $s;
+            }
+        }
+
+        final class Instance {
+            public function dirty(string $s): string {
+                return $s;
+            }
+
+            public function retclean(string $s): string {
+                return $s;
+            }
+        }
     ';
 
     #[Override]
@@ -145,6 +173,17 @@ final class TaintedCallTest extends DeferredAnalyzerTestCase
         yield 'source' => ['echo call_through("input");', 'TaintedHtml'];
         yield 'static method' => ['call_through("Page::show", (string) $_GET["x"]);', 'TaintedHtml'];
         yield 'builtin without a stub' => ['call_through("shell_exec", (string) $_GET["x"]);', 'TaintedShell'];
+        yield 'call event adding to the return of a PHP function call' => ['echo dirty("safe");', 'TaintedHtml'];
+        yield 'call event adding to the return of a static call' => ['echo Handled::dirty("safe");', 'TaintedHtml'];
+        yield 'decoder giving back what was escaped' => [
+            'echo call_through("html_entity_decode", escape((string) $_GET["x"]));',
+            'TaintedHtml',
+        ];
+        yield 'call event adding to the return of a method call' => [
+            'echo (new Instance())->dirty("safe");',
+            'TaintedHtml',
+        ];
+        yield 'call event adding to the return of a wired call' => ['echo call_through("dirty", "safe");', 'TaintedHtml'];
         yield 'specialized call taking the taint' => [
             'call_through("specialized", "safe");
             echo call_through("specialized", (string) $_GET["x"]);',
@@ -170,6 +209,23 @@ final class TaintedCallTest extends DeferredAnalyzerTestCase
         yield 'call event of a wired call' => ['echo call_through("clean", (string) $_GET["x"]);'];
         yield 'call event of a PHP call' => ['echo clean((string) $_GET["x"]);'];
         yield 'method of an unknown class' => ['call_through("Unknown::show", (string) $_GET["x"]);'];
+        yield 'call event removing from the return of a PHP function call' => ['echo retclean((string) $_GET["x"]);'];
+        yield 'call event removing from the return of a static call' => [
+            'echo Handled::retclean((string) $_GET["x"]);',
+        ];
+        yield 'builtin escaping by its flags' => [
+            'echo call_through("htmlspecialchars", (string) $_GET["x"], ENT_QUOTES);
+            echo call_through("json_encode", $_GET["y"], JSON_HEX_TAG | JSON_HEX_AMP);',
+        ];
+        yield 'decoder giving nothing back to what holds no input' => [
+            'echo call_through("html_entity_decode", "safe");',
+        ];
+        yield 'call event removing from the return of a method call' => [
+            'echo (new Instance())->retclean((string) $_GET["x"]);',
+        ];
+        yield 'call event removing from the return of a wired call' => [
+            'echo call_through("retclean", (string) $_GET["x"]);',
+        ];
     }
 
     private function analyze(string $code): void

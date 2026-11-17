@@ -10,6 +10,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\Type\TaintKind;
+use Psalm\Type\Union;
 
 use function strtolower;
 
@@ -64,6 +65,16 @@ final class JsonEncodeTainter implements RemoveTaintsInterface
             }
         }
 
+        return self::getRemovedTaints($has_flags, $flags);
+    }
+
+    /**
+     * What a call removes with the type of its flags
+     *
+     * @psalm-pure
+     */
+    public static function getRemovedTaints(bool $has_flags, ?Union $flags): int
+    {
         $flag_value = $flags !== null && $flags->isSingleIntLiteral() ? $flags->getSingleIntLiteral()->value : null;
         $removed_taints = 0;
 

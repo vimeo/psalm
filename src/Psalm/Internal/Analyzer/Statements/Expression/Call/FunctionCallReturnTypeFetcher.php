@@ -1612,7 +1612,7 @@ final class FunctionCallReturnTypeFetcher
             $template_result,
         );
 
-        if ($conditionally_removed_taints) {
+        if ($conditionally_removed_taints || $call_added_taints !== 0 || $call_removed_taints !== 0) {
             // a node of this call's own: what it removes depends on its arguments, and $function_call_node may be
             // shared with the other calls, the last call deciding for all
             $assignment_node = DataFlowNode::getForAssignment($function_id . '-escaped', $node_location);
@@ -1626,6 +1626,12 @@ final class FunctionCallReturnTypeFetcher
                 $added_taints,
                 $removed_taints | $conditionally_removed_taints,
             );
+
+            // what a handler adds to the call is there whatever the call is given
+            $source_taints = $call_added_taints & ~($removed_taints | $conditionally_removed_taints);
+            if ($source_taints !== 0 && $taint_flow_graph) {
+                $taint_flow_graph->addSource($assignment_node->setTaints($source_taints));
+            }
 
             $stmt_type = $stmt_type->addParentNodes([$assignment_node->id => $assignment_node]);
         } else {
