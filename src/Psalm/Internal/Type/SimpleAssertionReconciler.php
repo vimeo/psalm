@@ -2970,10 +2970,6 @@ final class SimpleAssertionReconciler extends Reconciler
                 $redundant = false;
 
                 $callable_types[] = $candidate_callable;
-            } elseif ($type instanceof TNamedObject && $codebase->interfaceExists($type->value)) {
-                // a class implementing the interface may have an __invoke() method
-                $callable_types[] = $type;
-                $redundant = false;
             } else {
                 $redundant = false;
             }
@@ -3018,7 +3014,13 @@ final class SimpleAssertionReconciler extends Reconciler
         $properties = [];
 
         foreach ($callable_array->properties as $offset => $property) {
-            $item = Type::intersectUnionTypes($type->type_params[1], $property, $codebase);
+            $item = Type::intersectUnionTypes($type->type_params[1], $property, $codebase)
+                // e.g. a literal-string, which may be the name of a class though Psalm has no type for both
+                ?? Type::intersectUnionTypes(
+                    $type->type_params[1],
+                    $offset === 0 ? new Union([new TObject(), new TString()]) : Type::getString(),
+                    $codebase,
+                );
 
             if ($item === null || $item->isNever()) {
                 return null;

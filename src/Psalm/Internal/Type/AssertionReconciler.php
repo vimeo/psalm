@@ -1719,6 +1719,7 @@ final class AssertionReconciler extends Reconciler
         ]);
 
         $compatible_string_type = self::getCompatibleStringType(
+            $statements_analyzer->getCodebase(),
             $existing_var_type,
             $existing_var_atomic_types,
             $assertion_type,
@@ -1769,6 +1770,7 @@ final class AssertionReconciler extends Reconciler
 
             if ($existing_var_atomic_type instanceof TTemplateParam) {
                 $compatible_string_type = self::getCompatibleStringType(
+                    $statements_analyzer->getCodebase(),
                     $existing_var_type,
                     $existing_var_atomic_type->as->getAtomicTypes(),
                     $assertion_type,
@@ -2024,9 +2026,9 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * @param array<string, Atomic> $existing_var_atomic_types
-     * @psalm-pure
      */
     private static function getCompatibleStringType(
+        Codebase $codebase,
         Union $existing_var_type,
         array $existing_var_atomic_types,
         TLiteralString $assertion_type,
@@ -2044,7 +2046,11 @@ final class AssertionReconciler extends Reconciler
                     && is_numeric($value)
                     && (!$existing_var_atomic_type instanceof TEmptyNumeric || $value === '0'))
                 // the name of a function is never numeric, e.g. 'strlen'
-                || ($existing_var_atomic_type::class === TCallable::class && $value !== '' && !is_numeric($value))
+                || ($existing_var_atomic_type::class === TCallable::class
+                    && $value !== ''
+                    && !is_numeric($value)
+                    && (($existing_var_atomic_type->params === null && $existing_var_atomic_type->return_type === null)
+                        || AtomicTypeComparator::isContainedBy($codebase, $assertion_type, $existing_var_atomic_type)))
             ) {
                 // Since PHP 8, an int is only loosely equal to a numeric string (`switch` compares loosely), so an
                 // array key loosely equal to a string that isn't numeric is that string

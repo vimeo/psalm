@@ -13,6 +13,7 @@ use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TEmptyNumeric;
 use Psalm\Type\Atomic\TEmptyScalar;
 use Psalm\Type\Atomic\TFalse;
@@ -44,8 +45,9 @@ final class AtomicParts
     /**
      * The parts of a type to intersect with another type
      *
-     * @return non-empty-list<Atomic>|null null for a type that is not made of several kinds, or for an iterable and
-     *     a class, whose Traversable half the comparators already find
+     * @return non-empty-list<Atomic>|null null for a type that is not made of several kinds, or where the comparators
+     *     already find the overlap: the Traversable half of an iterable compared with a class, the classes and the
+     *     function names a callable may be
      */
     public static function split(Atomic $type, Atomic $other, Codebase $codebase): ?array
     {
@@ -55,15 +57,29 @@ final class AtomicParts
             return $other instanceof TNamedObject ? null : self::splitIterable($type, $codebase);
         }
 
-        return match ($type::class) {
-            TCallable::class => [
+        if ($type::class === TCallable::class) {
+            if ($other instanceof TLiteralString) {
+                return null;
+            }
+
+            $closure = new TClosure($type->params, $type->return_type, $type->purity, [], [], $from_docblock);
+
+            if ($other instanceof TNamedObject) {
+                // a Closure of the signature of the callable
+                return $other->value === 'Closure' ? [$closure] : null;
+            }
+
+            return [
                 new TCallableString($from_docblock),
                 Atomic::create('callable-array', null, [], [], null, null, null, $from_docblock),
                 new TCallableObject(
                     $from_docblock,
                     $type->params !== null || $type->return_type !== null ? $type : null,
                 ),
-            ],
+            ];
+        }
+
+        return match ($type::class) {
             TNumeric::class => [
                 new TInt($from_docblock),
                 new TFloat($from_docblock),
@@ -85,14 +101,14 @@ final class AtomicParts
             TEmptyScalar::class => [
                 new TLiteralInt(0, $from_docblock),
                 new TLiteralFloat(0.0, $from_docblock),
-                new TLiteralString('', $from_docblock),
-                new TLiteralString('0', $from_docblock),
+                TLiteralString::make('', $from_docblock),
+                TLiteralString::make('0', $from_docblock),
                 new TFalse($from_docblock),
             ],
             TEmptyNumeric::class => [
                 new TLiteralInt(0, $from_docblock),
                 new TLiteralFloat(0.0, $from_docblock),
-                new TLiteralString('0', $from_docblock),
+                TLiteralString::make('0', $from_docblock),
             ],
             default => null,
         };
@@ -104,8 +120,16 @@ final class AtomicParts
     private static function splitIterable(TIterable $type, Codebase $codebase): array
     {
         $from_docblock = $type->from_docblock;
-        $traversable = $type->has_docblock_params
-            ? new TGenericObject('Traversable', $type->type_params, false, false, $type->extra_types, $from_docblock)
+        // the purity of the iterable is the last template of Traversable
+        $traversable = $type->has_docblock_params || $type->purity->getId() !== Type::getImpure()->getId()
+            ? new TGenericObject(
+                'Traversable',
+                [...$type->type_params, $type->purity],
+                false,
+                false,
+                $type->extra_types,
+                $from_docblock,
+            )
             : new TNamedObject('Traversable', false, false, $type->extra_types, $from_docblock);
 
         $array_key = Type::intersectUnionTypes($type->type_params[0], Type::getArrayKey(), $codebase);

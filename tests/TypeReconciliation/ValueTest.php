@@ -1311,17 +1311,57 @@ final class ValueTest extends TestCase
                     '$c===' => 'Traversable|callable-array{0: class-string|object, 1: non-empty-string}',
                 ],
             ],
-            'iterableOfIntsIdenticalToCallableIsAnInvokableTraversable' => [
+            'arrayOfStringsMayBeCallable' => [
                 'code' => <<<'PHP'
                     <?php
-                    /** @param iterable<int, int> $it */
-                    function f(iterable $it, callable $c): void {
-                        if ($it === $c) { // an invokable Traversable
-                            /** @psalm-check-type-exact $it = Traversable<int, int> */
-                            /** @psalm-check-type-exact $c = Traversable<int, int> */
+                    /** @return array<int, lowercase-string> */
+                    function a(): array {
+                        return [];
+                    }
+
+                    $a = a();
+
+                    if (!is_callable($a)) { // ['myclass', 'method']
+                        throw new RuntimeException();
+                    }
+                    PHP,
+                'assertions' => [
+                    '$a===' => 'callable-array{0: lowercase-string, 1: non-empty-lowercase-string}',
+                ],
+            ],
+            'callableInstanceOfClosureKeepsItsSignature' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param callable(int): void $c */
+                    function f(callable $c): void {
+                        if ($c instanceof Closure) {
+                            /** @psalm-check-type-exact $c = Closure(int):void */
                         }
                     }
                     PHP,
+            ],
+            'pureIterableInArrayOfObjectsKeepsItsPurity' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return iterable[pure]<int, string> */
+                    function a(): iterable {
+                        return [];
+                    }
+
+                    /** @return list<object> */
+                    function objects(): array {
+                        return [];
+                    }
+
+                    $a = a();
+
+                    if (!in_array($a, objects(), true)) {
+                        throw new RuntimeException();
+                    }
+                    PHP,
+                'assertions' => [
+                    '$a===' => 'Traversable[pure]<int, string>',
+                ],
             ],
             'callableArrayHasAClassOrObjectAndAMethodName' => [
                 'code' => <<<'PHP'
@@ -1626,6 +1666,38 @@ final class ValueTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'callableNeverIdenticalToFinalNonInvokableObject' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class F {}
+
+                    function f(callable $c, F $o): void {
+                        if ($c === $o) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'callableNeverInstanceOfFinalNonInvokableClass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class F {}
+
+                    function f(callable $c): void {
+                        if ($c instanceof F) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'callableNeverIdenticalToFunctionOfAnotherSignature' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param callable(int): int $c */
+                    function f(callable $c): void {
+                        if ($c === 'strrev') {}
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
             ],
         ];
     }
