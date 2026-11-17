@@ -1250,7 +1250,11 @@ final class ArgumentsAnalyzer
             $args = array_reverse($args, true);
         }
 
-        // the parameters each argument is checked against, keyed by their offset
+        /**
+         * The parameters each argument is checked against, keyed by their offset
+         *
+         * @var array<int, non-empty-array<int, FunctionLikeParameter>>
+         */
         $arg_function_params = [];
         $matched_args = [];
         // names given as named arguments to the variadic parameter: positional ones are not duplicates of them
