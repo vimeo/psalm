@@ -184,6 +184,59 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'scalarAndMixedKeywordTypesInNamespace' => [
+                'code' => '<?php
+                    namespace N;
+
+                    /**
+                     * @param non-empty-scalar $a
+                     * @param empty-scalar $b
+                     * @param non-empty-mixed $c
+                     */
+                    function f($a, $b, $c): void {
+                        /** @psalm-check-type-exact $a = non-empty-scalar */
+                        /** @psalm-check-type-exact $b = empty-scalar */
+                        /** @psalm-check-type-exact $c = non-empty-mixed */
+                        echo gettype($a), gettype($b), gettype($c);
+                    }',
+            ],
+            'uppercaseStringKeywordTypesInNamespace' => [
+                'code' => '<?php
+                    namespace N;
+
+                    /**
+                     * @param uppercase-string $a
+                     * @param non-empty-uppercase-string $b
+                     */
+                    function f($a, $b): void {
+                        /** @psalm-check-type-exact $a = string */
+                        /** @psalm-check-type-exact $b = non-empty-string */
+                        echo $a, $b;
+                    }',
+            ],
+            'scalarAndMixedKeywordTypesNestedInNamespace' => [
+                'code' => '<?php
+                    namespace N;
+
+                    final class A {
+                        /** @var array<string, non-empty-scalar> */
+                        public array $values = [];
+
+                        /** @return list<non-empty-mixed> */
+                        public function all(): array {
+                            return array_values($this->values);
+                        }
+                    }
+
+                    $a = new A();
+                    $values = $a->values;
+                    $all = $a->all();
+                    echo count($values), count($all);',
+                'assertions' => [
+                    '$values===' => 'array<string, non-empty-scalar>',
+                    '$all===' => 'list<non-empty-mixed>',
+                ],
+            ],
             'spacesInTypesThatAreNotNames' => [
                 'code' => '<?php
                     class Foo {}
