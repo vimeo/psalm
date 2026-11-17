@@ -1355,13 +1355,52 @@ final class ReferenceTest extends TestCase
             ],
             'referenceBoundInConditionIsNarrowedByTruthiness' => [
                 'code' => '<?php
-                    /** @param array<string, list<int>|null> $arr */
+                    /** @param array<string, non-empty-list<int>|null> $arr */
                     function f(array $arr, string $k): int {
                         if ($v = &$arr[$k]) {
                             return count($v);
                         }
                         return 0;
                     }',
+            ],
+            'referenceBoundInConditionIsNarrowedAfterAFalsinessThatReturns' => [
+                'code' => '<?php
+                    /** @param array<string, non-empty-list<int>|null> $arr */
+                    function f(array $arr, string $k): int {
+                        if (!$v = &$arr[$k]) {
+                            return 0;
+                        }
+                        return count($v);
+                    }',
+            ],
+            'referenceNarrowedInAnIfIsNotNarrowedInTheElse' => [
+                'code' => '<?php
+                    function f(?int $w): int {
+                        $v = &$w;
+                        if ($v) {
+                            return 1;
+                        } else {
+                            if ($v === 0) {
+                                return 2;
+                            }
+                            return 3;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'referenceNarrowedInAnIfThatReturnsIsNotNarrowedAfterIt' => [
+                'code' => '<?php
+                    /** @param list<int>|null $w */
+                    function f($w): int {
+                        $v = &$w;
+                        if (!$v) {
+                            return 0;
+                        }
+                        return count($v);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'referenceBoundInConditionIsNarrowedByAnAssertingFunction' => [
                 'code' => '<?php
@@ -1454,6 +1493,17 @@ final class ReferenceTest extends TestCase
                         return count($v);
                     }',
                 'error_message' => 'Argument 1 of count cannot be null, null value provided',
+            ],
+            'referenceBoundInConditionIsCheckedForRiskyTruthiness' => [
+                'code' => '<?php
+                    /** @param array<string, list<int>|null> $arr */
+                    function f(array $arr, string $k): int {
+                        if ($v = &$arr[$k]) {
+                            return count($v);
+                        }
+                        return 0;
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
             ],
             'referenceToOffsetOfMagicPropertyKeepsItsNull' => [
                 'code' => '<?php

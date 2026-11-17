@@ -1684,6 +1684,11 @@ final class AssignmentAnalyzer
             $context->inside_general_use = $was_inside_general_use;
         }
 
+        // The assignment expression itself evaluates to the referenced value.
+        if ($from_stmt === null && isset($context->vars_in_scope[$lhs_var_id])) {
+            $statements_analyzer->node_data->setType($stmt, $context->vars_in_scope[$lhs_var_id]->setByRef(false));
+        }
+
         return true;
     }
 
