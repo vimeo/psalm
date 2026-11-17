@@ -4069,6 +4069,53 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'exhaustedNullChecksLeaveNoValue' => [
+                'code' => '<?php
+                    function f(?int $x): int {
+                        if ($x === null) {
+                            return 1;
+                        }
+                        if ($x !== null) {
+                            return 2;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+            ],
+            'nonNullableValueIdenticalToNullIsNever' => [
+                'code' => '<?php
+                    function f(int $x): void {
+                        if ($x === null) {
+                            /** @psalm-check-type-exact $x = never */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainNull'],
+            ],
+            'objectIdenticalToANullVariableIsNotNull' => [
+                'code' => '<?php
+                    function f(Throwable $e): void {
+                        $failure = null;
+
+                        if ($e === $failure) {
+                            throw $e;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainNull', 'TypeDoesNotContainType'],
+            ],
+            'nullableTemplateIdenticalToNullIsNull' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int|null
+                     * @param T $x
+                     */
+                    function f($x): void {
+                        if ($x === null) {
+                            /** @psalm-check-type-exact $x = null */;
+                        }
+                    }',
+            ],
             'nullsafePropertyComparedToNullKeepsTheReceiverAndPropertyNotNull' => [
                 'code' => '<?php
                     final class RangeInfo {

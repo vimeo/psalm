@@ -134,13 +134,12 @@ final class GlobalAnalyzer
                         : VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
 
                     // `global` creates the global as null when it is not set, but a superglobal is read as set
-                    // ($http_response_header is a plain variable PHP sets)
                     if ($global_type->possibly_undefined || $global_type->possibly_undefined_from_try) {
                         $global_type = $global_type->setPossiblyUndefined(false, false);
 
                         if (!$global_type->isNullable()
                             && !$global_type->hasMixed()
-                            && ($var_id === '$http_response_header' || !VariableFetchAnalyzer::isSuperGlobal($var_id))
+                            && !VariableFetchAnalyzer::isReadAsSetSuperGlobal($var_id)
                         ) {
                             $global_type = $global_type->getBuilder()->addType(new TNull())->freeze();
                         }

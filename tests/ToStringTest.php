@@ -259,6 +259,22 @@ final class ToStringTest extends TestCase
 
                     echo implode(":", [new Bar()]);',
             ],
+            'toStringObjectPassedToConditionalParamWithItsClass' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    /** @template T of bool */
+                    final class C {
+                        /** @param (T is true ? string|Foo : Foo) $x */
+                        public function a($x): void {}
+
+                        public function b(Foo $f): void {
+                            $this->a($f);
+                        }
+                    }',
+            ],
         ];
     }
 

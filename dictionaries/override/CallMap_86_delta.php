@@ -112,6 +112,19 @@ return array (
         'type=' => 'int',
       ),
     ),
+    'ldap_free_result' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'result' => 'LDAP\\Result',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'result' => 'LDAP\\Result',
+      ),
+    ),
     'openssl_decrypt' => 
     array (
       'old' => 
@@ -251,6 +264,41 @@ return array (
         0 => 'true',
         'callback' => 'callable[impure]():void',
         '...args=' => 'mixed',
+      ),
+    ),
+    'socket_addrinfo_lookup' => 
+    array (
+      'old' => 
+      array (
+        0 => 'array<array-key, AddressInfo>|false',
+        'host' => 'string',
+        'service=' => 'null|string',
+        'hints=' => 'array<array-key, mixed>',
+      ),
+      'new' => 
+      array (
+        0 => 'array<array-key, AddressInfo>|false',
+        'host' => 'string',
+        'service=' => 'null|string',
+        'hints=' => 'array<array-key, mixed>',
+        '&w error_code=' => 'int|null',
+      ),
+    ),
+    'socket_cmsg_space' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int|null',
+        'level' => 'int',
+        'type' => 'int',
+        'num=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+        'level' => 'int',
+        'type' => 'int',
+        'num=' => 'int',
       ),
     ),
     'stream_copy_to_stream' => 
