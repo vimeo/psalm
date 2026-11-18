@@ -178,7 +178,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
                     instanceof FunctionLikeAnalyzer)
@@ -356,7 +355,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 ? new CodeLocation($source, $stmt->name)
                 : null,
             !$context->collect_initializations
-                && !$context->collect_mutations
                 ? $statements_analyzer
                 : null,
             $statements_analyzer->getFilePath(),
@@ -487,7 +485,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         ? new CodeLocation($source, $stmt->name)
                         : null,
                     !$context->collect_initializations
-                        && !$context->collect_mutations
                         ? $statements_analyzer
                         : null,
                     $statements_analyzer->getFilePath(),
@@ -754,7 +751,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             case TObject::class:
             case TObjectWithProperties::class:
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)
@@ -891,7 +887,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         ? new CodeLocation($statements_analyzer->getSource(), $stmt->name)
                         : null,
                     !$context->collect_initializations
-                    && !$context->collect_mutations
                         ? $statements_analyzer
                         : null,
                     $statements_analyzer->getFilePath(),

@@ -352,16 +352,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         if ($bound_atomic !== null) {
             $use_context->vars_in_scope['$this'] = new Union([$bound_atomic]);
         } elseif (!$statements_analyzer->isStatic() && !$closure_analyzer->isStatic()) {
-            if ($context->collect_mutations &&
-                $context->self &&
-                $codebase->classExtends(
-                    $context->self,
-                    (string)$statements_analyzer->getFQCLN(),
-                )
-            ) {
-                /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
-                $use_context->vars_in_scope['$this'] = $context->vars_in_scope['$this'];
-            } elseif ($context->self) {
+            if ($context->self) {
                 $outer_this_atomic = isset($context->vars_in_scope['$this'])
                     && $context->vars_in_scope['$this']->isSingle()
                     ? $context->vars_in_scope['$this']->getSingleAtomic()
