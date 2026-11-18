@@ -540,7 +540,7 @@ final class PartialFunctionApplicationTest extends TestCase
                         }
                     PHP,
                 'assertions' => [],
-                'ignored_issues' => ['InvalidNamedArgument', 'UnusedVariable'],
+                'ignored_issues' => ['InvalidNamedArgument'],
                 'php_version' => '8.6',
             ],
             'PartialApplication:InCoalesceLeftOperand' => [
