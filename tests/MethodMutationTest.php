@@ -8,6 +8,10 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 
+use function getcwd;
+
+use const DIRECTORY_SEPARATOR;
+
 final class MethodMutationTest extends TestCase
 {
     public function testControllerMutation(): void
@@ -222,5 +226,59 @@ final class MethodMutationTest extends TestCase
         );
 
         $this->assertSame('Foo', (string)$method_context->vars_in_scope['$this->foo']);
+    }
+
+    public function testMethodInheritedFromAnotherFileSeesConstantsOfRootFile(): void
+    {
+        $this->assertSame('int', $this->getCountSetBy(new MethodIdentifier('Child', 'setcount')));
+    }
+
+    public function testMethodOfAnotherFileSeesConstantsOfRootFile(): void
+    {
+        $this->assertSame('int', $this->getCountSetBy(new MethodIdentifier('Base', 'setcount')));
+    }
+
+    /**
+     * The type of `$this->count` after a call of $method_id made in index.php, which includes the file defining the
+     * constant the method sets it to: Base.php doesn't
+     */
+    private function getCountSetBy(MethodIdentifier $method_id): string
+    {
+        $root_file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'index.php';
+        $files = [
+            $root_file_path => '<?php
+                include "consts.php";
+                include "Base.php";
+                include "Child.php";',
+            (string) getcwd() . DIRECTORY_SEPARATOR . 'consts.php' => '<?php
+                define("FOO_COUNT", 5);',
+            (string) getcwd() . DIRECTORY_SEPARATOR . 'Base.php' => '<?php
+                class Base {
+                    /** @var int|null */
+                    public $count;
+
+                    public function setCount(): void {
+                        $this->count = FOO_COUNT;
+                    }
+                }',
+            (string) getcwd() . DIRECTORY_SEPARATOR . 'Child.php' => '<?php
+                class Child extends Base { }',
+        ];
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        foreach ($files as $file_path => $contents) {
+            $this->addFile($file_path, $contents);
+            $codebase->scanner->addFilesToShallowScan([$file_path => $file_path]);
+        }
+
+        $codebase->addFilesToAnalyze([$root_file_path => $root_file_path]);
+        $codebase->scanFiles();
+
+        $method_context = new Context();
+        $method_context->collect_mutations = true;
+        $this->project_analyzer->getMethodMutations($method_id, $method_context, $root_file_path, 'index.php');
+
+        return (string) $method_context->vars_in_scope['$this->count'];
     }
 }
