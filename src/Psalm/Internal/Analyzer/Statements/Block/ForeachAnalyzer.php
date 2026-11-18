@@ -256,6 +256,9 @@ final class ForeachAnalyzer
             }
         }
 
+        // read by ScopeAnalyzer::getControlActions()
+        $stmt->setAttribute('alwaysEntered', false);
+
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context) === false) {
@@ -276,7 +279,10 @@ final class ForeachAnalyzer
         );
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
-            $iterator_type = TypeVariableResolver::resolveTopLevel($stmt_expr_type, $codebase);
+            $iterator_type = TypeExpander::expandTemplateKeyOfAndValueOf(
+                $codebase,
+                TypeVariableResolver::resolveTopLevel($stmt_expr_type, $codebase),
+            );
         } elseif ($var_id && $context->hasVariable($var_id)) {
             $iterator_type = $context->vars_in_scope[$var_id];
         } else {
@@ -455,6 +461,8 @@ final class ForeachAnalyzer
         $loop_scope = new LoopScope($foreach_context, $context);
 
         $loop_scope->protected_var_ids = $context->protected_var_ids;
+
+        $stmt->setAttribute('alwaysEntered', $iterator_type !== null && $always_non_empty_array);
 
         if (LoopAnalyzer::analyze(
             $statements_analyzer,
@@ -1961,6 +1969,9 @@ final class ForeachAnalyzer
                 $passed_type_params,
             );
 
+            $key_type = $key_type?->replaceClassLike('static', $iterator_atomic_type->value);
+            $value_type = $value_type?->replaceClassLike('static', $iterator_atomic_type->value);
+
             return;
         }
     }
@@ -2287,7 +2298,7 @@ final class ForeachAnalyzer
             return null;
         }
 
-        return self::getExtendedType(
+        $value_type = self::getExtendedType(
             'TValue',
             'ArrayAccess',
             $storage->name,
@@ -2295,6 +2306,8 @@ final class ForeachAnalyzer
             $storage->template_types,
             $atomic_type instanceof TGenericObject ? $atomic_type->type_params : null,
         );
+
+        return $value_type?->replaceClassLike('static', $atomic_type->value);
     }
 
     /**

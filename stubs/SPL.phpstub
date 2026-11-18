@@ -1114,7 +1114,7 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @link https://php.net/manual/en/splobjectstorage.attach.php
      *
      * @param TObject $object The object to add.
-     * @param TArrayValue|null $data [optional] The data to associate with the object.
+     * @param TArrayValue|null $info [optional] The data to associate with the object.
      * @return void
      *
      * @since 5.1.0
@@ -1204,14 +1204,14 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * Sets the data associated with the current iterator entry
      * @link https://php.net/manual/en/splobjectstorage.setinfo.php
      *
-     * @param TArrayValue $data The data to associate with the current iterator entry.
+     * @param TArrayValue $info The data to associate with the current iterator entry.
      * @return void
      *
      * @since 5.3.0
      *
      * @psalm-capabilities read-props|write-this-props
      */
-    public function setInfo($data) {}
+    public function setInfo($info) {}
 
     /**
      * Returns the number of objects in the storage
@@ -1336,14 +1336,14 @@ class SplObjectStorage implements Countable, SeekableIterator, Serializable, Arr
      * @link https://php.net/manual/en/splobjectstorage.offsetset.php
      *
      * @param TObject $object The object to associate data with.
-     * @param TArrayValue|null $data [optional] The data to associate with the object.
+     * @param TArrayValue|null $info [optional] The data to associate with the object.
      * @return void
      *
      * @since 5.3.0
      *
      * @psalm-capabilities read-props|write-this-props
      */
-    public function offsetSet($object, $data = null) {}
+    public function offsetSet($object, $info = null) {}
 
     /**
      * Removes an object from the storage
@@ -1723,7 +1723,8 @@ class SplFileObject extends SplFileInfo implements RecursiveIterator, SeekableIt
     public function fpassthru() {}
 
     /**
-     * @param float|int|string $vars
+     * @param mixed $vars
+     * @param-out float|int|string $vars
      *
      * @psalm-capabilities read-props|write-this-props|write-refs|io
      */

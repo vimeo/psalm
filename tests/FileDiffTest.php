@@ -1323,7 +1323,7 @@ final class FileDiffTest extends TestCase
                 [],
                 [[84, 304], [327, 547]],
             ],
-            'SKIPPED-whiteSpaceOnly' => [
+            'whiteSpaceOnly' => [
                 '<?php
                 namespace Foo;
 
@@ -1348,11 +1348,11 @@ final class FileDiffTest extends TestCase
 
                     }
                 }',
+                [],
                 ['foo\a::foo', 'foo\a::bar'],
                 [],
                 [],
-                [],
-                [],
+                [[84, 160], [182, 258]],
             ],
             'changeDeclaredMethodId' => [
                 '<?php

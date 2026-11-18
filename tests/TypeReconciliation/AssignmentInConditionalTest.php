@@ -72,6 +72,52 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedBeforeABreakInTheElseIsNotTypedByTheIf' => [
+                'code' => '<?php
+                    /** @return list<string> */
+                    function getList(): array {
+                        return [];
+                    }
+
+                    if (rand(0, 1)) {
+                        $found = 1;
+                    } else {
+                        foreach (getList() as $item) {
+                            $found = $item;
+                            break;
+                        }
+                    }
+
+                    $b = $found ?? null;',
+                'assertions' => [
+                    '$b===' => 'mixed|null',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'variableAssignedInACatchInTheElseIsNotTypedByTheIf' => [
+                'code' => '<?php
+                    function load(): void {
+                        if (rand(0, 1) === 1) {
+                            throw new RuntimeException("x");
+                        }
+                    }
+
+                    if (rand(0, 1)) {
+                        $searched = 1;
+                    } else {
+                        try {
+                            load();
+                        } catch (Exception $e) {
+                            $searched = "";
+                        }
+                    }
+
+                    $b = $searched ?? null;',
+                'assertions' => [
+                    '$b===' => 'mixed|null',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'variableDefinedInSomeBranchesKeepsItsTypeWhenPossiblyUndefined' => [
                 'code' => '<?php
                     if (rand(0, 1)) {
@@ -578,7 +624,7 @@ final class AssignmentInConditionalTest extends TestCase
                         return $value;
                     }',
             ],
-            'SKIPPED-assertVarRedefinedInOpWithAnd' => [
+            'SKIPPED-assertVarRedefinedInOpWithAnd' => [ // #13921
                 'code' => '<?php
                     class O {
                         public function foo() : bool { return true; }
@@ -1062,6 +1108,88 @@ final class AssignmentInConditionalTest extends TestCase
                     '$y===' => 'int<0, 1>',
                 ],
             ],
+            'variableAssignedInCallArgumentOfSecondAndOperandIsSetInThird' => [
+                'code' => '<?php
+                    function isYmlFile(?string $relativePath): bool {
+                        return is_string($relativePath)
+                            && file_exists($absolute = "/home/user123/" . $relativePath)
+                            && pathinfo($absolute, PATHINFO_EXTENSION) === "yml";
+                    }',
+            ],
+            'variableAssignedByReferenceInSecondAndOperandIsSetInThird' => [
+                'code' => '<?php
+                    function f(bool $b, string $s): bool {
+                        return $b && preg_match("/a/", $s, $m) && $m[0] === "a";
+                    }',
+            ],
+            'variableAssignedInFirstAndOperandIsSetInThird' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, string $s): bool {
+                        return check($x = $s) && $b && $x === "a";
+                    }',
+            ],
+            'variableAssignedInAndOperandIsSetInEveryLaterOne' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, bool $c, string $s): bool {
+                        return $b && check($x = $s) && $c && $x === "a";
+                    }',
+            ],
+            'variableReassignedInSecondAndOperandHasItsNewTypeInThird' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b): bool {
+                        $x = null;
+                        return $b && check($x = "a") && strlen($x) > 0;
+                    }',
+            ],
+            'variableAssignedInParenthesizedAndOperandIsSetInNextOne' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, bool $c, string $s): bool {
+                        return $b && ($c && check($x = $s)) && $x === "a";
+                    }
+
+                    function g(bool $b, bool $c, string $s): bool {
+                        return ($b && check($x = $s) && $c) && $x === "a";
+                    }',
+            ],
+            'variableAssignedInLogicalAndOperandIsSetInNextOne' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, string $s): bool {
+                        return ($b and check($x = $s)) and $x === "a";
+                    }',
+            ],
+            'variableAssignedInAndOperandIsNarrowedByItsAssertionInNextOne' => [
+                'code' => '<?php
+                    function f(bool $b, int|string $s): bool {
+                        return $b && is_string($x = $s) && strlen($x) > 0;
+                    }
+
+                    function g(int|string $s, bool $b): bool {
+                        return is_string($x = $s) && $b && strlen($x) > 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1343,6 +1471,163 @@ final class AssignmentInConditionalTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'variableAssignedInSecondAndOperandKeepsItsTypeInThird' => [
+                'code' => '<?php
+                    function check(int $i): bool {
+                        return $i > 0;
+                    }
+
+                    function takesString(string $s): bool {
+                        return $s === "";
+                    }
+
+                    function f(bool $b): bool {
+                        return $b && check($x = 1) && takesString($x);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'variableAssignedInSkippedOperandOfOrIsPossiblyUndefinedInNextAndOperand' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, string $s): bool {
+                        return ($b || check($x = $s)) && $x === "a";
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInSkippedOperandOfOrInMiddleAndOperandIsPossiblyUndefinedInNextOne' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, bool $d, string $s): bool {
+                        return $b && ($d || check($x = $s)) && $x === "a";
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInSkippedOperandOfOrInFirstAndOperandIsPossiblyUndefinedInThird' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, bool $d, string $s): bool {
+                        return ($d || check($x = $s)) && $b && $x === "a";
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInRightAndOperandIsPossiblyUndefinedAfterIt' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function f(bool $b, string $s): bool {
+                        $r = $b && check($x = $s);
+                        echo $x;
+                        return $r;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInAndNestedInArgumentIsPossiblyUndefinedInNextAndOperand' => [
+                'code' => '<?php
+                    function check(bool $b): bool {
+                        return $b;
+                    }
+
+                    function f(bool $b, string $s): bool {
+                        return check($b && ($x = $s) === "b") && $x === "a";
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInAndOperandHasTheTypeAByRefArgumentOfALaterOneGivesIt' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    /** @param-out null $r */
+                    function nullRef(mixed &$r): bool {
+                        $r = null;
+                        return true;
+                    }
+
+                    function takesInt(int $i): bool {
+                        return $i > 0;
+                    }
+
+                    function f(): bool {
+                        return check($x = "a") && nullRef($x) && takesInt($x);
+                    }',
+                'error_message' => 'NullArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyAssignedInAndOperandHasTheTypeAMethodCallOfALaterOneGivesIt' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    final class A {
+                        public ?string $p = null;
+
+                        public function reset(): bool {
+                            $this->p = null;
+                            return true;
+                        }
+
+                        public function f(bool $a, string $s): bool {
+                            return $a && check($this->p = $s) && $this->reset() && strlen($this->p) > 0;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'arrayKeyAssignedInAndOperandIsForgottenWhenALaterOneReassignsTheArray' => [
+                'code' => '<?php
+                    function check(mixed $s): bool {
+                        return (bool) $s;
+                    }
+
+                    /** @param array{k?: string} $a */
+                    function f(array $a): bool {
+                        return check($a["k"] = "s") && check($a = ["other" => 1]) && strlen($a["k"]) > 0;
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'variableAssignedInAndOperandKeepsItsReferenceInLaterOnes' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    function gate(): bool {
+                        return true;
+                    }
+
+                    function probe(int $i, string $s): bool {
+                        return $i > 0 && $s !== "";
+                    }
+
+                    function f(): bool {
+                        $x = null;
+                        $y =& $x;
+                        return check($x = "a") && gate() && probe($y = 1, $x);
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'variableAssignedInNegatedAndIsPossiblyUndefinedInNextAndOperand' => [
+                'code' => '<?php
+                    function f(bool $b, bool $c, string $s): bool {
+                        return $b && !($c && ($x = $s) === "b") && $x === "a";
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }
