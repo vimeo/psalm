@@ -5475,6 +5475,7 @@ final class CapabilitiesTest extends TestCase
                         return \Implode(",", $names);
                     }',
                 'error_message' => 'possibly-mutating method App\Name::__toString',
+                'error_levels' => ['WrongCaseFunction'],
             ],
             'impureToStringInLooseInArrayCalledInAnotherCase' => [
                 'code' => '<?php
