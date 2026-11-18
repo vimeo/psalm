@@ -59,6 +59,7 @@ use UnexpectedValueException;
 use function array_pop;
 use function count;
 use function end;
+use function str_contains;
 use function strtolower;
 
 /**
@@ -124,12 +125,16 @@ final class PartialApplicationAnalyzer
                 ? $codebase->methods->getDeclaringMethodId($method_id, true)
                 : null;
             $has_one_signature = self::hasOneSignature($statements_analyzer, $closure);
+            // the closure of a method has the method's id, which the method call gives cased
+            $function_id = $closure->callable_id !== null && !str_contains($closure->callable_id, '::')
+                ? $closure->callable_id
+                : null;
             $binding = self::bind(
                 $statements_analyzer,
                 $stmt,
                 $closure,
-                $closure->callable_id ?? ($declaring_method_id !== null ? (string) $declaring_method_id : null),
-                $closure->callable_id
+                $function_id ?? ($declaring_method_id !== null ? (string) $declaring_method_id : null),
+                $function_id
                     ?? ($declaring_method_id !== null
                         ? $codebase->methods->getCasedMethodId($declaring_method_id)
                         : 'the closure'),
@@ -521,7 +526,10 @@ final class PartialApplicationAnalyzer
             }
         }
 
-        if ($closure->callable_id === null || InternalCallMapHandler::inCallMap($closure->callable_id)) {
+        if ($closure->callable_id === null
+            || str_contains($closure->callable_id, '::')
+            || InternalCallMapHandler::inCallMap($closure->callable_id)
+        ) {
             return false;
         }
 
@@ -642,7 +650,7 @@ final class PartialApplicationAnalyzer
                 }
             }
 
-            CliOutput::markPrintedArgs($statements_analyzer, $callee_id, $args, true);
+            CliOutput::markPrintedArgs($statements_analyzer, $context, $callee_id, $args, true);
         }
 
         $template_result = new TemplateResult([], $class_template_params ?? []);
@@ -837,6 +845,7 @@ final class PartialApplicationAnalyzer
                         $declaring_class_storage->properties[$prop_name],
                         $context,
                         $object_type->reference_free && $object_type->allow_mutations,
+                        true,
                     );
                 }
             }
