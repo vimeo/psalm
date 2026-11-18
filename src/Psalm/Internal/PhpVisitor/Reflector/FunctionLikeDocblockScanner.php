@@ -1447,6 +1447,20 @@ final class FunctionLikeDocblockScanner
                         }
                     }
                 }
+            } elseif ($flow->kind === TaintFlowAnnotation::CALLABLE_ARGUMENTS) {
+                foreach ($storage->params as $callable_offset => $callable_param_storage) {
+                    if ($callable_param_storage->name !== $flow->callable_param) {
+                        continue;
+                    }
+
+                    foreach ($flow->sources as $source_param) {
+                        foreach ($storage->params as $i => $param_storage) {
+                            if ($param_storage->name === $source_param) {
+                                $storage->callable_param_argument_sources[$callable_offset][$i] = $flow->path_type;
+                            }
+                        }
+                    }
+                }
             } elseif ($flow->proxy_function !== null) {
                 $call_params = [];
                 foreach ($flow->sources as $source_param) {
