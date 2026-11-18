@@ -319,6 +319,36 @@ final class ReturnTypeManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['LessSpecificReturnType'],
                 'safe_types' => false,
             ],
+            'fixLessSpecificReturnTypeKeepsOneLineDocblock' => [
+                'input' => '<?php
+                    /** @param list<int> $items */
+                    function first(array $items): ?int {
+                        return $items[0];
+                    }',
+                'output' => '<?php
+                    /** @param list<int> $items */
+                    function first(array $items): int {
+                        return $items[0];
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['LessSpecificReturnType'],
+                'safe_types' => false,
+            ],
+            'addMissingReturnTypeKeepsOneLineDocblock' => [
+                'input' => '<?php
+                    /** @param list<int> $items */
+                    function first(array $items) {
+                        return $items[0];
+                    }',
+                'output' => '<?php
+                    /** @param list<int> $items */
+                    function first(array $items): int {
+                        return $items[0];
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+            ],
             'fixLessSpecificUnionReturnType' => [
                 'input' => '<?php
                     function foo(bool $c): int|string|float {

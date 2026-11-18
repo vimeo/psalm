@@ -166,6 +166,13 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
             $class_storage->suppressed_issues + $this->getSuppressedIssues(),
         );
 
+        self::checkMixins(
+            $this,
+            $class_storage,
+            new CodeLocation($this, $this->class->name ?? $this->class, null, true),
+            $class_storage->suppressed_issues + $this->getSuppressedIssues(),
+        );
+
         $member_stmts = [];
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
@@ -243,9 +250,7 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        $pseudo_methods = $class_storage->pseudo_methods + $class_storage->pseudo_static_methods;
-
-        MethodComparator::comparePseudoMethods($pseudo_methods, $this->fq_class_name, $codebase, $class_storage);
+        MethodComparator::comparePseudoMethods($codebase, $class_storage);
 
         $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider(), true);
         $statements_analyzer->analyze($member_stmts, $interface_context, null);
