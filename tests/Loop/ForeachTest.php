@@ -242,6 +242,15 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'foreachIteratedExpressionIncrementsOnce' => [
+                'code' => '<?php
+                    $i = 0;
+                    foreach ([$i++] as $_) {
+                    }',
+                'assertions' => [
+                    '$i===' => '1',
+                ],
+            ],
             'foreachArrayNestedInItselfOnEveryIterationSettles' => [
                 'code' => <<<'PHP'
                     <?php
