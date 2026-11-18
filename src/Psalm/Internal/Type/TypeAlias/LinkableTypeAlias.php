@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type\TypeAlias;
 
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Storage\ImmutableNonCloneableTrait;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 /**
  * @internal
@@ -14,6 +15,7 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
 final class LinkableTypeAlias implements TypeAlias
 {
     use ImmutableNonCloneableTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     /**
      * @psalm-mutation-free

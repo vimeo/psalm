@@ -19,6 +19,7 @@ use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\ImpureMethodCall;
@@ -250,6 +251,8 @@ final class ConcatAnalyzer
         $config = Config::getInstance();
 
         if ($left_type && $right_type) {
+            $left_type = TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $left_type);
+            $right_type = TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $right_type);
             $result_type = Type::getString();
 
             if ($left_type->hasMixed() || $right_type->hasMixed()) {
