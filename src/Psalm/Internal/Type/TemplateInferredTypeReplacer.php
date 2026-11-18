@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
+use Closure;
 use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -261,6 +262,35 @@ final class TemplateInferredTypeReplacer
                 $codebase,
             )->getAtomicTypes(),
         )->freeze();
+    }
+
+    /**
+     * What a template intersected with other types (`T&object{k: U}`, the param of an `@extends`) stands for, given
+     * what $resolve binds each template it names to: null if the template itself isn't bound
+     *
+     * @param Closure(TTemplateParam): ?Union $resolve
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public static function replaceIntersectedTemplate(
+        TTemplateParam $template,
+        Closure $resolve,
+        ?Codebase $codebase,
+    ): ?Union {
+        $lower_bounds = [];
+
+        foreach ((new Union([$template]))->getTemplateTypes() as $named_template) {
+            $bound = $resolve($named_template->setIntersectionTypes([]));
+
+            if ($bound !== null) {
+                $lower_bounds[$named_template->param_name][$named_template->defining_class] = $bound;
+            }
+        }
+
+        if (!isset($lower_bounds[$template->param_name][$template->defining_class])) {
+            return null;
+        }
+
+        return self::replace(new Union([$template]), new TemplateResult([], $lower_bounds), $codebase);
     }
 
     /**

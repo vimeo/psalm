@@ -23,6 +23,97 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'templateIntersectedWithAShapeInAnInheritedParam' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Model {}
+                    final class User extends Model {}
+
+                    /** @template T of Model */
+                    abstract class Base {
+                        /** @param T&object{k: int} $row */
+                        abstract public function take(object $row): void;
+                    }
+
+                    /** @extends Base<User> */
+                    final class Child extends Base {
+                        #[Override]
+                        public function take(object $row): void {
+                            /** @psalm-check-type-exact $row = User&object{k: int} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'templateIntersectedWithAShapeAsTheParamOfAnExtendedClass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Model {}
+                    class Pivot extends Model {}
+                    final class MyPivot extends Pivot {}
+                    final class User extends Model {}
+
+                    /** @template TResult */
+                    abstract class Relation {
+                        /** @return TResult */
+                        public function getResults(): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template TRelatedModel of Model
+                     * @template TPivotModel of Pivot = Pivot
+                     * @extends Relation<TRelatedModel&object{pivot: TPivotModel}>
+                     */
+                    abstract class BelongsToMany extends Relation {}
+
+                    /**
+                     * @template TRelatedModel of Model
+                     * @template TPivotModel of Pivot = MyPivot
+                     * @extends BelongsToMany<TRelatedModel, TPivotModel>
+                     */
+                    abstract class MorphToMany extends BelongsToMany {}
+
+                    /** @extends BelongsToMany<User, MyPivot> */
+                    abstract class UserRelation extends BelongsToMany {}
+
+                    /**
+                     * @template T of Model
+                     * @extends BelongsToMany<T, MyPivot>
+                     */
+                    abstract class AnyRelation extends BelongsToMany {}
+
+                    /**
+                     * @param BelongsToMany<User, MyPivot> $generic
+                     * @param MorphToMany<User> $nested
+                     * @param AnyRelation<User> $child_generic
+                     */
+                    function f(
+                        BelongsToMany $generic,
+                        MorphToMany $nested,
+                        UserRelation $child,
+                        AnyRelation $child_generic,
+                        AnyRelation $child_raw,
+                    ): void {
+                        $a = $generic->getResults();
+                        $b = $nested->getResults();
+                        $c = $child->getResults();
+                        $d = $child_generic->getResults();
+                        $e = $child_raw->getResults();
+                        /** @psalm-check-type-exact $a = User&object{pivot: MyPivot} */
+                        /** @psalm-check-type-exact $b = User&object{pivot: MyPivot} */
+                        /** @psalm-check-type-exact $c = User&object{pivot: MyPivot} */
+                        /** @psalm-check-type-exact $d = User&object{pivot: MyPivot} */
+                        /** @psalm-check-type-exact $e = Model&object{pivot: MyPivot} */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'methodTemplateBoundToAnIntermediateClassTemplateOfAnObjectWithoutTypeParams' => [
                 'code' => <<<'PHP'
                     <?php
