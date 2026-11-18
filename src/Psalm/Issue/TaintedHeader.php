@@ -10,4 +10,5 @@ namespace Psalm\Issue;
 final class TaintedHeader extends TaintedInput
 {
     public const SHORTCODE = 256;
+    public const CWE_IDS = [601, 644];
 }
