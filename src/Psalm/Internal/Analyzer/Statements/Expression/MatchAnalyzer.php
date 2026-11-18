@@ -331,7 +331,14 @@ final class MatchAnalyzer
             $statements_analyzer->removeSuppressedIssues($analysis_suppressions);
 
             $reconcilable_types = Algebra::getTruthsFromFormula(
-                Algebra::negateFormula($clauses),
+                FormulaGenerator::getNegatedFormula(
+                    $clauses,
+                    $all_match_condition,
+                    spl_object_id($all_match_condition),
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                ),
             );
 
             // if the if has an || in the conditional, we cannot easily reason about it

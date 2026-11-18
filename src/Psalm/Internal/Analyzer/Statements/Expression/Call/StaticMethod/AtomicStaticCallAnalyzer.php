@@ -457,7 +457,8 @@ final class AtomicStaticCallAnalyzer
 
         // a `@method static` of the class or of its interfaces wins over its mixins
         if ((!$naive_method_exists || $hidden_by_magic_call)
-            && self::findPseudoMethodAndClassStorages($codebase, $class_storage, $method_name_lc, false) === null
+            && self::findPseudoMethodAndClassStorages($codebase, $class_storage, $method_name_lc, $method_id, false)
+                === null
         ) {
             $mixin = MixinLookup::findMember(
                 $codebase,
@@ -510,6 +511,7 @@ final class AtomicStaticCallAnalyzer
             $codebase,
             $class_storage,
             $method_name_lc,
+            $method_id,
             $method_visible,
         );
 
@@ -1354,8 +1356,13 @@ final class AtomicStaticCallAnalyzer
         Codebase $codebase,
         ClassLikeStorage $static_class_storage,
         string $method_name_lc,
+        MethodIdentifier $method_id,
         bool $method_visible,
     ): ?array {
+        if ($method_visible && !$codebase->methods->pseudoMethodWinsOverMethod($method_id, true)) {
+            return null;
+        }
+
         if ($pseudo_method_storage = $static_class_storage->pseudo_static_methods[$method_name_lc] ?? null) {
             return [$pseudo_method_storage, $static_class_storage];
         }
