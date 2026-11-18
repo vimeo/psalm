@@ -105,8 +105,12 @@ final class AtomicPropertyFetchAnalyzer
             return;
         }
 
+        // a property of a value whose type isn't known holds what the value does
         if ($lhs_type_part instanceof TMixed) {
-            $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                Type::getMixed()->setParentNodes($stmt_var_type->parent_nodes),
+            );
             return;
         }
 
@@ -171,7 +175,11 @@ final class AtomicPropertyFetchAnalyzer
         ) {
             $has_valid_fetch_type = true;
 
-            $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+            // a dynamic property of the object (a database row, a decoded document) holds what the object does
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                Type::getMixed()->setParentNodes($stmt_var_type->parent_nodes),
+            );
 
             return;
         }
