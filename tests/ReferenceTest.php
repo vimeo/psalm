@@ -1316,6 +1316,281 @@ final class ReferenceTest extends TestCase
                     '$a===' => 'array<string, int>|null',
                 ],
             ],
+            'writeThroughAReferenceInAnIfIsCombinedAfterIt' => [
+                'code' => '<?php
+                    $w = 1;
+                    $v = &$w;
+                    if (rand(0, 1)) {
+                        $v = "a";
+                    }',
+                'assertions' => [
+                    '$w===' => "'a'|1",
+                ],
+            ],
+            'writeThroughAReferenceInALoopIsCombinedAfterIt' => [
+                'code' => '<?php
+                    $w = 1;
+                    $v = &$w;
+                    while (rand(0, 1)) {
+                        if ($v === 1) {
+                            continue;
+                        }
+                        $v = "a";
+                    }',
+                'assertions' => [
+                    '$w===' => "'a'|1",
+                ],
+            ],
+            'referenceBoundInConditionToAnOffsetOfUnknownKeyMayBeNull' => [
+                'code' => '<?php
+                    /** @param null $n */
+                    function takesNull($n): void {}
+
+                    /** @param array<string, int> $cache */
+                    function f(array $cache, string $k): int {
+                        if (null === $x = &$cache[$k]) {
+                            takesNull($x);
+                            $x = 5;
+                        }
+                        return $x;
+                    }',
+            ],
+            'referenceToStaticPropertyItemOfUnknownKeyBoundInConditionMayBeNull' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var array<string, list<int>> */
+                        private static array $cache = [];
+
+                        /** @return list<int> */
+                        public static function get(string $k): array {
+                            if (null === $x = &self::$cache[$k]) {
+                                $x = [1, 2];
+                            }
+                            return $x;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyInvalidPropertyAssignmentValue'],
+            ],
+            'referenceBoundInConditionToAnOffsetKnownToBeUnsetMayBeNull' => [
+                'code' => '<?php
+                    /** @param null $n */
+                    function takesNull($n): void {}
+
+                    /** @param array<string, int> $a */
+                    function f(array $a, string $k): int {
+                        if (!isset($a[$k])) {
+                            if (null === $x = &$a[$k]) {
+                                takesNull($x);
+                                $x = 1;
+                            }
+                            return $x;
+                        }
+                        return 0;
+                    }',
+            ],
+            'referenceBoundInAStatementToAnOffsetKnownToBeUnsetMayBeNull' => [
+                'code' => '<?php
+                    /** @param array<string, int> $a */
+                    function f(array $a, string $k): int {
+                        if (!array_key_exists($k, $a)) {
+                            $x = &$a[$k];
+                            if (null === $x) {
+                                $x = 1;
+                            }
+                            return $x;
+                        }
+                        return 0;
+                    }',
+            ],
+            'referenceBoundInConditionToAnOffsetOfRequiredLiteralKeysIsSet' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a: int, b: int} $s
+                     * @param "a"|"b" $k
+                     */
+                    function f(array $s, string $k): int {
+                        if (($x = &$s[$k]) > 0) {
+                            return $x;
+                        }
+                        return $x;
+                    }',
+            ],
+            'referenceBoundToAnOffsetOfUnknownKeyOutsideAConditionIsTakenAsSet' => [
+                'code' => '<?php
+                    /** @param array<string, int> $a */
+                    function f(array $a, string $k): int {
+                        return $x = &$a[$k];
+                    }',
+            ],
+            'referenceBoundInAStatementToAnOffsetOfUnknownKeyIsTakenAsSet' => [
+                'code' => '<?php
+                    /** @param array<string, int> $arr */
+                    function f(array $arr): array {
+                        foreach ($arr as $k => $_) {
+                            $r = &$arr[$k];
+                            $r += 1;
+                        }
+                        return $arr;
+                    }',
+            ],
+            'referenceBoundInConditionIsNarrowedByNotIdenticalNull' => [
+                'code' => '<?php
+                    /** @param array<string, list<int>|null> $arr */
+                    function f(array $arr, string $k): int {
+                        if (null !== $v = &$arr[$k]) {
+                            return count($v);
+                        }
+                        return 0;
+                    }',
+            ],
+            'referenceBoundInConditionIsNarrowedAfterAnIdenticalNullThatReturns' => [
+                'code' => '<?php
+                    /** @param array<string, list<int>|null> $arr */
+                    function f(array $arr, string $k): int {
+                        $v = null;
+                        if (null === $v = &$arr[$k]) {
+                            return 0;
+                        }
+                        return count($v);
+                    }',
+            ],
+            'referenceBoundInConditionIsNullInTheElse' => [
+                'code' => '<?php
+                    /** @param null $n */
+                    function takesNull($n): void {}
+
+                    /** @param array<string, list<int>|null> $arr */
+                    function f(array $arr, string $k): int {
+                        $v = 5;
+                        if (null !== $v = &$arr[$k]) {
+                            return count($v);
+                        } else {
+                            takesNull($v);
+                            return 0;
+                        }
+                    }',
+            ],
+            'referenceBoundInConditionIsNarrowedByTruthiness' => [
+                'code' => '<?php
+                    /** @param array<string, non-empty-list<int>|null> $arr */
+                    function f(array $arr, string $k): int {
+                        if ($v = &$arr[$k]) {
+                            return count($v);
+                        }
+                        return 0;
+                    }',
+            ],
+            'referenceBoundInConditionIsNarrowedAfterAFalsinessThatReturns' => [
+                'code' => '<?php
+                    /** @param array<string, non-empty-list<int>|null> $arr */
+                    function f(array $arr, string $k): int {
+                        if (!$v = &$arr[$k]) {
+                            return 0;
+                        }
+                        return count($v);
+                    }',
+            ],
+            'referenceNarrowedInAnIfIsNotNarrowedInTheElse' => [
+                'code' => '<?php
+                    function f(?int $w): int {
+                        $v = &$w;
+                        if ($v) {
+                            return 1;
+                        } else {
+                            if ($v === 0) {
+                                return 2;
+                            }
+                            return 3;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'referenceNarrowedInAnIfThatReturnsIsNotNarrowedAfterIt' => [
+                'code' => '<?php
+                    /** @param list<int>|null $w */
+                    function f($w): int {
+                        $v = &$w;
+                        if (!$v) {
+                            return 0;
+                        }
+                        return count($v);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'referenceBoundInConditionIsNarrowedByAnAssertingFunction' => [
+                'code' => '<?php
+                    /** @param array<string, int|string> $arr */
+                    function f(array $arr, string $k): int {
+                        if (is_int($v = &$arr[$k])) {
+                            return $v;
+                        }
+                        return 0;
+                    }',
+            ],
+            'referenceBoundInConditionIsNarrowedByAComparison' => [
+                'code' => '<?php
+                    /** @param array<string, int|null> $arr */
+                    function f(array $arr, string $k): int {
+                        if (($v = &$arr[$k]) > 0) {
+                            return $v;
+                        }
+                        return 0;
+                    }',
+            ],
+            'referenceBoundInConditionIsNarrowedInTheRightOperandOfAnd' => [
+                'code' => '<?php
+                    /** @param array<string, list<int>|null> $arr */
+                    function f(array $arr, string $k): int {
+                        if (null !== ($v = &$arr[$k]) && [] !== $v) {
+                            return count($v);
+                        }
+                        return 0;
+                    }',
+            ],
+            'referenceBoundInConditionIsNarrowedInATernary' => [
+                'code' => '<?php
+                    /** @param array<string, int|null> $arr */
+                    function f(array $arr, string $k): int {
+                        return ($v = &$arr[$k]) !== null ? $v : 0;
+                    }',
+            ],
+            'referenceBoundInLoopConditionIsNarrowedInTheBody' => [
+                'code' => '<?php
+                    /** @param array<string, int|null> $arr */
+                    function f(array $arr, string $k): int {
+                        $t = 0;
+                        while (null !== $v = &$arr[$k]) {
+                            $t += $v;
+                            $arr[$k] = null;
+                        }
+                        return $t;
+                    }',
+            ],
+            'referenceToStaticPropertyItemBoundInConditionIsNarrowed' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var array<string, list<int>|null> */
+                        private static array $cache = [];
+
+                        /** @return list<int> */
+                        public static function get(string $k): array {
+                            if (null === $x = &self::$cache[$k]) {
+                                $x = [1, 2];
+                            }
+                            return $x;
+                        }
+
+                        public static function count(string $k): int {
+                            if (null !== $x = &self::$cache[$k]) {
+                                return count($x);
+                            }
+                            return 0;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -1326,6 +1601,28 @@ final class ReferenceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'referenceBoundInConditionIsNullWhereTheConditionIsFalse' => [
+                'code' => '<?php
+                    /** @param array<string, list<int>|null> $arr */
+                    function f(array $arr, string $k): int {
+                        if (null !== $v = &$arr[$k]) {
+                            return 0;
+                        }
+                        return count($v);
+                    }',
+                'error_message' => 'Argument 1 of count cannot be null, null value provided',
+            ],
+            'referenceBoundInConditionIsCheckedForRiskyTruthiness' => [
+                'code' => '<?php
+                    /** @param array<string, list<int>|null> $arr */
+                    function f(array $arr, string $k): int {
+                        if ($v = &$arr[$k]) {
+                            return count($v);
+                        }
+                        return 0;
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+            ],
             'referenceToOffsetOfMagicPropertyKeepsItsNull' => [
                 'code' => '<?php
                     /**
@@ -1591,7 +1888,7 @@ final class ReferenceTest extends TestCase
                             /** @psalm-suppress PossiblyUndefinedVariable */
                             preg_match("/(.*)/", $str, $out["m"]);
                         }
-                        return $out["m"][1] ?? "";
+                        return (string) $out["m"][1];
                     }',
                 'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:8',
             ],

@@ -8,6 +8,7 @@ use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -241,10 +242,10 @@ final class CodeUseEdgesCacheTest extends TestCase
      */
     private function createCaches(): void
     {
-        $this->parser_cache = new ParserCacheProvider($this->config, '', false);
-        $this->file_storage_cache = new FileStorageCacheProvider($this->config, '', false);
-        $this->classlike_storage_cache = new ClassLikeStorageCacheProvider($this->config, '', false);
-        $this->reference_cache = new FileReferenceCacheProvider($this->config, '', false);
+        $this->parser_cache = new ParserCacheProvider($this->config, '', CacheMode::Memory);
+        $this->file_storage_cache = new FileStorageCacheProvider($this->config, '', CacheMode::Memory);
+        $this->classlike_storage_cache = new ClassLikeStorageCacheProvider($this->config, '', CacheMode::Memory);
+        $this->reference_cache = new FileReferenceCacheProvider($this->config, '', CacheMode::Memory);
         $this->project_cache = new ProjectCacheProvider();
     }
 
@@ -258,10 +259,10 @@ final class CodeUseEdgesCacheTest extends TestCase
         return $this->analyzeWith(
             new Providers(
                 $this->files,
-                new ParserCacheProvider($this->config, '', false),
-                new FileStorageCacheProvider($this->config, '', false),
-                new ClassLikeStorageCacheProvider($this->config, '', false),
-                new FileReferenceCacheProvider($this->config, '', false),
+                new ParserCacheProvider($this->config, '', CacheMode::Memory),
+                new FileStorageCacheProvider($this->config, '', CacheMode::Memory),
+                new ClassLikeStorageCacheProvider($this->config, '', CacheMode::Memory),
+                new FileReferenceCacheProvider($this->config, '', CacheMode::Memory),
                 new ProjectCacheProvider(),
             ),
             $needs,

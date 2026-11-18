@@ -28,6 +28,7 @@ use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
+use ReflectionReference;
 use RuntimeException;
 
 use function array_diff_key;
@@ -411,6 +412,15 @@ final class Context
     public array $assigned_var_ids = [];
 
     /**
+     * The variables the last `&&` analysed outside an if condition assigns, as its right operand leaves them: an
+     * enclosing `&&` only gets what holds after the expression, which doesn't have them
+     *
+     * @internal
+     * @var array<string, Union>
+     */
+    public array $vars_assigned_in_and = [];
+
+    /**
      * A list of vars that have been may have been assigned to
      *
      * @var array<string, bool>
@@ -531,6 +541,33 @@ final class Context
          */
         public ?string $self = null,
     ) {
+    }
+
+    /**
+     * A copied array shares its PHP references with the original: give the clone its own slots, linked to each other
+     * as they were in the original.
+     */
+    public function __clone()
+    {
+        if (!$this->references_in_scope) {
+            return;
+        }
+
+        $vars_in_scope = [];
+        $slots = [];
+
+        foreach ($this->vars_in_scope as $var_id => $_) {
+            $reference = ReflectionReference::fromArrayElement($this->vars_in_scope, $var_id);
+            $slot_var_id = $reference === null ? $var_id : ($slots[$reference->getId()] ??= $var_id);
+
+            if ($slot_var_id === $var_id) {
+                $vars_in_scope[$var_id] = $this->vars_in_scope[$var_id];
+            } else {
+                $vars_in_scope[$var_id] = &$vars_in_scope[$slot_var_id];
+            }
+        }
+
+        $this->vars_in_scope = $vars_in_scope;
     }
 
     /**
@@ -1302,6 +1339,26 @@ final class Context
     }
 
     /**
+     * Drops the clauses about the variables a nested scope changed with the stamps $parent_remove_vars, as
+     * removeClausesOfVarsChangedIn() does with those it ends with
+     *
+     * @param array<string, int> $parent_remove_vars
+     * @internal
+     */
+    public function removeClausesOfVarsChangedWith(array $parent_remove_vars): void
+    {
+        foreach ($parent_remove_vars as $var_id => $stamp) {
+            if ($stamp > ($this->parent_remove_vars[$var_id] ?? 0)) {
+                if ($this->inside_conditional) {
+                    $this->parent_remove_vars[$var_id] = $stamp;
+                } else {
+                    $this->removeVarFromConflictingClauses($var_id);
+                }
+            }
+        }
+    }
+
+    /**
      * Drops the clauses about the variables changed since $parent_remove_vars was taken from this context
      *
      * @param array<string, int> $parent_remove_vars
@@ -1659,6 +1716,49 @@ final class Context
         }
 
         $this->clauses = $clauses_to_keep;
+    }
+
+    /**
+     * Forgets what is known of the items and properties of what a property holds, and of what depends on them, after
+     * a call wrote some of them. Those bound to variables by reference stay bound to them
+     */
+    public function forgetPropertyDescendents(string $property_id): void
+    {
+        $this->forgetNullArrayOffsets($property_id);
+        $this->removeVarFromConflictingClauses($property_id);
+
+        // `$a[$this->p]` too
+        $descendent_pattern = '/' . preg_quote($property_id, '/') . '[\]\[\-]/';
+
+        foreach (array_keys($this->vars_in_scope) as $var_id) {
+            if (preg_match($descendent_pattern, $var_id) === 1) {
+                $this->forgetWrittenVar($var_id);
+            }
+        }
+    }
+
+    /**
+     * Forgets a var a call wrote as removeMutableObjectVars() does: forgotten, not unset (Context::update() tells the
+     * two apart)
+     */
+    private function forgetWrittenVar(string $var_id): void
+    {
+        $this->forgetPropertyBoundByReference($var_id, false);
+        $this->vars_possibly_in_scope[$var_id] = true;
+        $this->parent_remove_vars[$var_id] = ++self::$clause_removal_count;
+    }
+
+    /**
+     * Forgets what is known of a property (`$a->p`), and of what it holds, after a call may have written items or
+     * properties of what it holds. One known to hold an object still holds it
+     */
+    public function forgetPropertyOfHeldObject(string $property_id): void
+    {
+        $this->forgetPropertyDescendents($property_id);
+
+        if (isset($this->vars_in_scope[$property_id]) && !$this->vars_in_scope[$property_id]->isObjectType()) {
+            $this->forgetWrittenVar($property_id);
+        }
     }
 
     /**

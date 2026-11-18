@@ -3019,6 +3019,18 @@ final class TaintTest extends TestCase
                     curl_setopt($curl, CURLOPT_POSTFIELDS, (string) $_GET["body"]);
                     curl_setopt($curl, \\CURLOPT_PRIVATE, (string) $_GET["private"]);',
             ],
+            'dontTaintSsrfInACurlOptionNotChoosingTheDestinationPassedByName' => [
+                'code' => '<?php // --taint-analysis
+                    $curl = curl_init("https://example.com/");
+                    curl_setopt($curl, value: (string) $_GET["private"], option: CURLOPT_PRIVATE);',
+            ],
+            'dontTaintSsrfInACurlOptionArrayNotChoosingTheDestinationPassedByName' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt_array(
+                        options: [CURLOPT_PRIVATE => (string) $_GET["private"]],
+                        handle: curl_init("https://example.com/"),
+                    );',
+            ],
             'dontTaintAnImmutableObjectBuiltFromAnotherCallsArgument' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-immutable */
@@ -6280,6 +6292,191 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'superGlobalPassedByReferenceIsTainted' => [
+                'code' => '<?php // --taint-analysis
+                    function show(array &$a): void {
+                        echo (string) $a["x"];
+                    }
+
+                    function f(): void {
+                        show($_GET);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintOfAnObjectAssignedInABlockNestedInABranchReachesTheCallAfterTheIf' => [
+                'code' => '<?php // --taint-analysis
+                    final class Foo {
+                        public function get(): string {
+                            return (string) $_GET["a"];
+                        }
+                    }
+
+                    /** @param mixed $x */
+                    function f($x, bool $c, bool $d): void {
+                        if ($c) {
+                            if ($d) {
+                                $x = new Foo();
+                            }
+                        }
+
+                        /** @psalm-suppress MixedMethodCall */
+                        echo $x->get();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarReachesTheReadAfterTheIf' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $u */
+                    function f($u): void {
+                        if (is_array($u) && rand(0, 1)) {
+                            $u["a"] = $_GET["x"];
+                        }
+
+                        /** @psalm-suppress MixedArrayAccess */
+                        echo (string) $u["a"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInAnElseReachesTheReadAfterTheIf' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $u */
+                    function f($u): void {
+                        if (!is_array($u) || rand(0, 1)) {
+                            echo 1;
+                        } else {
+                            $u["a"] = $_GET["x"];
+                        }
+
+                        /** @psalm-suppress MixedArrayAccess */
+                        echo (string) $u["a"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInASwitchCaseReachesTheReadAfterTheSwitch' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $u */
+                    function f($u): void {
+                        switch (true) {
+                            case is_array($u) && rand(0, 1):
+                                $u["a"] = $_GET["x"];
+                                break;
+                        }
+
+                        /** @psalm-suppress MixedArrayAccess */
+                        echo (string) $u["a"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInATernaryBranchReachesTheReadAfterIt' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $u */
+                    function f($u): void {
+                        is_array($u) && rand(0, 1) ? ($u["a"] = $_GET["x"]) : null;
+
+                        /** @psalm-suppress MixedArrayAccess */
+                        echo (string) $u["a"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInTheElseOfATernaryReachesTheReadAfterIt' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $u */
+                    function f($u): void {
+                        !is_array($u) ? null : ($u["a"] = $_GET["x"]);
+
+                        /** @psalm-suppress MixedArrayAccess */
+                        echo (string) $u["a"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInBothTernaryBranchesReachesTheReadAfterIt' => [
+                'code' => '<?php // --taint-analysis
+                    /** @var mixed $u */
+                    $u = [];
+
+                    is_array($u) ? ($u["a"] = (string) $_GET["x"]) : ($u["b"] = 1);
+
+                    /** @psalm-suppress MixedArrayAccess */
+                    echo (string) $u["a"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintWrittenAtAnOffsetOfANarrowedMixedVarInAMatchArmReachesTheReadAfterIt' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param mixed $u */
+                    function f($u): void {
+                        match (true) {
+                            is_array($u) && rand(0, 1) => $u["a"] = $_GET["x"],
+                            default => null,
+                        };
+
+                        /** @psalm-suppress MixedArrayAccess */
+                        echo (string) $u["a"];
+                    }',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.0',
+            ],
+            'taintAssignedBeforeABreakInTheElseReachesTheReadAfterTheIf' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param list<string> $list */
+                    function f(array $list, bool $b): void {
+                        if ($b) {
+                            $found = "safe";
+                        } else {
+                            foreach ($list as $_) {
+                                $found = (string) $_GET["x"];
+                                break;
+                            }
+                        }
+
+                        /** @psalm-suppress MixedArgument */
+                        echo $found ?? "";
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAssignedInACatchInTheElseReachesTheReadAfterTheIf' => [
+                'code' => '<?php // --taint-analysis
+                    function load(): void {
+                        if (rand(0, 1) === 1) {
+                            throw new RuntimeException("x");
+                        }
+                    }
+
+                    function f(bool $b): void {
+                        if ($b) {
+                            $found = "safe";
+                        } else {
+                            try {
+                                load();
+                            } catch (Exception $e) {
+                                $found = (string) $_GET["x"];
+                            }
+                        }
+
+                        /** @psalm-suppress MixedArgument */
+                        echo $found ?? "";
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintOfTheBranchTypingAVariableAnotherBranchAssignsBeforeABreakIsKept' => [
+                'code' => '<?php // --taint-analysis
+                    /** @param list<string> $list */
+                    function f(array $list, string $needle, bool $b): void {
+                        if ($b) {
+                            $found = (string) $_GET["x"];
+                        } else {
+                            foreach ($list as $item) {
+                                if ($item === $needle) {
+                                    $found = $item;
+                                    break;
+                                }
+                            }
+                        }
+
+                        /** @psalm-suppress MixedArgument */
+                        echo $found ?? "";
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'ternaryBranchWritingTheNarrowedTypeKeepsItsTaint' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-assert-if-true non-falsy-string $s */
@@ -11971,6 +12168,40 @@ final class TaintTest extends TestCase
                     curl_setopt_array(curl_init(), [CURLOPT_COOKIEFILE => (string) $_GET["file"]]);',
                 'error_message' => 'TaintedFile',
             ],
+            'taintCallableInACurlOptionPassedByName' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt(curl_init(), value: (string) $_GET["callback"], option: CURLOPT_WRITEFUNCTION);',
+                'error_message' => 'TaintedCallable',
+            ],
+            'taintFileInACurlOptionArrayPassedByName' => [
+                'code' => '<?php // --taint-analysis
+                    curl_setopt_array(options: [CURLOPT_COOKIEFILE => (string) $_GET["file"]], handle: curl_init());',
+                'error_message' => 'TaintedFile',
+            ],
+            'taintShellInANamedArgumentOfABuiltin' => [
+                'code' => '<?php // --taint-analysis
+                    mail("a@b.c", "s", "m", additional_params: (string) $_GET["x"]);',
+                'error_message' => 'TaintedShell',
+            ],
+            'taintSqlInANamedArgumentOfABuiltinPassedFirst' => [
+                'code' => '<?php // --taint-analysis
+                    function f(mysqli $c): void {
+                        mysqli_query(query: (string) $_GET["x"], mysql: $c);
+                    }',
+                'error_message' => 'TaintedSql',
+            ],
+            'taintSqlInANamedArgumentOfABuiltinPassedAtItsParameter' => [
+                'code' => '<?php // --taint-analysis
+                    function f(mysqli $c): void {
+                        mysqli_query(mysql: $c, query: (string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedSql',
+            ],
+            'taintShellInAnUnpackedListOfABuiltin' => [
+                'code' => '<?php // --taint-analysis
+                    mail(...["a@b.c", "s", "m", "", (string) $_GET["x"]]);',
+                'error_message' => 'TaintedShell',
+            ],
             'taintFileInACurlFile' => [
                 'code' => '<?php // --taint-analysis
                     $file = new CURLFile((string) $_GET["path"]);
@@ -14101,6 +14332,44 @@ final class TaintTest extends TestCase
                     }
                     $unsafe = new MyClass();
                     echo $unsafe;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'printToStringMagic' => [
+                'code' => '<?php
+                    class MyClass {
+                        public function __toString() {
+                            return $_GET["blah"];
+                        }
+                    }
+                    $unsafe = new MyClass();
+                    print $unsafe;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'stringArgumentOfAnObjectOrArrayKeepsTheTaintsOfTheArray' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string {
+                            return "name";
+                        }
+                    }
+                    /** @param Name|array<string> $value */
+                    function f($value): void {
+                        echo mb_convert_encoding($value, "UTF-8");
+                    }
+                    f($_GET["value"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'castToStringMagicInUnion' => [
+                'code' => '<?php
+                    class MyClass {
+                        public function __toString() {
+                            return $_GET["blah"];
+                        }
+                    }
+                    function f(MyClass|int $unsafe): void {
+                        echo $unsafe;
+                    }
+                    f(new MyClass());',
                 'error_message' => 'TaintedHtml',
             ],
             'castToStringViaArgument' => [

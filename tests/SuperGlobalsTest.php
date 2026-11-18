@@ -132,6 +132,72 @@ final class SuperGlobalsTest extends TestCase
             ',
         ];
 
+        yield 'superGlobalPassedByReferenceInAFunction' => [
+            'code' => '<?php
+                function byRef(array &$a): void {}
+
+                function f(): void {
+                    byRef($_SESSION);
+                }
+            ',
+        ];
+
+        yield 'superGlobalPassedByReferenceInTheFileScope' => [
+            'code' => '<?php
+                function byRef(array &$a): void {}
+
+                byRef($_SESSION);
+            ',
+        ];
+
+        yield 'superGlobalReadThenPassedByReference' => [
+            'code' => '<?php
+                function byRef(array &$a): void {}
+
+                echo count($_SESSION);
+                byRef($_SESSION);
+            ',
+        ];
+
+        yield 'superGlobalPassedByReferenceTakesTheOutType' => [
+            'code' => '<?php
+                /** @param-out list<int> $a */
+                function byRef(array &$a): void {
+                    $a = [1];
+                }
+
+                function f(): void {
+                    byRef($_GET);
+                    $get = $_GET;
+                    /** @psalm-check-type-exact $get = list<int> */;
+                }
+            ',
+        ];
+
+        yield 'superGlobalPassedToAMethodOfAnUnknownClass' => [
+            'code' => '<?php
+                /** @psalm-suppress MixedMethodCall */
+                function f(mixed $o): void {
+                    $o->save($_SESSION);
+                    $session = $_SESSION;
+                    /** @psalm-check-type-exact $session = array<non-empty-string, mixed> */;
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'superGlobalPassedToAnArraySortFunction' => [
+            'code' => '<?php
+                function f(): void {
+                    asort($_SESSION);
+                    $session = $_SESSION;
+                    /** @psalm-check-type-exact $session = array<non-empty-string, mixed> */;
+                }
+            ',
+        ];
+
         yield 'globalHttpResponseHeaderIsNullWhenUnset' => [
             'code' => '<?php
                 function headers(): void {
@@ -166,6 +232,28 @@ final class SuperGlobalsTest extends TestCase
                 }
             ',
             'error_message' => 'PossiblyUndefinedVariable',
+        ];
+
+        yield 'superGlobalPassedByReferenceKeepsItsType' => [
+            'code' => '<?php
+                function byRef(string &$a): void {}
+
+                function f(): void {
+                    byRef($_SESSION);
+                }
+            ',
+            'error_message' => 'InvalidArgument',
+        ];
+
+        yield 'httpResponseHeaderPassedByReferenceMayNotBeSet' => [
+            'code' => '<?php
+                function byRef(array &$a): void {}
+
+                function f(): void {
+                    byRef($http_response_header);
+                }
+            ',
+            'error_message' => 'NullReference',
         ];
 
         yield 'access SESSION key after session_unset' => [

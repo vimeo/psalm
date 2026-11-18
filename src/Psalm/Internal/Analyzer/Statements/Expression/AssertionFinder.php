@@ -105,14 +105,17 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_map;
 use function array_push;
 use function assert;
@@ -173,7 +176,9 @@ final class AssertionFinder
             );
         }
 
-        if ($conditional instanceof PhpParser\Node\Expr\Assign) {
+        if ($conditional instanceof PhpParser\Node\Expr\Assign
+            || $conditional instanceof PhpParser\Node\Expr\AssignRef
+        ) {
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $conditional->var,
                 $this_class_name,
@@ -2371,7 +2376,9 @@ final class AssertionFinder
         );
 
         if ($var_name) {
-            if ($base_conditional instanceof PhpParser\Node\Expr\Assign) {
+            if ($base_conditional instanceof PhpParser\Node\Expr\Assign
+                || $base_conditional instanceof PhpParser\Node\Expr\AssignRef
+            ) {
                 $var_name = '=' . $var_name;
             }
 
@@ -3135,7 +3142,10 @@ final class AssertionFinder
             $source,
         );
 
-        if ($var_name && $base_conditional instanceof PhpParser\Node\Expr\Assign) {
+        if ($var_name
+            && ($base_conditional instanceof PhpParser\Node\Expr\Assign
+                || $base_conditional instanceof PhpParser\Node\Expr\AssignRef)
+        ) {
             $var_name = '=' . $var_name;
         }
 
@@ -4062,6 +4072,7 @@ final class AssertionFinder
             );
 
             while ($operand instanceof PhpParser\Node\Expr\Assign
+                || $operand instanceof PhpParser\Node\Expr\AssignRef
                 || $operand instanceof PhpParser\Node\Expr\PreInc
                 || $operand instanceof PhpParser\Node\Expr\PreDec
             ) {
@@ -4116,7 +4127,6 @@ final class AssertionFinder
 
     /**
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
-     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function getInarrayAssertions(
         PhpParser\Node\Expr\FuncCall $expr,
@@ -4183,11 +4193,37 @@ final class AssertionFinder
                     if ($assertions !== []) {
                         $if_types[$first_var_name] = [$assertions];
                     }
+                } elseif ($second_arg_type->isSingle() && self::isArrayTemplate($atomic_type)) {
+                    $value_of_type = new Union([new TTemplateValueOf(
+                        $atomic_type->param_name,
+                        $atomic_type->defining_class,
+                        new Union([$atomic_type]),
+                    )]);
+
+                    // the values of two templates can't be intersected
+                    if (($first_var_type = $source->node_data->getType($expr->getArgs()[0]->value))
+                        && Type::intersectUnionTypes($value_of_type, $first_var_type, $source->getCodebase()) !== null
+                    ) {
+                        $if_types[$first_var_name] = [[new InArray($value_of_type, $haystack)]];
+                    }
                 }
             }
         }
 
         return $if_types ? [$if_types] : [];
+    }
+
+    /**
+     * @psalm-assert-if-true TTemplateParam $atomic_type
+     * @psalm-pure
+     */
+    private static function isArrayTemplate(?Atomic $atomic_type): bool
+    {
+        return $atomic_type instanceof TTemplateParam
+            && array_all(
+                $atomic_type->as->getAtomicTypes(),
+                static fn(Atomic $as): bool => $as instanceof TArray || $as instanceof TKeyedArray,
+            );
     }
 
     /**
@@ -4296,6 +4332,36 @@ final class AssertionFinder
                     }
                 }
             }
+
+            $array_atomic = $second_var_type->isSingle() ? $second_var_type->getSingleAtomic() : null;
+
+            if (self::isArrayTemplate($array_atomic)) {
+                $key_of_type = new Union([new TTemplateKeyOf(
+                    $array_atomic->param_name,
+                    $array_atomic->defining_class,
+                    new Union([$array_atomic]),
+                )]);
+
+                // only an int finds no other key than itself: '0' finds the key 0, null the key ''. A string that
+                // keys of T can be is still narrowed, though '0' may have found the int key 0
+                if (Type::intersectUnionTypes($key_of_type, $first_var_type, $source->getCodebase()) !== null
+                    && array_all(
+                        $first_var_type->getAtomicTypes(),
+                        static fn(Atomic $key_atomic): bool => $key_atomic instanceof TInt
+                            || Type::intersectUnionTypes(
+                                $key_of_type,
+                                new Union([$key_atomic]),
+                                $source->getCodebase(),
+                            ) !== null,
+                    )
+                ) {
+                    $template_key_var_name = $first_var_name;
+                    $template_key_assertion = new InArray(
+                        $key_of_type,
+                        self::getOperandId($expr->getArgs()[1]->value, $this_class_name, $source),
+                    );
+                }
+            }
         }
 
         if ($literal_assertions && $first_var_name !== null && $safe_to_track_literals) {
@@ -4378,6 +4444,10 @@ final class AssertionFinder
                     $if_types[$array_root . '[' . $first_var_name . ']'] = [[new ArrayKeyExists()]];
                 }
             }
+        }
+
+        if (isset($template_key_var_name, $template_key_assertion)) {
+            $if_types[$template_key_var_name] = [[$template_key_assertion]];
         }
 
         return $if_types ? [$if_types] : [];
