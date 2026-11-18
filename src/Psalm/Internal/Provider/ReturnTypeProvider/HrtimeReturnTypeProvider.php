@@ -30,6 +30,11 @@ final class HrtimeReturnTypeProvider implements FunctionReturnTypeProviderInterf
     #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
+        // hrtime() was added in PHP 7.3
+        if ($event->getStatementsSource()->getCodebase()->analysis_php_version_id < 7_03_00) {
+            return null;
+        }
+
         $keyed_array = TKeyedArray::make([
             Type::getInt(),
             Type::getInt(),

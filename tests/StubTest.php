@@ -2543,36 +2543,4 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->assertFalse($stub_defined->user_defined);
         $this->assertTrue($stub_defined->stubbed);
     }
-
-    public function testStubOfBuiltinFunctionTakesPrecedenceOverBuiltinReturnTypeLogic(): void
-    {
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__),
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="1"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-
-                    <stubs>
-                        <file name="tests/fixtures/stubs/stubbed_builtin_function.phpstub" />
-                    </stubs>
-                </psalm>',
-            ),
-        );
-
-        $file_path = (string) getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                $a = mb_strtolower("ABC");
-                /** @psalm-check-type-exact $a = "stubbed" */',
-        );
-
-        $this->analyzeFile($file_path, new Context());
-    }
 }

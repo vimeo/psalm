@@ -84,30 +84,9 @@ final class FunctionReturnTypeProvider
      */
     private static array $handlers = [];
 
-    private const CALLMAP_PROVIDERS = [
-        CountReturnTypeProvider::class,
-        FgetcsvReturnTypeProvider::class,
-        GetCalledClassReturnTypeProvider::class,
-        GetParentClassReturnTypeProvider::class,
-        HrtimeReturnTypeProvider::class,
-        MbStrtolowerReturnTypeProvider::class,
-    ];
-
-    /**
-     * @var array<lowercase-string, class-string<FunctionReturnTypeProviderInterface>>
-     */
-    private static array $callmap_providers = [];
-
     public function __construct()
     {
         self::$handlers = [];
-        self::$callmap_providers = [];
-
-        foreach (self::CALLMAP_PROVIDERS as $class) {
-            foreach ($class::getFunctionIds() as $function_id) {
-                self::$callmap_providers[$function_id] = $class;
-            }
-        }
 
         $this->registerClass(ArrayChunkReturnTypeProvider::class);
         $this->registerClass(ArrayColumnReturnTypeProvider::class);
@@ -158,33 +137,12 @@ final class FunctionReturnTypeProvider
         $this->registerClass(DateReturnTypeProvider::class);
         $this->registerClass(PowReturnTypeProvider::class);
         $this->registerClass(SprintfReturnTypeProvider::class);
-    }
-
-    /**
-     * Refines the callmap return type of an unstubbed builtin once every other handler returned null,
-     * so that plugins and stubs keep precedence.
-     *
-     * @param  non-empty-string $function_id
-     */
-    public function getCallMapReturnType(
-        StatementsSource $statements_source,
-        string $function_id,
-        PhpParser\Node\Expr\FuncCall $stmt,
-        Context $context,
-        CodeLocation $code_location,
-    ): ?Union {
-        $provider = self::$callmap_providers[strtolower($function_id)] ?? null;
-        if ($provider === null) {
-            return null;
-        }
-
-        return $provider::getFunctionReturnType(new FunctionReturnTypeProviderEvent(
-            $statements_source,
-            $function_id,
-            $stmt,
-            $context,
-            $code_location,
-        ));
+        $this->registerClass(CountReturnTypeProvider::class);
+        $this->registerClass(FgetcsvReturnTypeProvider::class);
+        $this->registerClass(GetCalledClassReturnTypeProvider::class);
+        $this->registerClass(GetParentClassReturnTypeProvider::class);
+        $this->registerClass(HrtimeReturnTypeProvider::class);
+        $this->registerClass(MbStrtolowerReturnTypeProvider::class);
     }
 
     /**
