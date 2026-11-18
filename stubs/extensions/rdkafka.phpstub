@@ -801,7 +801,7 @@ namespace RdKafka {
         public $timestamp;
 
         /**
-         * @var array|null
+         * @var array<string, string>|null
          */
         public $headers;
 

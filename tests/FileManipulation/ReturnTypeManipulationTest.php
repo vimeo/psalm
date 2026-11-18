@@ -118,6 +118,43 @@ final class ReturnTypeManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['InvalidFalsableReturnType'],
                 'safe_types' => true,
             ],
+            'fixInvalidFalsableReturnTypeOfAUnionReturnType80' => [
+                'input' => '<?php
+                    class Foo {}
+                    class Bar {}
+                    function foo(): Foo|Bar {
+                        return rand(0, 1) ? new Foo() : false;
+                    }',
+                'output' => '<?php
+                    class Foo {}
+                    class Bar {}
+                    function foo(): Foo|false {
+                        return rand(0, 1) ? new Foo() : false;
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['InvalidFalsableReturnType'],
+                'safe_types' => true,
+            ],
+            'fixInvalidFalsableReturnTypeOfAUnionReturnTypeThatIsNotPhpCompatible74' => [
+                'input' => '<?php
+                    class Foo {}
+                    class Bar {}
+                    function foo(): Foo|Bar {
+                        return rand(0, 1) ? new Foo() : false;
+                    }',
+                'output' => '<?php
+                    class Foo {}
+                    class Bar {}
+                    /**
+                     * @return Foo|false
+                     */
+                    function foo() {
+                        return rand(0, 1) ? new Foo() : false;
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['InvalidFalsableReturnType'],
+                'safe_types' => true,
+            ],
             'fixInvalidIntReturnTypeThatIsNotPhpCompatible70' => [
                 'input' => '<?php
                     function foo(): string {
@@ -280,6 +317,36 @@ final class ReturnTypeManipulationTest extends FileManipulationTestCase
                     }',
                 'php_version' => '7.1',
                 'issues_to_fix' => ['LessSpecificReturnType'],
+                'safe_types' => false,
+            ],
+            'fixLessSpecificReturnTypeKeepsOneLineDocblock' => [
+                'input' => '<?php
+                    /** @param list<int> $items */
+                    function first(array $items): ?int {
+                        return $items[0];
+                    }',
+                'output' => '<?php
+                    /** @param list<int> $items */
+                    function first(array $items): int {
+                        return $items[0];
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['LessSpecificReturnType'],
+                'safe_types' => false,
+            ],
+            'addMissingReturnTypeKeepsOneLineDocblock' => [
+                'input' => '<?php
+                    /** @param list<int> $items */
+                    function first(array $items) {
+                        return $items[0];
+                    }',
+                'output' => '<?php
+                    /** @param list<int> $items */
+                    function first(array $items): int {
+                        return $items[0];
+                    }',
+                'php_version' => '8.0',
+                'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => false,
             ],
             'fixLessSpecificUnionReturnType' => [

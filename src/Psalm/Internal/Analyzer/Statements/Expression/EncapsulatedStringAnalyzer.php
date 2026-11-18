@@ -14,11 +14,15 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
@@ -39,6 +43,13 @@ final class EncapsulatedStringAnalyzer
 
         $non_empty = false;
         $has_never_part = false;
+
+        // only "" and "0" are falsy: a part that is neither can't leave the string one of them, and neither
+        // can two parts that are not empty
+        $non_falsy = false;
+        $non_empty_parts = 0;
+        $non_falsy_string_type = Type::getNonFalsyString();
+        $non_empty_string_type = Type::getNonEmptyString();
 
         $all_literals = true;
 
@@ -67,6 +78,9 @@ final class EncapsulatedStringAnalyzer
                         ?? $literal_prefixes;
                 }
                 $non_empty = $non_empty || $part->value !== "";
+                $non_falsy = $non_falsy || ($part->value !== "" && $part->value !== "0");
+                $non_empty_parts += $part->value !== "" ? 1 : 0;
+                $non_falsy = $non_falsy || $non_empty_parts > 1;
             } elseif ($part_type = $statements_analyzer->node_data->getType($part)) {
                 $casted_part_type = CastAnalyzer::castStringAttempt(
                     $statements_analyzer,
@@ -79,7 +93,18 @@ final class EncapsulatedStringAnalyzer
                     $all_literals = false;
                 }
 
-                $non_empty = $non_empty || self::isNonEmpty($casted_part_type);
+                $codebase = $statements_analyzer->getCodebase();
+                $non_falsy = $non_falsy
+                    || self::isIntWithoutZero($part_type)
+                    || UnionTypeComparator::isContainedBy($codebase, $casted_part_type, $non_falsy_string_type);
+                $non_empty_parts += UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $casted_part_type,
+                    $non_empty_string_type,
+                ) ? 1 : 0;
+                $non_falsy = $non_falsy || $non_empty_parts > 1;
+
+                $non_empty = $non_empty || $non_falsy || self::isNonEmpty($casted_part_type);
                 $has_never_part = $has_never_part || $casted_part_type->isNever();
 
                 if ($literal_string !== null) {
@@ -170,10 +195,15 @@ final class EncapsulatedStringAnalyzer
 
             $stmt_type = new Union($literal_types, ['parent_nodes' => $parent_nodes]);
         } elseif ($non_empty) {
-            $stmt_type = new Union(
-                [$all_literals ? new TNonEmptyNonspecificLiteralString() : new TNonEmptyString()],
-                ['parent_nodes' => $parent_nodes],
-            );
+            if ($all_literals) {
+                $non_empty_type = new TNonEmptyNonspecificLiteralString();
+            } elseif ($non_falsy) {
+                $non_empty_type = new TNonFalsyString();
+            } else {
+                $non_empty_type = new TNonEmptyString();
+            }
+
+            $stmt_type = new Union([$non_empty_type], ['parent_nodes' => $parent_nodes]);
         } elseif ($all_literals) {
             $stmt_type = new Union(
                 [new TNonspecificLiteralString()],
@@ -187,6 +217,26 @@ final class EncapsulatedStringAnalyzer
         }
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+        return true;
+    }
+
+    /**
+     * An int that is never 0 is never "0" as a string either
+     *
+     * @psalm-pure
+     */
+    private static function isIntWithoutZero(Union $part_type): bool
+    {
+        foreach ($part_type->getAtomicTypes() as $atomic) {
+            if (!($atomic instanceof TLiteralInt && $atomic->value !== 0)
+                && !($atomic instanceof TIntRange
+                    && (($atomic->min_bound !== null && $atomic->min_bound > 0)
+                        || ($atomic->max_bound !== null && $atomic->max_bound < 0)))
+            ) {
+                return false;
+            }
+        }
 
         return true;
     }

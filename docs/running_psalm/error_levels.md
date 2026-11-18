@@ -29,6 +29,8 @@ These issues have very low false-positive rates and indicate definite problems. 
 
  - [AbstractMethodCall](issues/AbstractMethodCall.md)
  - [CheckType](issues/CheckType.md)
+ - [CliOnlyCall](issues/CliOnlyCall.md)
+ - [CliOnlyInstancesUnguarded](issues/CliOnlyInstancesUnguarded.md)
  - [ComplexFunction](issues/ComplexFunction.md)
  - [ComplexMethod](issues/ComplexMethod.md)
  - [ConfigIssue](issues/ConfigIssue.md)
@@ -91,6 +93,7 @@ These issues have very low false-positive rates and indicate definite problems. 
  - [OverriddenPropertyAccess](issues/OverriddenPropertyAccess.md)
  - [ParadoxicalCondition](issues/ParadoxicalCondition.md)
  - [ParentNotFound](issues/ParentNotFound.md)
+ - [ParseError](issues/ParseError.md)
  - [TooFewArguments](issues/TooFewArguments.md)
  - [UndefinedAttributeClass](issues/UndefinedAttributeClass.md)
  - [UndefinedClass](issues/UndefinedClass.md)
@@ -183,12 +186,17 @@ These issues become info (non-blocking) at level 3 and higher.
  - [UnsafeGenericInstantiation](issues/UnsafeGenericInstantiation.md)
  - [UnsafeInstantiation](issues/UnsafeInstantiation.md)
  - [UnsupportedReferenceUsage](issues/UnsupportedReferenceUsage.md)
+ - [WeakHash](issues/WeakHash.md)
+ - [WeakRandom](issues/WeakRandom.md)
 
 ## Errors at level 3 and below
 
 These issues become info (non-blocking) at level 4 and higher.
 
  - [ArgumentTypeCoercion](issues/ArgumentTypeCoercion.md)
+ - [CallableByReferenceMismatch](issues/CallableByReferenceMismatch.md)
+ - [ImplicitFloatToIntCast](issues/ImplicitFloatToIntCast.md)
+ - [InsecureCookie](issues/InsecureCookie.md)
  - [LessSpecificReturnStatement](issues/LessSpecificReturnStatement.md)
  - [MoreSpecificReturnType](issues/MoreSpecificReturnType.md)
  - [NonInvariantDocblockPropertyType](issues/NonInvariantDocblockPropertyType.md)
@@ -278,6 +286,8 @@ These issues become info (non-blocking) at level 6 and higher.
  - [NullableReturnStatement](issues/NullableReturnStatement.md)
  - [UndefinedInterfaceMethod](issues/UndefinedInterfaceMethod.md)
  - [UndefinedThisPropertyAssignment](issues/UndefinedThisPropertyAssignment.md)
+ - [WeakCipher](issues/WeakCipher.md)
+ - [XmlExternalEntity](issues/XmlExternalEntity.md)
 
 ## Errors at level 6 and below
 

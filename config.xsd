@@ -33,6 +33,7 @@
         <xs:attribute name="maxStringLength" type="xs:string" />
         <xs:attribute name="maxShapedArraySize" type="xs:integer" default="100" />
         <xs:attribute name="longScanWarning" type="xs:float" default="10.0" />
+        <xs:attribute name="minTypeCoverage" type="TypeCoveragePercentageType" />
         <xs:attribute name="name" type="xs:string" />
         <xs:attribute name="phpVersion" type="xs:string" />
         <xs:attribute name="serializer" type="SerializerType" />
@@ -47,9 +48,12 @@
         <xs:attribute name="checkForThrowsInGlobalScope" type="xs:boolean" default="false" />
         <xs:attribute name="ensureArrayIntOffsetsExist" type="xs:boolean" default="false" />
         <xs:attribute name="ensureArrayStringOffsetsExist" type="xs:boolean" default="false" />
+        <xs:attribute name="strictOptionalCallableParams" type="xs:boolean" default="false" />
         <xs:attribute name="ensureOverrideAttribute" type="xs:boolean" default="true" />
         <xs:attribute name="suggestPurityAnnotations" type="xs:boolean" default="false" />
+        <xs:attribute name="assumeGettersMutationFree" type="xs:boolean" default="true" />
         <xs:attribute name="findUnusedCode" type="xs:boolean" default="true" />
+        <xs:attribute name="markAllNonInternalCodeAsApi" type="xs:boolean" default="false" />
         <xs:attribute name="disallowLiteralKeysOnUnshapedArrays" type="xs:boolean" default="false" />
         <xs:attribute name="allFunctionsGlobal" type="xs:boolean" default="false" />
         <xs:attribute name="allConstantsGlobal" type="xs:boolean" default="false" />
@@ -251,9 +255,12 @@
             <xs:element name="AmbiguousConstantInheritance" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="ArgumentTypeCoercion" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="AssignmentToVoid" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="CallableByReferenceMismatch" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="CheckType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="CircularReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ClassMustBeFinal" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="CliOnlyCall" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="CliOnlyInstancesUnguarded" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ComplexFunction" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ComplexMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ConfigIssue" type="IssueHandlerType" minOccurs="0" />
@@ -289,6 +296,7 @@
             <xs:element name="ImplementationRequirementViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplementedParamTypeMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplementedReturnTypeMismatch" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ImplicitFloatToIntCast" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplicitToStringCast" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpureByReferenceAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImpureFunctionCall" type="IssueHandlerType" minOccurs="0" />
@@ -304,6 +312,7 @@
             <xs:element name="InaccessibleProperty" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="IncompatibleTypeParameters" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InheritorViolation" type="ClassIssueHandlerType" minOccurs="0" />
+            <xs:element name="InsecureCookie" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InterfaceInstantiation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InternalClass" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InternalMethod" type="MethodIssueHandlerType" minOccurs="0" />
@@ -402,8 +411,8 @@
             <xs:element name="MixedStringOffsetAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MoreSpecificImplementedParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MoreSpecificReturnType" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="ImmutableDependency" type="PropertyIssueHandlerType" minOccurs="0" />
-            <xs:element name="MutableDependency" type="PropertyIssueHandlerType" minOccurs="0" />
+            <xs:element name="ImmutableDependency" type="ClassIssueHandlerType" minOccurs="0" />
+            <xs:element name="MutableDependency" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="NamedArgumentNotAllowed" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="NoEnumProperties" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="NoInterfaceProperties" type="ClassIssueHandlerType" minOccurs="0" />
@@ -430,6 +439,7 @@
             <xs:element name="ParadoxicalCondition" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ParamNameMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ParentNotFound" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ParseError" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PluginIssue" type="PluginIssueHandlerType" minOccurs="0" />
             <xs:element name="PossibleRawObjectIteration" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyFalseArgument" type="ArgumentIssueHandlerType" minOccurs="0" />
@@ -571,6 +581,10 @@
             <xs:element name="UnusedPsalmSuppress" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedReturnValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedVariable" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="WeakCipher" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="WeakHash" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="WeakRandom" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="XmlExternalEntity" type="IssueHandlerType" minOccurs="0" />
         </xs:choice>
         <xs:anyAttribute processContents="skip" />
     </xs:complexType>
@@ -801,6 +815,14 @@
             <xs:enumeration value="default"/>
             <xs:enumeration value="never"/>
             <xs:enumeration value="always"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="TypeCoveragePercentageType">
+        <!-- a percentage from 0 to 100 with at most two decimals, the same pattern as for the command line option;
+             a string, so that whitespace isn't collapsed -->
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]{1,2}(\.[0-9]{1,2})?|100(\.0{1,2})?"/>
         </xs:restriction>
     </xs:simpleType>
 

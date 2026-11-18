@@ -39,11 +39,11 @@ use function count;
 use function hash;
 use function ini_set;
 use function max;
-use function md5;
 use function serialize;
+use function str_contains;
+use function str_replace;
 use function str_starts_with;
 use function strlen;
-use function strpos;
 use function unserialize;
 
 /**
@@ -126,7 +126,8 @@ final class StatementsProvider
         $config = Config::getInstance();
 
         if (!$this->parser_cache_provider
-            || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
+            || (!$config->isInProjectDirs($file_path)
+                && str_contains('/' . str_replace('\\', '/', $config->shortenFileName($file_path)), '/vendor/'))
         ) {
             // ProjectAnalyzer::getMethodMutations() asks for the same vendor parent classes over and over. Without a
             // parser cache provider every project file comes this way too, and keeping all of them is what made the
@@ -238,8 +239,7 @@ final class StatementsProvider
             $unchanged_members = array_fill_keys($unchanged_members, true);
             $unchanged_signature_members = array_fill_keys($unchanged_signature_members, true);
 
-            // do NOT change this to hash, it will fail on Windows for whatever reason
-            $file_path_hash = md5($file_path);
+            $file_path_hash = hash('xxh3', $file_path);
 
             $changed_members = array_map(
                 static function (string $key) use ($file_path_hash): string {
