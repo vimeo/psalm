@@ -24,6 +24,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
+use Psalm\Internal\Codebase\UrlHosts;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
@@ -352,7 +353,9 @@ final class FunctionCallReturnTypeFetcher
         }
 
         if (!$statements_analyzer->data_flow_graph || !$function_storage) {
-            return $stmt_type;
+            return $stmt->isFirstClassCallable()
+                ? $stmt_type
+                : UrlHosts::recordParseUrl($statements_analyzer, $stmt, $function_id, $stmt->getArgs(), $stmt_type);
         }
 
         // For a first-class callable (`foo(...)`) the value produced here is the closure
@@ -410,7 +413,8 @@ final class FunctionCallReturnTypeFetcher
             }
         }
 
-        return $stmt_type;
+        // the host of a URL, which a list of hosts can fix
+        return UrlHosts::recordParseUrl($statements_analyzer, $stmt, $function_id, $stmt->getArgs(), $stmt_type);
     }
 
     // functions whose false return stays reported with ignoreInternalFunctionFalseReturn

@@ -1524,6 +1524,18 @@ final class TaintTest extends TestCase
                     }
                     exec("gzip -" . (string) $level . " /tmp/backup.tar");',
             ],
+            'urlWhoseHostMatchesAListOfHostsRedirects' => [
+                'code' => '<?php
+                    function forward(): void {
+                        $url = trim((string) $_GET["next"]);
+                        $host = (string) parse_url($url, PHP_URL_HOST);
+                        if (!preg_match("#^(api\.example\.com|cdn\.example\.com)$#", $host)) {
+                            return;
+                        }
+                        header("Location: " . $url);
+                        fsockopen($url, 80);
+                    }',
+            ],
             'noTaintFromASpecializedPregReplaceCallbackCallbackInItsOtherCalls' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -7508,6 +7520,58 @@ final class TaintTest extends TestCase
 
                     backup($_GET["bin"]);',
                 'error_message' => 'TaintedShell',
+            ],
+            'urlAssignedAfterItsHostWasTakenIsStillTainted' => [
+                'code' => '<?php
+                    function forward(): void {
+                        $url = (string) $_GET["next"];
+                        $host = (string) parse_url($url, PHP_URL_HOST);
+                        $url = (string) $_GET["other"];
+                        if (!preg_match("#^api\.example\.com$#", $host)) {
+                            return;
+                        }
+                        fsockopen($url, 80);
+                    }',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'urlWhoseHostMatchesAPatternWithAnyCharacterIsStillTainted' => [
+                'code' => '<?php
+                    function forward(): void {
+                        $url = (string) $_GET["next"];
+                        $host = (string) parse_url($url, PHP_URL_HOST);
+                        if (!preg_match("#^api.example.com$#", $host)) {
+                            return;
+                        }
+                        fsockopen($url, 80);
+                    }',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'urlWhoseHostCanBeAnotherValueIsStillTainted' => [
+                'code' => '<?php
+                    function forward(bool $parse): void {
+                        $url = (string) $_GET["next"];
+                        $host = "api.example.com";
+                        if ($parse) {
+                            $host = (string) parse_url($url, PHP_URL_HOST);
+                        }
+                        if (!preg_match("#^api\.example\.com$#", $host)) {
+                            return;
+                        }
+                        fsockopen($url, 80);
+                    }',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'urlWhoseHostMatchesAListOfHostsCanStillReadAFile' => [
+                'code' => '<?php
+                    function forward(): void {
+                        $url = (string) $_GET["next"];
+                        $host = (string) parse_url($url, PHP_URL_HOST);
+                        if (!preg_match("#^api\.example\.com$#", $host)) {
+                            return;
+                        }
+                        echo file_get_contents($url);
+                    }',
+                'error_message' => 'TaintedFile',
             ],
             'valueThatMayNotMatchThePatternKeepsItsTaints' => [
                 'code' => '<?php
