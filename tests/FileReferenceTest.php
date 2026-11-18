@@ -400,6 +400,53 @@ final class FileReferenceTest extends TestCase
         );
     }
 
+    /**
+     * After is_callable() on an unknown value, a method no longer checks that the functions it calls exist
+     */
+    #[DataProvider('provideUsesOfAFunction')]
+    public function testFileOfAFunctionIsReferencedByAUseOfIt(string $use): void
+    {
+        $this->project_analyzer->getCodebase()->all_functions_global = true;
+
+        $files = $this->analyzeProject([
+            'functions.php' => '<?php function helper(int $i): int { return $i; }',
+            'apply.php' => '<?php
+                function apply(callable $c): void {}
+                function apply_nullable(?callable $c): void {}
+                /**
+                 * @template T
+                 * @param callable(int): T $c
+                 * @return T
+                 */
+                function apply_generic(callable $c) { return $c(1); }',
+            'use.php' => '<?php final class UsesHelper { public const CB = "helper"; ' . $use . ' }',
+        ]);
+
+        self::assertSame(
+            [$files['use.php']],
+            $this->project_analyzer->getCodebase()->file_reference_provider->getFilesReferencingFile(
+                $files['functions.php'],
+            ),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function provideUsesOfAFunction(): iterable
+    {
+        yield 'call after is_callable()' => [
+            'public function f(mixed $x): int { if (is_callable($x)) {} return helper(1); }',
+        ];
+        yield 'string for a nullable callable' => ['public function f(): void { apply_nullable("helper"); }'];
+        yield 'class constant for a callable' => ['public function f(): void { apply(self::CB); }'];
+        yield 'variable for a callable' => ['public function f(): void { $f = "helper"; apply($f); }'];
+        yield 'string for a generic callable after is_callable()' => [
+            'public function f(mixed $x): int { if (is_callable($x)) {} return apply_generic("helper"); }',
+        ];
+    }
+
     public function testAStubFunctionIsReferencedByNoFile(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
@@ -410,7 +457,6 @@ final class FileReferenceTest extends TestCase
 
         $this->analyzeProject(['caller.php' => '<?php echo stubbed_helper(1);']);
 
-        // a stub is not analysed: nothing needs to be analysed again when it changes
         self::assertSame(
             [],
             $codebase->code_use_graph->getReferencingNodes(CodeUseGraph::functionLikeNode('stubbed_helper')),

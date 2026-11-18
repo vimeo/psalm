@@ -72,7 +72,8 @@ final class Functions
 
     /**
      * @param non-empty-lowercase-string $function_id
-     * @param Context|null $context where the function is used: the analysed file then references it
+     * @param Context|null $context the context of the use: when given, the use is recorded as a reference from the
+     *                              analysed code to the function
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function getStorage(
@@ -90,7 +91,7 @@ final class Functions
 
         $codebase = $statements_analyzer->getCodebase();
 
-        // a stub is not analysed, so what references it never needs to be analysed again
+        // an edge to a stub function would be one per builtin call; a changed stub is not followed to its users
         if ($codebase->code_use_graph->record_edges
             && $storage->location
             && !$codebase->scanner->isStubFile($storage->location->file_path)
