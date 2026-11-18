@@ -1503,6 +1503,10 @@ final class ArgumentsAnalyzer
             }
         }
 
+        if ($method_id !== null && $method_id !== '') {
+            InsecureCallAnalyzer::analyze($statements_analyzer, $method_id, $args, $function_params, $code_location);
+        }
+
         if ($statements_analyzer->taint_flow_graph
             && $cased_method_id
             && !self::returnsInsteadOfOutputting($statements_analyzer, $cased_method_id, $args)
@@ -2003,7 +2007,7 @@ final class ArgumentsAnalyzer
      * @param array<int, FunctionLikeParameter> $function_params
      * @psalm-mutation-free
      */
-    private static function getArgForParam(array $args, array $function_params, string $param_name): ?PhpParser\Node\Arg
+    public static function getArgForParam(array $args, array $function_params, string $param_name): ?PhpParser\Node\Arg
     {
         foreach ($args as $arg) {
             if ($arg->name !== null && $arg->name->name === $param_name) {
