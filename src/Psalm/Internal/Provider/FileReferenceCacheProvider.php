@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
 use Psalm\Internal\Cache;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\Codebase\MutationLevelResolver;
 
@@ -32,9 +33,9 @@ final class FileReferenceCacheProvider
     /** @var Cache<array> */
     private readonly Cache $cache;
 
-    public function __construct(Config $config, string $composerLock, bool $persistent = true)
+    public function __construct(Config $config, string $composerLock, CacheMode $mode = CacheMode::Persistent)
     {
-        $this->cache = new Cache($config, 'file_reference', [$composerLock], $persistent);
+        $this->cache = new Cache($config, 'file_reference', [$composerLock], $mode);
     }
 
     public function consolidate(): void

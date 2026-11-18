@@ -25,6 +25,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ArgumentTypeCoercion;
+use Psalm\Issue\CallableByReferenceMismatch;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
@@ -161,6 +162,7 @@ final class ArrayFunctionArgumentsAnalyzer
 
         if ($method_id === 'array_push' && !$unpacked_args) {
             $node_data = $statements_analyzer->node_data;
+            $node_data->markWrittenByReference($array_arg);
             // the keys of an item pushed to are evaluated with its first value only
             $evaluated_operands = [];
 
@@ -407,9 +409,11 @@ final class ArrayFunctionArgumentsAnalyzer
                 } else {
                     $array_type = Type::getListAtomic($array_type->type_params[1]);
                 }
+            } elseif ($array_type instanceof TNonEmptyArray && !isset($args[3])) {
+                // removing elements can leave none
+                $array_type = new TArray($array_type->type_params);
             }
         }
-
         $offset_arg = $args[1]->value;
 
         if (ExpressionAnalyzer::analyze(
@@ -652,6 +656,8 @@ final class ArrayFunctionArgumentsAnalyzer
         Context $context,
         bool $is_array_shift,
     ): void {
+        $statements_analyzer->node_data->markWrittenByReference($arg->value);
+
         $var_id = ExpressionIdentifier::getExtendedVarId(
             $arg->value,
             $statements_analyzer->getFQCLN(),
@@ -775,6 +781,7 @@ final class ArrayFunctionArgumentsAnalyzer
                 $array_type = TypeCombiner::combine($array_atomic_types, $statements_analyzer->getCodebase());
                 $context->removeDescendents($var_id, $array_type);
                 $context->vars_in_scope[$var_id] = $array_type;
+                $context->possibly_assigned_var_ids[$var_id] = true;
             }
         }
     }
@@ -969,6 +976,20 @@ final class ArrayFunctionArgumentsAnalyzer
         foreach ($closure_params as $i => $param) {
             if (!$param->is_optional && !$param->is_variadic) {
                 $required_param_count = $i + 1;
+            }
+
+            // array_map() has no callable type to compare the callback with, as the other functions do: it calls the
+            // callback with values
+            if ($param->by_ref && $i < $max_closure_param_count && $method_id === 'array_map') {
+                IssueBuffer::maybeAdd(
+                    new CallableByReferenceMismatch(
+                        'The callback of ' . $method_id . ' takes parameter ' . ($i + 1) . ' by reference, but it is'
+                            . ' called with a value',
+                        new CodeLocation($statements_analyzer->getSource(), $closure_arg->value),
+                        $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
         }
 
