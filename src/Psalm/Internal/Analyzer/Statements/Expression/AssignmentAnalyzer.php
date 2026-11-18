@@ -639,6 +639,10 @@ final class AssignmentAnalyzer
             $assign_value_type = $assign_value_type->setByRef(false);
         }
 
+        if ($extended_var_id !== null) {
+            $context->forgetMethodResultsDependingOn($extended_var_id);
+        }
+
         if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
             if ($context->vars_in_scope[$extended_var_id]->by_ref
                 && !isset($context->captured_by_ref[$extended_var_id])
@@ -2061,6 +2065,7 @@ final class AssignmentAnalyzer
                     $by_ref_out_type,
                     $statements_analyzer,
                 );
+                $context->forgetMethodResultsDependingOn($property_var_id);
             }
 
             return;

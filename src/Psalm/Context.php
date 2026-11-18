@@ -51,8 +51,10 @@ use function preg_quote;
 use function preg_replace;
 use function serialize;
 use function str_contains;
+use function str_ends_with;
 use function str_starts_with;
 use function strcspn;
+use function strlen;
 use function strpos;
 use function strrpos;
 use function strtolower;
@@ -1298,6 +1300,7 @@ final class Context
         $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_analyzer);
         $this->parent_remove_vars[$remove_var_id] = ++self::$clause_removal_count;
 
+
         foreach ($this->getVarsBoundTo($remove_var_id) as $bound_var_id) {
             $this->clauses = self::filterClauses($bound_var_id, $this->clauses, $new_type, $statements_analyzer);
             $this->parent_remove_vars[$bound_var_id] = ++self::$clause_removal_count;
@@ -1710,6 +1713,56 @@ final class Context
             if (!$abandon_clause) {
                 $clauses_to_keep[] = $clause;
             }
+        }
+
+        $this->clauses = $clauses_to_keep;
+    }
+
+    /**
+     * Forgets the results of the methods of the objects holding a property (`$a->b->c` is held by `$a` and `$a->b`)
+     * that are memoized, which can depend on what the property holds, once it is written
+     */
+    public function forgetMethodResultsDependingOn(string $var_id): void
+    {
+        if (str_ends_with($var_id, ')')) {
+            return;
+        }
+
+        $offset = 0;
+        while (($arrow = strpos($var_id, '->', $offset)) !== false) {
+            $this->forgetMemoizedMethodResults(substr($var_id, 0, $arrow));
+            $offset = $arrow + 2;
+        }
+    }
+
+    /**
+     * Forgets the memoized results of the methods of the object (`$object->method()`)
+     */
+    private function forgetMemoizedMethodResults(string $object_id): void
+    {
+        $prefix = $object_id . '->';
+        $is_method_result = static fn(string $var_id): bool => str_starts_with($var_id, $prefix)
+            && preg_match('/^[^\[\-]*\(\)/', substr($var_id, strlen($prefix))) === 1;
+
+        foreach (array_keys($this->vars_in_scope) as $var_id) {
+            if ($is_method_result($var_id)) {
+                $this->forgetPropertyBoundByReference($var_id, true);
+                // forgotten, not unset: Context::update() tells the two apart
+                $this->vars_possibly_in_scope[$var_id] = true;
+                $this->parent_remove_vars[$var_id] = ++self::$clause_removal_count;
+            }
+        }
+
+        $clauses_to_keep = [];
+        foreach ($this->clauses as $clause) {
+            foreach ($clause->possibilities as $key => $_) {
+                if ($is_method_result($key)) {
+                    $this->parent_remove_vars[$key] = ++self::$clause_removal_count;
+                    continue 2;
+                }
+            }
+
+            $clauses_to_keep[] = $clause;
         }
 
         $this->clauses = $clauses_to_keep;
