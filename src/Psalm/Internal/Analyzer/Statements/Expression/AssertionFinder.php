@@ -86,13 +86,13 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TEnumCase;
-use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
@@ -3387,7 +3387,7 @@ final class AssertionFinder
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
-            && !ExpressionIdentifier::getExtendedVarId($base_conditional, $this_class_name, $source)
+            && ExpressionIdentifier::getExtendedVarId($base_conditional, $this_class_name, $source) === null
             && self::canBeFalsyButNotFalse($base_conditional, $source)
         ) {
             // `preg_match() === false` is also false when it found no match
