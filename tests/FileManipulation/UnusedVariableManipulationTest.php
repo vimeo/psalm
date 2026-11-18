@@ -457,7 +457,7 @@ final class UnusedVariableManipulationTest extends FileManipulationTestCase
                 'safe_types' => true,
             ],
 
-            'SKIPPED-removeUnusedVarAssignByRefToSubsequentlyUsedVariable' => [
+            'SKIPPED-removeUnusedVarAssignByRefToSubsequentlyUsedVariable' => [ // #13916
                 'input' => '<?php
                     function foo() : void {
                         $a = 5;
