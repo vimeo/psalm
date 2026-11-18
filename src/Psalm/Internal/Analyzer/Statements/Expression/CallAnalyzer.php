@@ -78,7 +78,9 @@ use function spl_object_id;
 use function str_contains;
 use function str_replace;
 use function str_starts_with;
+use function strrpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -708,7 +710,9 @@ abstract class CallAnalyzer
      */
     public static function getUnqualifiedFunctionName(string $function_id): string
     {
-        return (string) preg_replace('/.*\\\\/', '', $function_id);
+        $separator_position = strrpos($function_id, '\\');
+
+        return $separator_position === false ? $function_id : substr($function_id, $separator_position + 1);
     }
 
     /**
@@ -724,6 +728,10 @@ abstract class CallAnalyzer
         string $function_id,
     ): void {
         if ($function_storage->cased_name === null) {
+            return;
+        }
+
+        if ($function_storage->cased_name === $written_name) {
             return;
         }
 
