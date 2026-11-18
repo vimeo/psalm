@@ -7,6 +7,8 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\AtomicParts;
+use Psalm\Internal\Type\StringRefinement;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\Capabilities;
@@ -255,6 +257,13 @@ final class AtomicTypeComparator
 
             if ($container_type_part instanceof TTemplateParam
                 && ($container_type_part->as->isNullable() || $container_type_part->as->isMixed())
+            ) {
+                return true;
+            }
+
+            if ($container_type_part instanceof TTemplateValueOf
+                && ($value_type = TValueOf::getValueType($container_type_part->as, $codebase))
+                && ($value_type->isNullable() || $value_type->isMixed())
             ) {
                 return true;
             }
@@ -616,7 +625,15 @@ final class AtomicTypeComparator
                 array_values($container_type_part->else_type->getAtomicTypes()),
             );
 
+            // a match through a __toString() cast only counts if no alternative matches without one
+            $matched_with_to_string_cast = false;
+            $tried_to_string_cast = false;
+
             foreach ($atomic_types as $container_as_type_part) {
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->to_string_cast = null;
+                }
+
                 if (self::isContainedBy(
                     $codebase,
                     $input_type_part,
@@ -625,11 +642,21 @@ final class AtomicTypeComparator
                     $allow_float_int_equality,
                     $atomic_comparison_result,
                 )) {
-                    return true;
+                    if (!$atomic_comparison_result?->to_string_cast) {
+                        return true;
+                    }
+
+                    $matched_with_to_string_cast = true;
                 }
+
+                $tried_to_string_cast = $tried_to_string_cast || $atomic_comparison_result?->to_string_cast;
             }
 
-            return false;
+            if ($tried_to_string_cast && $atomic_comparison_result) {
+                $atomic_comparison_result->to_string_cast = true;
+            }
+
+            return $matched_with_to_string_cast;
         }
 
         if ($input_type_part instanceof TTemplateParam) {
@@ -939,7 +966,7 @@ final class AtomicTypeComparator
     }
 
     /**
-     * @psalm-assert-if-true TKeyedArray $array
+     * @psalm-assert-if-true =TKeyedArray $array
      * @psalm-pure
      */
     public static function isLegacyTListLike(Atomic $array): bool
@@ -953,7 +980,7 @@ final class AtomicTypeComparator
         ;
     }
     /**
-     * @psalm-assert-if-true TKeyedArray $array
+     * @psalm-assert-if-true =TKeyedArray $array
      * @psalm-pure
      */
     public static function isLegacyTNonEmptyListLike(Atomic $array): bool
@@ -1065,6 +1092,17 @@ final class AtomicTypeComparator
             return true;
         }
 
+        // the name of a function is never numeric
+        if (($type1_part instanceof TCallableString
+                && $type2_part instanceof TString
+                && (StringRefinement::getImplied($type2_part) & StringRefinement::NUMERIC) !== 0)
+            || ($type2_part instanceof TCallableString
+                && $type1_part instanceof TString
+                && (StringRefinement::getImplied($type1_part) & StringRefinement::NUMERIC) !== 0)
+        ) {
+            return false;
+        }
+
         if ($type1_part instanceof TIterable && $type2_part instanceof TNamedObject) {
             $type1_part = self::getTraversableHalf($codebase, $type1_part, $type2_part, false) ?? $type1_part;
         } elseif ($type2_part instanceof TIterable && $type1_part instanceof TNamedObject) {
@@ -1168,7 +1206,7 @@ final class AtomicTypeComparator
         $first_comparison_result = new TypeComparisonResult();
         $second_comparison_result = new TypeComparisonResult();
 
-        return (self::isContainedBy(
+        if ((self::isContainedBy(
             $codebase,
             $type1_part,
             $type2_part,
@@ -1191,7 +1229,27 @@ final class AtomicTypeComparator
         ) || ($type1_part instanceof TKeyedArray
             && $type2_part instanceof TKeyedArray
             && self::canKeyedArraysBeIdentical($codebase, $type1_part, $type2_part)
-        );
+        )) {
+            return true;
+        }
+
+        // e.g. callable and string can both be a callable-string
+        $type1_parts = AtomicParts::split($type1_part, $type2_part, $codebase);
+        $type2_parts = $type1_parts === null ? AtomicParts::split($type2_part, $type1_part, $codebase) : null;
+
+        if ($type1_parts === null && $type2_parts === null) {
+            return false;
+        }
+
+        foreach ($type1_parts ?? [$type1_part] as $type1_part_part) {
+            foreach ($type2_parts ?? [$type2_part] as $type2_part_part) {
+                if (self::canBeIdentical($codebase, $type1_part_part, $type2_part_part, $allow_interface_equality)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

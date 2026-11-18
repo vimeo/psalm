@@ -7,6 +7,7 @@ namespace Psalm\Tests\FileUpdates;
 use FilesystemIterator;
 use Override;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
@@ -47,10 +48,10 @@ final class CachedStorageTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserCacheProvider($config, '', false),
-            new FileStorageCacheProvider($config, '', false),
-            new ClassLikeStorageCacheProvider($config, '', false),
-            new FileReferenceCacheProvider($config, '', false),
+            new ParserCacheProvider($config, '', CacheMode::Memory),
+            new FileStorageCacheProvider($config, '', CacheMode::Memory),
+            new ClassLikeStorageCacheProvider($config, '', CacheMode::Memory),
+            new FileReferenceCacheProvider($config, '', CacheMode::Memory),
             new ProjectCacheProvider(),
         );
 
@@ -287,10 +288,10 @@ final class CachedStorageTest extends TestCase
 
         $project_analyzer = new ProjectAnalyzer($config, new Providers(
             $this->file_provider,
-            new ParserCacheProvider($config, '', false),
+            new ParserCacheProvider($config, '', CacheMode::Memory),
             new FileStorageCacheProvider($config, ''),
             new ClassLikeStorageCacheProvider($config, ''),
-            new FileReferenceCacheProvider($config, '', false),
+            new FileReferenceCacheProvider($config, '', CacheMode::Memory),
             new ProjectCacheProvider(),
         ));
         $project_analyzer->setPhpVersion('7.3', 'tests');

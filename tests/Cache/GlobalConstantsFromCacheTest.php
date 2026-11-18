@@ -7,6 +7,7 @@ namespace Psalm\Tests\Cache;
 use Override;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -211,10 +212,10 @@ final class GlobalConstantsFromCacheTest extends TestCase
 
         $providers = new Providers(
             $file_provider,
-            new ParserCacheProvider($config, '', false),
-            new FileStorageCacheProvider($config, '', false),
-            new ClassLikeStorageCacheProvider($config, '', false),
-            new FileReferenceCacheProvider($config, '', false),
+            new ParserCacheProvider($config, '', CacheMode::Memory),
+            new FileStorageCacheProvider($config, '', CacheMode::Memory),
+            new ClassLikeStorageCacheProvider($config, '', CacheMode::Memory),
+            new FileReferenceCacheProvider($config, '', CacheMode::Memory),
             new ProjectCacheProvider(),
         );
 
