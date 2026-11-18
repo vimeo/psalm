@@ -6580,6 +6580,28 @@ final class ConditionalTest extends TestCase
                     '$b' => 'A',
                 ],
             ],
+            'andWhoseBothSidesAssignTheSameVariableKnowsOnlyTheRightValue' => [
+                'code' => '<?php
+                    interface A {}
+                    final class C {}
+
+                    function f1(): ?object {
+                        return null;
+                    }
+
+                    function f2(): ?C {
+                        return null;
+                    }
+
+                    function test(): void {
+                        if (($x = f1()) instanceof A && ($x = f2())) {
+                            /** @psalm-check-type-exact $x = C */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 

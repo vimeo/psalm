@@ -97,9 +97,10 @@ final class FormulaGenerator
 
             // what the left one tested of the previous value of a variable the right one assigns says nothing
             // of the value that follows the assignment
-            $right_assigned_ids = array_diff_key(
-                self::getAssignedTargetIds($conditional->right, $this_class_name, self::getNodeData($source)),
-                self::getAssignedTargetIds($conditional->left, $this_class_name, self::getNodeData($source)),
+            $right_assigned_ids = self::getAssignedTargetIds(
+                $conditional->right,
+                $this_class_name,
+                self::getNodeData($source),
             );
 
             if ($right_assigned_ids) {
@@ -1209,7 +1210,9 @@ final class FormulaGenerator
 
             $key = ArrayAnalyzer::getLiteralArrayKeyInt($target->dim->value);
 
-            return $array_id . '[' . ($key === false ? '\'' . $target->dim->value . '\'' : $key) . ']';
+            return $array_id . '[' . (
+                $key === false ? ExpressionIdentifier::quoteOffset((string) $target->dim->value) : $key
+            ) . ']';
         }
 
         return null;
