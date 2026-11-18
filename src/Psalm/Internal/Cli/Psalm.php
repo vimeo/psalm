@@ -27,7 +27,6 @@ use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\FileStorageCacheProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
-use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\IssueBuffer;
@@ -66,12 +65,10 @@ use function gc_disable;
 use function getcwd;
 use function getenv;
 use function implode;
-use function in_array;
 use function ini_get;
 use function is_array;
 use function is_dir;
 use function is_int;
-use function is_numeric;
 use function is_string;
 use function json_encode;
 use function max;
@@ -144,6 +141,7 @@ final class Psalm
         'init',
         'init-ci',
         'memory-limit:',
+        'min-type-coverage:',
         'monochrome',
         'no-diff',
         'force-jit',
@@ -217,6 +215,8 @@ final class Psalm
 
         CliUtils::rejectUnrecognisedOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
 
+        $min_type_coverage = self::parseMinTypeCoverageOption($options);
+
         CliUtils::setMemoryLimit($options);
 
         self::syncShortOptions($options);
@@ -265,7 +265,7 @@ final class Psalm
                 ),
         );
 
-        $run_taint_analysis = self::shouldRunTaintAnalysis($options);
+        $run_taint_analysis = ProjectBootstrap::shouldRunTaintAnalysis($options);
 
         if (array_key_exists('v', $options)) {
             echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
@@ -288,6 +288,8 @@ final class Psalm
         if (isset($options['no-cache'])) {
             $config->cache_directory = null;
         }
+
+        $config->min_type_coverage = $min_type_coverage ?? $config->min_type_coverage;
 
         $config->setIncludeCollector($include_collector);
 
@@ -323,7 +325,25 @@ final class Psalm
             }
         }
 
+        // creating or updating the baseline is maintenance, so it doesn't check the type coverage
+        if (isset($options['set-baseline']) || isset($options['update-baseline'])) {
+            if ($min_type_coverage !== null) {
+                fwrite(
+                    STDERR,
+                    'Cannot check the minimum type coverage when creating or updating the baseline' . PHP_EOL,
+                );
+                exit(1);
+            }
+
+            $config->min_type_coverage = null;
+        }
+
         $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? null);
+
+        if ($paths_to_check !== null && isset($options['min-type-coverage'])) {
+            fwrite(STDERR, 'Cannot check the minimum type coverage when checking specific files' . PHP_EOL);
+            exit(1);
+        }
 
         if ($config->resolve_from_config_file) {
             $current_dir = $config->base_dir;
@@ -347,10 +367,6 @@ final class Psalm
 
         $is_diff = false; // self::initIsDiff($options);
 
-        $find_unused_code = self::shouldFindUnusedCode($options, $config);
-
-        $find_unused_variables = isset($options['find-unused-variables']);
-
         $find_references_to = isset($options['find-references-to']) && is_string($options['find-references-to'])
             ? $options['find-references-to']
             : null;
@@ -369,7 +385,7 @@ final class Psalm
             self::clearGlobalCache($config);
         }
 
-        $providers = self::initProviders($options, $config, $current_dir);
+        $providers = ProjectBootstrap::initProviders($options, $config, $current_dir);
 
         $stdout_report_options = self::initStdoutReportOptions($options, $show_info, $output_format, $in_ci);
 
@@ -379,7 +395,8 @@ final class Psalm
             $report_file_paths = [$report_file_paths];
         }
 
-        $project_analyzer = new ProjectAnalyzer(
+        $project_analyzer = ProjectBootstrap::createProjectAnalyzer(
+            $options,
             $config,
             $providers,
             $stdout_report_options,
@@ -392,29 +409,15 @@ final class Psalm
             $threads,
             $scanThreads,
             $progress,
-        );
-
-        CliUtils::initPhpVersion($options, $config, $project_analyzer);
-
-        $start_time = microtime(true);
-
-        self::configureProjectAnalyzer(
-            $options,
-            $config,
-            $project_analyzer,
+            $plugins,
             $find_references_to,
-            $find_unused_code,
-            $find_unused_variables,
             $run_taint_analysis,
         );
 
+        $start_time = microtime(true);
+
         if ($config->run_taint_analysis || $run_taint_analysis) {
             $is_diff = false;
-        }
-
-        /** @var string $plugin_path */
-        foreach ($plugins as $plugin_path) {
-            $config->addPluginPath($plugin_path);
         }
 
         // Prime cache
@@ -510,6 +513,31 @@ final class Psalm
         }
 
         fwrite(STDERR, '--' . $name . ' expects a positive integer or "auto"' . PHP_EOL);
+        exit(1);
+    }
+
+    /**
+     * @return float|null null if the option isn't given
+     */
+    private static function parseMinTypeCoverageOption(array $options): ?float
+    {
+        if (!isset($options['min-type-coverage'])) {
+            return null;
+        }
+
+        if (is_array($options['min-type-coverage'])) {
+            fwrite(STDERR, 'Only one --min-type-coverage can be given' . PHP_EOL);
+            exit(1);
+        }
+
+        // the coverage is reported with two decimals; the same pattern as for minTypeCoverage in config.xsd
+        if (is_string($options['min-type-coverage'])
+            && preg_match('/^([0-9]{1,2}(\.[0-9]{1,2})?|100(\.0{1,2})?)\z/', $options['min-type-coverage'])
+        ) {
+            return (float) $options['min-type-coverage'];
+        }
+
+        fwrite(STDERR, '--min-type-coverage expects a percentage from 0 to 100 with at most two decimals' . PHP_EOL);
         exit(1);
     }
 
@@ -655,39 +683,6 @@ final class Psalm
             . PHP_EOL;
     }
 
-    /** @param list<ClassLoader> $autoloaders */
-    private static function loadConfig(
-        ?string $path_to_config,
-        string $current_dir,
-        string $output_format,
-        array $autoloaders,
-        bool $run_taint_analysis,
-        array $options,
-    ): Config {
-        $config = CliUtils::initializeConfig(
-            $path_to_config,
-            $current_dir,
-            $output_format,
-            $autoloaders,
-            $run_taint_analysis,
-        );
-
-        if (isset($options['error-level'])
-            && is_numeric($options['error-level'])
-        ) {
-            $config_level = (int) $options['error-level'];
-
-            if (!in_array($config_level, [1, 2, 3, 4, 5, 6, 7, 8], true)) {
-                throw new ConfigException(
-                    'Invalid error level ' . $config_level,
-                );
-            }
-
-            $config->level = $config_level;
-        }
-        return $config;
-    }
-
     private static function initProgress(array $options, Config $config, bool $in_ci): Progress
     {
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
@@ -719,33 +714,6 @@ final class Psalm
             }
         }
         return $progress;
-    }
-
-    private static function initProviders(array $options, Config $config, string $current_dir): Providers
-    {
-        if ($config->cache_directory === null || isset($options['i'])) {
-            $providers = new Providers(
-                new FileProvider,
-                new ParserCacheProvider($config, Composer::getLockFile($current_dir), false),
-                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), false),
-                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), false),
-                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), false),
-            );
-        } else {
-            $no_reflection_cache = isset($options['no-reflection-cache']);
-            $no_file_cache = isset($options['no-file-cache']);
-            $no_reference_cache = isset($options['no-reference-cache']);
-
-            $providers = new Providers(
-                new FileProvider,
-                new ParserCacheProvider($config, Composer::getLockFile($current_dir), !$no_file_cache),
-                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), !$no_reflection_cache),
-                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), !$no_reflection_cache),
-                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), !$no_reference_cache),
-                new ProjectCacheProvider(),
-            );
-        }
-        return $providers;
     }
 
     /**
@@ -1215,7 +1183,7 @@ final class Psalm
             $config = Config::getInstance();
             $config->setComposerClassLoader($autoloaders);
         } else {
-            $config = self::loadConfig(
+            $config = ProjectBootstrap::loadConfig(
                 $path_to_config,
                 $current_dir,
                 $output_format,
@@ -1270,13 +1238,9 @@ final class Psalm
 
         if (!$issue_baseline && $baseline_file_path && !isset($options['ignore-baseline'])) {
             try {
-                $issue_baseline = ErrorBaseline::read(
-                    new FileProvider,
-                    $baseline_file_path,
-                );
-            } catch (ConfigException $exception) {
-                fwrite(STDERR, 'Could not read the baseline: ' . $exception->getMessage()
-                    . '. Create it with --set-baseline=' . $baseline_file_path . PHP_EOL);
+                $issue_baseline = ProjectBootstrap::readBaselineFile($baseline_file_path);
+            } catch (ProjectBootstrapException $exception) {
+                fwrite(STDERR, $exception->getMessage() . PHP_EOL);
                 exit(1);
             }
         }
@@ -1309,92 +1273,6 @@ final class Psalm
                     $flow_graph->summarizeEdges(),
                 )) .
                 "\n}\n");
-        }
-    }
-
-    /**
-     * @return false|'always'|'auto'
-     * @psalm-mutation-free
-     */
-    private static function shouldFindUnusedCode(array $options, Config $config): bool|string
-    {
-        $find_unused_code = false;
-        if (isset($options['find-dead-code'])) {
-            $options['find-unused-code'] = $options['find-dead-code'] === 'always' ? 'always' : 'auto';
-        }
-
-        if (isset($options['find-unused-code'])) {
-            if ($options['find-unused-code'] === 'always') {
-                $find_unused_code = 'always';
-            } else {
-                $find_unused_code = 'auto';
-            }
-        } elseif ($config->find_unused_code) {
-            $find_unused_code = 'auto';
-        }
-
-        return $find_unused_code;
-    }
-
-    /**
-     * @psalm-pure
-     */
-    private static function shouldRunTaintAnalysis(array $options): bool
-    {
-        return (isset($options['track-tainted-input'])
-            || isset($options['security-analysis'])
-            || isset($options['taint-analysis']));
-    }
-
-    /**
-     * @param false|'always'|'auto' $find_unused_code
-     */
-    private static function configureProjectAnalyzer(
-        array $options,
-        Config $config,
-        ProjectAnalyzer $project_analyzer,
-        string|bool|null $find_references_to,
-        false|string $find_unused_code,
-        bool $find_unused_variables,
-        bool $run_taint_analysis,
-    ): void {
-        if (isset($options['generate-json-map']) && is_string($options['generate-json-map'])) {
-            $project_analyzer->getCodebase()->store_node_types = true;
-        }
-
-        if (array_key_exists('debug-by-line', $options)) {
-            $project_analyzer->debug_lines = true;
-        }
-
-        if (array_key_exists('debug-performance', $options)) {
-            $project_analyzer->debug_performance = true;
-        }
-
-        if ($find_references_to !== null) {
-            $project_analyzer->getCodebase()->collectLocations();
-            $project_analyzer->show_issues = false;
-        }
-
-        if ($find_unused_code) {
-            $project_analyzer->getCodebase()->reportUnusedCode($find_unused_code);
-        }
-
-        if ($config->find_unused_variables || $find_unused_variables) {
-            $project_analyzer->getCodebase()->reportUnusedVariables();
-        }
-
-        if ($config->literal_array_key_check) {
-            $project_analyzer->getCodebase()->literal_array_key_check = true;
-        }
-        $project_analyzer->getCodebase()->all_constants_global = $config->all_constants_global;
-        $project_analyzer->getCodebase()->all_functions_global = $config->all_functions_global;
-
-        if ($config->run_taint_analysis || $run_taint_analysis) {
-            $project_analyzer->trackTaintedInputs();
-        }
-
-        if ($config->find_unused_psalm_suppress || isset($options['find-unused-psalm-suppress'])) {
-            $project_analyzer->trackUnusedSuppressions();
         }
     }
 
@@ -1578,6 +1456,11 @@ final class Psalm
 
             --stats
                 Shows a breakdown of Psalm’s ability to infer types in the codebase
+
+            --min-type-coverage=PERCENTAGE
+                Exit with status 2 when Psalm infers types for less than PERCENTAGE of the codebase (0 to 100,
+                at most two decimals). Cannot be combined with file paths, --set-baseline or --update-baseline.
+                Overrides the minTypeCoverage config option
 
         Reports:
             --report=PATH

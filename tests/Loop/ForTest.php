@@ -23,6 +23,52 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'forChainReadByThePostExpressionAfterAContinueIsAnalysedUntilItReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        $d = 0;
+                        for (; rand(0, 1); $a = $b) {
+                            $z = 1;
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $b = $c;
+                            $c = $d;
+                            $d = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 0|'s' */;
+                    }
+                    PHP,
+            ],
+            'forChainThroughNestedForeachValuesIsAnalysedUntilItReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        for (; rand(0, 1);) {
+                            foreach ([$b] as $a) {}
+                            foreach ([$c] as $b) {}
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 0|'s' */;
+                    }
+                    PHP,
+            ],
+            'preIncrementInAConditionThatHoldsOnlyForTheFirstValueExitsWithTheNextOne' => [
+                'code' => '<?php
+                    for ($try = 8; ++$try < 10;) {
+                        echo $try;
+                    }',
+                'assertions' => [
+                    '$try===' => '10',
+                ],
+            ],
             'forIntRangeShiftedByEveryIterationIsWidened' => [
                 'code' => '<?php
                     function f(): int {
@@ -481,6 +527,19 @@ final class ForTest extends TestCase
                     '$i===' => 'int<0, max>',
                 ],
             ],
+            'forVarAssignedBeforeContinueAndAtTheEndOfTheBody' => [
+                'code' => '<?php
+                    for ($i = 0; $i < 10; $i++) {
+                        if (rand(0, 1)) {
+                            $z = 1;
+                            continue;
+                        }
+                        $z = 2;
+                    }',
+                'assertions' => [
+                    '$z===' => '1|2',
+                ],
+            ],
         ];
     }
 
@@ -593,6 +652,35 @@ final class ForTest extends TestCase
 
                     echo $i * $j;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'forPossiblyNotEnteredVarAssignedBeforeContinue' => [
+                'code' => '<?php
+                    function f(int $n): int {
+                        for ($i = 0; $i < $n; $i++) {
+                            if (rand(0, 1)) {
+                                $z = 1;
+                                continue;
+                            }
+                            $z = 2;
+                        }
+
+                        return $z;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'forVarNotAssignedBeforeContinue' => [
+                'code' => '<?php
+                    function f(): int {
+                        for ($i = 0; $i < 10; $i++) {
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $z = 2;
+                        }
+
+                        return $z;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }
