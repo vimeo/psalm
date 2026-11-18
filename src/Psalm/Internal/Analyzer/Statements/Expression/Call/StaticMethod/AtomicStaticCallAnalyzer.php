@@ -549,15 +549,10 @@ final class AtomicStaticCallAnalyzer
                     if ($codebase->methods->hasStorage($declaring_method_id)) {
                         $declaring_method_storage = $codebase->methods->getStorage($declaring_method_id);
 
-                        // Pass the source and context like the non-callable path does: params
-                        // providers may need them.
+                        // Without a source, as getInheritedClosure() builds it: a call of the closure infers the
+                        // method's templates only when the two signatures match.
                         $closure = new TClosure(
-                            $codebase->methods->getMethodParams(
-                                $method_id,
-                                $statements_analyzer,
-                                null,
-                                $context,
-                            ),
+                            $codebase->methods->getMethodParams($method_id),
                             $codebase->getMethodReturnType($method_id, $self_fq_class_name),
                             $declaring_method_storage->capabilities,
                             callable_id: strtolower((string) $declaring_method_id),
@@ -600,15 +595,17 @@ final class AtomicStaticCallAnalyzer
                     $call_static_method_id = new MethodIdentifier($method_id->fq_class_name, '__callstatic'),
                     is_used: false,
                 )) {
-                    $call_static_storage = $codebase->methods->getStorage(
-                        $codebase->methods->getDeclaringMethodId($call_static_method_id) ?? $call_static_method_id,
-                    );
+                    $call_static_declaring_id = $codebase->methods->getDeclaringMethodId($call_static_method_id)
+                        ?? $call_static_method_id;
                     $closure = new TClosure(
                         null,
                         $codebase->getMethodReturnType($call_static_method_id, $self_fq_class_name),
-                        $call_static_storage->capabilities,
+                        self::getCallStaticCapabilities($codebase, $method_id->fq_class_name),
                     );
-                    $method_template_types = $call_static_storage->template_types ?? [];
+                    // an existence provider can confirm a __callStatic the class doesn't declare
+                    $method_template_types = $codebase->methods->hasStorage($call_static_declaring_id)
+                        ? $codebase->methods->getStorage($call_static_declaring_id)->template_types ?? []
+                        : [];
                 } else {
                     if (IssueBuffer::accepts(
                         new UndefinedMethod(
