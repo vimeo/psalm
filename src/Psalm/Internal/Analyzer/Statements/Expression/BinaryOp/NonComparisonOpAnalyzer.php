@@ -12,6 +12,7 @@ use Psalm\Internal\Type\IntMask;
 use Psalm\Type;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
 /**
@@ -88,7 +89,21 @@ final class NonComparisonOpAnalyzer
             }
 
             if (!$result_type) {
-                $result_type = new Union([new TInt(), new TFloat()]);
+                // a bitwise operation gives an int, or a string for two strings, whatever the operands are
+                $result_type = $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
+                        ? new Union(
+                            $stmt_left_type->hasString() && $stmt_right_type->hasString()
+                                ? [new TInt(), new TString()]
+                                : [new TInt()],
+                        )
+                        : (
+                            $stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+                            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
+                                ? new Union([new TInt()])
+                                : new Union([new TInt(), new TFloat()])
+                        );
             }
 
             $statements_analyzer->node_data->setType($stmt, $result_type);

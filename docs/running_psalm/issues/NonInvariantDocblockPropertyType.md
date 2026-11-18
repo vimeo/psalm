@@ -57,3 +57,24 @@ class AChild extends A {
     public $foo;
 }
 ```
+
+## Redeclaring without a docblock type
+
+A property redeclared without a docblock type has the docblock type of the parent property, when the native types are the same:
+
+```php
+<?php
+
+class B {
+    /** @var non-empty-string */
+    public string $foo = 'hello';
+}
+
+class BChild extends B {
+    public string $foo = 'world'; // no issue, $foo is a non-empty-string
+}
+
+class BOtherChild extends B {
+    public string $foo = ''; // InvalidPropertyAssignmentValue
+}
+```

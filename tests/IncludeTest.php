@@ -1070,17 +1070,15 @@ final class IncludeTest extends TestCase
                 ],
                 'error_message' => 'UndefinedTrait - A.php:3:33',
             ],
-            'SKIPPED-noHoistConstants' => [
+            'noHoistConstants' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
-                        require_once("file2.php");',
+                        require_once("file2.php");
+                        echo BAZ;',
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
-                        function bat() : void {
-                            echo FOO . BAR;
-                        }
-
-                        define("FOO", 5);
-                        const BAR = "BAR";',
+                        function defineBaz(): void {
+                            define("BAZ", 5);
+                        }',
                 ],
                 'files_to_check' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',

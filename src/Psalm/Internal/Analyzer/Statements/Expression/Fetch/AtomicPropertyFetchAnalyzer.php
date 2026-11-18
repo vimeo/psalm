@@ -597,6 +597,7 @@ final class AtomicPropertyFetchAnalyzer
                     $declaring_class_storage,
                     $context,
                     $stmt_var_id,
+                    $stmt->getAttribute(UnsetAnalyzer::TARGET_ATTRIBUTE) !== true,
                 );
             }
         }

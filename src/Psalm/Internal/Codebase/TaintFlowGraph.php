@@ -237,33 +237,11 @@ final class TaintFlowGraph extends DataFlowGraph
                 || !InternalCallMapHandler::keepsStateBetweenCalls($storage->cased_name);
         }
 
-        if ($graph === null
-            || $storage->has_mutations_annotation
-            || $storage->location === null
-            || !$codebase->config->isInProjectDirs($storage->location->file_path)
-        ) {
+        if ($graph === null) {
             return false;
         }
 
-        if ($storage instanceof MethodStorage) {
-            // `@method` pseudo-methods have no defining class, nor a body whose purity could be inferred
-            if ($storage->cased_name === '__construct'
-                || $storage->defining_fqcln === null
-                || $storage->defining_fqcln === ''
-            ) {
-                return false;
-            }
-
-            // an override could have side effects even if this implementation doesn't
-            if ($storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
-                && !$storage->final
-                && !$codebase->classlike_storage_provider->get($storage->defining_fqcln)->final
-            ) {
-                return false;
-            }
-        }
-
-        $function_node_id = CodeUseGraph::functionLikeNodeForStorage($storage);
+        $function_node_id = self::getSpeculativelySpecializedCallee($codebase, $storage);
 
         if ($function_node_id === null) {
             return false;
@@ -272,6 +250,43 @@ final class TaintFlowGraph extends DataFlowGraph
         $graph->speculative_calls[DataFlowNode::getSpecializationKey($call_location)][$function_node_id] = true;
 
         return true;
+    }
+
+    /**
+     * The function-like node of $storage if its calls are specialized speculatively (see isCallSpecialized()).
+     *
+     * @psalm-capabilities read-props
+     */
+    public static function getSpeculativelySpecializedCallee(Codebase $codebase, FunctionLikeStorage $storage): ?string
+    {
+        if ($storage->specialize_call
+            || $storage->builtin
+            || $storage->has_mutations_annotation
+            || $storage->location === null
+            || !$codebase->config->isInProjectDirs($storage->location->file_path)
+        ) {
+            return null;
+        }
+
+        if ($storage instanceof MethodStorage) {
+            // `@method` pseudo-methods have no defining class, nor a body whose purity could be inferred
+            if ($storage->cased_name === '__construct'
+                || $storage->defining_fqcln === null
+                || $storage->defining_fqcln === ''
+            ) {
+                return null;
+            }
+
+            // an override could have side effects even if this implementation doesn't
+            if ($storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                && !$storage->final
+                && !$codebase->classlike_storage_provider->get($storage->defining_fqcln)->final
+            ) {
+                return null;
+            }
+        }
+
+        return CodeUseGraph::functionLikeNodeForStorage($storage);
     }
 
     /**
@@ -387,9 +402,11 @@ final class TaintFlowGraph extends DataFlowGraph
             foreach ($callees as $function_node_id => $_) {
                 // A callee that only reads what other calls can see too (properties, globals) can't pass what one
                 // call gives it to another: its call stays specialized, and what it reads still flows out of all
-                // its calls (see the exits reached through shared state in TaintFlowResolution).
+                // its calls (see the exits reached through shared state in TaintFlowResolution). What it writes
+                // through its by-reference parameters only reaches the variables of the call passing them, like
+                // its return (see ArgumentsAnalyzer::getByRefParamOutNode()).
                 if ((($mutation_levels[$function_node_id] ?? Capabilities::ALL)
-                        & ~(Capabilities::READ_PROPS | Capabilities::READ_GLOBALS)) !== 0
+                        & ~(Capabilities::READ_PROPS | Capabilities::READ_GLOBALS | Capabilities::WRITE_REFS)) !== 0
                 ) {
                     $this->despecialized_calls[$specialization_key] = true;
                     break;

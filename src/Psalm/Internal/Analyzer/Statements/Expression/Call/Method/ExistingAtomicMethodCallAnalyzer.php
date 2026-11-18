@@ -484,16 +484,35 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $assertionsResolver = new AssertionsFromInheritanceResolver($codebase);
             $assertions = $assertionsResolver->resolve($method_storage, $class_storage);
 
+            // `self` in the assertions of a method of a trait is the class using the trait, where it appears
+            $trait_self_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
+                ?? $class_storage->name;
+
+            // `static` in the called method: the caller's on `$this` or on an object of type `static`, the class of the
+            // object when it has no subclass
+            $assertion_static_class = $lhs_var_id === '$this'
+                || ($lhs_type_part->is_static && $lhs_type_part->value === $context->self)
+                ? 'static'
+                : ($class_storage->final || $class_storage->is_enum ? $fq_class_name : null);
+
             if ($assertions) {
                 self::applyAssertionsToContext(
                     $stmt_name,
                     ExpressionIdentifier::getExtendedVarId($stmt->var, null, $statements_analyzer),
-                    self::getAssertionsOnArgs($assertions, $method_storage, $args),
+                    self::resolveStaticPropertyAssertionClasses(
+                        self::getAssertionsOnArgs($assertions, $method_storage, $args),
+                        $codebase,
+                        $context,
+                        $trait_self_class,
+                        $assertion_static_class,
+                        $fq_class_name,
+                    ),
                     $args,
                     $template_result,
                     $context,
                     $statements_analyzer,
                     $fq_class_name,
+                    $trait_self_class,
                 );
             }
 
@@ -501,13 +520,23 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
             if ($if_true_assertions) {
                 $possibilities = array_map(
-                    static fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
-                        $template_result,
-                        $lhs_var_id,
-                        $codebase,
-                        $static_type,
+                    static fn(Possibilities $assertion): Possibilities => self::resolveTraitSelf(
+                        $assertion->getUntemplatedCopy(
+                            $template_result,
+                            $lhs_var_id,
+                            $codebase,
+                            $static_type,
+                        ),
+                        $trait_self_class,
                     ),
-                    self::getAssertionsOnArgs($if_true_assertions, $method_storage, $args),
+                    self::resolveStaticPropertyAssertionClasses(
+                        self::getAssertionsOnArgs($if_true_assertions, $method_storage, $args),
+                        $codebase,
+                        $context,
+                        $trait_self_class,
+                        $assertion_static_class,
+                        $fq_class_name,
+                    ),
                 );
                 if ($lhs_var_id === null) {
                     $possibilities = array_filter(
@@ -527,13 +556,23 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
             if ($if_false_assertions) {
                 $possibilities = array_map(
-                    static fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
-                        $template_result,
-                        $lhs_var_id,
-                        $codebase,
-                        $static_type,
+                    static fn(Possibilities $assertion): Possibilities => self::resolveTraitSelf(
+                        $assertion->getUntemplatedCopy(
+                            $template_result,
+                            $lhs_var_id,
+                            $codebase,
+                            $static_type,
+                        ),
+                        $trait_self_class,
                     ),
-                    self::getAssertionsOnArgs($if_false_assertions, $method_storage, $args),
+                    self::resolveStaticPropertyAssertionClasses(
+                        self::getAssertionsOnArgs($if_false_assertions, $method_storage, $args),
+                        $codebase,
+                        $context,
+                        $trait_self_class,
+                        $assertion_static_class,
+                        $fq_class_name,
+                    ),
                 );
                 if ($lhs_var_id === null) {
                     $possibilities = array_filter(
