@@ -1306,6 +1306,17 @@ final class TaintTest extends TestCase
                     v("", "", "safe");
                     v("", "", escaped(tainted()));',
             ],
+            'arrayOrStringCastToAStringFoundInAListOfWords' => [
+                'code' => '<?php
+                    function backup(array|string $data): void {
+                        if (!in_array((string) $data, ["ls", "cat", "date"], true)) {
+                            return;
+                        }
+                        exec("tar -czf /tmp/backup.tgz " . (string) $data);
+                    }
+
+                    backup($_GET["bin"]);',
+            ],
             'noTaintFromASpecializedPregReplaceCallbackCallbackInItsOtherCalls' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -6724,6 +6735,18 @@ final class TaintTest extends TestCase
                         echo (string) $row["comment"];
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'arrayCastToAStringFoundInAListHoldingArray' => [
+                'code' => '<?php
+                    function backup(array|string $data): void {
+                        if (!in_array((string) $data, ["ls", "Array"], true)) {
+                            return;
+                        }
+                        exec("tar -czf /tmp/backup.tgz " . implode(" ", (array) $data));
+                    }
+
+                    backup($_GET["bin"]);',
+                'error_message' => 'TaintedShell',
             ],
             'valueThatMayNotMatchThePatternKeepsItsTaints' => [
                 'code' => '<?php

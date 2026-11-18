@@ -3198,6 +3198,7 @@ final class AssertionFinder
         PhpParser\Node\Expr $expr,
         ?string $this_class_name,
         StatementsAnalyzer $source,
+        bool $array_is_never_found = false,
     ): ?string {
         if ($expr instanceof PhpParser\Node\Expr\Cast\String_) {
             $type = $source->node_data->getType($expr->expr);
@@ -3207,7 +3208,10 @@ final class AssertionFinder
             }
 
             foreach ($type->getAtomicTypes() as $atomic) {
-                if (!$atomic instanceof Scalar && !$atomic instanceof TNull) {
+                if (!$atomic instanceof Scalar
+                    && !$atomic instanceof TNull
+                    && !($array_is_never_found && ($atomic instanceof TArray || $atomic instanceof TKeyedArray))
+                ) {
                     return null;
                 }
             }
@@ -3220,7 +3224,8 @@ final class AssertionFinder
 
     /**
      * The variable cast to a string an in_array() check is given as its needle (`in_array((string) $x, ["ls"])`),
-     * if only a string has the string form of each value it can find: none is empty, numeric, `INF` or `NAN`.
+     * if only a string has the string form of each value it can find: none is empty, numeric, `INF` or `NAN`. An array
+     * can be the needle when none is `Array`, its string form.
      * Its value is then the one found.
      */
     private static function getStringCastNeedleVarId(
@@ -3241,6 +3246,7 @@ final class AssertionFinder
             return null;
         }
 
+        $array_is_never_found = true;
         foreach ($haystack_type->getAtomicTypes() as $haystack) {
             if (!$haystack instanceof TKeyedArray || $haystack->fallback_params !== null) {
                 return null;
@@ -3254,10 +3260,15 @@ final class AssertionFinder
                 ) {
                     return null;
                 }
+
+                // the string form of an array
+                if ($value->value === 'Array') {
+                    $array_is_never_found = false;
+                }
             }
         }
 
-        return self::getStringFormVarId($needle, $this_class_name, $source);
+        return self::getStringFormVarId($needle, $this_class_name, $source, $array_is_never_found);
     }
 
     /**
