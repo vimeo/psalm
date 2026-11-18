@@ -127,7 +127,9 @@ final class FunctionLikeNodeScanner
                 );
             } catch (DocblockParseException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
-                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                    '@psalm-overload ' . trim($entry) . ' is not a valid overload'
+                        . ($e->getPrevious() !== null ? ': ' . $e->getPrevious()->getMessage() : '')
+                        . ' in docblock for ' . $cased_function_id,
                     new CodeLocation($this->file_scanner, $stmt, null, true),
                 );
 

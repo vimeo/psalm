@@ -37,12 +37,37 @@ final class OverloadSelector
         Context $context,
         array $overloads,
     ): FunctionLikeStorage {
+        return self::selectOrReal($statements_analyzer, $codebase, $args, $context, $overloads, null)
+            ?? $overloads[count($overloads) - 1];
+    }
+
+    /**
+     * Like select(), but when no overload accepts the arguments while the real signature does (`int|string`
+     * against an `(int)` and a `(string)` overload, the real one taking `int|string`), null: the call is the real one
+     *
+     * @template T of FunctionLikeStorage
+     * @param list<PhpParser\Node\Arg> $args
+     * @param non-empty-list<T> $overloads
+     * @return ?T
+     */
+    public static function selectOrReal(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        array $args,
+        Context $context,
+        array $overloads,
+        ?FunctionLikeStorage $real,
+    ): ?FunctionLikeStorage {
         $arg_types = self::getArgTypes($statements_analyzer, $args, $context);
 
         foreach ($overloads as $overload) {
             if (self::overloadAcceptsArgs($codebase, $overload, $args, $arg_types)) {
                 return $overload;
             }
+        }
+
+        if ($real !== null && self::overloadAcceptsArgs($codebase, $real, $args, $arg_types)) {
+            return null;
         }
 
         return $overloads[count($overloads) - 1];
