@@ -6,20 +6,30 @@ namespace Psalm\Internal\Analyzer;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Clause;
+use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\InArray;
 use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\NotInArray;
+use Psalm\Storage\Assertion\Truthy;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 
+use function array_any;
 use function array_filter;
 use function array_key_first;
 use function array_keys;
@@ -39,6 +49,154 @@ use function strpbrk;
  */
 final class AlgebraAnalyzer
 {
+    /**
+     * Context::removeReconciledClauses() for the variables a condition's reconciliation changed, keeping the clauses
+     * the new types do not express: `$x` truthy makes an `int|null` an `int`, which can still be falsy
+     *
+     * @param list<Clause> $clauses
+     * @param array<string, bool> $changed_var_ids
+     * @param array<string, Union> $vars_in_scope
+     * @return array{list<Clause>, list<Clause>}
+     */
+    public static function removeReconciledClauses(
+        array $clauses,
+        array $changed_var_ids,
+        array $vars_in_scope,
+        StatementsAnalyzer $statements_analyzer,
+    ): array {
+        [$included_clauses, $rejected_clauses] = Context::removeReconciledClauses($clauses, $changed_var_ids);
+
+        $expressed_clauses = [];
+
+        foreach ($rejected_clauses as $clause) {
+            if (self::isExpressedByTypes($clause, $vars_in_scope, $statements_analyzer)) {
+                $expressed_clauses[] = $clause;
+            } else {
+                $included_clauses[] = $clause;
+            }
+        }
+
+        return [$included_clauses, $expressed_clauses];
+    }
+
+    /**
+     * Context::removeReconciledClauses() that keeps the clauses linking several variables the new types do not express
+     *
+     * @param list<Clause> $clauses
+     * @param array<string, bool> $changed_var_ids
+     * @param array<string, Union> $vars_in_scope
+     * @return array{list<Clause>, list<Clause>}
+     */
+    public static function removeReconciledClausesOfOneVariable(
+        array $clauses,
+        array $changed_var_ids,
+        array $vars_in_scope,
+        StatementsAnalyzer $statements_analyzer,
+    ): array {
+        [$included_clauses, $rejected_clauses] = Context::removeReconciledClauses($clauses, $changed_var_ids);
+
+        $expressed_clauses = [];
+
+        foreach ($rejected_clauses as $clause) {
+            if (count($clause->possibilities) === 1
+                || self::isExpressedByTypes($clause, $vars_in_scope, $statements_analyzer)
+            ) {
+                $expressed_clauses[] = $clause;
+            } else {
+                $included_clauses[] = $clause;
+            }
+        }
+
+        return [$included_clauses, $expressed_clauses];
+    }
+
+    /**
+     * Whether the types make the clause certain. A lone assertion is only checked when it is `Truthy`/`Falsy`: types
+     * can't express that an int or a float is not zero. A clause linking several variables
+     * (`!$is_array || is_array($x)`) is only known not to be when each of its assertions holds for some of the values
+     * of its variable's type, and not for others
+     *
+     * @param array<string, Union> $vars_in_scope
+     */
+    private static function isExpressedByTypes(
+        Clause $clause,
+        array $vars_in_scope,
+        StatementsAnalyzer $statements_analyzer,
+    ): bool {
+        if (count($clause->possibilities) === 1) {
+            $assertion = self::getSingleAssertion($clause);
+
+            return $assertion === null
+                || !($assertion[1] instanceof Truthy || $assertion[1] instanceof Falsy)
+                || self::isCertain($assertion[0], $assertion[1], $vars_in_scope, $statements_analyzer);
+        }
+
+        foreach ($clause->possibilities as $var_id => $possibilities) {
+            // several assertions on one variable can be implied as a whole
+            if (count($possibilities) !== 1
+                || self::isCertain($var_id, reset($possibilities), $vars_in_scope, $statements_analyzer)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether the assertion may hold for every value of the variable's type, or for none: only false when it is known
+     * to hold for some of them and not for others
+     *
+     * @param array<string, Union> $vars_in_scope
+     */
+    private static function isCertain(
+        string $var_id,
+        Assertion $possibility,
+        array $vars_in_scope,
+        StatementsAnalyzer $statements_analyzer,
+    ): bool {
+        $type = $vars_in_scope[$var_id] ?? null;
+
+        // reconciling a type variable records bounds on it
+        if ($type === null
+            || array_any(
+                $type->getAtomicTypes(),
+                static fn(Atomic $atomic): bool => $atomic instanceof TTypeVariable,
+            )
+        ) {
+            return true;
+        }
+
+        $failed_reconciliation = Reconciler::RECONCILIATION_OK;
+
+        // truthiness is uncertain when its negation narrows the type. The negations of the other assertions are not
+        // all exact: they are uncertain when they narrow the type themselves
+        $is_truthiness = $possibility instanceof Truthy || $possibility instanceof Falsy;
+
+        $narrowed_type = AssertionReconciler::reconcile(
+            $is_truthiness ? $possibility->getNegation() : $possibility,
+            $type,
+            $var_id,
+            $statements_analyzer,
+            false,
+            $statements_analyzer->getTemplateTypeMap() ?? [],
+            null,
+            [],
+            $failed_reconciliation,
+        );
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        // the assertion is only known to be uncertain when this narrows the type: the reconciler may return the
+        // asserted type or an empty union instead of never when it is impossible, or the type unchanged when it
+        // can't tell
+        return $failed_reconciliation === Reconciler::RECONCILIATION_EMPTY
+            || $narrowed_type->isUnionEmpty()
+            || $narrowed_type->isNever()
+            || !UnionTypeComparator::isContainedBy($codebase, $narrowed_type, $type)
+            || UnionTypeComparator::isContainedBy($codebase, $type, $narrowed_type);
+    }
+
     /**
      * The variable of a clause that is only `isset($var)`, when it is a plain local one: `isset($a['k'])` and
      * `isset($o->p)` can be true while the value is null (`ArrayAccess::offsetExists()`, `__isset()`)

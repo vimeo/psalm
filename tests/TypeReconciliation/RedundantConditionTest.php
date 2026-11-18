@@ -2288,7 +2288,7 @@ final class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
-            'SKIPPED-secondInterfaceAssertionIsRedundant' => [
+            'secondInterfaceAssertionIsRedundant' => [
                 'code' => '<?php
                     interface One {}
                     interface Two {}
@@ -2301,7 +2301,7 @@ final class RedundantConditionTest extends TestCase
                             if ($value instanceof One) {}
                         }
                     }',
-                'error_message' => 'RedundantConditionGivenDocblockType',
+                'error_message' => 'RedundantCondition',
             ],
             'errorAfterStatementThatCannotBeConvertedToAssertion' => [
                 'code' => '<?php
