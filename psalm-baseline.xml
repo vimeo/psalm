@@ -1303,9 +1303,6 @@
       <code><![CDATA[round($mean)]]></code>
       <code><![CDATA[round($mean)]]></code>
     </InvalidOperand>
-    <PossiblyUndefinedArrayOffset>
-      <code><![CDATA[$stmt->expr->getArgs()[0]]]></code>
-    </PossiblyUndefinedArrayOffset>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$branch_point]]></code>
       <code><![CDATA[$new_issues]]></code>
