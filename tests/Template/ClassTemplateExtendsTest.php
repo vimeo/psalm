@@ -23,6 +23,40 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'templatedMethodOfAMiddleParentImplementsAnInterfaceOfTheChild' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    interface DomainRepository
+                    {
+                        /** @return T */
+                        public function oneOfId(string $id): object;
+                    }
+
+                    class Foo {}
+                    class Bar {}
+
+                    /** @template-extends DomainRepository<Foo> */
+                    interface FooRepositoryInterface extends DomainRepository {}
+
+                    /** @template B of object */
+                    abstract class BaseRepository
+                    {
+                        /** @return B */
+                        public function oneOfId(string $id): object
+                        {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template C of object
+                     * @template-extends BaseRepository<C>
+                     */
+                    abstract class MidRepository extends BaseRepository {}
+
+                    /** @template-extends MidRepository<Foo> */
+                    class FooRepository extends MidRepository implements FooRepositoryInterface {}',
+            ],
             'templatedParentMethodWithAParamImplementsAnInterfaceOfTheChild' => [
                 'code' => '<?php
                     /** @template T of object */
@@ -5473,6 +5507,41 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'templatedMethodOfAMiddleParentDoesNotImplementTheInterfaceOfTheChildWithAnotherType' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    interface DomainRepository
+                    {
+                        /** @return T */
+                        public function oneOfId(string $id): object;
+                    }
+
+                    class Foo {}
+                    class Bar {}
+
+                    /** @template-extends DomainRepository<Foo> */
+                    interface FooRepositoryInterface extends DomainRepository {}
+
+                    /** @template B of object */
+                    abstract class BaseRepository
+                    {
+                        /** @return B */
+                        public function oneOfId(string $id): object
+                        {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template C of object
+                     * @template-extends BaseRepository<C>
+                     */
+                    abstract class MidRepository extends BaseRepository {}
+
+                    /** @template-extends MidRepository<Bar> */
+                    class BarRepository extends MidRepository implements FooRepositoryInterface {}',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
             'templatedParentMethodWithAParamDoesNotImplementTheInterfaceOfTheChildWithAnotherType' => [
                 'code' => '<?php
                     /** @template T of object */

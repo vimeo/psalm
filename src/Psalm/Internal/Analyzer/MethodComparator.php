@@ -1691,8 +1691,6 @@ final class MethodComparator
 
     /**
      * A class that gets the method from a parent and the interface from elsewhere knows the templates of both
-     *
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function mapTemplatesOfTheCalledClass(
         Codebase $codebase,
@@ -1710,14 +1708,28 @@ final class MethodComparator
             return;
         }
 
-        $called_class_params = $codebase->classlike_storage_provider->get($implementer_called_class_name)
-            ->template_extended_params;
+        // the declaring class implements the interface itself: it was checked in its own context
+        if ($codebase->classExtendsOrImplements($implementer_method_storage->defining_fqcln, $guide_class_name)) {
+            return;
+        }
+
+        $called_class_storage = $codebase->classlike_storage_provider->get($implementer_called_class_name);
+        $called_class_params = $called_class_storage->template_extended_params;
 
         if ($called_class_params === null) {
             return;
         }
 
-        self::transformTemplates($called_class_params, $guide_class_name, $guide_type, $codebase);
+        self::transformTemplates(
+            $called_class_params,
+            $guide_class_name,
+            $guide_type,
+            $codebase,
+            $implementer_called_class_name,
+            $implementer_called_class_name,
+            $called_class_storage->parent_class,
+            $called_class_storage->final,
+        );
 
         // the guide's templates may be the ones of the class declaring the method by now
         self::transformTemplates(
@@ -1725,12 +1737,20 @@ final class MethodComparator
             $implementer_method_storage->defining_fqcln,
             $guide_type,
             $codebase,
+            $implementer_called_class_name,
+            $implementer_called_class_name,
+            $called_class_storage->parent_class,
+            $called_class_storage->final,
         );
         self::transformTemplates(
             $called_class_params,
             $implementer_method_storage->defining_fqcln,
             $implementer_type,
             $codebase,
+            $implementer_called_class_name,
+            $implementer_called_class_name,
+            $called_class_storage->parent_class,
+            $called_class_storage->final,
         );
     }
 
