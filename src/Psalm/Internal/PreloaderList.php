@@ -1409,6 +1409,7 @@ final class PreloaderList {
         \Psalm\Issue\TaintedHeader::class,
         \Psalm\Issue\TaintedHtml::class,
         \Psalm\Issue\TaintedInclude::class,
+        \Psalm\Issue\TaintedIntegerOverflow::class,
         \Psalm\Issue\TaintedInput::class,
         \Psalm\Issue\TaintedLdap::class,
         \Psalm\Issue\TaintedLlmPrompt::class,

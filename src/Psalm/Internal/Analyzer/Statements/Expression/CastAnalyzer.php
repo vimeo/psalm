@@ -65,6 +65,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -1311,7 +1312,14 @@ final class CastAnalyzer
 
         $removed_taints = $result_type->getTaintsToRemove($statements_analyzer->getCodebase()->getInputTaints());
 
-        if ($removed_taints !== 0 && $parent_nodes) {
+        // a number parsed from a string has the range the string's digits give it
+        $added_taints = ($cast_type === 'int' || $cast_type === 'float')
+            && $cast_value_type !== null
+            && ($cast_value_type->hasString() || $cast_value_type->hasMixed())
+            ? TaintKind::INPUT_INT_OVERFLOW
+            : 0;
+
+        if (($removed_taints !== 0 || $added_taints !== 0) && $parent_nodes) {
             $cast_node = DataFlowNode::getForAssignment(
                 $cast_type . '-cast',
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
@@ -1323,7 +1331,7 @@ final class CastAnalyzer
                     $parent_node,
                     $cast_node,
                     $cast_type . '-cast' . self::getArrayConversionSuffix($cast_value_type),
-                    0,
+                    $added_taints,
                     $removed_taints,
                 );
             }

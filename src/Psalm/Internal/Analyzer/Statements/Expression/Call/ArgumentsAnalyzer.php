@@ -26,6 +26,7 @@ use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
 use Psalm\Internal\Codebase\NosqlEqualityOperand;
+use Psalm\Internal\Codebase\PackSinks;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -1539,6 +1540,15 @@ final class ArgumentsAnalyzer
                 $cased_method_id,
                 $args,
             );
+
+            if ($in_call_map && strtolower($cased_method_id) === 'pack') {
+                PackSinks::addSinks(
+                    $statements_analyzer,
+                    $statements_analyzer->taint_flow_graph,
+                    $args,
+                    $code_location,
+                );
+            }
 
             foreach ($args as $argument_offset => $_) {
                 if (!isset($arg_function_params[$argument_offset])) {

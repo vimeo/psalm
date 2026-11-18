@@ -490,12 +490,19 @@ final class BinaryOpAnalyzer
             return;
         }
 
-        // among BinaryOp, only Concat and Coalesce can pass tainted value to the result. Also Plus on arrays only
+        // among BinaryOp, only Concat and Coalesce can pass tainted value to the result. Also Plus on arrays only, and
+        // arithmetic what a number can carry
         $removed_taints = $stmt instanceof PhpParser\Node\Expr\BinaryOp
             && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat
             && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
             && (!$stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus || !$result_type->hasArray())
-            ? TaintKind::ALL
+            ? ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Plus
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Minus
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Mul
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Pow
+                || $stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+                ? TaintKind::ALL & ~TaintKind::NUMERIC_ONLY
+                : TaintKind::ALL)
             : 0;
 
             $stmt_left_type = $statements_analyzer->node_data->getType($left);

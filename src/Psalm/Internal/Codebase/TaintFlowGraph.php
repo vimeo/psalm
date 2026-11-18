@@ -22,6 +22,7 @@ use Psalm\Issue\TaintedFile;
 use Psalm\Issue\TaintedHeader;
 use Psalm\Issue\TaintedHtml;
 use Psalm\Issue\TaintedInclude;
+use Psalm\Issue\TaintedIntegerOverflow;
 use Psalm\Issue\TaintedLdap;
 use Psalm\Issue\TaintedLlmPrompt;
 use Psalm\Issue\TaintedNosql;
@@ -1518,6 +1519,12 @@ final class TaintFlowGraph extends DataFlowGraph
                 ),
                 TaintKind::INPUT_SESSION => new TaintedSession(
                     'Detected tainted session data',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_INT_OVERFLOW => new TaintedIntegerOverflow(
+                    'Detected an integer the user chooses packed into a fixed size it can overflow',
                     $issue_location,
                     $issue_trace,
                     $path,

@@ -43,6 +43,7 @@ Psalm recognises a number of taint types by default, defined in the [Psalm\Type\
 - `header` - used for strings that could contain a http header
 - `redirect` - used for strings that could choose where a redirect sends the client (a `Location` header)
 - `session` - used for values that could be stored in the session, which the code reading it back trusts
+- `int_overflow` - used for numbers parsed from a string (`(int) $_GET['n']`) whose range the code doesn't bound, packed into a fixed size they can wrap around (`pack('N', $n)`). The cast adds it, the sources don't: an integer the code computes from user input (a length, an offset) isn't chosen by the user. Like `sleep`, `int` and `float` values carry it
 - `sleep` - used for values that could set how long the code waits (`sleep()`, curl timeouts, ...). Unlike the other taints, `int` and `float` values carry it
 - `llm_prompt` - used for strings that could contain instructions passed to an LLM prompt (prompt injection)
 - `user_secret` - used for strings that could contain user-supplied secrets

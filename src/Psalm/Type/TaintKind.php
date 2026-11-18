@@ -39,8 +39,14 @@ final class TaintKind
     public const INPUT_SESSION = (1 << 21);
     /** What can end a string literal of an XPath query: a quote */
     public const INPUT_XPATH_LITERAL = (1 << 22);
-    public const USER_SECRET = (1 << 23);
-    public const SYSTEM_SECRET = (1 << 24);
+    /**
+     * A number parsed from a string (`(int) $string`), whose range the code doesn't bound, which a fixed-size integer
+     * can wrap around. It is added by the cast, not given by the sources: an integer the code computes from user
+     * input (a length, an offset) isn't chosen by the user.
+     */
+    public const INPUT_INT_OVERFLOW = (1 << 23);
+    public const USER_SECRET = (1 << 24);
+    public const SYSTEM_SECRET = (1 << 25);
 
     /**
      * Bitmask of all INPUT_* taint types. Used as the default taint for
@@ -49,10 +55,10 @@ final class TaintKind
      * Excludes USER_SECRET and SYSTEM_SECRET, which represent
      * sensitive data leaking out rather than untrusted data flowing in.
      */
-    public const ALL_INPUT = (1 << 23) - 1;
+    public const ALL_INPUT = ((1 << 24) - 1) & ~self::INPUT_INT_OVERFLOW;
 
     /** @internal */
-    public const NUMERIC_ONLY = self::INPUT_SLEEP;
+    public const NUMERIC_ONLY = self::INPUT_SLEEP | self::INPUT_INT_OVERFLOW;
     /** @internal */
     public const BOOL_ONLY = self::INPUT_SLEEP;
     /**
@@ -69,7 +75,7 @@ final class TaintKind
     public const ALL = -1;
 
     /** @internal Keep this synced with the above */
-    public const BUILTIN_TAINT_COUNT = 25;
+    public const BUILTIN_TAINT_COUNT = 26;
 
 
     // Map of taint kind names to their bitmask values, used in taint annotations
@@ -97,6 +103,7 @@ final class TaintKind
         'xpath_query' => self::INPUT_XPATH,
         'xpath_literal' => self::INPUT_XPATH_LITERAL,
         'sleep' => self::INPUT_SLEEP,
+        'int_overflow' => self::INPUT_INT_OVERFLOW,
         'extract' => self::INPUT_EXTRACT,
         'user_secret' => self::USER_SECRET,
         'system_secret' => self::SYSTEM_SECRET,

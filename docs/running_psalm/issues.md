@@ -261,6 +261,7 @@
  - [TaintedHeader](issues/TaintedHeader.md)
  - [TaintedHtml](issues/TaintedHtml.md)
  - [TaintedInclude](issues/TaintedInclude.md)
+ - [TaintedIntegerOverflow](issues/TaintedIntegerOverflow.md)
  - [TaintedInput](issues/TaintedInput.md)
  - [TaintedLdap](issues/TaintedLdap.md)
  - [TaintedLlmPrompt](issues/TaintedLlmPrompt.md)

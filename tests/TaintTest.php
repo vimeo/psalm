@@ -1306,6 +1306,15 @@ final class TaintTest extends TestCase
                     v("", "", "safe");
                     v("", "", escaped(tainted()));',
             ],
+            'boundedIntegerPackedInItsSize' => [
+                'code' => '<?php
+                    function allocate(): string {
+                        $requested = (int) $_GET["size"];
+                        return pack("N", max(0, min($requested, 1048576)) + 1)
+                            . pack("a*", (string) $_GET["name"])
+                            . pack("J", $requested);
+                    }',
+            ],
             'valueEscapedForXpathByTheCodeInAStringLiteral' => [
                 'code' => '<?php
                     /**
@@ -6779,6 +6788,21 @@ final class TaintTest extends TestCase
                         echo (string) $row["comment"];
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'integerOfTheUserPackedInAFixedSize' => [
+                'code' => '<?php
+                    function wrap(): int {
+                        $requested = (int) trim((string) $_GET["size"]);
+                        return unpack("l", pack("l", $requested + 1))[1];
+                    }',
+                'error_message' => 'TaintedIntegerOverflow',
+            ],
+            'integerOfTheUserPackedAfterAString' => [
+                'code' => '<?php
+                    function fileHeader(): string {
+                        return pack("a4n", "PSLM", (int) $_GET["version"]);
+                    }',
+                'error_message' => 'TaintedIntegerOverflow',
             ],
             'valueAssignedWithAQuoteOfItsOwnInAnXpathStringLiteral' => [
                 'code' => '<?php
