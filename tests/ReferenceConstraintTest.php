@@ -166,6 +166,56 @@ final class ReferenceConstraintTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'paramOutOfAByRefParamBetweenTheArgumentsThatBindItsTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template U
+                     * @param T $a
+                     * @param U $b
+                     * @param-out T|U $r
+                     */
+                    function mid(mixed $a, mixed &$r, mixed $b): void {}
+
+                    mid(1, $r, "s");',
+                'assertions' => [
+                    '$r===' => "'s'|1",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfAByRefParamWithTheTemplateOfALaterArgumentInATypeArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $a
+                     * @param-out list<T> $r
+                     */
+                    function wrap(mixed &$r, mixed $a): void {}
+
+                    wrap($r, 5);',
+                'assertions' => [
+                    '$r===' => 'list<5>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfAByRefParamWithAValueOfTheTemplateOfALaterArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $a
+                     * @param-out value-of<T> $r
+                     */
+                    function vo(mixed &$r, array $a): void {}
+
+                    vo($r, ["x" => 1, "y" => 2]);',
+                'assertions' => [
+                    '$r===' => '1|2',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'paramOutOfAByRefParamBeforeAClosureThatBindsItsTemplate' => [
                 'code' => '<?php
                     /**

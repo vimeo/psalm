@@ -38,6 +38,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\InvalidPassByReference;
@@ -67,6 +68,7 @@ use UnexpectedValueException;
 
 use function array_all;
 use function array_any;
+use function array_intersect_key;
 use function array_key_first;
 use function array_keys;
 use function array_map;
@@ -1735,14 +1737,16 @@ final class ArgumentsAnalyzer
             $param = $params[array_key_first($params)];
             $out_type = $param->by_ref ? $param->out_type : null;
 
-            if ($out_type === null || (!$out_type->hasTemplate() && !$out_type->hasConditional())) {
+            if ($out_type === null) {
                 continue;
             }
 
-            $own_template_names = [];
+            $out_template_names = self::getTemplateNames($out_type);
 
-            foreach ($param->type?->getTemplateTypes() ?? [] as $own_template_type) {
-                $own_template_names[$own_template_type->param_name] = true;
+            if ($out_template_names === []
+                || array_intersect_key($out_template_names, self::getTemplateNames($param->type)) !== []
+            ) {
+                continue;
             }
 
             $later_template_names = [];
@@ -1751,33 +1755,41 @@ final class ArgumentsAnalyzer
             foreach ($function_params as $function_param) {
                 if ($function_param->name === $param->name) {
                     $is_later = true;
-                    continue;
-                }
-
-                if ($is_later) {
-                    foreach ($function_param->type?->getTemplateTypes() ?? [] as $later_template_type) {
-                        $later_template_names[$later_template_type->param_name] = true;
-                    }
+                } elseif ($is_later) {
+                    $later_template_names += self::getTemplateNames($function_param->type);
                 }
             }
 
-            $reads_later_params = true;
-
-            foreach ($out_type->getTemplateTypes() as $template_type) {
-                if (isset($own_template_names[$template_type->param_name])
-                    || !isset($later_template_names[$template_type->param_name])
-                ) {
-                    $reads_later_params = false;
-                    break;
-                }
-            }
-
-            if ($reads_later_params) {
+            if (array_intersect_key($out_template_names, $later_template_names) !== []) {
                 $offsets[$argument_offset] = true;
             }
         }
 
         return $offsets;
+    }
+
+    /**
+     * The names of the templates $type uses anywhere, also through `key-of<T>`, `value-of<T>` and `T[K]`
+     *
+     * @return array<string, true>
+     * @psalm-pure
+     */
+    private static function getTemplateNames(?Union $type): array
+    {
+        if ($type === null) {
+            return [];
+        }
+
+        $collector = new TemplateTypeCollector(true);
+        $collector->traverseArray($type->getAtomicTypes());
+
+        $names = [];
+
+        foreach ($collector->getTemplateTypes() as $template_type) {
+            $names[$template_type->param_name] = true;
+        }
+
+        return $names;
     }
 
     /**
