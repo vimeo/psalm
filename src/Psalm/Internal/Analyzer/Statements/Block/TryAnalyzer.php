@@ -176,6 +176,9 @@ final class TryAnalyzer
             foreach ($newly_assigned_var_ids as $assigned_var_id => $_) {
                 $context->removeVarFromConflictingClauses($assigned_var_id);
             }
+
+            // a branch of the body keeps the clauses that hold at its end, not where an exception may leave it
+            $context->removeClausesOfVarsChangedSince($old_context->parent_remove_vars);
         } else {
             foreach ($newly_assigned_var_ids as $assigned_var_id => $_) {
                 $try_context->removeVarFromConflictingClauses($assigned_var_id);
@@ -550,6 +553,14 @@ final class TryAnalyzer
                 $finally_context->possibly_assigned_var_ids = [];
 
                 $finally_context->vars_in_scope = $try_context->finally_scope->vars_in_scope;
+
+                // the finally may run from anywhere in the body: dropped without marking them changed, the clauses
+                // still hold after the try, which is only reached from the end of the body or of a catch
+                foreach ($context->parent_remove_vars as $var_id => $stamp) {
+                    if (($old_context->parent_remove_vars[$var_id] ?? null) !== $stamp) {
+                        $finally_context->clauses = Context::filterClauses($var_id, $finally_context->clauses);
+                    }
+                }
 
                 $statements_analyzer->analyze($stmt->finally->stmts, $finally_context);
 

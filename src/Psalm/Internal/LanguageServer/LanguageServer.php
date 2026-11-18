@@ -35,6 +35,8 @@ use Psalm\Config;
 use Psalm\ErrorBaseline;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\BaselineMatcher;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Composer;
 use Psalm\Internal\LanguageServer\Provider\InMemoryProjectCacheProvider;
 use Psalm\Internal\LanguageServer\Server\TextDocument as ServerTextDocument;
@@ -56,13 +58,10 @@ use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_reduce;
-use function array_search;
 use function array_shift;
-use function array_splice;
 use function array_unshift;
 use function array_values;
 use function cli_set_process_title;
-use function count;
 use function explode;
 use function fwrite;
 use function get_object_vars;
@@ -227,10 +226,10 @@ final class LanguageServer extends Dispatcher
         if ($inMemory) {
             $providers = new Providers(
                 new FileProvider,
-                new ParserCacheProvider($config, Composer::getLockFile($base_dir), false),
-                new FileStorageCacheProvider($config, Composer::getLockFile($base_dir), false),
-                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($base_dir), false),
-                new FileReferenceCacheProvider($config, Composer::getLockFile($base_dir), false),
+                new ParserCacheProvider($config, Composer::getLockFile($base_dir), CacheMode::Memory),
+                new FileStorageCacheProvider($config, Composer::getLockFile($base_dir), CacheMode::Memory),
+                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($base_dir), CacheMode::Memory),
+                new FileReferenceCacheProvider($config, Composer::getLockFile($base_dir), CacheMode::Memory),
                 new InMemoryProjectCacheProvider,
             );
         } else {
@@ -721,9 +720,10 @@ final class LanguageServer extends Dispatcher
         $issue_baseline = $this->issue_baseline;
 
         $data = IssueBuffer::clear();
+        $config = $this->project_analyzer->getCodebase()->config;
         foreach ($files as $file_path => $uri) {
             //Dont report errors in files we are not watching
-            if (!$this->project_analyzer->getCodebase()->config->isInProjectDirs($file_path)) {
+            if (!$config->isInProjectDirs($file_path)) {
                 continue;
             }
             $diagnostics = array_map(
@@ -774,32 +774,17 @@ final class LanguageServer extends Dispatcher
                     return self::omitNullProperties($diagnostic);
                 },
                 array_filter(
-                    array_map(static function (IssueData $issue_data) use (&$issue_baseline) {
-                        if (empty($issue_baseline)) {
-                            return $issue_data;
+                    array_map(static function (IssueData $issue_data) use (&$issue_baseline, $config): IssueData {
+                        if (BaselineMatcher::consume(
+                            $config,
+                            $issue_baseline,
+                            $issue_data->file_name,
+                            $issue_data->type,
+                            $issue_data->selected_text,
+                        )) {
+                            $issue_data->severity = IssueData::SEVERITY_INFO;
                         }
-                        //Process Baseline
-                        $file = $issue_data->file_name;
-                        $type = $issue_data->type;
-                        if (isset($issue_baseline[$file][$type]) && $issue_baseline[$file][$type]['o'] > 0) {
-                            if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
-                                $position = array_search(
-                                    str_replace("\r\n", "\n", trim($issue_data->selected_text)),
-                                    $issue_baseline[$file][$type]['s'],
-                                    true,
-                                );
 
-                                if ($position !== false) {
-                                    $issue_data->severity = IssueData::SEVERITY_INFO;
-                                    array_splice($issue_baseline[$file][$type]['s'], $position, 1);
-                                    $issue_baseline[$file][$type]['o']--;
-                                }
-                            } else {
-                                $issue_baseline[$file][$type]['s'] = [];
-                                $issue_data->severity = IssueData::SEVERITY_INFO;
-                                $issue_baseline[$file][$type]['o']--;
-                            }
-                        }
                         return $issue_data;
                     }, $data[$file_path] ?? []),
                     function (IssueData $issue_data) {
