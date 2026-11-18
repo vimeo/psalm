@@ -948,6 +948,17 @@ final class ArgumentAnalyzer
 
         $method_identifier = $cased_method_id ? ' of ' . $cased_method_id : '';
 
+        $source = $statements_analyzer->getSource();
+
+        if ($source instanceof FunctionLikeAnalyzer) {
+            $input_type = FunctionLikeAnalyzer::bindTraitTemplatesToUse(
+                $codebase,
+                $source->getFunctionLikeStorage($statements_analyzer),
+                $context,
+                $input_type,
+            );
+        }
+
         if ($input_type->hasMixed()) {
             if (!$context->collect_initializations
                 && !$context->collect_mutations

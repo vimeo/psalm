@@ -1773,9 +1773,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
     /**
      * A trait method is analyzed as a method of the class using the trait, where the templates of the trait
-     * are the types given to `@use`.
+     * are the types given to `@use`: an argument of such a template type fits the parameter of a call the
+     * concrete type fits.
      */
-    private function bindTraitTemplatesToUse(
+    public static function bindTraitTemplatesToUse(
         Codebase $codebase,
         FunctionLikeStorage $storage,
         Context $context,
@@ -1970,7 +1971,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     }
                 }
 
-                $param_type = $this->bindTraitTemplatesToUse($codebase, $storage, $context, $param_type);
 
                 $param_type = $param_type->addParentNodes($parent_nodes);
             } else {

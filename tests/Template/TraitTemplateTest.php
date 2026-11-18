@@ -45,6 +45,75 @@ final class TraitTemplateTest extends TestCase
                         }
                     }',
             ],
+            'traitMethodMayBranchOnItsTemplateWhateverTheUseTypeIs' => [
+                'code' => '<?php
+                    /** @template T */
+                    trait Red {
+                        /** @param T $x */
+                        public function f($x): string {
+                            if (is_string($x)) {
+                                return $x;
+                            }
+
+                            return "other";
+                        }
+                    }
+
+                    final class RedStr {
+                        /** @use Red<string> */
+                        use Red;
+                    }
+
+                    final class RedInt {
+                        /** @use Red<int> */
+                        use Red;
+                    }',
+            ],
+            'traitMethodMayTakeItsTemplateByReference' => [
+                'code' => '<?php
+                    /** @template T */
+                    trait Ref {
+                        /** @param T $d */
+                        public function r(&$d): void {
+                            echo "x";
+                        }
+                    }
+
+                    final class RefCls {
+                        /** @use Ref<int> */
+                        use Ref;
+                    }',
+            ],
+            'traitTemplateIsBoundInAListParamAndInANestedTrait' => [
+                'code' => '<?php
+                    /** @template U of object */
+                    trait Inner {
+                        /** @param U $d */
+                        public function inner($d): void {
+                            $this->take($d);
+                        }
+                    }
+
+                    /** @template T of object */
+                    trait Outer {
+                        /** @use Inner<T> */
+                        use Inner;
+
+                        /** @param list<T> $ds */
+                        public function outer(array $ds): void {
+                            foreach ($ds as $d) {
+                                $this->take($d);
+                            }
+                        }
+                    }
+
+                    final class A {
+                        /** @use Outer<DateTime> */
+                        use Outer;
+
+                        public function take(DateTime $d): void {}
+                    }',
+            ],
             'traitUsedWithDifferentTypesBindsEachOfThem' => [
                 'code' => '<?php
                     /** @template T of object */
