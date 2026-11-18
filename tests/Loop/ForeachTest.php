@@ -210,6 +210,38 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachArrayNestedInItselfOnEveryIterationSettles' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<mixed> $e
+                     * @param array<mixed> $opts
+                     */
+                    function g(array $e, array $opts): array {
+                        foreach ($opts as $k => $_) {
+                            if (rand(0, 1)) {
+                                $u1 = $e['k1'] ?? null;
+                                $u2 = $e['k2'] ?? null;
+                                $u3 = $e['k3'] ?? null;
+                                $u4 = $e['k4'] ?? null;
+                                $u5 = $e['k5'] ?? null;
+                                $u6 = $e['k6'] ?? null;
+                            }
+                            $e[$k] = [
+                                'k1' => $u1 ?? null,
+                                'k2' => $u2 ?? null,
+                                'k3' => $u3 ?? null,
+                                'k4' => $u4 ?? null,
+                                'k5' => $u5 ?? null,
+                                'k6' => $u6 ?? null,
+                            ];
+                        }
+                        return $e;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'foreachIntRangeSummedByEveryIterationIsWidened' => [
                 'code' => '<?php
                     /** @param list<int<1, 3>> $values */
