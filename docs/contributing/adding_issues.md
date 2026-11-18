@@ -24,6 +24,8 @@ final class MyNewIssue extends CodeIssue
 
 For `SHORTCODE` value use `$max_shortcode + 1`. To choose appropriate error level see [Error levels](../running_psalm/error_levels.md).
 
+If the issue flags a [CWE](https://cwe.mitre.org/) weakness, list its id in `public const CWE_IDS = [89];` (the most specific first), and link the same ids from the issue's documentation page.
+
 There a number of abstract classes you can extend:
 
 * `CodeIssue` - non-specific, default issue. It's a base class for all issues.

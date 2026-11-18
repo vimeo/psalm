@@ -191,7 +191,6 @@ final class StaticPropertyFetchAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
@@ -260,7 +259,6 @@ final class StaticPropertyFetchAnalyzer
 
             if ($codebase->store_node_types
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
@@ -413,7 +411,6 @@ final class StaticPropertyFetchAnalyzer
 
             if ($codebase->store_node_types
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
@@ -519,6 +516,19 @@ final class StaticPropertyFetchAnalyzer
 
         foreach ($stmt_class_type->getAtomicTypes() as $class_atomic_type) {
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+
+            // The literal fast-path below otherwise bypasses the strict string-class policy.
+            if ($class_atomic_type::class === TLiteralString::class
+                && !$codebase->config->allow_string_standin_for_class
+            ) {
+                IssueBuffer::maybeAdd(
+                    new InvalidStringClass(
+                        'String cannot be used as a class',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt_class),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
 
             $fq_class_names = self::getClassNamesFromClassStringType($class_atomic_type);
 

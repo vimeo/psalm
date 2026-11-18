@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -16,6 +18,32 @@ final class InArrayTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    public function testEqualConditionsAreStillAlreadyAsserted(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function test(?string $s): void {
+                    if (!$s && !$s) {
+                        echo 1;
+                    }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $messages = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'RedundantCondition') {
+                $messages[] = $issue->message;
+            }
+        }
+
+        $this->assertContains('!$s has already been asserted', $messages);
+    }
+
     /**
      * @psalm-pure
      */
@@ -23,6 +51,81 @@ final class InArrayTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'stringCastOfAScalarFoundInAListOfWords' => [
+                'code' => '<?php
+                    /** @return string|int|null */
+                    function value() {
+                        return null;
+                    }
+
+                    $value = value();
+                    $found = in_array((string) $value, ["ls", "cat"], true) ? $value : "none";',
+                'assertions' => [
+                    '$found===' => "'cat'|'ls'|'none'",
+                ],
+            ],
+            'stringCastOfAScalarFoundInAListWithANumber' => [
+                'code' => '<?php
+                    /** @return string|int|null */
+                    function value() {
+                        return null;
+                    }
+
+                    $value = value();
+                    $found = in_array((string) $value, ["ls", "1"], true) ? $value : "none";',
+                'assertions' => [
+                    '$found===' => 'int|null|string',
+                ],
+            ],
+            'notInTwoDifferentArraysOfTheSameType' => [
+                'code' => '<?php
+                    class User {}
+
+                    /**
+                     * @param User[] $a
+                     * @param User[] $b
+                     */
+                    function test(User $user, array $a, array $b): void {
+                        if (!in_array($user, $a, true) && !in_array($user, $b, true)) {
+                            throw new Exception();
+                        }
+                    }',
+            ],
+            'negatedInArrayOfLiteralListOrCall' => [
+                'code' => '<?php
+                    final class A {
+                        public const NAMES = [\'a\', \'b\', \'c\', \'d\', \'e\', \'f\', \'g\', \'h\', \'i\', \'j\', \'k\', \'l\'];
+                    }
+
+                    function known(string $s): bool {
+                        return $s !== \'\';
+                    }
+
+                    function getName(): string {
+                        return \'\';
+                    }
+
+                    $name = getName();
+
+                    if (!in_array($name, A::NAMES, true) || !known($name)) {
+                        exit;
+                    }',
+                'assertions' => [
+                    '$name===' => '\'a\'|\'b\'|\'c\'|\'d\'|\'e\'|\'f\'|\'g\'|\'h\'|\'i\'|\'j\'|\'k\'|\'l\'',
+                ],
+            ],
+            'inTwoDifferentArraysOfTheSameType' => [
+                'code' => '<?php
+                    class User {}
+
+                    /**
+                     * @param User[] $a
+                     * @param User[] $b
+                     */
+                    function test(User $user, array $a, array $b): bool {
+                        return in_array($user, $a, true) || in_array($user, $b, true);
+                    }',
+            ],
             'nullTypeRemovedAfterNegatedAssertionAgainstArrayOfInt' => [
                 'code' => '<?php
                     /**
@@ -367,7 +470,6 @@ final class InArrayTest extends TestCase
                         throw new \Exception();
                     }',
                 'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always falsy',
-                'error_levels' => ['RedundantConditionGivenDocblockType'],
             ],
             'inArrayDetectType' => [
                 'code' => '<?php

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Scanner\UnresolvedConstant;
 
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 /**
  * @internal
@@ -12,10 +13,15 @@ use Psalm\Internal\Scanner\UnresolvedConstantComponent;
  */
 final class Constant extends UnresolvedConstantComponent
 {
+    use UnserializeMemoryUsageSuppressionTrait;
+
     /**
      * @psalm-mutation-free
      */
-    public function __construct(public readonly string $name, public readonly bool $is_fully_qualified)
-    {
+    public function __construct(
+        public readonly string $name,
+        public readonly bool $is_fully_qualified,
+        public readonly string $namespace = '',
+    ) {
     }
 }

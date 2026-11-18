@@ -95,7 +95,6 @@ final class HackConformanceTest extends TestCase
             $exitCode,
         );
 
-        /** @var list<string> $output */
         if ($exitCode === 3) {
             $this->markTestSkipped(implode("\n", $output));
         }
@@ -158,7 +157,6 @@ final class HackConformanceTest extends TestCase
         $lines = [];
         exec($cmd, $lines);
 
-        /** @var list<string> $lines */
         $decoded = json_decode(implode("\n", $lines), true);
 
         if (!is_array($decoded) || !isset($decoded['available']) || !is_bool($decoded['available'])) {

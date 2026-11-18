@@ -19,6 +19,7 @@ use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\ImpureMethodCall;
@@ -250,11 +251,12 @@ final class ConcatAnalyzer
         $config = Config::getInstance();
 
         if ($left_type && $right_type) {
+            $left_type = TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $left_type);
+            $right_type = TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $right_type);
             $result_type = Type::getString();
 
             if ($left_type->hasMixed() || $right_type->hasMixed()) {
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)
@@ -327,7 +329,6 @@ final class ConcatAnalyzer
             }
 
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -655,7 +656,6 @@ final class ConcatAnalyzer
                             ? new CodeLocation($statements_analyzer->getSource(), $operand)
                             : null,
                         !$context->collect_initializations
-                            && !$context->collect_mutations
                             ? $statements_analyzer
                             : null,
                         $statements_analyzer->getFilePath(),

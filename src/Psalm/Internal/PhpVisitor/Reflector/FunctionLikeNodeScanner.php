@@ -162,6 +162,10 @@ final class FunctionLikeNodeScanner
             $is_functionlike_override,
         );
 
+        if ($stmt instanceof PhpParser\Node\PropertyHook) {
+            $this->addPropertyTypeToHook($stmt, $storage);
+        }
+
         if ($stmt instanceof PhpParser\Node\Stmt\Function_
             || $stmt instanceof PhpParser\Node\Stmt\ClassMethod
         ) {
@@ -184,8 +188,10 @@ final class FunctionLikeNodeScanner
                     && $classlike_storage->properties[$property_name]->type
                     && !$classlike_storage->properties[$property_name]->hook_get
                 ) {
-                    $storage->capabilities = Capabilities::MUTATION_FREE & $storage->capabilities;
-                    $storage->mutation_free_assumed = !$stmt->isFinal() && !$classlike_storage->final;
+                    if ($this->config->assume_getters_mutation_free) {
+                        $storage->capabilities = Capabilities::MUTATION_FREE & $storage->capabilities;
+                        $storage->mutation_free_assumed = !$stmt->isFinal() && !$classlike_storage->final;
+                    }
 
                     $classlike_storage->properties[$property_name]->getter_method = strtolower($stmt->name->name);
                 }
@@ -193,6 +199,10 @@ final class FunctionLikeNodeScanner
                 && $stmt->stmts
             ) {
                 $var_assertions = [];
+
+                // from where a condition assigns a parameter, what is said of it is no longer about the argument; what
+                // is said of a property of $this still holds for the caller
+                $assigned_var_ids = [];
 
                 foreach ($stmt->stmts as $function_stmt) {
                     if ($function_stmt instanceof PhpParser\Node\Stmt\If_) {
@@ -219,8 +229,21 @@ final class FunctionLikeNodeScanner
                             null,
                         );
 
+                        $assigned_var_ids += FormulaGenerator::getAssignedVarIds(
+                            $function_stmt->cond,
+                            $this->classlike_storage->name ?? null,
+                            null,
+                        );
+
                         try {
-                            $negated_formula = Algebra::negateFormula($if_clauses);
+                            $negated_formula = FormulaGenerator::getNegatedFormula(
+                                $if_clauses,
+                                $function_stmt->cond,
+                                $cond_id,
+                                $this->classlike_storage->name ?? null,
+                                $this->file_scanner,
+                                null,
+                            );
                         } catch (ComplicatedExpressionException) {
                             $var_assertions = [];
                             break;
@@ -234,6 +257,10 @@ final class FunctionLikeNodeScanner
                         }
 
                         foreach ($rules as $var_id => $rule) {
+                            if (isset($existing_params[$var_id], $assigned_var_ids[$var_id])) {
+                                continue;
+                            }
+
                             foreach ($rule as $rule_part) {
                                 if (count($rule_part) > 1) {
                                     $var_assertions = [];
@@ -343,6 +370,7 @@ final class FunctionLikeNodeScanner
                 $this->classlike_storage,
                 $this->aliases,
                 $this->codebase->analysis_php_version_id,
+                $stmt instanceof PhpParser\Node\Expr\Closure || $stmt instanceof PhpParser\Node\Expr\ArrowFunction,
             );
 
             $storage->return_type_location = new CodeLocation(
@@ -518,7 +546,15 @@ final class FunctionLikeNodeScanner
                     continue;
                 }
 
-                if (isset($classlike_storage->properties[$param_storage->name]) && $param_storage->location) {
+                $existing_property = $classlike_storage->properties[$param_storage->name] ?? null;
+
+                // only a property declared in the same file clashes; stubs refine properties from reflection and
+                // other stubs
+                if ($existing_property
+                    && $existing_property->location
+                    && $existing_property->location->file_path === $this->file_path
+                    && $param_storage->location
+                ) {
                     IssueBuffer::maybeAdd(
                         new ParseError(
                             'Promoted property ' . $param_storage->name . ' clashes with an existing property',
@@ -535,6 +571,7 @@ final class FunctionLikeNodeScanner
                 $var_comment_type = null;
                 $var_comment_readonly = false;
                 $var_comment_allow_private_mutation = false;
+                $var_comment_suppressed_issues = [];
                 if ($doc_comment) {
                     $template_types = ($this->existing_function_template_types ?: [])
                         + ($classlike_storage->template_types ?: [])
@@ -556,6 +593,7 @@ final class FunctionLikeNodeScanner
                             $var_comment_type = $var_comment->type;
                             $var_comment_readonly = $var_comment->readonly;
                             $var_comment_allow_private_mutation = $var_comment->allow_private_mutation;
+                            $var_comment_suppressed_issues = $var_comment->suppressed_issues;
                         }
                     } catch (IncorrectDocblockException $e) {
                         $storage->docblock_issues[] = new MissingDocblockType(
@@ -596,14 +634,15 @@ final class FunctionLikeNodeScanner
                 $property_storage->signature_type = $param_storage->signature_type;
                 $property_storage->signature_type_location = $param_storage->signature_type_location;
                 $property_storage->type_location = $param_storage->type_location;
+                $property_storage->has_docblock_type = $param_storage->has_docblock_type || $var_comment_type !== null;
                 $property_storage->location = $param_storage->location;
                 $property_storage->stmt_location = new CodeLocation($this->file_scanner, $param);
                 $property_storage->has_default = (bool)$param->default;
-                $param_type_readonly = (bool)($param->flags & Modifiers::READONLY);
-                $property_storage->readonly = $param_type_readonly
-                    || $classlike_storage->readonly
-                    || $var_comment_readonly;
+                $property_storage->native_readonly = ($param->flags & Modifiers::READONLY) !== 0
+                    || $classlike_storage->readonly;
+                $property_storage->readonly = $property_storage->native_readonly || $var_comment_readonly;
                 $property_storage->allow_private_mutation = $var_comment_allow_private_mutation;
+                $property_storage->suppressed_issues = $var_comment_suppressed_issues;
                 $param_storage->promoted_property = true;
                 $property_storage->is_promoted = true;
 
@@ -695,6 +734,11 @@ final class FunctionLikeNodeScanner
 
                 $storage->attributes[] = $attribute;
             }
+        }
+
+        if ($stmt instanceof PhpParser\Node\PropertyHook) {
+            // what the property suppresses is suppressed in its hooks
+            $storage->suppressed_issues += $this->getHookPropertyStorage($stmt)->suppressed_issues ?? [];
         }
 
         return $storage;
@@ -989,6 +1033,7 @@ final class FunctionLikeNodeScanner
                 $this->classlike_storage,
                 $this->aliases,
                 $this->codebase->analysis_php_version_id,
+                $stmt instanceof PhpParser\Node\Expr\Closure || $stmt instanceof PhpParser\Node\Expr\ArrowFunction,
             );
 
             if ($param_type->isMixed()) {
@@ -1056,6 +1101,56 @@ final class FunctionLikeNodeScanner
             $param->variadic,
             $default_type,
         );
+    }
+
+    private function getHookPropertyStorage(PhpParser\Node\PropertyHook $hook): ?PropertyStorage
+    {
+        /** @var mixed $property_name */
+        $property_name = $hook->getAttribute('propertyName');
+
+        return is_string($property_name)
+            ? $this->classlike_storage?->properties[$property_name] ?? null
+            : null;
+    }
+
+    /**
+     * A hook has no signature of its own: `get` returns a value of the type of the property, and `set` takes a
+     * value of that type unless its parameter has a type.
+     */
+    private function addPropertyTypeToHook(PhpParser\Node\PropertyHook $hook, FunctionLikeStorage $storage): void
+    {
+        $property_storage = $this->getHookPropertyStorage($hook);
+
+        if ($hook->name->toLowerString() === 'get') {
+            $storage->return_type = $property_storage->type ?? Type::getMixed();
+            $storage->return_type_location = $property_storage?->type_location;
+            $storage->signature_return_type = $property_storage?->signature_type;
+            $storage->signature_return_type_location = $property_storage?->signature_type_location;
+
+            return;
+        }
+
+        $storage->return_type = Type::getVoid();
+
+        $value_param = $storage->params[0] ?? null;
+
+        if ($value_param !== null && $value_param->type === null && $property_storage?->type !== null) {
+            $storage->setParams([$value_param->setType($property_storage->type)]);
+        }
+
+        if (!$hook->params) {
+            $storage->setParams([
+                new FunctionLikeParameter(
+                    'value',
+                    false,
+                    $property_storage->type ?? Type::getMixed(),
+                    $property_storage?->signature_type,
+                    null,
+                    null,
+                    false,
+                ),
+            ]);
+        }
     }
 
     //phpcs:disable -- Remove this once the phpstan phpdoc parser MR is merged
@@ -1328,9 +1423,10 @@ final class FunctionLikeNodeScanner
                 }
             }
         } elseif ($stmt instanceof PhpParser\Node\PropertyHook) {
+            // a hook body is analysed as a closure bound to the object, see ClassAnalyzer::analyzePropertyHooks()
             $function_id = $cased_function_id = strtolower($this->file_path)
                 . ':' . $stmt->getLine()
-                . ':' . (int)$stmt->getAttribute('startFilePos') . ':-:hook';
+                . ':' . (int)$stmt->getAttribute('startFilePos') . ':-:closure';
 
             $storage = $this->storage = $this->file_storage->functions[$function_id] = new FunctionStorage();
         } else {

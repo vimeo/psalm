@@ -5,8 +5,15 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
+use function implode;
+use function range;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -22,6 +29,21 @@ final class MatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'exhaustiveMatchOverAnEnumWithMoreCasesThanTheMaximumShapedArraySize' => [
+                'code' => '<?php
+                    enum Id: string {
+                        ' . implode("\n", array_map(static fn(int $i): string => "case ID_$i = \"$i\";", range(1, 105))) . '
+                    }
+
+                    function label(Id $id): string {
+                        return match ($id) {
+                            ' . implode("\n", array_map(static fn(int $i): string => "Id::ID_$i => \"label $i\",", range(1, 105))) . '
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'matchAssignsVarInEveryArm' => [
                 'code' => '<?php
                     $case = rand(0, 2);
@@ -305,6 +327,45 @@ final class MatchTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'matchTrueArmWithSeveralConditionsHasNoRedundantCast' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(string|\Stringable $level): string {
+                        return match (true) {
+                            \is_string($level),
+                            $level instanceof \Stringable => (string) $level,
+                        };
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'matchTrueArmWithSeveralConditionsUnionType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var string|\Stringable|int $level */
+                    $level = $_GET['a'];
+                    $a = match (true) {
+                        \is_string($level),
+                        $level instanceof \Stringable => $level,
+                        default => null,
+                    };
+                    $b = match (true) {
+                        $level instanceof \Stringable, \is_int($level), \is_string($level) => $level,
+                    };
+                    $c = match (true) {
+                        \is_string($level), \is_int($level) => $level,
+                    };
+                    PHP,
+                'assertions' => [
+                    '$a' => 'Stringable|null|string',
+                    '$b' => 'Stringable|int|string',
+                    '$c' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'matchTrueArmWithSeveralMethodCalls' => [
                 'code' => '<?php
                     interface Environment {
@@ -346,6 +407,21 @@ final class MatchTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'matchOverAnEnumWithMoreCasesThanTheMaximumShapedArraySizeMissingOne' => [
+                'code' => '<?php
+                    enum Id: string {
+                        ' . implode("\n", array_map(static fn(int $i): string => "case ID_$i = \"$i\";", range(1, 105))) . '
+                    }
+
+                    function label(Id $id): string {
+                        return match ($id) {
+                            ' . implode("\n", array_map(static fn(int $i): string => "Id::ID_$i => \"label $i\",", range(1, 104))) . '
+                        };
+                    }',
+                'error_message' => 'values enum(Id::ID_105',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'nestedTernaryAssignsVarInOnlySomeBranches' => [
                 'code' => '<?php
                     $c = (bool) rand(0, 1);
@@ -549,5 +625,34 @@ final class MatchTest extends TestCase
                 'php_version' => '8.0',
             ],
         ];
+    }
+
+    public function testMatchTrueArmConditionIssueIsReportedOnceAtTheCondition(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function f(int $i): int {
+                    return match (true) {
+                        $i > 0,
+                        is_string($i) => 1,
+                        default => 2,
+                    };
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [[5, 25, 'TypeDoesNotContainType']],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->column_from, $issue->type],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
     }
 }

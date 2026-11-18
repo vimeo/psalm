@@ -23,6 +23,118 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodTemplateBoundToAnIntermediateClassTemplateOfAnObjectWithoutTypeParams' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Model {}
+                    final class Customer extends Model {}
+                    final class Mechanic extends Model {}
+
+                    /** @template TModel of Model */
+                    abstract class BaseFactory
+                    {
+                        final public function __construct() {}
+
+                        public static function new(): static
+                        {
+                            return new static();
+                        }
+
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /**
+                     * @template TModel of Model
+                     * @extends BaseFactory<TModel>
+                     */
+                    abstract class Factory extends BaseFactory
+                    {
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        #[\Override]
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /** @extends Factory<Customer> */
+                    final class CustomerFactory extends Factory {}
+
+                    /**
+                     * @template TMechanic of Mechanic
+                     * @extends Factory<TMechanic>
+                     */
+                    final class MechanicFactory extends Factory {}
+
+                    function test(CustomerFactory $customers): void
+                    {
+                        $customers->for(MechanicFactory::new());
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['UnsafeGenericInstantiation'],
+                'php_version' => '8.3',
+            ],
+            'methodTemplateBoundToAnIntermediateClassParamOfAnObjectWithoutTypeParams' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Model {}
+                    final class Customer extends Model {}
+                    final class Mechanic extends Model {}
+
+                    /** @template TModel of Model */
+                    abstract class BaseFactory
+                    {
+                        final public function __construct() {}
+
+                        public static function new(): static
+                        {
+                            return new static();
+                        }
+
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /**
+                     * @template TModel of Model
+                     * @extends BaseFactory<TModel>
+                     */
+                    abstract class Factory extends BaseFactory
+                    {
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        #[\Override]
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /** @extends Factory<Customer> */
+                    final class CustomerFactory extends Factory {}
+
+                    /**
+                     * @template TMechanic of Mechanic
+                     * @extends Factory<TMechanic>
+                     */
+                    final class MechanicFactory extends Factory {}
+
+                    function test(CustomerFactory $customers): void
+                    {
+                        $customers->for(CustomerFactory::new());
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['UnsafeGenericInstantiation'],
+                'php_version' => '8.3',
+            ],
             'implementedTemplateWithUnionOfOwnTemplateIsResolvedAtTheCall' => [
                 'code' => '<?php
                     /** @template T1 */
@@ -50,7 +162,7 @@ final class ClassTemplateExtendsTest extends TestCase
                 'assertions' => [
                     '$result===' => 'null|string',
                 ],
-                'ignored_issues' => ['MissingOverrideAttribute'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'implementedTemplateWithOwnTemplateIsResolvedAtTheCall' => [
@@ -80,7 +192,6 @@ final class ClassTemplateExtendsTest extends TestCase
                 'assertions' => [
                     '$items===' => 'list<int>',
                 ],
-                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'inheritedDocblockReturnTypeResolvesThroughSubclassTemplates' => [
                 'code' => '<?php
@@ -179,7 +290,7 @@ final class ClassTemplateExtendsTest extends TestCase
                         return new Table([1]);
                     }',
             ],
-            'SKIPPED-interface' => [
+            'interface' => [
                 'code' => '<?php
                     /**
                      * Singleton interface
@@ -4987,6 +5098,50 @@ final class ClassTemplateExtendsTest extends TestCase
                     /** @implements Holder<Box<static>> */
                     class NonFinalNestedStatic extends Base implements Holder {}',
             ],
+            'selfInExtendsIsTheExtendingClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @return T */
+                        public function get(): mixed { throw new Exception(); }
+                    }
+
+                    /** @extends Base<self> */
+                    class Child extends Base {}
+
+                    final class GrandChild extends Child {}
+
+                    $a = (new Child())->get();
+                    $b = (new GrandChild())->get();',
+                'assertions' => [
+                    '$a===' => 'Child',
+                    '$b===' => 'Child',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'selfInImplementsIsTheImplementingClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Holder {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /** @implements Holder<self> */
+                    class Impl implements Holder {
+                        public function get(): mixed { return $this; }
+                    }
+
+                    final class SubImpl extends Impl {}
+
+                    $a = (new SubImpl())->get();',
+                'assertions' => [
+                    '$a===' => 'Impl',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nestedSelfInGenericTemplateArg' => [
                 'code' => '<?php
                     abstract class Base {}
@@ -5250,6 +5405,135 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'untypedOverrideBindsTheMethodTemplateOfTheParentParamDocblock' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Query {}
+
+                    class Base
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T, Query<T>): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void {}
+                    }
+
+                    final class Box extends Base
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    function takesStdClass(stdClass $_s): void {}
+
+                    /** @param Query<stdClass> $_q */
+                    function takesQuery(Query $_q): void {}
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function ($item, $query): void {
+                            takesStdClass($item);
+                            takesQuery($query);
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'untypedStaticOverrideBindsTheMethodTemplateOfTheParentParamDocblock' => [
+                'code' => '<?php
+                    class Base
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T): void $callback
+                         */
+                        public static function each(string $class, Closure $callback): void {}
+                    }
+
+                    final class Box extends Base
+                    {
+                        public static function each($class, $callback): void {}
+                    }
+
+                    function takesStdClass(stdClass $_s): void {}
+
+                    Box::each(stdClass::class, function ($item): void {
+                        takesStdClass($item);
+                    });',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'untypedImplementationBindsTheMethodTemplateOfTheInterfaceParamDocblock' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Query {}
+
+                    interface Collection
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T, Query<T>): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void;
+                    }
+
+                    final class Box implements Collection
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    /** @param Query<stdClass> $_q */
+                    function takesQuery(Query $_q): void {}
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function ($_item, $query): void {
+                            takesQuery($query);
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'untypedOverrideBindsTheMethodTemplateBesideTheClassTemplate' => [
+                'code' => '<?php
+                    /** @template TKey */
+                    class Base
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T, TKey): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void {}
+                    }
+
+                    /** @extends Base<int> */
+                    final class Box extends Base
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    function takesStdClass(stdClass $_s): void {}
+
+                    function takesInt(int $_i): void {}
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function ($item, $key): void {
+                            takesStdClass($item);
+                            takesInt($key);
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -5260,6 +5544,90 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'untypedOverrideChecksTheClosureAgainstTheBoundMethodTemplate' => [
+                'code' => '<?php
+                    class Base
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void {}
+                    }
+
+                    final class Box extends Base
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function (int $_i): void {});
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:53 - Argument 2 of Box::each expects Closure[impure](stdClass):void',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'objectWithoutTypeParamsOfAnotherModelIsNotABaseFactoryOfTheCustomer' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Model {}
+                    final class Customer extends Model {}
+                    final class Mechanic extends Model {}
+
+                    /** @template TModel of Model */
+                    abstract class BaseFactory
+                    {
+                        final public function __construct() {}
+
+                        public static function new(): static
+                        {
+                            return new static();
+                        }
+
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /**
+                     * @template TModel of Model
+                     * @extends BaseFactory<TModel>
+                     */
+                    abstract class Factory extends BaseFactory
+                    {
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        #[\Override]
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /** @extends Factory<Customer> */
+                    final class CustomerFactory extends Factory {}
+
+                    /**
+                     * @template TMechanic of Mechanic
+                     * @extends Factory<TMechanic>
+                     */
+                    final class MechanicFactory extends Factory {}
+
+                    /** @param BaseFactory<Customer> $factory */
+                    function takesCustomerFactory(BaseFactory $factory): void {}
+
+                    function test(): void
+                    {
+                        takesCustomerFactory(MechanicFactory::new());
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => ['UnsafeGenericInstantiation'],
+                'php_version' => '8.3',
+            ],
             'extendsFillsThePartialGenericInAGeneratedDefault' => [
                 'code' => '<?php
                     /**

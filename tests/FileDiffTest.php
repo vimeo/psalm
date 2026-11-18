@@ -1323,7 +1323,7 @@ final class FileDiffTest extends TestCase
                 [],
                 [[84, 304], [327, 547]],
             ],
-            'SKIPPED-whiteSpaceOnly' => [
+            'whiteSpaceOnly' => [
                 '<?php
                 namespace Foo;
 
@@ -1348,11 +1348,11 @@ final class FileDiffTest extends TestCase
 
                     }
                 }',
+                [],
                 ['foo\a::foo', 'foo\a::bar'],
                 [],
                 [],
-                [],
-                [],
+                [[84, 160], [182, 258]],
             ],
             'changeDeclaredMethodId' => [
                 '<?php
@@ -1861,6 +1861,169 @@ final class FileDiffTest extends TestCase
                 ['foo\a::foo', 'foo\a::bar', 'foo\a::foo', 'foo\a::bar'],
                 [[-6, 0]],
                 [[116, 428], [455, 756]],
+            ],
+            'keepMethodsOfClassWithDocblock' => [
+                '<?php
+                    /** @psalm-immutable */
+                    class A {
+                        public function foo() : int { return 1; }
+                        public function bar() : int { return 1; }
+                    }',
+                '<?php
+                    /** @psalm-immutable */
+                    class A {
+                        public function foo() : int { return 1; }
+                        public function bar() : int { return 2; }
+                    }',
+                ['a::foo'],
+                ['a::bar'],
+                [],
+                [[0, 0]],
+                [[170, 210]],
+            ],
+            'keepMethodsOfNamespacedClassWithDocblock' => [
+                '<?php
+                    namespace Foo;
+
+                    /** @psalm-immutable */
+                    class A {
+                        public function foo() : int { return 1; }
+                        public function bar() : int { return 1; }
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    /** @psalm-immutable */
+                    class A {
+                        public function foo() : int { return 1; }
+                        public function bar() : int { return 2; }
+                    }',
+                ['foo\a::foo'],
+                ['foo\a::bar'],
+                [],
+                [[0, 0]],
+                [[206, 246]],
+            ],
+            'changeClassDocblock' => [
+                '<?php
+                    /** @template K */
+                    class A {
+                        public function foo() : void {}
+                    }',
+                '<?php
+                    /** @template T */
+                    class A {
+                        public function foo() : void {}
+                    }',
+                [],
+                [],
+                ['a::foo'],
+                [[0, 0]],
+                [],
+            ],
+            'changeNamespacedClassDocblock' => [
+                '<?php
+                    namespace Foo;
+
+                    /** @template K */
+                    class A {
+                        public function foo() : void {}
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    /** @template T */
+                    class A {
+                        public function foo() : void {}
+                    }',
+                [],
+                [],
+                ['foo\a::foo'],
+                [[0, 0]],
+                [],
+            ],
+            'changeInterfaceParent' => [
+                '<?php
+                    namespace Foo;
+
+                    interface A extends B {
+                        public function foo() : void;
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    interface A extends C {
+                        public function foo() : void;
+                    }',
+                [],
+                [],
+                ['foo\a::foo'],
+                [[0, 0]],
+                [],
+            ],
+            'changeClassModifier' => [
+                '<?php
+                    namespace Foo;
+
+                    abstract class A {
+                        public function foo() : void {}
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    final class A {
+                        public function foo() : void {}
+                    }',
+                [],
+                [],
+                ['foo\a::foo'],
+                [[-3, 0]],
+                [],
+            ],
+            'changeClassAttribute' => [
+                '<?php
+                    namespace Foo;
+
+                    #[Attr(1)]
+                    class A {
+                        public function foo() : void {}
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    #[Attr(2)]
+                    class A {
+                        public function foo() : void {}
+                    }',
+                [],
+                [],
+                ['foo\a::foo'],
+                [[0, 0]],
+                [],
+            ],
+            'removeNamespacedFunction' => [
+                '<?php
+                    namespace Foo;
+
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    /** @return int */
+                    function bar() {
+                        return 1;
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    class A {
+                        public function foo() : void {}
+                    }',
+                ['foo\a::foo'],
+                [],
+                [],
+                [[0, 0]],
+                [[171, 281]],
             ],
         ];
     }

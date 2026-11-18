@@ -16,6 +16,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\ArrayFillReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayFilterReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayFindReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayFirstLastReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\ArrayIntersectKeyReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayMapReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayMergeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayPadReturnTypeProvider;
@@ -27,20 +28,27 @@ use Psalm\Internal\Provider\ReturnTypeProvider\ArrayReplaceRecursiveReturnTypePr
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayReverseReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArraySliceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArraySpliceReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\ArrayUniqueReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayUserCompareDiffReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\BasenameReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\CountReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DateReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DirnameReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\FgetcsvReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\FilterInputReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\FilterVarReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\FirstArgStringReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\GetCalledClassReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\GetClassMethodsReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\GetObjectVarsReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\GetParentClassReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\HexdecReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\HrtimeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ImplodeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\InArrayReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\IteratorToArrayReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MbInternalEncodingReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\MbStrtolowerReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MinMaxReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MktimeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ParseUrlReturnTypeProvider;
@@ -86,6 +94,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(ArrayFilterReturnTypeProvider::class);
         $this->registerClass(ArrayFindReturnTypeProvider::class);
         $this->registerClass(ArrayFirstLastReturnTypeProvider::class);
+        $this->registerClass(ArrayIntersectKeyReturnTypeProvider::class);
         $this->registerClass(ArrayMapReturnTypeProvider::class);
         $this->registerClass(ArrayMergeReturnTypeProvider::class);
         $this->registerClass(ArrayPadReturnTypeProvider::class);
@@ -98,6 +107,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(ArraySpliceReturnTypeProvider::class);
         $this->registerClass(ArrayUserCompareDiffReturnTypeProvider::class);
         $this->registerClass(ArrayReverseReturnTypeProvider::class);
+        $this->registerClass(ArrayUniqueReturnTypeProvider::class);
         $this->registerClass(ArrayFillReturnTypeProvider::class);
         $this->registerClass(ArrayFillKeysReturnTypeProvider::class);
         $this->registerClass(FilterInputReturnTypeProvider::class);
@@ -127,6 +137,12 @@ final class FunctionReturnTypeProvider
         $this->registerClass(DateReturnTypeProvider::class);
         $this->registerClass(PowReturnTypeProvider::class);
         $this->registerClass(SprintfReturnTypeProvider::class);
+        $this->registerClass(CountReturnTypeProvider::class);
+        $this->registerClass(FgetcsvReturnTypeProvider::class);
+        $this->registerClass(GetCalledClassReturnTypeProvider::class);
+        $this->registerClass(GetParentClassReturnTypeProvider::class);
+        $this->registerClass(HrtimeReturnTypeProvider::class);
+        $this->registerClass(MbStrtolowerReturnTypeProvider::class);
     }
 
     /**

@@ -41,6 +41,11 @@ The taints the native types of a value can't hold are still removed from it: a `
 
 See [Output of command-line code](avoiding_false_positives.md#output-of-command-line-code).
 
+## `@psalm-cli-only-instances`
+
+On a final class: its instances only exist in command-line processes, so the code that requires one only runs from the
+command line. See [Classes only instantiated from the command line](avoiding_false_positives.md#classes-only-instantiated-from-the-command-line).
+
 ## `@psalm-taint-property-bag $<property>`
 
 On a class: the array property `$<property>` holds the properties of its objects under their names.
@@ -58,6 +63,11 @@ Each `<arg>` is a parameter, like `$value`. With `-> return`, an `<arg>` can als
 
 - `$this`: the object the method is called on
 - a parameter followed by `()`, like `$compute()`: what the callables passed to that parameter return
+
+## `@psalm-flow ( <arg>, [ <arg>, ] ) -> $<callable>()`
+
+The callables given to the parameter `$<callable>` are called with what is given to the `<arg>`s. See
+[Arguments to callables](taint_flow.md#arguments-to-callables).
 
 ## `@psalm-flow ( <arg>, [ <arg>, ] ) -> <Class>::$<store>[<key>]` and `@psalm-flow <Class>::$<store>[<key>] -> return`
 
