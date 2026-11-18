@@ -25,12 +25,14 @@ final class HighOrderFunctionArgInfo
 
     /**
      * @psalm-param HighOrderFunctionArgInfo::TYPE_* $type
+     * @param ?non-empty-lowercase-string $callable_id the function or the declaring method called
      * @psalm-mutation-free
      */
     public function __construct(
         private readonly string $type,
         private readonly FunctionLikeStorage $function_storage,
         private readonly ?ClassLikeStorage $class_storage = null,
+        private readonly ?string $callable_id = null,
     ) {
     }
 
@@ -62,6 +64,7 @@ final class HighOrderFunctionArgInfo
                     $this->function_storage->params,
                     $this->function_storage->return_type,
                     $this->function_storage->capabilities,
+                    callable_id: $this->callable_id,
                 ),
             ]),
             self::TYPE_STRING_CALLABLE, self::TYPE_CLASS_CALLABLE => new Union([
@@ -69,6 +72,7 @@ final class HighOrderFunctionArgInfo
                     $this->function_storage->params,
                     $this->function_storage->return_type,
                     $this->function_storage->capabilities,
+                    callable_id: $this->callable_id,
                 ),
             ]),
             default => $this->function_storage->return_type ?? Type::getMixed(),
