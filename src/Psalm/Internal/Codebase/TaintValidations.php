@@ -24,9 +24,9 @@ use function sort;
 use function strtolower;
 
 /**
- * What a validator checks a value against (a pattern), recorded on what it returns (see
- * Codebase::addTaintValidation()), for the checks of that result: once they tell the validation passed, the variable
- * holding the value can't carry the taints the pattern removes, as long as it holds the same value.
+ * What a validator checks a value against (a pattern), recorded for the call (see Codebase::addTaintValidation()),
+ * for the checks of its result: once they tell the validation passed, the variable holding the value can't carry the
+ * taints the pattern removes, as long as it holds the same value.
  *
  * A result is either a validator, which `fails()` when the validation failed and `passes()` when it passed, or a list
  * of violations, empty when it passed (`count($violations) > 0`, `$violations->count() === 0`, ...).
@@ -43,23 +43,22 @@ final class TaintValidations
      */
     public static function record(
         StatementsAnalyzer $statements_analyzer,
-        Union $result_type,
+        Expr\CallLike $call,
         Expr $value,
         int $removed_taints,
         string $kind,
-        CodeLocation $location,
-    ): Union {
+    ): void {
         $graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
 
         if ($graph === null || $removed_taints === 0) {
-            return $result_type;
+            return;
         }
 
         // a value cast to a string has the taints of what is cast
         if ($value instanceof Expr\Cast\String_) {
             foreach ($statements_analyzer->node_data->getType($value->expr)?->getAtomicTypes() ?? [] as $atomic) {
                 if (!$atomic instanceof Scalar && !$atomic instanceof TNull) {
-                    return $result_type;
+                    return;
                 }
             }
 
@@ -80,16 +79,17 @@ final class TaintValidations
             || $value_type->by_ref
             || $value_type->parent_nodes === []
         ) {
-            return $result_type;
+            return;
         }
 
         $node_ids = array_keys($value_type->parent_nodes);
         sort($node_ids);
 
         // the analysis gives the value of the call its nodes after the plugins: the call is told by its location
-        $graph->addTaintValidationOfCall(self::getCallKey($location), [$var_id, $node_ids, $removed_taints, $kind]);
-
-        return $result_type;
+        $graph->addTaintValidationOfCall(
+            self::getCallKey($statements_analyzer, $call),
+            [$var_id, $node_ids, $removed_taints, $kind],
+        );
     }
 
     /**
@@ -115,6 +115,7 @@ final class TaintValidations
      * validation passed
      *
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     * @psalm-capabilities read-props
      */
     public static function getAssertions(StatementsAnalyzer $statements_analyzer, Expr $conditional): array
     {
@@ -152,6 +153,7 @@ final class TaintValidations
      * The validations an expression is the result of: the call making one, or a variable holding one
      *
      * @return list<array{string, list<string>, int, 'validator'|'violations'}>
+     * @psalm-pure
      */
     private static function getValidations(
         StatementsAnalyzer $statements_analyzer,
@@ -160,9 +162,7 @@ final class TaintValidations
         Union $type,
     ): array {
         if ($expr instanceof Expr\CallLike) {
-            return $graph->getTaintValidationsOfCall(
-                self::getCallKey(new CodeLocation($statements_analyzer->getSource(), $expr)),
-            );
+            return $graph->getTaintValidationsOfCall(self::getCallKey($statements_analyzer, $expr));
         }
 
         return $type->parent_nodes === [] ? [] : $graph->getTaintValidations($type->parent_nodes);
@@ -171,8 +171,10 @@ final class TaintValidations
     /**
      * @psalm-pure
      */
-    private static function getCallKey(CodeLocation $location): string
+    private static function getCallKey(StatementsAnalyzer $statements_analyzer, Expr\CallLike $call): string
     {
+        $location = new CodeLocation($statements_analyzer->getSource(), $call);
+
         return $location->file_path . ':' . $location->raw_file_start . '-' . $location->raw_file_end;
     }
 

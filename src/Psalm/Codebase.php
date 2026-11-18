@@ -3305,25 +3305,24 @@ final class Codebase
     }
 
     /**
-     * Returns $result_type, the result of a validation of $value against a pattern removing $removed_taints (see
-     * getTaintsRemovedByPattern()), holding the validation: where a condition on it tells the validation passed, the
-     * variable $value is (or casts to a string) can't carry those taints, as long as it holds the same value. A
-     * result of kind `validator` `fails()` when the validation failed and `passes()` when it passed; one of kind
-     * `violations` is a list of the violations, empty when it passed (`count($violations) > 0`, ...).
+     * Records that $call validates $value against a pattern removing $removed_taints (see getTaintsRemovedByPattern()):
+     * where a condition on its result tells the validation passed, the variable $value is (or casts to a string) can't
+     * carry those taints, as long as it holds the same value. A result of kind `validator` `fails()` when the
+     * validation failed and `passes()` when it passed; one of kind `violations` is a list of the violations, empty when
+     * it passed (`count($violations) > 0`, ...). Call it once the call is analysed (`afterExpressionAnalysis()`).
      *
      * @param 'validator'|'violations' $kind
      */
     public function addTaintValidation(
         StatementsSource $source,
-        Union $result_type,
+        PhpParser\Node\Expr\CallLike $call,
         PhpParser\Node\Expr $value,
         int $removed_taints,
         string $kind,
-        CodeLocation $location,
-    ): Union {
-        return $source instanceof StatementsAnalyzer
-            ? TaintValidations::record($source, $result_type, $value, $removed_taints, $kind, $location)
-            : $result_type;
+    ): void {
+        if ($source instanceof StatementsAnalyzer) {
+            TaintValidations::record($source, $call, $value, $removed_taints, $kind);
+        }
     }
 
     /**

@@ -429,12 +429,12 @@ Plugins can add flows that annotations can't express with these `Codebase` metho
   parameter at `$offset` and of the object it runs on, for a call the code doesn't show (e.g. a framework's). Given
   the location of the call, these are the nodes of that call if Psalm tells its calls apart (see
   `@psalm-taint-specialize`); the receiver node only exists then (null otherwise).
-+ `addTaintValidation($source, $result_type, $value, $removed_taints, $kind, $location)`: returns the type of the
-  result of a validation of `$value` (a local variable, or one cast to a string) against a pattern removing
-  `$removed_taints` (`getTaintsRemovedByPattern($pattern)`). Where a condition on the result tells the validation
-  passed, the variable can't carry those taints, as long as it holds the same value: `$validator->fails()` and
-  `passes()` for a result of kind `validator`, `count($violations) > 0`, `$violations->count() === 0`, ... for one of
-  kind `violations`. Call it from `afterMethodCallAnalysis()`.
++ `addTaintValidation($source, $call, $value, $removed_taints, $kind)`: records that the call `$call` validates
+  `$value` (a local variable, or one cast to a string) against a pattern removing `$removed_taints`
+  (`getTaintsRemovedByPattern($pattern)`). Where a condition on its result tells the validation passed, the variable
+  can't carry those taints, as long as it holds the same value: `$validator->fails()` and `passes()` for a result of
+  kind `validator`, `count($violations) > 0`, `$violations->count() === 0`, ... for one of kind `violations`. Call it
+  from `afterExpressionAnalysis()`.
 + `tracksTaintFlow($source)`: false when taints aren't tracked there, e.g. when `TaintedInput` is suppressed. The
   methods above then add nothing.
 
