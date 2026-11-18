@@ -358,6 +358,20 @@ final class AssertAnnotationTest extends TestCase
                     }
                     PHP,
             ],
+            'assertionOfABuiltinThatReturnsZeroIsNotNegatedWhenItReturnsFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(string $a, string $b): void {
+                        if (strpos($a, 'x') === false) {
+                            /** @psalm-check-type-exact $a = string */
+                        }
+
+                        if (false === stripos($b, 'x')) {
+                            /** @psalm-check-type-exact $b = string */
+                        }
+                    }
+                    PHP,
+            ],
             'assertionOfAUserFunctionThatReturnsZeroHoldsWhenItIsComparedToFalse' => [
                 'code' => <<<'PHP'
                     <?php
