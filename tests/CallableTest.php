@@ -182,6 +182,7 @@ final class CallableTest extends TestCase
                         return ["Magic", "anything"];
                     }
 
+                    // a pair that is not a literal is not proven wrong, so it is accepted
                     /**
                      * @param array{string, string} $pair
                      * @return callable-array{string, string}
