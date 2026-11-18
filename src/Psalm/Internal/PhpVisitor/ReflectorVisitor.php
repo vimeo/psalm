@@ -41,9 +41,11 @@ use SplObjectStorage;
 use UnexpectedValueException;
 
 use function array_pop;
+use function array_unshift;
 use function defined;
 use function end;
 use function explode;
+use function implode;
 use function in_array;
 use function is_string;
 use function preg_match;
@@ -217,12 +219,8 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 /** @var PhpParser\Node\FunctionLike */
                 $node = $node->value;
                 $this->closure_statements->offsetSet($node);
-            } elseif ($node instanceof PhpParser\Node\FunctionLike && $this->closure_statements->offsetExists($node)) {
+            } elseif ($this->closure_statements->offsetExists($node)) {
                 // This is a closure that was already processed at the statement level.
-                return null;
-            }
-
-            if (!$node instanceof PhpParser\Node\FunctionLike) {
                 return null;
             }
 
@@ -255,6 +253,27 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             $functionlike_node_scanner->applyTrivialConstructorCapabilities($node);
 
             $this->functionlike_node_scanners[] = $functionlike_node_scanner;
+
+            if ($node instanceof PhpParser\Node\Stmt\ClassMethod
+                && $functionlike_node_scanner->storage instanceof MethodStorage
+            ) {
+                $method_storage = $functionlike_node_scanner->storage;
+
+                // until a statement of the body says otherwise, see recordExternalEffects(), which only sees the
+                // body when it is scanned deep; the body of a stub is not what runs, and the caller may write
+                // through a reference the method returns
+                $method_storage->writes_only_this_properties = $node->stmts !== null
+                    && $this->scan_deep
+                    && !$method_storage->stubbed
+                    && !$method_storage->returns_by_ref;
+
+                foreach ($method_storage->params as $param) {
+                    // an assignment to it writes the caller's variable
+                    if ($param->by_ref) {
+                        $method_storage->writes_only_this_properties = false;
+                    }
+                }
+            }
 
             if ($classlike_storage
                 && $this->codebase->analysis_php_version_id >= 8_00_00
@@ -306,8 +325,29 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
             $classlike_node_scanner->handleTraitUse($node);
         } elseif ($node instanceof PhpParser\Node\Stmt\Const_) {
+            $var_type = null;
+
+            // a docblock type overrides the declared value to make stub constants configurable
+            $doc_comment = $node->getDocComment();
+            if ($doc_comment && $this->codebase->register_stub_files) {
+                try {
+                    foreach (CommentAnalyzer::getTypeFromComment(
+                        $this->codebase,
+                        $doc_comment,
+                        $this->file_scanner,
+                        $this->aliases,
+                    ) as $var_comment) {
+                        // only check the first @var comment
+                        $var_type = $var_comment->type;
+                        break;
+                    }
+                } catch (DocblockParseException) {
+                    // do nothing
+                }
+            }
+
             foreach ($node->consts as $const) {
-                $const_type = SimpleTypeInferer::infer(
+                $const_type = $var_type ?? SimpleTypeInferer::infer(
                     $this->codebase,
                     new NodeDataProvider(),
                     $const->value,
@@ -433,42 +473,171 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         if ($node instanceof PhpParser\Node\Expr\Assign
             || $node instanceof PhpParser\Node\Expr\AssignOp
             || $node instanceof PhpParser\Node\Expr\AssignRef
-        ) {
-            if ($node->var instanceof PhpParser\Node\Expr\PropertyFetch
-                && $node->var->var instanceof PhpParser\Node\Expr\Variable
-                && $node->var->var->name === 'this'
-                && $node->var->name instanceof PhpParser\Node\Identifier
-            ) {
-                if ($this->functionlike_node_scanners) {
-                    $functionlike_node_scanner = end($this->functionlike_node_scanners);
-                    $functionlike_storage = $functionlike_node_scanner->storage;
-
-                    if ($functionlike_storage instanceof MethodStorage) {
-                        $functionlike_storage->this_property_mutations[$node->var->name->name] = true;
-                    }
-                }
-            } else {
-                $this->recordStaticPropertyMutation($node->var);
-            }
-        }
-
-        if ($node instanceof PhpParser\Node\Expr\PreInc
+            || $node instanceof PhpParser\Node\Expr\PreInc
             || $node instanceof PhpParser\Node\Expr\PreDec
             || $node instanceof PhpParser\Node\Expr\PostInc
             || $node instanceof PhpParser\Node\Expr\PostDec
         ) {
+            $this->recordThisPropertyMutation($node->var);
             $this->recordStaticPropertyMutation($node->var);
         }
 
         if ($node instanceof PhpParser\Node\Stmt\Foreach_) {
             if ($node->keyVar !== null) {
+                $this->recordThisPropertyMutation($node->keyVar);
                 $this->recordStaticPropertyMutation($node->keyVar);
             }
 
+            $this->recordThisPropertyMutation($node->valueVar);
             $this->recordStaticPropertyMutation($node->valueVar);
         }
 
+        if ($node instanceof PhpParser\Node\Stmt\Unset_) {
+            foreach ($node->vars as $var) {
+                // unsetting a whole property of `$this` leaves it uninitialized: it is not assigned
+                if ($var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                    $this->recordThisPropertyMutation($var);
+                    $this->recordStaticPropertyMutation($var);
+                } elseif ($var instanceof PhpParser\Node\Expr\PropertyFetch
+                    && !$var->var instanceof PhpParser\Node\Expr\Variable
+                ) {
+                    $this->recordThisPropertyMutation($var);
+                }
+            }
+        }
+
+        $this->recordExternalEffects($node);
+
         return null;
+    }
+
+    /**
+     * Clears MethodStorage::$writes_only_this_properties of the method being scanned when $node may change
+     * something else than a property of `$this` or a local variable: a call (except building the exception thrown,
+     * when the method catches nothing), a write to anything else, a reference, the iteration of an object (in a
+     * `foreach` or a spread) or a clone. What only reading may run (a hook or `__get` of another object,
+     * `__toString`) or releasing an object (`__destruct`) is not considered, as everywhere else.
+     */
+    private function recordExternalEffects(PhpParser\Node $node): void
+    {
+        if (!$this->functionlike_node_scanners) {
+            return;
+        }
+
+        $storage = end($this->functionlike_node_scanners)->storage;
+
+        if (!$storage instanceof MethodStorage || !$storage->writes_only_this_properties) {
+            return;
+        }
+
+        if ($node instanceof PhpParser\Node\Expr\Throw_ && $node->expr instanceof PhpParser\Node\Expr\New_) {
+            $node->expr->setAttribute('thrownExceptionConstruction', true);
+
+            return;
+        }
+
+        if ($node instanceof PhpParser\Node\Expr\Assign
+            || $node instanceof PhpParser\Node\Expr\AssignOp
+            || $node instanceof PhpParser\Node\Expr\PreInc
+            || $node instanceof PhpParser\Node\Expr\PreDec
+            || $node instanceof PhpParser\Node\Expr\PostInc
+            || $node instanceof PhpParser\Node\Expr\PostDec
+        ) {
+            $target = $node->var;
+            $writes_outside = !($target instanceof PhpParser\Node\Expr\Variable
+                    && is_string($target->name)
+                    && $target->name !== 'this'
+                    && $target->name !== 'GLOBALS')
+                && !($target instanceof PhpParser\Node\Expr\PropertyFetch
+                    && $target->var instanceof PhpParser\Node\Expr\Variable
+                    && $target->var->name === 'this'
+                    && $target->name instanceof PhpParser\Node\Identifier);
+        } else {
+            $writes_outside = $node instanceof PhpParser\Node\Expr\New_
+                ? !$node->getAttribute('thrownExceptionConstruction', false)
+                : $node instanceof PhpParser\Node\Expr\CallLike
+                || $node instanceof PhpParser\Node\Expr\AssignRef
+                || $node instanceof PhpParser\Node\Expr\Clone_
+                || $node instanceof PhpParser\Node\Expr\Include_
+                || $node instanceof PhpParser\Node\Expr\Eval_
+                || $node instanceof PhpParser\Node\Expr\ShellExec
+                || $node instanceof PhpParser\Node\Expr\Yield_
+                || $node instanceof PhpParser\Node\Expr\YieldFrom
+                || $node instanceof PhpParser\Node\Stmt\Foreach_
+                || ($node instanceof PhpParser\Node\ArrayItem && $node->unpack)
+                || $node instanceof PhpParser\Node\Stmt\TryCatch
+                || $node instanceof PhpParser\Node\Stmt\Global_
+                || $node instanceof PhpParser\Node\Stmt\Unset_
+                || ($node instanceof PhpParser\Node\Expr\Variable && !is_string($node->name));
+        }
+
+        if ($writes_outside) {
+            $storage->writes_only_this_properties = false;
+        }
+    }
+
+    /**
+     * Records that the method being scanned writes `$this->property` (see MethodStorage::$this_property_mutations),
+     * or only items or properties of what it holds (see MethodStorage::$this_property_item_mutations)
+     */
+    private function recordThisPropertyMutation(PhpParser\Node\Expr $target): void
+    {
+        if (!$this->functionlike_node_scanners) {
+            return;
+        }
+
+        if ($target instanceof PhpParser\Node\Expr\List_ || $target instanceof PhpParser\Node\Expr\Array_) {
+            foreach ($target->items as $item) {
+                if ($item !== null) {
+                    $this->recordThisPropertyMutation($item->value);
+                }
+            }
+
+            return;
+        }
+
+        // the properties written under the property of `$this`, down to the first item written
+        $path = [];
+        $writes_last = true;
+
+        while ($target instanceof PhpParser\Node\Expr\ArrayDimFetch
+            || ($target instanceof PhpParser\Node\Expr\PropertyFetch
+                && !$target->var instanceof PhpParser\Node\Expr\Variable)
+        ) {
+            if ($target instanceof PhpParser\Node\Expr\PropertyFetch
+                && $target->name instanceof PhpParser\Node\Identifier
+            ) {
+                array_unshift($path, $target->name->name);
+            } else {
+                $path = [];
+                $writes_last = false;
+            }
+
+            $target = $target->var;
+        }
+
+        $storage = end($this->functionlike_node_scanners)->storage;
+
+        if (!$target instanceof PhpParser\Node\Expr\PropertyFetch
+            || !$target->var instanceof PhpParser\Node\Expr\Variable
+            || $target->var->name !== 'this'
+            || !$target->name instanceof PhpParser\Node\Identifier
+            || !$storage instanceof MethodStorage
+        ) {
+            return;
+        }
+
+        $name = $target->name->name;
+        $writes_property = !$path && $writes_last;
+
+        $storage->this_property_mutations[$name] = $writes_property
+            || ($storage->this_property_mutations[$name] ?? false);
+
+        if (!$writes_property) {
+            $sub_path = implode('->', $path);
+            $storage->this_property_item_mutations[$name][$sub_path] = $writes_last
+                || ($storage->this_property_item_mutations[$name][$sub_path] ?? false);
+        }
     }
 
     /**
