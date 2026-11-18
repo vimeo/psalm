@@ -6235,6 +6235,24 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'gettypeSwitchDefaultIsNarrowed' => [
+                'code' => '<?php
+                    function f(int|string|null $x): void {
+                        switch (gettype($x)) {
+                            case "integer":
+                                /** @psalm-check-type-exact $x = int */
+                                break;
+                            case "NULL":
+                                /** @psalm-check-type-exact $x = null */
+                                break;
+                            default:
+                                /** @psalm-check-type-exact $x = string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'classEqualToTheClassOfAnotherClassStillNarrows' => [
                 'code' => '<?php
                     class Bar {}
@@ -6691,6 +6709,15 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'gettypeNotIdenticalToTheOnlyPossibleType' => [
+                'code' => '<?php
+                    function f(int $x): void {
+                        if (gettype($x) !== "integer") {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'mixedOffsetReadAfterATernaryWritingAnOffsetOfAMixedVar' => [
                 'code' => '<?php
                     /** @param mixed $u */

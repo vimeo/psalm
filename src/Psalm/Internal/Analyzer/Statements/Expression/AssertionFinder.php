@@ -2836,10 +2836,10 @@ final class AssertionFinder
         $if_types = [];
 
         if ($gettype_position === self::ASSIGNMENT_TO_RIGHT) {
-            $whichclass_expr = $conditional->left;
+            $string_expr = $conditional->left;
             $gettype_expr = $conditional->right;
         } elseif ($gettype_position === self::ASSIGNMENT_TO_LEFT) {
-            $whichclass_expr = $conditional->right;
+            $string_expr = $conditional->right;
             $gettype_expr = $conditional->left;
         } else {
             throw new UnexpectedValueException('$gettype_position value');
@@ -2852,27 +2852,14 @@ final class AssertionFinder
             $source,
         );
 
-        if ($whichclass_expr instanceof PhpParser\Node\Scalar\String_) {
-            $var_type = $whichclass_expr->value;
-        } elseif ($whichclass_expr instanceof PhpParser\Node\Expr\ClassConstFetch
-            && $whichclass_expr->class instanceof PhpParser\Node\Name
-            && $whichclass_expr->name instanceof PhpParser\Node\Identifier
-            && strtolower($whichclass_expr->name->name) === 'class'
-        ) {
-            $var_type = ClassLikeAnalyzer::getFQCLNFromNameObject(
-                $whichclass_expr->class,
-                $source->getAliases(),
-            );
-        } else {
-            // a constant other than ::class says nothing about the class
-            return [];
-        }
+        /** @var PhpParser\Node\Scalar\String_ $string_expr */
+        $var_type = $string_expr->value;
 
         if (!isset(ClassLikeAnalyzer::GETTYPE_TYPES[$var_type])) {
             IssueBuffer::maybeAdd(
                 new UnevaluatedCode(
                     'gettype cannot return this value',
-                    new CodeLocation($source, $whichclass_expr),
+                    new CodeLocation($source, $string_expr),
                 ),
             );
         } elseif ($var_name && ($atomic = self::getGettypeAtomic($var_type))) {
