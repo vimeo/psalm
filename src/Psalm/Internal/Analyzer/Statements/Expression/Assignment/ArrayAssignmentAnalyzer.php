@@ -462,24 +462,36 @@ final class ArrayAssignmentAnalyzer
                 }
             }
 
-            // as for an assignment, an item that may be anything is mixed
-            $value_type = $holds_mixed ? Type::getMixed() : $item_type;
             $key_values = self::getKeyValuesOfOffset($context, $key);
 
             if ($key_values) {
-                $array_type = self::updateTypeWithKeyValues($codebase, $array_type, $value_type, $key_values);
+                $array_type = self::updateTypeWithKeyValues($codebase, $array_type, $item_type, $key_values);
             } else {
                 // the key the item is under, as an assignment to it has it
-                $key_type = $key[0] === '$' && isset($context->vars_in_scope[$key])
-                    && !$context->vars_in_scope[$key]->hasMixed()
-                    ? ArrayFetchAnalyzer::castInvalidOffsetTypes(
-                        ArrayFetchAnalyzer::replaceOffsetTypeWithInts($context->vars_in_scope[$key]),
-                    )
-                    : Type::getArrayKey();
+                $key_type = Type::getArrayKey();
 
+                if ($key[0] === '$'
+                    && isset($context->vars_in_scope[$key])
+                    && !$context->vars_in_scope[$key]->hasMixed()
+                ) {
+                    $key_type = $context->vars_in_scope[$key];
+
+                    // PHP takes null as the empty string
+                    if ($key_type->isNullable()) {
+                        $key_type = $key_type->getBuilder();
+                        $key_type->removeType('null');
+                        $key_type = $key_type->addType(Type::getAtomicStringFromLiteral(''))->freeze();
+                    }
+
+                    $key_type = ArrayFetchAnalyzer::castInvalidOffsetTypes(
+                        ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type),
+                    );
+                }
+
+                // as for an assignment, an item under any of the keys that may be anything is mixed
                 $array_type = Type::combineUnionTypes(
                     $array_type,
-                    new Union([new TNonEmptyArray([$key_type, $value_type])]),
+                    new Union([new TNonEmptyArray([$key_type, $holds_mixed ? Type::getMixed() : $item_type])]),
                     $codebase,
                 );
             }

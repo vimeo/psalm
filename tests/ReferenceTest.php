@@ -836,6 +836,33 @@ final class ReferenceTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedArgument'],
             ],
+            'writeThroughReferenceToKnownItemOfArrayHoldingMixedKeepsItsType' => [
+                'code' => '<?php
+                    /** @var array{x: int, y: mixed} */
+                    $a = ["x" => 1, "y" => 2];
+                    $r = &$a["x"];
+                    $r = "s";
+                ',
+                'assertions' => [
+                    '$a===' => 'array{x: \'s\', y: mixed}',
+                ],
+            ],
+            'writeThroughReferenceToOffsetOfNullableKeyUsesTheEmptyStringKey' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, array<string, bool>> $form
+                     * @param string|null $k
+                     * @return array<string, array<string, bool>>
+                     */
+                    function f(array $form, $k): array {
+                        $element = &$form[$k];
+                        $element["#d"] = true;
+                        return $form;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullArrayOffset'],
+            ],
             'writeToVariableAnArrayItemIsBoundToChangesTheArray' => [
                 'code' => '<?php
                     /** @return array{a: string} */
