@@ -526,31 +526,8 @@
       <code><![CDATA[$first_var_type]]></code>
       <code><![CDATA[$first_var_type]]></code>
       <code><![CDATA[$first_var_type]]></code>
-      <code><![CDATA[$true_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
     </ImplicitToStringCast>
     <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
@@ -568,13 +545,10 @@
       <code><![CDATA[$expr->getArgs()[1]]]></code>
       <code><![CDATA[$expr->getArgs()[1]]]></code>
       <code><![CDATA[$get_debug_type_expr->getArgs()[0]]]></code>
-      <code><![CDATA[$get_debug_type_expr->getArgs()[0]]]></code>
-      <code><![CDATA[$gettype_expr->getArgs()[0]]]></code>
       <code><![CDATA[$gettype_expr->getArgs()[0]]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$var_name]]></code>
-      <code><![CDATA[!$var_type]]></code>
       <code><![CDATA[!strpos($first_var_name, '->')]]></code>
       <code><![CDATA[!strpos($first_var_name, '[')]]></code>
       <code><![CDATA[$array_root]]></code>
@@ -583,8 +557,6 @@
       <code><![CDATA[$count_equality_position]]></code>
       <code><![CDATA[$count_inequality_position]]></code>
       <code><![CDATA[$count_inequality_position]]></code>
-      <code><![CDATA[$count_inequality_position]]></code>
-      <code><![CDATA[$false_position]]></code>
       <code><![CDATA[$false_position]]></code>
       <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name]]></code>
@@ -599,10 +571,7 @@
       <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name_in_array_argument]]></code>
       <code><![CDATA[$get_debug_type_position]]></code>
-      <code><![CDATA[$get_debug_type_position]]></code>
       <code><![CDATA[$getclass_position]]></code>
-      <code><![CDATA[$getclass_position]]></code>
-      <code><![CDATA[$gettype_position]]></code>
       <code><![CDATA[$gettype_position]]></code>
       <code><![CDATA[$if_false_assertions]]></code>
       <code><![CDATA[$if_true_assertions]]></code>
@@ -610,25 +579,9 @@
       <code><![CDATA[$other_var_name]]></code>
       <code><![CDATA[$superior_value_position]]></code>
       <code><![CDATA[$true_position]]></code>
-      <code><![CDATA[$true_position]]></code>
-      <code><![CDATA[$typed_value_position]]></code>
       <code><![CDATA[$typed_value_position]]></code>
       <code><![CDATA[$var_id]]></code>
       <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
       <code><![CDATA[$var_name]]></code>
       <code><![CDATA[$var_name]]></code>
       <code><![CDATA[$var_name]]></code>
@@ -651,8 +604,6 @@
       <code><![CDATA[$var_name]]></code>
       <code><![CDATA[$var_name_left]]></code>
       <code><![CDATA[$var_name_right]]></code>
-      <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[$var_type]]></code>
       <code><![CDATA[$var_type]]></code>
       <code><![CDATA[self::hasReconcilableNonEmptyCountEqualityCheck($conditional)]]></code>
     </RiskyTruthyFalsyComparison>
