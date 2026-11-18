@@ -2474,6 +2474,8 @@ final class ClassLikeNodeScanner
             $this->codebase->scanner->queueClassLikeForScanning($declaring_fq_classlike_name);
             $this->file_storage->referenced_classlikes[strtolower($declaring_fq_classlike_name)]
                 = $declaring_fq_classlike_name;
+            $this->file_storage->classlikes_used_in_declarations[strtolower($declaring_fq_classlike_name)]
+                = $declaring_fq_classlike_name;
 
             $results[$as_alias_name] = new LinkableTypeAlias(
                 $declaring_fq_classlike_name,

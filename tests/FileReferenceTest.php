@@ -367,7 +367,11 @@ final class FileReferenceTest extends TestCase
         ]);
 
         // the body of a trait method is analysed with the class using the trait
-        self::assertContains($files['c.php'], $this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']]));
+        $this->assertDependents(
+            $files['a.php'],
+            [],
+            [$files['a.php'], $files['t.php'], $files['c.php']],
+        );
     }
 
     public function testFileOfAFunctionIsReferencedByItsCallers(): void
@@ -384,13 +388,50 @@ final class FileReferenceTest extends TestCase
             'union.php' => '<?php $f = rand(0, 1) ? "helper" : "other"; echo $f(4);',
         ]);
 
-        $file_reference_provider = $this->project_analyzer->getCodebase()->file_reference_provider;
+        $codebase = $this->project_analyzer->getCodebase();
 
         self::assertEqualsCanonicalizing(
             [$files['caller.php'], $files['top.php'], $files['callable.php'], $files['union.php']],
-            $file_reference_provider->getFilesReferencingFile($files['functions.php']),
+            $codebase->file_reference_provider->getFilesReferencingFile($files['functions.php']),
         );
-        self::assertSame([$files['union.php']], $file_reference_provider->getFilesReferencingFile($files['other.php']));
+        self::assertSame(
+            [$files['union.php']],
+            $codebase->file_reference_provider->getFilesReferencingFile($files['other.php']),
+        );
+    }
+
+    public function testAStubFunctionIsReferencedByNoFile(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $stub_path = self::$src_dir_path . 'functions.phpstub';
+        $this->file_provider->registerFile($stub_path, '<?php function stubbed_helper(int $i): int { return $i; }');
+        $codebase->config->addStubFile($stub_path);
+        $codebase->config->visitStubFiles($codebase);
+
+        $this->analyzeProject(['caller.php' => '<?php echo stubbed_helper(1);']);
+
+        // a stub is not analysed: nothing needs to be analysed again when it changes
+        self::assertSame(
+            [],
+            $codebase->code_use_graph->getReferencingNodes(CodeUseGraph::functionLikeNode('stubbed_helper')),
+        );
+    }
+
+    public function testFileOfARequiredFunctionIsReferencedByItsCallers(): void
+    {
+        $files = $this->analyzeProject([
+            'functions.php' => '<?php function required_helper(int $i): int { return $i; }',
+            'caller.php' => '<?php
+                require_once __DIR__ . "/functions.php";
+                final class Caller { public function f(): int { return required_helper(1); } }',
+        ]);
+
+        self::assertSame(
+            [$files['caller.php']],
+            $this->project_analyzer->getCodebase()->file_reference_provider->getFilesReferencingFile(
+                $files['functions.php'],
+            ),
+        );
     }
 
     public function testFileOfAClassDependsOnTheClassesItsConstantExpressionsName(): void
@@ -403,10 +444,7 @@ final class FileReferenceTest extends TestCase
         ]);
 
         // D reads B::X only, which is A::Y * 2 wherever it is read
-        self::assertEqualsCanonicalizing(
-            [$files['a.php'], $files['b.php'], $files['d.php']],
-            array_values($this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']])),
-        );
+        $this->assertDependents($files['a.php'], [$files['b.php']], [$files['a.php'], $files['b.php'], $files['d.php']]);
     }
 
     public function testFileOfAClassDependsOnTheClassesItsParameterDefaultsName(): void
@@ -427,7 +465,11 @@ final class FileReferenceTest extends TestCase
         ]);
 
         // the type of $e->f() and helper() is that of A::Y
-        self::assertContains($files['g.php'], $this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']]));
+        $this->assertDependents(
+            $files['a.php'],
+            [$files['e.php'], $files['functions.php']],
+            [$files['a.php'], $files['e.php'], $files['functions.php'], $files['g.php']],
+        );
     }
 
     public function testFileOfAnEnumDependsOnTheClassesItsCaseValuesName(): void
@@ -440,8 +482,8 @@ final class FileReferenceTest extends TestCase
             'd.php' => '<?php final class D { public function f(): bool { return B::X->value === 22; } }',
         ]);
 
-        // A is scanned before B, which then could infer the value of its case already
-        self::assertContains($files['d.php'], $this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']]));
+        // the scan may infer the value of the case from A already
+        $this->assertDependents($files['a.php'], [$files['b.php']], [$files['a.php'], $files['b.php'], $files['d.php']]);
     }
 
     public function testFileOfAClassDependsOnTheEnumsWhoseCasePropertiesItsConstantExpressionsRead(): void
@@ -454,7 +496,7 @@ final class FileReferenceTest extends TestCase
             'd.php' => '<?php final class D { public function f(): bool { return B::X === 22; } }',
         ]);
 
-        self::assertContains($files['d.php'], $this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']]));
+        $this->assertDependents($files['a.php'], [$files['b.php']], [$files['a.php'], $files['b.php'], $files['d.php']]);
     }
 
     public function testFileOfAClassDependsOnTheClassesWhoseAliasesItsConstantExpressionsName(): void
@@ -465,7 +507,7 @@ final class FileReferenceTest extends TestCase
             'd.php' => '<?php final class D { public function f(): bool { return B::X === 22; } }',
         ]);
 
-        self::assertContains($files['d.php'], $this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']]));
+        $this->assertDependents($files['a.php'], [$files['b.php']], [$files['a.php'], $files['b.php'], $files['d.php']]);
     }
 
     public function testFileOfAClassDependsOnTheClassesItImportsTypesFrom(): void
@@ -480,7 +522,23 @@ final class FileReferenceTest extends TestCase
                 }',
         ]);
 
-        self::assertContains($files['imp.php'], $this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']]));
+        $this->assertDependents($files['a.php'], [$files['imp.php']], [$files['a.php'], $files['imp.php']]);
+    }
+
+    /**
+     * @param list<string> $inheriting the files depending on the file like on a parent
+     * @param list<string> $dependents the files to analyse again when the file changes
+     */
+    private function assertDependents(string $file, array $inheriting, array $dependents): void
+    {
+        self::assertEqualsCanonicalizing(
+            $inheriting,
+            $this->project_analyzer->getCodebase()->file_reference_provider->getFilesInheritingFromFile($file),
+        );
+        self::assertEqualsCanonicalizing(
+            $dependents,
+            array_values($this->project_analyzer->getReferencedFilesFromDiff([$file])),
+        );
     }
 
     /**
