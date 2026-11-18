@@ -165,12 +165,8 @@ final class FileReferenceProvider
         }
 
         foreach ($functions as $function_id => $_) {
-            $function_id = strtolower($function_id);
             $referencing_nodes += $this->code_use_graph->getReferencingNodes(
-                CodeUseGraph::functionLikeNode($function_id),
-            );
-            $referencing_nodes += $this->code_use_graph->getReferencingNodes(
-                CodeUseGraph::functionLikeReturnNode($function_id),
+                CodeUseGraph::functionLikeNode(strtolower($function_id)),
             );
         }
 
@@ -189,9 +185,10 @@ final class FileReferenceProvider
      * @return array<string, true>
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
-    public function getFilesOfNodes(Codebase $codebase, array $nodes): array
+    private function getFilesOfNodes(Codebase $codebase, array $nodes): array
     {
         $files = [];
+        $owner_classes = [];
 
         foreach ($nodes as $node_id => $_) {
             $node_file = $this->code_use_graph->getNodeFile($node_id);
@@ -202,10 +199,12 @@ final class FileReferenceProvider
 
             $owner_class = CodeUseGraph::getOwnerClass($node_id);
 
-            if ($owner_class === null) {
-                continue;
+            if ($owner_class !== null) {
+                $owner_classes[$owner_class] = true;
             }
+        }
 
+        foreach ($owner_classes as $owner_class => $_) {
             try {
                 $owner_file = $codebase->scanner->getClassLikeFilePath($owner_class);
             } catch (UnexpectedValueException) {

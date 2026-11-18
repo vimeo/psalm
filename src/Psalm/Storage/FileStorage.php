@@ -39,6 +39,14 @@ final class FileStorage
     public array $required_interfaces = [];
 
     /**
+     * The classes whose constants the constant expressions of the file (class constants, enum case values, parameter
+     * defaults) read
+     *
+     * @var array<lowercase-string, string>
+     */
+    public array $constant_expression_classlikes = [];
+
+    /**
      * @var array<string, FunctionStorage>
      */
     public array $functions = [];
