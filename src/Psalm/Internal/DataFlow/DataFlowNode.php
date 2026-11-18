@@ -511,13 +511,9 @@ final class DataFlowNode implements Stringable
         FunctionLikeParameter $param,
         int $position,
     ): ?int {
-        foreach ($storage->params as $i => $candidate) {
-            if ($candidate->name === $param->name) {
-                return $i < $position ? $i : null;
-            }
-        }
+        $declared = self::getParameterOffset($storage, $param, -1);
 
-        return null;
+        return $declared !== -1 && $declared < $position ? $declared : null;
     }
 
     /**
