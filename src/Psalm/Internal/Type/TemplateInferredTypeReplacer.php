@@ -554,7 +554,8 @@ final class TemplateInferredTypeReplacer
                     continue;
                 }
 
-                // an intersection of an interface and the final Closure is not an object there can be
+                // the final Closure has no object in common with such a candidate (an interface it does not
+                // implement): nothing of it is in the if branch, so it stays only in the else one, decidably
                 if (array_all(
                     $conditional_type->getAtomicTypes(),
                     static fn(Atomic $conditional_atomic_type): bool
