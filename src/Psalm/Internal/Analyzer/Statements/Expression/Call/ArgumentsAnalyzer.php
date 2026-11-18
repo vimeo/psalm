@@ -65,7 +65,6 @@ use UnexpectedValueException;
 
 use function array_all;
 use function array_any;
-use function array_key_last;
 use function array_keys;
 use function array_map;
 use function array_reduce;
@@ -1397,6 +1396,10 @@ final class ArgumentsAnalyzer
             }
         }
 
+        $postponed_by_ref_offsets = $method_id === 'extract' || $template_result === null
+            ? []
+            : self::getByRefOffsetsReadingLaterParams($template_result, $arg_function_params, $function_params);
+
         foreach ($args as $argument_offset => $arg) {
             if (!isset($arg_function_params[$argument_offset])) {
                 continue;
@@ -1404,12 +1407,7 @@ final class ArgumentsAnalyzer
 
             if ($arg_function_params[$argument_offset][0]->by_ref
                 && $method_id !== 'extract'
-                && !self::hasOutTypeOfLaterArguments(
-                    $arg_function_params[$argument_offset][0],
-                    $template_result,
-                    $argument_offset,
-                    $args,
-                )
+                && !isset($postponed_by_ref_offsets[$argument_offset])
             ) {
                 if (self::handlePossiblyMatchingByRefParam(
                     $statements_analyzer,
@@ -1460,35 +1458,25 @@ final class ArgumentsAnalyzer
             }
         }
 
-        // the out type of a by-ref param reads the templates the arguments after it bind too: it is handled once
-        // they are bound
-        if ($template_result && $template_result->template_types) {
-            foreach ($args as $argument_offset => $arg) {
-                $by_ref_param = $arg_function_params[$argument_offset][0] ?? null;
-
-                if ($by_ref_param !== null
-                    && $by_ref_param->by_ref
-                    && $method_id !== 'extract'
-                    && self::hasOutTypeOfLaterArguments($by_ref_param, $template_result, $argument_offset, $args)
-                    && self::handlePossiblyMatchingByRefParam(
-                        $statements_analyzer,
-                        $codebase,
-                        (string) $method_id,
-                        $cased_method_id,
-                        $last_param,
-                        $function_params,
-                        $argument_offset,
-                        $arg,
-                        $context,
-                        $template_result,
-                        $method_id instanceof MethodIdentifier ? $method_id : null,
-                        $in_call_map ? null : $function_storage,
-                        $code_location,
-                        $args,
-                    ) === false
-                ) {
-                    return null;
-                }
+        // the out type of these by-ref params reads templates that later params bind: handled once they are bound
+        foreach ($postponed_by_ref_offsets as $argument_offset => $_) {
+            if (self::handlePossiblyMatchingByRefParam(
+                $statements_analyzer,
+                $codebase,
+                (string) $method_id,
+                $cased_method_id,
+                $last_param,
+                $function_params,
+                $argument_offset,
+                $args[$argument_offset],
+                $context,
+                $template_result,
+                $method_id instanceof MethodIdentifier ? $method_id : null,
+                $in_call_map ? null : $function_storage,
+                $code_location,
+                $args,
+            ) === false) {
+                return null;
             }
         }
 
@@ -1664,45 +1652,72 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * Whether the out type of a by-ref param, that is not the last argument, reads templates that the arguments after
-     * it bind
+     * The offsets of the by-ref arguments whose out type reads templates that only a later parameter binds, and
+     * whose own parameter type doesn't (the `TOutput` of exec() is bound by the by-ref argument itself)
      *
-     * @param array<array-key, PhpParser\Node\Arg> $args
+     * @param array<int, non-empty-list<FunctionLikeParameter>> $arg_function_params
+     * @param array<int, FunctionLikeParameter> $function_params
+     * @return array<int, true>
      * @psalm-capabilities read-props
      */
-    private static function hasOutTypeOfLaterArguments(
-        FunctionLikeParameter $param,
-        ?TemplateResult $template_result,
-        int|string $argument_offset,
-        array $args,
-    ): bool {
-        $out_type = $param->by_ref ? $param->out_type : null;
-
-        if ($template_result === null
-            || $template_result->template_types === []
-            || $argument_offset === array_key_last($args)
-            || $out_type === null
-            || (!$out_type->hasTemplate() && !$out_type->hasConditional())
-        ) {
-            return false;
+    private static function getByRefOffsetsReadingLaterParams(
+        TemplateResult $template_result,
+        array $arg_function_params,
+        array $function_params,
+    ): array {
+        if ($template_result->template_types === []) {
+            return [];
         }
 
-        // the templates of the type of the argument itself (`TOutput` of exec()) are not bound by a later one
-        $own_template_names = [];
+        $offsets = [];
 
-        foreach ($param->type?->getTemplateTypes() ?? [] as $own_template_type) {
-            $own_template_names[$own_template_type->param_name] = true;
-        }
+        foreach ($arg_function_params as $argument_offset => $params) {
+            $param = $params[0];
+            $out_type = $param->by_ref ? $param->out_type : null;
 
-        foreach ($out_type->getTemplateTypes() as $template_type) {
-            if (isset($own_template_names[$template_type->param_name])
-                || !isset($template_result->lower_bounds[$template_type->param_name][$template_type->defining_class])
-            ) {
-                return false;
+            if ($out_type === null || (!$out_type->hasTemplate() && !$out_type->hasConditional())) {
+                continue;
+            }
+
+            $own_template_names = [];
+
+            foreach ($param->type?->getTemplateTypes() ?? [] as $own_template_type) {
+                $own_template_names[$own_template_type->param_name] = true;
+            }
+
+            $later_template_names = [];
+            $is_later = false;
+
+            foreach ($function_params as $function_param) {
+                if ($function_param->name === $param->name) {
+                    $is_later = true;
+                    continue;
+                }
+
+                if ($is_later) {
+                    foreach ($function_param->type?->getTemplateTypes() ?? [] as $later_template_type) {
+                        $later_template_names[$later_template_type->param_name] = true;
+                    }
+                }
+            }
+
+            $reads_later_params = true;
+
+            foreach ($out_type->getTemplateTypes() as $template_type) {
+                if (isset($own_template_names[$template_type->param_name])
+                    || !isset($later_template_names[$template_type->param_name])
+                ) {
+                    $reads_later_params = false;
+                    break;
+                }
+            }
+
+            if ($reads_later_params) {
+                $offsets[$argument_offset] = true;
             }
         }
 
-        return true;
+        return $offsets;
     }
 
     /**
