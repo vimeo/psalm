@@ -7,9 +7,14 @@ namespace Psalm;
 use Exception;
 use LogicException;
 use PhpParser;
+use Psalm\CodeLocation\DocblockTypeLocation;
+use Psalm\CodeLocation\ParseErrorLocation;
+use Psalm\CodeLocation\Raw;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Storage\ImmutableNonCloneableTrait;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
+use ReflectionClass;
 use UnexpectedValueException;
 
 use function explode;
@@ -37,6 +42,7 @@ use const PREG_OFFSET_CAPTURE;
 class CodeLocation
 {
     use ImmutableNonCloneableTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     public string $file_path;
 
@@ -93,30 +99,14 @@ class CodeLocation
     public const CATCH_VAR = 6;
     public const FUNCTION_PHPDOC_METHOD = 7;
 
-    private const PROPERTY_KEYS_FOR_UNSERIALIZE = [
-        'file_path' => 'file_path',
-        'file_name' => 'file_name',
-        'raw_line_number' => 'raw_line_number',
-        "\0" . self::class . "\0" . 'end_line_number' => 'end_line_number',
-        'raw_file_start' => 'raw_file_start',
-        'raw_file_end' => 'raw_file_end',
-        "\0*\0" . 'file_start' => 'file_start',
-        "\0*\0" . 'file_end' => 'file_end',
-        "\0*\0" . 'single_line' => 'single_line',
-        "\0*\0" . 'preview_start' => 'preview_start',
-        "\0" . self::class . "\0" . 'preview_end' => 'preview_end',
-        "\0" . self::class . "\0" . 'selection_start' => 'selection_start',
-        "\0" . self::class . "\0" . 'selection_end' => 'selection_end',
-        "\0" . self::class . "\0" . 'column_from' => 'column_from',
-        "\0" . self::class . "\0" . 'column_to' => 'column_to',
-        "\0" . self::class . "\0" . 'snippet' => 'snippet',
-        "\0" . self::class . "\0" . 'text' => 'text',
-        'docblock_start' => 'docblock_start',
-        "\0" . self::class . "\0" . 'docblock_start_line_number' => 'docblock_start_line_number',
-        "\0*\0" . 'docblock_line_number' => 'docblock_line_number',
-        "\0" . self::class . "\0" . 'regex_type' => 'regex_type',
-        "\0" . self::class . "\0" . 'have_recalculated' => 'have_recalculated',
-        'previous_location' => 'previous_location',
+    /**
+     * The classes of the locations getCompactState() describes: those with no state of their own
+     */
+    private const COMPACT_CLASSES = [
+        self::class => true,
+        DocblockTypeLocation::class => true,
+        ParseErrorLocation::class => true,
+        Raw::class => true,
     ];
 
     public function __construct(
@@ -156,17 +146,86 @@ class CodeLocation
     }
 
     /**
-     * Suppresses memory usage when unserializing objects.
+     * What this location holds besides its file, raw offsets and raw line number: its class, if not this one, and
+     * the values of its properties that differ from those of a location made of them alone (see
+     * fromCompactState()), whatever it computed already included. Null if it has a previous location, or is of a
+     * class that may hold more.
      *
-     * @see \Psalm\Storage\UnserializeMemoryUsageSuppressionTrait
-     * @psalm-external-mutation-free
+     * @internal
+     * @return array<string, scalar|null>|null
+     * @psalm-mutation-free
      */
-    public function __unserialize(array $properties): void
+    public function getCompactState(): ?array
     {
-        foreach (self::PROPERTY_KEYS_FOR_UNSERIALIZE as $key => $property_name) {
-            /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
-            $this->$property_name = $properties[$key];
+        if ($this->previous_location !== null || !isset(self::COMPACT_CLASSES[static::class])) {
+            return null;
         }
+
+        $state = static::class === self::class ? [] : ['class' => static::class];
+
+        // get_object_vars() would leave this location a property table, which it keeps (php/php-src#10126)
+        /** @var array<string, scalar|null> $properties the previous location, the only object, is null */
+        $properties = (array) $this;
+
+        foreach ($properties as $key => $value) {
+            $name = $key[0] === "\0" ? substr($key, (int) strpos($key, "\0", 1) + 1) : $key;
+
+            $default = match ($name) {
+                'file_path', 'file_name', 'raw_line_number', 'raw_file_start', 'raw_file_end' => $value,
+                'file_start', 'preview_start' => $this->raw_file_start,
+                'file_end' => $this->raw_file_end,
+                'single_line', 'have_recalculated' => false,
+                'snippet' => '',
+                'end_line_number', 'preview_end', 'selection_start', 'selection_end', 'column_from', 'column_to' => -1,
+                default => null,
+            };
+
+            if ($value !== $default) {
+                $state[$name] = $value;
+            }
+        }
+
+        return $state;
+    }
+
+    /**
+     * The location getCompactState() returned $state for
+     *
+     * @internal
+     * @param array<string, scalar|null> $state
+     * @psalm-pure
+     * @psalm-suppress ImpureMethodCall newInstanceWithoutConstructor() only makes a new object
+     * @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment the properties of that new object, not yet
+     * seen anywhere else
+     */
+    public static function fromCompactState(
+        string $file_path,
+        string $file_name,
+        int $raw_line_number,
+        int $raw_file_start,
+        int $raw_file_end,
+        array $state,
+    ): self {
+        /** @var class-string<CodeLocation> $class */
+        $class = $state['class'] ?? self::class;
+        unset($state['class']);
+
+        $location = (new ReflectionClass($class))->newInstanceWithoutConstructor();
+        $location->file_path = $file_path;
+        $location->file_name = $file_name;
+        $location->raw_line_number = $raw_line_number;
+        $location->raw_file_start = $raw_file_start;
+        $location->raw_file_end = $raw_file_end;
+        $location->file_start = $raw_file_start;
+        $location->file_end = $raw_file_end;
+        $location->single_line = false;
+        $location->preview_start = $raw_file_start;
+
+        foreach ($state as $name => $value) {
+            $location->$name = $value;
+        }
+
+        return $location;
     }
 
     /**
