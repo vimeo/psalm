@@ -103,6 +103,7 @@ use function get_defined_constants;
 use function get_defined_functions;
 use function getcwd;
 use function glob;
+use function hash;
 use function implode;
 use function in_array;
 use function interface_exists;
@@ -128,7 +129,6 @@ use function reset;
 use function rmdir;
 use function rtrim;
 use function scandir;
-use function sha1;
 use function simplexml_import_dom;
 use function sort;
 use function str_contains;
@@ -825,7 +825,7 @@ final class Config
 
         try {
             $config = self::loadFromXML($base_dir, $file_contents, $current_dir, $file_path);
-            $config->hash = sha1($file_contents . PSALM_VERSION);
+            $config->hash = hash('xxh3', $file_contents . PSALM_VERSION);
         } catch (ConfigException $e) {
             throw new ConfigException(
                 'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage(),
@@ -842,7 +842,7 @@ final class Config
      */
     public function computeHash(): string
     {
-        return sha1($this->hash . ':' . $this->level);
+        return hash('xxh3', $this->hash . ':' . $this->level);
     }
 
     /**
@@ -1272,7 +1272,7 @@ final class Config
         $config->global_cache_directory = $config->cache_directory;
 
         if ($config->cache_directory !== null) {
-            $config->cache_directory .= DIRECTORY_SEPARATOR . sha1($base_dir);
+            $config->cache_directory .= DIRECTORY_SEPARATOR . hash('xxh3', $base_dir);
         }
 
         if (isset($config_xml['serializer'])) {
