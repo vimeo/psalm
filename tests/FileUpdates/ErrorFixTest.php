@@ -521,6 +521,77 @@ final class ErrorFixTest extends TestCase
                 ],
                 'error_counts' => [2, 1, 0],
             ],
+            'fixClassDocblockTemplate' => [
+                'files' => [
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            /** @template K */
+                            final class A {
+                                /** @param T $x */
+                                public function foo($x): void {}
+                            }',
+                    ],
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            /** @template T */
+                            final class A {
+                                /** @param T $x */
+                                public function foo($x): void {}
+                            }',
+                    ],
+                ],
+                'error_counts' => [1, 0],
+            ],
+            'fixNamespacedClassDocblockTemplate' => [
+                'files' => [
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            /** @template K */
+                            final class A {
+                                /** @param T $x */
+                                public function foo($x): void {}
+                            }',
+                    ],
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            /** @template T */
+                            final class A {
+                                /** @param T $x */
+                                public function foo($x): void {}
+                            }',
+                    ],
+                ],
+                'error_counts' => [1, 0],
+            ],
+            'removeNamespacedFunctionWithError' => [
+                'files' => [
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            final class A {
+                                public function foo(): void {}
+                            }
+
+                            function bar(): int {
+                                return "a";
+                            }',
+                    ],
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            final class A {
+                                public function foo(): void {}
+                            }',
+                    ],
+                ],
+                'error_counts' => [2, 0],
+            ],
         ];
     }
 }

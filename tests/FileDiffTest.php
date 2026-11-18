@@ -1862,6 +1862,110 @@ final class FileDiffTest extends TestCase
                 [[-6, 0]],
                 [[116, 428], [455, 756]],
             ],
+            'keepMethodsOfClassWithDocblock' => [
+                '<?php
+                    /** @psalm-immutable */
+                    class A {
+                        public function foo() : int { return 1; }
+                        public function bar() : int { return 1; }
+                    }',
+                '<?php
+                    /** @psalm-immutable */
+                    class A {
+                        public function foo() : int { return 1; }
+                        public function bar() : int { return 2; }
+                    }',
+                ['a::foo'],
+                ['a::bar'],
+                [],
+                [[0, 0]],
+                [[170, 210]],
+            ],
+            'keepMethodsOfNamespacedClassWithDocblock' => [
+                '<?php
+                    namespace Foo;
+
+                    /** @psalm-immutable */
+                    class A {
+                        public function foo() : int { return 1; }
+                        public function bar() : int { return 1; }
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    /** @psalm-immutable */
+                    class A {
+                        public function foo() : int { return 1; }
+                        public function bar() : int { return 2; }
+                    }',
+                ['foo\a::foo'],
+                ['foo\a::bar'],
+                [],
+                [[0, 0]],
+                [[206, 246]],
+            ],
+            'changeClassDocblock' => [
+                '<?php
+                    /** @template K */
+                    class A {
+                        public function foo() : void {}
+                    }',
+                '<?php
+                    /** @template T */
+                    class A {
+                        public function foo() : void {}
+                    }',
+                [],
+                [],
+                ['a::foo'],
+                [[0, 0]],
+                [],
+            ],
+            'changeNamespacedClassDocblock' => [
+                '<?php
+                    namespace Foo;
+
+                    /** @template K */
+                    class A {
+                        public function foo() : void {}
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    /** @template T */
+                    class A {
+                        public function foo() : void {}
+                    }',
+                [],
+                [],
+                ['foo\a::foo'],
+                [[0, 0]],
+                [],
+            ],
+            'removeNamespacedFunction' => [
+                '<?php
+                    namespace Foo;
+
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    /** @return int */
+                    function bar() {
+                        return 1;
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    class A {
+                        public function foo() : void {}
+                    }',
+                ['foo\a::foo'],
+                [],
+                [],
+                [[0, 0]],
+                [[171, 281]],
+            ],
         ];
     }
 }
