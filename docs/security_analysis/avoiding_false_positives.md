@@ -103,8 +103,8 @@ if (preg_match('/[a-z]+/', $id)) {
 
 `$` also matches before a final newline, unless the pattern has the `D` modifier or ends with `\z`: that newline ends a shell command.
 
-The host `parse_url()` takes from a URL, matched against a list of hosts, fixes the server the URL reaches, as long as
-the variable holding the URL isn't assigned again:
+The host `parse_url()` takes from a URL, matched against a list of hosts, fixes the server PHP's stream wrappers
+reach, as long as the local variable holding the URL isn't assigned again:
 
 ```php
 <?php
@@ -112,12 +112,13 @@ the variable holding the URL isn't assigned again:
 $url = getParam('next');
 $host = (string) parse_url($url, PHP_URL_HOST);
 if (preg_match('/^(api\.example\.com|cdn\.example\.com)$/', $host)) {
-    header('Location: ' . $url);   // no issue
+    fsockopen($url, 80);           // no issue
     file_get_contents($url);       // TaintedFile: compress.zlib://api.example.com/etc/passwd is a local file
+    header('Location: ' . $url);   // TaintedRedirect: a browser goes to evil.example for http://evil.example\@api.example.com/
 }
 
 if (preg_match('/^api.example.com$/', $host)) {
-    header('Location: ' . $url);   // TaintedRedirect: `.` matches apixexample.com
+    fsockopen($url, 80);           // TaintedSSRF: `.` matches apixexample.com
 }
 ```
 

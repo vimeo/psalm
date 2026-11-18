@@ -1330,7 +1330,7 @@ final class CastAnalyzer
             }
 
             if ($statements_analyzer->taint_flow_graph) {
-                UrlHosts::recordFlow($statements_analyzer->taint_flow_graph, $parent_nodes, $cast_node);
+                UrlHosts::recordCast($statements_analyzer->taint_flow_graph, $parent_nodes, $cast_node);
             }
 
             $parent_nodes = [$cast_node->id => $cast_node];

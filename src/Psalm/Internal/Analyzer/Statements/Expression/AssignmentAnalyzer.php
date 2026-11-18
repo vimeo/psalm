@@ -3227,12 +3227,9 @@ final class AssignmentAnalyzer
             // the start of a string assigned, for the keys of the keyed stores it is used as
             $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
             if ($assign_value && $taint_flow_graph) {
-                $assigned_type = $statements_analyzer->node_data->getType($assign_value);
                 foreach ($context->vars_in_scope[$var_id]->parent_nodes as $var_node) {
                     TaintStore::recordAssignment($statements_analyzer, $taint_flow_graph, $assign_value, $var_node);
-                    if ($assigned_type) {
-                        UrlHosts::recordFlow($taint_flow_graph, $assigned_type->parent_nodes, $var_node);
-                    }
+                    UrlHosts::recordAssignment($statements_analyzer, $taint_flow_graph, $assign_value, $var_node);
                 }
             }
         }
