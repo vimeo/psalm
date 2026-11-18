@@ -604,7 +604,6 @@
       <code><![CDATA[$var_name_left]]></code>
       <code><![CDATA[$var_name_right]]></code>
       <code><![CDATA[$var_type]]></code>
-      <code><![CDATA[self::hasReconcilableNonEmptyCountEqualityCheck($conditional)]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Assignment/ArrayAssignmentAnalyzer.php">
