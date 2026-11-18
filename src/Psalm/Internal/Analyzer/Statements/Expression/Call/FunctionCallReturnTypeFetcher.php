@@ -349,7 +349,14 @@ final class FunctionCallReturnTypeFetcher
         if (!$statements_analyzer->data_flow_graph || !$function_storage) {
             return $stmt->isFirstClassCallable()
                 ? $stmt_type
-                : UrlHosts::recordParseUrl($statements_analyzer, $stmt, $function_id, $stmt->getArgs(), $stmt_type);
+                : UrlHosts::recordParseUrl(
+                    $statements_analyzer,
+                    $context,
+                    $stmt,
+                    $function_id,
+                    $stmt->getArgs(),
+                    $stmt_type,
+                );
         }
 
         // For a first-class callable (`foo(...)`) the value produced here is the closure
@@ -408,7 +415,14 @@ final class FunctionCallReturnTypeFetcher
         }
 
         // the host of a URL, which a list of hosts can fix
-        return UrlHosts::recordParseUrl($statements_analyzer, $stmt, $function_id, $stmt->getArgs(), $stmt_type);
+        return UrlHosts::recordParseUrl(
+            $statements_analyzer,
+            $context,
+            $stmt,
+            $function_id,
+            $stmt->getArgs(),
+            $stmt_type,
+        );
     }
 
     /**

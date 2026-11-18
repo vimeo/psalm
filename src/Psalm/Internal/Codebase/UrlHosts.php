@@ -10,6 +10,7 @@ use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Name;
 use PhpParser\Node\Scalar\String_;
 use Psalm\CodeLocation;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -45,6 +46,7 @@ final class UrlHosts
      */
     public static function recordParseUrl(
         StatementsAnalyzer $statements_analyzer,
+        Context $context,
         FuncCall $stmt,
         string $function_id,
         array $args,
@@ -95,6 +97,9 @@ final class UrlHosts
             || !preg_match('/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $url_var_id)
             || $url_type === null
             || $url_type->by_ref
+            || isset($context->references_in_scope[$url_var_id])
+            || isset($context->references_to_external_scope[$url_var_id])
+            || ($context->referenced_counts[$url_var_id] ?? 0) > 0
             || $url_type->parent_nodes === []
         ) {
             return $stmt_type;
