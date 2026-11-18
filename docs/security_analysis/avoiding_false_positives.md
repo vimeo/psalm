@@ -96,7 +96,7 @@ if (preg_match('/[a-z]+/', $id)) {
 }
 ```
 
-`$` also matches before a final newline, unless the pattern has the `D` modifier or ends with `\z`: that newline ends a shell command. `basename()` returns a name with no directory separator, which can't name a file outside the directory it is appended to.
+`$` also matches before a final newline, unless the pattern has the `D` modifier or ends with `\z`: that newline ends a shell command.
 
 ## Conditionally escaping tainted input
 

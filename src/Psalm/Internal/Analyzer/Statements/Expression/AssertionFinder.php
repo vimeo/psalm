@@ -4159,7 +4159,8 @@ final class AssertionFinder
     ): array {
         $args = $expr->getArgs();
 
-        if (!isset($args[0], $args[1])) {
+        // from an offset, the start of the subject isn't matched
+        if (!isset($args[0], $args[1]) || self::hasNonZeroOffsetArg($expr, $source)) {
             return [];
         }
 
@@ -4202,6 +4203,28 @@ final class AssertionFinder
         }
 
         return null;
+    }
+
+    /**
+     * Whether preg_match() is given an offset the analysis can't tell is 0
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function hasNonZeroOffsetArg(PhpParser\Node\Expr\FuncCall $expr, StatementsAnalyzer $source): bool
+    {
+        foreach ($expr->getArgs() as $offset => $arg) {
+            if ($arg->unpack) {
+                return true;
+            }
+
+            if ($arg->name !== null ? $arg->name->name === 'offset' : $offset === 4) {
+                $type = $source->node_data->getType($arg->value);
+
+                return $type === null || !$type->isSingleIntLiteral() || $type->getSingleIntLiteral()->value !== 0;
+            }
+        }
+
+        return false;
     }
 
     /**

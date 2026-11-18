@@ -1318,10 +1318,6 @@ final class TaintTest extends TestCase
                     }
                     exec("run " . (string) $command);',
             ],
-            'basenameRemovesTheFileTaint' => [
-                'code' => '<?php
-                    file_put_contents("/var/app/data/" . basename((string) $_GET["file"]), "data");',
-            ],
             'coalesceOnAnOffsetKeepsTheTypeOfTheArrayItReads' => [
                 'code' => '<?php
                     /** @param list<mixed> $l */
@@ -6463,10 +6459,14 @@ final class TaintTest extends TestCase
                     exec("run " . (string) $command);',
                 'error_message' => 'TaintedShell',
             ],
-            'basenameKeepsTheIncludeTaint' => [
+            'patternMatchedFromAnOffsetKeepsTheTaints' => [
                 'code' => '<?php
-                    include "/var/app/plugins/" . basename((string) $_GET["plugin"]);',
-                'error_message' => 'TaintedInclude',
+                    $name = (string) $_GET["name"];
+                    if (!preg_match("/^[a-z]+$/A", $name, $matches, 0, 3)) {
+                        exit;
+                    }
+                    echo $name;',
+                'error_message' => 'TaintedHtml',
             ],
             'superGlobalPassedByReferenceIsTainted' => [
                 'code' => '<?php // --taint-analysis

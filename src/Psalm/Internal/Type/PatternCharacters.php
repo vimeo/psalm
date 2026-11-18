@@ -9,9 +9,11 @@ use Psalm\Type\TaintKind;
 use function array_fill;
 use function chr;
 use function ctype_alnum;
+use function ctype_digit;
 use function hexdec;
 use function in_array;
 use function ord;
+use function preg_match;
 use function str_contains;
 use function str_split;
 use function strlen;
@@ -41,8 +43,9 @@ final class PatternCharacters
         TaintKind::INPUT_HAS_QUOTES => '\'"`',
         TaintKind::INPUT_LDAP => "*()\\,+\"<>;=\0",
         TaintKind::INPUT_XPATH => '\'"[]()=|*@/:<>!$,',
-        TaintKind::INPUT_FILE => "/\\\0",
-        TaintKind::INPUT_INCLUDE => "/\\\0",
+        // `..` is the parent directory wherever the path puts it
+        TaintKind::INPUT_FILE => "/\\.\0",
+        TaintKind::INPUT_INCLUDE => "/\\.\0",
         TaintKind::INPUT_UNSERIALIZE => ':',
         TaintKind::INPUT_URL_COMPONENT => "/?&#%=;+\\ ",
         TaintKind::INPUT_URL_PATH => '.',
@@ -341,13 +344,12 @@ final class PatternCharacters
         if ($char === '*' || $char === '+' || $char === '?') {
             $this->offset++;
         } elseif ($char === '{') {
-            $close = strpos($this->body, '}', $this->offset);
-
-            if ($close === false) {
+            // a brace that doesn't start a quantifier is a literal
+            if (preg_match('/\G\{(\d+(,\d*)?|,\d+)\}/', $this->body, $matches, 0, $this->offset) !== 1) {
                 return false;
             }
 
-            $this->offset = $close + 1;
+            $this->offset += strlen($matches[0] ?? '');
         } else {
             return true;
         }
@@ -402,7 +404,12 @@ final class PatternCharacters
             if ($char === '\\') {
                 $escape = $this->body[$this->offset + 1] ?? '';
 
-                if (in_array($escape, ['d', 'w', 's', 'D', 'W', 'S'], true)) {
+                if (in_array($escape, ['d', 'w', 's', 'v', 'D', 'W', 'S'], true)) {
+                    // the complement of almost every character isn't worked out
+                    if ($negated && in_array($escape, ['D', 'W', 'S'], true)) {
+                        return false;
+                    }
+
                     if (!$this->parseEscape()) {
                         return false;
                     }
@@ -474,6 +481,8 @@ final class PatternCharacters
             'd' => '0123456789',
             'w' => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_',
             's' => " \t\n\r\x0B\x0C",
+            // vertical whitespace, also the multibyte NEL and line and paragraph separators
+            'v' => "\n\r\x0B\x0C\x85",
             default => null,
         };
 
@@ -484,8 +493,8 @@ final class PatternCharacters
                 $this->chars[ord($char)] = true;
             }
 
-            if ($escape === 'w' && $this->unicode) {
-                // the letters of other scripts
+            if (($escape === 'w' || $escape === 'v') && $this->unicode) {
+                // the letters of other scripts, the multibyte separators
                 for ($byte = 128; $byte < 256; $byte++) {
                     $this->chars[$byte] = true;
                 }
@@ -548,7 +557,12 @@ final class PatternCharacters
             return chr((int) hexdec($hex));
         }
 
-        $special = ['n' => "\n", 'r' => "\r", 't' => "\t", 'f' => "\f", 'v' => "\v", 'e' => "\e", '0' => "\0"];
+        // `\v` is a class, `\0` followed by digits an octal escape
+        $special = ['n' => "\n", 'r' => "\r", 't' => "\t", 'f' => "\f", 'e' => "\e", '0' => "\0"];
+
+        if ($escape === '0' && ctype_digit($this->body[$this->offset + 2] ?? '')) {
+            return null;
+        }
 
         if (isset($special[$escape])) {
             $this->offset += 2;
