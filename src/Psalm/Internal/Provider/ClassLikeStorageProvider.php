@@ -65,14 +65,17 @@ final class ClassLikeStorageProvider
     }
 
     /**
-     * @return ClassLikeStorage|null null if the cache has no storage for the class-like in the file
+     * @return ClassLikeStorage|null null if the cache has no storage for the class-like in the file, or the name is
+     *                               already taken by a declaration in another file (or by the native class)
      */
     public function exhume(string $fq_classlike_name, string $file_path, string $file_contents): ?ClassLikeStorage
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
         if (isset(self::$storage[$fq_classlike_name_lc])) {
-            return self::$storage[$fq_classlike_name_lc];
+            $in_memory = self::$storage[$fq_classlike_name_lc];
+
+            return $in_memory->stmt_location?->file_path === $file_path ? $in_memory : null;
         }
 
         if (!$this->cache) {
@@ -178,11 +181,15 @@ final class ClassLikeStorageProvider
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @param string $file_path the file that declared the class-like, which keys its cache entry. Not the file of
+     *                          the storage's stmt_location, which a stub moves.
+     * @psalm-capabilities read-props|write-props|write-refs|read-globals|write-globals
      */
-    public function remove(string $fq_classlike_name): void
+    public function remove(string $fq_classlike_name, string $file_path): void
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
+
+        $this->cache?->evict($fq_classlike_name_lc, $file_path);
 
         unset(self::$storage[$fq_classlike_name_lc]);
     }

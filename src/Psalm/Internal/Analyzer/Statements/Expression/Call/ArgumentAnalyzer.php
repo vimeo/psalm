@@ -33,6 +33,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ArgumentTypeCoercion;
+use Psalm\Issue\CallableByReferenceMismatch;
 use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
@@ -65,6 +66,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
@@ -216,7 +218,7 @@ final class ArgumentAnalyzer
                     IssueBuffer::maybeAdd(
                         new MixedArgument(
                             'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                                . ' cannot be mixed, expecting ' . $param_type,
+                                . ' cannot be mixed, expecting ' . $param_type->getId(),
                             new CodeLocation($statements_analyzer->getSource(), $arg->value),
                             $cased_method_id,
                         ),
@@ -969,8 +971,8 @@ final class ArgumentAnalyzer
             IssueBuffer::maybeAdd(
                 new MixedArgument(
                     'Argument ' . ($argument_offset + 1) . $method_identifier
-                        . ' cannot be ' . $input_type->getId() . ', expecting ' .
-                        $param_type,
+                        . ' cannot be ' . $input_type->getId() . ', expecting '
+                        . $param_type->getId(),
                     $arg_location,
                     $cased_method_id,
                     $origin_location,
@@ -1189,6 +1191,10 @@ final class ArgumentAnalyzer
                 $upper_bound->from_argument_requirement = true;
             }
 
+            foreach ($union_comparison_results->type_variable_lower_bounds as [$_, $lower_bound]) {
+                $lower_bound->from_argument_value = true;
+            }
+
             // transfer any type-variable bounds the containment comparison
             // recorded, stamped with the argument's position
             $statements_analyzer->type_variable_tracker->addBounds(
@@ -1223,6 +1229,10 @@ final class ArgumentAnalyzer
                 $in_call_map,
                 $argument_name,
                 $unpack ? $unpacked_argument_offset : null,
+                $param_type->isString()
+                    || $union_comparison_results->to_string_cast === true
+                    // a builtin taking a stringable-object (sprintf) converts it
+                    || ($in_call_map && self::hasStringableObject($param_type)),
             );
 
             if ($function_param->assert_untainted) {
@@ -1423,6 +1433,19 @@ final class ArgumentAnalyzer
             }
         }
 
+        if ($union_comparison_results->callable_by_reference_mismatch) {
+            IssueBuffer::maybeAdd(
+                new CallableByReferenceMismatch(
+                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId()
+                        . ', but ' . $input_type->getId() . ' takes a parameter by reference where it is called with'
+                        . ' a value',
+                    $arg_location,
+                    $cased_method_id,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
         if ($union_comparison_results->to_string_cast && $cased_method_id !== 'echo' && $cased_method_id !== 'print') {
             IssueBuffer::maybeAdd(
                 new ImplicitToStringCast(
@@ -1601,6 +1624,31 @@ final class ArgumentAnalyzer
         return null;
     }
 
+    /**
+     * A `callable` parameter checks the callable in the scope of the function it is declared by, and a protected
+     * method is accessible from that scope when its class and the scope's class are in one hierarchy.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isProtectedCallableAccessibleFromCallee(
+        Codebase $codebase,
+        int $visibility,
+        MethodIdentifier $callable_method_id,
+        ?MethodIdentifier $callee_method_id,
+    ): bool {
+        if ($visibility !== ClassLikeAnalyzer::VISIBILITY_PROTECTED || !$callee_method_id) {
+            return false;
+        }
+
+        $callable_class = $codebase->methods->getDeclaringMethodId($callable_method_id)?->fq_class_name;
+        $callee_class = $codebase->methods->getDeclaringMethodId($callee_method_id)?->fq_class_name;
+
+        return $callable_class !== null
+            && $callee_class !== null
+            && ($codebase->classExtends($callable_class, $callee_class)
+                || $codebase->classExtends($callee_class, $callable_class));
+    }
+
     private static function verifyCallableInContext(
         MethodIdentifier $potential_method_id,
         ?string $cased_method_id,
@@ -1641,7 +1689,14 @@ final class ArgumentAnalyzer
                             && $method_id->fq_class_name !== $context->self
                             && $method_id->fq_class_name !== 'Closure')
                     ) {
-                        if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
+                        if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                            && !self::isProtectedCallableAccessibleFromCallee(
+                                $codebase,
+                                $method_storage->visibility,
+                                $potential_method_id,
+                                $method_id,
+                            )
+                        ) {
                             IssueBuffer::maybeAdd(
                                 new InvalidArgument(
                                     'Argument ' . ($argument_offset + 1) . $method_identifier
@@ -2125,6 +2180,20 @@ final class ArgumentAnalyzer
         }
     }
 
+    /**
+     * @psalm-pure
+     */
+    private static function hasStringableObject(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TObjectWithProperties && isset($atomic_type->methods['__tostring'])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static function processTaintedness(
         StatementsAnalyzer $statements_analyzer,
         string $cased_method_id,
@@ -2141,13 +2210,16 @@ final class ArgumentAnalyzer
         bool $in_call_map,
         ?string $argument_name = null,
         ?int $unpacked_argument_offset = null,
+        bool $converts_to_string = false,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
+        $string_param = $function_param->type && $function_param->type->isString();
+
+        if (!$input_type->isString() && ($string_param || ($converts_to_string && $input_type->hasObjectType()))) {
             // the argument check reports a bad argument itself, but the implicit __toString call is signalled
             // whether or not a data-flow graph is built
-            $input_type = CastAnalyzer::castStringAttempt(
+            $string_type = CastAnalyzer::castStringAttempt(
                 $statements_analyzer,
                 $context,
                 $input_type,
@@ -2155,6 +2227,16 @@ final class ArgumentAnalyzer
                 false,
                 false,
             );
+
+            // a string parameter takes the whole value as a string; any other only converts its objects, and what
+            // else the value may be keeps its own flow
+            if ($string_param) {
+                $input_type = $string_type;
+            } else {
+                $input_type = $input_type->setParentNodes($input_type->isObjectType()
+                    ? $string_type->parent_nodes
+                    : [...$input_type->parent_nodes, ...$string_type->parent_nodes]);
+            }
         }
 
         if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
@@ -2184,8 +2266,7 @@ final class ArgumentAnalyzer
         // (see getParameterOffset() / getForMethodArgumentById()), not by its position in this call,
         // so a named argument resolves to the same node as the equivalent positional one (and as the
         // method body's parameter node). When the caller has no storage it is resolved from the cased
-        // method id; only a genuinely storage-less callable falls back to getForCallableArg(), which
-        // has no declared parameter to key on and so uses the call offset.
+        // method id; only a genuinely storage-less callable falls back to getForCallableArg().
         // a call of parent::/self:: going into the body of the method analyzed for the class of `$this`
         /** @var string|null $body_class set by StaticCallAnalyzer */
         $body_class = $expr->getAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE);
