@@ -1,0 +1,7 @@
+<?php
+
+class Exception implements Throwable
+{
+    /** @param non-empty-string $message */
+    public function __construct(protected string $message = 'Unknown error', int $code = 0, ?Throwable $previous = null) {}
+}
