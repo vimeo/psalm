@@ -39,9 +39,11 @@ final class TClosure extends TNamedObject
      * @param CapabilitySet|Union $purity A capability set or a purity type (see {@see CallableTrait::$purity})
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
      * @param ?non-empty-lowercase-string $callable_id The id of the underlying function/method, when
-     *                                        known (e.g. for a first-class callable `foo(...)`). Metadata
-     *                                        only - it does not affect the structural type - and is
-     *                                        used to re-dispatch taint sinks/sources on invocation.
+     *                                        known (e.g. for a first-class callable `foo(...)`). It doesn't
+     *                                        change how the type reads, but it keeps closures made from
+     *                                        different functions apart. It is used to re-dispatch taint
+     *                                        sinks/sources on invocation, and to infer the templates of a
+     *                                        generic function or method there.
      */
     public function __construct(
         ?array $params = null,
@@ -62,6 +64,25 @@ final class TClosure extends TNamedObject
             $extra_types,
             $from_docblock,
         );
+    }
+
+    /**
+     * Closures made from different functions or methods are kept apart, though their types read the same
+     */
+    #[Override]
+    public function getKey(bool $include_extra = true): string
+    {
+        $key = $this->getPurityString() . $this->getParamString() . $this->getReturnTypeString();
+
+        return $this->callable_id === null ? $key : $key . '#' . $this->callable_id;
+    }
+
+    #[Override]
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
+    {
+        return $other_type instanceof self
+            && $this->callable_id === $other_type->callable_id
+            && parent::equals($other_type, $ensure_source_equality);
     }
 
     #[Override]
