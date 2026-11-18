@@ -18,12 +18,12 @@ use function count;
 use function implode;
 use function in_array;
 use function is_string;
-use function json_encode;
 use function preg_match;
 use function preg_replace;
 use function stripslashes;
 use function strtolower;
 use function substr;
+use function var_export;
 
 /**
  * @internal
@@ -343,7 +343,8 @@ final class ExpressionIdentifier
                 || $value instanceof PhpParser\Node\Scalar\Int_
                 || $value instanceof PhpParser\Node\Scalar\Float_
             ) {
-                $arguments[] = json_encode($value->value);
+                // the exact form of the literal tells `1`, `1.0` and `'1'` apart and keeps any bytes of a string
+                $arguments[] = var_export($value->value, true);
             } elseif ($value instanceof PhpParser\Node\Expr\ConstFetch
                 && in_array(strtolower($value->name->toString()), ['true', 'false', 'null'], true)
             ) {

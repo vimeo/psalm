@@ -3656,6 +3656,40 @@ final class FunctionCallTest extends TestCase
                         }
                     }',
             ],
+            'pureFunctionCalledWithAnIntAndAFloatIsAnotherCall' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-pure
+                     * @return ($x is int ? "int" : "float")
+                     */
+                    function kind(int|float $x): string {
+                        return is_int($x) ? "int" : "float";
+                    }
+
+                    $a = kind(1);
+                    $b = kind(1.0);',
+                'assertions' => [
+                    '$a===' => '\'int\'',
+                    '$b===' => '\'float\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'pureFunctionCalledWithOtherBytesIsAnotherCall' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function bad(string $s): ?string {
+                        return $s === "\xff" ? null : $s;
+                    }
+
+                    if (bad("\xff") !== null) {
+                        $x = bad("\xfe");
+                        /** @psalm-check-type-exact $x = null|string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'pureFunctionCalledWithOtherArgumentsIsAnotherCall' => [
                 'code' => '<?php
                     /** @psalm-pure */
