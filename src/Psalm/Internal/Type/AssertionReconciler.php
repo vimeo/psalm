@@ -40,16 +40,19 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TDecimalIntString;
+use Psalm\Type\Atomic\TEmptyNumeric;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -67,10 +70,13 @@ use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
@@ -173,6 +179,55 @@ final class AssertionReconciler extends Reconciler
             }
 
             return new Union($type_variables);
+        }
+
+        $template_key_or_value_of_bounds = [];
+        $expanded_var_type = $existing_var_type->getBuilder();
+
+        foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $existing_atomic) {
+            if (!$existing_atomic instanceof TTemplateKeyOf && !$existing_atomic instanceof TTemplateValueOf) {
+                continue;
+            }
+
+            $bound = $existing_atomic instanceof TTemplateKeyOf
+                ? TKeyOf::getArrayKeyType($existing_atomic->as)
+                : TValueOf::getValueType($existing_atomic->as, $codebase);
+
+            if ($bound === null) {
+                continue;
+            }
+
+            $template_key_or_value_of_bounds[$atomic_key] = [$existing_atomic, $bound];
+            $expanded_var_type->removeType($atomic_key);
+
+            foreach ($bound->getAtomicTypes() as $bound_atomic) {
+                $expanded_var_type->addType($bound_atomic);
+            }
+        }
+
+        if ($template_key_or_value_of_bounds) {
+            $expanded_var_type = $expanded_var_type->freeze();
+
+            $reconciled_type = self::reconcile(
+                $assertion,
+                $expanded_var_type,
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $negated,
+            );
+
+            return self::restoreTemplateKeyOrValueOf(
+                $codebase,
+                $existing_var_type,
+                $expanded_var_type,
+                $reconciled_type,
+                $template_key_or_value_of_bounds,
+            );
         }
 
         if (($assertion instanceof IsLooselyEqual || $assertion instanceof IsNotLooselyEqual)
@@ -304,6 +359,119 @@ final class AssertionReconciler extends Reconciler
             false,
             true,
         );
+    }
+
+    /**
+     * key-of<T> and value-of<T> are reconciled as their bound, then the part of the result within that bound
+     * becomes key-of<T> or value-of<T> again, with T narrowed to it
+     *
+     * @param non-empty-array<string, array{TTemplateKeyOf|TTemplateValueOf, Union}> $template_key_or_value_of_bounds
+     */
+    private static function restoreTemplateKeyOrValueOf(
+        Codebase $codebase,
+        Union $existing_var_type,
+        Union $expanded_var_type,
+        Union $reconciled_type,
+        array $template_key_or_value_of_bounds,
+    ): Union {
+        if ($reconciled_type->isNever() || $reconciled_type->failed_reconciliation) {
+            return $reconciled_type;
+        }
+
+        if ($reconciled_type->getId() === $expanded_var_type->getId()) {
+            return $existing_var_type;
+        }
+
+        $new_type = $reconciled_type->getBuilder();
+        $other_atomics = array_diff_key(
+            $existing_var_type->getAtomicTypes(),
+            $template_key_or_value_of_bounds,
+        );
+
+        foreach ($reconciled_type->getAtomicTypes() as $reconciled_key => $reconciled_atomic) {
+            $in_bound = false;
+
+            foreach ($template_key_or_value_of_bounds as [, $bound]) {
+                if (UnionTypeComparator::isContainedBy($codebase, new Union([$reconciled_atomic]), $bound)) {
+                    $in_bound = true;
+                    break;
+                }
+            }
+
+            if (!$in_bound) {
+                continue;
+            }
+
+            $in_other_type = false;
+
+            foreach ($other_atomics as $other_atomic) {
+                if (AtomicTypeComparator::isContainedBy($codebase, $reconciled_atomic, $other_atomic)) {
+                    $in_other_type = true;
+                    break;
+                }
+            }
+
+            if (!$in_other_type) {
+                $new_type->removeType($reconciled_key);
+            }
+        }
+
+        foreach ($template_key_or_value_of_bounds as [$template_of, $bound]) {
+            $narrowed_atomics = [];
+
+            foreach ($reconciled_type->getAtomicTypes() as $reconciled_atomic) {
+                if (UnionTypeComparator::isContainedBy($codebase, new Union([$reconciled_atomic]), $bound)) {
+                    $narrowed_atomics[] = $reconciled_atomic;
+                }
+            }
+
+            if (!$narrowed_atomics) {
+                continue;
+            }
+
+            $narrowed_bound = new Union($narrowed_atomics);
+
+            if ($narrowed_bound->getId() === $bound->getId()) {
+                $new_type->addType($template_of);
+                continue;
+            }
+
+            $template = $template_of->as->isSingle() ? $template_of->as->getSingleAtomic() : null;
+            $key_type = TKeyOf::getArrayKeyType($template_of->as);
+            $value_type = TValueOf::getValueType($template_of->as, $codebase);
+
+            if (!$template instanceof TTemplateParam || $key_type === null || $value_type === null) {
+                foreach ($narrowed_atomics as $narrowed_atomic) {
+                    $new_type->addType($narrowed_atomic);
+                }
+
+                continue;
+            }
+
+            $narrowed_template = new Union([$template->replaceAs(new Union([new TArray(
+                $template_of instanceof TTemplateKeyOf
+                    ? [$narrowed_bound, $value_type]
+                    : [$key_type, $narrowed_bound],
+            )]))]);
+
+            $new_type->addType(
+                $template_of instanceof TTemplateKeyOf
+                    ? new TTemplateKeyOf(
+                        $template_of->param_name,
+                        $template_of->defining_class,
+                        $narrowed_template,
+                        $template_of->from_docblock,
+                    )
+                    : new TTemplateValueOf(
+                        $template_of->param_name,
+                        $template_of->defining_class,
+                        $narrowed_template,
+                        $template_of->from_docblock,
+                    ),
+            );
+        }
+
+        return $new_type->freeze();
     }
 
     /**
@@ -740,6 +908,10 @@ final class AssertionReconciler extends Reconciler
 
             if ($intersection_type) {
                 $new_type = $intersection_type;
+            } elseif ($new_type_part instanceof TNull) {
+                $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
+
+                return Type::getNever();
             }
         }
 
@@ -770,6 +942,16 @@ final class AssertionReconciler extends Reconciler
 
                 if ($matching_atomic_type) {
                     $matching_atomic_types[] = $matching_atomic_type;
+                } else {
+                    $matching_atomic_types = [
+                        ...$matching_atomic_types,
+                        ...self::filterAtomicPartsWithAnother(
+                            $existing_type_part,
+                            $new_type_part,
+                            $codebase,
+                            $any_scalar_type_match_found,
+                        ),
+                    ];
                 }
             }
             unset($existing_type_part);
@@ -781,6 +963,53 @@ final class AssertionReconciler extends Reconciler
         }
 
         return null;
+    }
+
+    /**
+     * The matching types of the parts of two types neither of which contains the other: e.g. callable filtered with
+     * string is a callable-string
+     *
+     * @return list<Atomic>
+     */
+    private static function filterAtomicPartsWithAnother(
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+        Codebase $codebase,
+        bool &$any_scalar_type_match_found,
+    ): array {
+        $type_1_parts = AtomicParts::split($type_1_atomic, $type_2_atomic, $codebase);
+        $type_2_parts = $type_1_parts === null ? AtomicParts::split($type_2_atomic, $type_1_atomic, $codebase) : null;
+
+        if ($type_1_parts === null && $type_2_parts === null) {
+            return [];
+        }
+
+        $matching_atomic_types = [];
+
+        foreach ($type_1_parts ?? [$type_1_atomic] as $type_1_part) {
+            foreach ($type_2_parts ?? [$type_2_atomic] as $type_2_part) {
+                $matching_atomic_type = self::filterAtomicWithAnother(
+                    $type_1_part,
+                    $type_2_part,
+                    $codebase,
+                    $any_scalar_type_match_found,
+                );
+
+                $matching_atomic_types = [
+                    ...$matching_atomic_types,
+                    ...($matching_atomic_type !== null
+                        ? [$matching_atomic_type]
+                        : self::filterAtomicPartsWithAnother(
+                            $type_1_part,
+                            $type_2_part,
+                            $codebase,
+                            $any_scalar_type_match_found,
+                        )),
+                ];
+            }
+        }
+
+        return $matching_atomic_types;
     }
 
     /**
@@ -1660,6 +1889,7 @@ final class AssertionReconciler extends Reconciler
         ]);
 
         $compatible_string_type = self::getCompatibleStringType(
+            $statements_analyzer->getCodebase(),
             $existing_var_type,
             $existing_var_atomic_types,
             $assertion_type,
@@ -1710,6 +1940,7 @@ final class AssertionReconciler extends Reconciler
 
             if ($existing_var_atomic_type instanceof TTemplateParam) {
                 $compatible_string_type = self::getCompatibleStringType(
+                    $statements_analyzer->getCodebase(),
                     $existing_var_type,
                     $existing_var_atomic_type->as->getAtomicTypes(),
                     $assertion_type,
@@ -1965,19 +2196,31 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * @param array<string, Atomic> $existing_var_atomic_types
-     * @psalm-pure
      */
     private static function getCompatibleStringType(
+        Codebase $codebase,
         Union $existing_var_type,
         array $existing_var_atomic_types,
         TLiteralString $assertion_type,
         bool $is_loose_equality,
         bool $is_php8,
     ): ?Union {
+        $value = $assertion_type->value;
+
         foreach ($existing_var_atomic_types as $existing_var_atomic_type) {
             if ($existing_var_atomic_type instanceof TMixed
                 || $existing_var_atomic_type instanceof TScalar
                 || $existing_var_atomic_type instanceof TArrayKey
+                // e.g. '1'
+                || ($existing_var_atomic_type instanceof TNumeric
+                    && is_numeric($value)
+                    && (!$existing_var_atomic_type instanceof TEmptyNumeric || $value === '0'))
+                // the name of a function is never numeric, e.g. 'strlen'
+                || ($existing_var_atomic_type::class === TCallable::class
+                    && $value !== ''
+                    && !is_numeric($value)
+                    && (($existing_var_atomic_type->params === null && $existing_var_atomic_type->return_type === null)
+                        || AtomicTypeComparator::isContainedBy($codebase, $assertion_type, $existing_var_atomic_type)))
             ) {
                 // Since PHP 8, an int is only loosely equal to a numeric string (`switch` compares loosely), so an
                 // array key loosely equal to a string that isn't numeric is that string

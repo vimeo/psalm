@@ -496,7 +496,6 @@
       <code><![CDATA[$switch_var_id]]></code>
       <code><![CDATA[$switch_var_id]]></code>
       <code><![CDATA[$switch_var_id]]></code>
-      <code><![CDATA[$type_statements]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/DeclareAnalyzer.php">
@@ -728,7 +727,6 @@
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/AssignmentAnalyzer.php">
     <ImplicitToStringCast>
       <code><![CDATA[$comment_type]]></code>
-      <code><![CDATA[$context->byref_constraints[$var_id]->type]]></code>
       <code><![CDATA[$var_comment_type]]></code>
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>

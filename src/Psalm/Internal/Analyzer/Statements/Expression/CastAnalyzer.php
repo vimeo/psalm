@@ -21,6 +21,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpureMethodCall;
@@ -107,7 +108,7 @@ final class CastAnalyzer
 
                 $type = self::castIntAttempt(
                     $statements_analyzer,
-                    $maybe_type,
+                    TypeExpander::expandTemplateKeyOfAndValueOf($statements_analyzer->getCodebase(), $maybe_type),
                     $stmt->expr,
                     true,
                 );
@@ -134,7 +135,7 @@ final class CastAnalyzer
 
                 $type = self::castFloatAttempt(
                     $statements_analyzer,
-                    $maybe_type,
+                    TypeExpander::expandTemplateKeyOfAndValueOf($statements_analyzer->getCodebase(), $maybe_type),
                     $stmt->expr,
                     true,
                 );
@@ -214,10 +215,7 @@ final class CastAnalyzer
             $type = Type::getObject();
 
             if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
-                $stmt_expr_type = TypeVariableResolver::resolveTopLevel(
-                    $stmt_expr_type,
-                    $statements_analyzer->getCodebase(),
-                );
+                $stmt_expr_type = self::resolveOperandType($stmt_expr_type, $statements_analyzer->getCodebase());
 
                 if ($stmt_expr_type->isObjectType()) {
                     self::handleRedundantCast($stmt_expr_type, $statements_analyzer, $stmt);
@@ -244,10 +242,7 @@ final class CastAnalyzer
             $all_permissible = false;
 
             if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
-                $stmt_expr_type = TypeVariableResolver::resolveTopLevel(
-                    $stmt_expr_type,
-                    $statements_analyzer->getCodebase(),
-                );
+                $stmt_expr_type = self::resolveOperandType($stmt_expr_type, $statements_analyzer->getCodebase());
 
                 if ($stmt_expr_type->isArray()) {
                     self::handleRedundantCast($stmt_expr_type, $statements_analyzer, $stmt);
@@ -349,6 +344,18 @@ final class CastAnalyzer
         );
 
         return false;
+    }
+
+    /**
+     * A bare class-template type variable stands for the shape inferred at its construction site, and key-of<T> and
+     * value-of<T> for their bound: that is what is being cast
+     */
+    private static function resolveOperandType(Union $type, Codebase $codebase): Union
+    {
+        return TypeExpander::expandTemplateKeyOfAndValueOf(
+            $codebase,
+            TypeVariableResolver::resolveTopLevel($type, $codebase),
+        );
     }
 
     public static function castIntAttempt(
@@ -737,6 +744,39 @@ final class CastAnalyzer
         );
     }
 
+    /**
+     * The type of the values of what $type may be as an array, or null if it can't be one
+     */
+    public static function getArrayValueType(?Union $type): ?Union
+    {
+        if (!$type) {
+            return null;
+        }
+
+        $value_types = [];
+        $atomic_types = $type->getAtomicTypes();
+
+        while ($atomic_types) {
+            $atomic_type = array_pop($atomic_types);
+
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_types = [...$atomic_types, ...array_values($atomic_type->as->getAtomicTypes())];
+
+                continue;
+            }
+
+            if ($atomic_type instanceof TKeyedArray) {
+                $atomic_type = $atomic_type->getGenericArrayType();
+            }
+
+            if ($atomic_type instanceof TArray) {
+                $value_types[] = $atomic_type->type_params[1];
+            }
+        }
+
+        return $value_types ? Type::combineUnionTypeArray($value_types, null) : null;
+    }
+
     public static function castStringAttempt(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
@@ -753,9 +793,7 @@ final class CastAnalyzer
         // what an invalid cast of an array gives, which only matters for the result type
         $array_strings = [];
 
-        // a bare class-template type variable stands for the shape inferred at
-        // its construction site; that shape is what is being cast
-        $stmt_type = TypeVariableResolver::resolveTopLevel($stmt_type, $codebase);
+        $stmt_type = self::resolveOperandType($stmt_type, $codebase);
 
         $atomic_types = $stmt_type->getAtomicTypes();
 

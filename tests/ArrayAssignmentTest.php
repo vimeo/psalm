@@ -128,6 +128,45 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'unsetInTheElseBranchOfACheckEmptiesTheArray' => [
+                'code' => '<?php
+                    /** @var non-empty-array<string, int> $test */
+                    $test = ["a" => 0];
+                    /** @var string $k */
+                    $k = "a";
+                    if (isset($test[$k])) {
+                        echo 1;
+                    } else {
+                        unset($test[$k]);
+                    }',
+                'assertions' => [
+                    '$test===' => 'array<string, int>',
+                ],
+            ],
+            'unsetInABranchThatChecksALiteralOffsetEmptiesTheArray' => [
+                'code' => '<?php
+                    /** @var non-empty-array<string, int> $test */
+                    $test = ["a" => 0];
+                    if (array_key_exists("a", $test)) {
+                        unset($test["a"]);
+                    }',
+                'assertions' => [
+                    '$test===' => 'array<string, int>',
+                ],
+            ],
+            'unsetInABranchThatChecksTheOffsetEmptiesTheArray' => [
+                'code' => '<?php
+                    /** @var non-empty-array<string|int, int> $test */
+                    $test = ["test" => 0];
+                    /** @var string|int $k */
+                    $k = "test";
+                    if (isset($test[$k])) {
+                        unset($test[$k]);
+                    }',
+                'assertions' => [
+                    '$test===' => 'array<int|string, int>',
+                ],
+            ],
             'issetOfANestedOffsetUnderAKeyWithAQuoteNarrowsTheParent' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1459,6 +1498,115 @@ final class ArrayAssignmentTest extends TestCase
                         echo $a["b"]["d"];
                         echo $a["a"];
                         return $a;
+                    }',
+            ],
+            'nestedKeyAddedToKeyedArrayUnderMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $element
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f(&$element): void {
+                        $element["upload"] = ["#name" => "n", "#type" => "file"];
+                        $element["upload"]["#attached"]["ds"] = "y";
+                    }',
+            ],
+            'deeplyNestedKeyAddedToKeyedArrayUnderMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $element
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f(&$element): void {
+                        $element["upload"] = ["#name" => "n", "#type" => "file"];
+                        $element["upload"]["#attached"]["ds"]["file"]["el"] = "y";
+                    }',
+            ],
+            'deeplyNestedConstantKeyAddedToKeyedArrayUnderMixed' => [
+                'code' => '<?php
+                    final class K {
+                        const A = "att";
+                        const B = "ds";
+
+                        /**
+                         * @param mixed $element
+                         * @psalm-suppress MixedArrayAssignment
+                         */
+                        public static function f(&$element): void {
+                            $element["upload"] = ["#name" => "n"];
+                            $element["upload"][self::A][self::B]["file"]["el"] = "y";
+                        }
+                    }',
+            ],
+            'nestedKeyUnderUnknownOffsetOfKeyedArrayUnderMixed' => [
+                'code' => '<?php
+                    final class T {}
+
+                    /**
+                     * @param mixed $form
+                     * @param list<int|string> $ids
+                     * @psalm-suppress MixedArrayAccess
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f($form, array $ids): void {
+                        $form["links"] = ["#empty" => new T(), "#attributes" => ["id" => "s"]];
+                        foreach ($ids as $id) {
+                            $form["links"][$id]["#attributes"]["class"][] = "draggable";
+                            $form["links"][$id]["#weight"] = 1;
+                        }
+                    }',
+            ],
+            'nestedKeyAddedToKeyedArrayUnderMixedHasItsType' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function g() {
+                        return 1;
+                    }
+                    $m = g();
+                    $m["a"] = ["b" => 1];
+                    $m["a"]["c"]["d"] = 1;
+                    $x = $m["a"];',
+                'assertions' => [
+                    '$x===' => 'array{b: 1, c: array{d: 1}}',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAssignment'],
+            ],
+            'nestedAppendToKeyedArrayUnderMixedHasItsType' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function g() {
+                        return 1;
+                    }
+                    $m = g();
+                    $m["a"] = ["b" => 1];
+                    $m["a"]["c"][] = 1;
+                    $x = $m["a"];',
+                'assertions' => [
+                    '$x===' => 'array{b: 1, c: non-empty-list<1>}',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAssignment'],
+            ],
+            'possiblyUndefinedKeyWrittenUnderMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $m
+                     * @param array{k?: array{z: int}} $arr
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f($m, array $arr): void {
+                        $m["a"] = $arr;
+                        $m["a"]["k"]["y"] = 1;
+                    }',
+            ],
+            'nestedKeyAddedByDestructuringUnderMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $e
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f($e): void {
+                        $e["upload"] = ["#name" => "n"];
+                        [$e["upload"]["#attached"]["ds"]] = ["y"];
                     }',
             ],
             'mixedArrayCoercion' => [
@@ -3201,6 +3349,55 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'undefinedOuterOffsetOfNestedAssignmentUnderMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $m
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f($m): void {
+                        $m[$k]["a"]["b"] = 1;
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
+            'undefinedInnerOffsetOfNestedAssignmentUnderMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $m
+                     * @psalm-suppress MixedArrayAccess
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f($m): void {
+                        $m["a"]["b"][$k] = 1;
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
+            'nullableObjectWrittenThroughUnderMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $m
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f($m, ?ArrayObject $o): int {
+                        $m["a"] = ["b" => $o];
+                        $m["a"]["b"]["c"] = 1;
+                        return $m["a"]["b"]->count();
+                    }',
+                'error_message' => 'PossiblyNullReference - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25',
+            ],
+            'missingKeyReadAfterNestedAssignmentUnderMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $element
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function f(&$element): void {
+                        $element["upload"] = ["#name" => "n", "#type" => "file"];
+                        $element["upload"]["#attached"]["ds"] = "y";
+                        echo $element["upload"]["#missing"];
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:30 - Cannot access value on variable $element[\'upload\'] using offset value of \'#missing\', expecting \'#name\', \'#type\' or \'#attached',
+            ],
             'possiblyInvalidArrayOffsetWhenAssigningInALoop' => [
                 'code' => '<?php
                     /**
