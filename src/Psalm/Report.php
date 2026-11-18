@@ -105,7 +105,7 @@ abstract class Report
     /**
      * The message of an issue, followed by the CWE weaknesses it flags: `Detected tainted SQL (CWE-89)`
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     protected static function getMessageWithCwe(IssueData $issue_data): string
     {

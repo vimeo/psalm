@@ -12,6 +12,7 @@ use Spatie\ArrayToXml\ArrayToXml;
 
 use function array_map;
 use function get_object_vars;
+use function implode;
 
 /**
  * @api
