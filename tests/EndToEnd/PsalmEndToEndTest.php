@@ -394,7 +394,9 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         file_put_contents(
             $prepend_file,
             "<?php\nregister_shutdown_function(static function (): void {\n"
-                . "    file_put_contents(" . var_export($memory_limit_file, true) . ", (string) ini_get('memory_limit'));\n"
+                . "    file_put_contents(\n"
+                . "        " . var_export($memory_limit_file, true) . ", (string) ini_get('memory_limit')\n"
+                . "    );\n"
                 . "});\n",
         );
 
@@ -430,7 +432,9 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         file_put_contents(
             $prepend_file,
             "<?php\nregister_shutdown_function(static function (): void {\n"
-                . "    file_put_contents(" . var_export($memory_limit_file, true) . ", (string) ini_get('memory_limit'));\n"
+                . "    file_put_contents(\n"
+                . "        " . var_export($memory_limit_file, true) . ", (string) ini_get('memory_limit')\n"
+                . "    );\n"
                 . "});\n",
         );
 
