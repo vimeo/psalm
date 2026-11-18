@@ -109,7 +109,6 @@ final class AtomicStaticCallAnalyzer
                 $fq_class_name,
                 new CodeLocation($statements_analyzer, $stmt->class),
                 !$context->collect_initializations
-                    && !$context->collect_mutations
                     ? $context
                     : null,
                 $statements_analyzer->getSuppressedIssues(),
@@ -382,7 +381,6 @@ final class AtomicStaticCallAnalyzer
         if ($codebase->store_node_types
             && !$stmt->isFirstClassCallable()
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             ArgumentMapPopulator::recordArgumentPositions(
                 $statements_analyzer,
@@ -419,7 +417,6 @@ final class AtomicStaticCallAnalyzer
         $naive_method_exists = $codebase->methodExists(
             $method_id,
             !$context->collect_initializations
-                && !$context->collect_mutations
                 ? $context->calling_method_id
                 : null,
             $codebase->collect_locations
@@ -471,7 +468,6 @@ final class AtomicStaticCallAnalyzer
                         ? new CodeLocation($statements_analyzer, $stmt_name)
                         : null,
                     !$context->collect_initializations
-                    && !$context->collect_mutations
                         ? $statements_analyzer
                         : null,
                     $statements_analyzer->getFilePath(),
@@ -1018,7 +1014,6 @@ final class AtomicStaticCallAnalyzer
                 ? new CodeLocation($statements_analyzer, $stmt->name)
                 : null,
             !$context->collect_initializations
-            && !$context->collect_mutations
                 ? $statements_analyzer
                 : null,
             $statements_analyzer->getFilePath(),

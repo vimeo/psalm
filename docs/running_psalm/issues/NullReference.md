@@ -8,3 +8,7 @@ Emitted when attempting to call a method on `null`
 $a = null;
 $a->foo();
 ```
+
+## Further resources
+
+- [CWE-476](https://cwe.mitre.org/data/definitions/476.html)

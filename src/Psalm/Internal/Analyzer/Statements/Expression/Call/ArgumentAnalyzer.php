@@ -183,7 +183,6 @@ final class ArgumentAnalyzer
         if (!$arg_value_type) {
             if ($function_param && !$function_param->by_ref) {
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)
@@ -489,7 +488,6 @@ final class ArgumentAnalyzer
         if ($arg->unpack) {
             if ($arg_value_type->hasMixed()) {
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)
@@ -951,7 +949,6 @@ final class ArgumentAnalyzer
 
         if ($input_type->hasMixed()) {
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -1051,7 +1048,6 @@ final class ArgumentAnalyzer
         }
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
                     instanceof FunctionLikeAnalyzer)
@@ -2295,7 +2291,7 @@ final class ArgumentAnalyzer
 
         $graph->addNode($method_node);
 
-        if ($taint_flow_graph && $function_storage && !$in_call_map) {
+        if ($taint_flow_graph && $function_storage) {
             $callable_param_method_id = $cased_method_id;
             $callable_param_storage = $function_storage;
 
@@ -2306,16 +2302,28 @@ final class ArgumentAnalyzer
                 $callable_param_storage = $codebase->methods->getStorage($declaring_method_id);
             }
 
-            FunctionCallReturnTypeFetcher::taintCallablePassedToParam(
-                $statements_analyzer,
-                $taint_flow_graph,
-                $callable_param_method_id,
-                DataFlowNode::getParameterOffset($callable_param_storage, $function_param, $argument_offset),
+            $callable_param_offset = DataFlowNode::getParameterOffset(
                 $callable_param_storage,
-                $specialization_location,
-                $input_type,
-                $arg_location,
+                $function_param,
+                $argument_offset,
             );
+
+            // a builtin calls its callables out of the analyzed code: they matter only to the flows of its stub
+            if (!$in_call_map
+                || isset($callable_param_storage->return_source_callable_params[$callable_param_offset])
+                || isset($callable_param_storage->callable_param_argument_sources[$callable_param_offset])
+            ) {
+                FunctionCallReturnTypeFetcher::taintCallablePassedToParam(
+                    $statements_analyzer,
+                    $taint_flow_graph,
+                    $callable_param_method_id,
+                    $callable_param_offset,
+                    $callable_param_storage,
+                    $specialization_location,
+                    $input_type,
+                    $arg_location,
+                );
+            }
         }
 
         $argument_value_node = DataFlowNode::getForAssignment(
