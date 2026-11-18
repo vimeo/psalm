@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
+use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -16,7 +17,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Node\Stmt\VirtualExpression;
 use Psalm\Node\Stmt\VirtualIf;
-use Psalm\Type;
 use Psalm\Type\Reconciler;
 
 use function array_diff;
@@ -77,6 +77,9 @@ final class AndAnalyzer
             return false;
         }
 
+        // a nested `&&` leaves what holds after it, without what it assigns where it is true
+        $vars_assigned_in_left = self::isAnd($stmt->left) ? $left_context->vars_assigned_in_and : [];
+
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->left);
 
         $codebase = $statements_analyzer->getCodebase();
@@ -103,6 +106,16 @@ final class AndAnalyzer
             }
         }
 
+        // assigned one by one, which keeps the references between variables
+        foreach ($vars_assigned_in_left as $var_id => $type) {
+            $context->vars_in_scope[$var_id] = $type;
+        }
+
+        $context->vars_possibly_in_scope = [
+            ...$context->vars_possibly_in_scope,
+            ...$left_context->vars_possibly_in_scope,
+        ];
+
         // the left side always runs, so the offsets it read are read after the expression too
         $context->null_array_offsets_read = $left_context->null_array_offsets_read;
 
@@ -110,7 +123,10 @@ final class AndAnalyzer
         $left_referenced_var_ids = $left_context->cond_referenced_var_ids;
         $context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $left_referenced_var_ids);
 
-        $left_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
+        $left_assigned_var_ids = [
+            ...array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids),
+            ...array_fill_keys(array_keys($vars_assigned_in_left), 0),
+        ];
 
         $left_referenced_var_ids = self::removeAssignedVarIds($left_referenced_var_ids, $left_assigned_var_ids);
 
@@ -171,6 +187,10 @@ final class AndAnalyzer
             );
         } else {
             $right_context = clone $left_context;
+
+            foreach ($vars_assigned_in_left as $var_id => $type) {
+                $right_context->vars_in_scope[$var_id] = $type;
+            }
         }
 
         $right_context->inside_logical_operand = true;
@@ -185,18 +205,23 @@ final class AndAnalyzer
             ...GuardedClasses::unknownWhenResult($stmt->left, true, $codebase),
         ];
 
-        $partitioned_clauses = Context::removeReconciledClauses(
+        $partitioned_clauses = AlgebraAnalyzer::removeReconciledClausesOfOneVariable(
             [...$left_context->clauses, ...$left_clauses],
             $changed_var_ids,
+            $right_context->vars_in_scope,
+            $statements_analyzer,
         );
 
         $right_context->clauses = $partitioned_clauses[0];
 
         $pre_right_assigned_var_ids = $right_context->assigned_var_ids;
+        $pre_right_remove_vars = $right_context->parent_remove_vars;
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $right_context) === false) {
             return false;
         }
+
+        $vars_assigned_in_right = self::isAnd($stmt->right) ? $right_context->vars_assigned_in_and : [];
 
         // offset 0 records what no assignment of the condition writes (an argument a call coerces to its parameter
         // type, a property the callee writes): the condition has no clause about its new value
@@ -209,7 +234,11 @@ final class AndAnalyzer
 
         $context->intersectNullArrayOffsets($right_context);
         $context->removeClausesOfVarsChangedIn($left_context);
-        $context->removeClausesOfVarsChangedIn($right_context);
+
+        // what a right side that never returns changes is never seen after the expression
+        if (!$right_context->has_returned) {
+            $context->removeClausesOfVarsChangedIn($right_context);
+        }
 
         $context->cond_referenced_var_ids = array_merge(
             $right_context->cond_referenced_var_ids,
@@ -222,6 +251,11 @@ final class AndAnalyzer
                 ...$right_context->phantom_classes,
             ];
         }
+
+        $context->vars_possibly_in_scope = array_merge(
+            $right_context->vars_possibly_in_scope,
+            $left_context->vars_possibly_in_scope,
+        );
 
         if ($context->inside_conditional) {
             $context->updateChecks($right_context);
@@ -236,11 +270,6 @@ final class AndAnalyzer
                 ...array_diff_key($right_context->phantom_files, $right_context->negated_phantom_files),
             ];
 
-            $context->vars_possibly_in_scope = array_merge(
-                $right_context->vars_possibly_in_scope,
-                $left_context->vars_possibly_in_scope,
-            );
-
             $context->assigned_var_ids = array_merge(
                 $left_context->assigned_var_ids,
                 $right_context->assigned_var_ids,
@@ -248,6 +277,9 @@ final class AndAnalyzer
         }
 
         if ($context->if_body_context && !$context->inside_negation) {
+            // the body context gets them instead
+            $context->vars_assigned_in_and = [];
+
             $if_body_context = $context->if_body_context;
             $context->vars_in_scope = $right_context->vars_in_scope;
             $if_body_context->vars_in_scope = [
@@ -274,7 +306,12 @@ final class AndAnalyzer
                 static fn(Clause $c) => $c->hash,
                 [
                     ...$partitioned_clauses[1],
-                    ...Context::removeReconciledClauses($simplified_clauses, $changed_var_ids)[1],
+                    ...AlgebraAnalyzer::removeReconciledClausesOfOneVariable(
+                        $simplified_clauses,
+                        $changed_var_ids,
+                        $right_context->vars_in_scope,
+                        $statements_analyzer,
+                    )[1],
                 ],
             );
 
@@ -327,20 +364,36 @@ final class AndAnalyzer
             $context->vars_in_scope = $left_context->vars_in_scope;
 
             // the right operand is skipped when the left one is false
-            foreach ($right_context->assigned_var_ids as $var_id => $assigned_offset) {
-                if ((!isset($left_context->assigned_var_ids[$var_id])
-                        || $left_context->assigned_var_ids[$var_id] !== $assigned_offset)
-                    && isset($context->vars_in_scope[$var_id], $right_context->vars_in_scope[$var_id])
+            $context->mergeChangesOfPossiblySkippedBranch($right_context, $pre_right_remove_vars, $codebase);
+
+            // an enclosing `&&` gives its right operand what both sides assign, as the right side leaves it (which
+            // may change it without assigning it, or forget it, like the keys of an array it reassigned)
+            $vars_assigned_in_and = [];
+
+            foreach ($right_context->vars_in_scope as $var_id => $type) {
+                if (isset($vars_assigned_in_left[$var_id])
+                    || isset($left_context->assigned_var_ids[$var_id])
+                    || (isset($right_context->assigned_var_ids[$var_id])
+                        && ($pre_right_assigned_var_ids[$var_id] ?? null)
+                            !== $right_context->assigned_var_ids[$var_id])
                 ) {
-                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                        $context->vars_in_scope[$var_id],
-                        $right_context->vars_in_scope[$var_id],
-                    );
+                    $vars_assigned_in_and[$var_id] = $type;
                 }
             }
+
+            $context->vars_assigned_in_and = [...$vars_assigned_in_and, ...$vars_assigned_in_right];
         }
 
         return true;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isAnd(PhpParser\Node\Expr $expr): bool
+    {
+        return $expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd;
     }
 
     /**
