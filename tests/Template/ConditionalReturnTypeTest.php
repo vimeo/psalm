@@ -2410,6 +2410,30 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$fromInt===' => 'int',
                 ],
             ],
+            'conditionalReturnOfAMixedTemplateArgumentKeepsBothBranches' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $arg
+                     * @return ($arg is (Countable|array<mixed>) ? string : int)
+                     */
+                    function inner($arg) {
+                        return 1;
+                    }
+
+                    /**
+                     * @param mixed $arg
+                     * @return ($arg is (Countable|array<mixed>) ? string : int)
+                     */
+                    function outer($arg) {
+                        $r = inner($arg);
+                        /** @psalm-check-type-exact $r = int|string */
+
+                        return $r;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 

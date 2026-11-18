@@ -727,6 +727,17 @@ final class TemplateInferredTypeReplacer
      */
     private static function isDisjoint(Codebase $codebase, Atomic $candidate, Union $conditional_type): bool
     {
+        // a template is as disjoint as its bound: one bounded by `mixed` is never decidably disjoint
+        if ($candidate instanceof TTemplateParam) {
+            foreach ($candidate->as->getAtomicTypes() as $bound_atomic_type) {
+                if (!self::isDisjoint($codebase, $bound_atomic_type, $conditional_type)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         // the empty array is never a non-empty one, nor the reverse
         $overlapping_atomic_types = [];
 
