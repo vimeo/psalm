@@ -1905,6 +1905,22 @@ final class ArgumentsAnalyzer
                 ? TypeExpander::expandUnion($codebase, $by_ref_out_type, $self_class, $static_class, null)
                 : $by_ref_type;
 
+            if ($argument_offset === 0
+                && ($method_id === 'array_walk' || $method_id === 'array_walk_recursive')
+                && ($array_type = $statements_analyzer->node_data->getType($arg->value))
+                && isset($function_params[1])
+                && ($callback_arg = self::getArgForParam($args, $function_params, $function_params[1]->name))
+                && ($callback_type = $statements_analyzer->node_data->getType($callback_arg->value))
+            ) {
+                $by_ref_out_type = ArrayFunctionArgumentsAnalyzer::getArrayWalkOutType(
+                    $statements_analyzer,
+                    $context,
+                    $array_type,
+                    $callback_type,
+                    $method_id === 'array_walk_recursive',
+                ) ?? $by_ref_out_type;
+            }
+
             // what the function-like leaves in the parameter (see FunctionLikeAnalyzer::taintByRefParamsOut())
             $out_type_holds_value = false;
             if ($function_storage !== null
