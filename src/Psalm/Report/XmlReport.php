@@ -40,6 +40,8 @@ final class XmlReport extends Report
 
                         $issue_data['is_security'] = $issue_data['is_security'] ? 'true' : 'false';
 
+                        $issue_data['cwe_ids'] = implode(',', $issue_data['cwe_ids']);
+
                         if (null !== $issue_data['other_references']) {
                             $issue_data['other_references'] = array_map(
                                 static fn(DataFlowNodeData $reference): array => (array) $reference,
