@@ -14,5 +14,7 @@
         <ignored-regex>#^\[BC\] CHANGED: Value of constant Psalm\\Type\\TaintKind::(USER_SECRET|SYSTEM_SECRET|ALL_INPUT|BUILTIN_TAINT_COUNT|TAINT_NAMES) changed from #</ignored-regex>
         <!-- The default taint count of a codebase is BUILTIN_TAINT_COUNT, which grows with each builtin taint kind. -->
         <ignored-regex>#^\[BC\] CHANGED: Property Psalm\\Codebase\#\$taint_count changed default value from #</ignored-regex>
+        <!-- The CWEs an issue reports, which reports print, move to an issue added for some of them (CWE-601 to TaintedRedirect). -->
+        <ignored-regex>#^\[BC\] CHANGED: Value of constant Psalm\\Issue\\[A-Za-z]+::CWE_IDS changed from #</ignored-regex>
     </baseline>
 </roave-bc-check>
