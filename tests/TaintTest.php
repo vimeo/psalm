@@ -1331,6 +1331,16 @@ final class TaintTest extends TestCase
                         $xpath->query(\'//user[@id="\' . $id . \'"]\');
                     }',
             ],
+            'valueWithoutQuotesInAnXpathStringLiteralFollowedByAnotherQuote' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 _.%~\-]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@id=\'" . $id . "\"]");
+                    }',
+            ],
             'noTaintFromASpecializedPregReplaceCallbackCallbackInItsOtherCalls' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
