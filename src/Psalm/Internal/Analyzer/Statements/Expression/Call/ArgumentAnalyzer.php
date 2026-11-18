@@ -2133,6 +2133,15 @@ final class ArgumentAnalyzer
             }
         }
 
+        // a builtin taking an array of strings (vsprintf, str_replace) converts the objects among its values
+        if ($converts_to_string && $in_call_map && !$string_param) {
+            $value_type = CastAnalyzer::getArrayValueType($input_type);
+
+            if ($value_type && $value_type->hasObjectType()) {
+                CastAnalyzer::castStringAttempt($statements_analyzer, $context, $value_type, $expr, false, false);
+            }
+        }
+
         if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
             return;
         }

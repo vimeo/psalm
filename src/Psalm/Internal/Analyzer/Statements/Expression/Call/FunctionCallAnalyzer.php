@@ -93,6 +93,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_column;
 use function array_filter;
 use function array_map;
 use function array_shift;
@@ -103,6 +104,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_int;
 use function is_string;
 use function preg_replace;
 use function reset;
@@ -111,6 +113,12 @@ use function str_contains;
 use function str_ends_with;
 use function strpos;
 use function strtolower;
+
+use const SORT_FLAG_CASE;
+use const SORT_LOCALE_STRING;
+use const SORT_NATURAL;
+use const SORT_REGULAR;
+use const SORT_STRING;
 
 /**
  * @internal
@@ -126,6 +134,35 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         'in_array' => [[1, 'haystack'], [0, 'needle']],
         'array_search' => [[1, 'haystack'], [0, 'needle']],
         'array_keys' => [[0, 'array'], [1, 'filter_value']],
+    ];
+
+    /**
+     * Builtins converting the values of array arguments to strings: the [offset, name] of each such argument, or the
+     * number of trailing arguments (callbacks) that aren't
+     */
+    private const STRING_CONVERTED_VALUES_ARGS = [
+        'implode' => 0,
+        'join' => 0,
+        'natsort' => [[0, 'array']],
+        'natcasesort' => [[0, 'array']],
+        'array_diff' => 0,
+        'array_diff_assoc' => 0,
+        'array_diff_uassoc' => 1,
+        'array_intersect' => 0,
+        'array_intersect_assoc' => 0,
+        'array_intersect_uassoc' => 1,
+        'array_fill_keys' => [[0, 'keys']],
+    ];
+
+    /**
+     * Builtins comparing the values of their first argument as their second one (flags) says: [default flags]
+     */
+    private const SORT_FLAGS_DEFAULTS = [
+        'array_unique' => SORT_STRING,
+        'sort' => SORT_REGULAR,
+        'rsort' => SORT_REGULAR,
+        'asort' => SORT_REGULAR,
+        'arsort' => SORT_REGULAR,
     ];
 
     /**
@@ -552,15 +589,20 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         if ($function_call_info->in_call_map
             && $function_call_info->function_id !== null
-            && isset(self::LOOSE_SEARCH_ARGS[$function_call_info->function_id])
             && !$stmt->isFirstClassCallable()
         ) {
-            self::chargeLooseSearchNeedleToString(
-                $statements_analyzer,
-                $stmt,
-                $context,
-                ...self::LOOSE_SEARCH_ARGS[$function_call_info->function_id],
-            );
+            $builtin_id = strtolower($function_call_info->function_id);
+
+            if (isset(self::LOOSE_SEARCH_ARGS[$builtin_id])) {
+                self::chargeLooseSearchNeedleToString(
+                    $statements_analyzer,
+                    $stmt,
+                    $context,
+                    ...self::LOOSE_SEARCH_ARGS[$builtin_id],
+                );
+            }
+
+            self::chargeStringConversions($statements_analyzer, $stmt, $context, $builtin_id);
         }
 
         if ($function_call_info->function_storage) {
@@ -1986,7 +2028,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     }
 
     /**
-     * A search compared loosely to strings converts an object needle with its __toString
+     * A loose search converts with its __toString an object needle compared to strings, and object values compared to
+     * a string needle
      *
      * @param array{int, string} $haystack_param
      * @param array{int, string} $needle_param
@@ -2012,38 +2055,169 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $needle_type = $statements_analyzer->node_data->getType($needle_arg->value);
 
-        if (!$needle_type || !$needle_type->hasObjectType()) {
+        if (!$needle_type) {
             return;
         }
 
-        $haystack_type = $statements_analyzer->node_data->getType($haystack_arg->value);
+        $haystack_values = CastAnalyzer::getArrayValueType(
+            $statements_analyzer->node_data->getType($haystack_arg->value),
+        );
 
-        if ($haystack_type) {
-            $compared_to_strings = false;
-
-            foreach ($haystack_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TKeyedArray) {
-                    $atomic_type = $atomic_type->getGenericArrayType();
-                }
-
-                if (!$atomic_type instanceof TArray || self::mayBeString($atomic_type->type_params[1])) {
-                    $compared_to_strings = true;
-                }
-            }
-
-            if (!$compared_to_strings) {
-                return;
-            }
+        if ($needle_type->hasObjectType() && (!$haystack_values || self::mayBeString($haystack_values))) {
+            CastAnalyzer::castStringAttempt(
+                $statements_analyzer,
+                $context,
+                $needle_type,
+                $needle_arg->value,
+                false,
+                false,
+            );
         }
 
-        CastAnalyzer::castStringAttempt(
-            $statements_analyzer,
-            $context,
-            $needle_type,
-            $needle_arg->value,
-            false,
-            false,
-        );
+        if ($haystack_values && $haystack_values->hasObjectType() && self::mayBeString($needle_type)) {
+            CastAnalyzer::castStringAttempt(
+                $statements_analyzer,
+                $context,
+                $haystack_values,
+                $haystack_arg->value,
+                false,
+                false,
+            );
+        }
+    }
+
+    /**
+     * A builtin converting a value, or the values of its arrays, to strings calls their objects' __toString
+     */
+    private static function chargeStringConversions(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        Context $context,
+        string $function_id,
+    ): void {
+        if ($function_id === 'strval') {
+            $value_arg = self::getSearchArg($stmt, 0, 'value');
+            $value_type = $value_arg ? $statements_analyzer->node_data->getType($value_arg->value) : null;
+
+            if ($value_arg && $value_type && $value_type->hasObjectType()) {
+                CastAnalyzer::castStringAttempt(
+                    $statements_analyzer,
+                    $context,
+                    $value_type,
+                    $value_arg->value,
+                    false,
+                    false,
+                );
+            }
+
+            return;
+        }
+
+        if ($function_id === 'max' || $function_id === 'min') {
+            // a single argument is an array of the compared values, and so is an unpacked one
+            $args = $stmt->getArgs();
+            $compared = [];
+
+            foreach ($args as $arg) {
+                $type = $statements_analyzer->node_data->getType($arg->value);
+
+                if ($type && ($arg->unpack || count($args) === 1)) {
+                    $type = CastAnalyzer::getArrayValueType($type);
+                }
+
+                if (!$type) {
+                    return;
+                }
+
+                $compared[] = [$arg, $type];
+            }
+
+            // compared like SORT_REGULAR does, an object is only converted to be compared to a string
+            if (!$compared
+                || !self::mayBeString(Type::combineUnionTypeArray(array_column($compared, 1), null))
+            ) {
+                return;
+            }
+
+            foreach ($compared as [$arg, $type]) {
+                if ($type->hasObjectType()) {
+                    CastAnalyzer::castStringAttempt($statements_analyzer, $context, $type, $arg->value, false, false);
+                }
+            }
+
+            return;
+        }
+
+        // compared with SORT_REGULAR, an object is only converted to be compared to a string
+        $only_compared_to_strings = false;
+
+        if (isset(self::SORT_FLAGS_DEFAULTS[$function_id])) {
+            $flags = self::SORT_FLAGS_DEFAULTS[$function_id];
+            $flags_arg = self::getSearchArg($stmt, 1, 'flags');
+
+            if ($flags_arg) {
+                $flags_type = $statements_analyzer->node_data->getType($flags_arg->value);
+                // flags that aren't known may be SORT_STRING
+                $flags = $flags_type && $flags_type->isSingleIntLiteral()
+                    ? $flags_type->getSingleIntLiteral()->value & ~SORT_FLAG_CASE
+                    : SORT_STRING;
+            }
+
+            if ($flags !== SORT_STRING
+                && $flags !== SORT_LOCALE_STRING
+                && $flags !== SORT_NATURAL
+                && $flags !== SORT_REGULAR
+            ) {
+                return;
+            }
+
+            $only_compared_to_strings = $flags === SORT_REGULAR;
+            $array_arg = self::getSearchArg($stmt, 0, 'array');
+            $array_args = $array_arg ? [$array_arg] : [];
+        } elseif (isset(self::STRING_CONVERTED_VALUES_ARGS[$function_id])) {
+            $converted_args = self::STRING_CONVERTED_VALUES_ARGS[$function_id];
+
+            if (is_int($converted_args)) {
+                $args = $stmt->getArgs();
+                $array_args = array_slice($args, 0, count($args) - $converted_args);
+            } else {
+                $array_args = [];
+
+                foreach ($converted_args as [$offset, $name]) {
+                    $array_arg = self::getSearchArg($stmt, $offset, $name);
+
+                    if ($array_arg) {
+                        $array_args[] = $array_arg;
+                    }
+                }
+            }
+        } else {
+            return;
+        }
+
+        foreach ($array_args as $array_arg) {
+            if ($array_arg->unpack) {
+                continue;
+            }
+
+            $value_type = CastAnalyzer::getArrayValueType($statements_analyzer->node_data->getType($array_arg->value));
+
+            if (!$value_type
+                || !$value_type->hasObjectType()
+                || ($only_compared_to_strings && !self::mayBeString($value_type))
+            ) {
+                continue;
+            }
+
+            CastAnalyzer::castStringAttempt(
+                $statements_analyzer,
+                $context,
+                $value_type,
+                $array_arg->value,
+                false,
+                false,
+            );
+        }
     }
 
     /**
