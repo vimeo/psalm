@@ -13,6 +13,7 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -68,6 +69,18 @@ final class TypeCombination
     public ?Union $objectlike_key_type = null;
 
     public ?Union $objectlike_value_type = null;
+
+    /**
+     * Whether every keyed array is unsealed, with the same fallback key type.
+     */
+    public bool $objectlike_same_fallback_key = true;
+
+    /**
+     * Keys that a keyed array does not declare.
+     *
+     * @var array<string|int, true>
+     */
+    public array $objectlike_missing_keys = [];
 
     /**
      * What iterating over any of the iterables combined may do (arrays do nothing).
@@ -134,6 +147,39 @@ final class TypeCombination
             } elseif ($t instanceof TString && is_string($k)) {
                 return true;
             } elseif ($t instanceof TInt && is_int($k)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Whether the fallback key type holds the key for sure: a refined string or int type may not.
+     *
+     * @param array-key $k
+     * @psalm-mutation-free
+     */
+    public function fallbackKeyAlwaysContains($k): bool
+    {
+        if (!$this->objectlike_key_type) {
+            return false;
+        }
+        foreach ($this->objectlike_key_type->getAtomicTypes() as $t) {
+            if ($t::class === TArrayKey::class) {
+                return true;
+            } elseif ($t instanceof TLiteralInt || $t instanceof TLiteralString) {
+                if ($t->value === $k) {
+                    return true;
+                }
+            } elseif ($t instanceof TIntRange) {
+                if (is_int($k) && $t->contains($k)) {
+                    return true;
+                }
+            } elseif ($t::class === TString::class && is_string($k)) {
+                return true;
+            } elseif ($t::class === TNonEmptyString::class && is_string($k) && $k !== '') {
+                return true;
+            } elseif ($t::class === TInt::class && is_int($k)) {
                 return true;
             }
         }

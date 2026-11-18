@@ -75,6 +75,10 @@ final class CloneAnalyzer
                 $stmt_expr_type,
                 $statements_analyzer->getCodebase(),
             );
+            $stmt_expr_type = TypeExpander::expandTemplateKeyOfAndValueOf(
+                $statements_analyzer->getCodebase(),
+                $stmt_expr_type,
+            );
             $result_type = self::analyzeClonedType(
                 $statements_analyzer,
                 $context,

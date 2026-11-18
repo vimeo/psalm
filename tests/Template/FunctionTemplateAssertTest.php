@@ -1078,8 +1078,7 @@ final class FunctionTemplateAssertTest extends TestCase
                     assertEqual($c, $d);',
                 'error_message' => 'TypeDoesNotContainType',
             ],
-            // Ignoring this to put the behaviour on par with regular equality checks
-            'SKIPPED-detectIntFloatNeverCanBeEqualAfterAssertion' => [
+            'detectIntFloatNeverCanBeEqualAfterAssertion' => [
                 'code' => '<?php
 
                     /**
@@ -1208,7 +1207,7 @@ final class FunctionTemplateAssertTest extends TestCase
                     }',
                 'error_message' => 'string, string',
             ],
-            'SKIPPED-noCrashWhenOnUnparsableTemplatedAssertion' => [
+            'SKIPPED-noCrashWhenOnUnparsableTemplatedAssertion' => [ // #13929
                 'code' => '<?php
                     /**
                      * @template TCandidateKey as array-key
