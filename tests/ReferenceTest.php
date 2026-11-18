@@ -576,7 +576,7 @@ final class ReferenceTest extends TestCase
                     /**
                      * @param array<string, array<string, bool>> $form
                      * @param string|false $id_key
-                     * @return array<string, array<string, bool>>
+                     * @return array<array-key, array<string, bool>>
                      */
                     function f(array $form, $id_key): array {
                         $element = &$form[$id_key];
@@ -815,6 +815,26 @@ final class ReferenceTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'writeThroughReferenceToItemOfArrayOfMixedKeepsItMixed' => [
+                'code' => '<?php
+                    /** @param array<array-key, mixed> $_a */
+                    function children(array &$_a): void {}
+
+                    /** @var array<array-key, mixed> */
+                    $e = [];
+                    $n = k();
+                    $row = &$e[$n];
+                    children($row);
+
+                    function k(): string {
+                        return "k";
+                    }
+                ',
+                'assertions' => [
+                    '$e===' => 'array<array-key, mixed>',
+                ],
+                'ignored_issues' => ['MixedArgument'],
             ],
             'writeToVariableAnArrayItemIsBoundToChangesTheArray' => [
                 'code' => '<?php

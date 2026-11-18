@@ -450,31 +450,36 @@ final class ArrayAssignmentAnalyzer
             }
 
             $array_type = $context->vars_in_scope[$array_id];
-            $key_type = null;
+            $holds_mixed = $item_type->hasMixed();
 
             foreach ($array_type->getAtomicTypes() as $atomic_type) {
                 if ($atomic_type instanceof TKeyedArray) {
-                    $key_type = Type::combineUnionTypes($key_type, $atomic_type->getGenericKeyType());
+                    $holds_mixed = $holds_mixed || $atomic_type->getGenericValueType()->hasMixed();
                 } elseif ($atomic_type instanceof TArray) {
-                    $key_type = Type::combineUnionTypes($key_type, $atomic_type->type_params[0]);
+                    $holds_mixed = $holds_mixed || $atomic_type->type_params[1]->hasMixed();
                 } else {
                     return;
                 }
             }
 
+            // as for an assignment, an item that may be anything is mixed
+            $value_type = $holds_mixed ? Type::getMixed() : $item_type;
             $key_values = self::getKeyValuesOfOffset($context, $key);
 
             if ($key_values) {
-                $array_type = self::updateTypeWithKeyValues($codebase, $array_type, $item_type, $key_values);
+                $array_type = self::updateTypeWithKeyValues($codebase, $array_type, $value_type, $key_values);
             } else {
-                // the item binding the reference made is in the array already, under one of its keys
-                if ($key_type === null || $key_type->isNever()) {
-                    $key_type = Type::getArrayKey();
-                }
+                // the key the item is under, as an assignment to it has it
+                $key_type = $key[0] === '$' && isset($context->vars_in_scope[$key])
+                    && !$context->vars_in_scope[$key]->hasMixed()
+                    ? ArrayFetchAnalyzer::castInvalidOffsetTypes(
+                        ArrayFetchAnalyzer::replaceOffsetTypeWithInts($context->vars_in_scope[$key]),
+                    )
+                    : Type::getArrayKey();
 
                 $array_type = Type::combineUnionTypes(
                     $array_type,
-                    new Union([new TNonEmptyArray([$key_type, $item_type])]),
+                    new Union([new TNonEmptyArray([$key_type, $value_type])]),
                     $codebase,
                 );
             }
