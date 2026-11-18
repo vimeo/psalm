@@ -201,6 +201,10 @@ final class Config
         'symfony/framework-bundle' => 'Psalm\SymfonyPsalmPlugin\Plugin',
         'laravel/framework' => 'Psalm\LaravelPlugin\Plugin',
         'orchestra/testbench' => 'Psalm\LaravelPlugin\Plugin',
+        'doctrine/orm' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
+        'doctrine/dbal' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
+        'doctrine/collections' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
+        'doctrine/persistence' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
     ];
 
     /**
