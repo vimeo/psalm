@@ -2377,8 +2377,16 @@ final class AssertionFinder
 
             $if_types = [[$var_name => [[self::withPolarity($assertion, $negated)]]]];
         } elseif (!$value && $strict && self::canBeFalsyButNotFalse($base_conditional, $source)) {
-            // `preg_match() !== false` is also true when it found no match, and `=== false` false
-            $if_types = [];
+            // `preg_match() !== false` is also true when it found no match, and `=== false` false, so only the
+            // assertions a function declares for when it doesn't return false (`strpos() !== false`) hold
+            $base_assertions = ($base_conditional instanceof PhpParser\Node\Expr\FuncCall
+                    || $base_conditional instanceof PhpParser\Node\Expr\MethodCall
+                    || $base_conditional instanceof PhpParser\Node\Expr\StaticCall)
+                && !$base_conditional->isFirstClassCallable()
+                ? self::processCustomAssertion($base_conditional, $this_class_name, $source)
+                : [];
+
+            $if_types = $operand_holds ? $base_assertions : self::getNegatedAssertions($base_assertions);
         } else {
             if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall
                 && !$base_conditional->isFirstClassCallable()
