@@ -19,6 +19,7 @@ use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use UnexpectedValueException;
 
 use function file_get_contents;
+use function ini_set;
 use function json_decode;
 use function ob_end_clean;
 use function ob_start;
@@ -170,6 +171,7 @@ final class ReportOutputTest extends TestCase
                 'taint_trace' => null,
                 'other_references' => null,
                 'is_security' => false,
+                'cwe_ids' => [],
             ],
             [
                 'link' => 'https://psalm.dev/138',
@@ -193,6 +195,7 @@ final class ReportOutputTest extends TestCase
                 'taint_trace' => null,
                 'other_references' => null,
                 'is_security' => false,
+                'cwe_ids' => [],
             ],
             [
                 'link' => 'https://psalm.dev/020',
@@ -216,6 +219,7 @@ final class ReportOutputTest extends TestCase
                 'taint_trace' => null,
                 'other_references' => null,
                 'is_security' => false,
+                'cwe_ids' => [],
             ],
             [
                 'link' => 'https://psalm.dev/126',
@@ -239,6 +243,7 @@ final class ReportOutputTest extends TestCase
                 'taint_trace' => null,
                 'other_references' => null,
                 'is_security' => false,
+                'cwe_ids' => [],
             ],
         ];
 
@@ -512,6 +517,50 @@ final class ReportOutputTest extends TestCase
         $this->assertStringNotContainsString(
             "\033]8;;file://somefile.php#L3\033\\",
             $output,
+        );
+    }
+
+    public function testByIssueLevelAndTypeReport(): void
+    {
+        $this->analyzeFileForReport();
+
+        $report_options = new ReportOptions();
+        $report_options->format = Report::TYPE_BY_ISSUE_LEVEL;
+        $report_options->use_color = false;
+
+        $this->assertSame(
+            <<<'EOF'
+            |----------------------------------------------------------------------------------------|
+            |    Issues have been sorted by level and type. Feature-specific issues and the          |
+            |    most serious issues that will always be reported are listed first, with             |
+            |    remaining issues in level order. Issues near the top are usually the most serious.  |
+            |    Reducing the errorLevel in psalm.xml will suppress output of issues further down    |
+            |    this report.                                                                        |
+            |                                                                                        |
+            |    The level at which issue is reported as an error is given in brackets - e.g.        |
+            |    `ERROR (2): MissingReturnType` indicates that MissingReturnType is only reported    |
+            |    as an error when Psalm's level is set to 2 or below.                                |
+            |                                                                                        |
+            |    Issues are shown or hidden in this report according to current settings. For        |
+            |    the most complete report set Psalm's error level to 1 or use --show-info=true       |
+            |    See https://psalm.dev/docs/running_psalm/error_levels/                              |
+            |----------------------------------------------------------------------------------------|
+
+            ERROR: UndefinedConstant - somefile.php:9:6 - Const CHANGE_ME is not defined, consider enabling the allConstantsGlobal config option if scanning legacy codebases (see https://psalm.dev/020)
+            echo CHANGE_ME;
+
+            ERROR: UndefinedVariable - somefile.php:4:10 - Cannot find referenced variable $as_you_____type (see https://psalm.dev/024)
+              return $as_you_____type;
+
+            INFO (3): PossiblyUndefinedGlobalVariable - somefile.php:18:6 - Possibly undefined global variable $a, first seen on line 12 (see https://psalm.dev/126)
+            echo $a
+
+            ERROR (1): MixedReturnStatement - somefile.php:4:10 - Could not infer a return type (see https://psalm.dev/138)
+              return $as_you_____type;
+
+
+            EOF,
+            IssueBuffer::getOutput(IssueBuffer::getIssuesData(), $report_options),
         );
     }
 
@@ -792,6 +841,122 @@ final class ReportOutputTest extends TestCase
         $this->assertTrue($xml->loadXML($xml_output));
         $this->assertSame($message, $xml->getElementsByTagName('message')->item(0)?->textContent);
         $this->assertSame($snippet, $xml->getElementsByTagName('snippet')->item(0)?->textContent);
+    }
+
+    public function testXmlReportsReplaceCharactersXmlForbids(): void
+    {
+        // ESC, NUL, U+FFFE and an invalid UTF-8 byte can't appear in XML 1.0; DEL can
+        $file_name = "some\x1Bfile.php";
+        $issues_data = [
+            $file_name => [
+                new IssueData(
+                    IssueData::SEVERITY_ERROR,
+                    1,
+                    1,
+                    'InvalidDocblock',
+                    "Invalid type 'Foo\x1B' \xEF\xBF\xBE x\x7F",
+                    $file_name,
+                    $file_name,
+                    "echo \"a\x00b\xFFc\";",
+                    "a\x00b",
+                    0,
+                    20,
+                    0,
+                    20,
+                    1,
+                    21,
+                ),
+            ],
+        ];
+
+        $checkstyle = new DOMDocument();
+        $this->assertTrue($checkstyle->loadXML(IssueBuffer::getOutput(
+            $issues_data,
+            ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.checkstyle.xml'])[0],
+        )));
+        $this->assertSame(
+            "some\u{FFFD}file.php",
+            $checkstyle->getElementsByTagName('file')->item(0)?->getAttribute('name'),
+        );
+        $this->assertSame(
+            "InvalidDocblock: Invalid type 'Foo\u{FFFD}' \u{FFFD} x\x7F",
+            $checkstyle->getElementsByTagName('error')->item(0)?->getAttribute('message'),
+        );
+
+        $junit = new DOMDocument();
+        $this->assertTrue($junit->loadXML(IssueBuffer::getOutput(
+            $issues_data,
+            ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.junit.xml'])[0],
+        )));
+        $this->assertSame(
+            "some\u{FFFD}file.php",
+            $junit->getElementsByTagName('testsuite')->item(0)?->getAttribute('name'),
+        );
+        $this->assertSame(
+            "some\u{FFFD}file.php:1",
+            $junit->getElementsByTagName('testcase')->item(0)?->getAttribute('name'),
+        );
+        $failure = $junit->getElementsByTagName('failure')->item(0)?->textContent;
+        $this->assertNotNull($failure);
+        $this->assertStringContainsString("message: Invalid type 'Foo\u{FFFD}' \u{FFFD} x\x7F\n", $failure);
+        $this->assertStringContainsString("snippet: echo \"a\u{FFFD}b\u{FFFD}c\";\n", $failure);
+        $this->assertStringContainsString("selected_text: a\u{FFFD}b\n", $failure);
+    }
+
+    public function testXmlReportsEncodeUtf8WhateverTheDefaultCharset(): void
+    {
+        $file_name = 'пример.php';
+        $issues_data = [
+            $file_name => [
+                new IssueData(
+                    IssueData::SEVERITY_ERROR,
+                    1,
+                    1,
+                    'InvalidDocblock',
+                    'Invalid type пример',
+                    $file_name,
+                    $file_name,
+                    'пример',
+                    'пример',
+                    0,
+                    20,
+                    0,
+                    20,
+                    1,
+                    21,
+                ),
+            ],
+        ];
+
+        $default_charset = ini_set('default_charset', 'SJIS');
+        try {
+            $checkstyle_output = IssueBuffer::getOutput(
+                $issues_data,
+                ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.checkstyle.xml'])[0],
+            );
+            $junit_output = IssueBuffer::getOutput(
+                $issues_data,
+                ProjectAnalyzer::getFileReportOptions([__DIR__ . '/test-report.junit.xml'])[0],
+            );
+        } finally {
+            ini_set('default_charset', (string) $default_charset);
+        }
+
+        $checkstyle = new DOMDocument();
+        $this->assertTrue($checkstyle->loadXML($checkstyle_output));
+        $this->assertSame($file_name, $checkstyle->getElementsByTagName('file')->item(0)?->getAttribute('name'));
+        $this->assertSame(
+            'InvalidDocblock: Invalid type пример',
+            $checkstyle->getElementsByTagName('error')->item(0)?->getAttribute('message'),
+        );
+
+        $junit = new DOMDocument();
+        $this->assertTrue($junit->loadXML($junit_output));
+        $this->assertSame($file_name, $junit->getElementsByTagName('testsuite')->item(0)?->getAttribute('name'));
+        $this->assertStringContainsString(
+            "message: Invalid type пример\n",
+            (string) $junit->getElementsByTagName('failure')->item(0)?->textContent,
+        );
     }
 
     public function testGithubActionsOutput(): void

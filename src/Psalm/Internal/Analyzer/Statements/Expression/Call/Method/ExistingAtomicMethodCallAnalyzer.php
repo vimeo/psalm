@@ -115,7 +115,6 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         if ($codebase->store_node_types
             && !$stmt->isFirstClassCallable()
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             ArgumentMapPopulator::recordArgumentPositions(
                 $statements_analyzer,
@@ -157,7 +156,6 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
@@ -178,7 +176,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable
-            && ($context->collect_initializations || $context->collect_mutations)
+            && $context->collect_initializations
             && $stmt->var->name === 'this'
             && $source instanceof FunctionLikeAnalyzer
         ) {
@@ -276,7 +274,6 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         if ($codebase->store_node_types
             && !$stmt->isFirstClassCallable()
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             ArgumentMapPopulator::recordArgumentPositions(
                 $statements_analyzer,
@@ -418,7 +415,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $context->vars_in_scope[$lhs_var_id] = $self_out_candidate;
             }
 
-            if (!$context->collect_mutations && !$context->collect_initializations) {
+            if (!$context->collect_initializations) {
                 // a method of a mixin runs through the __call() of the class using the mixin
                 $magic_method_id = $mixin_user_class !== null
                     ? $codebase->methods->getDeclaringMethodId(new MethodIdentifier($mixin_user_class, '__call'))
@@ -488,11 +485,25 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $trait_self_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
                 ?? $class_storage->name;
 
+            // `static` in the called method: the caller's on `$this` or on an object of type `static`, the class of the
+            // object when it has no subclass
+            $assertion_static_class = $lhs_var_id === '$this'
+                || ($lhs_type_part->is_static && $lhs_type_part->value === $context->self)
+                ? 'static'
+                : ($class_storage->final || $class_storage->is_enum ? $fq_class_name : null);
+
             if ($assertions) {
                 self::applyAssertionsToContext(
                     $stmt_name,
                     ExpressionIdentifier::getExtendedVarId($stmt->var, null, $statements_analyzer),
-                    self::getAssertionsOnArgs($assertions, $method_storage, $args),
+                    self::resolveStaticPropertyAssertionClasses(
+                        self::getAssertionsOnArgs($assertions, $method_storage, $args),
+                        $codebase,
+                        $context,
+                        $trait_self_class,
+                        $assertion_static_class,
+                        $fq_class_name,
+                    ),
                     $args,
                     $template_result,
                     $context,
@@ -515,7 +526,14 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         ),
                         $trait_self_class,
                     ),
-                    self::getAssertionsOnArgs($if_true_assertions, $method_storage, $args),
+                    self::resolveStaticPropertyAssertionClasses(
+                        self::getAssertionsOnArgs($if_true_assertions, $method_storage, $args),
+                        $codebase,
+                        $context,
+                        $trait_self_class,
+                        $assertion_static_class,
+                        $fq_class_name,
+                    ),
                 );
                 if ($lhs_var_id === null) {
                     $possibilities = array_filter(
@@ -544,7 +562,14 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         ),
                         $trait_self_class,
                     ),
-                    self::getAssertionsOnArgs($if_false_assertions, $method_storage, $args),
+                    self::resolveStaticPropertyAssertionClasses(
+                        self::getAssertionsOnArgs($if_false_assertions, $method_storage, $args),
+                        $codebase,
+                        $context,
+                        $trait_self_class,
+                        $assertion_static_class,
+                        $fq_class_name,
+                    ),
                 );
                 if ($lhs_var_id === null) {
                     $possibilities = array_filter(

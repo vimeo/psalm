@@ -22,6 +22,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff;
 use function array_filter;
 use function array_intersect_key;
 use function array_map;
@@ -175,6 +176,9 @@ final class TryAnalyzer
             foreach ($newly_assigned_var_ids as $assigned_var_id => $_) {
                 $context->removeVarFromConflictingClauses($assigned_var_id);
             }
+
+            // a branch of the body keeps the clauses that hold at its end, not where an exception may leave it
+            $context->removeClausesOfVarsChangedSince($old_context->parent_remove_vars);
         } else {
             foreach ($newly_assigned_var_ids as $assigned_var_id => $_) {
                 $try_context->removeVarFromConflictingClauses($assigned_var_id);
@@ -456,6 +460,11 @@ final class TryAnalyzer
 
             $catch_doesnt_leave_parent_scope = in_array(ScopeAnalyzer::ACTION_NONE, $catch_actions[$i], true);
 
+            // a catch that breaks or continues goes on after the loop or switch around the try
+            if (array_diff($catch_actions[$i], [ScopeAnalyzer::ACTION_END, ScopeAnalyzer::ACTION_RETURN]) !== []) {
+                $context->removeClausesOfVarsChangedIn($catch_context);
+            }
+
             if ($catch_doesnt_leave_parent_scope) {
                 $context->intersectNullArrayOffsets($catch_context);
 
@@ -545,10 +554,19 @@ final class TryAnalyzer
 
                 $finally_context->vars_in_scope = $try_context->finally_scope->vars_in_scope;
 
+                // the finally may run from anywhere in the body: dropped without marking them changed, the clauses
+                // still hold after the try, which is only reached from the end of the body or of a catch
+                foreach ($context->parent_remove_vars as $var_id => $stamp) {
+                    if (($old_context->parent_remove_vars[$var_id] ?? null) !== $stamp) {
+                        $finally_context->clauses = Context::filterClauses($var_id, $finally_context->clauses);
+                    }
+                }
+
                 $statements_analyzer->analyze($stmt->finally->stmts, $finally_context);
 
                 // the code after the try runs after the finally
                 $context->intersectNullArrayOffsets($finally_context);
+                $context->removeClausesOfVarsChangedIn($finally_context);
 
                 $context->constructor_exits?->applyFinally(
                     $try_context->finally_scope,

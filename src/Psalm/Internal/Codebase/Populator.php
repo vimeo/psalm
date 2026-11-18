@@ -94,6 +94,9 @@ final class Populator
     {
         $this->progress->debug('ClassLikeStorage is populating' . "\n");
 
+        // before the members of the classes inherit their internal namespaces
+        $this->classlikes->markUnshippedCodeInternal();
+
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
             $this->populateClassLikeStorage($class_storage);
         }
@@ -614,11 +617,11 @@ final class Populator
                     continue;
                 }
 
-                $storage->pseudo_methods[$method_name] ??= $pseudo_method;
-
-                if (isset($parent_interface_storage->declaring_pseudo_method_ids[$method_name])) {
+                if (!isset($storage->pseudo_methods[$method_name])) {
+                    $storage->pseudo_methods[$method_name] = $pseudo_method;
                     $storage->declaring_pseudo_method_ids[$method_name]
-                        ??= $parent_interface_storage->declaring_pseudo_method_ids[$method_name];
+                        = $parent_interface_storage->declaring_pseudo_method_ids[$method_name]
+                            ?? new MethodIdentifier($parent_interface_storage->name, $method_name);
                 }
             }
         }
@@ -1080,6 +1083,13 @@ final class Populator
 
         $this->populateClassLikeStorage($parent_storage, $dependent_classlikes);
 
+        // The parent was named by a class_alias() that is only scanned after this class
+        if ($storage->parent_class !== null && strtolower($storage->parent_class) !== $parent_storage_class) {
+            unset($storage->parent_classes[strtolower($storage->parent_class)]);
+            $storage->parent_class = $parent_storage->name;
+            $storage->parent_classes = [$parent_storage_class => $parent_storage->name, ...$storage->parent_classes];
+        }
+
         $storage->parent_classes = [...$storage->parent_classes, ...$parent_storage->parent_classes];
 
         $this->extendTemplateParams($storage, $parent_storage, true);
@@ -1140,25 +1150,26 @@ final class Populator
     {
         $fq_class_name_lc = strtolower($storage->name);
 
+        // a plugin can add a `@method` without its declaring id
         foreach ($parent_storage->pseudo_methods as $method_name => $pseudo_method) {
-            if (!$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)) {
-                $storage->pseudo_methods[$method_name] ??= $pseudo_method;
-
-                if (isset($parent_storage->declaring_pseudo_method_ids[$method_name])) {
-                    $storage->declaring_pseudo_method_ids[$method_name]
-                        ??= $parent_storage->declaring_pseudo_method_ids[$method_name];
-                }
+            if (!isset($storage->pseudo_methods[$method_name])
+                && !$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)
+            ) {
+                $storage->pseudo_methods[$method_name] = $pseudo_method;
+                $storage->declaring_pseudo_method_ids[$method_name]
+                    = $parent_storage->declaring_pseudo_method_ids[$method_name]
+                        ?? new MethodIdentifier($parent_storage->name, $method_name);
             }
         }
 
         foreach ($parent_storage->pseudo_static_methods as $method_name => $pseudo_method) {
-            if (!$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)) {
-                $storage->pseudo_static_methods[$method_name] ??= $pseudo_method;
-
-                if (isset($parent_storage->declaring_pseudo_static_method_ids[$method_name])) {
-                    $storage->declaring_pseudo_static_method_ids[$method_name]
-                        ??= $parent_storage->declaring_pseudo_static_method_ids[$method_name];
-                }
+            if (!isset($storage->pseudo_static_methods[$method_name])
+                && !$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)
+            ) {
+                $storage->pseudo_static_methods[$method_name] = $pseudo_method;
+                $storage->declaring_pseudo_static_method_ids[$method_name]
+                    = $parent_storage->declaring_pseudo_static_method_ids[$method_name]
+                        ?? new MethodIdentifier($parent_storage->name, $method_name);
             }
         }
     }
@@ -1649,6 +1660,19 @@ final class Populator
                 $aliased_constant_name_lc = strtolower($constant_name);
                 $aliased_constant_name = $constant_name;
             }
+            // The class's own declaration wins over the constant of the trait. A plain isset() can't tell it from
+            // an inherited one: when a storage is populated again (the Populator resets `populated`), constants
+            // already holds the copies of the parent and of the trait from the first run.
+            $own_location = ($storage->constants[$aliased_constant_name] ?? null)?->location;
+            if ($own_location !== null
+                && $storage->stmt_location !== null
+                && $own_location->file_path === $storage->stmt_location->file_path
+                && $own_location->raw_file_start >= $storage->stmt_location->raw_file_start
+                && $own_location->raw_file_end <= $storage->stmt_location->raw_file_end
+            ) {
+                continue;
+            }
+
             $visibility = $storage->trait_visibility_map[$aliased_constant_name_lc]
                 ?? $class_constant_storage->visibility;
             $final = $storage->trait_final_map[$aliased_constant_name_lc] ?? $class_constant_storage->final;

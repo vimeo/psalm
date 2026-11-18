@@ -11,6 +11,7 @@ use PhpParser\Node\Stmt;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\Return_;
 use Psalm\Config;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
@@ -179,7 +180,7 @@ final class StatementsProviderTest extends TestCase
             . str_replace('/', DIRECTORY_SEPARATOR, $relative_path);
         $contents = '<?php class Acme {}';
         $this->files->registerFile($file_path, $contents);
-        $cache = new ParserCacheProvider($this->testConfig, '', false);
+        $cache = new ParserCacheProvider($this->testConfig, '', CacheMode::Memory);
         $provider = new StatementsProvider($this->files, $cache);
 
         $this->assertFalse($this->testConfig->isInProjectDirs($file_path));
@@ -225,7 +226,7 @@ final class StatementsProviderTest extends TestCase
             $this->assertSame($relative_path, $this->testConfig->shortenFileName($file_path));
             $this->assertFalse($this->testConfig->isInProjectDirs($file_path));
 
-            $cache = new ParserCacheProvider($this->testConfig, '', false);
+            $cache = new ParserCacheProvider($this->testConfig, '', CacheMode::Memory);
             $provider = new StatementsProvider(new FileProvider(), $cache);
             $stmts = $provider->getStatementsForFile($file_path, self::PHP_VERSION_ID, false);
 
@@ -242,7 +243,7 @@ final class StatementsProviderTest extends TestCase
         $file_path = self::$src_dir_path . 'vendor' . DIRECTORY_SEPARATOR . 'Acme.php';
         $contents = '<?php class Acme {}';
         $this->files->registerFile($file_path, $contents);
-        $cache = new ParserCacheProvider($this->testConfig, '', false);
+        $cache = new ParserCacheProvider($this->testConfig, '', CacheMode::Memory);
         $provider = new StatementsProvider($this->files, $cache);
 
         $this->assertTrue($this->testConfig->isInProjectDirs($file_path));

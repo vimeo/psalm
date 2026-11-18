@@ -30,6 +30,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -102,11 +103,11 @@ use function array_search;
 use function array_values;
 use function count;
 use function end;
+use function hash;
 use function in_array;
 use function is_string;
 use function krsort;
 use function mb_strpos;
-use function md5;
 use function microtime;
 use function preg_match;
 use function reset;
@@ -398,11 +399,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer = new StatementsAnalyzer($this, $type_provider, true);
 
-        // A method can be analyzed again to collect the properties it initializes or mutates, in the context of a
+        // A method can be analyzed again to collect the properties it initializes, in the context of a
         // class calling or inheriting it (see CallAnalyzer::collectSpecialInformation()): its parameters stay those of
         // every call, so linking its nodes to those of that class there would make any call to it, on any object,
         // reach the properties of that class. Its regular analysis adds its taint paths.
-        if ($context->collect_initializations || $context->collect_mutations) {
+        if ($context->collect_initializations) {
             $statements_analyzer->taint_flow_graph = null;
             $statements_analyzer->data_flow_graph = $statements_analyzer->variable_use_graph;
         }
@@ -592,6 +593,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             $ref_context->vars_in_scope[$tmp_var_id] = Type::getBool();
 
+            $bounds_before = $statements_analyzer->type_variable_tracker->snapshotBounds();
+
             $var = new VirtualVariable(
                 substr($tmp_var_id, 1),
             );
@@ -635,6 +638,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 IssueBuffer::clearRecordingLevel();
                 IssueBuffer::stopRecording();
             }
+
+            // the analysis of the body below records the bounds of these passes again, with the types they found
+            $statements_analyzer->type_variable_tracker->discardBoundsRecordedBetween($bounds_before);
 
             foreach ($byref_uses as $var_id => $_) {
                 $byref_vars[$var_id] = self::combineByRefPathTypes(
@@ -724,9 +730,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        // a signature that fails the check skips the body, but what the body initialises or mutates still counts:
+        // a signature that fails the check skips the body, but what the body initialises still counts:
         // its regular analysis reports the signature
-        if (!$check_stmts && !$context->collect_initializations && !$context->collect_mutations) {
+        if (!$check_stmts && !$context->collect_initializations) {
             // the body is not analysed, so its uses of the params are unknown
             if ($storage instanceof MethodStorage
                 && $this instanceof MethodAnalyzer
@@ -738,7 +744,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             return false;
         }
 
-        if ($context->collect_initializations || $context->collect_mutations) {
+        if ($context->collect_initializations) {
             $statements_analyzer->addSuppressedIssues([
                 'DocblockTypeContradiction',
                 'InvalidReturnStatement',
@@ -747,15 +753,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 'TypeDoesNotContainNull',
                 'TypeDoesNotContainType',
                 'LoopInvalidation',
+                'UndefinedInterfaceMethod',
+                'UndefinedMethod',
+                'PossiblyUndefinedMethod',
             ]);
-
-            if ($context->collect_initializations) {
-                $statements_analyzer->addSuppressedIssues([
-                    'UndefinedInterfaceMethod',
-                    'UndefinedMethod',
-                    'PossiblyUndefinedMethod',
-                ]);
-            }
         } elseif ($cased_method_id && strpos($cased_method_id, '__destruct')) {
             $statements_analyzer->addSuppressedIssues([
                 'InvalidPropertyAssignmentValue',
@@ -817,7 +818,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         if (!$this->function instanceof VirtualNode
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             if ($storage instanceof MethodStorage
                 && $storage->has_mutations_annotation
@@ -947,7 +947,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && $project_analyzer->debug_performance
             && $cased_method_id
         ) {
@@ -979,6 +978,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if (!$function_param->type
                 && $function_param->location
             ) {
+                if ($this instanceof ClosureAnalyzer && $this->getPropertyHookId() !== null) {
+                    // the property says what an untyped `$value` is
+                    continue;
+                }
+
                 if ($this->function instanceof Closure
                     || $this->function instanceof ArrowFunction
                 ) {
@@ -1023,6 +1027,16 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $closure_yield_types,
                 true,
             );
+
+            if (!$storage->return_type) {
+                $closure_return_types = ReturnTypeAnalyzer::addImplicitNullReturn(
+                    $closure_return_types,
+                    $closure_yield_types !== [],
+                    $function_stmts,
+                    $type_provider,
+                    $context->has_returned,
+                );
+            }
 
             $closure_return_type = $closure_return_types
                 ? Type::combineUnionTypeArray(
@@ -1105,7 +1119,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         if ($codebase->collect_references
             && !$context->collect_initializations
-            && !$context->collect_mutations
             && $codebase->find_unused_variables
         ) {
             $this->checkParamReferences(
@@ -1167,7 +1180,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        $missingThrowsDocblockErrors = [];
+        $fix_missing_throws = $codebase->alter_code
+            && isset($project_analyzer->getIssuesToFix()['MissingThrowsDocblock']);
+        $missing_throws_docblock_errors = [];
         foreach ($statements_analyzer->getUncaughtThrows($context) as $possibly_thrown_exception => $codelocations) {
             $is_expected = false;
 
@@ -1187,30 +1202,43 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if (!$is_expected) {
-                $missing_docblock_exception = new TNamedObject($possibly_thrown_exception);
-                $missingThrowsDocblockErrors[] = $missing_docblock_exception->toNamespacedString(
-                    $this->source->getNamespace(),
-                    $this->source->getAliasedClassesFlipped(),
-                    $this->source->getFQCLN(),
-                    true,
-                );
-
+                $add_to_docblock = false;
                 foreach ($codelocations as $codelocation) {
                     // issues are suppressed in ThrowAnalyzer, CallAnalyzer, etc.
+                    $issue = new MissingThrowsDocblock(
+                        $possibly_thrown_exception . ' is thrown but not caught - please either catch'
+                        . ' or add a @throws annotation',
+                        $codelocation,
+                        $possibly_thrown_exception,
+                    );
+
                     IssueBuffer::maybeAdd(
-                        new MissingThrowsDocblock(
-                            $possibly_thrown_exception . ' is thrown but not caught - please either catch'
-                                . ' or add a @throws annotation',
-                            $codelocation,
-                            $possibly_thrown_exception,
-                        ),
+                        $issue,
+                        $this->getSuppressedIssues(),
+                        true,
+                    );
+
+                    if ($fix_missing_throws
+                        && !$add_to_docblock
+                        && !IssueBuffer::isSuppressed($issue, $this->getSuppressedIssues())
+                    ) {
+                        $add_to_docblock = true;
+                    }
+                }
+
+                if ($add_to_docblock) {
+                    $missing_docblock_exception = new TNamedObject($possibly_thrown_exception);
+                    $missing_throws_docblock_errors[] = $missing_docblock_exception->toNamespacedString(
+                        $this->source->getNamespace(),
+                        $this->source->getAliasedClassesFlipped(),
+                        $this->source->getFQCLN(),
+                        true,
                     );
                 }
             }
         }
 
-        if ($codebase->alter_code
-            && isset($project_analyzer->getIssuesToFix()['MissingThrowsDocblock'])
+        if ($missing_throws_docblock_errors !== []
             && !$this->function instanceof VirtualNode
         ) {
             $manipulator = FunctionDocblockManipulator::getForFunction(
@@ -1218,7 +1246,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $this->source->getFilePath(),
                 $this->function,
             );
-            $manipulator->addThrowsDocblock($missingThrowsDocblockErrors);
+            $manipulator->addThrowsDocblock($missing_throws_docblock_errors);
         }
 
         if ($codebase->taint_flow_graph
@@ -1311,7 +1339,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 && $this instanceof MethodAnalyzer
                 && !$context->collect_initializations
             ) {
-                $new_hash = md5($real_method_id . '::' . $context->getScopeSummary());
+                $new_hash = hash('xxh3', $real_method_id . '::' . $context->getScopeSummary());
 
                 if ($new_hash === $hash) {
                     self::$no_effects_hashes[$hash] = true;
@@ -1342,7 +1370,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        $t = $storage instanceof MethodStorage ? Attribute::TARGET_METHOD : Attribute::TARGET_FUNCTION;
+        $t = $storage instanceof MethodStorage
+            || ($this instanceof ClosureAnalyzer && $this->getPropertyHookId() !== null)
+            ? Attribute::TARGET_METHOD
+            : Attribute::TARGET_FUNCTION;
         AttributesAnalyzer::analyze(
             $this,
             $context,
@@ -1396,6 +1427,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 );
 
                 if ($this instanceof ClosureAnalyzer) {
+                    // a hook cannot leave its parameter out
+                    if ($this->getPropertyHookId() !== null) {
+                        continue;
+                    }
+
                     IssueBuffer::maybeAdd(
                         new UnusedClosureParam(
                             $unused_param_message,
@@ -1481,11 +1517,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * The by-reference parameter $var_id stops referencing the variable passed to it (unset(), =&, global,
      * static, ...): that variable keeps what the parameter holds now. Also the case for a variable bound to
-     * a global.
+     * a global. What it was bound to no longer limits what it may hold.
      */
     public static function unbindByRefParam(Codebase $codebase, Context $context, string $var_id): void
     {
-        unset($context->bound_globals[$var_id]);
+        unset(
+            $context->bound_globals[$var_id],
+            $context->byref_constraints[$var_id],
+            $context->references_rebound_in_blocks[$var_id],
+        );
 
         if (isset($context->by_ref_param_out_nodes[$var_id])) {
             self::taintByRefParamOut($codebase, $context, $var_id);
@@ -1579,7 +1619,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         // specialized like the by-reference parameter out nodes of its calls (see
         // ArgumentsAnalyzer::getByRefParamOutNode())
-        $specialization_location = $storage->specialize_call ? $storage->location : null;
+        $specialization_location = $storage->specialize_call
+            || TaintFlowGraph::getSpeculativelySpecializedCallee($codebase, $storage) !== null
+                ? $storage->location
+                : null;
 
         // the classes a method overridden is called through (see getCasedBodyMethodId())
         foreach ($class_storage->parent_classes + $class_storage->class_implements as $ancestor) {
@@ -2440,7 +2483,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             throw new UnexpectedValueException('This is weird');
         }
 
-        return $this->getClosureId();
+        return $this->getPropertyHookId() ?? $this->getClosureId();
     }
 
     /**
@@ -2867,7 +2910,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             if ($add_mutations) {
                 if (!$context->collect_initializations) {
-                    $hash = md5($real_method_id . '::' . $context->getScopeSummary());
+                    $hash = hash('xxh3', $real_method_id . '::' . $context->getScopeSummary());
 
                     // if we know that the function has no effects on vars, we don't bother rechecking
                     if (isset(self::$no_effects_hashes[$hash])) {
@@ -3001,7 +3044,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $this->getSuppressedIssues(),
                     true,
                 );
-                    
+
                 if ($codebase->alter_code
                     && $storage->stmt_location !== null
                     && isset($this->getProjectAnalyzer()->getIssuesToFix()['MissingOverrideAttribute'])
@@ -3015,7 +3058,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             if ($overridden_method_ids
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 foreach ($overridden_method_ids as $overridden_method_id) {
                     $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);

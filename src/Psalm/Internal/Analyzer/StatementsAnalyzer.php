@@ -306,7 +306,6 @@ final class StatementsAnalyzer extends SourceAnalyzer
             if ($this->root_scope
                 && $this->depth === 1
                 && !$context->collect_initializations
-                && !$context->collect_mutations
                 && $codebase->find_unused_variables
                 && $context->check_variables
             ) {
@@ -776,7 +775,6 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
         if ($context->has_returned
             && !$context->collect_initializations
-            && !$context->collect_mutations
             && !($stmt instanceof PhpParser\Node\Stmt\Nop)
             && !($stmt instanceof PhpParser\Node\Stmt\Function_)
             && !($stmt instanceof PhpParser\Node\Stmt\Class_)
@@ -1279,11 +1277,14 @@ final class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * @param array{int, int}|null $code_range only the assignments between these file offsets
      * @return array<string, DataFlowNode>
      * @psalm-mutation-free
      */
-    public function getParentNodesForPossiblyUndefinedVariable(string $undefined_var_id): array
-    {
+    public function getParentNodesForPossiblyUndefinedVariable(
+        string $undefined_var_id,
+        ?array $code_range = null,
+    ): array {
         if (!$this->data_flow_graph) {
             return [];
         }
@@ -1291,7 +1292,11 @@ final class StatementsAnalyzer extends SourceAnalyzer
         $parent_nodes = [];
 
         foreach ($this->unused_var_locations as [$var_id, $original_location]) {
-            if ($var_id === $undefined_var_id) {
+            if ($var_id === $undefined_var_id
+                && ($code_range === null
+                    || ($original_location->raw_file_start >= $code_range[0]
+                        && $original_location->raw_file_end <= $code_range[1]))
+            ) {
                 $assignment_node = DataFlowNode::getForAssignment($var_id, $original_location);
                 $parent_nodes[$assignment_node->id] = $assignment_node;
             }

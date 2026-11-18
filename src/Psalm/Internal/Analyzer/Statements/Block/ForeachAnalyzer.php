@@ -247,13 +247,17 @@ final class ForeachAnalyzer
                 }
 
                 if (isset($context->vars_in_scope[$var_comment->var_id])) {
-                    /** @psalm-suppress InaccessibleProperty We just created this type */
-                    $comment_type->parent_nodes = $context->vars_in_scope[$var_comment->var_id]->parent_nodes;
+                    $comment_type = $comment_type->setParentNodes(
+                        $context->vars_in_scope[$var_comment->var_id]->parent_nodes,
+                    );
                 }
 
                 $context->vars_in_scope[$var_comment->var_id] = $comment_type;
             }
         }
+
+        // read by ScopeAnalyzer::getControlActions()
+        $stmt->setAttribute('alwaysEntered', false);
 
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
@@ -275,7 +279,10 @@ final class ForeachAnalyzer
         );
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
-            $iterator_type = TypeVariableResolver::resolveTopLevel($stmt_expr_type, $codebase);
+            $iterator_type = TypeExpander::expandTemplateKeyOfAndValueOf(
+                $codebase,
+                TypeVariableResolver::resolveTopLevel($stmt_expr_type, $codebase),
+            );
         } elseif ($var_id && $context->hasVariable($var_id)) {
             $iterator_type = $context->vars_in_scope[$var_id];
         } else {
@@ -400,10 +407,10 @@ final class ForeachAnalyzer
 
             if (isset($foreach_context->vars_in_scope[$var_comment->var_id])) {
                 $existing_var_type = $foreach_context->vars_in_scope[$var_comment->var_id];
-                /** @psalm-suppress InaccessibleProperty We just created this type */
-                $comment_type->parent_nodes = $existing_var_type->parent_nodes;
-                /** @psalm-suppress InaccessibleProperty We just created this type */
-                $comment_type->by_ref = $existing_var_type->by_ref;
+                $comment_type = $comment_type->setProperties([
+                    'parent_nodes' => $existing_var_type->parent_nodes,
+                    'by_ref' => $existing_var_type->by_ref,
+                ]);
             }
 
             $foreach_context->vars_in_scope[$var_comment->var_id] = $comment_type;
@@ -454,6 +461,8 @@ final class ForeachAnalyzer
         $loop_scope = new LoopScope($foreach_context, $context);
 
         $loop_scope->protected_var_ids = $context->protected_var_ids;
+
+        $stmt->setAttribute('alwaysEntered', $iterator_type !== null && $always_non_empty_array);
 
         if (LoopAnalyzer::analyze(
             $statements_analyzer,
@@ -1342,7 +1351,8 @@ final class ForeachAnalyzer
             } elseif ($iterator_atomic_type instanceof Scalar || $iterator_atomic_type instanceof TVoid) {
                 $invalid_iterator_types[] = $iterator_atomic_type->getKey();
 
-                $value_type = Type::getMixed();
+                // what the other types of the iterated value hold is still iterated
+                $value_type = Type::getMixed()->setParentNodes($value_type?->parent_nodes ?? []);
             } elseif ($iterator_atomic_type instanceof TObject ||
                 $iterator_atomic_type instanceof TMixed ||
                 $iterator_atomic_type instanceof TNever
@@ -1960,6 +1970,9 @@ final class ForeachAnalyzer
                 $passed_type_params,
             );
 
+            $key_type = $key_type?->replaceClassLike('static', $iterator_atomic_type->value);
+            $value_type = $value_type?->replaceClassLike('static', $iterator_atomic_type->value);
+
             return;
         }
     }
@@ -2286,7 +2299,7 @@ final class ForeachAnalyzer
             return null;
         }
 
-        return self::getExtendedType(
+        $value_type = self::getExtendedType(
             'TValue',
             'ArrayAccess',
             $storage->name,
@@ -2294,6 +2307,8 @@ final class ForeachAnalyzer
             $storage->template_types,
             $atomic_type instanceof TGenericObject ? $atomic_type->type_params : null,
         );
+
+        return $value_type?->replaceClassLike('static', $atomic_type->value);
     }
 
     /**

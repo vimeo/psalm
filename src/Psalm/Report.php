@@ -9,9 +9,12 @@ use Psalm\Report\ReportOptions;
 
 use function array_filter;
 use function htmlspecialchars;
+use function implode;
 use function strtoupper;
 
+use const ENT_DISALLOWED;
 use const ENT_QUOTES;
+use const ENT_SUBSTITUTE;
 use const ENT_XML1;
 
 /**
@@ -100,11 +103,27 @@ abstract class Report
     }
 
     /**
+     * The message of an issue, followed by the CWE weaknesses it flags: `Detected tainted SQL (CWE-89)`
+     *
+     * @psalm-capabilities read-props
+     */
+    protected static function getMessageWithCwe(IssueData $issue_data): string
+    {
+        if (!$issue_data->cwe_ids) {
+            return $issue_data->message;
+        }
+
+        return $issue_data->message . ' (CWE-' . implode(', CWE-', $issue_data->cwe_ids) . ')';
+    }
+
+    /**
+     * Characters XML 1.0 forbids, even as character references, and invalid UTF-8 become U+FFFD.
+     *
      * @psalm-pure
      */
     protected function xmlEncode(string $data): string
     {
-        return htmlspecialchars($data, ENT_XML1 | ENT_QUOTES);
+        return htmlspecialchars($data, ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE | ENT_DISALLOWED, 'UTF-8');
     }
 
     abstract public function create(): string;

@@ -178,7 +178,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
                     instanceof FunctionLikeAnalyzer)
@@ -356,7 +355,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 ? new CodeLocation($source, $stmt->name)
                 : null,
             !$context->collect_initializations
-                && !$context->collect_mutations
                 ? $statements_analyzer
                 : null,
             $statements_analyzer->getFilePath(),
@@ -487,7 +485,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         ? new CodeLocation($source, $stmt->name)
                         : null,
                     !$context->collect_initializations
-                        && !$context->collect_mutations
                         ? $statements_analyzer
                         : null,
                     $statements_analyzer->getFilePath(),
@@ -730,6 +727,16 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         bool $is_intersection,
         AtomicMethodCallAnalysisResult $result,
     ): void {
+        if ($is_intersection
+            && $lhs_type_part instanceof TObjectWithProperties
+            && !isset($lhs_type_part->methods['__call'])
+            && !($stmt->name instanceof PhpParser\Node\Identifier
+                && isset($lhs_type_part->methods[strtolower($stmt->name->name)]))
+        ) {
+            // a shape that declares neither the method nor __call() says nothing about it; the other parts decide
+            return;
+        }
+
         switch ($lhs_type_part::class) {
             case TNull::class:
             case TFalse::class:
@@ -744,7 +751,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             case TObject::class:
             case TObjectWithProperties::class:
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)
@@ -881,7 +887,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         ? new CodeLocation($statements_analyzer->getSource(), $stmt->name)
                         : null,
                     !$context->collect_initializations
-                    && !$context->collect_mutations
                         ? $statements_analyzer
                         : null,
                     $statements_analyzer->getFilePath(),

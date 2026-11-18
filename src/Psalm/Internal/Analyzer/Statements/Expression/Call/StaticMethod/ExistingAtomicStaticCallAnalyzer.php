@@ -32,6 +32,7 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\ImpureMethodCall;
@@ -96,7 +97,7 @@ final class ExistingAtomicStaticCallAnalyzer
 
         if ($class_storage->user_defined
             && $context->self
-            && ($context->collect_mutations || $context->collect_initializations)
+            && $context->collect_initializations
         ) {
             $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
@@ -114,37 +115,32 @@ final class ExistingAtomicStaticCallAnalyzer
 
                 $file_analyzer = $statements_analyzer->getFileAnalyzer();
 
-                if ($context->collect_mutations) {
+                $local_vars_in_scope = [];
+                $local_vars_possibly_in_scope = [];
+
+                foreach ($context->vars_in_scope as $var => $_) {
+                    if (!str_starts_with($var, '$this->') && $var !== '$this') {
+                        $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
+                    }
+                }
+
+                foreach ($context->vars_possibly_in_scope as $var => $_) {
+                    if (!str_starts_with($var, '$this->') && $var !== '$this') {
+                        $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
+                    }
+                }
+
+                if (!isset($context->initialized_methods[(string) $appearing_method_id])) {
+                    $context->initialized_methods[(string) $appearing_method_id] = true;
+
                     $file_analyzer->getMethodMutations($appearing_method_id, $context);
-                } else {
-                    // collecting initializations
-                    $local_vars_in_scope = [];
-                    $local_vars_possibly_in_scope = [];
 
-                    foreach ($context->vars_in_scope as $var => $_) {
-                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
-                            $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
-                        }
+                    foreach ($local_vars_in_scope as $var => $type) {
+                        $context->vars_in_scope[$var] = $type;
                     }
 
-                    foreach ($context->vars_possibly_in_scope as $var => $_) {
-                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
-                            $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
-                        }
-                    }
-
-                    if (!isset($context->initialized_methods[(string) $appearing_method_id])) {
-                        $context->initialized_methods[(string) $appearing_method_id] = true;
-
-                        $file_analyzer->getMethodMutations($appearing_method_id, $context);
-
-                        foreach ($local_vars_in_scope as $var => $type) {
-                            $context->vars_in_scope[$var] = $type;
-                        }
-
-                        foreach ($local_vars_possibly_in_scope as $var => $type) {
-                            $context->vars_possibly_in_scope[$var] = $type;
-                        }
+                    foreach ($local_vars_possibly_in_scope as $var => $type) {
+                        $context->vars_possibly_in_scope[$var] = $type;
                     }
                 }
 
@@ -203,7 +199,6 @@ final class ExistingAtomicStaticCallAnalyzer
             ->static_property_mutations;
 
         if ($static_property_mutations !== null
-            && !$context->collect_mutations
             && !$context->collect_initializations
         ) {
             $appearing_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
@@ -434,11 +429,26 @@ final class ExistingAtomicStaticCallAnalyzer
             $trait_self_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
                 ?? $class_storage->name;
 
+            // `static` in the called method: the class named by the call, or the caller's when the call forwards it
+            $assertion_static_class = $static_is_called_class
+                ? $fq_class_name
+                : ($stmt->class instanceof PhpParser\Node\Name
+                    && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
+                    ? 'static'
+                    : null);
+
             if ($assertions) {
                 CallAnalyzer::applyAssertionsToContext(
                     $stmt_name,
                     null,
-                    CallAnalyzer::getAssertionsOnArgs($assertions, $method_storage, $stmt->getArgs()),
+                    CallAnalyzer::resolveStaticPropertyAssertionClasses(
+                        CallAnalyzer::getAssertionsOnArgs($assertions, $method_storage, $stmt->getArgs()),
+                        $codebase,
+                        $context,
+                        $trait_self_class,
+                        $assertion_static_class,
+                        $fq_class_name,
+                    ),
                     $stmt->getArgs(),
                     $template_result,
                     $context,
@@ -456,10 +466,17 @@ final class ExistingAtomicStaticCallAnalyzer
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
                             $trait_self_class,
                         ),
-                        CallAnalyzer::getAssertionsOnArgs(
-                            $method_storage->if_true_assertions,
-                            $method_storage,
-                            $stmt->getArgs(),
+                        CallAnalyzer::resolveStaticPropertyAssertionClasses(
+                            CallAnalyzer::getAssertionsOnArgs(
+                                $method_storage->if_true_assertions,
+                                $method_storage,
+                                $stmt->getArgs(),
+                            ),
+                            $codebase,
+                            $context,
+                            $trait_self_class,
+                            $assertion_static_class,
+                            $fq_class_name,
                         ),
                     ),
                 );
@@ -473,10 +490,17 @@ final class ExistingAtomicStaticCallAnalyzer
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
                             $trait_self_class,
                         ),
-                        CallAnalyzer::getAssertionsOnArgs(
-                            $method_storage->if_false_assertions,
-                            $method_storage,
-                            $stmt->getArgs(),
+                        CallAnalyzer::resolveStaticPropertyAssertionClasses(
+                            CallAnalyzer::getAssertionsOnArgs(
+                                $method_storage->if_false_assertions,
+                                $method_storage,
+                                $stmt->getArgs(),
+                            ),
+                            $codebase,
+                            $context,
+                            $trait_self_class,
+                            $assertion_static_class,
+                            $fq_class_name,
                         ),
                     ),
                 );
@@ -551,6 +575,10 @@ final class ExistingAtomicStaticCallAnalyzer
             }
         }
 
+        if ($return_type_candidate) {
+            $return_type_candidate = TypeVariableTracker::resolveTypeVariables($return_type_candidate, $codebase);
+        }
+
         if ($config->eventDispatcher->hasAfterMethodCallAnalysisHandlers()) {
             $file_manipulations = [];
 
@@ -614,7 +642,6 @@ final class ExistingAtomicStaticCallAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),

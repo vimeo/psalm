@@ -757,13 +757,14 @@ final class FunctionLikeDocblockScanner
 
                                 $param_type_mapping[$token_body] = $template_name;
 
+                                // a check of the param against its docblock type is still one against the docblock
                                 $param_storage->type = new Union([
                                     new TTemplateParam(
                                         $template_name,
                                         $template_as_type,
                                         $template_function_id,
                                     ),
-                                ]);
+                                ], ['from_docblock' => $template_as_type->from_docblock]);
                             }
                         }
 
@@ -1443,6 +1444,20 @@ final class FunctionLikeDocblockScanner
                     foreach ($storage->params as $i => $param_storage) {
                         if ($param_storage->name === $source_param) {
                             $storage->return_source_params[$i] = $flow->path_type;
+                        }
+                    }
+                }
+            } elseif ($flow->kind === TaintFlowAnnotation::CALLABLE_ARGUMENTS) {
+                foreach ($storage->params as $callable_offset => $callable_param_storage) {
+                    if ($callable_param_storage->name !== $flow->callable_param) {
+                        continue;
+                    }
+
+                    foreach ($flow->sources as $source_param) {
+                        foreach ($storage->params as $i => $param_storage) {
+                            if ($param_storage->name === $source_param) {
+                                $storage->callable_param_argument_sources[$callable_offset][$i] = $flow->path_type;
+                            }
                         }
                     }
                 }
