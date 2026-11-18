@@ -464,7 +464,9 @@ final class ArrayAssignmentAnalyzer
 
             $key_values = self::getKeyValuesOfOffset($context, $key);
 
-            if ($key_values) {
+            if (count($key_values) === 1) {
+                $array_type = self::setItemOfKey($codebase, $array_type, $key_values[0], $item_type);
+            } elseif ($key_values) {
                 $array_type = self::updateTypeWithKeyValues($codebase, $array_type, $item_type, $key_values);
             } else {
                 // the key the item is under, as an assignment to it has it
@@ -502,6 +504,44 @@ final class ArrayAssignmentAnalyzer
             $context->vars_in_scope[$array_id] = $array_type;
             $item_type = $array_type;
         }
+    }
+
+    /**
+     * The array with $item_type under the key, which it holds whether it had it before or not, as an assignment to
+     * the item leaves it
+     */
+    private static function setItemOfKey(
+        Codebase $codebase,
+        Union $array_type,
+        TLiteralInt|TLiteralString $key_value,
+        Union $item_type,
+    ): Union {
+        $key = $key_value->value;
+        $item_type = $item_type->setPossiblyUndefined(false);
+        $atomic_types = [];
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray) {
+                if ($atomic_type->is_list && !isset($atomic_type->properties[$key])) {
+                    // which keys the list holds then depends on the ones before
+                    return self::updateTypeWithKeyValues($codebase, $array_type, $item_type, [$key_value]);
+                }
+
+                $properties = $atomic_type->properties;
+                $properties[$key] = $item_type;
+                $atomic_types[] = $atomic_type->setProperties($properties);
+            } elseif ($atomic_type instanceof TArray) {
+                $atomic_types[] = TKeyedArray::make(
+                    [$key => $item_type],
+                    null,
+                    $atomic_type->isEmptyArray() ? null : $atomic_type->type_params,
+                );
+            } else {
+                return self::updateTypeWithKeyValues($codebase, $array_type, $item_type, [$key_value]);
+            }
+        }
+
+        return (new Union($atomic_types))->setParentNodes($array_type->parent_nodes);
     }
 
     /**

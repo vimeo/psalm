@@ -847,6 +847,30 @@ final class ReferenceTest extends TestCase
                     '$a===' => 'array{x: \'s\', y: mixed}',
                 ],
             ],
+            'writeThroughReferenceToNewKeyKeepsTheOtherKeys' => [
+                'code' => '<?php
+                    /** @var array{grouping: true} */
+                    $variables = ["grouping" => true];
+                    $form = &$variables["form"];
+                    $form = 1;
+                ',
+                'assertions' => [
+                    '$variables===' => 'array{form: 1, grouping: true}',
+                ],
+            ],
+            'writeToItemsOfReferenceToNewKeyKeepsTheOtherKeysSet' => [
+                'code' => '<?php
+                    /** @var array<array-key, mixed> */
+                    $variables = [];
+                    $form = &$variables["form"];
+                    $variables["grouping"] = true;
+                    $form["a"] = 1;
+                ',
+                'assertions' => [
+                    '$variables===' => 'array{form: mixed, grouping: true, ...<array-key, mixed>}',
+                ],
+                'ignored_issues' => ['MixedArrayAssignment'],
+            ],
             'writeThroughReferenceToOffsetOfNullableKeyUsesTheEmptyStringKey' => [
                 'code' => '<?php
                     /**
