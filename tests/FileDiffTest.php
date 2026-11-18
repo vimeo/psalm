@@ -1942,6 +1942,65 @@ final class FileDiffTest extends TestCase
                 [[0, 0]],
                 [],
             ],
+            'changeInterfaceParent' => [
+                '<?php
+                    namespace Foo;
+
+                    interface A extends B {
+                        public function foo() : void;
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    interface A extends C {
+                        public function foo() : void;
+                    }',
+                [],
+                [],
+                ['foo\a::foo'],
+                [[0, 0]],
+                [],
+            ],
+            'changeClassModifier' => [
+                '<?php
+                    namespace Foo;
+
+                    abstract class A {
+                        public function foo() : void {}
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    final class A {
+                        public function foo() : void {}
+                    }',
+                [],
+                [],
+                ['foo\a::foo'],
+                [[-3, 0]],
+                [],
+            ],
+            'changeClassAttribute' => [
+                '<?php
+                    namespace Foo;
+
+                    #[Attr(1)]
+                    class A {
+                        public function foo() : void {}
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    #[Attr(2)]
+                    class A {
+                        public function foo() : void {}
+                    }',
+                [],
+                [],
+                ['foo\a::foo'],
+                [[0, 0]],
+                [],
+            ],
             'removeNamespacedFunction' => [
                 '<?php
                     namespace Foo;

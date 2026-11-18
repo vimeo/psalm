@@ -8,6 +8,7 @@ use PhpParser;
 
 use function assert;
 use function end;
+use function max;
 use function substr;
 
 /**
@@ -115,15 +116,15 @@ final class FileStatementsDiffer extends AstDiffer
                         && $diff_elem->new instanceof PhpParser\Node\Stmt\Trait_)
                 ) {
                     $class_keep = ClassStatementsDiffer::diff(
-                        ($namespace !== '' ? $namespace . '\\' : '') . $diff_elem->old->name,
+                        ($namespace !== '' ? $namespace . '\\' : '') . (string) $diff_elem->old->name,
                         $diff_elem->old->stmts,
                         $diff_elem->new->stmts,
                         $a_code,
                         $b_code,
                     );
 
-                    if ($diff_elem->old->getDocComment()?->getText()
-                        === $diff_elem->new->getDocComment()?->getText()
+                    if (self::getClassHeader($diff_elem->old, $a_code)
+                        === self::getClassHeader($diff_elem->new, $b_code)
                     ) {
                         $keep = [...$keep, ...$class_keep[0]];
                     } else {
@@ -181,5 +182,30 @@ final class FileStatementsDiffer extends AstDiffer
         }
 
         return [$keep, $keep_signature, $add_or_delete, $diff_map, $deletion_ranges];
+    }
+
+    /**
+     * The docblock, attributes, modifiers, name and parents of a class-like
+     */
+    private static function getClassHeader(PhpParser\Node\Stmt\ClassLike $node, string $code): string
+    {
+        $start = (int) $node->getAttribute('startFilePos');
+        $end = (int) $node->name?->getAttribute('endFilePos');
+
+        if ($node instanceof PhpParser\Node\Stmt\Class_) {
+            $parents = [$node->extends, ...$node->implements];
+        } elseif ($node instanceof PhpParser\Node\Stmt\Interface_) {
+            $parents = $node->extends;
+        } else {
+            $parents = [];
+        }
+
+        foreach ($parents as $parent) {
+            if ($parent !== null) {
+                $end = max($end, (int) $parent->getAttribute('endFilePos'));
+            }
+        }
+
+        return $node->getDocComment()?->getText() . "\n" . substr($code, $start, $end - $start + 1);
     }
 }

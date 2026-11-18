@@ -567,18 +567,29 @@ final class ErrorFixTest extends TestCase
                 ],
                 'error_counts' => [1, 0],
             ],
-            'removeNamespacedFunctionWithError' => [
+            'removeNamespacedFunctionBeforeClass' => [
                 'files' => [
                     [
                         (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
                             namespace Foo;
 
-                            final class A {
-                                public function foo(): void {}
+                            function bar(): int {
+                                $a = 1;
+                                $b = 2;
+                                $c = 3;
+                                echo $a . $b . $c;
+                                return "a";
                             }
 
-                            function bar(): int {
-                                return "a";
+                            final class A {
+                                public function foo(): void {
+                                    $a = 1;
+                                    $b = 2;
+                                    $c = 3;
+                                    $d = 4;
+                                    $e = 5;
+                                    echo $a . $b . $c . $d . $e;
+                                }
                             }',
                     ],
                     [
@@ -586,11 +597,162 @@ final class ErrorFixTest extends TestCase
                             namespace Foo;
 
                             final class A {
-                                public function foo(): void {}
+                                public function foo(): void {
+                                    $a = 1;
+                                    $b = 2;
+                                    $c = 3;
+                                    $d = 4;
+                                    $e = 5;
+                                    echo $a . $b . $c . $d . $e;
+                                }
                             }',
                     ],
                 ],
                 'error_counts' => [2, 0],
+            ],
+            'changeParentOfClass' => [
+                'files' => [
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class B {
+                                public function foo(): void {}
+                            }
+
+                            class C {}
+
+                            final class A extends B {
+                                public function bar(): void {
+                                    parent::foo();
+                                }
+                            }',
+                    ],
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class B {
+                                public function foo(): void {}
+                            }
+
+                            class C {}
+
+                            final class A extends C {
+                                public function bar(): void {
+                                    parent::foo();
+                                }
+                            }',
+                    ],
+                ],
+                'error_counts' => [0, 1],
+            ],
+            'changeParentOfClassWithDocblock' => [
+                'files' => [
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class B {
+                                public function foo(): void {}
+                            }
+
+                            class C {}
+
+                            /** @psalm-suppress MissingConstructor */
+                            final class A extends B {
+                                public function bar(): void {
+                                    parent::foo();
+                                }
+                            }',
+                    ],
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            class B {
+                                public function foo(): void {}
+                            }
+
+                            class C {}
+
+                            /** @psalm-suppress MissingConstructor */
+                            final class A extends C {
+                                public function bar(): void {
+                                    parent::foo();
+                                }
+                            }',
+                    ],
+                ],
+                'error_counts' => [0, 1],
+            ],
+            'changeParentOfNamespacedClass' => [
+                'files' => [
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class B {
+                                public function foo(): void {}
+                            }
+
+                            class C {}
+
+                            final class A extends B {
+                                public function bar(): void {
+                                    parent::foo();
+                                }
+                            }',
+                    ],
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class B {
+                                public function foo(): void {}
+                            }
+
+                            class C {}
+
+                            final class A extends C {
+                                public function bar(): void {
+                                    parent::foo();
+                                }
+                            }',
+                    ],
+                ],
+                'error_counts' => [0, 1],
+            ],
+            'changeParentOfNamespacedClassWithDocblock' => [
+                'files' => [
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class B {
+                                public function foo(): void {}
+                            }
+
+                            class C {}
+
+                            /** @psalm-suppress MissingConstructor */
+                            final class A extends B {
+                                public function bar(): void {
+                                    parent::foo();
+                                }
+                            }',
+                    ],
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            class B {
+                                public function foo(): void {}
+                            }
+
+                            class C {}
+
+                            /** @psalm-suppress MissingConstructor */
+                            final class A extends C {
+                                public function bar(): void {
+                                    parent::foo();
+                                }
+                            }',
+                    ],
+                ],
+                'error_counts' => [0, 1],
             ],
         ];
     }
