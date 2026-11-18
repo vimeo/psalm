@@ -1421,6 +1421,15 @@ final class TaintTest extends TestCase
                     header("Location: /account?tab=" . (string) $_GET["tab"]);
                     header("location : /docs/" . (string) $_GET["page"]);',
             ],
+            'sessionItemWhereTaintedInputIsSuppressed' => [
+                'code' => '<?php
+                    /** @psalm-suppress TaintedInput */
+                    function remember(string $user): void {
+                        $_SESSION["user"] = $user;
+                    }
+
+                    remember((string) $_GET["user"]);',
+            ],
             'sessionItemOfAValueThatCantBeTainted' => [
                 'code' => '<?php
                     $_SESSION["page"] = (int) $_GET["page"];

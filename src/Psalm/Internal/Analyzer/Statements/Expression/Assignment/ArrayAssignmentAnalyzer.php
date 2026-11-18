@@ -1079,7 +1079,7 @@ final class ArrayAssignmentAnalyzer
             // what is stored in the session is trusted by the requests that read it back
             if ($expr->var instanceof Variable
                 && $expr->var->name === '_SESSION'
-                && ($taint_flow_graph = $statements_analyzer->taint_flow_graph)
+                && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
             ) {
                 $session_sink = DataFlowNode::getForCallableArg(
                     'builtin',
