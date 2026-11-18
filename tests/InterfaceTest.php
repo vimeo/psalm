@@ -1971,7 +1971,7 @@ final class InterfaceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'arrayObjectSortOverrideWithoutFlagsPhp80' => [
+            'arrayObjectSortOverrideWithoutFlags' => [
                 'code' => '<?php
                     /**
                      * @extends ArrayObject<string, int>
@@ -1985,8 +1985,6 @@ final class InterfaceTest extends TestCase
                         }
                     }',
                 'error_message' => 'MethodSignatureMismatch',
-                'error_levels' => [],
-                'php_version' => '8.0',
             ],
             'arrayObjectSortFlagsMustBeInt' => [
                 'code' => '<?php
