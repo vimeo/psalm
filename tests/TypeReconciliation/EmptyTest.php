@@ -878,6 +878,26 @@ final class EmptyTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'nonEmptyMixedIsNeverNull' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (!empty($foo)) {
+                        if ($foo === null) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainNull',
+            ],
+            'nonEmptyMixedIsNeverInAListOfFalsyValues' => [
+                'code' => '<?php
+                    /** @var mixed $foo */
+                    if (!empty($foo)) {
+                        if (in_array($foo, [0, "", null], true)) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'emptyMixedIsNeverTrue' => [
                 'code' => '<?php
                     /** @var mixed $foo */
