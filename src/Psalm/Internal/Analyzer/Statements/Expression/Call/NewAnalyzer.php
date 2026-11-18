@@ -609,7 +609,13 @@ final class NewAnalyzer extends CallAnalyzer
             $stmt->class,
             null,
             self::resolveStaticPropertyAssertionClasses(
-                self::getAssertionsOnArgs($method_storage->assertions, $method_storage, $args),
+                self::getAssertionsOnArgs(
+                    $method_storage->assertions,
+                    $method_storage,
+                    $args,
+                    $statements_analyzer->node_data,
+                    $context->strict_types,
+                ),
                 $codebase,
                 $context,
                 ($codebase->methods->getAppearingMethodId($method_id) ?? $declaring_method_id)->fq_class_name,
@@ -763,6 +769,8 @@ final class NewAnalyzer extends CallAnalyzer
                                 $method_storage->if_true_assertions,
                                 $method_storage,
                                 $stmt->getArgs(),
+                                $statements_analyzer->node_data,
+                                $context->strict_types,
                             ),
                         ),
                     );
@@ -778,6 +786,8 @@ final class NewAnalyzer extends CallAnalyzer
                                 $method_storage->if_false_assertions,
                                 $method_storage,
                                 $stmt->getArgs(),
+                                $statements_analyzer->node_data,
+                                $context->strict_types,
                             ),
                         ),
                     );
