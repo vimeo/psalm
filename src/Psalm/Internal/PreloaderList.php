@@ -697,6 +697,7 @@ final class PreloaderList {
         \Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\HighOrderFunctionArgHandler::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\HighOrderFunctionArgInfo::class,
+        \Psalm\Internal\Analyzer\Statements\Expression\Call\InsecureCallAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicCallContext::class,
         \Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalysisResult::class,
