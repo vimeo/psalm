@@ -136,6 +136,9 @@ final class ClassLikeDocblockComment
     /** Whether the class has `@psalm-cli-only` */
     public bool $cli_only = false;
 
+    /** Whether the class has `@psalm-cli-only-instances` */
+    public bool $cli_only_instances = false;
+
     /** The array property `@psalm-taint-property-bag` says holds the properties of the objects under their names */
     public ?string $taint_property_bag = null;
 

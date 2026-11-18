@@ -35,11 +35,32 @@ final class NestedAssertions extends Assertion
 
     public function __toString(): string
     {
+        return '@' . self::getFormulaString($this->assertions);
+    }
+
+    /**
+     * The nested assertions by their string form: encoding the objects would drop their class
+     *
+     * @internal
+     * @param array<string, list<list<Assertion>>> $assertions
+     */
+    public static function getFormulaString(array $assertions): string
+    {
+        $strings = [];
+
+        foreach ($assertions as $var_id => $anded_assertions) {
+            foreach ($anded_assertions as $i => $orred_assertions) {
+                foreach ($orred_assertions as $assertion) {
+                    $strings[$var_id][$i][] = (string) $assertion;
+                }
+            }
+        }
+
         try {
-            return '@' . json_encode($this->assertions, JSON_THROW_ON_ERROR);
+            return json_encode($strings, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             // Keep binary assertions lossless and printable in condition diagnostics.
-            return '@' . bin2hex(var_export($this->assertions, true));
+            return bin2hex(var_export($strings, true));
         }
     }
 
