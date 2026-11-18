@@ -150,6 +150,27 @@ final class ArrayAssignmentTest extends TestCase
                 'ignored_issues' => ['PossiblyInvalidArrayOffset', 'PossiblyNullArrayOffset'],
                 'php_version' => '8.1',
             ],
+            'assignWithAnObjectOffsetDropsItFromTheKeysOfAStringKeyedArray' => [
+                'code' => '<?php
+                    function f(string|DateTime $key): void {
+                        $arr = [];
+                        $arr[$key] = 1;
+                        /** @psalm-check-type-exact $arr = non-empty-array<string, 1> */
+                        echo count($arr);
+                    }
+
+                    /**
+                     * @param array<string, int> $arr
+                     */
+                    function g(array $arr, string|DateTime $key): void {
+                        $arr[$key] = 1;
+                        /** @psalm-check-type-exact $arr = non-empty-array<string, int> */
+                        echo count($arr);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyInvalidArrayOffset'],
+                'php_version' => '8.1',
+            ],
             'assignWithKeyTypesThatAreCastToKeys' => [
                 'code' => '<?php
                     /**
@@ -273,7 +294,7 @@ final class ArrayAssignmentTest extends TestCase
                         return 0;
                     }',
             ],
-            'arrayKeyAssignedInALoopFromAnInvalidOffsetIsArrayKey' => [
+            'arrayAssignedInALoopFromAnInvalidOffsetHasTheKeysOfTheValidPartsOfIt' => [
                 'code' => '<?php
                     /** @var list<array|int|string> $items */
                     $items = [];
