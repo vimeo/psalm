@@ -346,7 +346,7 @@ final class Context
     public array $reconciled_expression_clauses = [];
 
     /**
-     * @deprecated Has no effect; will be removed in psalm-plugin-api 0.5.0.
+     * @deprecated Has no effect; will be removed in a future version.
      */
     public bool $collect_mutations = false;
 
