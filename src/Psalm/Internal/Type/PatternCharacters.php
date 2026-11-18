@@ -116,6 +116,11 @@ final class PatternCharacters
             $removed_taints |= TaintKind::INPUT_SHELL;
         }
 
+        // a value checked against a pattern restricting its characters is validated, which is what the session needs
+        if ($removed_taints !== 0) {
+            $removed_taints |= TaintKind::INPUT_SESSION;
+        }
+
         return $removed_taints;
     }
 

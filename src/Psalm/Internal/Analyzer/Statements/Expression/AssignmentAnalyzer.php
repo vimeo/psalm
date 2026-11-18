@@ -39,6 +39,7 @@ use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
+use Psalm\Internal\Codebase\TaintValidations;
 use Psalm\Internal\Codebase\UrlHosts;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -3230,6 +3231,16 @@ final class AssignmentAnalyzer
                 foreach ($context->vars_in_scope[$var_id]->parent_nodes as $var_node) {
                     TaintStore::recordAssignment($statements_analyzer, $taint_flow_graph, $assign_value, $var_node);
                     UrlHosts::recordAssignment($statements_analyzer, $taint_flow_graph, $assign_value, $var_node);
+                    $assigned_type = $statements_analyzer->node_data->getType($assign_value);
+                    if ($assigned_type) {
+                        TaintValidations::recordAssignment(
+                            $statements_analyzer,
+                            $taint_flow_graph,
+                            $assign_value,
+                            $assigned_type,
+                            $var_node,
+                        );
+                    }
                 }
             }
         }
