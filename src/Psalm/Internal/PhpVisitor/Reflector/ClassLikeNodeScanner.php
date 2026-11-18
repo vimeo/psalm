@@ -2597,9 +2597,18 @@ final class ClassLikeNodeScanner
                     $bound_templates[] = [$type_tokens[$i + 2][0], $depth + 1];
                 }
 
+                if (self::isShapeKey($type_tokens, $i)) {
+                    // the alias is spliced into docblocks that may have templates of the same names: quoted, its keys
+                    // stay names there
+                    if (preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $type_token[0])) {
+                        $type_tokens[$i][0] = '\'' . $type_token[0] . '\'';
+                    }
+
+                    continue;
+                }
+
                 if (isset($template_names[$type_token[0]])
                     && !in_array($type_token[0], array_column($bound_templates, 0), true)
-                    && !self::isShapeKey($type_tokens, $i)
                 ) {
                     throw new DocblockParseException(
                         'Type alias ' . $type_alias . ' cannot use the template ' . $type_token[0] . ' of its class',
