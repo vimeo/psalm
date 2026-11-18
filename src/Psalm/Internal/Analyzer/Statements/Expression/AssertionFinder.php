@@ -1161,6 +1161,12 @@ final class AssertionFinder
                         if ($assertion_var_id === null) {
                             continue;
                         }
+                    } elseif (self::splitArgumentOffsetVarId($assertion->var_id) !== null) {
+                        $assertion_var_id = self::getArgumentOffsetVarId($assertion->var_id, $expr->getArgs(), $source);
+
+                        if ($assertion_var_id === null) {
+                            continue;
+                        }
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
                         $assertion_var_id = $assertion->var_id;
                     } else {
@@ -1246,6 +1252,14 @@ final class AssertionFinder
                         }
 
                         $if_types[$assertion_var_id] = self::getNegatedAlternatives($assertion->rule);
+                    } elseif (self::splitArgumentOffsetVarId($assertion->var_id) !== null) {
+                        $offset_var_id = self::getArgumentOffsetVarId($assertion->var_id, $expr->getArgs(), $source);
+
+                        if ($offset_var_id === null || $assertion->rule === []) {
+                            continue;
+                        }
+
+                        $if_types[$offset_var_id] = self::getNegatedAlternatives($assertion->rule);
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
                         $if_types[$assertion->var_id] = self::getNegatedAlternatives($assertion->rule);
                     } else {
@@ -1342,6 +1356,45 @@ final class AssertionFinder
         }
 
         return new Possibilities($assertion->var_id, $rules);
+    }
+
+    /**
+     * `0:context['key']` stands for `$context['key']` of the array passed as the parameter `$context` at position 0
+     *
+     * @return array{int, string, string}|null the parameter's position and name, and the rest of the id (`['key']`)
+     * @psalm-pure
+     */
+    public static function splitArgumentOffsetVarId(string $var_id): ?array
+    {
+        if (preg_match('/^(\d+):(\w+)(\[.+)$/', $var_id, $matches) !== 1
+            || !isset($matches[1], $matches[2], $matches[3])
+        ) {
+            return null;
+        }
+
+        return [(int) $matches[1], $matches[2], $matches[3]];
+    }
+
+    /**
+     * @param list<PhpParser\Node\Arg> $args
+     */
+    public static function getArgumentOffsetVarId(string $var_id, array $args, FileSource $source): ?string
+    {
+        $parts = self::splitArgumentOffsetVarId($var_id);
+
+        if ($parts === null) {
+            return null;
+        }
+
+        $arg = self::getArgumentOfParameter($args, $parts[0], $parts[1]);
+
+        if ($arg === null) {
+            return null;
+        }
+
+        $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg->value, null, $source);
+
+        return $arg_var_id === null ? null : $arg_var_id . $parts[2];
     }
 
     /**
