@@ -5741,10 +5741,9 @@ final class CapabilitiesTest extends TestCase
                     /**
                      * @psalm-pure
                      * @param list<Name> $names
-                     * @return list<string>|null
                      */
-                    function f(array $names): ?array {
-                        return preg_replace("/a/", "b", $names);
+                    function f(array $names): bool {
+                        return preg_replace("/a/", "b", $names) !== null;
                     }',
                 'error_message' => 'possibly-mutating method Name::__toString',
                 'error_levels' => ['ImplicitToStringCast'],
@@ -5774,6 +5773,23 @@ final class CapabilitiesTest extends TestCase
                     /** @psalm-pure */
                     function f(Name $name): Name|string {
                         return max("a", $name);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInMaxWithUnpackedStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<string> $strings
+                     */
+                    function f(Name $name, array $strings): Name|string {
+                        return max($name, ...$strings);
                     }',
                 'error_message' => 'possibly-mutating method Name::__toString',
                 'error_levels' => [],

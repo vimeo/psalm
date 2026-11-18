@@ -2114,14 +2114,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         if ($function_id === 'max' || $function_id === 'min') {
-            // a single argument is an array of the compared values
+            // a single argument is an array of the compared values, and so is an unpacked one
             $args = $stmt->getArgs();
             $compared = [];
 
             foreach ($args as $arg) {
-                $type = $arg->unpack ? null : $statements_analyzer->node_data->getType($arg->value);
+                $type = $statements_analyzer->node_data->getType($arg->value);
 
-                if ($type && count($args) === 1) {
+                if ($type && ($arg->unpack || count($args) === 1)) {
                     $type = CastAnalyzer::getArrayValueType($type);
                 }
 
