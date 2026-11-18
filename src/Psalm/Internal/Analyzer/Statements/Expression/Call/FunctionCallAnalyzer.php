@@ -998,15 +998,20 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 );
 
                 if ($function_storage->overloads !== [] && !$stmt->isFirstClassCallable()) {
-                    $function_call_info->function_storage = $function_storage = $function_storage->withOverload(
-                        OverloadSelector::select(
-                            $statements_analyzer,
-                            $codebase,
-                            $args,
-                            $context,
-                            $function_storage->overloads,
-                        ),
+                    // when no overload accepts the arguments but the real signature does, the call is the real one
+                    $selected_overload = OverloadSelector::selectOrReal(
+                        $statements_analyzer,
+                        $codebase,
+                        $args,
+                        $context,
+                        $function_storage->overloads,
+                        $function_storage,
                     );
+
+                    if ($selected_overload !== null) {
+                        $function_call_info->function_storage = $function_storage
+                            = $function_storage->withOverload($selected_overload);
+                    }
                 }
 
                 $function_call_info->function_params = $function_call_info->function_storage->params;
