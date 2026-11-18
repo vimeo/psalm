@@ -1859,6 +1859,24 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * `self` and `static` stand for the class a call is made on, so what an overload says of them is not compared
+     *
+     * @psalm-pure
+     */
+    private static function isSelfOrStatic(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject
+                && ($atomic_type->is_static || in_array(strtolower($atomic_type->value), ['self', 'static'], true))
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Whether the type an overload declares is not contained by the one of the signature: only decided for types
      * without templates, which the overload may bind differently
      */
@@ -1869,6 +1887,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     ): bool {
         return $overload_type !== null
             && $signature_type !== null
+            && !self::isSelfOrStatic($overload_type)
+            && !self::isSelfOrStatic($signature_type)
             && !$overload_type->hasTemplate()
             && !$signature_type->hasTemplate()
             && $overload_type->getTemplateTypes() === []
