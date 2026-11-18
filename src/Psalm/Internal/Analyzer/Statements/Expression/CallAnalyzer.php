@@ -94,39 +94,7 @@ abstract class CallAnalyzer
         $project_analyzer = $source->getFileAnalyzer()->project_analyzer;
         $codebase = $source->getCodebase();
 
-        if ($context->collect_mutations &&
-            $context->self &&
-            (
-                $context->self === $fq_class_name ||
-                $codebase->classExtends(
-                    $context->self,
-                    $fq_class_name,
-                )
-            )
-        ) {
-            $method_id = new MethodIdentifier(
-                $fq_class_name,
-                $method_name_lc,
-            );
-
-            if ((string) $method_id !== $source->getId()) {
-                if ($context->collect_initializations) {
-                    if (isset($context->initialized_methods[(string) $method_id])) {
-                        return;
-                    }
-
-                    $context->initialized_methods[(string) $method_id] = true;
-                }
-
-                $project_analyzer->getMethodMutations(
-                    $method_id,
-                    $context,
-                    $source->getRootFilePath(),
-                    $source->getRootFileName(),
-                    $source->getFileAnalyzer(),
-                );
-            }
-        } elseif ($context->collect_initializations &&
+        if ($context->collect_initializations &&
             $context->self &&
             (
                 $context->self === $fq_class_name
@@ -1212,7 +1180,6 @@ abstract class CallAnalyzer
                         && $context->vars_in_scope[$var_id]->hasMixed()
                     ) {
                         if (!$context->collect_initializations
-                            && !$context->collect_mutations
                             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                             && (!(($parent_source = $statements_analyzer->getSource())
                                         instanceof FunctionLikeAnalyzer)

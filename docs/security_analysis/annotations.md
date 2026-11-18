@@ -64,6 +64,11 @@ Each `<arg>` is a parameter, like `$value`. With `-> return`, an `<arg>` can als
 - `$this`: the object the method is called on
 - a parameter followed by `()`, like `$compute()`: what the callables passed to that parameter return
 
+## `@psalm-flow ( <arg>, [ <arg>, ] ) -> $<callable>()`
+
+The callables given to the parameter `$<callable>` are called with what is given to the `<arg>`s. See
+[Arguments to callables](taint_flow.md#arguments-to-callables).
+
 ## `@psalm-flow ( <arg>, [ <arg>, ] ) -> <Class>::$<store>[<key>]` and `@psalm-flow <Class>::$<store>[<key>] -> return`
 
 See [Keyed stores](taint_flow.md#keyed-stores)
