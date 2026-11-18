@@ -497,7 +497,13 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $stmt_name,
                     ExpressionIdentifier::getExtendedVarId($stmt->var, null, $statements_analyzer),
                     self::resolveStaticPropertyAssertionClasses(
-                        self::getAssertionsOnArgs($assertions, $method_storage, $args),
+                        self::getAssertionsOnArgs(
+                            $assertions,
+                            $method_storage,
+                            $args,
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
+                        ),
                         $codebase,
                         $context,
                         $trait_self_class,
@@ -527,7 +533,13 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $trait_self_class,
                     ),
                     self::resolveStaticPropertyAssertionClasses(
-                        self::getAssertionsOnArgs($if_true_assertions, $method_storage, $args),
+                        self::getAssertionsOnArgs(
+                            $if_true_assertions,
+                            $method_storage,
+                            $args,
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
+                        ),
                         $codebase,
                         $context,
                         $trait_self_class,
@@ -563,7 +575,13 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $trait_self_class,
                     ),
                     self::resolveStaticPropertyAssertionClasses(
-                        self::getAssertionsOnArgs($if_false_assertions, $method_storage, $args),
+                        self::getAssertionsOnArgs(
+                            $if_false_assertions,
+                            $method_storage,
+                            $args,
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
+                        ),
                         $codebase,
                         $context,
                         $trait_self_class,

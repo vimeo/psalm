@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
@@ -47,8 +48,10 @@ use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
+use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -345,6 +348,9 @@ abstract class CallAnalyzer
 
                 if ($documenting_method_storage->template_types) {
                     $method_storage = $documenting_method_storage;
+
+                    // the inherited parameter types refer to the templates of the documenting method, bound by the call
+                    $template_result->template_types += $documenting_method_storage->template_types;
                 }
             }
 
@@ -763,13 +769,30 @@ abstract class CallAnalyzer
      * The assertions on a parameter with its offset replaced by the offset of the argument given for it, which differs
      * when arguments are named. Assertions on a parameter no argument is given for are dropped.
      *
+     * An assertion on a scalar parameter of an internal function doesn't narrow an argument that may be `mixed` in
+     * coercive mode: PHP converts a scalar or a Stringable object to the type of the parameter, so the argument keeps
+     * its own type (an `SplFileInfo` passed to `is_link()` is no `non-empty-string`).
+     *
      * @param array<Possibilities> $assertions
      * @param list<PhpParser\Node\Arg> $args
      * @return list<Possibilities>
-     * @psalm-capabilities read-props
+     * @psalm-capabilities read-props|write-this-props
      */
-    public static function getAssertionsOnArgs(array $assertions, FunctionLikeStorage $storage, array $args): array
-    {
+    public static function getAssertionsOnArgs(
+        array $assertions,
+        FunctionLikeStorage $storage,
+        array $args,
+        ?NodeDataProvider $node_data = null,
+        bool $strict_types = false,
+    ): array {
+        if ($node_data !== null && !$strict_types && self::isInCallMap($storage)) {
+            $assertions = array_filter(
+                $assertions,
+                static fn(Possibilities $assertion): bool
+                    => !self::isOnAMixedArgumentOfAScalarParameter($assertion, $storage, $args, $node_data),
+            );
+        }
+
         $arg_offsets = [];
         $has_named_arg = false;
 
@@ -803,6 +826,67 @@ abstract class CallAnalyzer
         }
 
         return $assertions_on_args;
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props
+     */
+    private static function isInCallMap(FunctionLikeStorage $storage): bool
+    {
+        $name = $storage->cased_name;
+
+        if ($name === null) {
+            return false;
+        }
+
+        if (!$storage instanceof MethodStorage) {
+            return InternalCallMapHandler::inCallMap($name);
+        }
+
+        return $storage->defining_fqcln !== null
+            && InternalCallMapHandler::inCallMap($storage->defining_fqcln . '::' . $name);
+    }
+
+    /**
+     * @param list<PhpParser\Node\Arg> $args
+     * @psalm-capabilities read-props
+     */
+    private static function isOnAMixedArgumentOfAScalarParameter(
+        Possibilities $assertion,
+        FunctionLikeStorage $storage,
+        array $args,
+        NodeDataProvider $node_data,
+    ): bool {
+        if (!is_int($assertion->var_id) || !isset($storage->params[$assertion->var_id])) {
+            return false;
+        }
+
+        $param = $storage->params[$assertion->var_id];
+
+        if ($param->type === null || $param->is_variadic) {
+            return false;
+        }
+
+        foreach ($param->type->getAtomicTypes() as $atomic_type) {
+            // a template is as scalar as its bound
+            $bound_types = $atomic_type instanceof TTemplateParam ? $atomic_type->as->getAtomicTypes() : [$atomic_type];
+
+            foreach ($bound_types as $bound_type) {
+                if (!$bound_type instanceof Scalar) {
+                    return false;
+                }
+            }
+        }
+
+        foreach ($args as $arg_offset => $arg) {
+            if ($arg->name === null ? $arg_offset === $assertion->var_id : $arg->name->name === $param->name) {
+                $arg_type = $node_data->getType($arg->value);
+
+                return $arg_type !== null && $arg_type->hasMixed();
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -971,6 +1055,12 @@ abstract class CallAnalyzer
                 );
             } elseif (isset($context->vars_in_scope[$var_possibilities->var_id])) {
                 $assertion_var_id = $var_possibilities->var_id;
+            } elseif (AssertionFinder::splitArgumentOffsetVarId($var_possibilities->var_id) !== null) {
+                $assertion_var_id = AssertionFinder::getArgumentOffsetVarId(
+                    $var_possibilities->var_id,
+                    $args,
+                    $statements_analyzer,
+                );
             } elseif (str_contains($var_possibilities->var_id, '->')) {
                 $assertion_var_id = AssertionFinder::getAssertedArgumentPropertyVarId(
                     $expr,

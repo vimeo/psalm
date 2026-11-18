@@ -75,7 +75,6 @@ use function preg_match;
 use function preg_replace;
 use function str_contains;
 use function str_ends_with;
-use function str_replace;
 use function str_starts_with;
 use function strlen;
 use function strtolower;
@@ -1752,6 +1751,14 @@ final class FunctionLikeDocblockScanner
                         );
                         continue 2;
                     }
+
+                    if (self::isOffsetOfParameter($param, $assertion['param_name'])) {
+                        $storage->assertions[] = new Possibilities(
+                            $i . ':' . $assertion['param_name'],
+                            $assertion_type_parts,
+                        );
+                        continue 2;
+                    }
                 }
 
                 $storage->assertions[] = new Possibilities(
@@ -1809,7 +1816,15 @@ final class FunctionLikeDocblockScanner
 
                     if (str_starts_with($assertion['param_name'], $param->name.'->')) {
                         $storage->if_true_assertions[] = new Possibilities(
-                            str_replace($param->name, (string) $i, $assertion['param_name']),
+                            substr_replace($assertion['param_name'], (string) $i, 0, strlen($param->name)),
+                            $assertion_type_parts,
+                        );
+                        continue 2;
+                    }
+
+                    if (self::isOffsetOfParameter($param, $assertion['param_name'])) {
+                        $storage->if_true_assertions[] = new Possibilities(
+                            $i . ':' . $assertion['param_name'],
                             $assertion_type_parts,
                         );
                         continue 2;
@@ -1871,7 +1886,15 @@ final class FunctionLikeDocblockScanner
 
                     if (str_starts_with($assertion['param_name'], $param->name.'->')) {
                         $storage->if_false_assertions[] = new Possibilities(
-                            str_replace($param->name, (string) $i, $assertion['param_name']),
+                            substr_replace($assertion['param_name'], (string) $i, 0, strlen($param->name)),
+                            $assertion_type_parts,
+                        );
+                        continue 2;
+                    }
+
+                    if (self::isOffsetOfParameter($param, $assertion['param_name'])) {
+                        $storage->if_false_assertions[] = new Possibilities(
+                            $i . ':' . $assertion['param_name'],
                             $assertion_type_parts,
                         );
                         continue 2;
@@ -1884,6 +1907,19 @@ final class FunctionLikeDocblockScanner
                 );
             }
         }
+    }
+
+    /**
+     * An assertion on a literal offset of a parameter. A variadic parameter's offsets are the collected arguments, and
+     * an offset given by a variable is handled by {@see getArrayOffsetTarget()}.
+     *
+     * @psalm-mutation-free
+     */
+    private static function isOffsetOfParameter(FunctionLikeParameter $param, string $target): bool
+    {
+        return !$param->is_variadic
+            && str_starts_with($target, $param->name . '[')
+            && !str_contains($target, '[$');
     }
 
     /**

@@ -39,7 +39,7 @@ final class PylintReport extends Report
         $message = sprintf(
             '%s: %s',
             $issue_data->type,
-            self::getMessageWithCwe($issue_data),
+            $this->escapeControlCharacters(self::getMessageWithCwe($issue_data)),
         );
 
         if ($issue_data->severity === Config::REPORT_ERROR) {
@@ -54,7 +54,7 @@ final class PylintReport extends Report
         $message = sprintf('%s (column %d)', $message, $issue_data->column_from);
         return sprintf(
             '%s:%d: [%s] %s',
-            $issue_data->file_name,
+            $this->escapeControlCharacters($issue_data->file_name),
             $issue_data->line_from,
             $code,
             $message,
