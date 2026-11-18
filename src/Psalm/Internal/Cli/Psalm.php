@@ -366,8 +366,16 @@ final class Psalm
             exit(1);
         }
 
-        if (isset($options['record-references']) && ($paths_to_check !== null || $config->cache_directory === null)) {
-            fwrite(STDERR, '--record-references needs a full run with a cache: no paths, no --no-cache' . PHP_EOL);
+        if (isset($options['record-references'])
+            && ($paths_to_check !== null
+                || $config->cache_directory === null
+                || isset($options['no-reference-cache']))
+        ) {
+            fwrite(
+                STDERR,
+                '--record-references needs a full run with a reference cache: no paths, no --no-cache,'
+                    . ' no --no-reference-cache' . PHP_EOL,
+            );
             exit(1);
         }
 
