@@ -71,9 +71,8 @@ final class Functions
     }
 
     /**
-     * During analysis, the analysed file then references a function declared in another file, from $context
-     *
      * @param non-empty-lowercase-string $function_id
+     * @param Context|null $context where the function is used: the analysed file then references it
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function getStorage(
@@ -83,24 +82,48 @@ final class Functions
         ?string $checked_file_path = null,
         ?Context $context = null,
     ): FunctionStorage {
+        $storage = $this->findStorage($statements_analyzer, $function_id, $root_file_path, $checked_file_path);
+
+        if ($context === null || $statements_analyzer === null) {
+            return $storage;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        // a stub is not analysed, so what references it never needs to be analysed again
+        if ($codebase->code_use_graph->record_edges
+            && $storage->location
+            && !$codebase->scanner->isStubFile($storage->location->file_path)
+            && ($function_node = CodeUseGraph::functionLikeNodeForStorage($storage)) !== null
+        ) {
+            $codebase->code_use_graph->addReference(
+                $function_node,
+                $context,
+                null,
+                CodeUseGraph::EDGE_USE,
+                $statements_analyzer->getFilePath(),
+            );
+        }
+
+        return $storage;
+    }
+
+    /**
+     * @param non-empty-lowercase-string $function_id
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private function findStorage(
+        ?StatementsAnalyzer $statements_analyzer,
+        string $function_id,
+        ?string $root_file_path,
+        ?string $checked_file_path,
+    ): FunctionStorage {
         if ($function_id[0] === '\\') {
             $function_id = substr($function_id, 1);
         }
 
         if (isset(self::$stubbed_functions[$function_id])) {
-            $storage = self::$stubbed_functions[$function_id];
-
-            // the functions of autoload files are registered as global
-            if ($statements_analyzer && $storage->location) {
-                self::addReference(
-                    $statements_analyzer,
-                    $function_id,
-                    strtolower($storage->location->file_path),
-                    $context,
-                );
-            }
-
-            return $storage;
+            return self::$stubbed_functions[$function_id];
         }
 
         $file_storage = null;
@@ -167,32 +190,7 @@ final class Functions
             );
         }
 
-        if ($statements_analyzer) {
-            self::addReference($statements_analyzer, $function_id, strtolower($declaring_file_path), $context);
-        }
-
         return $declaring_file_storage->functions[$function_id];
-    }
-
-    /**
-     * @param lowercase-string $declaring_file_path_lc
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
-     */
-    private static function addReference(
-        StatementsAnalyzer $statements_analyzer,
-        string $function_id,
-        string $declaring_file_path_lc,
-        ?Context $context,
-    ): void {
-        $codebase = $statements_analyzer->getCodebase();
-        $file_path = $statements_analyzer->getFilePath();
-
-        if ($codebase->code_use_graph->record_edges
-            && $declaring_file_path_lc !== strtolower($file_path)
-            && !$codebase->scanner->isStubFile($declaring_file_path_lc)
-        ) {
-            $codebase->addReferenceToFunctionLike(strtolower($function_id), null, $context, false, $file_path);
-        }
     }
 
     /**

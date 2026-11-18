@@ -74,8 +74,8 @@ use const T_WHITESPACE;
 final class ExpressionResolver
 {
     /**
-     * A constant expression is resolved where it is read, so what it evaluates to changes with the classes whose
-     * constants it reads, whether or not the scan could already infer it
+     * A constant expression is resolved where it is read: the file declaring it depends on the classes whose
+     * constants it reads
      */
     public static function registerConstantExpressionDependencies(
         Expr $expr,
@@ -95,7 +95,7 @@ final class ExpressionResolver
             $fq_class_name_lc = strtolower($fq_class_name);
 
             if ($fq_classlike_name === null || $fq_class_name_lc !== strtolower($fq_classlike_name)) {
-                $file_storage->constant_expression_classlikes[$fq_class_name_lc] = $fq_class_name;
+                $file_storage->classlikes_used_in_declarations[$fq_class_name_lc] = $fq_class_name;
             }
         }
     }

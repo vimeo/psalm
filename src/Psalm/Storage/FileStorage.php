@@ -39,12 +39,13 @@ final class FileStorage
     public array $required_interfaces = [];
 
     /**
-     * The classes whose constants the constant expressions of the file (class constants, enum case values, parameter
-     * defaults) read
+     * The classes whose constants (in class constants, enum case values and parameter defaults) and type aliases
+     * (through `@psalm-import-type`) the declarations of the file use. Those are expanded where the declarations are
+     * read, so the file depends on these classes as on a parent.
      *
      * @var array<lowercase-string, string>
      */
-    public array $constant_expression_classlikes = [];
+    public array $classlikes_used_in_declarations = [];
 
     /**
      * @var array<string, FunctionStorage>
