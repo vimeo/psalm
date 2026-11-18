@@ -541,6 +541,30 @@ namespace {
 
         public function getErrorMessage(): string {}
     }
+
+    /** @since 8.6 */
+    final class SodiumCryptoXofShake128State
+    {
+        private function __construct() {}
+    }
+
+    /** @since 8.6 */
+    final class SodiumCryptoXofShake256State
+    {
+        private function __construct() {}
+    }
+
+    /** @since 8.6 */
+    final class SodiumCryptoXofTurboshake128State
+    {
+        private function __construct() {}
+    }
+
+    /** @since 8.6 */
+    final class SodiumCryptoXofTurboshake256State
+    {
+        private function __construct() {}
+    }
 }
 
 namespace Uri\Rfc3986 {
