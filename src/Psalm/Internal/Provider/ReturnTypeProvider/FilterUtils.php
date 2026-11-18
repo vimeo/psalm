@@ -964,7 +964,8 @@ final class FilterUtils
 
                     if (self::hasFlag($flags_int_used, FILTER_NULL_ON_FAILURE)
                         && (
-                            ($atomic_type instanceof TLiteralInt && $atomic_type->value === 0)
+                            $atomic_type instanceof TNull
+                            || ($atomic_type instanceof TLiteralInt && $atomic_type->value === 0)
                             || ($atomic_type instanceof TLiteralFloat && $atomic_type->value === 0.0)
                             || ($atomic_type instanceof TLiteralString
                                 && in_array(strtolower($atomic_type->value), ['0', 'false', 'off', 'no', ''], true)
@@ -1187,6 +1188,8 @@ final class FilterUtils
                         || $atomic_type instanceof TScalar
                         || $atomic_type instanceof TMixed) {
                         $filter_types[] = new TString();
+                    } elseif ($atomic_type instanceof TNull) {
+                        $filter_types[] = Type::getAtomicStringFromLiteral('');
                     }
 
                     $can_fail = true;
@@ -1216,6 +1219,11 @@ final class FilterUtils
                         || $atomic_type instanceof TFloat
                         || $atomic_type instanceof TScalar) {
                         $filter_types[] = $string_type;
+                    } elseif ($atomic_type instanceof TNull
+                        && !self::hasFlag($flags_int_used, FILTER_FLAG_HOSTNAME)
+                    ) {
+                        $filter_types[] = Type::getAtomicStringFromLiteral('');
+                        continue;
                     }
 
                     $can_fail = true;
@@ -1246,7 +1254,7 @@ final class FilterUtils
                         continue;
                     }
 
-                    if ($atomic_type instanceof TFalse) {
+                    if ($atomic_type instanceof TFalse || $atomic_type instanceof TNull) {
                         $filter_types[] = Type::getAtomicStringFromLiteral('');
                         continue;
                     }
@@ -1371,7 +1379,7 @@ final class FilterUtils
                         continue;
                     }
 
-                    if ($atomic_type instanceof TFalse) {
+                    if ($atomic_type instanceof TFalse || $atomic_type instanceof TNull) {
                         $filter_types[] = Type::getAtomicStringFromLiteral('');
                         continue;
                     }
@@ -1396,6 +1404,7 @@ final class FilterUtils
             case 513: // 8.1.0 FILTER_SANITIZE_STRING and FILTER_SANITIZE_STRIPPED (alias) have been deprecated.
                 foreach ($input_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof TBool
+                        || $atomic_type instanceof TNull
                         || $atomic_type instanceof TString
                         || $atomic_type instanceof TInt
                         || $atomic_type instanceof TFloat
@@ -1451,7 +1460,7 @@ final class FilterUtils
                         continue;
                     }
 
-                    if ($atomic_type instanceof TFalse) {
+                    if ($atomic_type instanceof TFalse || $atomic_type instanceof TNull) {
                         $filter_types[] = Type::getAtomicStringFromLiteral('');
                         continue;
                     }
