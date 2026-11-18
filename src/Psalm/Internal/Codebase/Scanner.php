@@ -56,6 +56,7 @@ use const PHP_EOL;
 use const SORT_STRING;
 
 /**
+ * @psalm-import-type ClassLikesThreadData from ClassLikes
  * @psalm-type  ThreadData = array{
  *     array<string, string>,
  *     array<string, string>,
@@ -69,19 +70,7 @@ use const SORT_STRING;
  * }
  *
  * @psalm-type  PoolData = array{
- *     classlikes_data:array{
- *         array<lowercase-string, bool>,
- *         array<lowercase-string, bool>,
- *         array<lowercase-string, bool>,
- *         array<string, bool>,
- *         array<lowercase-string, bool>,
- *         array<string, bool>,
- *         array<lowercase-string, bool>,
- *         array<string, bool>,
- *         array<string, bool>,
- *         array<lowercase-string, string>,
- *         array<string, bool>
- *     },
+ *     classlikes_data: ClassLikesThreadData,
  *     scanner_data: ThreadData,
  *     issues:array<string, list<IssueData>>,
  *     changed_members:array<string, array<string, bool>>,

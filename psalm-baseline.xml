@@ -1423,9 +1423,6 @@
       <code><![CDATA[$calling_method_id]]></code>
       <code><![CDATA[$file_path]]></code>
       <code><![CDATA[$file_path]]></code>
-      <code><![CDATA[$file_path]]></code>
-      <code><![CDATA[$file_path]]></code>
-      <code><![CDATA[$file_path]]></code>
       <code><![CDATA[$migrated_source_fqcln]]></code>
       <code><![CDATA[$migrated_source_fqcln]]></code>
       <code><![CDATA[empty($classlike_storage->overridden_method_ids[$method_name])]]></code>

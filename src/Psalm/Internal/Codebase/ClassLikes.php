@@ -92,6 +92,13 @@ use const T_WHITESPACE;
  *
  * Handles information about classes, interfaces and traits
  * @psalm-import-type CapabilitySet from Capabilities
+ * @psalm-type ClassLikesThreadData = array{
+ *     array<lowercase-string, bool>,
+ *     array<lowercase-string, int-mask-of<self::KIND_*>>,
+ *     array<string, int-mask-of<self::KIND_*>>,
+ *     array<lowercase-string, string>,
+ *     array<string, bool>,
+ * }
  */
 final class ClassLikes
 {
@@ -2901,13 +2908,7 @@ final class ClassLikes
     }
 
     /**
-     * @return array{
-     *     array<lowercase-string, bool>,
-     *     array<lowercase-string, int-mask-of<self::KIND_*>>,
-     *     array<string, int-mask-of<self::KIND_*>>,
-     *     array<lowercase-string, string>,
-     *     array<string, bool>,
-     * }
+     * @return ClassLikesThreadData
      * @psalm-mutation-free
      */
     public function getThreadData(): array
@@ -2922,13 +2923,7 @@ final class ClassLikes
     }
 
     /**
-     * @param array{
-     *     0: array<lowercase-string, bool>,
-     *     1: array<lowercase-string, int-mask-of<self::KIND_*>>,
-     *     2: array<string, int-mask-of<self::KIND_*>>,
-     *     3: array<lowercase-string, string>,
-     *     4: array<string, bool>,
-     * } $thread_data
+     * @param ClassLikesThreadData $thread_data
      * @psalm-external-mutation-free
      */
     public function addThreadData(array $thread_data): void
