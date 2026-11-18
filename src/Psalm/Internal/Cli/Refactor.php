@@ -62,7 +62,7 @@ final class Refactor
 {
     public const LONG_OPTIONS = [
         'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'root:', 'monochrome',
-        'scan-threads:', 'threads:', 'memory-limit:', 'move:', 'into:', 'rename:', 'to:', 'no-progress', 'no-cache',
+        'scan-threads:', 'threads:', 'memory-limit:', 'use-ini-defaults', 'move:', 'into:', 'rename:', 'to:', 'no-progress', 'no-cache',
     ];
 
     /** @param array<int,string> $argv */
@@ -148,6 +148,9 @@ final class Refactor
 
                 --memory-limit=LIMIT
                     Use a specific memory limit.
+
+                --use-ini-defaults
+                    Use the PHP ini defaults instead of Psalm memory and error settings.
 
                 --move "[Identifier]" --into "[Class]"
                     Moves the specified item into the class. More than one item can be moved into a class
