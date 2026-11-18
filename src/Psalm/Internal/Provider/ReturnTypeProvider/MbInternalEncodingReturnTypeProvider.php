@@ -50,9 +50,9 @@ final class MbInternalEncodingReturnTypeProvider implements FunctionReturnTypePr
         if ($first_arg_type === null) {
             if ($codebase->analysis_php_version_id >= 8_00_00) {
                 return new Union([new TString(), new TTrue()]);
-            } else {
-                return new Union([new TString(), new TBool()]);
             }
+
+            return new Union([new TString(), new TBool()]);
         }
 
         $has_stringable = false;

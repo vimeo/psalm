@@ -5,8 +5,16 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
+use function getcwd;
+
+use const DIRECTORY_SEPARATOR;
 
 final class InternalAnnotationTest extends TestCase
 {
@@ -1758,5 +1766,87 @@ final class InternalAnnotationTest extends TestCase
                 'error_message' => 'A\Inner is internal to A but called from Other\T::t',
             ],
         ];
+    }
+
+    public function testCodeTheProjectDoesNotShipIsInternal(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        // Psalm's composer.json autoloads Psalm\Tests\ from tests/ for development only, and its .gitattributes
+        // leaves tests/ out of the package
+        $test_file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $src_file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $test_file_path,
+            '<?php
+                namespace Psalm\Tests {
+                    final class Helper {
+                        public static function make(): void {}
+                    }
+
+                    /** @psalm-internal Psalm\Tests */
+                    final class Annotated {}
+
+                    final class UsesFixture {
+                        public function run(): void {
+                            new \Fixtures\Fixture();
+                        }
+                    }
+                }
+
+                namespace Fixtures {
+                    final class Fixture {}
+                }
+
+                namespace {
+                    final class GlobalHelper {}
+                }',
+        );
+        $this->addFile(
+            $src_file_path,
+            '<?php
+                namespace Lib {
+                    final class Client {
+                        public function run(): void {
+                            new \Psalm\Tests\Helper();
+                            \Psalm\Tests\Helper::make();
+                            new \GlobalHelper();
+                        }
+                    }
+                }
+
+                namespace Psalm\Lib {
+                    final class Client {
+                        public function run(): void {
+                            new \Psalm\Tests\Helper();
+                            new \Psalm\Tests\Annotated();
+                        }
+                    }
+                }',
+        );
+        $this->analyzeFile($test_file_path, new Context(), false);
+        $this->analyzeFile($src_file_path, new Context(), false);
+
+        $this->assertSame([], IssueBuffer::getIssuesDataForFile($test_file_path));
+        $this->assertSame(
+            [
+                ['InternalClass', 5, 'Psalm\\Tests\\Helper is internal to Psalm and Fixtures but called from Lib\\Client::run'],
+                ['InternalClass', 6, 'Psalm\\Tests\\Helper is internal to Psalm and Fixtures but called from Lib\\Client::run'],
+                [
+                    'InternalMethod',
+                    6,
+                    'The method Psalm\\Tests\\Helper::make is internal to Psalm and Fixtures but called from Lib\\Client::run',
+                ],
+                [
+                    'InternalClass',
+                    16,
+                    'Psalm\\Tests\\Annotated is internal to Psalm\\Tests but called from Psalm\\Lib\\Client::run',
+                ],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->type, $issue->line_from, $issue->message],
+                IssueBuffer::getIssuesDataForFile($src_file_path),
+            ),
+        );
     }
 }
