@@ -1524,15 +1524,14 @@ final class TaintTest extends TestCase
                     }
                     exec("gzip -" . (string) $level . " /tmp/backup.tar");',
             ],
-            'urlWhoseHostMatchesAListOfHostsRedirects' => [
+            'requestToAUrlWhoseHostMatchesAListOfHosts' => [
                 'code' => '<?php
-                    function forward(): void {
+                    function fetch(): void {
                         $url = trim((string) $_GET["next"]);
                         $host = (string) parse_url($url, PHP_URL_HOST);
                         if (!preg_match("#^(api\.example\.com|cdn\.example\.com)$#", $host)) {
                             return;
                         }
-                        header("Location: " . $url);
                         fsockopen($url, 80);
                     }',
             ],
@@ -7520,6 +7519,49 @@ final class TaintTest extends TestCase
 
                     backup($_GET["bin"]);',
                 'error_message' => 'TaintedShell',
+            ],
+            'redirectToAUrlWhoseHostMatchesAListOfHostsIsStillTainted' => [
+                'code' => '<?php
+                    function forward(): void {
+                        $url = (string) $_GET["next"];
+                        $host = (string) parse_url($url, PHP_URL_HOST);
+                        if (!preg_match("#^api\.example\.com$#", $host)) {
+                            return;
+                        }
+                        header("Location: " . $url);
+                    }',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'urlWhoseHostATernaryCanFixIsStillTainted' => [
+                'code' => '<?php
+                    function fetch(bool $parse): void {
+                        $url = (string) $_GET["next"];
+                        $host = $parse ? (string) parse_url($url, PHP_URL_HOST) : "api.example.com";
+                        if (!preg_match("#^api\.example\.com$#", $host)) {
+                            return;
+                        }
+                        fsockopen($url, 80);
+                    }',
+                'error_message' => 'TaintedSSRF',
+            ],
+            'urlOfAPropertyWhoseHostMatchesAListOfHostsIsStillTainted' => [
+                'code' => '<?php
+                    final class Fetcher {
+                        public string $url = "";
+
+                        public function fetch(): void {
+                            $host = (string) parse_url($this->url, PHP_URL_HOST);
+                            if (!preg_match("#^api\.example\.com$#", $host)) {
+                                return;
+                            }
+                            fsockopen($this->url, 80);
+                        }
+                    }
+
+                    $fetcher = new Fetcher();
+                    $fetcher->url = (string) $_GET["next"];
+                    $fetcher->fetch();',
+                'error_message' => 'TaintedSSRF',
             ],
             'urlAssignedAfterItsHostWasTakenIsStillTainted' => [
                 'code' => '<?php

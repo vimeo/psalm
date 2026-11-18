@@ -3362,9 +3362,9 @@ final class AssignmentAnalyzer
                 $assigned_type = $statements_analyzer->node_data->getType($assign_value);
                 foreach ($context->vars_in_scope[$var_id]->parent_nodes as $var_node) {
                     TaintStore::recordAssignment($statements_analyzer, $taint_flow_graph, $assign_value, $var_node);
+                    UrlHosts::recordAssignment($statements_analyzer, $taint_flow_graph, $assign_value, $var_node);
                     if ($assigned_type) {
                         DatabaseTaints::recordAssignment($taint_flow_graph, $assigned_type, $var_node);
-                        UrlHosts::recordFlow($taint_flow_graph, $assigned_type->parent_nodes, $var_node);
                     }
                 }
             }

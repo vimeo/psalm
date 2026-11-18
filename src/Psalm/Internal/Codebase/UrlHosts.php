@@ -7,6 +7,8 @@ namespace Psalm\Internal\Codebase;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\FuncCall;
+use PhpParser\Node\Name;
+use PhpParser\Node\Scalar\String_;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -18,21 +20,23 @@ use Psalm\Type\Union;
 use function array_keys;
 use function preg_match;
 use function sort;
+use function strtolower;
 
 use const PHP_URL_HOST;
 
 /**
  * A URL whose host matches a list of hosts (`preg_match('/^(a\.example|b\.example)$/', parse_url($url,
- * PHP_URL_HOST))`) can only reach those servers: it can't make a request to a server it chooses (SSRF) nor redirect
- * to one. The host keeps track of the variable holding the URL it was taken from, and of the nodes that variable
- * held, so that the URL is only trusted while it holds the same value.
+ * PHP_URL_HOST))`) can only make PHP's stream wrappers, which parse URLs as parse_url() does, reach those servers
+ * (SSRF). A browser parses some URLs differently (`http://evil.example\@a.example/`), so it can still be redirected
+ * elsewhere. The host keeps track of the local variable holding the URL it was taken from, and of the nodes that
+ * variable held, so that the URL is only trusted while it holds the same value.
  *
  * @internal
  */
 final class UrlHosts
 {
     /** What a URL whose server is one of a list can't carry */
-    public const REMOVED_TAINTS = TaintKind::INPUT_SSRF | TaintKind::INPUT_REDIRECT;
+    public const REMOVED_TAINTS = TaintKind::INPUT_SSRF;
 
     /**
      * What `parse_url($url, PHP_URL_HOST)` returns, recorded as the host of `$url`
@@ -86,7 +90,12 @@ final class UrlHosts
         );
         $url_type = $statements_analyzer->node_data->getType($url_arg->value);
 
-        if ($url_var_id === null || $url_type === null || $url_type->parent_nodes === []) {
+        // a property or an element can be changed by a call without its variable being assigned
+        if ($url_var_id === null
+            || !preg_match('/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $url_var_id)
+            || $url_type === null
+            || $url_type->parent_nodes === []
+        ) {
             return $stmt_type;
         }
 
@@ -104,26 +113,77 @@ final class UrlHosts
     }
 
     /**
-     * Records the host the parent nodes hold for the node they flow into, such as that of the variable they are
-     * assigned to or of a cast
+     * Records the host the value assigned holds for the node of the variable it is assigned to, if it can only be
+     * that host: `parse_url()` itself, cast to a string or with an empty string for a missing host (`?: ''`, `?? ''`).
+     * What else a ternary can give has no node to tell it apart.
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    public static function recordAssignment(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph $graph,
+        Expr $assigned,
+        DataFlowNode $var_node,
+    ): void {
+        $type = $statements_analyzer->node_data->getType($assigned);
+        $url = $type === null || $type->parent_nodes === [] ? null : $graph->getUrlOfHost($type->parent_nodes);
+
+        if ($url !== null && self::isOnlyAHost($assigned)) {
+            $graph->addUrlHost($var_node, $url);
+        }
+    }
+
+    /**
+     * Records the host a cast to a string of it holds
      *
      * @param array<string, DataFlowNode> $parent_nodes
      * @psalm-capabilities read-props|write-props
      */
-    public static function recordFlow(TaintFlowGraph $graph, array $parent_nodes, DataFlowNode $node): void
+    public static function recordCast(TaintFlowGraph $graph, array $parent_nodes, DataFlowNode $cast_node): void
     {
         $url = $parent_nodes === [] ? null : $graph->getUrlOfHost($parent_nodes);
 
         if ($url !== null) {
-            $graph->addUrlHost($node, $url);
+            $graph->addUrlHost($cast_node, $url);
         }
+    }
+
+    /**
+     * Whether the expression can only be a host parse_url() returns, or empty
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isOnlyAHost(Expr $expr): bool
+    {
+        while (true) {
+            if ($expr instanceof Expr\Cast\String_) {
+                $expr = $expr->expr;
+            } elseif (($expr instanceof Expr\Ternary && $expr->if === null && self::isEmptyString($expr->else))
+                || ($expr instanceof Expr\BinaryOp\Coalesce && self::isEmptyString($expr->right))
+            ) {
+                $expr = $expr instanceof Expr\Ternary ? $expr->cond : $expr->left;
+            } else {
+                break;
+            }
+        }
+
+        return $expr instanceof FuncCall
+            && $expr->name instanceof Name
+            && strtolower($expr->name->toString()) === 'parse_url';
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function isEmptyString(Expr $expr): bool
+    {
+        return $expr instanceof String_ && $expr->value === '';
     }
 
     /**
      * The assertion that the URL the subject is the host of has a server of the list of hosts the pattern matches
      *
      * @return ?array{string, MatchesPattern} the id of the variable holding the URL and the assertion
-     *
      * @psalm-capabilities read-props
      */
     public static function getAssertion(
