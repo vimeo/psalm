@@ -7,8 +7,13 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\PluginRegistrationSocket;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Type;
+use Psalm\Type\Union;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -5684,6 +5689,41 @@ final class FunctionCallTest extends TestCase
 
         //will only pass if no exception is thrown
         $this->assertTrue(true);
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPluginReturnTypeProviderTakesPrecedenceOverBuiltinReturnTypeLogic(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $socket = new PluginRegistrationSocket($codebase->config, $codebase);
+        $socket->registerHooksFromClass((new class implements FunctionReturnTypeProviderInterface {
+            /**
+             * @psalm-pure
+             * @return array<lowercase-string>
+             */
+            #[Override]
+            public static function getFunctionIds(): array
+            {
+                return ['count'];
+            }
+
+            #[Override]
+            public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
+            {
+                return Type::getInt(false, 42);
+            }
+        })::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param non-empty-list<int> $l */
+                function f(array $l): void {
+                    $c = count($l);
+                    /** @psalm-check-type-exact $c = 42 */
+                }',
+        );
 
         $this->analyzeFile('somefile.php', new Context());
     }

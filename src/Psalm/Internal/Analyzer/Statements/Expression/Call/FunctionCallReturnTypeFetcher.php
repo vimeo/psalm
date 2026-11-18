@@ -264,7 +264,13 @@ final class FunctionCallReturnTypeFetcher
                     throw new UnexpectedValueException('We should have a callmap callable here');
                 }
 
-                $stmt_type = self::getReturnTypeFromCallMap($codebase, $function_id, $callmap_callable);
+                $stmt_type = $codebase->functions->return_type_provider->getCallMapReturnType(
+                    $statements_analyzer,
+                    $function_id,
+                    $stmt,
+                    $context,
+                    new CodeLocation($statements_analyzer->getSource(), $function_name),
+                ) ?? self::getReturnTypeFromCallMap($codebase, $function_id, $callmap_callable);
             }
         }
 

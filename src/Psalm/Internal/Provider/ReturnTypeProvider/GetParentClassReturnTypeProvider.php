@@ -38,7 +38,7 @@ final class GetParentClassReturnTypeProvider implements FunctionReturnTypeProvid
         $context = $event->getContext();
         $codebase = $event->getStatementsSource()->getCodebase();
 
-        if (!$context->self || !$codebase->classExists($context->self, null, $context)) {
+        if ($context->self === null || !$codebase->classExists($context->self, null, $context)) {
             return null;
         }
 

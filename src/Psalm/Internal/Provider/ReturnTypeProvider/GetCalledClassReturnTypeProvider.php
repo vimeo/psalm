@@ -26,6 +26,9 @@ final class GetCalledClassReturnTypeProvider implements FunctionReturnTypeProvid
         return ['get_called_class'];
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
@@ -37,8 +40,8 @@ final class GetCalledClassReturnTypeProvider implements FunctionReturnTypeProvid
 
         return new Union([
             new TClassString(
-                $self ?: 'object',
-                $self ? new TNamedObject($self, true) : null,
+                $self ?? 'object',
+                $self !== null ? new TNamedObject($self, true) : null,
             ),
         ]);
     }

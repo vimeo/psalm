@@ -929,9 +929,6 @@
       <code><![CDATA[$method]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$function_storage->template_types]]></code>
       <code><![CDATA[$function_storage->template_types]]></code>
     </RiskyTruthyFalsyComparison>
