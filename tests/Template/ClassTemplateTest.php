@@ -236,6 +236,55 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'typeArgumentOfAnotherInstanceWithTheClassOwnTemplateIsReplacedOnce' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class AL {
+                        /** @param T $value */
+                        public function add(mixed $value): void {}
+
+                        /**
+                         * @param T $mine
+                         * @param AL<list<T>> $o
+                         */
+                        public function nested(mixed $mine, AL $o): void {
+                            $o->add([$mine]);
+                        }
+
+                        /** @param AL<AL<T>> $o */
+                        public function wrapped(AL $o): void {
+                            $o->add($this);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'receiverOfTheClassWithTheClassOwnTemplateAsATypeArgumentKeepsItInTheCallable' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    abstract class Collection {
+                        /** @return static<int, TKey> */
+                        abstract public function keys(): static;
+
+                        /**
+                         * @param TValue|callable(TValue, TKey): bool $value
+                         * @return TKey|false
+                         */
+                        abstract public function search(mixed $value): mixed;
+
+                        /** @param TKey $key */
+                        public function before(mixed $key): void {
+                            $this->keys()->search($key);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'newOfTheClassItselfInsideItsMethodAcceptsAnotherTemplate' => [
                 'code' => '<?php
                     /** @template T */

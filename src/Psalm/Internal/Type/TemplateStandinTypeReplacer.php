@@ -825,7 +825,8 @@ final class TemplateStandinTypeReplacer
                     null,
                 );
 
-                if ($depth < 10) {
+                // the receiver's type arguments are in the caller's terms already: their templates are the caller's
+                if ($depth < 10 && !$template_result->of_receiver) {
                     $replacement_type = self::replace(
                         $replacement_type,
                         $template_result,
