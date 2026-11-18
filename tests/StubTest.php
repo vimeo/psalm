@@ -2546,6 +2546,7 @@ final class StubTest extends DeferredAnalyzerTestCase
 
     /**
      * @return iterable<string, array{string}>
+     * @psalm-pure
      */
     public static function providerStubbedBuiltinFunctionWithReturnTypeProvider(): iterable
     {
