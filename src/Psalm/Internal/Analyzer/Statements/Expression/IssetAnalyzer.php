@@ -21,6 +21,20 @@ use function spl_object_id;
  */
 final class IssetAnalyzer
 {
+    /**
+     * The type of the property the fetch gave the context, if it did
+     */
+    private static function analyzeThisPropertyFetch(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $isset_var,
+        string $var_id,
+        Context $context,
+    ): Type\Union {
+        InstancePropertyFetchAnalyzer::analyze($statements_analyzer, $isset_var, $context);
+
+        return $context->vars_in_scope[$var_id] ?? Type::getMixed();
+    }
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Isset_ $stmt,
@@ -35,16 +49,9 @@ final class IssetAnalyzer
                 $var_id = '$this->' . $isset_var->name->name;
 
                 if (!isset($context->vars_in_scope[$var_id])) {
-                    if (isset($context->vars_in_scope['$this'])) {
-                        InstancePropertyFetchAnalyzer::analyze(
-                            $statements_analyzer,
-                            $isset_var,
-                            $context,
-                        );
-                    }
-                    if (!isset($context->vars_in_scope[$var_id])) {
-                        $context->vars_in_scope[$var_id] = Type::getMixed();
-                    }
+                    $context->vars_in_scope[$var_id] = isset($context->vars_in_scope['$this'])
+                        ? self::analyzeThisPropertyFetch($statements_analyzer, $isset_var, $var_id, $context)
+                        : Type::getMixed();
                     $context->vars_possibly_in_scope[$var_id] = true;
                 }
             } elseif (!self::isValidStatement($isset_var)) {

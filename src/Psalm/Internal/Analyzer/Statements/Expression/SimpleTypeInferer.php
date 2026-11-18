@@ -442,7 +442,17 @@ final class SimpleTypeInferer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
-            return Type::getObject();
+            $operand_type = self::infer(
+                $codebase,
+                $nodes,
+                $stmt->expr,
+                $aliases,
+                $file_source,
+                $existing_class_constants,
+                $fq_classlike_name,
+            );
+
+            return $operand_type ? CastAnalyzer::getObjectCastType($operand_type) : Type::getObject();
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
