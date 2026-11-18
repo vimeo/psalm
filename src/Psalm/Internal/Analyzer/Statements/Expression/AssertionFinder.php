@@ -3580,6 +3580,13 @@ final class AssertionFinder
         StatementsAnalyzer $source,
         bool $negated,
     ): array {
+        // `strpos() == 0` is also true when it didn't find the prefix (false)
+        if (!$conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            && !$conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+        ) {
+            return [];
+        }
+
         $sides = [[$conditional->left, $conditional->right], [$conditional->right, $conditional->left]];
         foreach ($sides as [$call, $zero]) {
             if ($call instanceof PhpParser\Node\Expr\FuncCall

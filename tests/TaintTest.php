@@ -8355,6 +8355,17 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedFile',
             ],
+            'canonicalPathLooselyComparedToTheStartOfADirectoryCanBeAnywhere' => [
+                'code' => '<?php
+                    function save(): void {
+                        $resolved = realpath((string) $_COOKIE["name"]);
+                        if ($resolved === false || strpos($resolved, "/var/app/data/") != 0) {
+                            return;
+                        }
+                        file_put_contents($resolved, "data");
+                    }',
+                'error_message' => 'TaintedFile',
+            ],
             'pathStartingWithADirectoryCanLeaveItWithDots' => [
                 'code' => '<?php
                     function save(): void {
