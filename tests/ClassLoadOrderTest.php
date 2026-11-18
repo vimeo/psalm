@@ -152,7 +152,7 @@ final class ClassLoadOrderTest extends TestCase
                     class I extends G {}',
                 'error_message' => 'Circular reference',
             ],
-            'SKIPPED-invalidDeferredReference' => [
+            'SKIPPED-invalidDeferredReference' => [ // #13938
                 'code' => '<?php
                     class B {
                         const C = A;
