@@ -87,7 +87,7 @@ final class TaintValidations
         sort($node_ids);
 
         // the analysis gives the value of the call its nodes after the plugins: the call is told by its location
-        $graph->addTaintValidationsOfCall(self::getCallKey($location), [[$var_id, $node_ids, $removed_taints, $kind]]);
+        $graph->addTaintValidationOfCall(self::getCallKey($location), [$var_id, $node_ids, $removed_taints, $kind]);
 
         return $result_type;
     }
