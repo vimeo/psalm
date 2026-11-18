@@ -18,13 +18,17 @@ use Psalm\Internal\Scope\FinallyScope;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Scope\TryScope;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type;
 use Psalm\Type\Atomic\DependentType;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
+use ReflectionReference;
 use RuntimeException;
 
 use function array_diff_key;
@@ -34,6 +38,7 @@ use function array_keys;
 use function array_map;
 use function array_search;
 use function array_shift;
+use function array_unique;
 use function array_values;
 use function assert;
 use function count;
@@ -392,11 +397,28 @@ final class Context
     public array $byref_constraints = [];
 
     /**
+     * Variables a branch of the if/else being analysed rebinds: their constraints are merged by
+     * mergeConstraintsOfReferencesReboundIn(), not by the merge of the constraints the branches add
+     *
+     * @var array<string, true>
+     */
+    public array $references_rebound_in_blocks = [];
+
+    /**
      * A list of vars that have been assigned to
      *
      * @var array<string, int>
      */
     public array $assigned_var_ids = [];
+
+    /**
+     * The variables the last `&&` analysed outside an if condition assigns, as its right operand leaves them: an
+     * enclosing `&&` only gets what holds after the expression, which doesn't have them
+     *
+     * @internal
+     * @var array<string, Union>
+     */
+    public array $vars_assigned_in_and = [];
 
     /**
      * A list of vars that have been may have been assigned to
@@ -522,6 +544,33 @@ final class Context
     }
 
     /**
+     * A copied array shares its PHP references with the original: give the clone its own slots, linked to each other
+     * as they were in the original.
+     */
+    public function __clone()
+    {
+        if (!$this->references_in_scope) {
+            return;
+        }
+
+        $vars_in_scope = [];
+        $slots = [];
+
+        foreach ($this->vars_in_scope as $var_id => $_) {
+            $reference = ReflectionReference::fromArrayElement($this->vars_in_scope, $var_id);
+            $slot_var_id = $reference === null ? $var_id : ($slots[$reference->getId()] ??= $var_id);
+
+            if ($slot_var_id === $var_id) {
+                $vars_in_scope[$var_id] = $this->vars_in_scope[$var_id];
+            } else {
+                $vars_in_scope[$var_id] = &$vars_in_scope[$slot_var_id];
+            }
+        }
+
+        $this->vars_in_scope = $vars_in_scope;
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     public function __destruct()
@@ -644,6 +693,50 @@ final class Context
         }
         $this->references_possibly_from_confusing_scope +=
             $confusing_scope_context->references_possibly_from_confusing_scope;
+    }
+
+    /**
+     * A variable a block that may not run binds by reference elsewhere (or releases) keeps a constraint only when it is
+     * constrained both before and after the block, to what either allows
+     *
+     * @param array<PhpParser\Node> $block_nodes
+     * @return array<string, true> the variables the block rebinds
+     */
+    public function mergeConstraintsOfReferencesReboundIn(
+        Context $block_context,
+        array $block_nodes,
+        Codebase $codebase,
+    ): array {
+        $rebound_var_ids = [];
+
+        foreach ($this->byref_constraints + $block_context->byref_constraints as $var_id => $_) {
+            $constraint = $this->byref_constraints[$var_id] ?? null;
+            $block_constraint = $block_context->byref_constraints[$var_id] ?? null;
+
+            if ($constraint === $block_constraint || self::findReferenceRebinding($block_nodes, $var_id) === null) {
+                continue;
+            }
+
+            $rebound_var_ids[$var_id] = true;
+
+            if ($constraint?->type && $block_constraint?->type) {
+                $this->byref_constraints[$var_id] = new ReferenceConstraint(
+                    Type::combineUnionTypes($constraint->type, $block_constraint->type, $codebase),
+                    false,
+                    // a reference to a property, or to one of them, only if it is one on both paths
+                    $constraint->referenced_properties && $block_constraint->referenced_properties
+                        ? array_values(array_unique([
+                            ...$constraint->referenced_properties,
+                            ...$block_constraint->referenced_properties,
+                        ]))
+                        : [],
+                );
+            } else {
+                unset($this->byref_constraints[$var_id]);
+            }
+        }
+
+        return $rebound_var_ids;
     }
 
     /**
@@ -1085,18 +1178,15 @@ final class Context
             } elseif ($statements_analyzer &&
                 $new_type &&
                 !$new_type->hasMixed()
+                // the types don't say whether the variable is set
+                && !$new_type->possibly_undefined
+                && !$new_type->possibly_undefined_from_try
             ) {
                 $type_changed = false;
 
                 // if the clause contains any possibilities that would be altered
                 // by the new type
                 foreach ($clause->possibilities[$remove_var_id] as $assertion) {
-                    // if we're negating a type, we generally don't need the clause anymore
-                    if ($assertion->isNegation()) {
-                        $type_changed = true;
-                        break;
-                    }
-
                     $result_type = AssertionReconciler::reconcile(
                         $assertion,
                         $new_type,
@@ -1128,7 +1218,16 @@ final class Context
                         $failed_reconciliation,
                     );
 
-                    if (!$negated_result_type->isNever()) {
+                    // an impossible assertion may be reconciled to the asserted type instead of never: no value of the
+                    // new type is then left
+                    if (!$negated_result_type->isNever()
+                        && $failed_reconciliation !== Reconciler::RECONCILIATION_EMPTY
+                        && UnionTypeComparator::isContainedBy(
+                            $statements_analyzer->getCodebase(),
+                            $negated_result_type,
+                            $new_type,
+                        )
+                    ) {
                         $type_changed = true;
                         break;
                     }
@@ -1209,11 +1308,44 @@ final class Context
      * Drops the clauses about the variables a nested scope, analysed in a clone of this context, changed. Inside a
      * condition, the clauses are only marked as changed: the condition is checked against them for paradoxes
      * first, and its analyser drops them afterwards (see removeClausesOfVarsChangedSince()).
+     *
+     * With $statements_analyzer, the nested scope must only lead here from its end (an if branch): the clauses that
+     * still hold for the types it leaves are kept.
      */
-    public function removeClausesOfVarsChangedIn(Context $nested_context): void
-    {
+    public function removeClausesOfVarsChangedIn(
+        Context $nested_context,
+        ?StatementsAnalyzer $statements_analyzer = null,
+    ): void {
         foreach ($nested_context->parent_remove_vars as $var_id => $stamp) {
-            if (($this->parent_remove_vars[$var_id] ?? null) !== $stamp) {
+            // an older stamp than this context's is one the nested scope was cloned with before a sibling scope
+            // changed the variable (an else after its if), not a change of its own
+            if ($stamp > ($this->parent_remove_vars[$var_id] ?? 0)) {
+                if ($this->inside_conditional) {
+                    $this->parent_remove_vars[$var_id] = $stamp;
+                } elseif ($statements_analyzer) {
+                    $this->removeVarFromConflictingClauses(
+                        $var_id,
+                        $nested_context->vars_in_scope[$var_id] ?? null,
+                        $statements_analyzer,
+                    );
+                } else {
+                    $this->removeVarFromConflictingClauses($var_id);
+                }
+            }
+        }
+    }
+
+    /**
+     * Drops the clauses about the variables a nested scope changed with the stamps $parent_remove_vars, as
+     * removeClausesOfVarsChangedIn() does with those it ends with
+     *
+     * @param array<string, int> $parent_remove_vars
+     * @internal
+     */
+    public function removeClausesOfVarsChangedWith(array $parent_remove_vars): void
+    {
+        foreach ($parent_remove_vars as $var_id => $stamp) {
+            if ($stamp > ($this->parent_remove_vars[$var_id] ?? 0)) {
                 if ($this->inside_conditional) {
                     $this->parent_remove_vars[$var_id] = $stamp;
                 } else {
@@ -1237,6 +1369,57 @@ final class Context
         foreach ($this->parent_remove_vars as $var_id => $stamp) {
             if (($parent_remove_vars[$var_id] ?? null) !== $stamp) {
                 $this->removeVarFromConflictingClauses($var_id);
+            }
+        }
+    }
+
+    /**
+     * Applies what a branch that may have been skipped, analysed in a clone of this context, changed since it had
+     * the stamps $parent_remove_vars: the types it wrote are combined with the ones here, and what it forgot is
+     * forgotten here too
+     *
+     * @param array<string, int> $parent_remove_vars
+     * @internal
+     */
+    public function mergeChangesOfPossiblySkippedBranch(
+        Context $branch,
+        array $parent_remove_vars,
+        Codebase $codebase,
+    ): void {
+        if ($branch->has_returned) {
+            return;
+        }
+
+        foreach ($branch->parent_remove_vars as $changed_var_id => $stamp) {
+            if (($parent_remove_vars[$changed_var_id] ?? null) === $stamp) {
+                continue;
+            }
+
+            foreach ($this->vars_in_scope as $var_id => $type) {
+                if ($var_id !== $changed_var_id
+                    && !str_starts_with($var_id, $changed_var_id . '->')
+                    && !str_starts_with($var_id, $changed_var_id . '[')
+                ) {
+                    continue;
+                }
+
+                if (!isset($branch->vars_in_scope[$var_id])) {
+                    $this->remove($var_id, false);
+                    $this->vars_possibly_in_scope[$var_id] = true;
+                } elseif ($branch->vars_in_scope[$var_id] === $type) {
+                    continue;
+                } elseif (UnionTypeComparator::isContainedBy($codebase, $branch->vars_in_scope[$var_id], $type)) {
+                    // a narrower type (a mixed argument coerced to its parameter type) adds nothing but its data flow
+                    $this->vars_in_scope[$var_id] = $type->addParentNodes(
+                        $branch->vars_in_scope[$var_id]->parent_nodes,
+                    );
+                } else {
+                    $this->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $type,
+                        $branch->vars_in_scope[$var_id],
+                        $codebase,
+                    );
+                }
             }
         }
     }
@@ -1366,7 +1549,7 @@ final class Context
                 );
             }
 
-            $this->remove($var_id);
+            $this->forgetPropertyBoundByReference($var_id, true);
             $this->removeVarFromConflictingClauses($var_id);
             $this->possibly_assigned_var_ids[$var_id] = true;
 
@@ -1501,7 +1684,7 @@ final class Context
         }
 
         foreach ($vars_to_remove as $var_id) {
-            $this->remove($var_id, false);
+            $this->forgetPropertyBoundByReference($var_id, false);
             // forgotten, not unset: Context::update() tells the two apart
             $this->vars_possibly_in_scope[$var_id] = true;
             $this->parent_remove_vars[$var_id] = ++self::$clause_removal_count;
@@ -1530,6 +1713,79 @@ final class Context
         }
 
         $this->clauses = $clauses_to_keep;
+    }
+
+    /**
+     * Forgets what is known of the items and properties of what a property holds, and of what depends on them, after
+     * a call wrote some of them. Those bound to variables by reference stay bound to them
+     */
+    public function forgetPropertyDescendents(string $property_id): void
+    {
+        $this->forgetNullArrayOffsets($property_id);
+        $this->removeVarFromConflictingClauses($property_id);
+
+        // `$a[$this->p]` too
+        $descendent_pattern = '/' . preg_quote($property_id, '/') . '[\]\[\-]/';
+
+        foreach (array_keys($this->vars_in_scope) as $var_id) {
+            if (preg_match($descendent_pattern, $var_id) === 1) {
+                $this->forgetWrittenVar($var_id);
+            }
+        }
+    }
+
+    /**
+     * Forgets a var a call wrote as removeMutableObjectVars() does: forgotten, not unset (Context::update() tells the
+     * two apart)
+     */
+    private function forgetWrittenVar(string $var_id): void
+    {
+        $this->forgetPropertyBoundByReference($var_id, false);
+        $this->vars_possibly_in_scope[$var_id] = true;
+        $this->parent_remove_vars[$var_id] = ++self::$clause_removal_count;
+    }
+
+    /**
+     * Forgets what is known of a property (`$a->p`), and of what it holds, after a call may have written items or
+     * properties of what it holds. One known to hold an object still holds it
+     */
+    public function forgetPropertyOfHeldObject(string $property_id): void
+    {
+        $this->forgetPropertyDescendents($property_id);
+
+        if (isset($this->vars_in_scope[$property_id]) && !$this->vars_in_scope[$property_id]->isObjectType()) {
+            $this->forgetWrittenVar($property_id);
+        }
+    }
+
+    /**
+     * Forgets a property (or an item of it) a call may have written. One bound to variables by reference stays bound
+     * to them, and now holds whatever it is declared to hold
+     */
+    private function forgetPropertyBoundByReference(string $var_id, bool $remove_descendents): void
+    {
+        $reference_id = array_search($var_id, $this->references_in_scope, true);
+
+        if ($reference_id === false || !isset($this->vars_in_scope[$var_id])) {
+            $this->remove($var_id, $remove_descendents);
+
+            return;
+        }
+
+        $existing_type = $this->vars_in_scope[$var_id];
+
+        $this->forgetNarrowedShapeProperty($var_id);
+
+        if ($remove_descendents) {
+            $this->removeDescendents($var_id, $existing_type);
+        }
+
+        unset($this->null_array_offsets_read[$var_id]);
+        $this->forgetNullArrayOffsets($var_id);
+
+        // written through the binding: the variables bound to it get the type too
+        $this->vars_in_scope[$var_id] = ($this->byref_constraints[$reference_id]->type ?? Type::getMixed())
+            ->setParentNodes($existing_type->parent_nodes);
     }
 
     /**
