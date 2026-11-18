@@ -1408,7 +1408,7 @@ final class ClassLikeNodeScanner
             $storage->template_type_extends_count[$atomic_type->value] = count($atomic_type->type_params);
 
             foreach ($atomic_type->type_params as $type_param) {
-                $extended_type_parameters[] = $type_param;
+                $extended_type_parameters[] = $type_param->replaceClassLike('self', $storage->name);
             }
 
             $storage->template_extended_offsets[$atomic_type->value] = $extended_type_parameters;
@@ -1498,7 +1498,7 @@ final class ClassLikeNodeScanner
             $storage->template_type_implements_count[$generic_class_lc] = count($atomic_type->type_params);
 
             foreach ($atomic_type->type_params as $type_param) {
-                $implemented_type_parameters[] = $type_param;
+                $implemented_type_parameters[] = $type_param->replaceClassLike('self', $storage->name);
             }
 
             $storage->template_extended_offsets[$atomic_type->value] = $implemented_type_parameters;
@@ -1980,6 +1980,7 @@ final class ClassLikeNodeScanner
                 $enum_value,
                 $case_location,
                 $deprecated,
+                $attrs,
             );
         } else {
             $this->file_storage->scan_issues[] = new DuplicateEnumCase(
