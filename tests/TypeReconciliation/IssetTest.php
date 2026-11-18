@@ -81,6 +81,133 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullsafeCallCoalescedWithAFalsyValueKeepsTheReceiverNullableWhereItIsFalsy' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public function m(): bool {
+                            return rand() > 0;
+                        }
+                    }
+
+                    function f(?A $a): void {
+                        if ($a?->m() ?? false) {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+
+                        if (!($a?->m() ?? false)) {
+                            /** @psalm-check-type-exact $a = A|null */
+                        } else {
+                            /** @psalm-check-type-exact $a = A */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nullsafePropertyCoalescedWithAFalsyValueKeepsTheReceiverNullableWhereItIsFalsy' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public bool $p = true;
+                    }
+
+                    function f(?A $a): void {
+                        if ($a?->p ?? false) {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+
+                        if (!($a?->p ?? false)) {
+                            /** @psalm-check-type-exact $a = A|null */
+                        } else {
+                            /** @psalm-check-type-exact $a = A */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nullsafeCallCoalescedWithAnEmptyStringOrAZeroKeepsTheReceiverNullableWhereItIsFalsy' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public function name(): string {
+                            return 'a';
+                        }
+
+                        public function ratio(): float {
+                            return 0.5;
+                        }
+
+                        /** @return list<int> */
+                        public function items(): array {
+                            return [1];
+                        }
+                    }
+
+                    function emptyString(?A $a): void {
+                        if ($a?->name() ?? '') {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+                    }
+
+                    function zeroString(?A $a): void {
+                        if ($a?->name() ?? '0') {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+                    }
+
+                    function zeroFloat(?A $a): void {
+                        if ($a?->ratio() ?? 0.0) {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+                    }
+
+                    function emptyArray(?A $a): void {
+                        if ($a?->items() ?? []) {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nullsafeCallCoalescedWithATruthyStringKeepsTheReceiverNullable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public function name(): string {
+                            return 'a';
+                        }
+                    }
+
+                    function f(?A $a): void {
+                        if ($a?->name() ?? 'x') {
+                            /** @psalm-check-type-exact $a = A|null */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainType'],
+                'php_version' => '8.1',
+            ],
             'variableAssignedByAnArgumentOfTheLeftCallOfACoalesceIsSetOnTheRight' => [
                 'code' => <<<'PHP'
                     <?php
@@ -580,6 +707,38 @@ final class IssetTest extends TestCase
 
                         return $arr;
                     }',
+            ],
+            'unsetOfTheOffsetAnIssetCheckedInALoopMakesANonEmptyArrayPossiblyEmpty' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string, int> $first */
+                    function removeInALoop(array $first): void {
+                        foreach (["bad", "worse"] as $key) {
+                            if (isset($first[$key])) {
+                                unset($first[$key]);
+                            }
+                        }
+
+                        if (empty($first)) {
+                            echo "empty";
+                        }
+                    }',
+            ],
+            'typeOfAnArrayAfterAnUnsetOfTheOffsetAnIssetChecked' => [
+                'code' => '<?php
+                    /** @var non-empty-array<string, int> $data */
+                    $data = ["a" => 1];
+
+                    /** @var string $key */
+                    $key = "a";
+
+                    if (isset($data[$key])) {
+                        unset($data[$key]);
+                    }
+
+                    $after = $data;',
+                'assertions' => [
+                    '$after===' => 'array<string, int>',
+                ],
             ],
             'arrayAccessAfterOneIsset' => [
                 'code' => '<?php
@@ -1186,9 +1345,23 @@ final class IssetTest extends TestCase
                     }
 
                     /**
+                     * @psalm-suppress MixedArrayAccess
                      * @psalm-suppress MixedArgument
                      */
                     echo $payload["b"];',
+            ],
+            'noMixedMethodCallAfterIssetInAndCondition' => [
+                'code' => '<?php
+                    $data = file_get_contents("php://input");
+                    /** @psalm-suppress MixedAssignment */
+                    $payload = json_decode($data, true);
+
+                    if (isset($payload["a"]) && rand(0, 1)) {
+                        /**
+                         * @psalm-suppress MixedArgument
+                         */
+                        echo $payload["b"];
+                    }',
             ],
             'implicitIssetWithStringKeyOnArrayDoesntChangeArrayType' => [
                 'code' => '<?php
@@ -1682,6 +1855,57 @@ final class IssetTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'nullsafeCallCoalescedWithAFalsyValueNarrowsTheReceiver' => [
+                'code' => '<?php
+                    class Checker {
+                        public function isValid(): bool {
+                            return (bool) rand(0, 1);
+                        }
+
+                        public function count(): int {
+                            return rand(0, 3);
+                        }
+                    }
+
+                    class Holder {
+                        public function __construct(private ?Checker $checker = null) {}
+
+                        public function fromProperty(): Checker {
+                            if ($this->checker?->isValid() ?? false) {
+                                return $this->checker;
+                            }
+
+                            throw new RuntimeException();
+                        }
+
+                        public function fromParameter(?Checker $checker): Checker {
+                            if ($checker?->isValid() ?? null) {
+                                return $checker;
+                            }
+
+                            throw new RuntimeException();
+                        }
+
+                        public function fromZero(?Checker $checker): Checker {
+                            if ($checker?->count() ?? 0) {
+                                return $checker;
+                            }
+
+                            throw new RuntimeException();
+                        }
+
+                        public function negated(?Checker $checker): Checker {
+                            if (!($checker?->isValid() ?? false)) {
+                                throw new RuntimeException();
+                            }
+
+                            return $checker;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'comparisonOfAnItemWithAUnionKeyKeepsTheTypesOfItemsOfOtherTypes' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1768,6 +1992,312 @@ final class IssetTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'issetOfDynamicOffsetSetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (isset($data[$k])) {
+                            echo $data[$k];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'issetOfLiteralOffsetSetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (isset($data["a"])) {
+                            echo $data["a"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'issetOfOffsetsOfSetMixedVariableNarrowsItAfterTheReturn' => [
+                'code' => '<?php
+                    function f(array $trace): ?string {
+                        $i = count($trace);
+                        $line = $trace[$i];
+
+                        if (!isset($line["object"]) && !isset($line["class"])) {
+                            return null;
+                        }
+
+                        if (!isset($line["class"], $trace[$i - 2]["function"])
+                            || !str_starts_with((string) $line["class"], "X")
+                        ) {
+                            return "a";
+                        }
+
+                        $test = $line["args"][0] ?? null;
+                        return is_string($test) ? $test : null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'issetOfIntOffsetSetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (isset($data[0])) {
+                            echo $data[0];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'issetOfOffsetSetsMixedVariableAssignedInTry' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function f(string $s, string $k): void {
+                        try {
+                            $data = dec($s);
+                        } catch (\Exception $e) {
+                            echo "error";
+                        }
+                        if (!isset($data[$k])) {
+                            return;
+                        }
+                        echo $data[$k];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'issetOfNestedOffsetSetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (isset($data[$k]["b"])) {
+                            echo $data[$k]["b"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'nonEmptyOffsetSetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (!empty($data[$k])) {
+                            echo $data[$k];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'issetOfPropertySetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s); }
+
+                    function g(string $s): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (isset($data->a)) {
+                            echo $data->a;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedPropertyFetch'],
+            ],
+            'elseifIssetOfOffsetSetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (rand(0, 1)) {
+                            echo "a";
+                        } elseif (isset($data[$k])) {
+                            echo $data[$k];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'elseifNotIssetOfOffsetSetsPossiblyUndefinedMixedVariableAfterIt' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (rand(0, 1)) {
+                            return;
+                        } elseif (!isset($data[$k])) {
+                            return;
+                        }
+                        echo $data[$k];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'ternaryIssetOfOffsetSetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    /** @return mixed */
+                    function g(string $s, string $k) {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        return isset($data[$k]) ? $data[$k] : null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
+            'ternaryNotIssetOfOffsetSetsPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    /** @return mixed */
+                    function g(string $s, string $k) {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        return !isset($data[$k]) ? null : $data[$k];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
+            'doWhileNotIssetOfOffsetSetsPossiblyUndefinedMixedVariableAfterIt' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        do {
+                            if (rand(0, 1)) {
+                                $data = dec($s);
+                            }
+                        } while (!isset($data[$k]));
+                        echo $data[$k];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'coalesceOfOffsetOfPossiblyUndefinedMixedVariable' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        echo $data["a"] ?? "x";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'MixedArrayAccess'],
+            ],
+            'nonEmptyOffsetOfSetMixedItemKeepsTheArrayType' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function hooks() { return []; }
+
+                    $result = hooks();
+                    if ($result) {
+                        foreach ($result as $hook => $_) {
+                            $result[$hook]["type"] = "module";
+                            if (!empty($result[$hook]["base hook"])) {
+                                $result[$hook]["incomplete"] = true;
+                            }
+                        }
+                        $r = $result;
+                    }',
+                'assertions' => [
+                    '$r===' => 'non-empty-array<array-key, mixed>|non-empty-mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess', 'MixedArrayOffset', 'MixedArrayAssignment'],
+            ],
+            'emptyOffsetOfSetMixedItemThenContinueKeepsTheArrayType' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function hooks() { return []; }
+
+                    $result = hooks();
+                    if ($result) {
+                        foreach ($result as $hook => $_) {
+                            $result[$hook]["type"] = "module";
+                            if (empty($result[$hook]["base hook"])) {
+                                continue;
+                            }
+                            $result[$hook]["incomplete"] = true;
+                        }
+                        $r = $result;
+                    }',
+                'assertions' => [
+                    '$r===' => 'non-empty-array<array-key, mixed>|non-empty-mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess', 'MixedArrayOffset', 'MixedArrayAssignment'],
+            ],
+            'issetOfAnotherOffsetOfMixedVariableIsNotRedundant' => [
+                'code' => '<?php
+                    /** @param mixed $data */
+                    function f($data): void {
+                        if (!isset($data["a"])) {
+                            return;
+                        }
+                        if (isset($data["b"])) {
+                            echo "b";
+                        }
+                    }',
+            ],
+            'nestedIssetOfOffsetsOfPossiblyUndefinedMixedVariableIsNotRedundant' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (isset($data["a"])) {
+                            if (isset($data["b"])) {
+                                echo "b";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
         ];
     }
 
@@ -1778,6 +2308,56 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'possiblyUndefinedMixedVariableStaysSoWhereIssetOfOffsetIsFalse' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (isset($data[$k])) {
+                            echo "set";
+                        } else {
+                            echo $data;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => ['MixedAssignment', 'MixedArgument'],
+            ],
+            'possiblyUndefinedMixedVariableStaysSoWhereIssetOfOffsetIsOnlyAnAlternative' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (isset($data[$k]) || rand(0, 1)) {
+                            echo $data;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => ['MixedAssignment', 'MixedArgument'],
+            ],
+            'possiblyUndefinedMixedVariableStaysSoWhereOffsetIsNotSet' => [
+                'code' => '<?php
+                    /** @return mixed */
+                    function dec(string $s) { return json_decode($s, true); }
+
+                    function g(string $s, string $k): void {
+                        if (rand(0, 1)) {
+                            $data = dec($s);
+                        }
+                        if (!isset($data[$k])) {
+                            echo $data;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => ['MixedAssignment', 'MixedArgument'],
+            ],
             'variableAssignedInANullsafeCallOnTheLeftOfACoalesceIsPossiblyUndefined' => [
                 'code' => '<?php
                     final class K {
@@ -2198,6 +2778,25 @@ final class IssetTest extends TestCase
                 'error_message' => 'RedundantCondition',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'nullsafeCallCoalescedWithATruthyValueDoesNotNarrowTheReceiver' => [
+                'code' => '<?php
+                    class Checker {
+                        public function isValid(): bool {
+                            return (bool) rand(0, 1);
+                        }
+                    }
+
+                    function check(?Checker $checker): Checker {
+                        if ($checker?->isValid() ?? true) {
+                            return $checker;
+                        }
+
+                        throw new RuntimeException();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

@@ -545,7 +545,7 @@ final class IntRangeTest extends TestCase
                 'assertions' => [
                     '$a===' => 'int<-1, 3>',
                     '$b===' => 'int<-1, 3>',
-                    '$c===' => 'int<min, 7>',
+                    '$c===' => 'int<0, 7>',
                 ],
             ],
             'loopLeftWithWhatItsConditionWroteWhenTheBodyRestoresIt' => [
