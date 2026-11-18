@@ -37,8 +37,10 @@ final class TaintKind
     public const INPUT_URL_PATH = (1 << 19);
     public const INPUT_REDIRECT = (1 << 20);
     public const INPUT_SESSION = (1 << 21);
-    public const USER_SECRET = (1 << 22);
-    public const SYSTEM_SECRET = (1 << 23);
+    /** What can end a string literal of an XPath query: a quote */
+    public const INPUT_XPATH_LITERAL = (1 << 22);
+    public const USER_SECRET = (1 << 23);
+    public const SYSTEM_SECRET = (1 << 24);
 
     /**
      * Bitmask of all INPUT_* taint types. Used as the default taint for
@@ -47,7 +49,7 @@ final class TaintKind
      * Excludes USER_SECRET and SYSTEM_SECRET, which represent
      * sensitive data leaking out rather than untrusted data flowing in.
      */
-    public const ALL_INPUT = (1 << 22) - 1;
+    public const ALL_INPUT = (1 << 23) - 1;
 
     /** @internal */
     public const NUMERIC_ONLY = self::INPUT_SLEEP;
@@ -67,7 +69,7 @@ final class TaintKind
     public const ALL = -1;
 
     /** @internal Keep this synced with the above */
-    public const BUILTIN_TAINT_COUNT = 24;
+    public const BUILTIN_TAINT_COUNT = 25;
 
 
     // Map of taint kind names to their bitmask values, used in taint annotations
@@ -90,7 +92,9 @@ final class TaintKind
         'cookie' => self::INPUT_COOKIE,
         'header' => self::INPUT_HEADER,
         'session' => self::INPUT_SESSION,
-        'xpath' => self::INPUT_XPATH,
+        // an XPath query is injected through a value outside a string literal, or one ending it
+        'xpath' => self::INPUT_XPATH | self::INPUT_XPATH_LITERAL,
+        'xpath_literal' => self::INPUT_XPATH_LITERAL,
         'sleep' => self::INPUT_SLEEP,
         'extract' => self::INPUT_EXTRACT,
         'user_secret' => self::USER_SECRET,

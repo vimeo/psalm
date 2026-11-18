@@ -1306,6 +1306,31 @@ final class TaintTest extends TestCase
                     v("", "", "safe");
                     v("", "", escaped(tainted()));',
             ],
+            'valueEscapedForXpathByTheCodeInAStringLiteral' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape xpath
+                     */
+                    function xpathLiteral(string $value): string {
+                        return "concat(\'" . str_replace("\'", "\', \"\'\", \'", $value) . "\', \'\')";
+                    }
+
+                    function find(DOMXPath $xpath): void {
+                        $xpath->query("//user[@id=" . xpathLiteral((string) $_GET["id"]) . "]");
+                        $xpath->query("//user[@id=\'" . xpathLiteral((string) $_GET["id"]) . "\']");
+                    }',
+            ],
+            'valueWithoutQuotesInAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 _.%~\-]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@id=\'" . $id . "\']");
+                        $xpath->query(\'//user[@id="\' . $id . \'"]\');
+                    }',
+            ],
             'noTaintFromASpecializedPregReplaceCallbackCallbackInItsOtherCalls' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -6744,6 +6769,35 @@ final class TaintTest extends TestCase
                         echo (string) $row["comment"];
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'valueWithSpacesOutsideAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@id=" . $id . "]");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'valueBetweenDifferentQuotesInAnXpathQuery' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@id=\'" . $id . "\"]");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'valueWithQuotesInAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $xpath->query("//user[@id=\'" . (string) $_GET["id"] . "\']");
+                    }',
+                'error_message' => 'TaintedXpath',
             ],
             'valueThatMayNotMatchThePatternKeepsItsTaints' => [
                 'code' => '<?php

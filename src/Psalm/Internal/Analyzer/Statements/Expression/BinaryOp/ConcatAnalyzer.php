@@ -59,6 +59,7 @@ use function preg_match;
 use function reset;
 use function strlen;
 use function strpbrk;
+use function substr;
 
 /**
  * @internal
@@ -98,6 +99,44 @@ final class ConcatAnalyzer
         return strpbrk($matches[2] ?? '', '?#') === false
             ? $removed_taints
             : $removed_taints | TaintKind::INPUT_URL_PATH;
+    }
+
+    /**
+     * Whether the left operand of the concatenation is a value between quotes: a literal ending with a quote followed
+     * by a value (`"[@id='" . $id`), and a right operand starting with that quote (`"']"`)
+     *
+     * @psalm-capabilities read-props
+     */
+    public static function isQuotedOperand(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\BinaryOp\Concat $stmt,
+    ): bool
+    {
+        $left = $stmt->left;
+
+        if (!$left instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
+            return false;
+        }
+
+        $opening_type = $statements_analyzer->node_data->getType($left->left);
+        $value_type = $statements_analyzer->node_data->getType($left->right);
+
+        if (!$opening_type || !$opening_type->allStringLiterals() || !$value_type || $value_type->allStringLiterals()) {
+            return false;
+        }
+
+        $closings = self::getLiteralPrefixes($statements_analyzer, $stmt->right);
+        $quotes = [];
+
+        foreach (self::getLiteralValues($opening_type) as $opening) {
+            $quotes[substr($opening, -1)] = true;
+        }
+
+        foreach ($closings as $closing) {
+            $quotes[substr($closing, 0, 1)] = true;
+        }
+
+        return $closings !== [] && count($quotes) === 1 && (isset($quotes['\'']) || isset($quotes['"']));
     }
 
     /**
