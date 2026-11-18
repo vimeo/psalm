@@ -17,7 +17,9 @@ use function sprintf;
 use function strlen;
 use function strtoupper;
 
+use const ENT_DISALLOWED;
 use const ENT_QUOTES;
+use const ENT_SUBSTITUTE;
 use const ENT_XML1;
 
 /**
@@ -133,11 +135,13 @@ abstract class Report
     }
 
     /**
+     * Characters XML 1.0 forbids, even as character references, and invalid UTF-8 become U+FFFD.
+     *
      * @psalm-pure
      */
     protected function xmlEncode(string $data): string
     {
-        return htmlspecialchars($data, ENT_XML1 | ENT_QUOTES);
+        return htmlspecialchars($data, ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE | ENT_DISALLOWED, 'UTF-8');
     }
 
     abstract public function create(): string;

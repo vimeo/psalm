@@ -301,7 +301,10 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $context->inside_general_use = true;
             ExpressionAnalyzer::analyze($statements_analyzer, $stmt->class, $context);
             $context->inside_general_use = $was_inside_general_use;
-            $lhs_type = $statements_analyzer->node_data->getType($stmt->class) ?? Type::getMixed();
+            $lhs_type = TypeExpander::expandTemplateKeyOfAndValueOf(
+                $codebase,
+                $statements_analyzer->node_data->getType($stmt->class) ?? Type::getMixed(),
+            );
         }
 
         if (!$lhs_type) {
@@ -335,7 +338,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $stmt,
                 $context,
                 $lhs_type_part,
-                $lhs_type->ignore_nullable_issues || $class_state === NullsafeChainState::ShortCircuit,
+                $lhs_type->ignore_nullable_issues || $class_state->isNullOnlyByShortCircuit(),
                 $moved_call,
                 $has_mock,
                 $has_existing_method,
@@ -347,7 +350,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
         if ($class_state !== NullsafeChainState::None) {
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
-            $class_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
+            $class_state->afterLink($stmt_type)->markOn($stmt);
 
             if ($stmt_type && !$stmt_type->isNullable()) {
                 $statements_analyzer->node_data->setType(

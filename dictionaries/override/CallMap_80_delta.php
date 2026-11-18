@@ -7168,14 +7168,14 @@ return array (
         0 => 'list<mixed>',
         'stream' => 'resource',
         'format' => 'string',
-        '&...vars=' => 'mixed',
+        '&...w vars=' => 'mixed',
       ),
       'new' => 
       array (
         0 => 'list<mixed>|null',
         'stream' => 'resource',
         'format' => 'string',
-        '&...vars=' => 'mixed',
+        '&...w vars=' => 'mixed',
       ),
     ),
     'fseek' => 
@@ -14797,13 +14797,13 @@ return array (
       array (
         0 => 'false|string',
         'zoneId' => 'string',
-        '&isSystemID=' => 'bool',
+        '&w isSystemID=' => 'bool',
       ),
       'new' => 
       array (
         0 => 'false|string',
         'timezoneId' => 'string',
-        '&isSystemId=' => 'bool',
+        '&w isSystemId=' => 'bool',
       ),
     ),
     'intltz_get_display_name' => 
@@ -14900,8 +14900,8 @@ return array (
         'timeZone' => 'IntlTimeZone',
         'date' => 'float',
         'local' => 'bool',
-        '&rawOffset' => 'int',
-        '&dstOffset' => 'int',
+        '&w rawOffset' => 'int',
+        '&w dstOffset' => 'int',
       ),
       'new' => 
       array (
@@ -14909,8 +14909,8 @@ return array (
         'timezone' => 'IntlTimeZone',
         'timestamp' => 'float',
         'local' => 'bool',
-        '&rawOffset' => 'int',
-        '&dstOffset' => 'int',
+        '&w rawOffset' => 'int',
+        '&w dstOffset' => 'int',
       ),
     ),
     'intltz_get_raw_offset' => 
@@ -20943,7 +20943,7 @@ return array (
         '&w ekeys' => 'array<array-key, mixed>',
         'pubkeys' => 'array<array-key, mixed>',
         'method=' => 'string',
-        '&iv=' => 'string',
+        '&w iv=' => 'string',
       ),
       'new' => 
       array (
@@ -20953,7 +20953,7 @@ return array (
         '&w encrypted_keys' => 'array<array-key, mixed>',
         'public_key' => 'list<OpenSSLAsymmetricKey>',
         'cipher_algo' => 'string',
-        '&iv=' => 'string',
+        '&w iv=' => 'string',
       ),
     ),
     'openssl_sign' => 
@@ -24153,7 +24153,7 @@ return array (
         0 => 'false|resource',
         'command' => 'array<array-key, mixed>|string',
         'descriptorspec' => 'array<array-key, mixed>',
-        '&pipes' => 'array<array-key, resource>',
+        '&w pipes' => 'array<array-key, resource>',
         'cwd=' => 'null|string',
         'env=' => 'array<array-key, mixed>|null',
         'other_options=' => 'array<array-key, mixed>|null',
@@ -24163,7 +24163,7 @@ return array (
         0 => 'false|resource',
         'command' => 'array<array-key, mixed>|string',
         'descriptor_spec' => 'array<array-key, mixed>',
-        '&pipes' => 'array<array-key, resource>',
+        '&w pipes' => 'array<array-key, resource>',
         'cwd=' => 'null|string',
         'env_vars=' => 'array<array-key, mixed>|null',
         'options=' => 'array<array-key, mixed>|null',
@@ -32245,14 +32245,14 @@ return array (
         0 => 'int|list<float|int|null|string>|null',
         'str' => 'string',
         'format' => 'string',
-        '&...vars=' => 'float|int|null|string',
+        '&...w vars=' => 'float|int|null|string',
       ),
       'new' => 
       array (
         0 => 'int|list<float|int|null|string>|null',
         'string' => 'string',
         'format' => 'string',
-        '&...vars=' => 'float|int|null|string',
+        '&...w vars=' => 'float|int|null|string',
       ),
     ),
     'str_getcsv' => 
@@ -32670,12 +32670,12 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'array{blocked: bool, crypto?: array{cipher_bits: int, cipher_name: string, cipher_version: string, protocol: string}, eof: bool, mediatype: string, mode: string, seekable: bool, stream_type: string, timed_out: bool, unread_bytes: int, uri: string, wrapper_data: mixed, wrapper_type: string}',
+        0 => 'array{base64?: bool, blocked?: bool, charset?: string, crypto?: array{cipher_bits: int, cipher_name: string, cipher_version: string, protocol: string}, eof?: bool, mediatype?: string, mode: string, seekable: bool, stream_type: string, timed_out?: bool, unread_bytes: int, uri?: string, wrapper_data?: mixed, wrapper_type?: string}',
         'fp' => 'resource',
       ),
       'new' => 
       array (
-        0 => 'array{blocked: bool, crypto?: array{cipher_bits: int, cipher_name: string, cipher_version: string, protocol: string}, eof: bool, mediatype: string, mode: string, seekable: bool, stream_type: string, timed_out: bool, unread_bytes: int, uri: string, wrapper_data: mixed, wrapper_type: string}',
+        0 => 'array{base64?: bool, blocked?: bool, charset?: string, crypto?: array{cipher_bits: int, cipher_name: string, cipher_version: string, protocol: string}, eof?: bool, mediatype?: string, mode: string, seekable: bool, stream_type: string, timed_out?: bool, unread_bytes: int, uri?: string, wrapper_data?: mixed, wrapper_type?: string}',
         'stream' => 'resource',
       ),
     ),

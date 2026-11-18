@@ -6,6 +6,7 @@ namespace Psalm\Internal\Scope;
 
 use Psalm\Context;
 use Psalm\Internal\Clause;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Storage\Assertion;
 use Psalm\Type\Union;
 
@@ -35,6 +36,14 @@ final class IfScope
      * @var array<string, Union>
      */
     public array $partial_new_vars = [];
+
+    /**
+     * Variables a branch reaching the end possibly defines without a type (e.g. in a loop left by a break, or in a
+     * catch): the type the other branches give them is not all of it. Each maps to its assignments in those branches
+     *
+     * @var array<string, array<string, DataFlowNode>>
+     */
+    public array $untyped_new_vars = [];
 
     /**
      * @var array<string, bool>
@@ -118,6 +127,14 @@ final class IfScope
      * @var string[]
      */
     public array $final_actions = [];
+
+    /**
+     * The classes the code after the if may use without them being reported when every other branch leaves, so it
+     * is only reached through the if block
+     *
+     * @var array<lowercase-string, true>|null
+     */
+    public ?array $phantom_classes_of_if_block = null;
 
     /**
      * Whether there is no else and the conditions matched every value of a variable
