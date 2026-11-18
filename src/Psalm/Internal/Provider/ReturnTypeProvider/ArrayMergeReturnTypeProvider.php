@@ -17,6 +17,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -37,14 +38,14 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['array_merge', 'array_replace'];
+        return ['array_merge', 'array_merge_recursive', 'array_replace'];
     }
 
     /**
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     #[Override]
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -55,6 +56,30 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
         }
 
         $is_replace = $event->getFunctionId() === 'array_replace';
+
+        // merging recursively only equals merging for arrays that share no key: their keys are known
+        if ($event->getFunctionId() === 'array_merge_recursive') {
+            $seen_keys = [];
+
+            foreach ($call_args as $call_arg) {
+                $call_arg_type = $statements_source->node_data->getType($call_arg->value);
+                $keyed_array = $call_arg_type && !$call_arg->unpack && $call_arg_type->isSingle()
+                    ? $call_arg_type->getSingleAtomic()
+                    : null;
+
+                if (!$keyed_array instanceof TKeyedArray || $keyed_array->fallback_params !== null) {
+                    return null;
+                }
+
+                foreach ($keyed_array->properties as $key => $_) {
+                    if (!is_string($key) || isset($seen_keys[$key])) {
+                        return null;
+                    }
+
+                    $seen_keys[$key] = true;
+                }
+            }
+        }
 
         $inner_value_types = [];
         $inner_key_types = [];
@@ -71,10 +96,15 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
 
         $max_keyed_array_size = 0;
 
+        // after an array with an unknown number of int keys, the elements of the next lists land at unknown positions
+        $offsets_unknown = false;
+
         foreach ($call_args as $call_arg) {
             if (!($call_arg_type = $statements_source->node_data->getType($call_arg->value))) {
                 return Type::getArray();
             }
+
+            $arg_has_unknown_length = false;
 
             foreach ($call_arg_type->getAtomicTypes() as $type_part) {
                 $unpacking_indefinite_number_of_args = false;
@@ -135,7 +165,10 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
                             if (is_string($key)) {
                                 $all_int_offsets = false;
                             } elseif (!$is_replace) {
-                                if ($unpacking_indefinite_number_of_args || $type->possibly_undefined) {
+                                if ($unpacking_indefinite_number_of_args
+                                    || $type->possibly_undefined
+                                    || $offsets_unknown
+                                ) {
                                     $added_inner_values = true;
                                     $inner_value_types = array_merge(
                                         $inner_value_types,
@@ -180,11 +213,14 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
                         }
 
                         if ($added_inner_values) {
+                            $arg_has_unknown_length = true;
                             $all_keyed_arrays = false;
                             $inner_key_types []= new TInt;
                         }
 
                         if ($unpacked_type_part->fallback_params !== null) {
+                            $arg_has_unknown_length = $arg_has_unknown_length
+                                || self::canHoldAnInt($unpacked_type_part->fallback_params[0]);
                             $all_keyed_arrays = false;
                             $inner_value_types = array_merge(
                                 $inner_value_types,
@@ -223,6 +259,8 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
 
                         $all_keyed_arrays = false;
                         $all_nonempty_lists = false;
+                        $arg_has_unknown_length = $arg_has_unknown_length
+                            || self::canHoldAnInt($unpacked_type_part->type_params[0]);
 
                         if (!$unpacked_type_part->type_params[0]->isInt()) {
                             $all_int_offsets = false;
@@ -246,6 +284,10 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
                         array_values($unpacked_type_part->type_params[1]->getAtomicTypes()),
                     );
                 }
+            }
+
+            if ($arg_has_unknown_length) {
+                $offsets_unknown = true;
             }
         }
 
@@ -314,5 +356,21 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
         }
 
         return Type::getArray();
+    }
+
+    /**
+     * Whether a key type can hold an int, which moves the offsets of the lists merged after it
+     *
+     * @psalm-pure
+     */
+    private static function canHoldAnInt(Union $key_type): bool
+    {
+        foreach ($key_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TString) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

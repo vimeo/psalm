@@ -31,6 +31,8 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeParameter;
@@ -209,6 +211,8 @@ final class FunctionCallReturnTypeFetcher
                             true,
                         );
 
+                        $return_type = TypeVariableTracker::resolveTypeVariables($return_type, $codebase);
+
                         $return_type_location = $function_storage->return_type_location;
 
                         $event = new AfterFunctionCallAnalysisEvent(
@@ -234,22 +238,30 @@ final class FunctionCallReturnTypeFetcher
                         $return_type = $return_type->setByRef($function_storage->returns_by_ref);
                         $stmt_type = $return_type;
 
-                        // only check the type locally if it's defined externally
+                        // only check the type locally if it's defined externally, reporting its issues at one call
                         if ($return_type_location &&
                             !$is_stubbed && // makes lookups or array_* functions quicker
                             !$config->isInProjectDirs($return_type_location->file_path)
                         ) {
-                            /** @psalm-suppress UnusedMethodCall Actually generates issues */
-                            $return_type->check(
-                                $statements_analyzer,
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                $statements_analyzer->getSuppressedIssues(),
-                                $context->phantom_classes,
-                                true,
-                                false,
-                                false,
-                                $context,
+                            $issue_group = IssueBuffer::setIssueGroup(
+                                $return_type_location->file_path . ':' . $return_type_location->raw_file_start,
                             );
+
+                            try {
+                                /** @psalm-suppress UnusedMethodCall Actually generates issues */
+                                $return_type->check(
+                                    $statements_analyzer,
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                    $statements_analyzer->getSuppressedIssues(),
+                                    $context->phantom_classes,
+                                    true,
+                                    false,
+                                    false,
+                                    $context,
+                                );
+                            } finally {
+                                IssueBuffer::setIssueGroup($issue_group);
+                            }
                         }
                     }
                 } catch (InvalidArgumentException) {
@@ -274,6 +286,8 @@ final class FunctionCallReturnTypeFetcher
         if (!$stmt_type) {
             $stmt_type = Type::getMixed();
         }
+
+        $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
 
         if (!$stmt->isFirstClassCallable()) {
             self::taintPhpInputSource(
@@ -565,17 +579,18 @@ final class FunctionCallReturnTypeFetcher
                     }
                     if (count($call_args) < 2) {
                         return $returnType;
-                    } else {
-                        $second_arg_type = $statements_analyzer->node_data->getType($call_args[1]->value);
-                        if ($second_arg_type && $second_arg_type->isNull()) {
-                            return $returnType;
-                        }
                     }
+
+                    $second_arg_type = $statements_analyzer->node_data->getType($call_args[1]->value);
+                    if ($second_arg_type && $second_arg_type->isNull()) {
+                        return $returnType;
+                    }
+
                     if ($string_arg_type !== null && $string_arg_type->isNonEmptyString()) {
                         return Type::getNonEmptyString();
-                    } else {
-                        return Type::getString();
                     }
+
+                    return Type::getString();
             }
         }
 
@@ -1111,7 +1126,7 @@ final class FunctionCallReturnTypeFetcher
      * The storage of a closure from its id (see ClosureAnalyzer::getClosureId()), which starts with the
      * path of the file it is in.
      */
-    private static function getClosureStorage(
+    public static function getClosureStorage(
         StatementsAnalyzer $statements_analyzer,
         string $closure_id,
     ): ?FunctionLikeStorage {
@@ -1192,7 +1207,10 @@ final class FunctionCallReturnTypeFetcher
     ): ?FunctionLikeStorage {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$codebase->functions->functionExists($statements_analyzer, $function_id)) {
+        // the closure of a method has the method's id
+        if (str_contains($function_id, '::')
+            || !$codebase->functions->functionExists($statements_analyzer, $function_id)
+        ) {
             return null;
         }
 
@@ -1578,8 +1596,6 @@ final class FunctionCallReturnTypeFetcher
         );
         $graph->addNode($function_call_node);
 
-        $codebase = $statements_analyzer->getCodebase();
-
         $conditionally_removed_taints = self::getConditionallyRemovedTaints(
             $codebase,
             $function_storage,
@@ -1611,7 +1627,7 @@ final class FunctionCallReturnTypeFetcher
         }
 
         if ($function_storage->return_source_params && !$stmt->isFirstClassCallable()) {
-            $removed_taints = $function_storage->removed_taints;
+            $removed_taints |= $function_storage->removed_taints;
 
             $args = $stmt->getArgs();
             if ($function_id === 'preg_replace' && count($args) > 2) {
@@ -1669,11 +1685,6 @@ final class FunctionCallReturnTypeFetcher
                     $function_id === 'vsprintf',
                 )
                 : [];
-
-            $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
-
-            $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-            $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
             self::taintUsingFlows(
                 $function_storage,

@@ -61,9 +61,11 @@ use const FILTER_FLAG_ALLOW_OCTAL;
 use const FILTER_FLAG_ALLOW_SCIENTIFIC;
 use const FILTER_FLAG_ALLOW_THOUSAND;
 use const FILTER_FLAG_EMAIL_UNICODE;
+use const FILTER_FLAG_EMPTY_STRING_NULL;
 use const FILTER_FLAG_ENCODE_AMP;
 use const FILTER_FLAG_ENCODE_HIGH;
 use const FILTER_FLAG_ENCODE_LOW;
+use const FILTER_FLAG_GLOBAL_RANGE;
 use const FILTER_FLAG_HOSTNAME;
 use const FILTER_FLAG_IPV4;
 use const FILTER_FLAG_IPV6;
@@ -962,7 +964,8 @@ final class FilterUtils
 
                     if (self::hasFlag($flags_int_used, FILTER_NULL_ON_FAILURE)
                         && (
-                            ($atomic_type instanceof TLiteralInt && $atomic_type->value === 0)
+                            $atomic_type instanceof TNull
+                            || ($atomic_type instanceof TLiteralInt && $atomic_type->value === 0)
                             || ($atomic_type instanceof TLiteralFloat && $atomic_type->value === 0.0)
                             || ($atomic_type instanceof TLiteralString
                                 && in_array(strtolower($atomic_type->value), ['0', 'false', 'off', 'no', ''], true)
@@ -1185,6 +1188,8 @@ final class FilterUtils
                         || $atomic_type instanceof TScalar
                         || $atomic_type instanceof TMixed) {
                         $filter_types[] = new TString();
+                    } elseif ($atomic_type instanceof TNull) {
+                        $filter_types[] = Type::getAtomicStringFromLiteral('');
                     }
 
                     $can_fail = true;
@@ -1214,6 +1219,11 @@ final class FilterUtils
                         || $atomic_type instanceof TFloat
                         || $atomic_type instanceof TScalar) {
                         $filter_types[] = $string_type;
+                    } elseif ($atomic_type instanceof TNull
+                        && !self::hasFlag($flags_int_used, FILTER_FLAG_HOSTNAME)
+                    ) {
+                        $filter_types[] = Type::getAtomicStringFromLiteral('');
+                        continue;
                     }
 
                     $can_fail = true;
@@ -1244,7 +1254,7 @@ final class FilterUtils
                         continue;
                     }
 
-                    if ($atomic_type instanceof TFalse) {
+                    if ($atomic_type instanceof TFalse || $atomic_type instanceof TNull) {
                         $filter_types[] = Type::getAtomicStringFromLiteral('');
                         continue;
                     }
@@ -1268,7 +1278,41 @@ final class FilterUtils
             case FILTER_SANITIZE_SPECIAL_CHARS:
             case FILTER_SANITIZE_FULL_SPECIAL_CHARS:
             case FILTER_DEFAULT:
+                // only an empty input (null is an empty string first) is null, what the strip flags empty out stays
+                // an empty string
+                $empty_string_is_null = $filter_int_used === FILTER_DEFAULT
+                    && self::hasFlag($flags_int_used, FILTER_FLAG_EMPTY_STRING_NULL);
+                $strips = self::hasFlag($flags_int_used, FILTER_FLAG_STRIP_LOW)
+                    || self::hasFlag($flags_int_used, FILTER_FLAG_STRIP_HIGH)
+                    || self::hasFlag($flags_int_used, FILTER_FLAG_STRIP_BACKTICK);
+                $encodes = self::hasFlag($flags_int_used, FILTER_FLAG_ENCODE_LOW)
+                    || self::hasFlag($flags_int_used, FILTER_FLAG_ENCODE_HIGH)
+                    || self::hasFlag($flags_int_used, FILTER_FLAG_ENCODE_AMP);
+
                 foreach ($input_type->getAtomicTypes() as $atomic_type) {
+                    if ($empty_string_is_null
+                        && ($atomic_type instanceof TFalse
+                            || $atomic_type instanceof TNull
+                            || ($atomic_type instanceof TLiteralString && $atomic_type->value === ''))
+                    ) {
+                        $filter_types[] = new TNull();
+                        continue;
+                    }
+
+                    if ($empty_string_is_null && $atomic_type instanceof TBool && !$atomic_type instanceof TTrue) {
+                        $filter_types[] = Type::getAtomicStringFromLiteral('1');
+                        $filter_types[] = new TNull();
+                        continue;
+                    }
+
+                    if ($empty_string_is_null && $atomic_type instanceof TLiteralString) {
+                        // the encode flags rewrite a literal without emptying it
+                        $filter_types[] = $strips
+                            ? new TString()
+                            : ($encodes ? new TNonEmptyString() : $atomic_type);
+                        continue;
+                    }
+
                     if ($filter_int_used === FILTER_DEFAULT
                         && $flags_int_used === 0
                         && $atomic_type instanceof TString
@@ -1313,6 +1357,12 @@ final class FilterUtils
                     }
 
                     if ($atomic_type instanceof TString) {
+                        if ($empty_string_is_null) {
+                            $filter_types[] = $strips ? new TString() : new TNonEmptyString();
+                            $filter_types[] = new TNull();
+                            continue;
+                        }
+
                         $filter_types[] = new TString();
                         continue;
                     }
@@ -1329,7 +1379,7 @@ final class FilterUtils
                         continue;
                     }
 
-                    if ($atomic_type instanceof TFalse) {
+                    if ($atomic_type instanceof TFalse || $atomic_type instanceof TNull) {
                         $filter_types[] = Type::getAtomicStringFromLiteral('');
                         continue;
                     }
@@ -1341,7 +1391,11 @@ final class FilterUtils
                     }
 
                     if ($atomic_type instanceof TMixed || $atomic_type instanceof TScalar) {
-                        $filter_types[] = new TString();
+                        $filter_types[] = $empty_string_is_null && !$strips ? new TNonEmptyString() : new TString();
+
+                        if ($empty_string_is_null) {
+                            $filter_types[] = new TNull();
+                        }
                     }
 
                     $can_fail = true;
@@ -1350,6 +1404,7 @@ final class FilterUtils
             case 513: // 8.1.0 FILTER_SANITIZE_STRING and FILTER_SANITIZE_STRIPPED (alias) have been deprecated.
                 foreach ($input_type->getAtomicTypes() as $atomic_type) {
                     if ($atomic_type instanceof TBool
+                        || $atomic_type instanceof TNull
                         || $atomic_type instanceof TString
                         || $atomic_type instanceof TInt
                         || $atomic_type instanceof TFloat
@@ -1405,7 +1460,7 @@ final class FilterUtils
                         continue;
                     }
 
-                    if ($atomic_type instanceof TFalse) {
+                    if ($atomic_type instanceof TFalse || $atomic_type instanceof TNull) {
                         $filter_types[] = Type::getAtomicStringFromLiteral('');
                         continue;
                     }
@@ -1596,6 +1651,7 @@ final class FilterUtils
             ),
             FILTER_UNSAFE_RAW => array(
                 'flags' => array(
+                    FILTER_FLAG_EMPTY_STRING_NULL,
                     FILTER_FLAG_STRIP_LOW,
                     FILTER_FLAG_STRIP_HIGH,
                     FILTER_FLAG_STRIP_BACKTICK,
@@ -1724,8 +1780,8 @@ final class FilterUtils
         }
 
         if ($codebase->analysis_php_version_id >= 8_02_00) {
-            // phpcs:ignore SlevomatCodingStandard.Numbers.RequireNumericLiteralSeparator.RequiredNumericLiteralSeparator
-            $validate_filters[FILTER_VALIDATE_IP]['flags'][] = 268435456; // FILTER_FLAG_GLOBAL_RANGE
+            // its value depends on the PHP Psalm runs on (268435456 up to PHP 8.4, 536870912 from PHP 8.5)
+            $validate_filters[FILTER_VALIDATE_IP]['flags'][] = FILTER_FLAG_GLOBAL_RANGE;
         }
 
         if ($codebase->analysis_php_version_id >= 7_00_00) {

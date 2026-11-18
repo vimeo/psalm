@@ -221,7 +221,7 @@ final class CastTest extends TestCase
                     $five = strval(5);
                     /** @psalm-check-type-exact $five = \'5\' */
                     $concatenated = "id $int";
-                    /** @psalm-check-type-exact $concatenated = non-empty-string */
+                    /** @psalm-check-type-exact $concatenated = non-falsy-string */
                 }
             ',
         ];
@@ -302,34 +302,34 @@ final class CastTest extends TestCase
             'ignored_issues' => [],
             'php_version' => '8.6',
         ];
-        yield 'SKIPPED-castFalseOrIntToInt' => [
+        yield 'castFalseOrIntToInt' => [
             'code' => '<?php
                 /** @var false|int<10, 20> */
                 $intOrFalse = 10;
                 $int = (int) $intOrFalse;
             ',
             'assertions' => [
-                '$int===' => '0|int<10, 20>',
+                '$int===' => 'int<0, 20>',
             ],
         ];
-        yield 'SKIPPED-castTrueOrIntToInt' => [
+        yield 'castTrueOrIntToInt' => [
             'code' => '<?php
                 /** @var true|int<10, 20> */
                 $intOrTrue = 10;
                 $int = (int) $intOrTrue;
             ',
             'assertions' => [
-                '$int===' => '1|int<10, 20>',
+                '$int===' => 'int<1, 20>',
             ],
         ];
-        yield 'SKIPPED-castBoolOrIntToInt' => [
+        yield 'castBoolOrIntToInt' => [
             'code' => '<?php
                 /** @var bool|int<10, 20> */
                 $intOrBool = 10;
                 $int = (int) $intOrBool;
             ',
             'assertions' => [
-                '$int===' => '0|1|int<10, 20>',
+                '$int===' => 'int<0, 20>',
             ],
         ];
         yield 'castObjectWithPropertiesToArray' => [
@@ -462,7 +462,7 @@ final class CastTest extends TestCase
                 function f(Wrapper $wrapper): void {
                     $wrapped = "[{$wrapper}]";
                     $twice = "{$wrapper}{$wrapper}";
-                    /** @psalm-check-type-exact $wrapped = non-empty-string */
+                    /** @psalm-check-type-exact $wrapped = non-falsy-string */
                     /** @psalm-check-type-exact $twice = string */
                 }
             ',
@@ -475,7 +475,7 @@ final class CastTest extends TestCase
                  */
                 function f(string $class): void {
                     $prefixed = "x$class";
-                    /** @psalm-check-type-exact $prefixed = non-empty-string */
+                    /** @psalm-check-type-exact $prefixed = non-falsy-string */
                 }
             ',
         ];
@@ -488,7 +488,7 @@ final class CastTest extends TestCase
                     $prefixed = "x$value";
                     /** @psalm-check-type-exact $cast = string */
                     /** @psalm-check-type-exact $interpolated = string */
-                    /** @psalm-check-type-exact $prefixed = non-empty-string */
+                    /** @psalm-check-type-exact $prefixed = non-falsy-string */
                 }
             ',
             'assertions' => [],
@@ -510,7 +510,7 @@ final class CastTest extends TestCase
                     /** @psalm-check-type-exact $anything_cast = string */
                     /** @psalm-check-type-exact $interpolated = string */
                     /** @psalm-check-type-exact $anything_interpolated = string */
-                    /** @psalm-check-type-exact $prefixed = non-empty-string */
+                    /** @psalm-check-type-exact $prefixed = non-falsy-string */
                 }
             ',
             'assertions' => [],
