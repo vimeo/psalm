@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Methods;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\KeyedArrayComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -39,6 +40,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplatePropertiesOf;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
 
 use function array_fill;
@@ -950,13 +952,7 @@ final class TemplateStandinTypeReplacer
                 $generic_param = $input_type->getBuilder();
 
                 if ($matching_input_keys) {
-                    $generic_param_keys = array_keys($generic_param->getAtomicTypes());
-
-                    foreach ($generic_param_keys as $atomic_key) {
-                        if (!isset($matching_input_keys[$atomic_key])) {
-                            $generic_param->removeType($atomic_key);
-                        }
-                    }
+                    self::keepMatchingInputTypes($codebase, $generic_param, $matching_input_keys, $atomic_type->as);
                 }
                 if ($add_lower_bound) {
                     return array_values($generic_param->getAtomicTypes());
@@ -1083,13 +1079,7 @@ final class TemplateStandinTypeReplacer
                 $generic_param = $input_type->getBuilder();
 
                 if ($matching_input_keys) {
-                    $generic_param_keys = array_keys($generic_param->getAtomicTypes());
-
-                    foreach ($generic_param_keys as $atomic_key) {
-                        if (!isset($matching_input_keys[$atomic_key])) {
-                            $generic_param->removeType($atomic_key);
-                        }
-                    }
+                    self::keepMatchingInputTypes($codebase, $generic_param, $matching_input_keys, $gate_replacement_type);
                 }
                 $generic_param = $generic_param->freeze();
 
@@ -1456,6 +1446,47 @@ final class TemplateStandinTypeReplacer
         }
 
         return true;
+    }
+
+    /**
+     * Keeps the parts of the input that can be of the bound: a part only coerced to it is narrowed to the parts
+     * of the bound it contains, e.g. a scalar for a string|array bound to a string.
+     *
+     * @param array<array-key, mixed> $matching_input_keys
+     */
+    private static function keepMatchingInputTypes(
+        Codebase $codebase,
+        MutableUnion $input_type,
+        array $matching_input_keys,
+        Union $bound,
+    ): void {
+        $bounded_input_types = [];
+
+        foreach ($input_type->getAtomicTypes() as $atomic_key => $input_atomic_type) {
+            if (isset($matching_input_keys[$atomic_key])) {
+                continue;
+            }
+
+            $input_type->removeType($atomic_key);
+
+            foreach ($bound->getAtomicTypes() as $bound_atomic_type) {
+                if (AtomicTypeComparator::isContainedBy(
+                    $codebase,
+                    $bound_atomic_type,
+                    $input_atomic_type,
+                    false,
+                    false,
+                )) {
+                    $bounded_input_types[] = $bound_atomic_type;
+                }
+            }
+        }
+
+        foreach ($bounded_input_types as $bounded_input_type) {
+            if (!$input_type->hasType($bounded_input_type->getKey())) {
+                $input_type->addType($bounded_input_type);
+            }
+        }
     }
 
     /**

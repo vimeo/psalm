@@ -10,6 +10,7 @@ use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Cache;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FakeFileProvider;
@@ -46,6 +47,7 @@ use function pcntl_waitpid;
 use function pcntl_wexitstatus;
 use function pcntl_wifexited;
 use function posix_getrlimit;
+use function posix_getuid;
 use function posix_setrlimit;
 use function preg_match;
 use function restore_error_handler;
@@ -217,11 +219,14 @@ final class CacheTest extends TestCase
      * @param list<array{
      *     files: array<string, string|null>,
      *     issues?: array<string, list<string>>,
+     *     type_coverage?: array{int, int},
      * }> $interactions
+     * @param bool $is_diff the diff mode, which the command line does not use
      */
     #[DataProvider('provideCacheInteractions')]
     public function testCacheInteractions(
         array $interactions,
+        bool $is_diff = true,
     ): void {
         $config = Config::loadFromXML(
             __DIR__ . DIRECTORY_SEPARATOR . 'test_base_dir',
@@ -239,10 +244,10 @@ final class CacheTest extends TestCase
         $file_provider = new FakeFileProvider();
         $providers = new Providers(
             $file_provider,
-            new ParserCacheProvider($config, '', false),
-            new FileStorageCacheProvider($config, '', false),
-            new ClassLikeStorageCacheProvider($config, '', false),
-            new FileReferenceCacheProvider($config, '', false),
+            new ParserCacheProvider($config, '', CacheMode::Memory),
+            new FileStorageCacheProvider($config, '', CacheMode::Memory),
+            new ClassLikeStorageCacheProvider($config, '', CacheMode::Memory),
+            new FileReferenceCacheProvider($config, '', CacheMode::Memory),
             new ProjectCacheProvider(),
         );
 
@@ -260,22 +265,27 @@ final class CacheTest extends TestCase
 
             $start_time = microtime(true);
             $project_analyzer = new ProjectAnalyzer($config, $providers);
-            $project_analyzer->check($config->base_dir, true);
+            $project_analyzer->check($config->base_dir, $is_diff);
             $project_analyzer->finish($start_time, PSALM_VERSION);
 
             $issues = self::normalizeIssueData(IssueBuffer::getIssuesData());
             self::assertSame($interaction['issues'] ?? [], $issues);
+
+            if (isset($interaction['type_coverage'])) {
+                $codebase = $project_analyzer->getCodebase();
+                self::assertSame($interaction['type_coverage'], $codebase->analyzer->getTotalTypeCoverage($codebase));
+            }
         }
     }
 
     #[DataProvider('provideSaveItemRetention')]
-    public function testSaveItemRetention(bool $persistent, bool $array_cache, bool $retained): void
+    public function testSaveItemRetention(CacheMode $mode, bool $array_cache, bool $retained): void
     {
         $config = $this->newConfig();
         $config->array_cache = $array_cache;
 
         /** @var Cache<string> $cache */
-        $cache = new Cache($config, 'test', [], $persistent);
+        $cache = new Cache($config, 'test', [], $mode);
         $cache->saveItem('key', 'item', 'hash');
 
         $in_memory = new ReflectionProperty(Cache::class, 'cache');
@@ -284,14 +294,14 @@ final class CacheTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{bool, bool, bool}>
+     * @return iterable<string, array{CacheMode, bool, bool}>
      * @psalm-pure
      */
     public static function provideSaveItemRetention(): iterable
     {
-        yield 'persistent with array cache' => [true, true, true];
-        yield 'persistent without array cache' => [true, false, false];
-        yield 'not persistent without array cache' => [false, false, true];
+        yield 'persistent with array cache' => [CacheMode::Persistent, true, true];
+        yield 'persistent without array cache' => [CacheMode::Persistent, false, false];
+        yield 'not persistent without array cache' => [CacheMode::Memory, false, true];
     }
 
     /** Callers such as ParserCacheProvider keep the previous file contents as the hash to compare them */
@@ -740,12 +750,112 @@ final class CacheTest extends TestCase
         self::assertSame([], $errors);
     }
 
+    public function testReadOnlyCacheCreatesNothing(): void
+    {
+        $config = $this->newConfig();
+
+        self::assertSame($this->cache_directory, CacheMode::ReadOnly->getDirectory($config));
+
+        /** @var Cache<string> $cache */
+        $cache = new Cache($config, 'test', [], CacheMode::ReadOnly);
+        $cache->saveItem(self::KEY, 'contents', 'hash');
+        $cache->consolidate();
+
+        self::assertSame('contents', $cache->getItem(self::KEY, 'hash'));
+        self::assertDirectoryDoesNotExist($this->cache_directory);
+    }
+
+    public function testReadOnlyCacheReadsEntriesAndWritesNone(): void
+    {
+        $this->newCache()->saveItem(self::KEY, 'written', 'hash');
+        $files_before = scandir($this->entryDirectory());
+
+        $cache = $this->newReadOnlyCache();
+
+        self::assertSame('written', $cache->getItem(self::KEY, 'hash'));
+
+        $cache->saveItem(self::KEY, 'kept in memory', 'other hash');
+        $cache->saveItem('src/B.php', 'kept in memory');
+        $cache->consolidate();
+
+        self::assertSame($files_before, scandir($this->entryDirectory()));
+        self::assertSame('written', $this->newCache()->getItem(self::KEY, 'hash'));
+        self::assertSame('kept in memory', $cache->getItem('src/B.php'));
+    }
+
+    public function testReadOnlyCacheWithoutArrayCacheKeepsWhatItIsGivenInMemory(): void
+    {
+        $cache = $this->newReadOnlyCache(false);
+        $cache->saveItem(self::KEY, 'kept in memory', 'hash');
+
+        self::assertSame('kept in memory', $cache->getItem(self::KEY, 'hash'));
+        self::assertDirectoryDoesNotExist($this->cache_directory);
+    }
+
+    public function testReadOnlyCacheReadsAConsolidatedCache(): void
+    {
+        $cache = $this->newCache();
+        $cache->saveItem(self::KEY, 'consolidated', 'hash');
+        $cache->consolidate();
+
+        self::assertSame('consolidated', $this->newReadOnlyCache()->getItem(self::KEY, 'hash'));
+    }
+
+    public function testReadOnlyCacheKeepsTheItemItWasGivenWhenItReadsAnOlderOne(): void
+    {
+        $this->newCache()->saveItem(self::KEY, 'written', 'old hash');
+
+        $cache = $this->newReadOnlyCache();
+        $cache->saveItem(self::KEY, 'kept in memory', 'new hash');
+
+        self::assertSame('written', $cache->getItem(self::KEY, 'old hash'));
+        self::assertSame('kept in memory', $cache->getItem(self::KEY, 'new hash'));
+    }
+
+    public function testReadOnlyCacheTellsWhetherItIsCold(): void
+    {
+        self::assertTrue($this->newReadOnlyCache()->isCold());
+
+        $this->newCache();
+
+        self::assertFalse($this->newReadOnlyCache()->isCold());
+    }
+
+    public function testReadOnlyCacheWithALockItCannotOpenRaisesNothing(): void
+    {
+        if (DIRECTORY_SEPARATOR === '\\' || (function_exists('posix_getuid') && posix_getuid() === 0)) {
+            self::markTestSkipped('needs a file its owner cannot read');
+        }
+
+        $this->newCache()->saveItem(self::KEY, 'written', 'hash');
+        // what --clear-cache deleting the lock between is_file() and fopen() looks like to the reader
+        chmod($this->entryDirectory() . '/lock', 0o000);
+
+        $cache = null;
+        self::assertSame([], self::errorsRaisedBy(function () use (&$cache): void {
+            $cache = $this->newReadOnlyCache();
+        }));
+        self::assertInstanceOf(Cache::class, $cache);
+        self::assertSame('written', $cache->getItem(self::KEY, 'hash'));
+    }
+
+    /** @return Cache<string> */
+    private function newReadOnlyCache(bool $array_cache = true): Cache
+    {
+        $config = $this->newConfig();
+        $config->array_cache = $array_cache;
+
+        return new Cache($config, 'test', [], CacheMode::ReadOnly);
+    }
+
     /**
-     * @return iterable<string, list{
-     *     list<array{
+     * @return iterable<string, array{
+     *     0: list<array{
      *         files: array<string, string|null>,
      *         issues?: array<string, list<string>>,
+     *         type_coverage?: array{int, int},
      *     }>,
+     *     1?: bool,
      * }>
      * @psalm-pure
      */
@@ -991,6 +1101,62 @@ final class CacheTest extends TestCase
                     ],
                 ],
             ],
+        ];
+
+        $typed = <<<'PHP'
+            <?php
+            function typed(int $i): int {
+                return $i + 1;
+            }
+            PHP;
+        $untyped = <<<'PHP'
+            <?php
+            /** @param mixed $m */
+            function untyped($m): void {
+                echo $m;
+            }
+            PHP;
+        $mixed_argument = ['MixedArgument: Argument 1 of echo cannot be mixed, expecting string'];
+
+        $deleted_file_interactions = [
+            [
+                'files' => ['src/A.php' => $typed, 'src/Untyped.php' => $untyped],
+                'issues' => ['src/Untyped.php' => $mixed_argument],
+                'type_coverage' => [1, 2],
+            ],
+            [
+                'files' => ['src/Untyped.php' => null],
+                'type_coverage' => [0, 2],
+            ],
+            [
+                'files' => [],
+                'type_coverage' => [0, 2],
+            ],
+        ];
+
+        yield 'deletedFileIsNotCountedInTheTypeCoverage' => [$deleted_file_interactions, false];
+
+        yield 'deletedFileIsNotCountedInTheTypeCoverageOfADiffRun' => [$deleted_file_interactions];
+
+        yield 'renamedFileIsCountedOnceInTheTypeCoverage' => [
+            [
+                [
+                    'files' => ['src/A.php' => $typed, 'src/Untyped.php' => $untyped],
+                    'issues' => ['src/Untyped.php' => $mixed_argument],
+                    'type_coverage' => [1, 2],
+                ],
+                [
+                    'files' => ['src/Untyped.php' => null, 'src/Renamed.php' => $untyped],
+                    'issues' => ['src/Renamed.php' => $mixed_argument],
+                    'type_coverage' => [1, 2],
+                ],
+                [
+                    'files' => [],
+                    'issues' => ['src/Renamed.php' => $mixed_argument],
+                    'type_coverage' => [1, 2],
+                ],
+            ],
+            false,
         ];
     }
 }

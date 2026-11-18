@@ -2876,6 +2876,129 @@ final class FunctionTemplateTest extends TestCase
                     '$cars===' => 'list<Car>',
                 ],
             ],
+            'conditionalReturnOnArgumentOnlyCoercedToTheBoundKeepsTheBoundPartsItContains' => [
+                'code' => '<?php
+                    /** @return array|scalar */
+                    function arrayOrScalar() {
+                        return "";
+                    }
+
+                    /** @return array|int */
+                    function arrayOrInt() {
+                        return [];
+                    }
+
+                    $from_scalar = substr_replace(arrayOrScalar(), "x", 0, 1);
+                    $from_int = substr_replace(arrayOrInt(), "x", 0, 1);',
+                'assertions' => [
+                    '$from_scalar===' => 'array<array-key, string>|string',
+                    '$from_int===' => 'array<array-key, string>',
+                ],
+                'ignored_issues' => ['ArgumentTypeCoercion', 'PossiblyInvalidArgument'],
+            ],
+            'templateBoundByArgumentOnlyCoercedToTheBoundKeepsTheStringItContains' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     * @return T
+                     */
+                    function identity($value) {
+                        return $value;
+                    }
+
+                    /** @return array|scalar */
+                    function arrayOrScalar() {
+                        return "";
+                    }
+
+                    $value = identity(arrayOrScalar());',
+                'assertions' => [
+                    '$value===' => 'array<array-key, mixed>|string',
+                ],
+                'ignored_issues' => ['ArgumentTypeCoercion'],
+            ],
+            'templateBoundByArgumentOnlyCoercedToTheBoundKeepsTheBoundPartsItContains' => [
+                'code' => '<?php
+                    interface I {}
+                    class A {}
+
+                    /**
+                     * @template T of I|string
+                     * @param T $value
+                     * @return T
+                     */
+                    function identity($value) {
+                        return $value;
+                    }
+
+                    /** @return A|string */
+                    function aOrString() {
+                        return "";
+                    }
+
+                    /** @return object|string */
+                    function objectOrString() {
+                        return "";
+                    }
+
+                    /**
+                     * @template T of int|array
+                     * @param T $value
+                     * @return T
+                     */
+                    function intOrArray($value) {
+                        return $value;
+                    }
+
+                    /** @return float|array */
+                    function floatOrArray() {
+                        return [];
+                    }
+
+                    $from_a = identity(aOrString());
+                    $from_object = identity(objectOrString());
+                    $from_float = intOrArray(floatOrArray());',
+                'assertions' => [
+                    '$from_a===' => 'string',
+                    '$from_object===' => 'I|string',
+                    '$from_float===' => 'array<array-key, mixed>',
+                ],
+                'ignored_issues' => ['ArgumentTypeCoercion', 'PossiblyInvalidArgument', 'InvalidScalarArgument'],
+            ],
+            'templateUpperBoundByCallableParamOnlyCoercedToTheBoundKeepsTheBoundPartsItContains' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string|array<string>
+                     * @param callable(T): void $callback
+                     * @return T
+                     */
+                    function fromCallback(callable $callback) {
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     * @param callable(T): void $callback
+                     * @return T
+                     */
+                    function withCallback($value, callable $callback) {
+                        return $value;
+                    }
+
+                    /**
+                     * @param callable(array|scalar): void $callback
+                     * @param string|array<string> $string_or_array
+                     */
+                    function takesArrayOrScalar(callable $callback, string $string, $string_or_array): void {
+                        $from_callback = fromCallback($callback);
+                        /** @psalm-check-type-exact $from_callback = array<array-key, mixed>|string */
+
+                        withCallback($string, $callback);
+                        withCallback($string_or_array, $callback);
+                    }',
+            ],
         ];
     }
 
