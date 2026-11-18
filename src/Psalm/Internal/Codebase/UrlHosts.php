@@ -90,10 +90,11 @@ final class UrlHosts
         );
         $url_type = $statements_analyzer->node_data->getType($url_arg->value);
 
-        // a property or an element can be changed by a call without its variable being assigned
+        // a property, an element or a reference can be changed by a call without the variable being assigned
         if ($url_var_id === null
             || !preg_match('/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $url_var_id)
             || $url_type === null
+            || $url_type->by_ref
             || $url_type->parent_nodes === []
         ) {
             return $stmt_type;
@@ -195,8 +196,10 @@ final class UrlHosts
         $graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
         $subject_type = $statements_analyzer->node_data->getType($subject);
 
+        // a variable only holds a host once assigned one (see recordAssignment())
         if ($graph === null || $subject_type === null || $subject_type->parent_nodes === []
             || !self::matchesAListOfHosts($pattern)
+            || !($subject instanceof Expr\Variable || self::isOnlyAHost($subject))
         ) {
             return null;
         }
