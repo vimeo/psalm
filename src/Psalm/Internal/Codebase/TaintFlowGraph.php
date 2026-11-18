@@ -167,6 +167,15 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $string_starts = [];
 
     /**
+     * The ids of the nodes of hosts parse_url() took from a URL (`parse_url($url, PHP_URL_HOST)`) => the id of the
+     * variable holding the URL and the ids of the nodes it held then (see UrlHosts). Only used while analysing the
+     * function-like they are in, so never merged by addGraph().
+     *
+     * @var array<string, array{string, list<string>}>
+     */
+    private array $url_hosts = [];
+
+    /**
      * The ids of the nodes of variables assigned an empty array, whose items the next item assigned starts the start
      * of (see TaintStore::recordItemAssignment()), and only used while analysing the function-like they are in
      *
@@ -599,6 +608,38 @@ final class TaintFlowGraph extends DataFlowGraph
     public function addStringStart(DataFlowNode $node, string $start): void
     {
         $this->string_starts[$node->id] = $start;
+    }
+
+    /**
+     * @param array{string, list<string>} $url
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function addUrlHost(DataFlowNode $node, array $url): void
+    {
+        $this->url_hosts[$node->id] = $url;
+    }
+
+    /**
+     * The URL the nodes hold the host of: the variable and the ids of the nodes it held, if all of them hold the host
+     * of the same
+     *
+     * @param array<string, DataFlowNode> $nodes
+     * @return ?array{string, list<string>}
+     * @psalm-mutation-free
+     */
+    public function getUrlOfHost(array $nodes): ?array
+    {
+        $url = null;
+        foreach ($nodes as $node) {
+            $node_url = $this->url_hosts[$node->id] ?? null;
+            if ($node_url === null || ($url !== null && $url !== $node_url)) {
+                return null;
+            }
+
+            $url = $node_url;
+        }
+
+        return $url;
     }
 
     /**
