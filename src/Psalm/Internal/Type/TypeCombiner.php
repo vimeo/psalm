@@ -52,8 +52,10 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeVariable;
@@ -770,6 +772,14 @@ final class TypeCombiner
             $combination->objectlike_sealed = $combination->objectlike_sealed
                 && $type->fallback_params === null;
 
+            if (!$type->fallback_params
+                || ($combination->objectlike_key_type
+                    ? $combination->objectlike_key_type->getId() !== $type->fallback_params[0]->getId()
+                    : $existing_objectlike_entries)
+            ) {
+                $combination->objectlike_same_fallback_key = false;
+            }
+
             $has_defined_keys = false;
 
             $class_strings = $type->class_strings ?? [];
@@ -781,6 +791,9 @@ final class TypeCombiner
                     $combination->objectlike_entries[$candidate_property_name] = $candidate_property_type
                         ->setPossiblyUndefined($existing_objectlike_entries
                             || $candidate_property_type->possibly_undefined);
+                    if ($existing_objectlike_entries && $combination->objectlike_same_fallback_key) {
+                        $combination->objectlike_missing_keys[$candidate_property_name] = true;
+                    }
                 } else {
                     $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
                         $value_type,
@@ -861,6 +874,9 @@ final class TypeCombiner
             foreach ($missing_entries as $k => $_) {
                 $combination->objectlike_entries[$k] = $combination->objectlike_entries[$k]
                     ->setPossiblyUndefined(true);
+                if ($combination->objectlike_same_fallback_key) {
+                    $combination->objectlike_missing_keys[$k] = true;
+                }
             }
 
             if ($combination->objectlike_value_type) {
@@ -870,7 +886,7 @@ final class TypeCombiner
                     }
                     $combination->objectlike_entries[$k] =  Type::combineUnionTypes(
                         $combination->objectlike_entries[$k],
-                        $combination->objectlike_value_type,
+                        $type->fallback_params[1] ?? $combination->objectlike_value_type,
                         $codebase,
                         $overwrite_empty_array,
                     );
@@ -943,6 +959,26 @@ final class TypeCombiner
                 }
 
                 return null;
+            }
+
+            $combination->value_types[$type_key] = $type;
+
+            return null;
+        }
+
+        if ($type instanceof TTemplateKeyOf || $type instanceof TTemplateValueOf) {
+            $existing_type = $combination->value_types[$type_key] ?? null;
+
+            if (($existing_type instanceof TTemplateKeyOf || $existing_type instanceof TTemplateValueOf)
+                && $existing_type->defining_class === $type->defining_class
+                && !$existing_type->as->equals($type->as)
+            ) {
+                $type = new ($type::class)(
+                    $type->param_name,
+                    $type->defining_class,
+                    Type::combineUnionTypes($type->as, $existing_type->as, $codebase, false, false),
+                    $type->from_docblock,
+                );
             }
 
             $combination->value_types[$type_key] = $type;
@@ -1769,6 +1805,30 @@ final class TypeCombiner
                     $objectlike_entry = $objectlike_entry->setPossiblyUndefined(true);
                 }
                 unset($objectlike_entry);
+            }
+
+            if ($combination->objectlike_value_type
+                && $combination->objectlike_same_fallback_key
+                && !$combination->array_type_params
+                && !$combination->all_arrays_lists
+                && !$combination->all_arrays_callable
+            ) {
+                // a key that every array lacking it may hold in its fallback, with the fallback's type, is the fallback
+                $fallback_value_type = $combination->objectlike_value_type;
+                foreach ($combination->objectlike_missing_keys as $k => $_) {
+                    $objectlike_entry = $combination->objectlike_entries[$k];
+                    if ($objectlike_entry->possibly_undefined
+                        && $combination->fallbackKeyAlwaysContains($k)
+                        && ($objectlike_entry->hasMixed()
+                            ? $fallback_value_type->hasMixed()
+                            : $objectlike_entry->getId() === $fallback_value_type->getId())
+                    ) {
+                        unset(
+                            $combination->objectlike_entries[$k],
+                            $combination->objectlike_class_string_keys[$k],
+                        );
+                    }
+                }
             }
 
             if ($combination->objectlike_entries) {

@@ -21,6 +21,14 @@ final class SwitchScope
     public ?array $new_vars_in_scope = null;
 
     /**
+     * Offsets some cases reaching the end know to be set and others not (e.g. by `isset()`): the type of the
+     * array tells as much
+     *
+     * @var array<string, true>
+     */
+    public array $unknown_offsets = [];
+
+    /**
      * @var array<string, bool>
      */
     public array $new_vars_possibly_in_scope = [];

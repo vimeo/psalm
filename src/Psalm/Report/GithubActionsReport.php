@@ -40,7 +40,7 @@ final class GithubActionsReport extends Report
                 $issue_data->line_from,
                 $issue_data->column_from,
                 $issue_data->type,
-                $issue_data->message . $issue_reference,
+                self::getMessageWithCwe($issue_data) . $issue_reference,
             ));
 
             $output .= sprintf(

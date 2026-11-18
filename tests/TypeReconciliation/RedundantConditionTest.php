@@ -1258,7 +1258,7 @@ final class RedundantConditionTest extends TestCase
                             throw new RuntimeException("");
                         }
                         if (rand(0, 1)) {
-                            $p["a"] = 3;
+                            unset($p["a"]);
                         }
                         assert(!!$p);
                     }',
@@ -1645,6 +1645,22 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'secondFalsyTwiceWithOffsetAdded' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a?:int,b?:string} $p
+                     */
+                    function f(array $p) : void {
+                        if (!$p) {
+                            throw new RuntimeException("");
+                        }
+                        if (rand(0, 1)) {
+                            $p["a"] = 3;
+                        }
+                        assert(!!$p);
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
             'redundantCoalesceOnCallNamesTheLeftOperand' => [
                 'code' => '<?php
                     function getArray(): array {
@@ -2156,7 +2172,7 @@ final class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
-            'SKIPPED-secondInterfaceAssertionIsRedundant' => [
+            'secondInterfaceAssertionIsRedundant' => [
                 'code' => '<?php
                     interface One {}
                     interface Two {}
@@ -2169,7 +2185,7 @@ final class RedundantConditionTest extends TestCase
                             if ($value instanceof One) {}
                         }
                     }',
-                'error_message' => 'RedundantConditionGivenDocblockType',
+                'error_message' => 'RedundantCondition',
             ],
             'errorAfterStatementThatCannotBeConvertedToAssertion' => [
                 'code' => '<?php

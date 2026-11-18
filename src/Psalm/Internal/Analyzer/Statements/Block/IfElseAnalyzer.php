@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
+use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Exception\ScopeAnalysisException;
@@ -17,19 +19,21 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseIfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\GuardedClasses;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\VariableUseGraph;
+use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\IssueBuffer;
-use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_diff;
+use function array_diff_key;
 use function array_fill_keys;
 use function array_filter;
 use function array_intersect_key;
@@ -108,19 +112,16 @@ final class IfElseAnalyzer
         $pre_cond_clauses = $context->clauses;
         $pre_cond_remove_vars = $context->parent_remove_vars;
 
-        $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
-
         // the else of an `||` is analysed again from where the condition started, not from where it ended
-        $pre_condition_context = $reassigned_var_ids
-            || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+        $pre_condition_context = $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
                 ? clone $context
                 : null;
 
         try {
-            $if_conditional_scope = IfConditionalAnalyzer::analyze(
+            $if_conditional_scope = self::analyzeCondition(
                 $statements_analyzer,
-                $stmt->cond,
+                $stmt,
                 $context,
                 $codebase,
                 $if_scope,
@@ -137,6 +138,12 @@ final class IfElseAnalyzer
             return false;
         }
 
+        $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides(
+            $stmt->cond,
+            $context->self,
+            $statements_analyzer->node_data,
+        );
+
         if ($if_scope->post_leaving_if_context) {
             self::applyCalleeEffectsOfCondition(
                 $statements_analyzer,
@@ -146,47 +153,16 @@ final class IfElseAnalyzer
             );
         }
 
-        $mixed_var_ids = [];
-
-        foreach ($if_context->vars_in_scope as $var_id => $type) {
-            if ($type->isMixed() && isset($context->vars_in_scope[$var_id])) {
-                $mixed_var_ids[] = $var_id;
-            }
-        }
-
         $cond_object_id = spl_object_id($stmt->cond);
 
-        $if_clauses = FormulaGenerator::getFormula(
-            $cond_object_id,
-            $cond_object_id,
-            $stmt->cond,
-            $context->self,
+        [$if_clauses, $get_negated_clauses] = self::getConditionClauses(
             $statements_analyzer,
+            $stmt->cond,
+            $cond_object_id,
+            $if_context,
+            $context,
             $codebase,
         );
-
-        if (count($if_clauses) > 200) {
-            $if_clauses = [];
-        }
-
-        $if_clauses_handled = [];
-        foreach ($if_clauses as $clause) {
-            $keys = array_keys($clause->possibilities);
-            $mixed_var_ids = array_diff($mixed_var_ids, $keys);
-
-            foreach ($keys as $key) {
-                foreach ($mixed_var_ids as $mixed_var_id) {
-                    if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                        $clause = new Clause([], $cond_object_id, $cond_object_id, true);
-                        break 2;
-                    }
-                }
-            }
-
-            $if_clauses_handled[] = $clause;
-        }
-
-        $if_clauses = $if_clauses_handled;
 
         $entry_clauses = $context->clauses;
 
@@ -269,33 +245,10 @@ final class IfElseAnalyzer
         $if_scope->reasonable_clauses = $if_context->clauses;
 
         try {
-            if (FormulaGenerator::leavesOutClausesOfAssignedVars($stmt->cond, $context->self)) {
-                // the right side of an `&&` that assigns isn't evaluated where the left one is false
-                throw new ComplicatedExpressionException();
-            }
-
-            $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
+            $if_scope->negated_clauses = $get_negated_clauses();
         } catch (ComplicatedExpressionException) {
-            try {
-                $if_scope->negated_clauses = FormulaGenerator::getFormula(
-                    $cond_object_id,
-                    $cond_object_id,
-                    new VirtualBooleanNot($stmt->cond),
-                    $context->self,
-                    $statements_analyzer,
-                    $codebase,
-                    false,
-                );
-            } catch (ComplicatedExpressionException) {
-                $if_scope->negated_clauses = [];
-            }
+            $if_scope->negated_clauses = [];
         }
-
-        $if_scope->negated_clauses = FormulaGenerator::withoutClausesOfReassignedVars(
-            $if_scope->negated_clauses,
-            $stmt->cond,
-            $context->self,
-        );
 
         $if_scope->negated_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
@@ -336,6 +289,8 @@ final class IfElseAnalyzer
             $temp_else_context->getRedefinedVars($context->vars_in_scope, true),
             $changed_var_ids,
         );
+
+        $references_rebound_before = $context->references_rebound_in_blocks;
 
         // check the if
         if (IfAnalyzer::analyze(
@@ -409,6 +364,10 @@ final class IfElseAnalyzer
             return false;
         }
 
+        $context->references_rebound_in_blocks = $references_rebound_before;
+
+        $statements_analyzer->node_data->setImplicitElseImpossible($stmt, $if_scope->implicit_else_is_impossible);
+
         if (count($if_scope->if_actions) && !in_array(ScopeAnalyzer::ACTION_NONE, $if_scope->if_actions, true)
             && !$stmt->elseifs
         ) {
@@ -468,6 +427,10 @@ final class IfElseAnalyzer
             $if_scope->assigned_var_ids ?: [],
         );
 
+        foreach ($if_scope->unknown_offsets as $var_id => $_) {
+            unset($context->vars_in_scope[$var_id], $context->vars_possibly_in_scope[$var_id]);
+        }
+
         if ($if_scope->new_vars) {
             foreach ($if_scope->new_vars as $var_id => &$type) {
                 // a variable every branch assigns no longer holds what it held before: only the use of variables
@@ -489,9 +452,19 @@ final class IfElseAnalyzer
         }
 
         foreach ($if_scope->partial_new_vars as $var_id => $type) {
-            if (!isset($context->vars_in_scope[$var_id])) {
-                $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true);
+            if (isset($context->vars_in_scope[$var_id])) {
+                continue;
             }
+
+            if (isset($if_scope->untyped_new_vars[$var_id])) {
+                // what the branches that don't type it assigned flows to the uses too
+                $type = Type::getMixed()->setParentNodes([
+                    ...$type->parent_nodes,
+                    ...$if_scope->untyped_new_vars[$var_id],
+                ]);
+            }
+
+            $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true);
         }
 
         if ($if_scope->redefined_vars) {
@@ -502,7 +475,7 @@ final class IfElseAnalyzer
 
                 // what was known of an offset or property of a variable a branch assigned is no longer true
                 if ($previous_type && isset($if_scope->reassigned_var_ids[$var_id])) {
-                    $context->removeDescendents($var_id, $previous_type, $type);
+                    $context->removeDescendents($var_id, $previous_type, $type, $statements_analyzer);
                 }
 
                 if ($if_scope->reasonable_clauses) {
@@ -537,7 +510,7 @@ final class IfElseAnalyzer
                         );
 
                         if (!$combined_type->equals($context->vars_in_scope[$var_id], true, false)) {
-                            $context->removeDescendents($var_id, $combined_type);
+                            $context->removeDescendents($var_id, $combined_type, $type, $statements_analyzer);
                         }
 
                         $context->vars_in_scope[$var_id] = $combined_type;
@@ -552,11 +525,29 @@ final class IfElseAnalyzer
                             && !UnionTypeComparator::isContainedBy($codebase, $type, $updated_type)
                         ) {
                             $updated_type = Type::combineUnionTypes($updated_type, $type, $codebase);
-                            $context->removeDescendents($var_id, $updated_type);
+                            $context->removeDescendents($var_id, $updated_type, $type, $statements_analyzer);
                         }
 
                         $context->vars_in_scope[$var_id] = $updated_type;
                     }
+                }
+            }
+        }
+
+        // Context::update() left the type the if ends with for an offset or a property it narrowed: nothing is
+        // known of it once another branch reaching the end has forgotten it
+        foreach ($if_scope->updated_vars as $var_id => $_) {
+            if (!isset($context->vars_in_scope[$var_id])
+                || !isset($if_context->vars_in_scope[$var_id])
+                || (!str_contains($var_id, '[') && !str_contains($var_id, '->'))
+            ) {
+                continue;
+            }
+
+            foreach ($if_scope->end_contexts as $end_context) {
+                if (!isset($end_context->vars_in_scope[$var_id])) {
+                    unset($context->vars_in_scope[$var_id]);
+                    break;
                 }
             }
         }
@@ -566,6 +557,73 @@ final class IfElseAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * The clauses of the condition, where a clause on an offset or a property of a variable that is mixed in the body
+     * is unknown, and a function returning those of its negation
+     *
+     * @return array{list<Clause>, Closure(): list<Clause>}
+     */
+    private static function getConditionClauses(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $cond,
+        int $cond_object_id,
+        Context $if_context,
+        Context $context,
+        Codebase $codebase,
+    ): array {
+        // whether each mixed variable may be unset
+        $mixed_vars = [];
+
+        foreach ($if_context->vars_in_scope as $var_id => $type) {
+            if ($type->isMixed() && isset($context->vars_in_scope[$var_id])) {
+                $mixed_vars[$var_id] = $type->possibly_undefined || $type->possibly_undefined_from_try;
+            }
+        }
+
+        $cond_clauses = FormulaGenerator::getFormula(
+            $cond_object_id,
+            $cond_object_id,
+            $cond,
+            $context->self,
+            $statements_analyzer,
+            $codebase,
+        );
+
+        if (count($cond_clauses) > 200) {
+            $cond_clauses = [];
+        }
+
+        $if_clauses = [];
+        foreach ($cond_clauses as $clause) {
+            $mixed_vars = array_diff_key($mixed_vars, $clause->possibilities);
+
+            $if_clauses[] = $clause->forgetItemsOfMixedVars($mixed_vars, $cond_object_id);
+        }
+
+        $get_negated_clauses = static fn(): array => [
+            ...FormulaGenerator::getNegatedFormula(
+                Algebra::simplifyCNF($if_clauses),
+                $cond,
+                $cond_object_id,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+                true,
+            ),
+            ...FormulaGenerator::getNegatedSetMixedVarClauses(
+                $cond_clauses,
+                $mixed_vars,
+                $cond,
+                $cond_object_id,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+            ),
+        ];
+
+        return [$if_clauses, $get_negated_clauses];
     }
 
     /**
@@ -650,6 +708,47 @@ final class IfElseAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * A class that doesn't exist is only known to be there in the block run when `class_exists()` (or the like)
+     * is true, and after the if where the condition is false; after an if whose other branches leave, it is
+     * known where the condition is true
+     *
+     * @throws ScopeAnalysisException
+     */
+    private static function analyzeCondition(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\If_ $stmt,
+        Context $context,
+        Codebase $codebase,
+        IfScope $if_scope,
+        int $branch_point,
+    ): IfConditionalScope {
+        $phantom_classes_before_cond = $context->phantom_classes;
+
+        $if_conditional_scope = IfConditionalAnalyzer::analyze(
+            $statements_analyzer,
+            $stmt->cond,
+            $context,
+            $codebase,
+            $if_scope,
+            $branch_point,
+        );
+
+        $context->phantom_classes = [
+            ...$phantom_classes_before_cond,
+            ...GuardedClasses::unknownWhenResult($stmt->cond, false, $codebase),
+        ];
+
+        if ($stmt->else) {
+            $if_scope->phantom_classes_of_if_block = [
+                ...$phantom_classes_before_cond,
+                ...GuardedClasses::unknownWhenResult($stmt->cond, true, $codebase),
+            ];
+        }
+
+        return $if_conditional_scope;
     }
 
     /**

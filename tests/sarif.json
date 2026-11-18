@@ -10,7 +10,7 @@
                     "version": "dev-master@",
                     "rules": [
                         {
-                            "id": "190",
+                            "id": "PossiblyInvalidCast",
                             "name": "PossiblyInvalidCast",
                             "shortDescription": {
                                 "text": "PossiblyInvalidCast"
@@ -27,7 +27,7 @@
                             }
                         },
                         {
-                            "id": "2",
+                            "id": "ForbiddenCode",
                             "name": "ForbiddenCode",
                             "shortDescription": {
                                 "text": "ForbiddenCode"
@@ -44,14 +44,15 @@
                             }
                         },
                         {
-                            "id": "246",
+                            "id": "TaintedShell",
                             "name": "TaintedShell",
                             "shortDescription": {
                                 "text": "TaintedShell"
                             },
                             "properties": {
                                 "tags": [
-                                    "security"
+                                    "security",
+                                    "external\/cwe\/cwe-078"
                                 ],
                                 "security-severity": "9.8"
                             },
@@ -62,39 +63,41 @@
                             }
                         },
                         {
-                            "id": "245",
+                            "id": "TaintedHtml",
                             "name": "TaintedHtml",
                             "shortDescription": {
                                 "text": "TaintedHtml"
                             },
                             "properties": {
                                 "tags": [
-                                    "security"
+                                    "security",
+                                    "external\/cwe\/cwe-079"
                                 ],
                                 "security-severity": "6.1"
                             },
                             "helpUri": "https:\/\/psalm.dev\/245",
                             "help": {
-                                "markdown": "# TaintedHtml\n\nThis is a **security issue**, reported by [security analysis](https:\/\/psalm.dev\/docs\/security_analysis\/): it flags a potential vulnerability.\n\nEmitted when user-controlled input that can contain HTML can be passed into an `echo` statement.\n\n## Risk\n\nThis could lead to a potential Cross Site Scripting (XSS) vulnerability. Using an XSS vulnerability, an attacker could inject malicious JavaScript and execute any action JavaScript could do. Examples include:\n\n- Stealing authentication material (e.g. cookies, JWT tokens)\n- Exfiltrate sensitive information by reading the DOM\n- Keylog entries on the website (e.g. fake login form)\n\nWhether this is exploitable or not depends on a few conditions:\n\n- Is an executable mimetype set? (e.g. `text\/html`)\n- Is the content served inline or as attachment? (`Content-Disposition`)\n- Is the output properly sanitized? (e.g. stripping all HTML tags or having an allowlist of allowed characters)\n\n## Example\n\n```php\n<?php\n\n$name = $_GET[\"name\"];\n\nprintName($name);\n\nfunction printName(string $name) {\n    echo $name;\n}\n```\n\n## Mitigations\n\n- Sanitize user-input by using functions such as `htmlentities` or use an allowlist.\n- Set all cookies to `HTTPOnly`.\n- Consider using Content Security Policy (CSP), to limit the risk of XSS vulnerabilities.\n- If user input itself is HTML, see [Sanitizing HTML User Input](..\/..\/security_analysis\/avoiding_false_positives.md#sanitizing-html-user-input)\n\n## Further resources\n\n- [OWASP Wiki for Cross Site Scripting (XSS)](https:\/\/owasp.org\/www-community\/attacks\/xss\/)\n- [Content-Security-Policy - Web Fundamentals](https:\/\/developers.google.com\/web\/fundamentals\/security\/csp)\n",
-                                "text": "# TaintedHtml\n\nThis is a **security issue**, reported by [security analysis](https:\/\/psalm.dev\/docs\/security_analysis\/): it flags a potential vulnerability.\n\nEmitted when user-controlled input that can contain HTML can be passed into an `echo` statement.\n\n## Risk\n\nThis could lead to a potential Cross Site Scripting (XSS) vulnerability. Using an XSS vulnerability, an attacker could inject malicious JavaScript and execute any action JavaScript could do. Examples include:\n\n- Stealing authentication material (e.g. cookies, JWT tokens)\n- Exfiltrate sensitive information by reading the DOM\n- Keylog entries on the website (e.g. fake login form)\n\nWhether this is exploitable or not depends on a few conditions:\n\n- Is an executable mimetype set? (e.g. `text\/html`)\n- Is the content served inline or as attachment? (`Content-Disposition`)\n- Is the output properly sanitized? (e.g. stripping all HTML tags or having an allowlist of allowed characters)\n\n## Example\n\n```php\n<?php\n\n$name = $_GET[\"name\"];\n\nprintName($name);\n\nfunction printName(string $name) {\n    echo $name;\n}\n```\n\n## Mitigations\n\n- Sanitize user-input by using functions such as `htmlentities` or use an allowlist.\n- Set all cookies to `HTTPOnly`.\n- Consider using Content Security Policy (CSP), to limit the risk of XSS vulnerabilities.\n- If user input itself is HTML, see [Sanitizing HTML User Input](..\/..\/security_analysis\/avoiding_false_positives.md#sanitizing-html-user-input)\n\n## Further resources\n\n- [OWASP Wiki for Cross Site Scripting (XSS)](https:\/\/owasp.org\/www-community\/attacks\/xss\/)\n- [Content-Security-Policy - Web Fundamentals](https:\/\/developers.google.com\/web\/fundamentals\/security\/csp)\n"
+                                "markdown": "# TaintedHtml\n\nThis is a **security issue**, reported by [security analysis](https:\/\/psalm.dev\/docs\/security_analysis\/): it flags a potential vulnerability.\n\nEmitted when user-controlled input that can contain HTML can be passed into an `echo` statement.\n\n## Risk\n\nThis could lead to a potential Cross Site Scripting (XSS) vulnerability. Using an XSS vulnerability, an attacker could inject malicious JavaScript and execute any action JavaScript could do. Examples include:\n\n- Stealing authentication material (e.g. cookies, JWT tokens)\n- Exfiltrate sensitive information by reading the DOM\n- Keylog entries on the website (e.g. fake login form)\n\nWhether this is exploitable or not depends on a few conditions:\n\n- Is an executable mimetype set? (e.g. `text\/html`)\n- Is the content served inline or as attachment? (`Content-Disposition`)\n- Is the output properly sanitized? (e.g. stripping all HTML tags or having an allowlist of allowed characters)\n\n## Example\n\n```php\n<?php\n\n$name = $_GET[\"name\"];\n\nprintName($name);\n\nfunction printName(string $name) {\n    echo $name;\n}\n```\n\n## Mitigations\n\n- Sanitize user-input by using functions such as `htmlentities` or use an allowlist.\n- Set all cookies to `HTTPOnly`.\n- Consider using Content Security Policy (CSP), to limit the risk of XSS vulnerabilities.\n- If user input itself is HTML, see [Sanitizing HTML User Input](..\/..\/security_analysis\/avoiding_false_positives.md#sanitizing-html-user-input)\n\n## Further resources\n\n- [OWASP Wiki for Cross Site Scripting (XSS)](https:\/\/owasp.org\/www-community\/attacks\/xss\/)\n- [Content-Security-Policy - Web Fundamentals](https:\/\/developers.google.com\/web\/fundamentals\/security\/csp)\n- [CWE-79](https:\/\/cwe.mitre.org\/data\/definitions\/79.html)\n",
+                                "text": "# TaintedHtml\n\nThis is a **security issue**, reported by [security analysis](https:\/\/psalm.dev\/docs\/security_analysis\/): it flags a potential vulnerability.\n\nEmitted when user-controlled input that can contain HTML can be passed into an `echo` statement.\n\n## Risk\n\nThis could lead to a potential Cross Site Scripting (XSS) vulnerability. Using an XSS vulnerability, an attacker could inject malicious JavaScript and execute any action JavaScript could do. Examples include:\n\n- Stealing authentication material (e.g. cookies, JWT tokens)\n- Exfiltrate sensitive information by reading the DOM\n- Keylog entries on the website (e.g. fake login form)\n\nWhether this is exploitable or not depends on a few conditions:\n\n- Is an executable mimetype set? (e.g. `text\/html`)\n- Is the content served inline or as attachment? (`Content-Disposition`)\n- Is the output properly sanitized? (e.g. stripping all HTML tags or having an allowlist of allowed characters)\n\n## Example\n\n```php\n<?php\n\n$name = $_GET[\"name\"];\n\nprintName($name);\n\nfunction printName(string $name) {\n    echo $name;\n}\n```\n\n## Mitigations\n\n- Sanitize user-input by using functions such as `htmlentities` or use an allowlist.\n- Set all cookies to `HTTPOnly`.\n- Consider using Content Security Policy (CSP), to limit the risk of XSS vulnerabilities.\n- If user input itself is HTML, see [Sanitizing HTML User Input](..\/..\/security_analysis\/avoiding_false_positives.md#sanitizing-html-user-input)\n\n## Further resources\n\n- [OWASP Wiki for Cross Site Scripting (XSS)](https:\/\/owasp.org\/www-community\/attacks\/xss\/)\n- [Content-Security-Policy - Web Fundamentals](https:\/\/developers.google.com\/web\/fundamentals\/security\/csp)\n- [CWE-79](https:\/\/cwe.mitre.org\/data\/definitions\/79.html)\n"
                             }
                         },
                         {
-                            "id": "274",
+                            "id": "TaintedTextWithQuotes",
                             "name": "TaintedTextWithQuotes",
                             "shortDescription": {
                                 "text": "TaintedTextWithQuotes"
                             },
                             "properties": {
                                 "tags": [
-                                    "security"
+                                    "security",
+                                    "external\/cwe\/cwe-079"
                                 ],
                                 "security-severity": "6.1"
                             },
                             "helpUri": "https:\/\/psalm.dev\/274",
                             "help": {
-                                "markdown": "# TaintedTextWithQuotes\n\nThis is a **security issue**, reported by [security analysis](https:\/\/psalm.dev\/docs\/security_analysis\/): it flags a potential vulnerability.\n\nEmitted when user-controlled input that can contain quotation marks can be passed into an `echo` statement.\n\n## Risk\n\nThis could lead to a potential Cross Site Scripting (XSS) vulnerability. Using an XSS vulnerability, an attacker could inject malicious JavaScript and execute any action JavaScript could do. Examples include:\n\n- Stealing authentication material (e.g. cookies, JWT tokens)\n- Exfiltrate sensitive information by reading the DOM\n- Keylog entries on the website (e.g. fake login form)\n\nWhether this is exploitable or not depends on a few conditions:\n\n- Is an executable mimetype set? (e.g. `text\/html`)\n- Is the content served inline or as attachment? (`Content-Disposition`)\n- Is the output properly sanitized? (e.g. stripping all HTML tags or having an allowlist of allowed characters)\n\n## Example\n\n```php\n<?php\n$param = strip_tags($_GET['param']);\n?>\n\n<script>\n    console.log('<?=$param?>')\n<\/script>\n```\n\nPassing `');alert('injection');\/\/` as a `GET` param here would cause the `alert` to trigger.\n\n## Mitigations\n\n- Sanitize user input by using functions such as `htmlentities` with the `ENT_QUOTES` flag or use an allowlist.\n- Set all cookies to `HTTPOnly`.\n- Consider using Content Security Policy (CSP), to limit the risk of XSS vulnerabilities.\n- If user input itself is HTML, see [Sanitizing HTML User Input](..\/..\/security_analysis\/avoiding_false_positives.md#sanitizing-html-user-input)\n\n## Further resources\n\n- [OWASP Wiki for Cross Site Scripting (XSS)](https:\/\/owasp.org\/www-community\/attacks\/xss\/)\n- [Content-Security-Policy - Web Fundamentals](https:\/\/developers.google.com\/web\/fundamentals\/security\/csp)\n",
-                                "text": "# TaintedTextWithQuotes\n\nThis is a **security issue**, reported by [security analysis](https:\/\/psalm.dev\/docs\/security_analysis\/): it flags a potential vulnerability.\n\nEmitted when user-controlled input that can contain quotation marks can be passed into an `echo` statement.\n\n## Risk\n\nThis could lead to a potential Cross Site Scripting (XSS) vulnerability. Using an XSS vulnerability, an attacker could inject malicious JavaScript and execute any action JavaScript could do. Examples include:\n\n- Stealing authentication material (e.g. cookies, JWT tokens)\n- Exfiltrate sensitive information by reading the DOM\n- Keylog entries on the website (e.g. fake login form)\n\nWhether this is exploitable or not depends on a few conditions:\n\n- Is an executable mimetype set? (e.g. `text\/html`)\n- Is the content served inline or as attachment? (`Content-Disposition`)\n- Is the output properly sanitized? (e.g. stripping all HTML tags or having an allowlist of allowed characters)\n\n## Example\n\n```php\n<?php\n$param = strip_tags($_GET['param']);\n?>\n\n<script>\n    console.log('<?=$param?>')\n<\/script>\n```\n\nPassing `');alert('injection');\/\/` as a `GET` param here would cause the `alert` to trigger.\n\n## Mitigations\n\n- Sanitize user input by using functions such as `htmlentities` with the `ENT_QUOTES` flag or use an allowlist.\n- Set all cookies to `HTTPOnly`.\n- Consider using Content Security Policy (CSP), to limit the risk of XSS vulnerabilities.\n- If user input itself is HTML, see [Sanitizing HTML User Input](..\/..\/security_analysis\/avoiding_false_positives.md#sanitizing-html-user-input)\n\n## Further resources\n\n- [OWASP Wiki for Cross Site Scripting (XSS)](https:\/\/owasp.org\/www-community\/attacks\/xss\/)\n- [Content-Security-Policy - Web Fundamentals](https:\/\/developers.google.com\/web\/fundamentals\/security\/csp)\n"
+                                "markdown": "# TaintedTextWithQuotes\n\nThis is a **security issue**, reported by [security analysis](https:\/\/psalm.dev\/docs\/security_analysis\/): it flags a potential vulnerability.\n\nEmitted when user-controlled input that can contain quotation marks can be passed into an `echo` statement.\n\n## Risk\n\nThis could lead to a potential Cross Site Scripting (XSS) vulnerability. Using an XSS vulnerability, an attacker could inject malicious JavaScript and execute any action JavaScript could do. Examples include:\n\n- Stealing authentication material (e.g. cookies, JWT tokens)\n- Exfiltrate sensitive information by reading the DOM\n- Keylog entries on the website (e.g. fake login form)\n\nWhether this is exploitable or not depends on a few conditions:\n\n- Is an executable mimetype set? (e.g. `text\/html`)\n- Is the content served inline or as attachment? (`Content-Disposition`)\n- Is the output properly sanitized? (e.g. stripping all HTML tags or having an allowlist of allowed characters)\n\n## Example\n\n```php\n<?php\n$param = strip_tags($_GET['param']);\n?>\n\n<script>\n    console.log('<?=$param?>')\n<\/script>\n```\n\nPassing `');alert('injection');\/\/` as a `GET` param here would cause the `alert` to trigger.\n\n## Mitigations\n\n- Sanitize user input by using functions such as `htmlentities` with the `ENT_QUOTES` flag or use an allowlist.\n- Set all cookies to `HTTPOnly`.\n- Consider using Content Security Policy (CSP), to limit the risk of XSS vulnerabilities.\n- If user input itself is HTML, see [Sanitizing HTML User Input](..\/..\/security_analysis\/avoiding_false_positives.md#sanitizing-html-user-input)\n\n## Further resources\n\n- [OWASP Wiki for Cross Site Scripting (XSS)](https:\/\/owasp.org\/www-community\/attacks\/xss\/)\n- [Content-Security-Policy - Web Fundamentals](https:\/\/developers.google.com\/web\/fundamentals\/security\/csp)\n- [CWE-79](https:\/\/cwe.mitre.org\/data\/definitions\/79.html)\n",
+                                "text": "# TaintedTextWithQuotes\n\nThis is a **security issue**, reported by [security analysis](https:\/\/psalm.dev\/docs\/security_analysis\/): it flags a potential vulnerability.\n\nEmitted when user-controlled input that can contain quotation marks can be passed into an `echo` statement.\n\n## Risk\n\nThis could lead to a potential Cross Site Scripting (XSS) vulnerability. Using an XSS vulnerability, an attacker could inject malicious JavaScript and execute any action JavaScript could do. Examples include:\n\n- Stealing authentication material (e.g. cookies, JWT tokens)\n- Exfiltrate sensitive information by reading the DOM\n- Keylog entries on the website (e.g. fake login form)\n\nWhether this is exploitable or not depends on a few conditions:\n\n- Is an executable mimetype set? (e.g. `text\/html`)\n- Is the content served inline or as attachment? (`Content-Disposition`)\n- Is the output properly sanitized? (e.g. stripping all HTML tags or having an allowlist of allowed characters)\n\n## Example\n\n```php\n<?php\n$param = strip_tags($_GET['param']);\n?>\n\n<script>\n    console.log('<?=$param?>')\n<\/script>\n```\n\nPassing `');alert('injection');\/\/` as a `GET` param here would cause the `alert` to trigger.\n\n## Mitigations\n\n- Sanitize user input by using functions such as `htmlentities` with the `ENT_QUOTES` flag or use an allowlist.\n- Set all cookies to `HTTPOnly`.\n- Consider using Content Security Policy (CSP), to limit the risk of XSS vulnerabilities.\n- If user input itself is HTML, see [Sanitizing HTML User Input](..\/..\/security_analysis\/avoiding_false_positives.md#sanitizing-html-user-input)\n\n## Further resources\n\n- [OWASP Wiki for Cross Site Scripting (XSS)](https:\/\/owasp.org\/www-community\/attacks\/xss\/)\n- [Content-Security-Policy - Web Fundamentals](https:\/\/developers.google.com\/web\/fundamentals\/security\/csp)\n- [CWE-79](https:\/\/cwe.mitre.org\/data\/definitions\/79.html)\n"
                             }
                         }
                     ]
@@ -102,7 +105,7 @@
             },
             "results": [
                 {
-                    "ruleId": "190",
+                    "ruleId": "PossiblyInvalidCast",
                     "message": {
                         "text": "non-empty-array<int|non-empty-string, array<int|non-empty-string, mixed>|string> cannot be cast to string"
                     },
@@ -125,7 +128,7 @@
                     ]
                 },
                 {
-                    "ruleId": "2",
+                    "ruleId": "ForbiddenCode",
                     "message": {
                         "text": "Unsafe shell_exec"
                     },
@@ -148,7 +151,7 @@
                     ]
                 },
                 {
-                    "ruleId": "246",
+                    "ruleId": "TaintedShell",
                     "message": {
                         "text": "Detected tainted shell code"
                     },
@@ -349,7 +352,7 @@
                     ]
                 },
                 {
-                    "ruleId": "245",
+                    "ruleId": "TaintedHtml",
                     "message": {
                         "text": "Detected tainted HTML"
                     },
@@ -565,7 +568,7 @@
                     ]
                 },
                 {
-                    "ruleId": "274",
+                    "ruleId": "TaintedTextWithQuotes",
                     "message": {
                         "text": "Detected tainted text with possible quotes"
                     },

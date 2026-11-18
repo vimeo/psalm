@@ -6,6 +6,7 @@ namespace Psalm\Issue;
 
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 use function array_pop;
 use function explode;
@@ -15,12 +16,20 @@ use function explode;
  */
 abstract class CodeIssue
 {
+    use UnserializeMemoryUsageSuppressionTrait;
+
     /** @var int */
     public const ERROR_LEVEL = -1;
     /** @var int<0, max> */
     public const SHORTCODE = 0;
     /** @var non-empty-string|null */
     public const DOCUMENTATION_URL = null;
+    /**
+     * The ids of the CWE weaknesses the issue flags, the most specific first
+     *
+     * @var list<positive-int>
+     */
+    public const CWE_IDS = [];
 
     public ?string $dupe_key = null;
 
@@ -122,6 +131,7 @@ abstract class CodeIssue
             static::DOCUMENTATION_URL,
             $this instanceof SecurityIssue,
             $this->group_key,
+            static::CWE_IDS,
         );
     }
 }
