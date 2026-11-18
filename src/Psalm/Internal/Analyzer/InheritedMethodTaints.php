@@ -104,34 +104,33 @@ final class InheritedMethodTaints
         $suffix = ' for ' . $class_storage->name;
         self::$bodies[$key] = $suffix;
 
-        self::analyzeBody(
-            $statements_analyzer,
-            $class_storage->name,
-            $declaring_class_storage->name,
-            $declaring_method_id,
-            $suffix,
+        $class = $class_storage->name;
+        $declaring_class = $declaring_class_storage->name;
+
+        ProjectAnalyzer::getInstance()->analyzeInFileOfClassLike(
+            $declaring_class,
+            $statements_analyzer->getRootFilePath(),
+            $statements_analyzer->getRootFileName(),
+            static function (FileAnalyzer $file_analyzer) use (
+                $class,
+                $declaring_class,
+                $declaring_method_id,
+                $suffix,
+            ): void {
+                self::analyzeBody($file_analyzer, $class, $declaring_class, $declaring_method_id, $suffix);
+            },
         );
 
         return $suffix;
     }
 
     private static function analyzeBody(
-        StatementsAnalyzer $statements_analyzer,
+        FileAnalyzer $file_analyzer,
         string $class,
         string $declaring_class,
         MethodIdentifier $declaring_method_id,
         string $suffix,
     ): void {
-        $project_analyzer = ProjectAnalyzer::getInstance();
-        $codebase = $project_analyzer->getCodebase();
-
-        $file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($declaring_class);
-        $file_analyzer->setRootFilePath(
-            $statements_analyzer->getRootFilePath(),
-            $statements_analyzer->getRootFileName(),
-        );
-        $file_analyzer->populateCheckers($codebase->getStatementsForFile($file_analyzer->getFilePath()), false);
-
         $class_analyzer = $file_analyzer->class_analyzers_to_analyze[strtolower($declaring_class)] ?? null;
 
         if ($class_analyzer === null) {
@@ -164,10 +163,6 @@ final class InheritedMethodTaints
             } else {
                 DataFlowNode::$method_suffixes[$method_id_lc] = $old_method_suffix;
             }
-
-            $file_analyzer->class_analyzers_to_analyze = [];
-            $file_analyzer->interface_analyzers_to_analyze = [];
-            $file_analyzer->clearSourceBeforeDestruction();
         }
     }
 
