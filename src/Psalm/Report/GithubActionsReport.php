@@ -40,7 +40,7 @@ final class GithubActionsReport extends Report
                 $issue_data->line_from,
                 $issue_data->column_from,
                 $issue_data->type,
-                $this->escapeControlCharacters($issue_data->message) . $issue_reference,
+                $this->escapeControlCharacters(self::getMessageWithCwe($issue_data)) . $issue_reference,
             ));
 
             $output .= sprintf(

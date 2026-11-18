@@ -31,7 +31,7 @@ final class TextReport extends Report
                 $issue_data->column_from,
                 ($issue_data->severity === IssueData::SEVERITY_ERROR ? 'error' : 'warning'),
                 $issue_data->type,
-                $this->escapeControlCharacters($issue_data->message),
+                $this->escapeControlCharacters(self::getMessageWithCwe($issue_data)),
             ) . "\n";
         }
 

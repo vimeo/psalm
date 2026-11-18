@@ -26,7 +26,7 @@ final class CompactReport extends Report
 
             $output .= $severity . ' ' . $this->escapeControlCharacters($issue_data->file_name)
                 . ':' . $issue_data->line_from . ':' . $issue_data->column_from . ' ' . $issue_data->type . ': '
-                . $this->escapeControlCharacters($issue_data->message) . "\n";
+                . $this->escapeControlCharacters(self::getMessageWithCwe($issue_data)) . "\n";
         }
 
         return $output;

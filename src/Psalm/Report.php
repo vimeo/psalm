@@ -10,6 +10,7 @@ use Psalm\Report\ReportOptions;
 use function array_filter;
 use function assert;
 use function htmlspecialchars;
+use function implode;
 use function mb_ord;
 use function ord;
 use function preg_replace_callback;
@@ -132,6 +133,20 @@ abstract class Report
             },
             $text,
         );
+    }
+
+    /**
+     * The message of an issue, followed by the CWE weaknesses it flags: `Detected tainted SQL (CWE-89)`
+     *
+     * @psalm-capabilities read-props
+     */
+    protected static function getMessageWithCwe(IssueData $issue_data): string
+    {
+        if (!$issue_data->cwe_ids) {
+            return $issue_data->message;
+        }
+
+        return $issue_data->message . ' (CWE-' . implode(', CWE-', $issue_data->cwe_ids) . ')';
     }
 
     /**
