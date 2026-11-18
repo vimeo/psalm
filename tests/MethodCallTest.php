@@ -33,6 +33,36 @@ final class MethodCallTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testConstructorOverloadReportsBothIssuesOfTheLastDeclaredSignature(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                class Connection {
+                    /**
+                     * @psalm-overload (string $dsn)
+                     * @psalm-overload (string $host, int $port)
+                     */
+                    public function __construct(string $dsnOrHost, ?int $port = null) {}
+                }
+
+                new Connection(3306);',
+        );
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            ['InvalidArgument', 'TooFewArguments'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     public function testNewOfAnObjectOrAClassStringOfTheSameClassIsReportedOnce(): void
     {
         $this->testConfig->throw_exception = false;
@@ -381,6 +411,57 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'psalmOverloadOfAConstructorOfAGenericClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /**
+                         * @psalm-overload (T $value)
+                         * @psalm-overload (T $value, int $n)
+                         */
+                        public function __construct(mixed $value, int $n = 0) {
+                        }
+                    }
+
+                    $one = new Box(1);
+                    $two = new Box("x", 2);',
+                'assertions' => [
+                    '$one===' => 'Box<1>',
+                    '$two===' => "Box<'x'>",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadOfAConstructorIsChosenByNamedArgumentsSelfAndParent' => [
+                'code' => '<?php
+                    class Connection {
+                        /**
+                         * @psalm-overload (string $dsn)
+                         * @psalm-overload (string $host, int $port)
+                         */
+                        public function __construct(string $dsnOrHost, ?int $port = null) {
+                        }
+
+                        public static function memory(): self {
+                            return new self("sqlite::memory:");
+                        }
+                    }
+
+                    final class Pooled extends Connection {
+                        public function __construct(string $host) {
+                            parent::__construct($host, 5432);
+                        }
+                    }
+
+                    $named = new Connection(host: "localhost", port: 3306);
+                    $memory = Connection::memory();',
+                'assertions' => [
+                    '$named===' => 'Connection',
+                    '$memory===' => 'Connection',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'psalmOverloadOfAConstructorAcceptsEachDeclaredSignature' => [
                 'code' => '<?php
                     class Connection {

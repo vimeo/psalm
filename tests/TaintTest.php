@@ -6541,6 +6541,21 @@ final class TaintTest extends TestCase
                     (new View())->show($_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintSinkOfAConstructorWithOverloadsIsStillChecked' => [
+                'code' => '<?php
+                    final class View {
+                        /**
+                         * @psalm-taint-sink html $x
+                         * @psalm-overload (int $x)
+                         * @psalm-overload (string $x)
+                         */
+                        public function __construct(int|string $x) {
+                        }
+                    }
+
+                    new View($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintSinkOfAStaticMethodWithOverloadsIsStillChecked' => [
                 'code' => '<?php
                     final class View {
