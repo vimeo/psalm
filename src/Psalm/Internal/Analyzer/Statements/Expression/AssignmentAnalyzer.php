@@ -2634,7 +2634,8 @@ final class AssignmentAnalyzer
             foreach ($assign_value_type->getAtomicTypes() as $assign_value_atomic_type) {
                 // like for the items of a list, a null value is no issue when a shape has the key for sure
                 if ($assign_value_atomic_type instanceof TKeyedArray
-                    && ($assign_value_atomic_type->properties[$offset_value ?? ''] ?? null)?->possibly_undefined
+                    && $offset_value !== null
+                    && ($assign_value_atomic_type->properties[$offset_value] ?? null)?->possibly_undefined
                         === false
                 ) {
                     $has_shape_with_key = true;

@@ -3468,6 +3468,14 @@ final class ArrayAccessTest extends TestCase
                     ["y" => $a] = f();',
                 'error_message' => 'PossiblyNullArrayAccess',
             ],
+            'destructureNullableShapeWithAnEmptyStringKeyByADynamicKey' => [
+                'code' => '<?php
+                    /** @param array{"": int}|null $l */
+                    function f(?array $l, string $k): void {
+                        [$k => $a] = $l;
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
             'possiblyFalseOffsetOfAnArrayVariableNamesTheVariable' => [
                 'code' => '<?php
                     function read(array $items): void {
