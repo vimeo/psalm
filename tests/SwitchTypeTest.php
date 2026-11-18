@@ -123,7 +123,7 @@ final class SwitchTypeTest extends TestCase
 
                     $rest = $type;',
                 'assertions' => [
-                    '$rest===' => 'string',
+                    '$rest===' => 'non-empty-string',
                 ],
             ],
             'switchWithoutDefaultAfterANullCaseOfAnIntDropsTheNull' => [
