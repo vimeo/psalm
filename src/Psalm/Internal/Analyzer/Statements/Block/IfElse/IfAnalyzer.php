@@ -576,7 +576,10 @@ final class IfAnalyzer
 
         // a variable the branch unset is possibly undefined afterwards
         foreach ($possibly_assigned_var_ids as $var_id => $_) {
-            if (isset($outer_context->vars_in_scope[$var_id]) && !isset($if_context->vars_in_scope[$var_id])) {
+            if (preg_match('/^\$\w+$/', $var_id) === 1
+                && isset($outer_context->vars_in_scope[$var_id])
+                && !isset($if_context->vars_in_scope[$var_id])
+            ) {
                 $possibly_redefined_vars[$var_id] = $outer_context->vars_in_scope[$var_id]->setPossiblyUndefined(true);
             }
         }

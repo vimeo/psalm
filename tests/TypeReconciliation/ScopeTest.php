@@ -455,6 +455,36 @@ final class ScopeTest extends TestCase
                         takesA($a);
                     }',
             ],
+            'propertyUnsetInABranchKeepsItsDeclaredType' => [
+                'code' => '<?php
+                    final class A {
+                        public int $q = 1;
+
+                        /** @var array<string, int> */
+                        public array $arr = ["a" => 1];
+
+                        public function t2(bool $c): int {
+                            $this->q = 1;
+                            if ($c) {
+                                unset($this->q);
+                            }
+
+                            return $this->q;
+                        }
+
+                        public function t4(bool $c): int {
+                            $this->arr = ["a" => 1];
+                            if ($c) {
+                                unset($this->arr);
+                            }
+
+                            return count($this->arr);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 

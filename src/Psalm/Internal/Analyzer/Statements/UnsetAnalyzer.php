@@ -143,6 +143,7 @@ final class UnsetAnalyzer
                 FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $var_id);
 
                 $context->remove($var_id);
+                // "possibly assigned" also stands for "possibly unset": either way it differs from the outer scope
                 $context->possibly_assigned_var_ids[$var_id] = true;
                 unset($context->references_possibly_from_confusing_scope[$var_id]);
             }
