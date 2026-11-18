@@ -48,6 +48,7 @@ use UnexpectedValueException;
 use function array_pop;
 use function count;
 use function end;
+use function str_contains;
 use function strtolower;
 
 /**
@@ -100,12 +101,16 @@ final class PartialApplicationAnalyzer
 
         if ($closure) {
             $method_id = self::getMethodId($statements_analyzer, $stmt, $context);
+            // the closure of a method has the method's id, which the method call gives cased
+            $function_id = $closure->callable_id !== null && !str_contains($closure->callable_id, '::')
+                ? $closure->callable_id
+                : null;
             $binding = self::bind(
                 $statements_analyzer,
                 $stmt,
                 $closure,
-                $closure->callable_id ?? ($method_id !== null ? (string) $method_id : null),
-                $closure->callable_id
+                $function_id ?? ($method_id !== null ? (string) $method_id : null),
+                $function_id
                     ?? ($method_id !== null ? $codebase->methods->getCasedMethodId($method_id) : 'the closure'),
                 $code_location,
             );
@@ -395,7 +400,10 @@ final class PartialApplicationAnalyzer
             }
         }
 
-        if ($closure->callable_id === null || InternalCallMapHandler::inCallMap($closure->callable_id)) {
+        if ($closure->callable_id === null
+            || str_contains($closure->callable_id, '::')
+            || InternalCallMapHandler::inCallMap($closure->callable_id)
+        ) {
             return false;
         }
 
@@ -520,6 +528,7 @@ final class PartialApplicationAnalyzer
                         $declaring_class_storage->properties[$prop_name],
                         $context,
                         $object_type->reference_free && $object_type->allow_mutations,
+                        true,
                     );
                 }
             }
