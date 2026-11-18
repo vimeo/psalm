@@ -363,13 +363,14 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame('', $process->getErrorOutput());
     }
 
-    public function testRefactorAcceptsMemoryLimitOption(): void
+    public function testRefactorAcceptsMemoryLimitAndUseIniDefaultsOptions(): void
     {
         $process = self::newProcess(
             [
                 PHP_BINARY,
                 __DIR__ . '/../../psalm-refactor',
                 '--memory-limit=1G',
+                '--use-ini-defaults',
                 '--help',
             ],
             self::$tmpDir,
@@ -380,6 +381,82 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame(0, $process->getExitCode(), $process->getErrorOutput());
         $this->assertSame('', $process->getErrorOutput());
         $this->assertStringContainsString('--memory-limit=LIMIT', $process->getOutput());
+        $this->assertStringContainsString('--use-ini-defaults', $process->getOutput());
+    }
+
+    public function testRefactorAppliesMemoryLimitBeforeProjectSetup(): void
+    {
+        $memory_limit_file = self::$tmpDir . '/refactor-memory-limit.txt';
+        $prepend_file = self::$tmpDir . '/refactor-memory-limit-prepend.php';
+        file_put_contents(
+            $prepend_file,
+            "<?php\nregister_shutdown_function(static function (): void {\n"
+                . "    file_put_contents(" . var_export($memory_limit_file, true) . ", (string) ini_get('memory_limit'));\n"
+                . "});\n",
+        );
+
+        try {
+            $process = self::newProcess(
+                [
+                    PHP_BINARY,
+                    '-d',
+                    'auto_prepend_file=' . $prepend_file,
+                    __DIR__ . '/../../psalm-refactor',
+                    '--memory-limit=32M',
+                    '--root=missing-project',
+                ],
+                self::$tmpDir,
+                self::agentEnvVarsToUnset(),
+            );
+            $process->run();
+
+            $this->assertSame('32M', file_get_contents($memory_limit_file));
+            $this->assertStringContainsString('Could not locate root directory', $process->getErrorOutput());
+        } finally {
+            unlink($prepend_file);
+            if (file_exists($memory_limit_file)) {
+                unlink($memory_limit_file);
+            }
+        }
+    }
+
+    public function testRefactorHonoursUseIniDefaults(): void
+    {
+        $memory_limit_file = self::$tmpDir . '/refactor-ini-defaults-memory-limit.txt';
+        $prepend_file = self::$tmpDir . '/refactor-ini-defaults-prepend.php';
+        file_put_contents(
+            $prepend_file,
+            "<?php\nregister_shutdown_function(static function (): void {\n"
+                . "    file_put_contents(" . var_export($memory_limit_file, true) . ", (string) ini_get('memory_limit'));\n"
+                . "});\n",
+        );
+
+        try {
+            $process = self::newProcess(
+                [
+                    PHP_BINARY,
+                    '-d',
+                    'memory_limit=64M',
+                    '-d',
+                    'auto_prepend_file=' . $prepend_file,
+                    __DIR__ . '/../../psalm-refactor',
+                    '--memory-limit=32M',
+                    '--use-ini-defaults',
+                    '--root=missing-project',
+                ],
+                self::$tmpDir,
+                self::agentEnvVarsToUnset(),
+            );
+            $process->run();
+
+            $this->assertSame('64M', file_get_contents($memory_limit_file));
+            $this->assertStringContainsString('Could not locate root directory', $process->getErrorOutput());
+        } finally {
+            unlink($prepend_file);
+            if (file_exists($memory_limit_file)) {
+                unlink($memory_limit_file);
+            }
+        }
     }
 
     /**
