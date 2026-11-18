@@ -212,6 +212,7 @@ final class ExpressionResolver
             return new Constant(
                 $stmt->name->toString(),
                 $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
+                $aliases->namespace ?? '',
             );
         }
 

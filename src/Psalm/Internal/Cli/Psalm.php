@@ -27,7 +27,6 @@ use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\FileStorageCacheProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
-use Psalm\Internal\Provider\ProjectCacheProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\IssueBuffer;
@@ -39,7 +38,6 @@ use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
 use ReflectionClass;
-use RuntimeException;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 
@@ -48,12 +46,13 @@ use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_merge;
-use function array_shift;
+use function array_search;
 use function array_slice;
 use function array_sum;
 use function array_values;
 use function chdir;
 use function count;
+use function ctype_digit;
 use function defined;
 use function extension_loaded;
 use function file_exists;
@@ -65,13 +64,11 @@ use function gc_collect_cycles;
 use function gc_disable;
 use function getcwd;
 use function getenv;
-use function getopt;
 use function implode;
-use function in_array;
 use function ini_get;
 use function is_array;
 use function is_dir;
-use function is_numeric;
+use function is_int;
 use function is_string;
 use function json_encode;
 use function max;
@@ -144,6 +141,7 @@ final class Psalm
         'init',
         'init-ci',
         'memory-limit:',
+        'min-type-coverage:',
         'monochrome',
         'no-diff',
         'force-jit',
@@ -154,10 +152,10 @@ final class Psalm
         'output-format:',
         'plugin:',
         'report:',
-        'report-show-info:',
+        'report-show-info::',
         'root:',
         'set-baseline::',
-        'show-info:',
+        'show-info::',
         'show-snippet::',
         'stats',
         'threads:',
@@ -203,10 +201,7 @@ final class Psalm
         $args = array_slice($argv, 1);
 
         // get options from command line
-        $options = CliUtils::chosenByOperator(getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS));
-        if (false === $options) {
-            throw new RuntimeException('Failed to parse CLI options');
-        }
+        $options = CliUtils::getOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
 
         // debug CI environment
         if (!array_key_exists('debug', $options)
@@ -218,7 +213,9 @@ final class Psalm
 
         self::forwardCliCall($options, $argv);
 
-        self::validateCliArguments($args);
+        CliUtils::rejectUnrecognisedOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
+
+        $min_type_coverage = self::parseMinTypeCoverageOption($options);
 
         CliUtils::setMemoryLimit($options);
 
@@ -268,7 +265,7 @@ final class Psalm
                 ),
         );
 
-        $run_taint_analysis = self::shouldRunTaintAnalysis($options);
+        $run_taint_analysis = ProjectBootstrap::shouldRunTaintAnalysis($options);
 
         if (array_key_exists('v', $options)) {
             echo 'Psalm ' . PSALM_VERSION . PHP_EOL;
@@ -291,6 +288,8 @@ final class Psalm
         if (isset($options['no-cache'])) {
             $config->cache_directory = null;
         }
+
+        $config->min_type_coverage = $min_type_coverage ?? $config->min_type_coverage;
 
         $config->setIncludeCollector($include_collector);
 
@@ -326,7 +325,25 @@ final class Psalm
             }
         }
 
+        // creating or updating the baseline is maintenance, so it doesn't check the type coverage
+        if (isset($options['set-baseline']) || isset($options['update-baseline'])) {
+            if ($min_type_coverage !== null) {
+                fwrite(
+                    STDERR,
+                    'Cannot check the minimum type coverage when creating or updating the baseline' . PHP_EOL,
+                );
+                exit(1);
+            }
+
+            $config->min_type_coverage = null;
+        }
+
         $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? null);
+
+        if ($paths_to_check !== null && isset($options['min-type-coverage'])) {
+            fwrite(STDERR, 'Cannot check the minimum type coverage when checking specific files' . PHP_EOL);
+            exit(1);
+        }
 
         if ($config->resolve_from_config_file) {
             $current_dir = $config->base_dir;
@@ -350,10 +367,6 @@ final class Psalm
 
         $is_diff = false; // self::initIsDiff($options);
 
-        $find_unused_code = self::shouldFindUnusedCode($options, $config);
-
-        $find_unused_variables = isset($options['find-unused-variables']);
-
         $find_references_to = isset($options['find-references-to']) && is_string($options['find-references-to'])
             ? $options['find-references-to']
             : null;
@@ -372,7 +385,7 @@ final class Psalm
             self::clearGlobalCache($config);
         }
 
-        $providers = self::initProviders($options, $config, $current_dir);
+        $providers = ProjectBootstrap::initProviders($options, $config, $current_dir);
 
         $stdout_report_options = self::initStdoutReportOptions($options, $show_info, $output_format, $in_ci);
 
@@ -382,7 +395,8 @@ final class Psalm
             $report_file_paths = [$report_file_paths];
         }
 
-        $project_analyzer = new ProjectAnalyzer(
+        $project_analyzer = ProjectBootstrap::createProjectAnalyzer(
+            $options,
             $config,
             $providers,
             $stdout_report_options,
@@ -395,29 +409,15 @@ final class Psalm
             $threads,
             $scanThreads,
             $progress,
-        );
-
-        CliUtils::initPhpVersion($options, $config, $project_analyzer);
-
-        $start_time = microtime(true);
-
-        self::configureProjectAnalyzer(
-            $options,
-            $config,
-            $project_analyzer,
+            $plugins,
             $find_references_to,
-            $find_unused_code,
-            $find_unused_variables,
             $run_taint_analysis,
         );
 
+        $start_time = microtime(true);
+
         if ($config->run_taint_analysis || $run_taint_analysis) {
             $is_diff = false;
-        }
-
-        /** @var string $plugin_path */
-        foreach ($plugins as $plugin_path) {
-            $config->addPluginPath($plugin_path);
         }
 
         // Prime cache
@@ -459,6 +459,10 @@ final class Psalm
     /** @return int<1, max> */
     public static function getThreads(array $options, Config $config, bool $for_scan): int
     {
+        // validated before the platform checks, so that a wrong value is an error everywhere
+        $scan_threads = self::parseThreadsOption($options, 'scan-threads');
+        $analysis_threads = self::parseThreadsOption($options, 'threads');
+
         if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
             // No support desired for Windows at the moment
             return 1;
@@ -467,30 +471,74 @@ final class Psalm
             return 1;
         }
 
-        if ($for_scan) {
-            if (isset($options['scan-threads'])) {
-                $threads = max(1, (int)$options['scan-threads']);
-            } elseif (isset($options['threads'])) {
-                $threads = max(1, (int)$options['threads']);
-            } elseif (isset($options['debug'])) {
-                $threads = 1;
-            } elseif ($config->scan_threads) {
-                $threads = $config->scan_threads;
-            } else {
-                $threads = max(1, (new CpuCoreCounter())->getCountWithFallback(1));
-            }
-        } else {
-            if (isset($options['threads'])) {
-                $threads = max(1, (int)$options['threads']);
-            } elseif (isset($options['debug'])) {
-                $threads = 1;
-            } elseif ($config->threads) {
-                $threads = $config->threads;
-            } else {
-                $threads = max(1, (new CpuCoreCounter())->getCountWithFallback(1));
+        $requested = $for_scan ? ($scan_threads ?? $analysis_threads) : $analysis_threads;
+
+        if (is_int($requested)) {
+            return $requested;
+        }
+
+        // not given, or `auto`: the default
+        if (isset($options['debug'])) {
+            return 1;
+        }
+
+        $config_threads = $for_scan ? $config->scan_threads : $config->threads;
+
+        if ($config_threads) {
+            return $config_threads;
+        }
+
+        return max(1, (new CpuCoreCounter())->getCountWithFallback(1));
+    }
+
+    /**
+     * @return int<1, max>|'auto'|null null if the option isn't given
+     */
+    private static function parseThreadsOption(array $options, string $name): int|string|null
+    {
+        if (!isset($options[$name])) {
+            return null;
+        }
+
+        if ($options[$name] === 'auto') {
+            return 'auto';
+        }
+
+        if (is_string($options[$name]) && ctype_digit($options[$name])) {
+            $threads = (int) $options[$name];
+
+            if ($threads >= 1) {
+                return $threads;
             }
         }
-        return $threads;
+
+        fwrite(STDERR, '--' . $name . ' expects a positive integer or "auto"' . PHP_EOL);
+        exit(1);
+    }
+
+    /**
+     * @return float|null null if the option isn't given
+     */
+    private static function parseMinTypeCoverageOption(array $options): ?float
+    {
+        if (!isset($options['min-type-coverage'])) {
+            return null;
+        }
+
+        if (is_array($options['min-type-coverage'])) {
+            fwrite(STDERR, 'Only one --min-type-coverage can be given' . PHP_EOL);
+            exit(1);
+        }
+
+        // the coverage is reported with two decimals; the same pattern as for minTypeCoverage in config.xsd
+        if (is_string($options['min-type-coverage'])
+            && preg_match('/^([0-9]{1,2}(\.[0-9]{1,2})?|100(\.0{1,2})?)\z/', $options['min-type-coverage'])
+        ) {
+            return (float) $options['min-type-coverage'];
+        }
+
+        fwrite(STDERR, '--min-type-coverage expects a percentage from 0 to 100 with at most two decimals' . PHP_EOL);
+        exit(1);
     }
 
     /**
@@ -525,9 +573,9 @@ final class Psalm
      */
     private static function initShowInfo(array $options): bool
     {
+        // a valueless `--show-info` is `--show-info=true`
         return isset($options['show-info'])
-            ? $options['show-info'] === 'true' || $options['show-info'] === '1'
-            : false;
+            && ($options['show-info'] === false || $options['show-info'] === 'true' || $options['show-info'] === '1');
     }
 
     /*private static function initIsDiff(array $options): bool
@@ -536,46 +584,6 @@ final class Psalm
             && !isset($options['set-baseline'])
             && !isset($options['update-baseline']);
     }*/
-
-    /**
-     * @param array<int,string> $args
-     */
-    private static function validateCliArguments(array $args): void
-    {
-        array_map(
-            static function (string $arg): void {
-                if (str_starts_with($arg, '--') && $arg !== '--') {
-                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
-
-                    if (!in_array($arg_name, self::LONG_OPTIONS)
-                        && !in_array($arg_name . ':', self::LONG_OPTIONS)
-                        && !in_array($arg_name . '::', self::LONG_OPTIONS)
-                    ) {
-                        fwrite(
-                            STDERR,
-                            'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL,
-                        );
-                        exit(1);
-                    }
-                } elseif (str_starts_with($arg, '-') && $arg !== '-' && $arg !== '--') {
-                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 1));
-
-                    if (!in_array($arg_name, self::SHORT_OPTIONS)
-                        && !in_array($arg_name . ':', self::SHORT_OPTIONS)
-                    ) {
-                        fwrite(
-                            STDERR,
-                            'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL,
-                        );
-                        exit(1);
-                    }
-                }
-            },
-            $args,
-        );
-    }
 
     /**
      * @param array<int, string> $args
@@ -675,46 +683,11 @@ final class Psalm
             . PHP_EOL;
     }
 
-    /** @param list<ClassLoader> $autoloaders */
-    private static function loadConfig(
-        ?string $path_to_config,
-        string $current_dir,
-        string $output_format,
-        array $autoloaders,
-        bool $run_taint_analysis,
-        array $options,
-    ): Config {
-        $config = CliUtils::initializeConfig(
-            $path_to_config,
-            $current_dir,
-            $output_format,
-            $autoloaders,
-            $run_taint_analysis,
-        );
-
-        if (isset($options['error-level'])
-            && is_numeric($options['error-level'])
-        ) {
-            $config_level = (int) $options['error-level'];
-
-            if (!in_array($config_level, [1, 2, 3, 4, 5, 6, 7, 8], true)) {
-                throw new ConfigException(
-                    'Invalid error level ' . $config_level,
-                );
-            }
-
-            $config->level = $config_level;
-        }
-        return $config;
-    }
-
     private static function initProgress(array $options, Config $config, bool $in_ci): Progress
     {
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
 
-        $show_info = isset($options['show-info'])
-            ? $options['show-info'] === 'true' || $options['show-info'] === '1'
-            : false;
+        $show_info = self::initShowInfo($options);
 
         // CI takes precedence over AI detection: persistent CI logs still want
         // per-phase breadcrumbs for humans reviewing the build. Agents that
@@ -741,33 +714,6 @@ final class Psalm
             }
         }
         return $progress;
-    }
-
-    private static function initProviders(array $options, Config $config, string $current_dir): Providers
-    {
-        if ($config->cache_directory === null || isset($options['i'])) {
-            $providers = new Providers(
-                new FileProvider,
-                new ParserCacheProvider($config, Composer::getLockFile($current_dir), false),
-                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), false),
-                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), false),
-                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), false),
-            );
-        } else {
-            $no_reflection_cache = isset($options['no-reflection-cache']);
-            $no_file_cache = isset($options['no-file-cache']);
-            $no_reference_cache = isset($options['no-reference-cache']);
-
-            $providers = new Providers(
-                new FileProvider,
-                new ParserCacheProvider($config, Composer::getLockFile($current_dir), !$no_file_cache),
-                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir), !$no_reflection_cache),
-                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir), !$no_reflection_cache),
-                new FileReferenceCacheProvider($config, Composer::getLockFile($current_dir), !$no_reference_cache),
-                new ProjectCacheProvider(),
-            );
-        }
-        return $providers;
     }
 
     /**
@@ -966,9 +912,7 @@ final class Psalm
         bool $in_ci,
     ): ReportOptions {
         $stdout_report_options = new ReportOptions();
-        $stdout_report_options->use_color = !array_key_exists('m', $options)
-            && !CliUtils::noColorRequested()
-            && !CliUtils::runningUnderAiAgent();
+        $stdout_report_options->use_color = CliUtils::useColor($options, false);
         $stdout_report_options->show_info = $show_info;
         $stdout_report_options->show_suggestions = !array_key_exists('no-suggestions', $options);
         /**
@@ -1152,7 +1096,12 @@ final class Psalm
 
         if (isset($options['review'])) {
             require_once __DIR__ . '/Review.php';
-            array_shift($argv);
+            // psalm-review takes the report right after the script name, wherever --review was given
+            $review_position = array_search('--review', $argv, true);
+            if ($review_position !== false) {
+                unset($argv[$review_position]);
+            }
+
             Review::run(array_values($argv));
             exit;
         }
@@ -1234,7 +1183,7 @@ final class Psalm
             $config = Config::getInstance();
             $config->setComposerClassLoader($autoloaders);
         } else {
-            $config = self::loadConfig(
+            $config = ProjectBootstrap::loadConfig(
                 $path_to_config,
                 $current_dir,
                 $output_format,
@@ -1289,13 +1238,9 @@ final class Psalm
 
         if (!$issue_baseline && $baseline_file_path && !isset($options['ignore-baseline'])) {
             try {
-                $issue_baseline = ErrorBaseline::read(
-                    new FileProvider,
-                    $baseline_file_path,
-                );
-            } catch (ConfigException $exception) {
-                fwrite(STDERR, 'Could not read the baseline: ' . $exception->getMessage()
-                    . '. Create it with --set-baseline=' . $baseline_file_path . PHP_EOL);
+                $issue_baseline = ProjectBootstrap::readBaselineFile($baseline_file_path);
+            } catch (ProjectBootstrapException $exception) {
+                fwrite(STDERR, $exception->getMessage() . PHP_EOL);
                 exit(1);
             }
         }
@@ -1328,92 +1273,6 @@ final class Psalm
                     $flow_graph->summarizeEdges(),
                 )) .
                 "\n}\n");
-        }
-    }
-
-    /**
-     * @return false|'always'|'auto'
-     * @psalm-mutation-free
-     */
-    private static function shouldFindUnusedCode(array $options, Config $config): bool|string
-    {
-        $find_unused_code = false;
-        if (isset($options['find-dead-code'])) {
-            $options['find-unused-code'] = $options['find-dead-code'] === 'always' ? 'always' : 'auto';
-        }
-
-        if (isset($options['find-unused-code'])) {
-            if ($options['find-unused-code'] === 'always') {
-                $find_unused_code = 'always';
-            } else {
-                $find_unused_code = 'auto';
-            }
-        } elseif ($config->find_unused_code) {
-            $find_unused_code = 'auto';
-        }
-
-        return $find_unused_code;
-    }
-
-    /**
-     * @psalm-pure
-     */
-    private static function shouldRunTaintAnalysis(array $options): bool
-    {
-        return (isset($options['track-tainted-input'])
-            || isset($options['security-analysis'])
-            || isset($options['taint-analysis']));
-    }
-
-    /**
-     * @param false|'always'|'auto' $find_unused_code
-     */
-    private static function configureProjectAnalyzer(
-        array $options,
-        Config $config,
-        ProjectAnalyzer $project_analyzer,
-        string|bool|null $find_references_to,
-        false|string $find_unused_code,
-        bool $find_unused_variables,
-        bool $run_taint_analysis,
-    ): void {
-        if (isset($options['generate-json-map']) && is_string($options['generate-json-map'])) {
-            $project_analyzer->getCodebase()->store_node_types = true;
-        }
-
-        if (array_key_exists('debug-by-line', $options)) {
-            $project_analyzer->debug_lines = true;
-        }
-
-        if (array_key_exists('debug-performance', $options)) {
-            $project_analyzer->debug_performance = true;
-        }
-
-        if ($find_references_to !== null) {
-            $project_analyzer->getCodebase()->collectLocations();
-            $project_analyzer->show_issues = false;
-        }
-
-        if ($find_unused_code) {
-            $project_analyzer->getCodebase()->reportUnusedCode($find_unused_code);
-        }
-
-        if ($config->find_unused_variables || $find_unused_variables) {
-            $project_analyzer->getCodebase()->reportUnusedVariables();
-        }
-
-        if ($config->literal_array_key_check) {
-            $project_analyzer->getCodebase()->literal_array_key_check = true;
-        }
-        $project_analyzer->getCodebase()->all_constants_global = $config->all_constants_global;
-        $project_analyzer->getCodebase()->all_functions_global = $config->all_functions_global;
-
-        if ($config->run_taint_analysis || $run_taint_analysis) {
-            $project_analyzer->trackTaintedInputs();
-        }
-
-        if ($config->find_unused_psalm_suppress || isset($options['find-unused-psalm-suppress'])) {
-            $project_analyzer->trackUnusedSuppressions();
         }
     }
 
@@ -1498,11 +1357,13 @@ final class Psalm
             --force-jit
                 Enable JIT acceleration. Exits immediately if JIT cannot be enabled.
 
-            --threads=INT
+            --threads=INT|auto
                 If greater than one, Psalm will run the scan and analysis on multiple threads, speeding things up.
+                `auto` (the default) uses the threads setting of the config, or else one thread per CPU core.
 
-            --scan-threads=INT
+            --scan-threads=INT|auto
                 If greater than one, Psalm will run the scan on multiple threads, speeding things up (if specified, takes priority over the --threads flag).
+                `auto` (the default) uses the scanThreads setting of the config, or else one thread per CPU core.
 
             --no-diff
                 Turns off Psalm’s diff mode, checks all files regardless of whether they’ve changed.
@@ -1525,6 +1386,9 @@ final class Psalm
                 Look for unused code. Options are 'auto' or 'always'. If no value is specified, default is 'auto'.
                 Unused code detection is already on by default (see the findUnusedCode config option)
 
+            --find-unused-variables
+                Look for unused variables
+
             --find-unused-psalm-suppress
                 Finds all @psalm-suppress annotations that aren’t used, including those on
                 classes, interfaces, traits and enums. @psalm-suppress of Tainted* issues is
@@ -1537,7 +1401,7 @@ final class Psalm
             --no-suggestions
                 Hide suggestions
 
-            --taint-analysis
+            --taint-analysis, --track-tainted-input, --security-analysis
                 Run Psalm in taint analysis mode – see https://psalm.dev/docs/security_analysis for more info
 
             --dump-taint-graph=OUTPUT_PATH
@@ -1569,13 +1433,17 @@ final class Psalm
         Output:
             -m, --monochrome
                 Enable monochrome output.
-                Auto-enabled when NO_COLOR is set to a non-empty value or when
-                an AI coding agent is driving the shell.
+                Auto-enabled when NO_COLOR is set to a non-empty value, when
+                TERM=dumb, or when an AI coding agent is driving the shell.
+                FORCE_COLOR set to a non-empty value forces colors on instead.
 
             --output-format=console
                 Changes the output format.
                 Available formats:
                     $outputFormats
+
+            --pretty-print
+                Pretty-print JSON output
 
             --no-progress
                 Disable the progress indicator.
@@ -1588,6 +1456,11 @@ final class Psalm
 
             --stats
                 Shows a breakdown of Psalm’s ability to infer types in the codebase
+
+            --min-type-coverage=PERCENTAGE
+                Exit with status 2 when Psalm infers types for less than PERCENTAGE of the codebase (0 to 100,
+                at most two decimals). Cannot be combined with file paths, --set-baseline or --update-baseline.
+                Overrides the minTypeCoverage config option
 
         Reports:
             --report=PATH
@@ -1644,6 +1517,9 @@ final class Psalm
             --debug-by-line
                 Debug information on a line-by-line level
 
+            --debug-performance
+                Show performance information
+
             --debug-emitted-issues
                 Print a php backtrace to stderr when emitting issues.
 
@@ -1661,6 +1537,9 @@ final class Psalm
 
             --alter
                 Run Psalter
+
+            --refactor
+                Run Psalm Refactor
 
             --review
                 Run the psalm-review tool

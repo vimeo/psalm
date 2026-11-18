@@ -40,6 +40,7 @@ use function array_slice;
 use function assert;
 use function count;
 use function end;
+use function is_numeric;
 use function ltrim;
 use function str_starts_with;
 use function strpos;
@@ -132,6 +133,12 @@ final class CallableTypeComparator
                     }
 
                     return false;
+                }
+
+                // a callee that takes the argument by reference can't be called with a value: it is a subtype all the
+                // same, and reported where the type is checked
+                if ($input_param->by_ref && !$container_param->by_ref && $atomic_comparison_result) {
+                    $atomic_comparison_result->callable_by_reference_mismatch = true;
                 }
 
                 // a callable that may be called without the parameter must not require it
@@ -251,6 +258,12 @@ final class CallableTypeComparator
         TCallable $container_type_part,
         ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
+        // the name of a function is neither empty nor numeric
+        if ($input_type_part instanceof TLiteralString
+            && ($input_type_part->value === '' || is_numeric($input_type_part->value))
+        ) {
+            return false;
+        }
 
         if ($input_type_part instanceof TArray) {
             if ($input_type_part->type_params[1]->isMixed()
@@ -959,7 +972,6 @@ final class CallableTypeComparator
                             }
 
                             if ($member_id) {
-                                /** @psalm-suppress PossiblyNullArgument Psalm bug */
                                 $codebase->analyzer->addMixedMemberName(
                                     strtolower($member_id) . '::',
                                     $calling_method_id ?: $file_name,

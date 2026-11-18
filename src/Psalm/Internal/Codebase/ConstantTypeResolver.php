@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayOffsetFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArraySpread;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayValue;
@@ -59,12 +60,14 @@ use Psalm\Type\Union;
 use ReflectionProperty;
 use UnitEnum;
 
+use function array_unshift;
 use function array_values;
 use function ctype_digit;
 use function is_array;
 use function is_float;
 use function is_int;
 use function is_string;
+use function ltrim;
 use function spl_object_id;
 use function strtolower;
 
@@ -73,6 +76,41 @@ use function strtolower;
  */
 final class ConstantTypeResolver
 {
+    /**
+     * Without an analyzer to resolve the name, the constant is looked up in the scanned files
+     */
+    private static function resolveScannedConstant(
+        ClassLikes $classlikes,
+        Constant $c,
+        array $visited_constant_ids,
+    ): Atomic {
+        $names = [ltrim($c->name, '\\')];
+
+        if (!$c->is_fully_qualified && $c->namespace !== '') {
+            array_unshift($names, $c->namespace . '\\' . $c->name);
+        }
+
+        // PHP resolves `A\SOME` of any file before the global `SOME`
+        foreach ($names as $name) {
+            foreach (FileStorageProvider::getAll() as $file_storage) {
+                if (isset($file_storage->unresolved_constants[$name])) {
+                    return self::resolve(
+                        $classlikes,
+                        $file_storage->unresolved_constants[$name],
+                        null,
+                        $visited_constant_ids,
+                    );
+                }
+
+                if (isset($file_storage->constants[$name])) {
+                    return $file_storage->constants[$name]->getSingleAtomic();
+                }
+            }
+        }
+
+        return new TMixed;
+    }
+
     private static function resolveShift(UnresolvedShift $c, Atomic $left, Atomic $right): Atomic
     {
         if ($left instanceof TLiteralInt && $right instanceof TLiteralInt) {
@@ -371,6 +409,8 @@ final class ConstantTypeResolver
                 if ($found_type) {
                     return $found_type->getSingleAtomic();
                 }
+            } else {
+                return self::resolveScannedConstant($classlikes, $c, $visited_constant_ids);
             }
         }
 
@@ -436,7 +476,7 @@ final class ConstantTypeResolver
         // the global function is called only if the namespace does not declare one of that name
         if (!$closure
             && $c->global_fallback_name !== null
-            && !$codebase->functions->isDeclaredInCode($c->name)
+            && !$codebase->functions->isDeclaredInCode($c->name, $codebase->scanner)
             && !$codebase->functions->hasStubbedFunction($c->name)
         ) {
             $closure = CallableTypeComparator::getClosureFromFunctionId(

@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
@@ -201,7 +202,7 @@ final class FileReferenceTest extends TestCase
     public function testAnalysisPersistsEveryResultToTheReferenceCache(): void
     {
         $config = new TestConfig();
-        $cache = new FileReferenceCacheProvider($config, '', false);
+        $cache = new FileReferenceCacheProvider($config, '', CacheMode::Memory);
         $file_path = $this->scanFileWithReferenceCache($cache);
         $this->project_analyzer->getCodebase()->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
@@ -216,7 +217,7 @@ final class FileReferenceTest extends TestCase
 
     public function testCacheSavedWithoutEdgesIsOnlyLoadedByRunsThatDoNotNeedThem(): void
     {
-        $cache = new FileReferenceCacheProvider(new TestConfig(), '', false);
+        $cache = new FileReferenceCacheProvider(new TestConfig(), '', CacheMode::Memory);
         $file_path = $this->scanFileWithReferenceCache($cache);
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->code_use_graph->record_edges = false;
@@ -239,7 +240,7 @@ final class FileReferenceTest extends TestCase
 
     public function testCacheSavedWithEdgesIsLoadedByAnyRun(): void
     {
-        $cache = new FileReferenceCacheProvider(new TestConfig(), '', false);
+        $cache = new FileReferenceCacheProvider(new TestConfig(), '', CacheMode::Memory);
         $this->scanFileWithReferenceCache($cache);
         $this->project_analyzer->getCodebase()->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
@@ -258,7 +259,7 @@ final class FileReferenceTest extends TestCase
 
     public function testCacheSavedBeforeEdgesWereOptionalIsLoadedByRunsNeedingThem(): void
     {
-        $cache = new FileReferenceCacheProvider(new TestConfig(), '', false);
+        $cache = new FileReferenceCacheProvider(new TestConfig(), '', CacheMode::Memory);
         $this->scanFileWithReferenceCache($cache);
         $this->project_analyzer->getCodebase()->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
@@ -300,7 +301,7 @@ final class FileReferenceTest extends TestCase
     public function testAnalysisWritesTheReferenceCacheOnce(): void
     {
         $cache = $this->getMockBuilder(FileReferenceCacheProvider::class)
-            ->setConstructorArgs([new TestConfig(), '', false])
+            ->setConstructorArgs([new TestConfig(), '', CacheMode::Memory])
             ->onlyMethods(['setCachedFileReferences'])
             ->getMock();
 
@@ -331,6 +332,29 @@ final class FileReferenceTest extends TestCase
 
         self::assertSame(['/b.php', '/c.php'], $provider->getFilesInheritingFromFile($file_path));
         self::assertSame(['/b.php', '/c.php'], $provider->getFilesReferencingFile($file_path));
+    }
+
+    public function testFileOfAClassInheritsFromTheClassesItsMixinLookupReaches(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $deep_path = self::$src_dir_path . 'deep.php';
+        $mid_path = self::$src_dir_path . 'mid.php';
+        $host_path = self::$src_dir_path . 'host.php';
+        $this->file_provider->registerFile($deep_path, '<?php final class Deep {}');
+        $this->file_provider->registerFile($mid_path, '<?php /** @mixin Deep */ final class Mid {}');
+        $this->file_provider->registerFile(
+            $host_path,
+            '<?php /** @mixin Mid */ trait ForwardsCalls {} abstract class Base { use ForwardsCalls; } final class Host extends Base {}',
+        );
+        $codebase->addFilesToAnalyze([$deep_path => $deep_path, $mid_path => $mid_path, $host_path => $host_path]);
+        $codebase->scanFiles();
+
+        $provider = $codebase->file_reference_provider;
+        $provider->updateReferenceCache($codebase, [$deep_path => true, $mid_path => true]);
+
+        // a change to the mixin of the mixin of a trait of the parent class reaches the file of the class
+        self::assertEqualsCanonicalizing([$mid_path, $host_path], $provider->getFilesInheritingFromFile($deep_path));
+        self::assertSame([$host_path], $provider->getFilesInheritingFromFile($mid_path));
     }
 
     private function scanFileWithReferenceCache(FileReferenceCacheProvider $cache): string
@@ -390,6 +414,36 @@ final class FileReferenceTest extends TestCase
                     (new A())->foo();',
                 'A::foo',
                 ['7:32:foo'],
+            ],
+            'getMethodLocationWithUsedReturnValue' => [
+                '<?php
+                    final class A {
+                        public function foo(): ?string {
+                            return null;
+                        }
+                    }
+
+                    function f(A $a): string {
+                        return $a->foo() ?? "";
+                    }
+
+                    function g(A $a): void {
+                        $a->foo();
+                    }',
+                'A::foo',
+                ['9:36:foo', '13:29:foo'],
+            ],
+            'getInterfaceMethodLocationWithUsedReturnValue' => [
+                '<?php
+                    interface I {
+                        public function foo(): string;
+                    }
+
+                    function f(I $i): string {
+                        return $i->foo();
+                    }',
+                'I::foo',
+                ['7:36:foo'],
             ],
             'getPropertyLocation' => [
                 '<?php
