@@ -130,8 +130,6 @@
 
 - [BC] Psalm\Type\Atomic\TKeyedArray#__construct() was made private
 
-- [BC] Method Psalm\Codebase#filterCompletionItemsByBeginLiteralPart(), deprecated since Psalm 5.21, was removed
-
 # Upgrading from Psalm 5 to Psalm 6
 ## Changed
 
