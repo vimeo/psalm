@@ -381,6 +381,26 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'psalmOverloadOfAStaticMethodIsNotChosenForAFirstClassCallable' => [
+                'code' => '<?php
+                    final class Picker {
+                        /**
+                         * @psalm-overload (int $x): int
+                         * @psalm-overload (string $x): string
+                         */
+                        public static function pick(int|string $x): int|string {
+                            return $x;
+                        }
+                    }
+
+                    $f = Picker::pick(...);
+                    $r = $f(1);',
+                'assertions' => [
+                    '$r===' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'psalmOverloadOfAMethodIsChosenByTheArguments' => [
                 'code' => '<?php
                     interface Query {}

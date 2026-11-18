@@ -168,17 +168,17 @@ final class ExistingAtomicStaticCallAnalyzer
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;
         }
 
-        $overloaded_method_storage = $codebase->methods->getUserMethodStorage($method_id);
+        $method_storage = $codebase->methods->getUserMethodStorage($method_id);
 
         $overload = null;
 
-        if ($overloaded_method_storage && $overloaded_method_storage->overloads !== []) {
+        if ($method_storage && $method_storage->overloads !== [] && !$stmt->isFirstClassCallable()) {
             $overload = OverloadSelector::select(
                 $statements_analyzer,
                 $codebase,
                 $args,
                 $context,
-                $overloaded_method_storage->overloads,
+                $method_storage->overloads,
             );
         }
 
@@ -293,8 +293,6 @@ final class ExistingAtomicStaticCallAnalyzer
                 $overload,
             );
         }
-
-        $method_storage = $codebase->methods->getUserMethodStorage($method_id);
 
         if ($method_storage) {
             if ($method_storage->abstract
