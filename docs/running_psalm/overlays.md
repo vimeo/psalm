@@ -61,7 +61,7 @@ With `--output-format=json` a failure prints `{"protocol":1,"error":{"kind":"...
 
 Psalm analyses the overlaid files, the files their changes can reach, and lists them in `analyzed_files`. A change inside a method body reaches the overlaid file, the classes inheriting from it, the users of its traits and the files including it. A changed visibility also reaches the callers of that member. Another change to existing declarations (a type, a parameter, a default value) also reaches the files that depend on the overlaid file according to the reference index. Added or removed declarations reach every project file. Passes over the whole project (unused code and `ClassMustBeFinal`, taint analysis, purity suggestions) do not run. Those the configuration runs are listed in `not_checked`, unless the request asks for `"whole_project": true`.
 
-`--record-references` makes the normal run write a reference index into the cache. Overlay analysis needs it, and refuses an index when the contents of a project file, the config, a stub file, `composer.lock` or the baseline differ from what it recorded. It never writes to the cache, so it also refuses a cache that has nothing for its config and its version of Psalm (`references_not_recorded`), rather than parse the whole project into memory. Record with the baseline options the overlay runs use (`--use-baseline`, `--ignore-baseline`):
+`--record-references` makes the normal run write a reference index into the cache, so the run needs a cache it writes to (no `--no-cache`, `--no-reference-cache` or `noCache="true"`). Overlay analysis needs the index, and refuses it when a project file, an extra file, a stub file, `composer.json`, the `autoloader` file, a plugin file or the baseline differs from what the recording run found before it read them. A changed config (with the files it includes through XInclude) or `composer.lock` leaves no cache for the index. Overlay analysis never writes to the cache, so it also refuses a cache that has nothing for its config and its version of Psalm (`references_not_recorded`), rather than parse the whole project into memory. Record with the baseline options the overlay runs use (`--use-baseline`, `--ignore-baseline`):
 
 ```bash
 vendor/bin/psalm --overlay=src/A.php=/tmp/A.php
@@ -79,7 +79,7 @@ echo '{"overlays": [{"path": "src/A.php", "contents": "<?php ..."}, {"path": "sr
 
 Relative paths are relative to the directory Psalm runs in, on every transport: `--overlay`, `--overlays-from` and the server (`OverlaySession` runs it in its `root`).
 
-Overlays of files that do not exist yet, and `{"path": "...", "deleted": true}`, answer `unsupported` for now. Overlays of the config, the baseline, `composer.json`, `composer.lock` and stub files (preloaded or not) are `invalid_overlay`.
+Overlays of files that do not exist yet, and `{"path": "...", "deleted": true}`, answer `unsupported` for now. Overlays of the config, the baseline, `composer.json`, `composer.lock`, the `autoloader` file, plugin files and stub files (preloaded or not) are `invalid_overlay`.
 
 ## Timeouts
 

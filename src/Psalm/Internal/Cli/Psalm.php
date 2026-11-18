@@ -375,11 +375,6 @@ final class Psalm
             exit(1);
         }
 
-        if (isset($options['record-references']) && ($paths_to_check !== null || $config->cache_directory === null)) {
-            fwrite(STDERR, '--record-references needs a full run with a cache: no paths, no --no-cache' . PHP_EOL);
-            exit(1);
-        }
-
         if ($config->resolve_from_config_file) {
             $current_dir = $config->base_dir;
             chdir($current_dir);
@@ -426,6 +421,17 @@ final class Psalm
             $current_dir,
             $overlay_mode ? CacheMode::ReadOnly : CacheMode::Persistent,
         );
+
+        if (isset($options['record-references'])
+            && ($paths_to_check !== null || !$providers->file_reference_provider->cache?->writesToDisk())
+        ) {
+            fwrite(
+                STDERR,
+                '--record-references needs a full run that writes the cache: no paths, no --init, no --no-cache or'
+                    . ' --no-reference-cache, no noCache="true" in the config' . PHP_EOL,
+            );
+            exit(1);
+        }
 
         $stdout_report_options = self::initStdoutReportOptions($options, $show_info, $output_format, $in_ci);
 
@@ -1639,7 +1645,7 @@ final class Psalm
                 Runs Psalm without using cached representations of unchanged methods.
 
             --record-references
-                Experimental. Also record which files depend on which, for overlay analysis (see --overlay)
+                Experimental. Also records which files depend on which, for overlay analysis (see --overlay).
 
             --no-file-cache
                 Runs Psalm without using caching every single file for later diffing.

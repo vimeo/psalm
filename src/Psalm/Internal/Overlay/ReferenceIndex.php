@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Overlay;
 
+use Psalm\Codebase;
 use Psalm\Config;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Composer;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Symfony\Component\Filesystem\Path;
@@ -17,28 +16,28 @@ use function array_values;
 use function clearstatcache;
 use function count;
 use function file_exists;
-use function filesize;
 use function hash_file;
-use function is_array;
-use function ksort;
-use function str_contains;
 
 /**
  * Which files depend on which, as a full run that recorded the code use edges found them, with a stamp of every
- * file the run depended on. The cached graph cannot serve: a partial run replaces it with its own edges.
+ * file the run read that the cache identity does not cover. The cached graph cannot serve: a partial run replaces it
+ * with its own edges.
  *
- * @psalm-type Stamp = array{int, string}
+ * @psalm-type Data = array{
+ *     files: array<string, array{i: list<string>, a: list<string>}>,
+ *     members: array<string, list<string>>,
+ *     stamps: array<string, ?string>,
+ *     project_files: list<string>,
+ * }
  * @internal
  */
 final class ReferenceIndex
 {
-    private const VERSION = 2;
-
     /**
      * @param array<string, array{i: list<string>, a: list<string>}> $files file => the files inheriting from its
      *      classes (or depending on them like it), the files referencing its classes and functions
      * @param array<string, list<string>> $members code use graph node of a class member => the files referencing it
-     * @param array<string, Stamp> $stamps file => size and hash
+     * @param array<string, ?string> $stamps file => its content hash, null if it did not exist
      * @param list<string> $project_files
      */
     public function __construct(
@@ -51,10 +50,12 @@ final class ReferenceIndex
 
     /**
      * After a full run that recorded the code use edges
+     *
+     * @param list<string> $project_files
+     * @param array<string, ?string> $stamps taken before the run read the files, see stampFiles()
      */
-    public static function build(ProjectAnalyzer $project_analyzer): self
+    public static function build(Codebase $codebase, array $project_files, array $stamps): self
     {
-        $codebase = $project_analyzer->getCodebase();
         $file_reference_provider = $codebase->file_reference_provider;
 
         $files = [];
@@ -67,25 +68,7 @@ final class ReferenceIndex
             }
         }
 
-        $members = [];
-        foreach ($file_reference_provider->code_use_graph->getAllReferences() as $target_node => $sources) {
-            if (CodeUseGraph::getOwnerClass($target_node) === null || !str_contains($target_node, '::')) {
-                continue;
-            }
-
-            $members[$target_node] = array_keys($file_reference_provider->getFilesOfNodes($codebase, $sources));
-        }
-
-        $project_files = array_values($project_analyzer->initProjectFiles());
-
-        $stamps = [];
-        foreach ([...$project_files, ...self::getConfigurationFiles($codebase->config)] as $file_path) {
-            $stamp = self::stamp($file_path);
-            if ($stamp !== null) {
-                $stamps[$file_path] = $stamp;
-            }
-        }
-        ksort($stamps);
+        $members = $file_reference_provider->getFilesReferencingMembers($codebase);
 
         return new self($files, $members, $stamps, $project_files);
     }
@@ -93,7 +76,6 @@ final class ReferenceIndex
     public function save(FileReferenceCacheProvider $cache): void
     {
         $cache->setReferenceIndex([
-            'version' => self::VERSION,
             'files' => $this->files,
             'members' => $this->members,
             'stamps' => $this->stamps,
@@ -105,18 +87,10 @@ final class ReferenceIndex
     {
         $data = $cache->getReferenceIndex();
 
-        if (!is_array($data) || ($data['version'] ?? null) !== self::VERSION) {
+        if ($data === null) {
             return null;
         }
 
-        /**
-         * @var array{
-         *     files: array<string, array{i: list<string>, a: list<string>}>,
-         *     members: array<string, list<string>>,
-         *     stamps: array<string, Stamp>,
-         *     project_files: list<string>,
-         * } $data
-         */
         return new self($data['files'], $data['members'], $data['stamps'], $data['project_files']);
     }
 
@@ -125,7 +99,7 @@ final class ReferenceIndex
      *
      * @param array<string, string> $project_files
      */
-    public function getStaleReason(array $project_files, Config $config): ?string
+    public function getStaleReason(array $project_files): ?string
     {
         if (count($project_files) !== count($this->project_files)) {
             return 'the set of project files changed';
@@ -137,10 +111,8 @@ final class ReferenceIndex
             }
         }
 
-        $configuration_files = self::getConfigurationFiles($config);
-
-        foreach ([...$this->project_files, ...$configuration_files] as $file_path) {
-            if (!self::isUnchanged($file_path, $this->stamps[$file_path] ?? null)) {
+        foreach ($this->stamps as $file_path => $stamp) {
+            if (!self::isUnchanged($file_path, $stamp)) {
                 return $file_path . ' changed';
             }
         }
@@ -149,28 +121,18 @@ final class ReferenceIndex
     }
 
     /**
-     * Whether the file is as the stamp says (null: the file did not exist)
-     *
-     * @param Stamp|null $stamp
+     * Whether the file is as the stamp says. Not by the modification time: a same-size edit within its resolution
+     * keeps it.
      */
-    public static function isUnchanged(string $file_path, ?array $stamp): bool
+    public static function isUnchanged(string $file_path, ?string $stamp): bool
     {
-        clearstatcache(true, $file_path);
-
-        if ($stamp === null) {
-            return !file_exists($file_path);
-        }
-
-        if (!file_exists($file_path)) {
-            return false;
-        }
-
-        // not the modification time: a same-size edit within its resolution keeps it
-        return filesize($file_path) === $stamp[0] && hash_file('xxh128', $file_path) === $stamp[1];
+        return self::stamp($file_path) === $stamp;
     }
 
-    /** @return Stamp|null */
-    public static function stamp(string $file_path): ?array
+    /**
+     * The content hash of the file, null if it does not exist
+     */
+    public static function stamp(string $file_path): ?string
     {
         clearstatcache(true, $file_path);
 
@@ -178,14 +140,24 @@ final class ReferenceIndex
             return null;
         }
 
-        $size = filesize($file_path);
         $hash = hash_file('xxh128', $file_path);
 
-        if ($size === false || $hash === false) {
-            return null;
+        return $hash === false ? null : $hash;
+    }
+
+    /**
+     * @param list<string> $file_paths
+     * @return array<string, ?string>
+     */
+    public static function stampFiles(array $file_paths): array
+    {
+        $stamps = [];
+
+        foreach ($file_paths as $file_path) {
+            $stamps[$file_path] = self::stamp($file_path);
         }
 
-        return [$size, $hash];
+        return $stamps;
     }
 
     /**
@@ -257,21 +229,22 @@ final class ReferenceIndex
     }
 
     /**
-     * Files the analysis of every project file depends on besides the project files: overlaying them would change
-     * what the index describes
+     * Files besides the project and extra files that what a run finds depends on, and that the cache identity (the
+     * config with what it includes, composer.lock, the Psalm version) does not cover
      *
      * @return list<string>
      */
-    public static function getConfigurationFiles(Config $config): array
+    public static function getInputFiles(Config $config): array
     {
         $files = [
-            Composer::getLockFilePath($config->base_dir),
+            Composer::getJsonFilePath($config->base_dir),
             ...array_values($config->getStubFiles()),
             ...array_values($config->getPreloadedStubFiles()),
+            ...array_values($config->plugin_paths),
         ];
 
-        if ($config->source_filename !== null) {
-            $files[] = $config->source_filename;
+        if ($config->autoloader !== null) {
+            $files[] = $config->autoloader;
         }
 
         if ($config->error_baseline !== null && $config->error_baseline !== '') {

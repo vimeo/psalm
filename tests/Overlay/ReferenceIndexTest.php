@@ -38,6 +38,8 @@ final class ReferenceIndexTest extends TestCase
             $mtime = filemtime($file);
             assert($mtime !== false);
 
+            $this->assertTrue(ReferenceIndex::isUnchanged($file, $stamp));
+
             file_put_contents($file, 'BBBB');
             touch($file, $mtime);
 
@@ -50,21 +52,20 @@ final class ReferenceIndexTest extends TestCase
     /**
      * @param non-empty-string $config_xml
      */
-    #[DataProvider('provideConfigurationFiles')]
-    public function testAChangedConfigurationFileIsStamped(string $config_xml, string $changed_file): void
+    #[DataProvider('provideInputFiles')]
+    public function testAChangedInputFileMakesTheStampsStale(string $config_xml, string $changed_file): void
     {
         $filesystem = new Filesystem();
-        $dir = sys_get_temp_dir() . '/PsalmConfigurationFiles_' . uniqid();
+        $dir = sys_get_temp_dir() . '/PsalmInputFiles_' . uniqid();
         $filesystem->dumpFile($dir . '/stub.phpstub', '<?php class Stubbed {}');
+        $filesystem->dumpFile($dir . '/autoload.php', '<?php');
+        $filesystem->dumpFile($dir . '/plugin.php', '<?php');
         $filesystem->dumpFile($dir . '/A.php', '<?php');
         $dir = (string) realpath($dir);
 
         try {
             $config = Config::loadFromXML($dir, $config_xml);
-            $stamps = [];
-            foreach (ReferenceIndex::getConfigurationFiles($config) as $file_path) {
-                $stamps[$file_path] = ReferenceIndex::stamp($file_path);
-            }
+            $stamps = ReferenceIndex::stampFiles(ReferenceIndex::getInputFiles($config));
 
             file_put_contents($dir . '/' . $changed_file, "\n", FILE_APPEND);
 
@@ -72,7 +73,7 @@ final class ReferenceIndexTest extends TestCase
                 [$dir . '/' . $changed_file],
                 array_keys(array_filter(
                     $stamps,
-                    static fn(?array $stamp, string $file_path): bool
+                    static fn(?string $stamp, string $file_path): bool
                         => !ReferenceIndex::isUnchanged($file_path, $stamp),
                     ARRAY_FILTER_USE_BOTH,
                 )),
@@ -86,7 +87,7 @@ final class ReferenceIndexTest extends TestCase
      * @return iterable<string, array{non-empty-string, string}>
      * @psalm-pure
      */
-    public static function provideConfigurationFiles(): iterable
+    public static function provideInputFiles(): iterable
     {
         $project_files = '<projectFiles><file name="A.php"/></projectFiles>';
 
@@ -98,5 +99,12 @@ final class ReferenceIndexTest extends TestCase
             '<psalm>' . $project_files . '<stubs><file name="stub.phpstub" preloadClasses="true"/></stubs></psalm>',
             'stub.phpstub',
         ];
+        yield 'autoloader' => ['<psalm autoloader="autoload.php">' . $project_files . '</psalm>', 'autoload.php'];
+        yield 'plugin file' => [
+            '<psalm>' . $project_files . '<plugins><plugin filename="plugin.php"/></plugins></psalm>',
+            'plugin.php',
+        ];
+        // created after the stamps were taken
+        yield 'composer.json' => ['<psalm>' . $project_files . '</psalm>', 'composer.json'];
     }
 }

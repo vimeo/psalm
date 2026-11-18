@@ -9,6 +9,7 @@ use Psalm\Internal\Cache;
 use Psalm\Internal\CacheMode;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\Codebase\MutationLevelResolver;
+use Psalm\Internal\Overlay\ReferenceIndex;
 
 /**
  * Used to determine which files reference other files, necessary for using the --diff
@@ -16,6 +17,7 @@ use Psalm\Internal\Codebase\MutationLevelResolver;
  *
  * @psalm-import-type FileMapType from Analyzer
  * @psalm-import-type MutationInfo from MutationLevelResolver
+ * @psalm-import-type Data from ReferenceIndex as ReferenceIndexData
  * @internal
  */
 final class FileReferenceCacheProvider
@@ -144,15 +146,29 @@ final class FileReferenceCacheProvider
         $this->cache->saveItem(self::CODE_USE_GRAPH_CACHE_NAME, $data);
     }
 
-    /** @see \Psalm\Internal\Overlay\ReferenceIndex */
+    /**
+     * @return ReferenceIndexData|null
+     */
     public function getReferenceIndex(): ?array
     {
+        /** @var ReferenceIndexData|null */
         return $this->cache->getItem(self::REFERENCE_INDEX_CACHE_NAME);
     }
 
+    /**
+     * @param ReferenceIndexData $index
+     */
     public function setReferenceIndex(array $index): void
     {
         $this->cache->saveItem(self::REFERENCE_INDEX_CACHE_NAME, $index);
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    public function writesToDisk(): bool
+    {
+        return $this->cache->writesToDisk();
     }
 
     /**

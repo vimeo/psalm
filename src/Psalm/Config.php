@@ -821,7 +821,6 @@ final class Config
 
         try {
             $config = self::loadFromXML($base_dir, $file_contents, $current_dir, $file_path);
-            $config->hash = sha1($file_contents . PSALM_VERSION);
         } catch (ConfigException $e) {
             throw new ConfigException(
                 'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage(),
@@ -1103,6 +1102,9 @@ final class Config
         $dom_document = self::loadDomDocument($base_dir, $file_contents);
 
         if (null !== $config_path) {
+            // with what it includes through XInclude
+            $config->hash = sha1($dom_document->saveXML() . PSALM_VERSION);
+
             self::processConfigDeprecations(
                 $config,
                 $dom_document,

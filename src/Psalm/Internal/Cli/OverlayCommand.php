@@ -297,7 +297,7 @@ final class OverlayCommand
             );
         }
 
-        $stale = $index->getStaleReason($project_analyzer->initProjectFiles(), $config);
+        $stale = $index->getStaleReason($project_analyzer->initProjectFiles());
         if ($stale !== null) {
             throw new OverlayFailure(
                 OverlayFailure::REFERENCES_STALE,

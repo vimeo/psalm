@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CacheMode;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Overlay\ReferenceIndex;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -377,16 +378,20 @@ final class FileReferenceTest extends TestCase
 
         $files = $this->analyzeProject([
             'functions.php' => '<?php function helper(int $i): int { return $i; }',
+            'other.php' => '<?php function other(int $i): int { return $i; }',
             'caller.php' => '<?php final class Caller { public function f(): int { return helper(1); } }',
             'top.php' => '<?php echo helper(2);',
+            'callable.php' => '<?php echo array_sum(array_map("helper", [3]));',
+            'union.php' => '<?php $f = rand(0, 1) ? "helper" : "other"; echo $f(4);',
         ]);
 
+        $file_reference_provider = $this->project_analyzer->getCodebase()->file_reference_provider;
+
         self::assertEqualsCanonicalizing(
-            [$files['caller.php'], $files['top.php']],
-            $this->project_analyzer->getCodebase()->file_reference_provider->getFilesReferencingFile(
-                $files['functions.php'],
-            ),
+            [$files['caller.php'], $files['top.php'], $files['callable.php'], $files['union.php']],
+            $file_reference_provider->getFilesReferencingFile($files['functions.php']),
         );
+        self::assertSame([$files['union.php']], $file_reference_provider->getFilesReferencingFile($files['other.php']));
     }
 
     public function testFileOfAClassDependsOnTheClassesItsConstantExpressionsName(): void
@@ -395,13 +400,73 @@ final class FileReferenceTest extends TestCase
             'a.php' => '<?php final class A { public const Y = 10; }',
             'b.php' => '<?php final class B { public const X = A::Y * 2; }',
             'd.php' => '<?php final class D { public function f(): bool { return B::X === 22; } }',
-            'e.php' => '<?php final class E { public function f(int $i = A::Y): int { return $i; } }',
+            'unrelated.php' => '<?php final class U { public const X = 2; }',
         ]);
 
         // D reads B::X only, which is A::Y * 2 wherever it is read
-        $dependents = $this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']]);
-        self::assertContains($files['d.php'], $dependents);
-        self::assertContains($files['e.php'], $dependents);
+        self::assertEqualsCanonicalizing(
+            [$files['a.php'], $files['b.php'], $files['d.php']],
+            array_values($this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']])),
+        );
+    }
+
+    public function testFileOfAClassDependsOnTheClassesItsParameterDefaultsName(): void
+    {
+        $this->project_analyzer->getCodebase()->all_functions_global = true;
+
+        $template_docblock = '/**
+             * @template T
+             * @param T $i
+             * @return T
+             */';
+
+        $files = $this->analyzeProject([
+            'a.php' => '<?php final class A { public const Y = 10; }',
+            'e.php' => '<?php final class E { ' . $template_docblock . ' public function f($i = A::Y) { return $i; } }',
+            'functions.php' => '<?php ' . $template_docblock . ' function helper($i = A::Y) { return $i; }',
+            'g.php' => '<?php final class G { public function f(E $e): int { return $e->f() + helper(); } }',
+        ]);
+
+        // the type of $e->f() and helper() is that of A::Y
+        self::assertContains($files['g.php'], $this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']]));
+    }
+
+    public function testFileOfAnEnumDependsOnTheClassesItsCaseValuesName(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $files = $this->analyzeProject([
+            'a.php' => '<?php final class A { public const Y = 10; }',
+            'b.php' => '<?php enum B: int { case X = A::Y * 2; }',
+            'd.php' => '<?php final class D { public function f(): bool { return B::X->value === 22; } }',
+        ]);
+
+        // A is scanned before B, which then could infer the value of its case already
+        self::assertContains($files['d.php'], $this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']]));
+    }
+
+    public function testFileOfAClassDependsOnTheEnumsWhoseCasePropertiesItsConstantExpressionsRead(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.2', 'tests');
+
+        $files = $this->analyzeProject([
+            'a.php' => '<?php enum A: int { case Y = 10; }',
+            'b.php' => '<?php final class B { public const X = A::Y->value * 2; }',
+            'd.php' => '<?php final class D { public function f(): bool { return B::X === 22; } }',
+        ]);
+
+        self::assertContains($files['d.php'], $this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']]));
+    }
+
+    public function testFileOfAClassDependsOnTheClassesWhoseAliasesItsConstantExpressionsName(): void
+    {
+        $files = $this->analyzeProject([
+            'a.php' => '<?php final class A { public const Y = 10; } class_alias("A", "AliasOfA");',
+            'b.php' => '<?php final class B { public const X = AliasOfA::Y * 2; }',
+            'd.php' => '<?php final class D { public function f(): bool { return B::X === 22; } }',
+        ]);
+
+        self::assertContains($files['d.php'], $this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']]));
     }
 
     public function testFileOfAClassDependsOnTheClassesItImportsTypesFrom(): void
@@ -417,6 +482,26 @@ final class FileReferenceTest extends TestCase
         ]);
 
         self::assertContains($files['imp.php'], $this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']]));
+    }
+
+    public function testTheReferenceIndexKeepsTheDependentsOfAFullRun(): void
+    {
+        $files = $this->analyzeProject([
+            'a.php' => '<?php class A { public function foo(): void {} }',
+            'b.php' => '<?php final class B extends A {}',
+            'c.php' => '<?php final class C { public function f(A $a): void { $a->foo(); } }',
+        ]);
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $index = ReferenceIndex::build($codebase, array_values($files), [$files['a.php'] => 'hash']);
+
+        self::assertSame([$files['b.php']], $index->files[$files['a.php']]['i']);
+        self::assertContains($files['c.php'], $index->files[$files['a.php']]['a']);
+        self::assertSame([$files['c.php']], $index->members[CodeUseGraph::functionLikeNode('a::foo')]);
+
+        $cache = new FileReferenceCacheProvider($codebase->config, '', CacheMode::Memory);
+        $index->save($cache);
+        self::assertEquals($index, ReferenceIndex::load($cache));
     }
 
     /**
