@@ -597,7 +597,6 @@ final class CallableTypeComparator
                 $function_storage = $codebase->functions->getStorage(
                     $statements_analyzer,
                     strtolower($input_type_part->value),
-                    context: $context,
                 );
 
                 if ($expand_callable) {
