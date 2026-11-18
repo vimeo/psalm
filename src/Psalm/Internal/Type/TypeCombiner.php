@@ -356,6 +356,12 @@ final class TypeCombiner
                     unset($combination->value_types[$key]);
                 }
             }
+            foreach ($combination->named_object_types as $key => $named_object) {
+                $combination->named_object_types[$key] = $named_object->setIsStatic(
+                    $combination->object_static[$named_object->value] ?? false,
+                    $combination->object_static_resolved[$named_object->value] ?? false,
+                );
+            }
             $combination->value_types += $combination->named_object_types;
         }
 
@@ -992,11 +998,6 @@ final class TypeCombiner
             }
 
             if (isset($combination->named_object_types[$type_key])) {
-                if (!$type->is_static) {
-                    $combination->named_object_types[$type_key]
-                        = $combination->named_object_types[$type_key]->setIsStatic(false);
-                }
-
                 return null;
             }
 
