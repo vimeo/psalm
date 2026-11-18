@@ -12,7 +12,6 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name;
-use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
 use Psalm\Context;
@@ -21,9 +20,9 @@ use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
-use Psalm\Plugin\EventHandler\AfterMethodCallAnalysisInterface;
+use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
-use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
@@ -55,7 +54,6 @@ use function sort;
 use function str_repeat;
 use function str_starts_with;
 use function strpos;
-use function strtolower;
 use function trim;
 
 use const DIRECTORY_SEPARATOR;
@@ -133,38 +131,39 @@ final class TaintTest extends TestCase
 
         $codebase = $this->project_analyzer->getCodebase();
         $socket = new PluginRegistrationSocket($codebase->config, $codebase);
-        $socket->registerHooksFromClass((new class implements AfterMethodCallAnalysisInterface {
+        $socket->registerHooksFromClass((new class implements AfterExpressionAnalysisInterface {
             #[Override]
-            public static function afterMethodCallAnalysis(AfterMethodCallAnalysisEvent $event): void
+            public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool
             {
                 $expr = $event->getExpr();
-                $method_id = strtolower($event->getMethodId());
-                $result = $event->getReturnTypeCandidate();
 
                 if (!$expr instanceof StaticCall
-                    || ($method_id !== 'validator::make' && $method_id !== 'validator::check')
-                    || $result === null
+                    || !$expr->class instanceof Name
+                    || $expr->class->toString() !== 'Validator'
+                    || !$expr->name instanceof Identifier
+                    || !in_array($expr->name->toLowerString(), ['make', 'check'], true)
                     || !isset($expr->getArgs()[1])
                 ) {
-                    return;
+                    return null;
                 }
 
                 $source = $event->getStatementsSource();
                 $pattern = $source->getNodeTypeProvider()->getType($expr->getArgs()[1]->value);
 
                 if ($pattern === null || !$pattern->isSingleStringLiteral()) {
-                    return;
+                    return null;
                 }
 
                 $codebase = $event->getCodebase();
-                $event->setReturnTypeCandidate($codebase->addTaintValidation(
+                $codebase->addTaintValidation(
                     $source,
-                    $result,
+                    $expr,
                     $expr->getArgs()[0]->value,
                     $codebase->getTaintsRemovedByPattern($pattern->getSingleStringLiteral()->value),
-                    $method_id === 'validator::make' ? 'validator' : 'violations',
-                    new CodeLocation($source, $expr),
-                ));
+                    $expr->name->toLowerString() === 'make' ? 'validator' : 'violations',
+                );
+
+                return null;
             }
         })::class);
         $codebase->config->initializePlugins($this->project_analyzer);
