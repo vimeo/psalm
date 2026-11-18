@@ -1,0 +1,11 @@
+<?php
+
+class PhpToken implements Stringable
+{
+    /** @var non-empty-string */
+    public string $text;
+
+    public ?int $pos;
+
+    public $line;
+}
