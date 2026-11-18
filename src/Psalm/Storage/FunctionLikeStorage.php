@@ -463,8 +463,10 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
         $variant->param_lookup = $overload->param_lookup;
         $variant->required_param_count = $overload->required_param_count;
-        $variant->return_type = $overload->return_type;
-        $variant->return_type_location = $overload->return_type_location;
+        $variant->return_type = $overload->return_type ?? $this->return_type;
+        $variant->return_type_location = $overload->return_type === null
+            ? $this->return_type_location
+            : $overload->return_type_location;
         $variant->template_types = $overload->template_types ?? $this->template_types;
         $variant->overloads = [];
 

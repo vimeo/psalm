@@ -89,6 +89,45 @@ final class FunctionCallTest extends TestCase
                     '$byId===' => 'string',
                 ],
             ],
+            'psalmOverloadOfAUnionArgumentFallsBackToTheRealSignature' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int $x): int
+                     * @psalm-overload (string $x): string
+                     */
+                    function pick(int|string $x): int|string {
+                        return $x;
+                    }
+
+                    /** @var int|string $v */
+                    $either = pick($v);
+                    $int = pick(1);',
+                'assertions' => [
+                    '$either===' => 'int|string',
+                    '$int===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmOverloadWithoutAReturnTypeKeepsTheRealOne' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $x)
+                     * @psalm-overload (int $x, int $y)
+                     */
+                    function pick(string|int $x, int $y = 0): int {
+                        return 0;
+                    }
+
+                    $a = pick("a");
+                    $b = pick(1, 2);',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'psalmOverloadSkipsAnOptionalParameterWithANamedArgument' => [
                 'code' => '<?php
                     /**
@@ -4328,7 +4367,8 @@ final class FunctionCallTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
-                    . 'overload(string $a:int is not a valid method: Unterminated method in docblock for pick',
+                    . '@psalm-overload (string $a: int is not a valid overload: Unterminated method '
+                    . 'in docblock for pick',
             ],
             'fileTestFunctionOnAnEmptyStringIsAlwaysFalse' => [
                 'code' => '<?php

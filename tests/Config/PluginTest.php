@@ -1095,16 +1095,25 @@ final class PluginTest extends DeferredAnalyzerTestCase
             '<?php
                 namespace Ns;
 
-                final class Foo {
+                abstract class Model {
                     /** @psalm-pure */
                     public static function __callStatic(string $method_name, array $args): mixed {
                         return null;
                     }
+                }
 
-                    public static function sourcedRealMethod(int|string $first): int|string {
+                final class Foo extends Model {
+                    /**
+                     * @template T of int|string
+                     * @param T $first
+                     * @return T
+                     */
+                    public static function sourcedGenericMethod(int|string $first): int|string {
                         return $first;
                     }
                 }
+
+                final class Ghost {}
 
                 $magic = Foo::magicMethod(...);
                 /** @psalm-check-type-exact $magic = \Closure[pure](string=) */
@@ -1112,11 +1121,15 @@ final class PluginTest extends DeferredAnalyzerTestCase
                 $sourced = Foo::sourcedMagicMethod(...);
                 /** @psalm-check-type-exact $sourced = \Closure[pure](int=) */
 
-                $real = Foo::sourcedRealMethod(...);
-                /** @psalm-check-type-exact $real = \Closure[impure](int=):(int|string) */
+                $generic = Foo::sourcedGenericMethod(...);
+                $generic_result = $generic(5);
+                /** @psalm-check-type-exact $generic_result = 5 */
 
                 $paramless = Foo::paramlessMagicMethod(...);
                 /** @psalm-check-type-exact $paramless = \Closure[pure] */
+
+                $ghost = Ghost::anything(...);
+                /** @psalm-check-type-exact $ghost = \Closure[impure] */
 
                 $name = "magicMethod";
                 $dynamic = Foo::$name(...);

@@ -6525,6 +6525,38 @@ final class TaintTest extends TestCase
                     show($_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintSinkOfAMethodWithOverloadsIsStillChecked' => [
+                'code' => '<?php
+                    final class View {
+                        /**
+                         * @psalm-taint-sink html $x
+                         * @psalm-overload (int $x): string
+                         * @psalm-overload (string $x): string
+                         */
+                        public function show(int|string $x): string {
+                            return "static";
+                        }
+                    }
+
+                    (new View())->show($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintSinkOfAStaticMethodWithOverloadsIsStillChecked' => [
+                'code' => '<?php
+                    final class View {
+                        /**
+                         * @psalm-taint-sink html $x
+                         * @psalm-overload (int $x): string
+                         * @psalm-overload (string $x): string
+                         */
+                        public static function show(int|string $x): string {
+                            return "static";
+                        }
+                    }
+
+                    View::show($_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintOfAnArgumentAfterTheFirstOneReachesAVariadicOverrideCalledThroughTheParentType' => [
                 'code' => '<?php
                     /** @psalm-taint-source input */

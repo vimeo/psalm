@@ -306,7 +306,7 @@ abstract class CallAnalyzer
             ) !== false;
         }
 
-        $method_params = $overload->params ?? $codebase->methods->getMethodParams(
+        $method_params = $overload !== null ? [] : $codebase->methods->getMethodParams(
             $method_id,
             $statements_analyzer,
             $args,
@@ -358,6 +358,13 @@ abstract class CallAnalyzer
             if (!$context->isSuppressingExceptions($statements_analyzer)) {
                 $context->mergeFunctionExceptions($method_storage, $code_location);
             }
+        }
+
+        // one storage per call, as for functions: the parameters and the return type of the overload, the sinks,
+        // `@param-out` and the rest of what the real parameters declare
+        if ($overload !== null) {
+            $method_storage = $method_storage?->withOverload($overload);
+            $method_params = $method_storage->params ?? $overload->params;
         }
 
         if (ArgumentsAnalyzer::analyze(
