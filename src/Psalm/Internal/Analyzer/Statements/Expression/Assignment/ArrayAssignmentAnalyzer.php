@@ -67,6 +67,7 @@ use function preg_match;
 use function sort;
 use function spl_object_id;
 use function str_contains;
+use function str_ends_with;
 use function str_starts_with;
 use function strlen;
 use function substr;
@@ -394,23 +395,47 @@ final class ArrayAssignmentAnalyzer
     }
 
     /**
-     * What is written to a variable bound by reference to an array item (`$r = &$a['k']`) is written to the arrays
-     * holding that item: their types are rebuilt from its new type
+     * What is written to a variable bound by reference to array items (`$r = &$a['k']`, `$a['k'] = &$r`) is written
+     * to the arrays holding those items: their types are rebuilt from its new type
      */
     public static function updateArraysHoldingBoundItem(Context $context, string $var_id, Codebase $codebase): void
     {
-        $item_id = $var_id;
-        $seen = [];
-
-        while (isset($context->references_in_scope[$item_id]) && !isset($seen[$item_id])) {
-            $seen[$item_id] = true;
-            $item_id = $context->references_in_scope[$item_id];
-        }
-
-        if ($item_id === $var_id || !isset($context->vars_in_scope[$item_id])) {
+        if (!isset($context->references_in_scope[$var_id]) && !($context->referenced_counts[$var_id] ?? 0)) {
             return;
         }
 
+        $referenced_id = self::getReferencedVarId($context, $var_id);
+
+        foreach ([$referenced_id => $referenced_id] + $context->references_in_scope as $item_id => $_) {
+            if ($item_id !== $var_id
+                && str_ends_with($item_id, ']')
+                && isset($context->vars_in_scope[$item_id])
+                && self::getReferencedVarId($context, $item_id) === $referenced_id
+            ) {
+                self::updateArraysHoldingItem($context, $item_id, $codebase);
+            }
+        }
+    }
+
+    /**
+     * The variable the reference chain from $var_id ends at
+     *
+     * @psalm-mutation-free
+     */
+    private static function getReferencedVarId(Context $context, string $var_id): string
+    {
+        $seen = [];
+
+        while (isset($context->references_in_scope[$var_id]) && !isset($seen[$var_id])) {
+            $seen[$var_id] = true;
+            $var_id = $context->references_in_scope[$var_id];
+        }
+
+        return $var_id;
+    }
+
+    private static function updateArraysHoldingItem(Context $context, string $item_id, Codebase $codebase): void
+    {
         $item_type = $context->vars_in_scope[$item_id];
         $key_parts = Reconciler::breakUpPathIntoParts($item_id);
 
@@ -447,6 +472,9 @@ final class ArrayAssignmentAnalyzer
                     $codebase,
                 );
             }
+
+            // the array holds what was written
+            $array_type = $array_type->addParentNodes($item_type->parent_nodes);
 
             $context->vars_in_scope[$array_id] = $array_type;
             $item_type = $array_type;

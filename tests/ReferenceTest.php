@@ -780,6 +780,62 @@ final class ReferenceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'staticDetachesVariableFromWhatItWasBoundTo' => [
+                'code' => '<?php
+                    function assignAfterStatic(int|string $w): int|string {
+                        $v = &$w;
+                        static $v;
+                        $v = 1.5;
+                        return $w;
+                    }
+
+                    function assignReferencedAfterStatic(int|string $v): int|string {
+                        $w = &$v;
+                        static $v;
+                        $v = 1.5;
+                        return $w;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'writeToVariableAnArrayItemIsBoundToChangesTheArray' => [
+                'code' => '<?php
+                    /** @return array{a: string} */
+                    function f(): array {
+                        $x = 1;
+                        $out = [];
+                        $out["a"] = &$x;
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+            ],
+            'writeToVariableNestedArrayItemsAreBoundToChangesTheArrays' => [
+                'code' => '<?php
+                    $x = 1;
+                    $out = [];
+                    $out["a"]["b"] = &$x;
+                    $y = &$x;
+                    $y = "z";
+                ',
+                'assertions' => [
+                    '$out===' => 'array{a: array{b: \'z\'}}',
+                ],
+            ],
+            'catchIntoReferenceToOffsetChangesArrayType' => [
+                'code' => '<?php
+                    $a = ["x" => 1];
+                    $r = &$a["x"];
+                    try {
+                        throw new Exception();
+                    } catch (Exception $r) {}
+                ',
+                'assertions' => [
+                    '$a===' => 'array{x: Exception}',
+                ],
+            ],
             'referenceToReference' => [
                 'code' => '<?php
                     $a = 1;

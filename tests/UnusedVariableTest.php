@@ -3254,6 +3254,17 @@ final class UnusedVariableTest extends TestCase
                     }
                 ',
             ],
+            'writeToVariableAnArrayItemIsBoundToIsUsedByTheArray' => [
+                'code' => '<?php
+                    function f(): array {
+                        $x = 1;
+                        $out = [];
+                        $out["a"] = &$x;
+                        $x = 2;
+                        return $out;
+                    }
+                ',
+            ],
             'usedPlusInAddition' => [
                 'code' => '<?php
                     function takesAnInt(): void {
