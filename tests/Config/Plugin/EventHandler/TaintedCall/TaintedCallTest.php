@@ -16,6 +16,8 @@ use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestConfig;
 
+use function array_filter;
+use function array_values;
 use function define;
 use function defined;
 use function dirname;
@@ -152,6 +154,57 @@ final class TaintedCallTest extends DeferredAnalyzerTestCase
     }
 
     /**
+     * @param list<string> $events
+     */
+    #[DataProvider('providerCallTaintEvents')]
+    public function testCallTaintEventsAreDispatchedWhereTaintAnalysisRuns(
+        string $docblock,
+        string $statement,
+        array $events,
+    ): void {
+        CallTaintsRecorder::flush();
+
+        $this->analyze(
+            $docblock . '
+            function calls(): void {
+                clean("a");
+                Handled::dirty("b");
+                (new Instance())->dirty("c");
+                ' . $statement . '
+            }',
+            // a suppressed TaintedInput is reported unused, though the taint isn't reported
+            false,
+        );
+
+        // the echos of the declarations
+        $this->assertSame(
+            $events,
+            array_values(array_filter(
+                CallTaintsRecorder::flush(),
+                static fn(string $event): bool => $event !== 'echo#0',
+            )),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string, string, list<string>}>
+     * @psalm-pure
+     */
+    public static function providerCallTaintEvents(): iterable
+    {
+        yield 'taint analysis running' => [
+            '',
+            '',
+            ['clean#0', 'clean', 'handled::dirty#0', 'handled::dirty', 'instance::dirty#0', 'instance::dirty'],
+        ];
+        yield 'TaintedInput suppressed' => [
+            '/** @psalm-suppress TaintedInput */',
+            'echo (string) $_GET["x"];',
+            [],
+        ];
+    }
+
+    /**
      * @return iterable<string, array{string, string}>
      * @psalm-pure
      */
@@ -228,7 +281,7 @@ final class TaintedCallTest extends DeferredAnalyzerTestCase
         ];
     }
 
-    private function analyze(string $code): void
+    private function analyze(string $code, bool $track_unused_suppressions = true): void
     {
         $config = TestConfig::loadFromXML(
             dirname(__DIR__, 5) . DIRECTORY_SEPARATOR,
@@ -256,11 +309,12 @@ final class TaintedCallTest extends DeferredAnalyzerTestCase
         $this->project_analyzer->initExtraFiles();
         $this->project_analyzer->initProjectFiles();
         $config->initializePlugins($this->project_analyzer);
+        $config->eventDispatcher->registerClass(CallTaintsRecorder::class);
         $this->project_analyzer->trackTaintedInputs();
 
         $file_path = (string) getcwd() . '/src/somefile.php';
         $this->addFile($file_path, self::DECLARATIONS . $code);
 
-        $this->analyzeFile($file_path, new Context());
+        $this->analyzeFile($file_path, new Context(), $track_unused_suppressions);
     }
 }

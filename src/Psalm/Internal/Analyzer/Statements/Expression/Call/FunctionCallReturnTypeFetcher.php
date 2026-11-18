@@ -1584,11 +1584,15 @@ final class FunctionCallReturnTypeFetcher
 
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
-        [$call_added_taints, $call_removed_taints] = $codebase->config->eventDispatcher->dispatchAddRemoveCallTaints(
-            new AddRemoveCallTaintsEvent($codebase, $cased_function_id, null, null, $node_location),
-        );
-        $added_taints |= $call_added_taints;
-        $removed_taints |= $call_removed_taints;
+        $call_added_taints = 0;
+        $call_removed_taints = 0;
+        if ($taint_flow_graph) {
+            $call_event = new AddRemoveCallTaintsEvent($codebase, $cased_function_id, null, null, $node_location);
+            [$call_added_taints, $call_removed_taints] = $codebase->config->eventDispatcher
+                ->dispatchAddRemoveCallTaints($call_event);
+            $added_taints |= $call_added_taints;
+            $removed_taints |= $call_removed_taints;
+        }
 
         $specialization_location = TaintFlowGraph::isCallSpecialized(
             $taint_flow_graph,

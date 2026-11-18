@@ -12,7 +12,7 @@ use Psalm\Type\Union;
  * A value going into or coming out of a call, which may take taints or lose some on its way: an argument going into
  * the parameter of the function-like called, or what the call returns. Unlike AddRemoveTaintsEvent, it has no
  * expression: it is dispatched for the calls of PHP code and for those plugins wire with Codebase::addTaintedCall()
- * alike.
+ * alike, wherever taint analysis runs (not in code suppressing TaintedInput).
  *
  * @psalm-immutable
  * @api
