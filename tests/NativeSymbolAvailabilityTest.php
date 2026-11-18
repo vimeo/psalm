@@ -274,6 +274,23 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'php_version' => '7.4',
         ];
 
+        yield 'closureCreatedUnderAPhpVersionIdGuard' => [
+            'code' => '<?php
+                function a(): ?Closure {
+                    if (PHP_VERSION_ID >= 80000) {
+                        return function (): object {
+                            return new WeakMap();
+                        };
+                    }
+
+                    return null;
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+
         yield 'guardedByClassExists' => [
             'code' => '<?php
                 function a(): ?object {
@@ -715,6 +732,67 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'php_version' => '8.6',
         ];
 
+        yield 'php86SodiumXofStatesAvailable' => [
+            'code' => '<?php
+                function shake128(string $m): string {
+                    $s = sodium_crypto_xof_shake128_init();
+                    sodium_crypto_xof_shake128_update($s, $m);
+                    return sodium_crypto_xof_shake128_squeeze(clone $s, 32);
+                }
+
+                function shake256(string $m): string {
+                    $s = sodium_crypto_xof_shake256_init();
+                    sodium_crypto_xof_shake256_update($s, $m);
+                    return sodium_crypto_xof_shake256_squeeze($s, 32);
+                }
+
+                function turboshake128(string $m): string {
+                    $s = sodium_crypto_xof_turboshake128_init(1);
+                    sodium_crypto_xof_turboshake128_update($s, $m);
+                    return sodium_crypto_xof_turboshake128_squeeze($s, 32);
+                }
+
+                function turboshake256(string $m): string {
+                    $s = sodium_crypto_xof_turboshake256_init(null);
+                    sodium_crypto_xof_turboshake256_update($s, $m);
+                    return sodium_crypto_xof_turboshake256_squeeze($s, 32);
+                }
+
+                $state = sodium_crypto_xof_shake128_init();
+            ',
+            'assertions' => [
+                '$state===' => 'SodiumCryptoXofShake128State',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.6',
+        ];
+
+        yield 'php86GlobalConstantsAreDefined' => [
+            'code' => '<?php
+                $blockBytes = SODIUM_CRYPTO_XOF_SHAKE128_BLOCKBYTES;
+                $filterMode = ARRAY_FILTER_USE_VALUE;
+                $addrinfoError = EAI_AGAIN;
+            ',
+            'assertions' => [
+                '$blockBytes===' => '168',
+                '$filterMode===' => '0',
+                '$addrinfoError===' => 'int',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.6',
+        ];
+
+        yield 'stubConstantWithAVarDocblockHasTheDocblockType' => [
+            'code' => '<?php
+                $icuVersion = INTL_ICU_VERSION;
+            ',
+            'assertions' => [
+                '$icuVersion===' => 'string',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.5',
+        ];
+
         yield 'php86ConstantAvailableFromItsVersion' => [
             'code' => '<?php
                 $x = ARRAY_FILTER_USE_VALUE;
@@ -1079,6 +1157,10 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'OpensslPsk' => 'Openssl\Psk',
             'OpensslException' => 'Openssl\OpensslException',
             'IntlNumberRangeFormatter' => 'IntlNumberRangeFormatter',
+            'SodiumCryptoXofShake128State' => 'SodiumCryptoXofShake128State',
+            'SodiumCryptoXofShake256State' => 'SodiumCryptoXofShake256State',
+            'SodiumCryptoXofTurboshake128State' => 'SodiumCryptoXofTurboshake128State',
+            'SodiumCryptoXofTurboshake256State' => 'SodiumCryptoXofTurboshake256State',
         ];
 
         foreach ($classesNewIn86 as $case => $class) {
@@ -1120,6 +1202,26 @@ final class NativeSymbolAvailabilityTest extends TestCase
                 $f = new IntlNumberRangeFormatter();
             ',
             'error_message' => 'InaccessibleMethod',
+            'error_levels' => [],
+            'php_version' => '8.6',
+        ];
+
+        yield 'php86SodiumXofStateNotInstantiable' => [
+            'code' => '<?php
+                $s = new SodiumCryptoXofShake128State();
+            ',
+            'error_message' => 'InaccessibleMethod',
+            'error_levels' => [],
+            'php_version' => '8.6',
+        ];
+
+        yield 'php86SodiumXofStatesAreDistinct' => [
+            'code' => '<?php
+                function f(SodiumCryptoXofShake256State $s): string {
+                    return sodium_crypto_xof_shake128_squeeze($s, 32);
+                }
+            ',
+            'error_message' => 'InvalidArgument',
             'error_levels' => [],
             'php_version' => '8.6',
         ];
