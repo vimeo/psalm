@@ -8,6 +8,7 @@ use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
@@ -37,10 +38,10 @@ final class ErrorAfterUpdateTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserCacheProvider($config, '', false),
+            new ParserCacheProvider($config, '', CacheMode::Memory),
             null,
             null,
-            new FileReferenceCacheProvider($config, '', false),
+            new FileReferenceCacheProvider($config, '', CacheMode::Memory),
             new ProjectCacheProvider(),
         );
 
@@ -156,6 +157,83 @@ final class ErrorAfterUpdateTest extends TestCase
                     ],
                 ],
                 'error_message' => 'UndefinedMethod',
+            ],
+            'invalidateCallerOfAMethodOfTheMixinOfATrait' => [
+                'file_stages' => [
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            /** @psalm-api */
+                            final class A {
+                                public function foo() : void {}
+                            }',
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            namespace Foo;
+
+                            /** @mixin A */
+                            trait ForwardsCalls {}
+
+                            final class B {
+                                use ForwardsCalls;
+
+                                /**
+                                 * @psalm-api
+                                 * @param list<mixed> $args
+                                 * @return mixed
+                                 */
+                                public function __call(string $name, array $args) {
+                                    return null;
+                                }
+                            }',
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                            namespace Foo;
+
+                            final class C {
+                                public function bar() : void {
+                                    (new B)->foo();
+                                }
+                            }
+
+                            (new C())->bar();',
+                    ],
+                    [
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'A.php' => '<?php
+                            namespace Foo;
+
+                            /** @psalm-api */
+                            final class A {}',
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'B.php' => '<?php
+                            namespace Foo;
+
+                            /** @mixin A */
+                            trait ForwardsCalls {}
+
+                            final class B {
+                                use ForwardsCalls;
+
+                                /**
+                                 * @psalm-api
+                                 * @param list<mixed> $args
+                                 * @return mixed
+                                 */
+                                public function __call(string $name, array $args) {
+                                    return null;
+                                }
+                            }',
+                        (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'C.php' => '<?php
+                            namespace Foo;
+
+                            final class C {
+                                public function bar() : void {
+                                    (new B)->foo();
+                                }
+                            }
+
+                            (new C())->bar();',
+                    ],
+                ],
+                'error_message' => 'UndefinedMagicMethod',
             ],
             'invalidateAfterPropertyTypeChange' => [
                 'file_stages' => [
