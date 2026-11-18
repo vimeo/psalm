@@ -5,8 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
+use function sort;
 
 final class InsecureCallTest extends TestCase
 {
@@ -42,6 +48,14 @@ final class InsecureCallTest extends TestCase
                 'code' => '<?php
                     mt_srand();
                     echo mt_rand(), rand(), random_int(0, 10);',
+            ],
+            'mersenneTwisterSeededWithNull' => [
+                'code' => '<?php
+                    mt_srand(null);
+                    echo (new Random\Randomizer(new Random\Engine\Mt19937(null)))->getInt(0, 10);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
             ],
             'unseededMersenneTwister' => [
                 'code' => '<?php
@@ -182,5 +196,26 @@ final class InsecureCallTest extends TestCase
                 'error_message' => 'XmlExternalEntity',
             ],
         ];
+    }
+
+    public function testAnInsecureCallIsReportedWhenItsArgumentsHaveTheWrongType(): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            function digest(array $data): string {
+                return md5($data);
+            }');
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $types = array_map(
+            static fn(IssueData $issue): string => $issue->type,
+            IssueBuffer::getIssuesDataForFile($file_path),
+        );
+        sort($types);
+
+        $this->assertSame(['InvalidArgument', 'WeakHash'], $types);
     }
 }

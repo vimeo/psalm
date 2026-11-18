@@ -145,7 +145,10 @@ final class InsecureCallAnalyzer
                 }
             }
         } elseif (isset(self::RANDOM_SEED_PARAMS[$id])
-            && ArgumentsAnalyzer::getArgForParam($args, $function_params, self::RANDOM_SEED_PARAMS[$id]) !== null
+            && self::isGivenASeed(
+                $statements_analyzer,
+                ArgumentsAnalyzer::getArgForParam($args, $function_params, self::RANDOM_SEED_PARAMS[$id]),
+            )
         ) {
             $issue = new WeakRandom(
                 'A seeded Mersenne Twister generates values whoever knows or guesses the seed can predict:'
@@ -176,6 +179,22 @@ final class InsecureCallAnalyzer
         if ($issue instanceof CodeIssue) {
             IssueBuffer::maybeAdd($issue, $statements_analyzer->getSuppressedIssues());
         }
+    }
+
+    /**
+     * Whether a seed is given: null (since PHP 8.3) seeds randomly, as no seed does
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isGivenASeed(StatementsAnalyzer $statements_analyzer, ?PhpParser\Node\Arg $arg): bool
+    {
+        if ($arg === null) {
+            return false;
+        }
+
+        $type = $statements_analyzer->node_data->getType($arg->value);
+
+        return $type === null || !$type->isNull();
     }
 
     /**
