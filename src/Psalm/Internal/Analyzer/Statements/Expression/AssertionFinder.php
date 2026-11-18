@@ -22,6 +22,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\FileSource;
 use Psalm\Internal\Algebra;
+use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
@@ -103,14 +104,17 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_map;
 use function array_push;
 use function assert;
@@ -128,8 +132,10 @@ use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strtolower;
-use function strtr;
 use function substr;
+
+use const PHP_INT_MAX;
+use const PHP_INT_MIN;
 
 /**
  * @internal
@@ -169,7 +175,9 @@ final class AssertionFinder
             );
         }
 
-        if ($conditional instanceof PhpParser\Node\Expr\Assign) {
+        if ($conditional instanceof PhpParser\Node\Expr\Assign
+            || $conditional instanceof PhpParser\Node\Expr\AssignRef
+        ) {
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $conditional->var,
                 $this_class_name,
@@ -2184,6 +2192,44 @@ final class AssertionFinder
     }
 
     /**
+     * A nullsafe chain that is null only by short-circuiting is null exactly when the receiver of its nullsafe link
+     * is, which holds for a single link: with several, a null intermediate value says nothing. A nullsafe property
+     * fetch compared to null is expanded by the FormulaGenerator.
+     */
+    private static function getReceiverOfAChainNullOnlyByShortCircuit(
+        PhpParser\Node\Expr $chain,
+        ?string $this_class_name,
+        FileSource $source,
+    ): ?string {
+        if (NullsafeChainState::of($chain) !== NullsafeChainState::ShortCircuit
+            || $chain instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+        ) {
+            return null;
+        }
+
+        $nullsafe_receivers = [];
+        $chain_link = $chain;
+
+        while ($chain_link instanceof PhpParser\Node\Expr\PropertyFetch
+            || $chain_link instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            || $chain_link instanceof PhpParser\Node\Expr\MethodCall
+            || $chain_link instanceof PhpParser\Node\Expr\NullsafeMethodCall
+        ) {
+            if ($chain_link instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+                || $chain_link instanceof PhpParser\Node\Expr\NullsafeMethodCall
+            ) {
+                $nullsafe_receivers[] = $chain_link->var;
+            }
+
+            $chain_link = $chain_link->var;
+        }
+
+        return count($nullsafe_receivers) === 1
+            ? ExpressionIdentifier::getExtendedVarId($nullsafe_receivers[0], $this_class_name, $source)
+            : null;
+    }
+
+    /**
      * What a non-null (or truthy) `$a?->b?->value` says: the fetch is that way, and so is every receiver of the chain
      * (`$a?->b` and `$a`). A null one says nothing about the receivers, so no assertion is made for it.
      *
@@ -2329,7 +2375,9 @@ final class AssertionFinder
         );
 
         if ($var_name) {
-            if ($base_conditional instanceof PhpParser\Node\Expr\Assign) {
+            if ($base_conditional instanceof PhpParser\Node\Expr\Assign
+                || $base_conditional instanceof PhpParser\Node\Expr\AssignRef
+            ) {
                 $var_name = '=' . $var_name;
             }
 
@@ -2347,6 +2395,15 @@ final class AssertionFinder
                 $this_class_name,
                 $source,
             );
+        }
+
+        // `!=` is also false for a falsy value of a receiver that is not null (`false == null`)
+        $nullsafe_var_name = $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+            ? self::getReceiverOfAChainNullOnlyByShortCircuit($base_conditional, $this_class_name, $source)
+            : null;
+
+        if ($nullsafe_var_name !== null) {
+            $if_types[$nullsafe_var_name] = [[new IsNotType(new TNull())]];
         }
 
         if ($codebase
@@ -3084,7 +3141,10 @@ final class AssertionFinder
             $source,
         );
 
-        if ($var_name && $base_conditional instanceof PhpParser\Node\Expr\Assign) {
+        if ($var_name
+            && ($base_conditional instanceof PhpParser\Node\Expr\Assign
+                || $base_conditional instanceof PhpParser\Node\Expr\AssignRef)
+        ) {
             $var_name = '=' . $var_name;
         }
 
@@ -3094,6 +3154,15 @@ final class AssertionFinder
             } else {
                 $if_types[$var_name] = [[new IsLooselyEqual(new TNull())]];
             }
+        }
+
+        // `==` is also true for a falsy value of a receiver that is not null (`false == null`)
+        $nullsafe_var_name = $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            ? self::getReceiverOfAChainNullOnlyByShortCircuit($base_conditional, $this_class_name, $source)
+            : null;
+
+        if ($nullsafe_var_name !== null) {
+            $if_types[$nullsafe_var_name] = [[new IsType(new TNull())]];
         }
 
         if ($codebase
@@ -3961,6 +4030,67 @@ final class AssertionFinder
     }
 
     /**
+     * The variable an operand compared with an integer is: `$a++` and `$a--` compare the value `$a` had before, so
+     * when it is an integer, what `$a` holds afterwards is compared with the integer shifted by one. A variable the
+     * operand evaluated after it writes (`$a < ($a = 10)`) no longer holds the compared value.
+     */
+    private static function getComparedVarId(
+        PhpParser\Node\Expr $operand,
+        ?PhpParser\Node\Expr $later_operand,
+        ?string $this_class_name,
+        FileSource $source,
+        int &$compared_value,
+    ): ?string {
+        $shift = 0;
+
+        if ($operand instanceof PhpParser\Node\Expr\PostInc || $operand instanceof PhpParser\Node\Expr\PostDec) {
+            $shift = $operand instanceof PhpParser\Node\Expr\PostInc ? 1 : -1;
+
+            if (!$source instanceof StatementsAnalyzer
+                || !($old_type = $source->node_data->getType($operand))
+                || !$old_type->isInt()
+                || $compared_value === ($shift === 1 ? PHP_INT_MAX : PHP_INT_MIN)
+            ) {
+                return null;
+            }
+
+            $operand = $operand->var;
+        }
+
+        $var_id = ExpressionIdentifier::getExtendedVarId($operand, $this_class_name, $source);
+
+        if ($var_id === null) {
+            return null;
+        }
+
+        if ($later_operand !== null) {
+            $written_var_ids = FormulaGenerator::getAssignedVarIds(
+                $later_operand,
+                $this_class_name,
+                $source instanceof StatementsAnalyzer ? $source->node_data : null,
+            );
+
+            while ($operand instanceof PhpParser\Node\Expr\Assign
+                || $operand instanceof PhpParser\Node\Expr\AssignRef
+                || $operand instanceof PhpParser\Node\Expr\PreInc
+                || $operand instanceof PhpParser\Node\Expr\PreDec
+            ) {
+                $operand = $operand->var;
+            }
+
+            $root_var_id = ExpressionIdentifier::getRootVarId($operand, $this_class_name, $source);
+
+            if ($root_var_id === null ? $written_var_ids !== [] : isset($written_var_ids[$root_var_id])) {
+                return null;
+            }
+        }
+
+        $compared_value += $shift;
+
+        return $var_id;
+    }
+
+    /**
      * The operand a value compared with an operand of this type is identical to, unless the type has a single value
      * and says it all: two comparisons with different values of the same type are not each other's negation
      *
@@ -3996,7 +4126,6 @@ final class AssertionFinder
 
     /**
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
-     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function getInarrayAssertions(
         PhpParser\Node\Expr\FuncCall $expr,
@@ -4063,11 +4192,37 @@ final class AssertionFinder
                     if ($assertions !== []) {
                         $if_types[$first_var_name] = [$assertions];
                     }
+                } elseif ($second_arg_type->isSingle() && self::isArrayTemplate($atomic_type)) {
+                    $value_of_type = new Union([new TTemplateValueOf(
+                        $atomic_type->param_name,
+                        $atomic_type->defining_class,
+                        new Union([$atomic_type]),
+                    )]);
+
+                    // the values of two templates can't be intersected
+                    if (($first_var_type = $source->node_data->getType($expr->getArgs()[0]->value))
+                        && Type::intersectUnionTypes($value_of_type, $first_var_type, $source->getCodebase()) !== null
+                    ) {
+                        $if_types[$first_var_name] = [[new InArray($value_of_type, $haystack)]];
+                    }
                 }
             }
         }
 
         return $if_types ? [$if_types] : [];
+    }
+
+    /**
+     * @psalm-assert-if-true TTemplateParam $atomic_type
+     * @psalm-pure
+     */
+    private static function isArrayTemplate(?Atomic $atomic_type): bool
+    {
+        return $atomic_type instanceof TTemplateParam
+            && array_all(
+                $atomic_type->as->getAtomicTypes(),
+                static fn(Atomic $as): bool => $as instanceof TArray || $as instanceof TKeyedArray,
+            );
     }
 
     /**
@@ -4176,6 +4331,36 @@ final class AssertionFinder
                     }
                 }
             }
+
+            $array_atomic = $second_var_type->isSingle() ? $second_var_type->getSingleAtomic() : null;
+
+            if (self::isArrayTemplate($array_atomic)) {
+                $key_of_type = new Union([new TTemplateKeyOf(
+                    $array_atomic->param_name,
+                    $array_atomic->defining_class,
+                    new Union([$array_atomic]),
+                )]);
+
+                // only an int finds no other key than itself: '0' finds the key 0, null the key ''. A string that
+                // keys of T can be is still narrowed, though '0' may have found the int key 0
+                if (Type::intersectUnionTypes($key_of_type, $first_var_type, $source->getCodebase()) !== null
+                    && array_all(
+                        $first_var_type->getAtomicTypes(),
+                        static fn(Atomic $key_atomic): bool => $key_atomic instanceof TInt
+                            || Type::intersectUnionTypes(
+                                $key_of_type,
+                                new Union([$key_atomic]),
+                                $source->getCodebase(),
+                            ) !== null,
+                    )
+                ) {
+                    $template_key_var_name = $first_var_name;
+                    $template_key_assertion = new InArray(
+                        $key_of_type,
+                        self::getOperandId($expr->getArgs()[1]->value, $this_class_name, $source),
+                    );
+                }
+            }
         }
 
         if ($literal_assertions && $first_var_name !== null && $safe_to_track_literals) {
@@ -4260,6 +4445,10 @@ final class AssertionFinder
             }
         }
 
+        if (isset($template_key_var_name, $template_key_assertion)) {
+            $if_types[$template_key_var_name] = [[$template_key_assertion]];
+        }
+
         return $if_types ? [$if_types] : [];
     }
 
@@ -4340,19 +4529,13 @@ final class AssertionFinder
         }
 
         if ($superior_value_position && $superior_value_comparison !== null) {
-            if ($superior_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                $var_name = ExpressionIdentifier::getExtendedVarId(
-                    $conditional->left,
-                    $this_class_name,
-                    $source,
-                );
-            } else {
-                $var_name = ExpressionIdentifier::getExtendedVarId(
-                    $conditional->right,
-                    $this_class_name,
-                    $source,
-                );
-            }
+            $var_name = self::getComparedVarId(
+                $superior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->left : $conditional->right,
+                $superior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->right : null,
+                $this_class_name,
+                $source,
+                $superior_value_comparison,
+            );
 
             if ($var_name !== null) {
                 if ($superior_value_position === self::ASSIGNMENT_TO_RIGHT) {
@@ -4386,36 +4569,13 @@ final class AssertionFinder
         ?string $this_class_name,
         FileSource $source,
     ): array {
-        if (!$conditional instanceof BinaryOp) {
+        $comparison = self::getStringLengthComparison($conditional, $this_class_name, $source);
+
+        if ($comparison === null) {
             return [];
         }
 
-        $operator = match (true) {
-            $conditional instanceof BinaryOp\Identical, $conditional instanceof BinaryOp\Equal => '==',
-            $conditional instanceof BinaryOp\NotIdentical, $conditional instanceof BinaryOp\NotEqual => '!=',
-            $conditional instanceof BinaryOp\Greater => '>',
-            $conditional instanceof BinaryOp\GreaterOrEqual => '>=',
-            $conditional instanceof BinaryOp\Smaller => '<',
-            $conditional instanceof BinaryOp\SmallerOrEqual => '<=',
-            default => null,
-        };
-
-        if ($operator === null) {
-            return [];
-        }
-
-        $left_argument = self::getStringLengthArgument($conditional->left);
-        $right_argument = self::getStringLengthArgument($conditional->right);
-        if ($left_argument && $conditional->right instanceof PhpParser\Node\Scalar\Int_) {
-            $length_argument = $left_argument;
-            $compared_length = $conditional->right->value;
-        } elseif ($right_argument && $conditional->left instanceof PhpParser\Node\Scalar\Int_) {
-            $length_argument = $right_argument;
-            $compared_length = $conditional->left->value;
-            $operator = strtr($operator, '<>', '><');
-        } else {
-            return [];
-        }
+        [$var_name, $operator, $compared_length] = $comparison;
 
         // only a condition that holds exactly when the string is (non-)empty, as its negation holds otherwise
         $is_non_empty = match ($operator) {
@@ -4433,6 +4593,91 @@ final class AssertionFinder
             return [];
         }
 
+        $empty_string = TLiteralString::make('');
+
+        return [[$var_name => [[$is_non_empty ? new IsNotIdentical($empty_string) : new IsIdentical($empty_string)]]]];
+    }
+
+    /**
+     * A comparison of strlen() that implies the string isn't empty in only one of its branches, like
+     * `strlen($s) === 3` when true or `strlen($s) < 3` when false
+     *
+     * @return array{string, bool}|null the string, and whether it's non-empty when the comparison is true
+     */
+    public static function getOneWayNonEmptyStringLengthComparison(
+        PhpParser\Node\Expr $conditional,
+        ?string $this_class_name,
+        FileSource $source,
+    ): ?array {
+        $comparison = self::getStringLengthComparison($conditional, $this_class_name, $source);
+
+        if ($comparison === null) {
+            return null;
+        }
+
+        [$var_name, $operator, $compared_length, $argument_type] = $comparison;
+
+        // the comparison would only be reported as redundant for a string that can't be empty anyway
+        if ($argument_type->isNonEmptyString(true)) {
+            return null;
+        }
+
+        return match (true) {
+            $operator === '==' && $compared_length > 0,
+            $operator === '>' && $compared_length > 0,
+            $operator === '>=' && $compared_length > 1 => [$var_name, true],
+            $operator === '!=' && $compared_length > 0,
+            $operator === '<' && $compared_length > 1,
+            $operator === '<=' && $compared_length > 0 => [$var_name, false],
+            default => null,
+        };
+    }
+
+    /**
+     * @return array{string, '=='|'!='|'>'|'>='|'<'|'<=', int, Union}|null
+     */
+    private static function getStringLengthComparison(
+        PhpParser\Node\Expr $conditional,
+        ?string $this_class_name,
+        FileSource $source,
+    ): ?array {
+        if (!$conditional instanceof BinaryOp || !$source instanceof StatementsAnalyzer) {
+            return null;
+        }
+
+        $operator = match (true) {
+            $conditional instanceof BinaryOp\Identical, $conditional instanceof BinaryOp\Equal => '==',
+            $conditional instanceof BinaryOp\NotIdentical, $conditional instanceof BinaryOp\NotEqual => '!=',
+            $conditional instanceof BinaryOp\Greater => '>',
+            $conditional instanceof BinaryOp\GreaterOrEqual => '>=',
+            $conditional instanceof BinaryOp\Smaller => '<',
+            $conditional instanceof BinaryOp\SmallerOrEqual => '<=',
+            default => null,
+        };
+
+        if ($operator === null) {
+            return null;
+        }
+
+        $left_argument = self::getStringLengthArgument($conditional->left, $source);
+        $right_argument = self::getStringLengthArgument($conditional->right, $source);
+        if ($left_argument && $conditional->right instanceof PhpParser\Node\Scalar\Int_) {
+            $length_argument = $left_argument;
+            $compared_length = $conditional->right->value;
+        } elseif ($right_argument && $conditional->left instanceof PhpParser\Node\Scalar\Int_) {
+            $length_argument = $right_argument;
+            $compared_length = $conditional->left->value;
+            $operator = match ($operator) {
+                '>' => '<',
+                '>=' => '<=',
+                '<' => '>',
+                '<=' => '>=',
+                default => $operator,
+            };
+        } else {
+            return null;
+        }
+
         $var_name = ExpressionIdentifier::getExtendedVarId(
             $length_argument,
             $this_class_name,
@@ -4440,31 +4685,43 @@ final class AssertionFinder
         );
 
         if ($var_name === null) {
-            return [];
+            return null;
         }
 
         // in the non-strict mode the length of null and false is 0 too: only a string is empty exactly when it is
-        $argument_type = $source instanceof StatementsAnalyzer
-            ? $source->node_data->getType($length_argument)
-            : null;
+        $argument_type = $source->node_data->getType($length_argument);
 
         if ($argument_type === null || !$argument_type->isString(true)) {
-            return [];
+            return null;
         }
 
-        $empty_string = TLiteralString::make('');
-
-        return [[$var_name => [[$is_non_empty ? new IsNotIdentical($empty_string) : new IsIdentical($empty_string)]]]];
+        return [$var_name, $operator, $compared_length, $argument_type];
     }
 
-    private static function getStringLengthArgument(PhpParser\Node\Expr $expr): ?PhpParser\Node\Expr
-    {
+    private static function getStringLengthArgument(
+        PhpParser\Node\Expr $expr,
+        StatementsAnalyzer $source,
+    ): ?PhpParser\Node\Expr {
         if (!$expr instanceof PhpParser\Node\Expr\FuncCall
             || !$expr->name instanceof PhpParser\Node\Name
-            || !in_array(strtolower($expr->name->getFirst()), ['strlen', 'mb_strlen'])
+            || !in_array($expr->name->toLowerString(), ['strlen', 'mb_strlen'], true)
             || $expr->isFirstClassCallable()
         ) {
             return null;
+        }
+
+        // a function of the namespace, or one imported under that name, is called instead of the built-in one
+        if (!$expr->name instanceof PhpParser\Node\Name\FullyQualified) {
+            $function_id = strtolower($source->getCodebase()->functions->getFullyQualifiedFunctionNameFromString(
+                $expr->name->toString(),
+                $source,
+            ));
+
+            if ($function_id !== $expr->name->toLowerString()
+                && $source->getCodebase()->functions->functionExists($source, $function_id)
+            ) {
+                return null;
+            }
         }
 
         $first_argument = $expr->getArgs()[0] ?? null;
@@ -4546,20 +4803,15 @@ final class AssertionFinder
         }
 
         if ($inferior_value_position) {
-            if ($inferior_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                $var_name = ExpressionIdentifier::getExtendedVarId(
-                    $conditional->left,
+            $var_name = $inferior_value_comparison !== null
+                ? self::getComparedVarId(
+                    $inferior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->left : $conditional->right,
+                    $inferior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->right : null,
                     $this_class_name,
                     $source,
-                );
-            } else {
-                $var_name = ExpressionIdentifier::getExtendedVarId(
-                    $conditional->right,
-                    $this_class_name,
-                    $source,
-                );
-            }
-
+                    $inferior_value_comparison,
+                )
+                : null;
 
             if ($var_name !== null && $inferior_value_comparison !== null) {
                 if ($inferior_value_position === self::ASSIGNMENT_TO_RIGHT) {

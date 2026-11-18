@@ -16,7 +16,7 @@ use Psalm\Type;
 use function array_filter;
 use function array_slice;
 use function count;
-use function end;
+use function str_ends_with;
 
 /**
  * @internal
@@ -44,13 +44,19 @@ final class BreakAnalyzer
 
         $loop_scope = $context->loop_scope;
 
+        $break_depth = $stmt->num instanceof PhpParser\Node\Scalar\Int_ ? $stmt->num->value : 1;
+        $target_index = count($context->break_types) - $break_depth;
+        $inner_break_types = $target_index >= 0 ? array_slice($context->break_types, $target_index + 1) : [];
+        $loops_between = count(array_filter(
+            $inner_break_types,
+            static fn(string $break_type): bool => $break_type === 'loop',
+        ));
+        $targets_switch = $target_index >= 0 && $context->break_types[$target_index] === 'switch';
+
         $leaving_switch = true;
 
         if ($loop_scope) {
-            if ($context->break_types
-                && end($context->break_types) === 'switch'
-                && (!$stmt->num instanceof PhpParser\Node\Scalar\Int_ || $stmt->num->value < 2)
-            ) {
+            if ($targets_switch && $loops_between === 0) {
                 $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_LEAVE_SWITCH;
             } else {
                 $leaving_switch = false;
@@ -59,14 +65,6 @@ final class BreakAnalyzer
             }
 
             // a `break 2` or more out of a nested loop does not land after this loop: it leaves the loops around it too
-            $break_depth = $stmt->num instanceof PhpParser\Node\Scalar\Int_ ? $stmt->num->value : 1;
-            $target_index = count($context->break_types) - $break_depth;
-            $loops_between = $target_index >= 0
-                ? count(array_filter(
-                    array_slice($context->break_types, $target_index + 1),
-                    static fn(string $break_type): bool => $break_type === 'loop',
-                ))
-                : 0;
             $ends_this_loop = !$leaving_switch && $loops_between === 0;
 
             // a break out of a switch only reaches the end of the switch, which keeps what every case read
@@ -92,12 +90,24 @@ final class BreakAnalyzer
                 foreach ($loop_scope->possibly_defined_loop_parent_vars as $var_id => $type) {
                     if ($ends_this_loop && !isset($context->vars_in_scope[$var_id])) {
                         $loop_scope->possibly_defined_loop_parent_vars[$var_id] = $type->setPossiblyUndefined(true);
+
+                        if (str_ends_with($var_id, ']')) {
+                            $loop_scope->unknown_offsets[$var_id] = true;
+                        }
                     }
                 }
 
                 foreach ($context->vars_in_scope as $var_id => $type) {
                     if (!isset($loop_scope->loop_parent_context->vars_in_scope[$var_id])) {
                         $previous_type = $loop_scope->possibly_defined_loop_parent_vars[$var_id] ?? null;
+
+                        if (str_ends_with($var_id, ']')
+                            && ($previous_type
+                                ? $previous_type->possibly_undefined !== $type->possibly_undefined
+                                : $ends_this_loop && $loop_scope->break_count > 0)
+                        ) {
+                            $loop_scope->unknown_offsets[$var_id] = true;
+                        }
 
                         $loop_scope->possibly_defined_loop_parent_vars[$var_id] = Type::combineUnionTypes(
                             $ends_this_loop && $loop_scope->break_count > 0 && $previous_type === null
@@ -168,8 +178,20 @@ final class BreakAnalyzer
             }
         }
 
-        $case_scope = $context->case_scope;
-        if ($case_scope && $leaving_switch) {
+        // the case of the switch the break leaves, which a `break 2` or more reaches past the inner switches
+        $case_scope = null;
+
+        if ($targets_switch) {
+            $case_scope = $context->case_scope;
+
+            foreach ($inner_break_types as $break_type) {
+                if ($break_type === 'switch') {
+                    $case_scope = $case_scope?->outer_case_scope;
+                }
+            }
+        }
+
+        if ($case_scope) {
             $case_scope->addBreak($context);
 
             $is_first_break = $case_scope->break_vars === null;

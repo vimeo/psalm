@@ -18,6 +18,7 @@ use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitFloatToIntCast;
 use Psalm\Issue\InvalidOperand;
@@ -56,8 +57,10 @@ use function array_diff_key;
 use function array_values;
 use function count;
 use function floor;
+use function is_array;
 use function is_int;
 use function is_numeric;
+use function is_string;
 use function max;
 use function min;
 use function preg_match;
@@ -93,6 +96,11 @@ final class ArithmeticOpAnalyzer
         $left_type = $nodes->getType($left);
         $right_type = $nodes->getType($right);
         $config = Config::getInstance();
+
+        if ($codebase) {
+            $left_type = $left_type ? TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $left_type) : null;
+            $right_type = $right_type ? TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $right_type) : null;
+        }
 
         if ($left_type && $left_type->isNever()) {
             $left_type = $right_type;
@@ -228,8 +236,16 @@ final class ArithmeticOpAnalyzer
             $has_string_increment = false;
 
             $right_type_parts = self::expandNumericTemplates($right_type);
+            $left_type_parts = self::expandNumericTemplates($left_type);
 
-            foreach (self::expandNumericTemplates($left_type) as $left_type_part) {
+            if ($context !== null
+                && $context->inside_loop
+                && ($parent instanceof VirtualPlus || $parent instanceof VirtualMinus)
+            ) {
+                $left_type_parts = self::getLiteralIntsAsRange($left_type_parts);
+            }
+
+            foreach ($left_type_parts as $left_type_part) {
                 foreach ($right_type_parts as $right_type_part) {
                     $candidate_result_type = self::analyzeOperands(
                         $statements_source,
@@ -333,6 +349,39 @@ final class ArithmeticOpAnalyzer
         }
 
         return $parts;
+    }
+
+    /**
+     * In a loop, `++`, `--`, `+=` and `-=` make a single literal an unbounded range, as the next iterations go further.
+     * Several literals are the values the passes over the loop combined: they are shifted as the range they span,
+     * which the loop analysis widens if the iterations keep shifting it.
+     *
+     * @param list<Atomic> $parts
+     * @return list<Atomic>
+     * @psalm-pure
+     */
+    private static function getLiteralIntsAsRange(array $parts): array
+    {
+        $other_parts = [];
+        $min = null;
+        $max = null;
+
+        foreach ($parts as $part) {
+            if ($part instanceof TLiteralInt && $part->value !== PHP_INT_MIN && $part->value !== PHP_INT_MAX) {
+                $min = $min === null ? $part->value : min($min, $part->value);
+                $max = $max === null ? $part->value : max($max, $part->value);
+            } else {
+                $other_parts[] = $part;
+            }
+        }
+
+        if ($min === null || $max === null || $min === $max) {
+            return $parts;
+        }
+
+        $other_parts[] = new TIntRange($min, $max);
+
+        return $other_parts;
     }
 
     /**
@@ -888,6 +937,11 @@ final class ArithmeticOpAnalyzer
             if ($left_type_part instanceof TInt && $right_type_part instanceof TInt) {
                 if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
                     $result_type = new Union([new TInt(), new TFloat()]);
+                } elseif ($parent instanceof PhpParser\Node\Expr\BinaryOp\Pow
+                    && $right_type_part instanceof TLiteralInt
+                    && $right_type_part->value < 0
+                ) {
+                    $result_type = Type::combineUnionTypes(Type::getFloat(), $result_type);
                 } else {
                     $left_is_positive = ($left_type_part instanceof TLiteralInt && $left_type_part->value > 0)
                         || ($left_type_part instanceof TIntRange && $left_type_part->isPositive());
@@ -1205,18 +1259,51 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
-     * What a loop can change: any variable, and an item or property of one the loop assigns or passes to a call
+     * What a loop can change: an operand that is a variable, an item or property of a variable the loop assigns or
+     * passes to a call, and what is computed from those or from a variable the loop assigns (`$a ?? 0`,
+     * `max($a, 0)`). What only selects between values (the condition of `$a ? 1 : 2`) doesn't count.
      */
-    private static function isChangeableByLoop(PhpParser\Node\Expr $expr, ?Context $context): bool
+    private static function isChangeableByLoop(PhpParser\Node $expr, ?Context $context, bool $is_operand = true): bool
     {
         if ($expr instanceof PhpParser\Node\Expr\Variable) {
-            return true;
+            return $is_operand
+                || !is_string($expr->name)
+                || $context?->loop_scope === null
+                || isset($context->loop_scope->assigned_root_var_ids['$' . $expr->name]);
         }
 
         if (!$expr instanceof PhpParser\Node\Expr\ArrayDimFetch
             && !$expr instanceof PhpParser\Node\Expr\PropertyFetch
             && !$expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
         ) {
+            $selector = null;
+
+            if ($expr instanceof PhpParser\Node\Expr\Match_
+                || ($expr instanceof PhpParser\Node\Expr\Ternary && $expr->if !== null)
+            ) {
+                $selector = 'cond';
+            } elseif ($expr instanceof PhpParser\Node\MatchArm) {
+                $selector = 'conds';
+            }
+
+            foreach ($expr->getSubNodeNames() as $sub_node_name) {
+                if ($sub_node_name === $selector) {
+                    continue;
+                }
+
+                /** @var mixed $sub_nodes */
+                $sub_nodes = $expr->$sub_node_name;
+
+                /** @var mixed $sub_node */
+                foreach (is_array($sub_nodes) ? $sub_nodes : [$sub_nodes] as $sub_node) {
+                    if ($sub_node instanceof PhpParser\Node
+                        && self::isChangeableByLoop($sub_node, $context, false)
+                    ) {
+                        return true;
+                    }
+                }
+            }
+
             return false;
         }
 

@@ -450,8 +450,16 @@ final class ExpressionAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                 );
 
-                // Analyze as if it were a normal assignment and just pretend the reference doesn't exist
-                return self::analyzeAssignment($statements_analyzer, $stmt, $context, $from_stmt);
+                // Analyze as if it were a normal assignment and just pretend the reference doesn't exist, but for the
+                // offset it binds, which PHP creates
+                $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+                $context->inside_by_ref_offset = $stmt->expr instanceof PhpParser\Node\Expr\ArrayDimFetch;
+
+                try {
+                    return self::analyzeAssignment($statements_analyzer, $stmt, $context, $from_stmt);
+                } finally {
+                    $context->inside_by_ref_offset = $was_inside_by_ref_offset;
+                }
             }
 
             return true;

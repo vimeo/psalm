@@ -26,7 +26,6 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTrue;
 
-use function count;
 use function strpos;
 
 /**
@@ -432,7 +431,7 @@ final class MutableUnion implements TypeNode
                     $this->types[$key] = TypeCombiner::combine([$new_type_part, $this->types[$key]])->getSingleAtomic();
                 }
             }
-        } elseif (count($this->types) === 0) {
+        } elseif ($this->isUnionEmpty()) {
             $this->types['mixed'] = new TMixed();
         }
 
