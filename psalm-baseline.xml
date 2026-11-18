@@ -2368,21 +2368,6 @@
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
       <code><![CDATA[$var_id]]></code>
       <code><![CDATA[$var_id]]></code>
       <code><![CDATA[$var_id]]></code>
@@ -2401,17 +2386,6 @@
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$count]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
-      <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
