@@ -574,6 +574,18 @@ final class AssertionFinder
             );
         }
 
+        return self::getOperandTypeComparisonAssertions($conditional, $this_class_name, $source, $codebase);
+    }
+
+    /**
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     */
+    private static function getOperandTypeComparisonAssertions(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        ?string $this_class_name,
+        StatementsAnalyzer $source,
+        ?Codebase $codebase,
+    ): array {
         $var_type = $source->node_data->getType($conditional->left);
         $other_type = $source->node_data->getType($conditional->right);
 
@@ -628,6 +640,7 @@ final class AssertionFinder
                 }
             }
         }
+
         if ($codebase
             && $var_type
             && $other_type
