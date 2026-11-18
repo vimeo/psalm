@@ -2766,54 +2766,16 @@ final class Config
 
         $core_generic_files = [];
 
-        if (PHP_VERSION_ID < 8_00_00 && $codebase->analysis_php_version_id >= 8_00_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.phpstub';
+        foreach ([8_04_00 => '8.4', 8_06_00 => '8.6'] as $version_id => $version) {
+            if (PHP_VERSION_ID < $version_id && $codebase->analysis_php_version_id >= $version_id) {
+                $stub_path = dirname(__DIR__, 2) . '/stubs/Php' . str_replace('.', '', $version) . '.phpstub';
 
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.0 classes');
+                if (!file_exists($stub_path)) {
+                    throw new UnexpectedValueException('Cannot locate PHP ' . $version . ' classes');
+                }
+
+                $core_generic_files[] = $stub_path;
             }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (PHP_VERSION_ID < 8_01_00 && $codebase->analysis_php_version_id >= 8_01_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php81.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.1 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (PHP_VERSION_ID < 8_02_00 && $codebase->analysis_php_version_id >= 8_02_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php82.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.2 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (PHP_VERSION_ID < 8_04_00 && $codebase->analysis_php_version_id >= 8_04_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php84.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.4 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (PHP_VERSION_ID < 8_06_00 && $codebase->analysis_php_version_id >= 8_06_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php86.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.6 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
         }
 
         // Genuinely-new classes from every version live in PhpVersionedClasses.phpstub (always

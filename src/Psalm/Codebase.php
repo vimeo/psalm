@@ -2563,29 +2563,6 @@ final class Codebase
     }
 
     /**
-     * @param list<CompletionItem> $items
-     * @return list<CompletionItem>
-     * @deprecated to be removed in Psalm 6
-     * @api fix deprecation problem "PossiblyUnusedMethod: Cannot find any calls to method"
-     * @psalm-mutation-free
-     */
-    public function filterCompletionItemsByBeginLiteralPart(array $items, string $literal_part): array
-    {
-        if (!$literal_part) {
-            return $items;
-        }
-
-        $res = [];
-        foreach ($items as $item) {
-            if ($item->insertText && str_starts_with($item->insertText, $literal_part)) {
-                $res[] = $item;
-            }
-        }
-
-        return $res;
-    }
-
-    /**
      * @return list<CompletionItem>
      */
     public function getCompletionItemsForPartialSymbol(
