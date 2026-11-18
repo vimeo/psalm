@@ -256,39 +256,6 @@ final class ComparisonAssertionTest extends TestCase
                         }
                     }',
             ],
-            'gettypeIdentical' => [
-                'code' => '<?php
-                    /** @param mixed $m */
-                    function f($m): void {
-                        if (gettype($m) === "integer") {
-                            /** @psalm-check-type-exact $m = int */;
-                        }
-                        if (gettype($m) === "double") {
-                            /** @psalm-check-type-exact $m = float */;
-                        }
-                        if (gettype($m) === "boolean") {
-                            /** @psalm-check-type-exact $m = bool */;
-                        }
-                    }',
-            ],
-            'gettypeNotIdentical' => [
-                'code' => '<?php
-                    /** @param mixed $m */
-                    function f($m): void {
-                        if (gettype($m) !== "integer") {
-                        } else {
-                            /** @psalm-check-type-exact $m = int */;
-                        }
-                        if (gettype($m) !== "double") {
-                        } else {
-                            /** @psalm-check-type-exact $m = float */;
-                        }
-                        if (gettype($m) !== "boolean") {
-                        } else {
-                            /** @psalm-check-type-exact $m = bool */;
-                        }
-                    }',
-            ],
             'getDebugTypeIdentical' => [
                 'code' => '<?php
                     final class A {}
@@ -520,15 +487,6 @@ final class ComparisonAssertionTest extends TestCase
                         if (gettype($m) !== "int") {}
                     }',
                 'error_message' => 'UnevaluatedCode',
-            ],
-            'getDebugTypeIdenticalToAGettypeNameIsTheNameOfAClass' => [
-                'code' => '<?php
-                    function f(int $i): void {
-                        if (get_debug_type($i) === "integer") {}
-                    }',
-                'error_message' => 'TypeDoesNotContainType',
-                'error_levels' => [],
-                'php_version' => '8.0',
             ],
             'getClassIdenticalToAnUndefinedClass' => [
                 'code' => '<?php

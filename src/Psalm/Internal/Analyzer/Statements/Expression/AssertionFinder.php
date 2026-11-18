@@ -92,7 +92,6 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
-use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -1942,6 +1941,26 @@ final class AssertionFinder
     }
 
     /**
+     * @psalm-pure
+     */
+    private static function getGettypeAtomic(string $gettype): ?Atomic
+    {
+        return match ($gettype) {
+            'boolean' => new Atomic\TBool(),
+            'integer' => new Atomic\TInt(),
+            'double' => new Atomic\TFloat(),
+            'string' => new Atomic\TString(),
+            'array' => new Atomic\TArray([Type::getArrayKey(), Type::getMixed()]),
+            'object' => new TObject(),
+            'resource' => new TResource(),
+            'resource (closed)' => new TClosedResource(),
+            'NULL' => new Atomic\TNull(),
+            // 'unknown type' is not returned by any supported PHP version
+            default => null,
+        };
+    }
+
+    /**
      * @return array<string, non-empty-list<non-empty-list<Assertion>>>
      */
     private static function handleIsTypeCheck(
@@ -2546,19 +2565,13 @@ final class AssertionFinder
             return [];
         }
 
-        if ($var_name === null) {
+        $atomic = self::getGettypeAtomic($type_name);
+
+        if ($var_name === null || $atomic === null) {
             return [];
         }
 
-        $assertion = match ($type_name) {
-            'integer' => new IsType(new TInt()),
-            'double' => new IsType(new TFloat()),
-            'boolean' => new IsType(new TBool()),
-            'resource (closed)' => new IsType(new TClosedResource()),
-            default => new IsType(Atomic::create($type_name)),
-        };
-
-        return [[$var_name => [[self::withPolarity($assertion, $negated)]]]];
+        return [[$var_name => [[self::withPolarity(new IsType($atomic), $negated)]]]];
     }
 
     /**

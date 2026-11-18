@@ -812,7 +812,6 @@ final class PreloaderList {
         \Psalm\Internal\Diff\DiffElem::class,
         \Psalm\Internal\Diff\FileDiffer::class,
         \Psalm\Internal\Diff\FileStatementsDiffer::class,
-        \Psalm\Internal\Diff\NamespaceStatementsDiffer::class,
         \Psalm\Internal\ErrorHandler::class,
         \Psalm\Internal\EventDispatcher::class,
         \Psalm\Internal\ExecutionEnvironment\BuildInfoCollector::class,
