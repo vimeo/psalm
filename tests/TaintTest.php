@@ -1284,6 +1284,34 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'canonicalPathStartingWithADirectoryIsInIt' => [
+                'code' => '<?php
+                    function save(): void {
+                        $resolved = realpath("/var/app/data/" . (string) $_COOKIE["name"]);
+                        if ($resolved === false || strpos($resolved, "/var/app/data/") !== 0) {
+                            return;
+                        }
+                        file_put_contents($resolved, "data");
+                    }',
+            ],
+            'canonicalPathCheckedWithStrStartsWithIsInTheDirectory' => [
+                'code' => '<?php
+                    function save(): void {
+                        $path = realpath((string) $_GET["path"]);
+                        if ($path !== false && str_starts_with($path, "/srv/files/")) {
+                            file_put_contents($path, "data");
+                        }
+                    }',
+            ],
+            'pathStartingWithADirectoryIsNoServer' => [
+                'code' => '<?php
+                    function connect(): void {
+                        $path = (string) $_GET["path"];
+                        if (str_starts_with($path, "/srv/sockets/")) {
+                            fsockopen($path, 80);
+                        }
+                    }',
+            ],
             'noTaintFromASpecializedPregReplaceCallbackCallbackInItsOtherCalls' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -6498,6 +6526,47 @@ final class TaintTest extends TestCase
 
                     foreach (rows() as $row) {
                         echo (string) $row["comment"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'canonicalPathLooselyComparedToTheStartOfADirectoryCanBeAnywhere' => [
+                'code' => '<?php
+                    function save(): void {
+                        $resolved = realpath((string) $_COOKIE["name"]);
+                        if ($resolved === false || strpos($resolved, "/var/app/data/") != 0) {
+                            return;
+                        }
+                        file_put_contents($resolved, "data");
+                    }',
+                'error_message' => 'TaintedFile',
+            ],
+            'pathStartingWithADirectoryCanLeaveItWithDots' => [
+                'code' => '<?php
+                    function save(): void {
+                        $path = (string) $_GET["path"];
+                        if (str_starts_with($path, "/srv/files/")) {
+                            file_put_contents($path, "data");
+                        }
+                    }',
+                'error_message' => 'TaintedFile',
+            ],
+            'canonicalPathStartingWithANameIsMaybeInASiblingDirectory' => [
+                'code' => '<?php
+                    function save(): void {
+                        $path = realpath((string) $_GET["path"]);
+                        if ($path !== false && str_starts_with($path, "/srv/files")) {
+                            file_put_contents($path, "data");
+                        }
+                    }',
+                'error_message' => 'TaintedFile',
+            ],
+            'canonicalPathInADirectoryKeepsItsOtherTaints' => [
+                'code' => '<?php
+                    function show(): void {
+                        $path = realpath((string) $_GET["path"]);
+                        if ($path !== false && str_starts_with($path, "/srv/files/")) {
+                            echo $path;
+                        }
                     }',
                 'error_message' => 'TaintedHtml',
             ],

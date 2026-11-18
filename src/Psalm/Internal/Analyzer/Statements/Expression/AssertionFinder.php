@@ -30,6 +30,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\CanonicalPaths;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
@@ -428,6 +429,12 @@ final class AssertionFinder
             return self::getPatternMatchAssertions($pattern_match, $source, $this_class_name);
         }
 
+        if ($source instanceof StatementsAnalyzer
+            && ($prefix_assertions = self::getCanonicalPathPrefixAssertions($conditional, $source, false)) !== []
+        ) {
+            return $prefix_assertions;
+        }
+
         $null_position = self::hasNullVariable($conditional, $source);
 
         if ($null_position !== null) {
@@ -655,6 +662,12 @@ final class AssertionFinder
             && ($pattern_match = self::getPatternMatchComparedToOne($conditional))
         ) {
             return self::getPatternMatchAssertions($pattern_match, $source, $this_class_name, true);
+        }
+
+        if ($source instanceof StatementsAnalyzer
+            && ($prefix_assertions = self::getCanonicalPathPrefixAssertions($conditional, $source, true)) !== []
+        ) {
+            return $prefix_assertions;
         }
 
         $null_position = self::hasNullVariable($conditional, $source);
@@ -938,6 +951,18 @@ final class AssertionFinder
             && isset($expr->getArgs()[1])
         ) {
             return self::getPatternMatchAssertions($expr, $source, $this_class_name);
+        } elseif ($source instanceof StatementsAnalyzer
+            && $expr->name instanceof PhpParser\Node\Name
+            && strtolower($expr->name->getFirst()) === 'str_starts_with'
+            && count($expr->getArgs()) === 2
+            && ($prefix = CanonicalPaths::getAssertion(
+                $source,
+                $expr->getArgs()[0]->value,
+                $expr->getArgs()[1]->value,
+                false,
+            )) !== null
+        ) {
+            return [[$prefix[0] => [[$prefix[1]]]]];
         } else {
             return self::processCustomAssertion($expr, $this_class_name, $source);
         }
@@ -4167,6 +4192,46 @@ final class AssertionFinder
         }
 
         return [[$subject_var_id => [[new MatchesPattern($removed_taints, $negated)]]]];
+    }
+
+    /**
+     * The assertion that a canonical path starts with a directory (`strpos($path, '/var/app/') === 0`), or none
+     *
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     */
+    private static function getCanonicalPathPrefixAssertions(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+        StatementsAnalyzer $source,
+        bool $negated,
+    ): array {
+        // `strpos() == 0` is also true when it didn't find the prefix (false)
+        if (!$conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            && !$conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+        ) {
+            return [];
+        }
+
+        $sides = [[$conditional->left, $conditional->right], [$conditional->right, $conditional->left]];
+        foreach ($sides as [$call, $zero]) {
+            if ($call instanceof PhpParser\Node\Expr\FuncCall
+                && $call->name instanceof PhpParser\Node\Name
+                && strtolower($call->name->getFirst()) === 'strpos'
+                && !$call->isFirstClassCallable()
+                && count($call->getArgs()) === 2
+                && $zero instanceof PhpParser\Node\Scalar\Int_
+                && $zero->value === 0
+                && ($prefix = CanonicalPaths::getAssertion(
+                    $source,
+                    $call->getArgs()[0]->value,
+                    $call->getArgs()[1]->value,
+                    $negated,
+                )) !== null
+            ) {
+                return [[$prefix[0] => [[$prefix[1]]]]];
+            }
+        }
+
+        return [];
     }
 
     /**

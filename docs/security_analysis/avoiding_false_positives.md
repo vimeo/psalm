@@ -103,6 +103,23 @@ if (preg_match('/[a-z]+/', $id)) {
 
 `$` also matches before a final newline, unless the pattern has the `D` modifier or ends with `\z`: that newline ends a shell command.
 
+A path that starts with a directory (`str_starts_with()`, or `strpos()` compared to `0`) is a local file, not a server.
+The path `realpath()` returns has no `..` left, so it is also in that directory:
+
+```php
+<?php
+
+$path = realpath('/var/app/data/' . getParam('name'));
+if ($path !== false && str_starts_with($path, '/var/app/data/')) {
+    file_put_contents($path, 'data'); // no issue
+}
+
+$path = getParam('path');
+if (str_starts_with($path, '/var/app/data/')) {
+    file_put_contents($path, 'data'); // TaintedFile: /var/app/data/../../etc/passwd
+}
+```
+
 ## Conditionally escaping tainted input
 
 A slightly modified version of the previous example is using a condition to determine whether the return value

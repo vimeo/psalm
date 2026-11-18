@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTy
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CanonicalPaths;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -1326,6 +1327,10 @@ final class CastAnalyzer
                     0,
                     $removed_taints,
                 );
+            }
+
+            if ($statements_analyzer->taint_flow_graph && $cast_type === 'string') {
+                CanonicalPaths::recordFlow($statements_analyzer->taint_flow_graph, $parent_nodes, $cast_node);
             }
 
             $parent_nodes = [$cast_node->id => $cast_node];

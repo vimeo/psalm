@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CanonicalPaths;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
@@ -346,7 +347,7 @@ final class FunctionCallReturnTypeFetcher
         }
 
         if (!$statements_analyzer->data_flow_graph || !$function_storage) {
-            return $stmt_type;
+            return CanonicalPaths::recordRealpath($statements_analyzer, $stmt, $function_id, $stmt_type);
         }
 
         // For a first-class callable (`foo(...)`) the value produced here is the closure
@@ -404,7 +405,7 @@ final class FunctionCallReturnTypeFetcher
             }
         }
 
-        return $stmt_type;
+        return CanonicalPaths::recordRealpath($statements_analyzer, $stmt, $function_id, $stmt_type);
     }
 
     /**

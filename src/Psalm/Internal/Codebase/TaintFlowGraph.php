@@ -165,6 +165,14 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $string_starts = [];
 
     /**
+     * The ids of the nodes holding a canonical path, which realpath() returned (see CanonicalPaths). Only used while
+     * analysing the function-like they are in, so never merged by addGraph().
+     *
+     * @var array<string, true>
+     */
+    private array $canonical_paths = [];
+
+    /**
      * The ids of the nodes of variables assigned an empty array, whose items the next item assigned starts the start
      * of (see TaintStore::recordItemAssignment()), and only used while analysing the function-like they are in
      *
@@ -597,6 +605,31 @@ final class TaintFlowGraph extends DataFlowGraph
     public function addStringStart(DataFlowNode $node, string $start): void
     {
         $this->string_starts[$node->id] = $start;
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function addCanonicalPath(DataFlowNode $node): void
+    {
+        $this->canonical_paths[$node->id] = true;
+    }
+
+    /**
+     * Whether all the nodes hold a canonical path
+     *
+     * @param array<string, DataFlowNode> $nodes
+     * @psalm-mutation-free
+     */
+    public function areCanonicalPaths(array $nodes): bool
+    {
+        foreach ($nodes as $node) {
+            if (!isset($this->canonical_paths[$node->id])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
