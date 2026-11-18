@@ -20,6 +20,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\LiteralCast;
+use Psalm\Internal\Type\TemplateShapeKeys;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
@@ -266,14 +267,12 @@ final class CastAnalyzer
                         // a closure has no properties: it becomes the only element
                         $permissible_atomic_types[] = TKeyedArray::make([new Union([$type])], null, null, true);
                     } elseif ($type instanceof TObjectWithProperties) {
-                        $array_type = $type->properties === []
-                            ? Type::getArrayAtomic()
-                            : TKeyedArray::make(
-                                $type->properties,
-                                null,
-                                [Type::getArrayKey(), Type::getMixed()],
-                            );
-                        $permissible_atomic_types[] = $array_type;
+                        $fallback = [Type::getArrayKey(), Type::getMixed()];
+                        $permissible_atomic_types[] = $type->template_keys
+                            ? TemplateShapeKeys::toArray($type, $fallback)
+                            : ($type->properties === []
+                                ? new TArray($fallback)
+                                : TKeyedArray::make($type->properties, null, $fallback));
                     } else {
                         $all_permissible = false;
                         break;

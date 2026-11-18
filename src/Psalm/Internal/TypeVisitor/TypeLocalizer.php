@@ -7,6 +7,7 @@ namespace Psalm\Internal\TypeVisitor;
 use Override;
 use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateShapeKeys;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
@@ -79,6 +80,7 @@ final class TypeLocalizer extends MutableTypeVisitor
                                 ? new Union($types)
                                 : null,
                         null,
+                        true,
                     )?->getAtomicTypes() ?? [])
                     : Methods::getExtendedTemplatedTypes(
                         $atomic_type,
@@ -91,6 +93,20 @@ final class TypeLocalizer extends MutableTypeVisitor
                     foreach ($types_to_add as $extra_added_type) {
                         $union->addType($extra_added_type);
                     }
+                }
+            } elseif ($template_keys = TemplateShapeKeys::getTemplateKeys($atomic_type)) {
+                $names = [];
+
+                foreach ($template_keys as $template_key => $template) {
+                    $types = Methods::getExtendedTemplatedTypes($template, $this->extends);
+                    $names[$template_key] = new Union($types ?: [$template]);
+                }
+
+                $localized_type = TemplateShapeKeys::rename($atomic_type, $names, null, true);
+
+                if ($localized_type !== $atomic_type) {
+                    $union->removeType($key);
+                    $union->addType($localized_type);
                 }
             }
         }

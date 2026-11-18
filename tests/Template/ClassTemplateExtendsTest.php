@@ -47,6 +47,167 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'forwardedTemplateKeyInMultiLevelIntersection' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface HasId {}
+                    class Model {}
+
+                    /** @template U */
+                    abstract class Base {
+                        /** @return U */
+                        public function get() {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template T of Model
+                     * @template K of string
+                     * @extends Base<T&HasId&object{K: int}>
+                     */
+                    abstract class Middle extends Base {}
+
+                    /**
+                     * @template L of string
+                     * @extends Middle<Model, L>
+                     */
+                    final class Leaf extends Middle {}
+
+                    /** @param Leaf<'x'> $leaf */
+                    function read(Leaf $leaf): int {
+                        $row = $leaf->get();
+                        /** @psalm-check-type-exact $row = Model&HasId&object{x: int} */
+                        return $row->x;
+                    }
+                    PHP,
+            ],
+            'unionTemplateKeyInAnInheritedParamIntersection' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Model {}
+
+                    /**
+                     * @template T of Model
+                     * @template K of string
+                     */
+                    abstract class Base {
+                        /** @param T&object{K: int} $row */
+                        abstract public function take(object $row): int;
+                    }
+
+                    /** @extends Base<Model, 'a'|'b'> */
+                    final class Child extends Base {
+                        #[Override]
+                        public function take(object $row): int {
+                            return $row->a + $row->b;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'collidingTemplateKeyInAnInheritedProperty' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template K of string */
+                    abstract class Holder {
+                        /** @var object{K: int|string, fixed: string|bool}|null */
+                        public ?object $row = null;
+                    }
+
+                    /** @extends Holder<'fixed'> */
+                    final class FixedHolder extends Holder {}
+
+                    $row = (new FixedHolder())->row;
+                    PHP,
+                'assertions' => ['$row===' => 'null|object{fixed:bool|string}'],
+            ],
+            // Known limitation: an inherited union binding keeps the optional keys used in return types.
+            'guardInheritedUnionShapeBindingAcceptsPartialArgument' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function take(object $value): void {}
+
+                        /** @return T */
+                        public function get(): object {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template K of string
+                     * @extends Base<object{K: int}>
+                     */
+                    final class Reader extends Base {}
+
+                    /** @var Reader<"a"|"b"> $reader */
+                    $reader->take((object) ["a" => 1]);
+                    $row = $reader->get();',
+                'assertions' => ['$row===' => 'object{a?:int, b?:int}'],
+            ],
+            'templateAsObjectShapeKeyThroughExtends' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of string */
+                    abstract class Holder {
+                        /** @param object{T: int} $row */
+                        public function __construct(public object $row) {}
+
+                        /** @param object{T: int} $row */
+                        public function set(object $row): void {
+                            $this->row = $row;
+                        }
+
+                        /** @return object{T: int} */
+                        public function get(): object {
+                            return $this->row;
+                        }
+                    }
+
+                    /** @extends Holder<"x"> */
+                    final class XHolder extends Holder {
+                        public function fill(): void {
+                            $this->row = (object) ["x" => 1];
+                            $this->set((object) ["x" => 2]);
+                            $row = $this->get();
+                            /** @psalm-check-type-exact $row = object{x: int} */
+                        }
+
+                        #[Override]
+                        public function set(object $row): void {
+                            /** @psalm-check-type-exact $row = object{x: int} */
+                            $this->row = $row;
+                        }
+                    }
+
+                    /** @template TResult */
+                    abstract class Relation {
+                        /** @return TResult */
+                        public function getResults(): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template TKey of string
+                     * @extends Relation<object{TKey: int}>
+                     */
+                    final class Keyed extends Relation {}
+
+                    /** @param Keyed<"k"> $keyed */
+                    function f(Keyed $keyed): void {
+                        $result = $keyed->getResults();
+                        /** @psalm-check-type-exact $result = object{k: int} */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'templateIntersectedWithAShapeAsTheParamOfAnExtendedClass' => [
                 'code' => <<<'PHP'
                     <?php

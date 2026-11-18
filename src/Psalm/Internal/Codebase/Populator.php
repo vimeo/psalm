@@ -51,6 +51,7 @@ use function array_merge;
 use function array_pop;
 use function array_search;
 use function array_splice;
+use function assert;
 use function count;
 use function explode;
 use function in_array;
@@ -1058,7 +1059,9 @@ final class Populator
                         null,
                     );
 
-                    foreach (($intersected_type ?? $referenced_type)->getAtomicTypes() as $intersected_atomic_type) {
+                    assert($intersected_type !== null);
+
+                    foreach ($intersected_type->getAtomicTypes() as $intersected_atomic_type) {
                         $extended_types[] = $intersected_atomic_type;
                     }
                 } elseif ($referenced_type) {

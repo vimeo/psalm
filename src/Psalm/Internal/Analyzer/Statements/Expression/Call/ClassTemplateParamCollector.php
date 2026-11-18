@@ -340,7 +340,8 @@ final class ClassTemplateParamCollector
                 }
             } else {
                 if ($template_result !== null) {
-                    $type_extends_atomic = $type_extends_atomic->replaceTemplateTypesWithArgTypes(
+                    $type_extends_atomic = TemplateInferredTypeReplacer::replaceTemplateKeys(
+                        $type_extends_atomic->replaceTemplateTypesWithArgTypes($template_result, $codebase),
                         $template_result,
                         $codebase,
                     );

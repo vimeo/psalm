@@ -9,19 +9,25 @@ use Countable;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateKeyOf;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use ReflectionFunction;
 use ReflectionParameter;
 use Stringable;
 use Traversable;
 
+use function array_keys;
 use function array_map;
+use function array_values;
 use function function_exists;
 use function mb_substr;
 use function print_r;
@@ -809,6 +815,93 @@ final class TypeParseTest extends TestCase
     public function testObjectWithDollarArgs(): void
     {
         $this->assertSame('object{a:int, $b:string}', (string) Type::parseString('object{a:int, $b:string}'));
+    }
+
+    public function testObjectWithATemplateAsKey(): void
+    {
+        $type = Type::parseString(
+            'object{T: int, \'T\': string, U?: bool}',
+            null,
+            ['T' => ['Box' => Type::getString()]],
+        );
+        $shape = $type->getSingleAtomic();
+
+        $this->assertInstanceOf(TObjectWithProperties::class, $shape);
+        $this->assertSame(['T'], array_map(
+            static fn(TTemplateParam $template): string => $template->param_name,
+            array_values($shape->template_keys),
+        ));
+        $this->assertSame(['T', 'U'], array_keys($shape->properties));
+        $this->assertSame(array_keys($shape->template_keys), array_keys($shape->template_properties));
+        $this->assertSame('object{T:string, U?:bool, (T:Box as string):int}', $type->getId());
+        $this->assertSame("object{'T':string, 'U'?:bool, T:int}", $type->toNamespacedString(null, [], null, false));
+        $this->assertSame($type->getId(), Type::parseString(
+            $type->toNamespacedString(null, [], null, false),
+            null,
+            ['T' => ['Box' => Type::getString()]],
+        )->getId());
+    }
+
+    public function testObjectWithAKeyNamedLikeATemplateNotInScope(): void
+    {
+        $shape = Type::parseString('object{T: int}')->getSingleAtomic();
+
+        $this->assertInstanceOf(TObjectWithProperties::class, $shape);
+        $this->assertSame([], $shape->template_keys);
+        $this->assertSame(['T'], array_keys($shape->properties));
+    }
+
+    public function testObjectWithATemplateAsKeyTwice(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        $this->expectExceptionMessage('Duplicate key T detected');
+        Type::parseString('object{T: int, T: string}', null, ['T' => ['Box' => Type::getString()]]);
+    }
+
+    public function testArrayShapeKeyNamedLikeATemplateStaysAName(): void
+    {
+        $this->assertSame(
+            'array{T: int}',
+            Type::parseString('array{T: int}', null, ['T' => ['Box' => Type::getString()]])->getId(),
+        );
+    }
+
+    public function testNonKeyTemplateAndQuotedPropertyHaveTheSameName(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        $this->expectExceptionMessage('Duplicate key T detected');
+        Type::parseString("object{T: int, 'T': string}", null, ['T' => ['Box' => Type::getObject()]]);
+    }
+
+    public function testCombineObjectShapesWithPendingProperties(): void
+    {
+        $templates = ['T' => ['Box' => Type::getString()]];
+        $pending_int = Type::parseString('object{T: int, fixed: bool}', null, $templates);
+        $pending_string = Type::parseString('object{T: string, fixed: bool}', null, $templates);
+        $literal = Type::parseString("object{'T': int, fixed: bool}", null, $templates);
+
+        $this->assertSame(
+            'object{fixed:bool, (T:Box as string):int|string}',
+            Type::combineUnionTypes($pending_int, $pending_string)->getId(),
+        );
+        $this->assertSame('object{fixed:bool}', Type::combineUnionTypes($pending_int, $literal)->getId());
+    }
+
+    public function testGuardObjectTemplateKeyNamedInEarlierPassWinsCollision(): void
+    {
+        $shape = Type::parseString('object{K: int, L: string}', null, [
+            'K' => ['Box' => Type::getString()],
+            'L' => ['Box' => Type::getString()],
+        ]);
+        $key = Type::getString('a');
+        $first = TemplateInferredTypeReplacer::replace($shape, new TemplateResult([], [
+            'K' => ['Box' => $key],
+            'L' => ['Box' => new Union([new TTemplateParam('Forward', Type::getString(), 'Other')])],
+        ]), null);
+        $second = TemplateInferredTypeReplacer::replace($first, new TemplateResult([], [
+            'Forward' => ['Other' => $key],
+        ]), null);
+        $this->assertSame('object{a:int}', $second->getId());
     }
 
     public function testTKeyedArrayWithUnionArgs(): void

@@ -789,6 +789,25 @@ final class TypeExpander
             }
             unset($property_type);
             $return_type = $return_type->setProperties($properties);
+
+            if ($return_type->template_keys) {
+                $return_type = TemplateShapeKeys::expand(
+                    $return_type,
+                    static fn(Union $type): Union => self::expandUnion(
+                        $codebase,
+                        $type,
+                        $self_class,
+                        $static_class_type,
+                        $parent_class,
+                        $evaluate_class_constants,
+                        $evaluate_conditional_types,
+                        $final,
+                        $expand_generic,
+                        $expand_templates,
+                        $throw_on_unresolvable_constant,
+                    ),
+                );
+            }
         }
 
         if ($return_type instanceof TCallable

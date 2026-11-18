@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateShapeKeys;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
@@ -34,6 +35,13 @@ final class KeyedArrayComparator
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
+        if ($input_type_part instanceof TObjectWithProperties && $input_type_part->template_keys) {
+            $input_type_part = TemplateShapeKeys::projectKnownNames($input_type_part);
+        }
+        if ($container_type_part instanceof TObjectWithProperties && $container_type_part->template_keys) {
+            $container_type_part = TemplateShapeKeys::projectKnownNames($container_type_part);
+        }
+
         $container_sealed = $container_type_part instanceof TKeyedArray
             && $container_type_part->fallback_params === null;
 
@@ -147,6 +155,23 @@ final class KeyedArrayComparator
                 }
             }
         }
+
+        if ($container_type_part instanceof TObjectWithProperties) {
+            // a property a template names is only known to be there as the same template's
+            foreach ($container_type_part->template_properties as $key => $container_property_type) {
+                $input_property_type = $input_type_part instanceof TObjectWithProperties
+                    ? $input_type_part->template_properties[$key] ?? null
+                    : null;
+
+                if ($input_property_type === null
+                    ? !$container_property_type->possibly_undefined
+                    : !UnionTypeComparator::isContainedBy($codebase, $input_property_type, $container_property_type)
+                ) {
+                    $all_types_contain = false;
+                }
+            }
+        }
+
         if ($container_sealed && $input_properties) {
             if ($atomic_comparison_result) {
                 $atomic_comparison_result->missing_shape_fields = array_keys($input_properties);
@@ -289,7 +314,18 @@ final class KeyedArrayComparator
         bool $allow_interface_equality,
         ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
+        if ($container_type_part->template_keys) {
+            $container_type_part = TemplateShapeKeys::projectKnownNames($container_type_part);
+        }
+
         $all_types_contain = true;
+
+        foreach ($container_type_part->template_properties as $container_property_type) {
+            // a class declares no property a template names
+            if (!$container_property_type->possibly_undefined) {
+                return false;
+            }
+        }
 
         $input_object_with_keys = self::coerceToObjectWithProperties(
             $codebase,

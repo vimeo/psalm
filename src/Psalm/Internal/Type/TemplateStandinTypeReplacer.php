@@ -156,6 +156,15 @@ final class TemplateStandinTypeReplacer
         $had_template = false;
 
         foreach ($original_atomic_types as $key => $atomic_type) {
+            $atomic_type = self::replaceTemplateKeys(
+                $atomic_type,
+                $template_result,
+                $codebase,
+                $input_arg_offset,
+                $calling_class,
+                $calling_function,
+                $replace,
+            );
             $matches_input_key = $input_type && $input_type->hasType($key);
 
             // nothing is left to infer the other atoms from, so keep them as they are
@@ -216,6 +225,51 @@ final class TemplateStandinTypeReplacer
         }
 
         return $union_type;
+    }
+
+    /**
+     * Resolve a key from this call's inferred binding, or its stand-in if there is no binding yet.
+     * Nothing is inferred from the key itself.
+     */
+    private static function replaceTemplateKeys(
+        Atomic $atomic_type,
+        TemplateResult $template_result,
+        Codebase $codebase,
+        ?int $input_arg_offset,
+        ?string $calling_class,
+        ?string $calling_function,
+        bool $replace,
+    ): Atomic {
+        $template_keys = TemplateShapeKeys::getTemplateKeys($atomic_type);
+
+        if (!$template_keys) {
+            return $atomic_type;
+        }
+
+        $names = [];
+
+        foreach ($template_keys as $key => $template) {
+            $names[$key] = TypeVariableResolver::resolveTopLevel(
+                isset($template_result->lower_bounds[$template->param_name][$template->defining_class])
+                    ? self::getMostSpecificTypeFromBounds(
+                        $template_result->lower_bounds[$template->param_name][$template->defining_class],
+                        $codebase,
+                    )
+                    : self::replace(
+                        new Union([$template]),
+                        $template_result,
+                        $codebase,
+                        null,
+                        null,
+                        calling_class: $calling_class,
+                        calling_function: $calling_function,
+                        replace: $replace,
+                    ),
+                $codebase,
+            );
+        }
+
+        return TemplateShapeKeys::rename($atomic_type, $names, null, $input_arg_offset !== null);
     }
 
     /**

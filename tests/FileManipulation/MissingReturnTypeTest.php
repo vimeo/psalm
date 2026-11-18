@@ -18,6 +18,32 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'quoteLiteralObjectShapeKeyThatNamesATemplate' => [
+                'input' => <<<'PHP'
+                    <?php
+                    /** @template T of string */
+                    final class Box {
+                        public function get() {
+                            return (object) ['T' => 1];
+                        }
+                    }
+                    PHP,
+                'output' => <<<'PHP'
+                    <?php
+                    /** @template T of string */
+                    final class Box {
+                        /**
+                         * @psalm-return object{'T':1}
+                         */
+                        public function get(): object {
+                            return (object) ['T' => 1];
+                        }
+                    }
+                    PHP,
+                'php_version' => '8.3',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
             'addMissingVoidReturnType56' => [
                 'input' => '<?php
                     function foo() { }',

@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TemplateShapeKeys;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
@@ -76,6 +77,9 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
             }
 
             if ($object_type instanceof TObjectWithProperties) {
+                if ($object_type->template_keys) {
+                    return TemplateShapeKeys::toArray($object_type, null);
+                }
                 if ([] === $object_type->properties) {
                     return self::$fallback;
                 }

@@ -57,6 +57,492 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'singletonTemplateBoundNamesPropertyInDeclaringClass' => [
+                'code' => '<?php
+                    /** @template K of "x" */
+                    final class Box {
+                        public int $x = 1;
+
+                        /** @return object{K: int} */
+                        public function build(): object {
+                            $this->take((object) ["x" => 1]);
+                            return $this;
+                        }
+
+                        /** @param object{K: int} $value */
+                        private function take(object $value): void {}
+                    }',
+            ],
+            'templateOnlyCollisionUsesUnionRegardlessOfSingletonBounds' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template K of string
+                     * @template L of string
+                     */
+                    final class Simultaneous {
+                        /**
+                         * @param object{K: int, L: string} $row
+                         * @return object{K: int, L: string}
+                         */
+                        public function pass(object $row): object { return $row; }
+                    }
+
+                    /**
+                     * @template K of 'a'
+                     * @template L of string
+                     */
+                    final class FirstSingleton {
+                        /**
+                         * @param object{K: int, L: string} $row
+                         * @return object{K: int, L: string}
+                         */
+                        public function pass(object $row): object { return $row; }
+                    }
+
+                    /**
+                     * @template K of string
+                     * @template L of 'a'
+                     */
+                    final class SecondSingleton {
+                        /**
+                         * @param object{K: int, L: string} $row
+                         * @return object{K: int, L: string}
+                         */
+                        public function pass(object $row): object { return $row; }
+                    }
+
+                    /** @var Simultaneous<'a', 'a'> $simultaneous */
+                    $samePass = $simultaneous->pass((object) ['a' => 1]);
+                    /** @var FirstSingleton<'a', 'a'> $first */
+                    $firstBound = $first->pass((object) ['a' => 'value']);
+                    /** @var SecondSingleton<'a', 'a'> $second */
+                    $secondBound = $second->pass((object) ['a' => 1]);
+                    PHP,
+                'assertions' => [
+                    '$samePass===' => 'object{a:int|string}',
+                    '$firstBound===' => 'object{a:int|string}',
+                    '$secondBound===' => 'object{a:int|string}',
+                ],
+            ],
+            // Known limitation: the parameter of a returned callable keeps optional keys.
+            'guardReturnedCallableAcceptsPartialUnionKeyShape' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template K of string */
+                    final class CallbackProducer {
+                        /** @return Closure(object{K: int}): void */
+                        public function consumer(): Closure { throw new RuntimeException(); }
+                    }
+
+                    /** @var CallbackProducer<'a'|'b'> $producer */
+                    $consume = $producer->consumer();
+                    $consume((object) ['a' => 1]);
+                    PHP,
+                'assertions' => ['$consume===' => 'Closure[impure](object{a?:int, b?:int}):void'],
+            ],
+            'indirectNeverKeyBoundsKeepLiteralProperty' => [
+                'code' => '<?php
+                    /** @template K of self::FLOAT_KEY */
+                    final class ConstantKey {
+                        public const FLOAT_KEY = 1.5;
+
+                        /** @return object{K: int} */
+                        public function build(): object {
+                            return (object) ["K" => 1];
+                        }
+                    }
+
+                    /**
+                     * @template B of object
+                     * @template K of B
+                     */
+                    final class ForwardedKey {
+                        /** @return object{K: int} */
+                        public function build(): object {
+                            return (object) ["K" => 2];
+                        }
+                    }
+
+                    /** @var ConstantKey<1.5> $constant */
+                    $constantRow = $constant->build();
+                    /** @var ForwardedKey<stdClass, stdClass> $forwarded */
+                    $forwardedRow = $forwarded->build();',
+                'assertions' => [
+                    '$constantRow===' => 'object{K:int}',
+                    '$forwardedRow===' => 'object{K:int}',
+                ],
+            ],
+            'collidingObjectShapePropertyRemainsReadable' => [
+                'code' => '<?php
+                    /** @template K of string */
+                    final class Reader {
+                        /** @return object{K: array<string, int>, x: array{id: int}} */
+                        public function get(): object {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @var Reader<"x"> $reader */
+                    $values = $reader->get()->x;
+                    $id = $values["id"];',
+                'assertions' => ['$values===' => 'array{id: int}', '$id===' => 'int'],
+            ],
+            'conditionalKeyCollisionDoesNotNarrowOtherReturnAlternative' => [
+                'code' => '<?php
+                    /** @template K of string */
+                    final class Reader {
+                        /** @return object{a: string, K: int} */
+                        public function get(): object {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @var Reader<"a"|"b"> $reader */
+                    $row = $reader->get();
+                    $value = $row->a;',
+                'assertions' => ['$row===' => 'object{a:string, b?:int}', '$value===' => 'string'],
+            ],
+            'writtenCollisionTypeAlsoWinsInParameter' => [
+                'code' => '<?php
+                    /** @template K of string */
+                    final class Reader {
+                        /** @param object{K: int, x: string} $row */
+                        public function read(object $row): void {}
+                    }
+
+                    /** @var Reader<"x"> $reader */
+                    $reader->read((object) ["x" => "written"]);',
+            ],
+            'templateAsObjectShapeKey' => [
+                'code' => '<?php
+                    /** @template TAccessor of string = \'pivot\' */
+                    final class Relation {
+                        /**
+                         * @template TNew of string
+                         * @param TNew $accessor
+                         * @return self<TNew>
+                         */
+                        public function as(string $accessor): self {
+                            /** @var self<TNew> */
+                            return new self();
+                        }
+
+                        /** @return object{TAccessor: int, \'TAccessor\': string} */
+                        public function first(): object {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    $row = (new Relation())->as("subscription")->first();
+                    $default = (new Relation())->first();
+                    $subscription = $row->subscription;',
+                'assertions' => [
+                    '$row===' => 'object{TAccessor:string, subscription:int}',
+                    '$default===' => 'object{TAccessor:string, pivot:int}',
+                    '$subscription===' => 'int',
+                ],
+            ],
+            'templateAsObjectShapeKeyOfAnExtendedParamIntersection' => [
+                'code' => '<?php
+                    class Model {}
+                    class Pivot extends Model {}
+                    final class MyPivot extends Pivot {}
+                    final class User extends Model {}
+
+                    /** @template TResult */
+                    abstract class Relation {
+                        /** @return TResult */
+                        public function getResults() {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template TRelatedModel of Model
+                     * @template TPivotModel of Pivot = Pivot
+                     * @template TAccessor of string = \'pivot\'
+                     * @extends Relation<TRelatedModel&object{TAccessor: TPivotModel}>
+                     */
+                    class BelongsToMany extends Relation {
+                        /**
+                         * @template TNew of string
+                         * @param TNew $accessor
+                         * @return static<TRelatedModel, TPivotModel, TNew>
+                         */
+                        public function as(string $accessor) {
+                            throw new RuntimeException();
+                        }
+
+                        /**
+                         * @template TNew of string
+                         * @param TNew $accessor
+                         * @psalm-this-out static<TRelatedModel, TPivotModel, TNew>
+                         */
+                        public function setAccessor(string $accessor): void {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @extends BelongsToMany<User, MyPivot, \'members\'> */
+                    final class Members extends BelongsToMany {}
+
+                    /**
+                     * @param BelongsToMany<User, MyPivot, \'subscription\'> $named
+                     * @param BelongsToMany<User> $default
+                     */
+                    function f(BelongsToMany $named, BelongsToMany $default, Members $members): void {
+                        $a = $named->getResults();
+                        $b = $default->getResults();
+                        $c = $default->as("sub")->getResults();
+                        $e = $members->getResults();
+                        $default->setAccessor("other");
+                        $d = $default->getResults();
+                        /** @psalm-check-type-exact $a = User&object{subscription: MyPivot} */
+                        /** @psalm-check-type-exact $b = User&object{pivot: Pivot} */
+                        /** @psalm-check-type-exact $c = User&object{sub: Pivot} */
+                        /** @psalm-check-type-exact $d = User&object{other: Pivot} */
+                        /** @psalm-check-type-exact $e = User&object{members: MyPivot} */
+                    }',
+            ],
+            'templateAsObjectShapeKeyBoundToSomethingElseThanOneLiteral' => [
+                'code' => '<?php
+                    /** @template T of array-key */
+                    final class Box {
+                        /** @param T $key */
+                        public function __construct(public $key) {}
+
+                        /** @return object{T: int, fixed: string} */
+                        public function get(): object {
+                            throw new RuntimeException();
+                        }
+
+                        /** @return object{T: int, fixed: bool} */
+                        public function clash(): object {
+                            throw new RuntimeException();
+                        }
+
+                        /**
+                         * @template U of array-key
+                         * @param U $key
+                         * @return Box<U>
+                         */
+                        public function rebind($key): Box {
+                            return new Box($key);
+                        }
+                    }
+
+                    /** @var Box<"a"|"b"> $l */
+                    $literals = $l->get();
+                    /** @var Box<string> $s */
+                    $string = $s->get();
+                    /** @var Box<5> $i */
+                    $int = $i->get();
+                    /** @var Box<"fixed"> $fx */
+                    $fixed = $fx->clash();
+                    /** @var Box $r */
+                    $raw = $r->get();
+                    $constructed = (new Box("ctor"))->get();
+                    $rebound = (new Box("a"))->rebind("re")->get();',
+                'assertions' => [
+                    '$literals===' => 'object{fixed:string, a?:int, b?:int}',
+                    '$string===' => 'object{fixed:string}',
+                    '$int===' => 'object{fixed:string, 5:int}',
+                    '$fixed===' => 'object{fixed:bool}',
+                    '$raw===' => 'object{fixed:string}',
+                    '$constructed===' => 'object{fixed:string, ctor:int}',
+                    '$rebound===' => 'object{fixed:string, re:int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateAsObjectShapeKeyNested' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class Box {
+                        /** @return array{list: list<object{T: int}>} */
+                        public function nested(): array {
+                            throw new RuntimeException();
+                        }
+
+                        /** @return Closure(): object{T: int} */
+                        public function closure(): Closure {
+                            throw new RuntimeException();
+                        }
+
+                        /** @return Generator<int, object{T: int}> */
+                        public function generator(): Generator {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @var Box<"x"> $box */
+                    $nested = $box->nested();
+                    $called = ($box->closure())();
+                    $yielded = $box->generator()->current();',
+                'assertions' => [
+                    '$nested===' => 'array{list: list<object{x:int}>}',
+                    '$called===' => 'object{x:int}',
+                    '$yielded===' => 'null|object{x:int}',
+                ],
+            ],
+            'templateAsObjectShapeKeyOfAParamOfAConstructedReceiver' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class Box {
+                        /** @param T $key */
+                        public function __construct(public string $key) {}
+
+                        /** @param object{T: int} $row */
+                        public function takeObject(object $row): void {}
+                    }
+
+                    $box = new Box("ctor");
+                    $box->takeObject((object) ["ctor" => 1]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateAsObjectShapeKeyConvertedToAnArray' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class Box {
+                        /** @param object{T: int, a: string} $row */
+                        public function f(object $row): void {
+                            $cast = (array) $row;
+                            /** @psalm-check-type-exact $cast = array{a: string, ...<array-key, mixed>} */
+                            $vars = get_object_vars($row);
+                            /** @psalm-check-type-exact $vars = array{a: string, ...<T, int>} */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'requiredTemplateKeyedPropertyKeepsAnObjectConvertedToAnArrayNonEmpty' => [
+                'code' => '<?php
+                    /** @template K of "field" */
+                    final class Box {
+                        /**
+                         * @param object{K: int} $row
+                         * @return non-empty-array
+                         */
+                        public function cast(object $row): array {
+                            return (array) $row;
+                        }
+
+                        /**
+                         * @param object{K: int} $row
+                         * @return non-empty-array
+                         */
+                        public function vars(object $row): array {
+                            return get_object_vars($row);
+                        }
+                    }',
+            ],
+            'templateWithAnUnexpandedBoundAsObjectShapeKey' => [
+                'code' => '<?php
+                    enum Suit: string {
+                        case H = "h";
+                        case S = "s";
+                    }
+
+                    /** @template K of self::A|self::B */
+                    final class Constants {
+                        const A = "a";
+                        const B = "b";
+
+                        /** @return object{K: int} */
+                        public function get(): object {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @template K of self::P_* */
+                    final class Wildcard {
+                        const P_ONE = "one";
+                        const P_TWO = "two";
+
+                        /** @return object{K: int} */
+                        public function get(): object {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @template K of value-of<Suit> */
+                    final class EnumValue {
+                        /** @return object{K: int} */
+                        public function get(): object {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @template K of key-of<self::MAP> */
+                    final class ConstantKey {
+                        const MAP = ["m" => 1, "n" => 2];
+
+                        /** @return object{K: int} */
+                        public function get(): object {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @var Constants<"a"> $constants */
+                    $constant = $constants->get();
+                    /** @var Wildcard<"two"> $wildcard */
+                    $wildcarded = $wildcard->get();
+                    /** @var EnumValue<"h"> $enum_value */
+                    $enum = $enum_value->get();
+                    /** @var ConstantKey<"m"> $constant_key */
+                    $key = $constant_key->get();',
+                'assertions' => [
+                    '$constant===' => 'object{a:int}',
+                    '$wildcarded===' => 'object{two:int}',
+                    '$enum===' => 'object{h:int}',
+                    '$key===' => 'object{m:int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'guardNonKeyTemplateLeavesLiteralProperty' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Box {
+                        /** @return object{T: int} */
+                        public function get(): object {
+                            return (object) ["T" => 1];
+                        }
+                    }',
+            ],
+            'guardPendingObjectShapeKeyInDeclaringClass' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class Holder {
+                        /** @param object{T: int} $row */
+                        public function __construct(private object $row) {}
+
+                        /** @return object{T: int} */
+                        public function get(): object {
+                            /** @var object{T: int} $copy */
+                            $copy = $this->row;
+                            $this->set($copy);
+                            return $copy;
+                        }
+
+                        /** @param object{T: int} $row */
+                        public function set(object $row): void {
+                            $this->row = $row;
+                        }
+
+                        /** @param object{T: int} $other */
+                        public function same(object $other): bool {
+                            return $this->row == $other;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'listParamInheritedFromATemplatedParentAcceptsAList' => [
                 'code' => '<?php
                     /** @template T */
@@ -6190,6 +6676,153 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'suggestedPropertyTypeQuotesLiteralObjectShapeKey' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class Holder {
+                        public $row;
+
+                        public function __construct() {
+                            $this->row = (object) ["T" => 1];
+                        }
+                    }',
+                'error_message' => "consider object{'T':int",
+            ],
+            'constructorInferredObjectShapeKeyRejectsWrongValue' => [
+                'code' => '<?php
+                    /** @template K of string */
+                    final class Holder {
+                        /**
+                         * @param K $key
+                         * @param object{K: int} $row
+                         */
+                        public function __construct(string $key, object $row) {}
+                    }
+
+                    new Holder("zz", (object) ["zz" => "no"]);',
+                'error_message' => 'expects object{zz:int}, but',
+            ],
+            'unionObjectShapeKeyRequiresEveryParameterProperty' => [
+                'code' => '<?php
+                    /** @template K of string */
+                    final class Reader {
+                        /** @param object{K: int} $row */
+                        public function read(object $row): void {}
+                    }
+
+                    /**
+                     * @param Reader<"a"|"b"> $reader
+                     * @param object{} $empty
+                     */
+                    function read(Reader $reader, object $empty): void {
+                        $reader->read($empty);
+                    }',
+                'error_message' => 'expects object{a:int, b:int}, but',
+            ],
+            'collidingObjectShapeKeysCheckWrittenPropertyType' => [
+                'code' => '<?php
+                    /**
+                     * @template K of string
+                     * @template L of string
+                     */
+                    final class Reader {
+                        /** @param object{K: int|string, L: int|bool, x: positive-int} $row */
+                        public function read(object $row): void {}
+                    }
+
+                    /** @param Reader<"x", "x"> $reader */
+                    function read(Reader $reader): void {
+                        $reader->read((object) ["x" => -1]);
+                    }',
+                'error_message' => 'expects object{x:int<1, max>}, but',
+            ],
+            'collidingObjectShapeKeysCheckWrittenArrayShape' => [
+                'code' => '<?php
+                    /** @template K of string */
+                    final class Reader {
+                        /** @param object{K: array<string, int>, x: array{id: int}} $row */
+                        public function read(object $row): void {}
+                    }
+
+                    /** @param Reader<"x"> $reader */
+                    function read(Reader $reader): void {
+                        $reader->read((object) ["x" => ["other" => 1]]);
+                    }',
+                'error_message' => 'expects object{x:array{id: int}}, but',
+            ],
+            'duplicateLiteralObjectKeyWithIndirectNonKeyBound' => [
+                'code' => '<?php
+                    /** @template K of self::FLOAT_KEY */
+                    final class Box {
+                        public const FLOAT_KEY = 1.5;
+
+                        /** @param object{K: int, "K": string} $row */
+                        public function read(object $row): void {}
+                    }',
+                'error_message' => 'Duplicate key K detected',
+            ],
+            'templateAsObjectShapeKeyInAGetObjectVarsReturnTypeSuggestion' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class Box {
+                        /** @param object{T: int} $row */
+                        public function get(object $row) {
+                            return get_object_vars($row);
+                        }
+                    }',
+                'error_message' => 'does not have a return type, expecting non-empty-array<T:Box as string, int',
+            ],
+            'templateAsObjectShapeKeyOfAParamOfAConstructedReceiverRejectsAnotherObject' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class Box {
+                        /** @param T $key */
+                        public function __construct(public string $key) {}
+
+                        /** @param object{T: int} $row */
+                        public function takeObject(object $row): void {}
+                    }
+
+                    (new Box("ctor"))->takeObject((object) ["other" => 1]);',
+                'error_message' => 'Argument 1 of Box::takeObject expects object{ctor:int}, but',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'templateAsObjectShapeKeyOfAParamNamesTheArgument' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class Holder {
+                        /** @param object{T: int} $row */
+                        public function set(object $row): void {}
+                    }
+
+                    /** @param Holder<"a"> $holder */
+                    function f(Holder $holder): void {
+                        $holder->set((object) ["a" => 1]);
+                        $holder->set((object) ["b" => 1]);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:38 - Argument 1 of Holder::set expects object{a:int}, but',
+            ],
+            'templateAsObjectShapeKeyOfAReturnTypeNamesTheTemplate' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class Holder {
+                        /** @return object{T: int} */
+                        public function get(): object {
+                            return (object) ["a" => 1];
+                        }
+                    }',
+                'error_message' => "does not match the declared return type 'object{(T:Holder as string):int}' for Holder::get",
+            ],
+            'covariantTemplateAsObjectShapeKeyOfAParam' => [
+                'code' => '<?php
+                    /** @template-covariant T of string */
+                    final class Holder {
+                        /** @param object{T: int} $row */
+                        public function set(object $row): void {}
+                    }',
+                'error_message' => 'Template param T of Holder is marked covariant and cannot be used here',
+            ],
             'listParamInheritedFromATemplatedParentRejectsAWrongList' => [
                 'code' => '<?php
                     /** @template T */

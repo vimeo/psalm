@@ -1103,6 +1103,59 @@ final class CacheTest extends TestCase
             ],
         ];
 
+        $template_key_issues = [
+            'src/A.php' => [
+                "InvalidReturnStatement: The inferred type 'object{x:int}' does not match the declared return type 'object{y:int}' for A::get",
+                "InvalidReturnType: The declared return type 'object{y:int}' for A::get is incorrect, got 'object{x:int}'",
+            ],
+        ];
+
+        yield 'templateAsShapeKeyOfACachedClass' => [
+            [
+                [
+                    'files' => [
+                        'vendor/Box.php' => <<<'PHP'
+                            <?php
+                            /** @template T of string */
+                            abstract class Box {
+                                /** @return object{T: int} */
+                                public function obj(): object { throw new RuntimeException(); }
+                            }
+
+                            /** @extends Box<'x'> */
+                            final class XBox extends Box {}
+                            PHP,
+                        'src/A.php' => <<<'PHP'
+                            <?php
+                            require_once __DIR__ . '/../vendor/Box.php';
+                            final class A {
+                                /** @return object{y: int} */
+                                public function get(XBox $b): object {
+                                    return $b->obj();
+                                }
+                            }
+                            PHP,
+                    ],
+                    'issues' => $template_key_issues,
+                ],
+                [
+                    'files' => [
+                        'src/A.php' => <<<'PHP'
+                            <?php
+                            require_once __DIR__ . '/../vendor/Box.php';
+                            final class A {
+                                /** @return object{y: int} */
+                                public function get(XBox $box): object {
+                                    return $box->obj();
+                                }
+                            }
+                            PHP,
+                    ],
+                    'issues' => $template_key_issues,
+                ],
+            ],
+        ];
+
         $typed = <<<'PHP'
             <?php
             function typed(int $i): int {

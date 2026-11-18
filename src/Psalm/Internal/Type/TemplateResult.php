@@ -43,6 +43,8 @@ final class TemplateResult
      */
     public bool $readonly = false;
 
+    public bool $require_resolved_shape_keys = false;
+
     /**
      * @var list<Union>
      */

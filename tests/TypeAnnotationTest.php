@@ -118,24 +118,24 @@ final class TypeAnnotationTest extends TestCase
                         }
                     }
 
-                    /** @psalm-type Arr = array{TKey: int} */
-                    final class Lists {
-                        /**
-                         * @template TKey of string
-                         * @param TKey $key
-                         * @return Arr
-                         */
-                        public static function arr(string $key): array {
-                            return ["TKey" => strlen($key)];
+                    /**
+                     * @template TKey of string
+                     * @psalm-import-type Row from Repo
+                     */
+                    final class Imported {
+                        /** @return Row */
+                        public function row(): object {
+                            return (object) ["TKey" => 1];
                         }
                     }
 
                     /** @var Repo<"a"> $repo */
                     $row = $repo->row("a");
-                    $arr = Lists::arr("b");',
+                    /** @var Imported<"b"> $imported */
+                    $importedRow = $imported->row();',
                 'assertions' => [
                     '$row===' => 'object{TKey:int}',
-                    '$arr===' => 'array{TKey: int}',
+                    '$importedRow===' => 'object{TKey:int}',
                 ],
             ],
             'typeAliasOfAClassWithATemplateThatDoesNotUseIt' => [

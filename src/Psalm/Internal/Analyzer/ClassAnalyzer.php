@@ -34,6 +34,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateShapeKeys;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DeprecatedClass;
@@ -1864,7 +1865,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $message .= ' - consider ' . str_replace(
                 ['<array-key, mixed>', '<never, never>'],
                 '',
-                $suggested_type->getId(false),
+                TemplateShapeKeys::getSuggestionId($suggested_type),
             );
         }
 

@@ -1123,6 +1123,7 @@ final class PreloaderList {
         \Psalm\Internal\Type\TemplateDefaults::class,
         \Psalm\Internal\Type\TemplateInferredTypeReplacer::class,
         \Psalm\Internal\Type\TemplateResult::class,
+        \Psalm\Internal\Type\TemplateShapeKeys::class,
         \Psalm\Internal\Type\TemplateStandinTypeReplacer::class,
         \Psalm\Internal\Type\TypeAlias::class,
         \Psalm\Internal\Type\TypeAlias\ClassTypeAlias::class,
