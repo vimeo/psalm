@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
+use Psalm\Internal\TypeVisitor\TemplateBoundNarrower;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
@@ -40,8 +41,11 @@ use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeAlias;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
@@ -83,9 +87,11 @@ final class TypeExpander
     ): Union {
         $new_return_type_parts = [];
         $int_mask_bits = $return_type->int_mask_bits;
+        $changed = $int_mask_bits !== null;
 
         foreach ($return_type->getAtomicTypes() as $return_type_part) {
             $is_int_mask = self::isIntMask($codebase, $return_type_part, $self_class);
+            $original_part = $return_type_part;
 
             $parts = self::expandAtomic(
                 $codebase,
@@ -107,10 +113,41 @@ final class TypeExpander
                 $int_mask_bits = ($int_mask_bits ?? 0) | $part_int_mask_bits;
             }
 
-            $new_return_type_parts = [...$new_return_type_parts, ...$parts];
+            if ($is_int_mask || count($parts) !== 1 || $parts[0] !== $original_part) {
+                $changed = true;
+            }
+
+            foreach ($parts as $part) {
+                $new_return_type_parts[] = $part;
+            }
         }
 
-        $fleshed_out_type = TypeCombiner::combine(
+        $fleshed_out_type = null;
+
+        // combining can still simplify the parts, e.g. drop a subclass of another class of the union
+        if (!$changed && count($new_return_type_parts) > 1) {
+            $fleshed_out_type = TypeCombiner::combine($new_return_type_parts, $codebase);
+            $changed = $fleshed_out_type->getAtomicTypes() !== $return_type->getAtomicTypes();
+        }
+
+        // keeps the type, its cached ids and the types that hold it, with what a rebuilt type would reset
+        if (!$changed) {
+            return $return_type->setProperties([
+                'from_calculation' => false,
+                'initialized_class' => null,
+                'failed_reconciliation' => false,
+                'ignore_isset' => false,
+                'from_template_default' => false,
+                'reference_free' => false,
+                'closure_state' => false,
+                'allow_mutations' => true,
+                'has_mutations' => true,
+                'propagate_parent_nodes' => false,
+                'different' => false,
+            ]);
+        }
+
+        $fleshed_out_type ??= TypeCombiner::combine(
             $new_return_type_parts,
             $codebase,
         );
@@ -133,6 +170,50 @@ final class TypeExpander
             : null;
 
         return $fleshed_out_type;
+    }
+
+    /**
+     * The type with key-of<T> and value-of<T> replaced by their bound, the keys or values of T's `as`, also in the
+     * `as` of a template param, for the operations that read a template param through its `as`
+     */
+    public static function expandTemplateKeyOfAndValueOf(Codebase $codebase, Union $type): Union
+    {
+        $builder = null;
+
+        foreach ($type->getAtomicTypes() as $atomic_key => $atomic) {
+            if ($atomic instanceof TTemplateParam) {
+                $as = self::expandTemplateKeyOfAndValueOf($codebase, $atomic->as);
+
+                if ($as !== $atomic->as) {
+                    $builder ??= $type->getBuilder();
+                    $builder->removeType($atomic_key);
+                    $builder->addType($atomic->replaceAs($as));
+                }
+
+                continue;
+            }
+
+            if (!$atomic instanceof TTemplateKeyOf && !$atomic instanceof TTemplateValueOf) {
+                continue;
+            }
+
+            $bound = $atomic instanceof TTemplateKeyOf
+                ? TKeyOf::getArrayKeyType($atomic->as)
+                : TValueOf::getValueType($atomic->as, $codebase);
+
+            if ($bound === null) {
+                continue;
+            }
+
+            $builder ??= $type->getBuilder();
+            $builder->removeType($atomic_key);
+
+            foreach (self::expandTemplateKeyOfAndValueOf($codebase, $bound)->getAtomicTypes() as $bound_atomic) {
+                $builder->addType($bound_atomic);
+            }
+        }
+
+        return $builder ? $builder->freeze() : $type;
     }
 
     /**
@@ -214,6 +295,11 @@ final class TypeExpander
             return [$return_type];
         }
 
+        // its id follows bounds that keep growing, so the types holding it are rebuilt to drop their cached ids
+        if ($return_type instanceof TTypeVariable) {
+            return [new TTypeVariable($return_type->name, $return_type->bounds, $return_type->from_docblock)];
+        }
+
         if ($return_type instanceof TNamedObject
             || $return_type instanceof TTemplateParam
         ) {
@@ -230,6 +316,7 @@ final class TypeExpander
                         $parent_class,
                         $evaluate_class_constants,
                         $evaluate_conditional_types,
+                        $final,
                         $expand_generic,
                         $expand_templates,
                         $throw_on_unresolvable_constant,
@@ -390,7 +477,12 @@ final class TypeExpander
                 return [$return_type];
             }
 
-            $class_storage = $codebase->classlike_storage_provider->get($declaring_fq_classlike_name);
+            $class_storage = $codebase->classlikes->getStorageFor($declaring_fq_classlike_name);
+
+            // a class that exists but is not scanned yet
+            if ($class_storage === null) {
+                return [$return_type];
+            }
 
             $type_alias_name = $return_type->alias_name;
 
@@ -456,6 +548,8 @@ final class TypeExpander
             $potential_ints = [];
 
             foreach ($return_type->values as $value_type) {
+                $is_global_constant = $value_type instanceof TGlobalConstant;
+
                 $new_value_type = self::expandAtomic(
                     $codebase,
                     $value_type,
@@ -473,7 +567,9 @@ final class TypeExpander
                 $new_value_type = reset($new_value_type);
 
                 if (!$new_value_type instanceof TLiteralInt) {
-                    return [new TInt()];
+                    // a global constant that is not defined or not an int stays in the type, for the checker to
+                    // report it
+                    return $is_global_constant && !$new_value_type instanceof TInt ? [$return_type] : [new TInt()];
                 }
 
                 $potential_ints[] = $new_value_type->value;
@@ -705,6 +801,22 @@ final class TypeExpander
                         $param = $param->setType(self::expandUnion(
                             $codebase,
                             $param->type,
+                            $self_class,
+                            $static_class_type,
+                            $parent_class,
+                            $evaluate_class_constants,
+                            $evaluate_conditional_types,
+                            $final,
+                            $expand_generic,
+                            $expand_templates,
+                            $throw_on_unresolvable_constant,
+                        ));
+                    }
+
+                    if ($param->out_type) {
+                        $param = $param->setOutType(self::expandUnion(
+                            $codebase,
+                            $param->out_type,
                             $self_class,
                             $static_class_type,
                             $parent_class,
@@ -1031,9 +1143,21 @@ final class TypeExpander
                 }
             }
 
+            $if_type = $return_type->if_type;
+
+            // in the true branch the template is what the condition says
+            if ($return_type->subject_type === null) {
+                (new TemplateBoundNarrower(
+                    $return_type->param_name,
+                    $return_type->defining_class,
+                    $return_type->conditional_type,
+                    $codebase,
+                ))->traverse($if_type);
+            }
+
             $if_conditional_return_types = [];
 
-            foreach ($return_type->if_type->getAtomicTypes() as $if_atomic_type) {
+            foreach ($if_type->getAtomicTypes() as $if_atomic_type) {
                 $candidate_types = self::expandAtomic(
                     $codebase,
                     $if_atomic_type,
@@ -1389,9 +1513,9 @@ final class TypeExpander
             ) {
                 if ($throw_on_unresolvable_constant) {
                     throw new UnresolvableConstantException($type_param->fq_classlike_name, $type_param->const_name);
-                } else {
-                    return [$return_type];
                 }
+
+                return [$return_type];
             }
 
             $type_atomics = array_merge(

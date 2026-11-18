@@ -37,8 +37,8 @@ Have a look at [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Built by Matt Brown ([@muglug](https://github.com/muglug)).
 
-Maintained by Daniil Gentili ([@danog](https://github.com/danog)) and Alies Lapatsin ([@alies-dev](https://github.com/alies-dev)).
+Maintained by Daniil Gentili ([@danog](https://github.com/danog)), Alies Lapatsin ([@alies-dev](https://github.com/alies-dev)) and Orklah ([@orklah](https://github.com/orklah)).
 
-Former maintainers: Orklah ([@orklah](https://github.com/orklah)) and Bruce Weirdan ([@weirdan](https://github.com/weirdan)).
+Former maintainer: Bruce Weirdan ([@weirdan](https://github.com/weirdan)).
 
 The engineering team at [Vimeo](https://github.com/vimeo) have provided a lot encouragement, especially [@nbeliard](https://github.com/nbeliard), [@erunion](https://github.com/erunion) and [@nickyr](https://github.com/nickyr).

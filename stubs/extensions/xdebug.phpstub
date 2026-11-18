@@ -34,7 +34,7 @@ function xdebug_set_filter(int $group, int $list_type, array $configuration) : a
 {
 }
 
-function xdebug_start_code_coverage(int $options) : void
+function xdebug_start_code_coverage(int $options = 0) : void
 {
 }
 
