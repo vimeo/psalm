@@ -664,8 +664,7 @@ final class SwitchCaseAnalyzer
                     && isset($original_context->vars_in_scope[$var_id])
                     && !isset($case_context->vars_in_scope[$var_id])
                 ) {
-                    $case_redefined_vars[$var_id] = $original_context->vars_in_scope[$var_id]
-                        ->setPossiblyUndefined(true);
+                    $case_redefined_vars[$var_id] = Type::getNever()->setPossiblyUndefined(true);
                 }
             }
 

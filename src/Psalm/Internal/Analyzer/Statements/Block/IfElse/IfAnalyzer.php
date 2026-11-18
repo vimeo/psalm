@@ -580,7 +580,7 @@ final class IfAnalyzer
                 && isset($outer_context->vars_in_scope[$var_id])
                 && !isset($if_context->vars_in_scope[$var_id])
             ) {
-                $possibly_redefined_vars[$var_id] = $outer_context->vars_in_scope[$var_id]->setPossiblyUndefined(true);
+                $possibly_redefined_vars[$var_id] = Type::getNever()->setPossiblyUndefined(true);
             }
         }
 
