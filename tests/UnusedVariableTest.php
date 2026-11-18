@@ -37,6 +37,18 @@ final class UnusedVariableTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['UndefinedClass'],
             ],
+            'variableNamedByCompactInArgumentOfStaticCallOnUndefinedClass' => [
+                'code' => '<?php
+                    function f(): array {
+                        $v = "x";
+
+                        return Missing::config(compact("v"));
+                    }
+
+                    echo count(f());',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedClass', 'MixedReturnStatement', 'MixedInferredReturnType'],
+            ],
             'variableUsedInArgumentOfStaticCallOnUndefinedClassInFunction' => [
                 'code' => '<?php
                     function f(string $a): string {
