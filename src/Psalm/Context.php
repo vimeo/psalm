@@ -575,6 +575,8 @@ final class Context
             if ($slot_var_id === $var_id) {
                 $copy[$var_id] = $vars_in_scope[$var_id];
             } else {
+                // copied when the first variable of the slot was
+                assert(isset($copy[$slot_var_id]));
                 $copy[$var_id] = &$copy[$slot_var_id];
             }
         }

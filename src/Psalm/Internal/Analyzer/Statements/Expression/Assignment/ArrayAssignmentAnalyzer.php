@@ -396,8 +396,6 @@ final class ArrayAssignmentAnalyzer
     /**
      * What is written to a variable bound by reference to an array item (`$r = &$a['k']`) is written to the arrays
      * holding that item: their types are rebuilt from its new type
-     *
-     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public static function updateArraysHoldingBoundItem(Context $context, string $var_id, Codebase $codebase): void
     {
@@ -422,7 +420,7 @@ final class ArrayAssignmentAnalyzer
             array_pop($key_parts);
             $array_id = implode('', $key_parts);
 
-            if (!isset($context->vars_in_scope[$array_id])) {
+            if ($key === null || !isset($context->vars_in_scope[$array_id])) {
                 return;
             }
 
@@ -459,7 +457,6 @@ final class ArrayAssignmentAnalyzer
      * The literal keys the offset of a var id (`'k'`, `0`, `$k`) can be, or none when one of them isn't known
      *
      * @return list<TLiteralInt|TLiteralString>
-     * @psalm-mutation-free
      */
     private static function getKeyValuesOfOffset(Context $context, string $offset): array
     {
