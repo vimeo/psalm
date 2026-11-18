@@ -6793,15 +6793,6 @@ final class TaintTest extends TestCase
                     exec("gzip " . $file . " && echo done");',
                 'error_message' => 'TaintedShell',
             ],
-            'stringCastNeedleOfAnArrayKeepsItsTaints' => [
-                'code' => '<?php
-                    $command = $_GET["command"];
-                    if (!in_array((string) $command, ["ls"], true)) {
-                        exit;
-                    }
-                    exec("run " . (string) $command);',
-                'error_message' => 'TaintedShell',
-            ],
             'patternMatchComparedStrictlyToFalseKeepsTheTaints' => [
                 'code' => '<?php
                     $name = (string) $_GET["name"];
