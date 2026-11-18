@@ -2817,18 +2817,6 @@
       <code><![CDATA[$this->progress / $this->number_of_tasks * 100]]></code>
     </InvalidOperand>
   </file>
-  <file src="src/Psalm/Report/ByIssueLevelAndTypeReport.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$issue_data->other_references]]></code>
-      <code><![CDATA[$issue_data->taint_trace]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
-  <file src="src/Psalm/Report/ConsoleReport.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$issue_data->other_references]]></code>
-      <code><![CDATA[$issue_data->taint_trace]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="src/Psalm/Report/JunitReport.php">
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
