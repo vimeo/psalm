@@ -110,8 +110,7 @@ final class ConcatAnalyzer
     public static function isQuotedOperand(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BinaryOp\Concat $stmt,
-    ): bool
-    {
+    ): bool {
         $left = $stmt->left;
 
         if (!$left instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
