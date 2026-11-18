@@ -86,6 +86,82 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'filterVarSanitizesNullAsAnEmptyString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $default = filter_var(null);
+                    $special = filter_var(null, FILTER_SANITIZE_SPECIAL_CHARS);
+                    $full_special = filter_var(null, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+                    $encoded = filter_var(null, FILTER_SANITIZE_ENCODED);
+                    $slashes = filter_var(null, FILTER_SANITIZE_ADD_SLASHES);
+                    $email = filter_var(null, FILTER_SANITIZE_EMAIL);
+                    $url = filter_var(null, FILTER_SANITIZE_URL);
+                    $number_int = filter_var(null, FILTER_SANITIZE_NUMBER_INT);
+                    $number_float = filter_var(null, FILTER_SANITIZE_NUMBER_FLOAT);
+                    $unsafe_raw = filter_var(null, FILTER_UNSAFE_RAW);
+                    $stripped = filter_var(null, FILTER_DEFAULT, FILTER_FLAG_STRIP_LOW);
+                    $sanitize_string = filter_var(null, FILTER_SANITIZE_STRING);
+                    $forced_array = filter_var(null, FILTER_DEFAULT, FILTER_FORCE_ARRAY);
+
+                    /** @psalm-check-type-exact $default = '' */
+                    /** @psalm-check-type-exact $special = '' */
+                    /** @psalm-check-type-exact $full_special = '' */
+                    /** @psalm-check-type-exact $encoded = '' */
+                    /** @psalm-check-type-exact $slashes = '' */
+                    /** @psalm-check-type-exact $email = '' */
+                    /** @psalm-check-type-exact $url = '' */
+                    /** @psalm-check-type-exact $number_int = '' */
+                    /** @psalm-check-type-exact $number_float = '' */
+                    /** @psalm-check-type-exact $unsafe_raw = '' */
+                    /** @psalm-check-type-exact $stripped = '' */
+                    /** @psalm-check-type-exact $sanitize_string = string */
+                    /** @psalm-check-type-exact $forced_array = list{''} */
+                    PHP,
+            ],
+            'filterVarSanitizesANullableInputWithoutFailing' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param ?string $s
+                     * @param ?non-empty-string $non_empty
+                     * @param ?int $i
+                     * @param array<?string> $array
+                     */
+                    function filter(?string $s, ?string $non_empty, ?int $i, array $array): void {
+                        $default = filter_var($s);
+                        $special = filter_var($non_empty, FILTER_SANITIZE_SPECIAL_CHARS);
+                        $email = filter_var($s, FILTER_SANITIZE_EMAIL);
+                        $number = filter_var($i, FILTER_SANITIZE_NUMBER_INT);
+                        $elements = filter_var($array, FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
+
+                        /** @psalm-check-type-exact $default = string */
+                        /** @psalm-check-type-exact $special = string */
+                        /** @psalm-check-type-exact $email = string */
+                        /** @psalm-check-type-exact $number = ''|numeric-string */
+                        /** @psalm-check-type-exact $elements = array<array-key, string>|false */
+                    }
+                    PHP,
+            ],
+            'filterVarValidatesNullAsAnEmptyString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $bool = filter_var(null, FILTER_VALIDATE_BOOLEAN);
+                    $bool_null_on_failure = filter_var(null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                    $int = filter_var(null, FILTER_VALIDATE_INT);
+                    $int_null_on_failure = filter_var(null, FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE);
+                    $domain = filter_var(null, FILTER_VALIDATE_DOMAIN);
+                    $hostname = filter_var(null, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
+                    $regexp = filter_var(null, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/^$/']]);
+
+                    /** @psalm-check-type-exact $bool = false */
+                    /** @psalm-check-type-exact $bool_null_on_failure = false */
+                    /** @psalm-check-type-exact $int = false */
+                    /** @psalm-check-type-exact $int_null_on_failure = null */
+                    /** @psalm-check-type-exact $domain = '' */
+                    /** @psalm-check-type-exact $hostname = false */
+                    /** @psalm-check-type-exact $regexp = ''|false */
+                    PHP,
+            ],
             'classExistsComparedWithTrueGuardsTheRightOperandOfAnd' => [
                 'code' => '<?php
                     function check(): bool {
@@ -1337,6 +1413,46 @@ final class FunctionCallTest extends TestCase
                     $elements = explode(" ", $string);',
                 'assertions' => [
                     '$elements' => 'non-empty-list<string>',
+                ],
+            ],
+            'pathinfoOfStringMayLackDirname' => [
+                'code' => '<?php
+                    /** @var string $path */
+                    $info = pathinfo($path);',
+                'assertions' => [
+                    '$info===' => 'array{basename: string, dirname?: string, extension?: string, filename: string}',
+                ],
+            ],
+            'pathinfoOfEmptyStringMayLackDirname' => [
+                'code' => '<?php
+                    $info = pathinfo("");',
+                'assertions' => [
+                    '$info===' => 'array{basename: string, dirname?: string, extension?: string, filename: string}',
+                ],
+            ],
+            'pathinfoOfNonEmptyStringHasDirname' => [
+                'code' => '<?php
+                    /** @var non-empty-string $path */
+                    $info = pathinfo($path);
+                    $dir = $info["dirname"];',
+                'assertions' => [
+                    '$info===' => 'array{basename: string, dirname: string, extension?: string, filename: string}',
+                    '$dir===' => 'string',
+                ],
+            ],
+            'pathinfoOfLiteralPathHasDirname' => [
+                'code' => '<?php
+                    $dir = pathinfo("a/b.c")["dirname"];',
+                'assertions' => [
+                    '$dir===' => 'string',
+                ],
+            ],
+            'pathinfoOfStringWithFlagReturnsString' => [
+                'code' => '<?php
+                    /** @var string $path */
+                    $dir = pathinfo($path, PATHINFO_DIRNAME);',
+                'assertions' => [
+                    '$dir===' => 'string',
                 ],
             ],
             'explodeWithPositiveLimit' => [
@@ -4953,6 +5069,13 @@ final class FunctionCallTest extends TestCase
                         }
 
                         return "";
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'pathinfoDirnamePossiblyUndefined' => [
+                'code' => '<?php
+                    function dir_of(string $s) : string {
+                        return pathinfo($s)["dirname"];
                     }',
                 'error_message' => 'PossiblyUndefinedArrayOffset',
             ],

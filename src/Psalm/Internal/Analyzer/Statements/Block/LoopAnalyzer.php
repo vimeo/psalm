@@ -312,6 +312,10 @@ final class LoopAnalyzer
             $max_passes = $assignment_depth;
             $data_flow_pass_added = false;
             $widening_passes = 0;
+            $propagation_passes = 0;
+            $feeding_var_ids = $assignment_mapper->getFeedingVarIds();
+            $max_propagation_passes = count($feeding_var_ids);
+            $previously_changed_feeding_var_ids = [];
             $widening_bounds = null;
             $force_pass = false;
 
@@ -608,6 +612,28 @@ final class LoopAnalyzer
                     } else {
                         $widening_passes = 4;
                     }
+                }
+
+                // the passes counted from the assignment map don't cover every chain of copies (`$a = $b; $b = $c;
+                // $c = "s";`): a type still changing in the last pass is carried to the variables it goes into by
+                // one more pass. Along a chain, the variables a pass changes aren't those the previous one changed:
+                // the same ones changing again keep changing on their own (`$e[$k] = [$e[$k] ?? null]`) and would
+                // never settle.
+                if ($i + 1 === $max_passes && $propagation_passes < $max_propagation_passes) {
+                    $changed_feeding_var_ids = self::getChangedFeedingVarIds(
+                        $feeding_var_ids,
+                        $vars_at_iteration_start,
+                        self::getVarsStartingNextIteration($continue_context, $loop_scope, $post_expressions),
+                    );
+
+                    if ($changed_feeding_var_ids
+                        && $changed_feeding_var_ids != $previously_changed_feeding_var_ids
+                    ) {
+                        ++$max_passes;
+                        ++$propagation_passes;
+                    }
+
+                    $previously_changed_feeding_var_ids = $changed_feeding_var_ids;
                 }
 
                 if ($i + 1 === $max_passes
@@ -2051,6 +2077,38 @@ final class LoopAnalyzer
         }
 
         return $bounds;
+    }
+
+    /**
+     * @param array<string, true> $feeding_var_ids
+     * @param array<string, Union> $vars_at_start
+     * @param array<string, Union> $vars_at_end
+     * @return array<string, true>
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function getChangedFeedingVarIds(
+        array $feeding_var_ids,
+        array $vars_at_start,
+        array $vars_at_end,
+    ): array {
+        $changed_var_ids = [];
+
+        foreach ($feeding_var_ids as $var_id => $_) {
+            if (!isset($vars_at_end[$var_id])) {
+                continue;
+            }
+
+            if (!isset($vars_at_start[$var_id])
+                || self::differ(
+                    Type::combineUnionTypes($vars_at_start[$var_id], $vars_at_end[$var_id]),
+                    $vars_at_start[$var_id],
+                )
+            ) {
+                $changed_var_ids[$var_id] = true;
+            }
+        }
+
+        return $changed_var_ids;
     }
 
     /**
