@@ -429,7 +429,7 @@ final class AlgebraTest extends TestCase
         $this->assertSame([], Algebra::groupImpossibilities([$is_not_five, $is_five]));
     }
 
-    public function testNegateFormulaOfOredLiteralsKeepsGroupedClausesLinear(): void
+    public function testNegateFormulaOfOredLiteralsDropsSubsumedGroupedClauses(): void
     {
         // !in_array($name, ['a', ..., 'l'], true) || !$k
         $formula = [];
@@ -444,7 +444,16 @@ final class AlgebraTest extends TestCase
             array_map(static fn(Clause $clause): Clause => $clause->calculateNegation(), $formula),
         );
 
-        $this->assertCount(13, $grouped);
+        $this->assertSame(
+            [
+                '$k',
+                implode(' || ', array_map(
+                    static fn(string $literal): string => '($name is string(' . $literal . '))',
+                    range('l', 'a'),
+                )),
+            ],
+            self::clauseStrings($grouped),
+        );
 
         $this->assertSame(
             [
