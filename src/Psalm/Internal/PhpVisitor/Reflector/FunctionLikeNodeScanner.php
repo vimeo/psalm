@@ -1057,7 +1057,6 @@ final class FunctionLikeNodeScanner
             ExpressionResolver::registerConstantExpressionDependencies(
                 $param->default,
                 $this->aliases,
-                $fq_classlike_name,
                 $this->file_storage,
             );
 

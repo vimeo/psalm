@@ -1619,7 +1619,7 @@ final class Populator
     }
 
     /**
-     * See FileStorage::$classlikes_used_in_declarations
+     * @see FileStorage::$classlikes_used_in_declarations
      */
     private function registerDeclarationDependencies(FileStorage $storage): void
     {

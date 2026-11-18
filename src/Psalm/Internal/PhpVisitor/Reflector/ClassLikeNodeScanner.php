@@ -1710,7 +1710,6 @@ final class ClassLikeNodeScanner
             ExpressionResolver::registerConstantExpressionDependencies(
                 $const->value,
                 $this->aliases,
-                $fq_classlike_name,
                 $this->file_storage,
             );
 
@@ -1870,7 +1869,6 @@ final class ClassLikeNodeScanner
             ExpressionResolver::registerConstantExpressionDependencies(
                 $stmt->expr,
                 $this->aliases,
-                $fq_classlike_name,
                 $this->file_storage,
             );
 
