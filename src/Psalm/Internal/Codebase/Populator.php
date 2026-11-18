@@ -12,9 +12,6 @@ use Psalm\Internal\PhpVisitor\Reflector\FunctionLikeDocblockScanner;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
-use Psalm\Internal\Scanner\UnresolvedConstant\ClassConstant;
-use Psalm\Internal\Scanner\UnresolvedConstant\EnumPropertyFetch;
-use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateDefaults;
@@ -54,10 +51,8 @@ use function array_merge;
 use function array_pop;
 use function array_search;
 use function array_splice;
-use function array_walk_recursive;
 use function count;
 use function explode;
-use function get_object_vars;
 use function in_array;
 use function key;
 use function reset;
@@ -662,8 +657,6 @@ final class Populator
             foreach ($storage->used_traits as $used_trait_lc => $_) {
                 $this->file_reference_provider->addFileInheritanceToClass($file_path, $used_trait_lc);
             }
-
-            $this->registerValueDependencies($storage, $file_path);
         }
 
         $this->resolveDeferredCapabilities($storage);
@@ -1223,65 +1216,6 @@ final class Populator
     }
 
     /**
-     * What a class takes from another class through an imported type alias, or through a constant expression that
-     * is resolved where it is used (a constant, an enum case value, a parameter default), changes with that class,
-     * like what it inherits: the file of the class inherits from it, transitively
-     */
-    private function registerValueDependencies(ClassLikeStorage $storage, string $file_path): void
-    {
-        $type_aliases = $storage->type_aliases;
-
-        try {
-            // the aliases a class imports are kept with its file
-            $type_aliases += $this->file_storage_provider->get($file_path)->type_aliases;
-        } catch (InvalidArgumentException) {
-        }
-
-        foreach ($type_aliases as $type_alias) {
-            if ($type_alias instanceof LinkableTypeAlias) {
-                $this->file_reference_provider->addFileInheritanceToClass(
-                    $file_path,
-                    strtolower($type_alias->declaring_fq_classlike_name),
-                );
-            }
-        }
-
-        foreach ($storage->constants as $constant_storage) {
-            $this->registerClassConstantDependencies($constant_storage->unresolved_node, $file_path);
-        }
-
-        foreach ($storage->enum_cases as $enum_case_storage) {
-            $this->registerClassConstantDependencies($enum_case_storage->value, $file_path);
-        }
-
-        foreach ($storage->methods as $method_storage) {
-            foreach ($method_storage->params as $param) {
-                $this->registerClassConstantDependencies($param->default_type, $file_path);
-            }
-        }
-    }
-
-    /**
-     * @param mixed $node a part of a constant expression
-     */
-    private function registerClassConstantDependencies(mixed $node, string $file_path): void
-    {
-        if ($node instanceof ClassConstant || $node instanceof EnumPropertyFetch) {
-            $this->file_reference_provider->addFileInheritanceToClass($file_path, strtolower($node->fqcln));
-        }
-
-        if ($node instanceof UnresolvedConstantComponent) {
-            $parts = get_object_vars($node);
-            array_walk_recursive(
-                $parts,
-                function (mixed $part) use ($file_path): void {
-                    $this->registerClassConstantDependencies($part, $file_path);
-                },
-            );
-        }
-    }
-
-    /**
      * Second populate pass, once every class is populated: the file of a class inherits from each named mixin class
      * its `@mixin` lookup (see MixinLookup) can reach, so that a change there invalidates it. A `@mixin T` is skipped,
      * as the class it names depends on the receiver. They are not its dependent_classlikes, which would make it a
@@ -1560,6 +1494,8 @@ final class Populator
             $this->populateGeneratorPurity($function_storage, null);
         }
 
+        $this->registerValueDependencies($storage);
+
         $file_path_lc = strtolower($storage->file_path);
 
         if (isset($dependent_file_paths[$file_path_lc])) {
@@ -1681,6 +1617,29 @@ final class Populator
         }
 
         $storage->populated = true;
+    }
+
+    /**
+     * A file reading another class through a constant expression, which is resolved where it is read, or through an
+     * imported type alias depends on that class as on a parent: the file inherits from it
+     */
+    private function registerValueDependencies(FileStorage $storage): void
+    {
+        $classes = $storage->constant_expression_classlikes;
+
+        foreach ($storage->type_aliases as $type_alias) {
+            if ($type_alias instanceof LinkableTypeAlias) {
+                $classes[strtolower($type_alias->declaring_fq_classlike_name)]
+                    = $type_alias->declaring_fq_classlike_name;
+            }
+        }
+
+        foreach ($classes as $fq_class_name) {
+            $this->file_reference_provider->addFileInheritanceToClass(
+                $storage->file_path,
+                strtolower($this->classlikes->getUnAliasedName($fq_class_name)),
+            );
+        }
     }
 
     private function inheritConstantsFromTrait(

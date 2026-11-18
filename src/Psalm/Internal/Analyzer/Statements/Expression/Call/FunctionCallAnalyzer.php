@@ -199,6 +199,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
 
             if ($function_call_info->new_function_name) {
+                self::referenceLiteralCallables($statements_analyzer, $function_name, $context);
+
                 // a literal callable string: from here on it is a call of the named function
                 $function_name = $function_call_info->new_function_name;
 
@@ -945,15 +947,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $function_call_info->function_storage = $function_storage = $codebase_functions->getStorage(
                     $statements_analyzer,
                     strtolower($function_call_info->function_id),
-                );
-
-                // the file declaring the function is then referenced by the file of the call
-                $statements_analyzer->getCodebase()->addReferenceToFunctionLike(
-                    strtolower($function_call_info->function_id),
-                    null,
-                    $context,
-                    false,
-                    $statements_analyzer->getFilePath(),
+                    context: $context,
                 );
 
                 $function_call_info->function_params = $function_call_info->function_storage->params;
@@ -1839,6 +1833,34 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         return $function_call_info;
+    }
+
+    /**
+     * A call of literal callable strings is analysed as a call of the function the last one names, but it may call
+     * any of them: their lookup references them
+     */
+    private static function referenceLiteralCallables(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $function_name,
+        Context $context,
+    ): void {
+        $function_name_type = $statements_analyzer->node_data->getType($function_name);
+
+        if ($function_name_type === null) {
+            return;
+        }
+
+        foreach ($function_name_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TLiteralString && !str_contains($atomic_type->value, '::')) {
+                CallableTypeComparator::getCallableFromAtomic(
+                    $statements_analyzer->getCodebase(),
+                    $atomic_type,
+                    null,
+                    $statements_analyzer,
+                    $context,
+                );
+            }
+        }
     }
 
     private static function analyzeInvokeCall(
