@@ -183,7 +183,6 @@ final class Psalm
         'dump-taint-graph:',
         'find-unused-psalm-suppress',
         'error-level:',
-        'record-references',
     ];
 
     /**
@@ -346,19 +345,6 @@ final class Psalm
             exit(1);
         }
 
-        if (isset($options['record-references'])
-            && ($paths_to_check !== null
-                || $config->cache_directory === null
-                || isset($options['no-reference-cache']))
-        ) {
-            fwrite(
-                STDERR,
-                '--record-references needs a full run with a reference cache: no paths, no --no-cache,'
-                    . ' no --no-reference-cache' . PHP_EOL,
-            );
-            exit(1);
-        }
-
         if ($config->resolve_from_config_file) {
             $current_dir = $config->base_dir;
             chdir($current_dir);
@@ -427,8 +413,6 @@ final class Psalm
             $find_references_to,
             $run_taint_analysis,
         );
-
-        $project_analyzer->record_references = isset($options['record-references']);
 
         $start_time = microtime(true);
 
@@ -1507,9 +1491,6 @@ final class Psalm
 
             --no-reference-cache
                 Runs Psalm without using cached representations of unchanged methods.
-
-            --record-references
-                Experimental. Also write which files depend on which into the cache (a full run with a cache only)
 
             --no-file-cache
                 Runs Psalm without using caching every single file for later diffing.

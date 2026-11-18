@@ -3492,15 +3492,6 @@ final class Config
         $this->preloaded_stub_files[$stub_file] = $stub_file;
     }
 
-    /**
-     * @return array<string, string>
-     * @internal
-     */
-    public function getPreloadedStubFiles(): array
-    {
-        return $this->preloaded_stub_files;
-    }
-
     public function getPhpVersion(): ?string
     {
         return $this->getPhpVersionFromConfig() ?? $this->getPHPVersionFromComposerJson();

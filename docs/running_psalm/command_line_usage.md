@@ -36,10 +36,6 @@ Type coverage is the number in Psalm's summary line and on [Shepherd](#shepherd)
 
 Only full runs are checked: the option can't be combined with file paths, `--set-baseline` or `--update-baseline`, and the config attribute is skipped on such runs.
 
-## Reference index
-
-`--record-references` makes a full run also write a reference index into the cache: which files depend on which, and the size and content hash of every file the run depended on. It needs a persistent reference cache (neither `--no-cache` nor `--no-reference-cache`) and no path arguments. The option is experimental: it and the index may change in any release.
-
 ## Shepherd
 
 Psalm currently offers some GitHub integration with public projects.
