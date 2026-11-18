@@ -21,6 +21,18 @@ final class EmptyTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'emptyOnRequiredKeyOfANestedShape' => [
+                'code' => '<?php
+                    /**
+                     * @param array{foo: array{bar: string}} $a
+                     */
+                    function f(array $a): bool {
+                        return empty($a["foo"]["bar"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'emptyOnRequiredShapeKey' => [
                 'code' => '<?php
                     /** @param array{foo: string} $arg */
