@@ -559,7 +559,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
             && ($stmt_type = $statements_analyzer->node_data->getType($real_stmt))
         ) {
             $codebase->analyzer->addNodeType(
@@ -613,7 +612,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $function_name,
                     null,
                     self::resolveStaticPropertyAssertionClasses(
-                        self::getAssertionsOnArgs($function_storage->assertions, $function_storage, $stmt->getArgs()),
+                        self::getAssertionsOnArgs(
+                            $function_storage->assertions,
+                            $function_storage,
+                            $stmt->getArgs(),
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
+                        ),
                         $codebase,
                         $context,
                         null,
@@ -636,6 +641,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $function_storage->if_true_assertions,
                             $function_storage,
                             $stmt->getArgs(),
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
                         ),
                     ),
                 );
@@ -651,6 +658,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $function_storage->if_false_assertions,
                             $function_storage,
                             $stmt->getArgs(),
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
                         ),
                     ),
                 );
@@ -910,7 +919,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             && !$stmt->isFirstClassCallable()
             && $codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             ArgumentMapPopulator::recordArgumentPositions(
                 $statements_analyzer,
@@ -1038,7 +1046,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
@@ -2002,7 +2009,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     && $context->vars_in_scope[$var_id]->hasMixed()
                 ) {
                     if (!$context->collect_initializations
-                        && !$context->collect_mutations
                         && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                         && (!(($parent_source = $statements_analyzer->getSource())
                                     instanceof FunctionLikeAnalyzer)
@@ -2297,7 +2303,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         $config = $codebase->config;
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && ($context->isExternalMutationFree()
                 || $codebase->find_unused_variables
                 || !$config->remember_property_assignments_after_call
