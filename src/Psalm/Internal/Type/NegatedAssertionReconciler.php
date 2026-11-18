@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
-use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
@@ -71,6 +70,8 @@ final class NegatedAssertionReconciler extends Reconciler
             $existing_var_type,
             $statements_analyzer->getCodebase(),
         );
+
+        $original_var_type = $existing_var_type;
 
         $is_equality = $assertion->hasEquality();
 
@@ -214,14 +215,6 @@ final class NegatedAssertionReconciler extends Reconciler
             && $assertion_type->is_loaded
         ) {
             // do nothing
-        } elseif ($existing_var_type->isSingle()
-            && $existing_var_type->hasNamedObjectType()
-            && $assertion_type instanceof TNamedObject
-            && isset($existing_var_type->getAtomicTypes()[$assertion_type->getKey()])
-            && !self::isEnum($codebase, $assertion_type->value)
-        ) {
-            // checking if two types share a common parent is not enough to guarantee children are instanceof each other
-            // fall through
         } elseif ($existing_var_type->isArray()
             && ($assertion->getAtomicType() instanceof TArray
                 || $assertion->getAtomicType() instanceof TKeyedArray)
@@ -235,10 +228,14 @@ final class NegatedAssertionReconciler extends Reconciler
                 ? $existing_var_type->getAtomicTypes()[$assertion_type->getKey()] ?? null
                 : null;
 
+            // `static` is the class called, maybe a child: only an object of that same late static class is one
+            $late_static_assertion = $assertion_type instanceof TNamedObject && $assertion_type->is_static;
+
             $is_direct_hit = $assertion_type
                 && (!$same_key_type
                     || $same_key_type::class === $assertion_type::class
                     || AtomicTypeComparator::isContainedBy($codebase, $same_key_type, $assertion_type))
+                && (!$late_static_assertion || self::isLateStatic($same_key_type))
                 && $existing_var_type->removeType($assertion_type->getKey());
 
             // go deeper than the direct hit, eliminating subtypes
@@ -275,7 +272,9 @@ final class NegatedAssertionReconciler extends Reconciler
                             }
                         }
 
-                        if (!$existing_var_type_part->isObjectType()) {
+                        if (!$existing_var_type_part->isObjectType()
+                            || ($late_static_assertion && !self::isLateStatic($existing_var_type_part))
+                        ) {
                             continue;
                         }
 
@@ -351,21 +350,23 @@ final class NegatedAssertionReconciler extends Reconciler
         }
 
         if ($existing_var_type->isUnionEmpty()) {
-            if ($key !== '$this'
-                || !($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer)
-            ) {
-                if ($key && $code_location && !$is_equality) {
-                    self::triggerIssueForImpossible(
-                        $existing_var_type,
-                        $old_var_type_string,
-                        $key,
-                        $assertion,
-                        false,
-                        $negated,
-                        $code_location,
-                        $suppressed_issues,
-                    );
-                }
+            // code analysed for another class than its own (a trait, a constructor inherited by the analysed class)
+            // can have branches that only that class never reaches
+            if ($key === '$this' && self::isAnalysedForAnotherClass($statements_analyzer, $original_var_type)) {
+                return $original_var_type;
+            }
+
+            if ($key && $code_location && !$is_equality) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    $assertion,
+                    false,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues,
+                );
             }
 
             $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
@@ -578,13 +579,31 @@ final class NegatedAssertionReconciler extends Reconciler
     }
 
     /**
-     * An enum has no child that an instanceof check of itself could leave out
-     *
-     * @psalm-capabilities read-props
+     * @psalm-pure
      */
-    private static function isEnum(Codebase $codebase, string $fq_class_name): bool
+    private static function isLateStatic(?Atomic $type): bool
     {
-        return $codebase->classlike_storage_provider->has($fq_class_name)
-            && $codebase->classlike_storage_provider->get($fq_class_name)->is_enum;
+        return $type instanceof TNamedObject && $type->is_static;
+    }
+
+    private static function isAnalysedForAnotherClass(
+        StatementsAnalyzer $statements_analyzer,
+        Union $this_type,
+    ): bool {
+        if ($statements_analyzer->getSource()->getSource() instanceof TraitAnalyzer) {
+            return true;
+        }
+
+        $code_class = $statements_analyzer->getFQCLN();
+
+        foreach ($this_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNamedObject
+                && ($code_class === null || strtolower($atomic_type->value) !== strtolower($code_class))
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

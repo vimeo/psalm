@@ -6,10 +6,12 @@ namespace Psalm\Internal\Analyzer\Statements\Block\IfElse;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -35,6 +37,8 @@ use function array_filter;
 use function array_intersect;
 use function array_intersect_key;
 use function array_key_exists;
+use function array_key_first;
+use function array_key_last;
 use function array_keys;
 use function array_merge;
 use function array_reduce;
@@ -482,7 +486,7 @@ final class IfAnalyzer
      * @param  array<string, bool>   $newly_reconciled_var_ids
      * @param  array<string, int>    $assigned_in_conditional_var_ids
      * @param  array<PhpParser\Node> $branch_nodes the code of the branch: what it rebinds by reference is detached
-     *                                             in the outer context
+     *                                             in the outer context, unless $detach_references is false
      */
     public static function updateIfScope(
         StatementsAnalyzer $statements_analyzer,
@@ -495,12 +499,13 @@ final class IfAnalyzer
         bool $update_new_vars = true,
         array $assigned_in_conditional_var_ids = [],
         array $branch_nodes = [],
+        bool $detach_references = true,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
         $if_scope->addBranchReachingTheEnd($if_context);
 
-        if ($branch_nodes) {
+        if ($branch_nodes && $detach_references) {
             $outer_context->detachReferencesReboundIn($if_context, $statements_analyzer, $branch_nodes);
         }
 
@@ -521,6 +526,27 @@ final class IfAnalyzer
             $if_scope->partial_new_vars[$new_var] = isset($if_scope->partial_new_vars[$new_var])
                 ? Type::combineUnionTypes($if_scope->partial_new_vars[$new_var], $type, $codebase)
                 : $type;
+        }
+
+        $branch_range = $branch_nodes
+            ? [
+                $branch_nodes[array_key_first($branch_nodes)]->getStartFilePos(),
+                $branch_nodes[array_key_last($branch_nodes)]->getEndFilePos(),
+            ]
+            : null;
+
+        foreach ($if_context->vars_possibly_in_scope as $var_id => $_) {
+            if (!isset($if_context->vars_in_scope[$var_id])
+                && !isset($outer_context->vars_possibly_in_scope[$var_id])
+            ) {
+                // the assignments of the branch, not those another branch overwrote
+                $if_scope->untyped_new_vars[$var_id] = [
+                    ...$if_scope->untyped_new_vars[$var_id] ?? [],
+                    ...$branch_range
+                        ? $statements_analyzer->getParentNodesForPossiblyUndefinedVariable($var_id, $branch_range)
+                        : [],
+                ];
+            }
         }
 
         if ($if_scope->new_vars === null) {
@@ -554,13 +580,10 @@ final class IfAnalyzer
             ) {
                 unset($possibly_redefined_vars[$var_id]);
             } elseif (isset($outer_context->vars_in_scope[$var_id])
-                && $outer_context->vars_in_scope[$var_id]->hasMixed()
-                && !isset($assigned_var_ids[$var_id])
-                && !isset($possibly_assigned_var_ids[$var_id])
-                && UnionTypeComparator::isContainedBy($codebase, $type, $outer_context->vars_in_scope[$var_id])
+                && !isset($assigned_in_conditional_var_ids[$var_id])
+                && self::isNarrowedMixed($codebase, $type, $outer_context->vars_in_scope[$var_id])
+                && !self::mayAssignAsAWhole($branch_nodes, $var_id, $statements_analyzer)
             ) {
-                // a mixed var that was only narrowed (never written) in this branch is still just mixed,
-                // merging the narrowed type back in would only produce a `mixed|Foo` union
                 $possibly_redefined_vars[$var_id] = $outer_context->vars_in_scope[$var_id]
                     ->addParentNodes($type->parent_nodes);
             }
@@ -607,5 +630,93 @@ final class IfAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Whether the type a branch leaves a mixed variable with only narrows it, as when the branch only checked it or
+     * wrote at some of its offsets: the variable is still just mixed after the branch, and merging the narrowed type
+     * back in would only produce a `mixed|Foo` union
+     */
+    public static function isNarrowedMixed(Codebase $codebase, Union $branch_type, Union $outer_type): bool
+    {
+        return $outer_type->hasMixed()
+            && (!$branch_type->possibly_undefined || $outer_type->possibly_undefined)
+            && UnionTypeComparator::isContainedBy($codebase, $branch_type, $outer_type);
+    }
+
+    /**
+     * Whether the statements may assign the variable as a whole, in nested blocks too: an assignment to it
+     * (`$a = `, `$a .= `, `[$a] = `, `$a = &$b`, `$b = &$a`, `$a++`), a foreach, static or global declaration of
+     * it, `unset($a)`, or passing it by reference to a call or a closure. The condition of the branch itself is
+     * left out, as the assignments the condition records are
+     *
+     * @param array<PhpParser\Node> $nodes
+     */
+    public static function mayAssignAsAWhole(
+        array $nodes,
+        string $var_id,
+        StatementsAnalyzer $statements_analyzer,
+    ): bool {
+        $is_target = static fn(?PhpParser\Node\Expr $expr): bool
+            => self::isTarget($expr, $var_id, $statements_analyzer);
+
+        return (new PhpParser\NodeFinder())->findFirst(
+            array_filter($nodes, static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Stmt),
+            static fn(PhpParser\Node $node): bool => match (true) {
+                $node instanceof PhpParser\Node\Expr\CallLike => array_any(
+                    $node->getRawArgs(),
+                    static fn(PhpParser\Node $arg): bool => $arg instanceof PhpParser\Node\Arg
+                        && $statements_analyzer->node_data->isWrittenByReference($arg->value)
+                        && $is_target($arg->value),
+                ),
+                // an alias of it may be written whole too
+                $node instanceof PhpParser\Node\Expr\AssignRef => $is_target($node->var) || $is_target($node->expr),
+                $node instanceof PhpParser\Node\Expr\Assign,
+                $node instanceof PhpParser\Node\Expr\AssignOp,
+                $node instanceof PhpParser\Node\Expr\PreInc,
+                $node instanceof PhpParser\Node\Expr\PreDec,
+                $node instanceof PhpParser\Node\Expr\PostInc,
+                $node instanceof PhpParser\Node\Expr\PostDec => $is_target($node->var),
+                $node instanceof PhpParser\Node\Stmt\Foreach_ => $is_target($node->keyVar)
+                    || $is_target($node->valueVar),
+                $node instanceof PhpParser\Node\Stmt\Unset_,
+                $node instanceof PhpParser\Node\Stmt\Global_ => array_any($node->vars, $is_target),
+                $node instanceof PhpParser\Node\Stmt\Static_ => array_any(
+                    $node->vars,
+                    static fn(PhpParser\Node\StaticVar $static_var): bool => $is_target($static_var->var),
+                ),
+                $node instanceof PhpParser\Node\Expr\Closure => array_any(
+                    $node->uses,
+                    static fn(PhpParser\Node\ClosureUse $use): bool => $use->byRef && $is_target($use->var),
+                ),
+                default => false,
+            },
+        ) !== null;
+    }
+
+    /**
+     * Whether the expression is the variable, or a list() destructuring into it
+     */
+    private static function isTarget(
+        ?PhpParser\Node\Expr $expr,
+        string $var_id,
+        StatementsAnalyzer $statements_analyzer,
+    ): bool {
+        if ($expr instanceof PhpParser\Node\Expr\List_ || $expr instanceof PhpParser\Node\Expr\Array_) {
+            foreach ($expr->items as $item) {
+                if ($item && self::isTarget($item->value, $var_id, $statements_analyzer)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return $expr !== null
+            && ExpressionIdentifier::getExtendedVarId(
+                $expr,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            ) === $var_id;
     }
 }

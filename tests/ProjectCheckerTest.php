@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\LanguageServer\ClientConfiguration;
 use Psalm\Internal\LanguageServer\LanguageServer;
@@ -129,10 +130,10 @@ final class ProjectCheckerTest extends DeferredAnalyzerTestCase
     {
         return new Providers(
             $this->file_provider,
-            new ParserCacheProvider($config, '', false),
-            new FileStorageCacheProvider($config, '', false),
-            new ClassLikeStorageCacheProvider($config, '', false),
-            new FileReferenceCacheProvider($config, '', false),
+            new ParserCacheProvider($config, '', CacheMode::Memory),
+            new FileStorageCacheProvider($config, '', CacheMode::Memory),
+            new ClassLikeStorageCacheProvider($config, '', CacheMode::Memory),
+            new FileReferenceCacheProvider($config, '', CacheMode::Memory),
             new ProjectCacheProvider(),
         );
     }
