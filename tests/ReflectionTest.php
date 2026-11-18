@@ -25,7 +25,7 @@ final class ReflectionTest extends TestCase
                     throw new Exception();
                 }
                 PHP,
-            'assertions' => ['$a===' => 'ReflectionClass<stdClass&Iterator>'],
+            'assertions' => ['$a===' => 'ReflectionClass<stdClass&Iterator[impure]<mixed, mixed>>'],
         ];
         yield 'ReflectionClass::implementsInterface' => [
             'code' => <<<'PHP'
@@ -35,7 +35,7 @@ final class ReflectionTest extends TestCase
                     throw new Exception();
                 }
                 PHP,
-            'assertions' => ['$a===' => 'ReflectionClass<stdClass&Iterator>'],
+            'assertions' => ['$a===' => 'ReflectionClass<stdClass&Iterator[impure]<mixed, mixed>>'],
         ];
         yield 'ReflectionClass::isInstance' => [
             'code' => <<<'PHP'
