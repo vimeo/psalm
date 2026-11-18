@@ -12,6 +12,7 @@ use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\New_;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Name;
+use PhpParser\Node\Stmt\If_;
 use PhpParser\Node\Stmt\Return_;
 use PhpParser\NodeAbstract;
 use Psalm\NodeTypeProvider;
@@ -42,6 +43,9 @@ final class NodeDataProvider implements NodeTypeProvider
     /** @var SplObjectStorage<Expr, list<string>> */
     private SplObjectStorage $node_literal_prefixes;
 
+    /** @var SplObjectStorage<Expr, true> */
+    private SplObjectStorage $written_by_reference;
+
     /**
      * Expressions analysed already, whose analysis is not repeated (see markEvaluated()), with how many times
      * they were marked
@@ -49,6 +53,17 @@ final class NodeDataProvider implements NodeTypeProvider
      * @var SplObjectStorage<Expr, positive-int>
      */
     private SplObjectStorage $evaluated;
+
+    /**
+     * Array fetches whose offset was checked in this pass: a fetch that is read and written (`$a[$k]++`) is
+     * analyzed twice, and its offset is reported once
+     *
+     * @var SplObjectStorage<Expr, true>
+     */
+    private SplObjectStorage $offset_checked;
+
+    /** @var SplObjectStorage<If_, true> */
+    private SplObjectStorage $impossible_implicit_elses;
 
     public bool $cache_assertions = true;
 
@@ -62,7 +77,31 @@ final class NodeDataProvider implements NodeTypeProvider
         $this->node_if_true_assertions = new SplObjectStorage();
         $this->node_if_false_assertions = new SplObjectStorage();
         $this->node_literal_prefixes = new SplObjectStorage();
+        $this->written_by_reference = new SplObjectStorage();
         $this->evaluated = new SplObjectStorage();
+        $this->offset_checked = new SplObjectStorage();
+        $this->impossible_implicit_elses = new SplObjectStorage();
+    }
+
+    /**
+     * Records whether the conditions of an if without an else matched every value of a variable, so that nothing
+     * goes past the if without going through one of its branches
+     */
+    public function setImplicitElseImpossible(If_ $node, bool $impossible): void
+    {
+        if ($impossible) {
+            $this->impossible_implicit_elses[$node] = true;
+        } else {
+            unset($this->impossible_implicit_elses[$node]);
+        }
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    public function isImplicitElseImpossible(If_ $node): bool
+    {
+        return isset($this->impossible_implicit_elses[$node]);
     }
 
     /**
@@ -168,6 +207,22 @@ final class NodeDataProvider implements NodeTypeProvider
     }
 
     /**
+     * Records an argument passed to a by-reference parameter, which the call may assign
+     */
+    public function markWrittenByReference(Expr $node): void
+    {
+        $this->written_by_reference[$node] = true;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    public function isWrittenByReference(Expr $node): bool
+    {
+        return isset($this->written_by_reference[$node]);
+    }
+
+    /**
      * Until unmarkEvaluated(), ExpressionAnalyzer::analyze() keeps the type of these expressions instead of
      * analysing them again: their side effects happen once
      *
@@ -214,6 +269,24 @@ final class NodeDataProvider implements NodeTypeProvider
 
     public function clearNodeOfTypeAndAssertions(Expr $node): void
     {
-        unset($this->node_types[$node], $this->node_assertions[$node], $this->node_literal_prefixes[$node]);
+        unset(
+            $this->node_types[$node],
+            $this->node_assertions[$node],
+            $this->node_literal_prefixes[$node],
+            $this->offset_checked[$node],
+        );
+    }
+
+    public function markOffsetChecked(Expr $node): void
+    {
+        $this->offset_checked[$node] = true;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    public function isOffsetChecked(Expr $node): bool
+    {
+        return isset($this->offset_checked[$node]);
     }
 }
