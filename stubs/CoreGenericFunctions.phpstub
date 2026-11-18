@@ -689,7 +689,11 @@ function sscanf(string $string, string $format, &...$vars) {}
  *
  * @return (
  *     func_num_args() is 1
- *     ? array{dirname: string, basename: string, extension?: string, filename: string}
+ *     ? (
+ *         $path is non-empty-string
+ *         ? array{dirname: string, basename: string, extension?: string, filename: string}
+ *         : array{dirname?: string, basename: string, extension?: string, filename: string}
+ *     )
  *     : string
  * )
  * @psalm-flow ($path) -> return
