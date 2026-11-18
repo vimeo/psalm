@@ -2335,6 +2335,45 @@ final class FunctionCallTest extends TestCase
                     '$d' => 'list{int, int}',
                 ],
             ],
+            'builtinReturnTypeProvidersOnLessCommonCalls' => [
+                'code' => '<?php
+                    /** @return non-empty-list<int> */
+                    function getList(): array {
+                        return [1];
+                    }
+                    /** @return array{a: int, b?: int} */
+                    function getShape(): array {
+                        return ["a" => 1];
+                    }
+                    $a = sizeof(getList());
+                    $b = COUNT(getShape());
+                    $c = get_called_class();
+                    $d = get_parent_class();
+                    $e = count(...);
+                    $f = hrtime(...);
+                    $g = mb_strtolower(...);',
+                'assertions' => [
+                    '$a===' => 'int<1, max>',
+                    '$b===' => 'int<1, 2>',
+                    '$c===' => 'class-string',
+                    '$d===' => 'class-string|false',
+                    '$e===' => 'Closure[pure](Countable|array<array-key, mixed>, int=):int<0, max>',
+                    '$f===' => 'Closure[time](true=):(false|float|int)',
+                    '$g===' => 'Closure[pure](string, string=):lowercase-string',
+                ],
+            ],
+            'hrtimePolyfillBeforePhp73KeepsItsDeclaredType' => [
+                'code' => '<?php
+                    function hrtime(bool $as_number = false): string {
+                        return "polyfill";
+                    }
+                    $a = hrtime(true);',
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.2',
+            ],
             'hrtimeCanBeFloat' => [
                 'code' => '<?php
                     $a = hrtime(true);

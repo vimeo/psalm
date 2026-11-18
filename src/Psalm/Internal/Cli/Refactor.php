@@ -62,7 +62,8 @@ final class Refactor
 {
     public const LONG_OPTIONS = [
         'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'root:', 'monochrome',
-        'scan-threads:', 'threads:', 'memory-limit:', 'use-ini-defaults', 'move:', 'into:', 'rename:', 'to:', 'no-progress', 'no-cache',
+        'scan-threads:', 'threads:', 'memory-limit:', 'use-ini-defaults', 'move:', 'into:', 'rename:', 'to:',
+        'no-progress', 'no-cache',
     ];
 
     /** @param array<int,string> $argv */
