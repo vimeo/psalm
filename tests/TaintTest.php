@@ -1284,6 +1284,44 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'anchoredPatternWithoutQuotesRemovesTheXpathTaint' => [
+                'code' => '<?php
+                    $data = (string) $_GET["id"];
+                    if (!preg_match("#^[a-zA-Z0-9 _.%~\\\\-]+$#", $data)) {
+                        exit;
+                    }
+                    (new DOMXPath(new DOMDocument()))->query("//user[@id=\'" . $data . "\']");',
+            ],
+            'anchoredPatternOfWordsRemovesTheHtmlTaint' => [
+                'code' => '<?php
+                    $sort = (string) $_GET["sort"];
+                    if (!preg_match("/^(asc|desc|name|created)$/", $sort)) {
+                        exit;
+                    }
+                    echo "<div>" . $sort . "</div>";',
+            ],
+            'anchoredPatternMatchedThroughAStringCast' => [
+                'code' => '<?php
+                    function show(?string $page): void {
+                        $page ??= (string) $_GET["page"];
+                        if (preg_match("/^\\d+$/D", (string) $page) !== 1) {
+                            return;
+                        }
+                        exec("convert page" . $page . ".png");
+                    }',
+            ],
+            'stringCastNeedleFoundInAListOfWords' => [
+                'code' => '<?php
+                    $command = str_replace("\\0", "", (string) $_GET["command"]);
+                    if (!in_array((string) $command, ["ls", "cat", "date"], true)) {
+                        exit;
+                    }
+                    exec("run " . (string) $command);',
+            ],
+            'basenameRemovesTheFileTaint' => [
+                'code' => '<?php
+                    file_put_contents("/var/app/data/" . basename((string) $_GET["file"]), "data");',
+            ],
             'coalesceOnAnOffsetKeepsTheTypeOfTheArrayItReads' => [
                 'code' => '<?php
                     /** @param list<mixed> $l */
@@ -6380,6 +6418,56 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'valueThatMayNotMatchThePatternKeepsItsTaints' => [
+                'code' => '<?php
+                    $name = (string) $_GET["name"];
+                    if (preg_match("/^[a-z]+$/", $name)) {
+                        echo $name;
+                    }
+                    echo $name;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'unanchoredPatternKeepsTheTaints' => [
+                'code' => '<?php
+                    $name = (string) $_GET["name"];
+                    if (!preg_match("/[a-z]+/", $name)) {
+                        exit;
+                    }
+                    echo $name;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'patternAllowingSpacesKeepsTheShellTaint' => [
+                'code' => '<?php
+                    $term = (string) $_GET["term"];
+                    if (!preg_match("/^[a-zA-Z0-9 _.-]+$/D", $term)) {
+                        exit;
+                    }
+                    shell_exec("grep -r " . $term . " /var/log");',
+                'error_message' => 'TaintedShell',
+            ],
+            'patternEndingWithADollarAllowsATrailingNewline' => [
+                'code' => '<?php
+                    $file = (string) $_GET["file"];
+                    if (!preg_match("/^[a-z]+$/", $file)) {
+                        exit;
+                    }
+                    exec("gzip " . $file . " && echo done");',
+                'error_message' => 'TaintedShell',
+            ],
+            'stringCastNeedleOfAnArrayKeepsItsTaints' => [
+                'code' => '<?php
+                    $command = $_GET["command"];
+                    if (!in_array((string) $command, ["ls"], true)) {
+                        exit;
+                    }
+                    exec("run " . (string) $command);',
+                'error_message' => 'TaintedShell',
+            ],
+            'basenameKeepsTheIncludeTaint' => [
+                'code' => '<?php
+                    include "/var/app/plugins/" . basename((string) $_GET["plugin"]);',
+                'error_message' => 'TaintedInclude',
+            ],
             'superGlobalPassedByReferenceIsTainted' => [
                 'code' => '<?php // --taint-analysis
                     function show(array &$a): void {

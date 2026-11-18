@@ -34,6 +34,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\PatternCharacters;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\InvalidDocblock;
@@ -74,6 +75,7 @@ use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\IsType;
+use Psalm\Storage\Assertion\MatchesPattern;
 use Psalm\Storage\Assertion\NestedAssertions;
 use Psalm\Storage\Assertion\NonEmptyCountable;
 use Psalm\Storage\Assertion\NotNonEmptyCountable;
@@ -82,6 +84,7 @@ use Psalm\Storage\Possibilities;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableString;
@@ -418,6 +421,12 @@ final class AssertionFinder
         bool $cache = true,
         bool $inside_conditional = true,
     ): array {
+        if ($source instanceof StatementsAnalyzer
+            && ($pattern_match = self::getPatternMatchComparedToOne($conditional))
+        ) {
+            return self::getPatternMatchAssertions($pattern_match, $source, $this_class_name);
+        }
+
         $null_position = self::hasNullVariable($conditional, $source);
 
         if ($null_position !== null) {
@@ -641,6 +650,12 @@ final class AssertionFinder
         bool $cache = true,
         bool $inside_conditional = true,
     ): array {
+        if ($source instanceof StatementsAnalyzer
+            && ($pattern_match = self::getPatternMatchComparedToOne($conditional))
+        ) {
+            return self::getPatternMatchAssertions($pattern_match, $source, $this_class_name, true);
+        }
+
         $null_position = self::hasNullVariable($conditional, $source);
 
         if ($null_position !== null) {
@@ -891,7 +906,7 @@ final class AssertionFinder
             return self::getInarrayAssertions(
                 $expr,
                 $source,
-                $first_var_name,
+                $first_var_name ?? self::getStringCastNeedleVarId($expr, $source, $this_class_name),
                 self::getOperandId($expr->getArgs()[1]->value, $this_class_name, $source),
             );
         } elseif (self::hasArrayKeyExistsCheck($expr)) {
@@ -916,6 +931,12 @@ final class AssertionFinder
             // says nothing about the type of the constant, but puts it into the clause, so that
             // `!defined('X') || !is_string(X)` narrows X where it is false
             $if_types[$expr->getArgs()[0]->value->value] = [[new Any()]];
+        } elseif ($source instanceof StatementsAnalyzer
+            && $expr->name instanceof PhpParser\Node\Name
+            && strtolower($expr->name->getFirst()) === 'preg_match'
+            && isset($expr->getArgs()[1])
+        ) {
+            return self::getPatternMatchAssertions($expr, $source, $this_class_name);
         } else {
             return self::processCustomAssertion($expr, $this_class_name, $source);
         }
@@ -4122,6 +4143,135 @@ final class AssertionFinder
         }
 
         return $assertions;
+    }
+
+    /**
+     * A string matching a pattern anchored at both ends holds only the characters it allows, so it can't carry some
+     * taints (see PatternCharacters)
+     *
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     */
+    private static function getPatternMatchAssertions(
+        PhpParser\Node\Expr\FuncCall $expr,
+        StatementsAnalyzer $source,
+        ?string $this_class_name,
+        bool $negated = false,
+    ): array {
+        $args = $expr->getArgs();
+
+        if (!isset($args[0], $args[1])) {
+            return [];
+        }
+
+        $pattern_type = $source->node_data->getType($args[0]->value);
+
+        if ($pattern_type === null || !$pattern_type->isSingleStringLiteral()) {
+            return [];
+        }
+
+        $removed_taints = PatternCharacters::getTaintsRemoved($pattern_type->getSingleStringLiteral()->value);
+        $subject_var_id = self::getStringFormVarId($args[1]->value, $this_class_name, $source);
+
+        if ($removed_taints === 0 || $subject_var_id === null) {
+            return [];
+        }
+
+        return [[$subject_var_id => [[new MatchesPattern($removed_taints, $negated)]]]];
+    }
+
+    /**
+     * The preg_match() call of `preg_match(...) === 1` or `1 !== preg_match(...)`, which tell whether it matched
+     *
+     * @psalm-mutation-free
+     */
+    private static function getPatternMatchComparedToOne(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+    ): ?PhpParser\Node\Expr\FuncCall {
+        $sides = [[$conditional->left, $conditional->right], [$conditional->right, $conditional->left]];
+
+        foreach ($sides as [$call, $one]) {
+            if ($call instanceof PhpParser\Node\Expr\FuncCall
+                && $call->name instanceof PhpParser\Node\Name
+                && strtolower($call->name->name) === 'preg_match'
+                && isset($call->getArgs()[1])
+                && $one instanceof PhpParser\Node\Scalar\Int_
+                && $one->value === 1
+            ) {
+                return $call;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The id of the variable $expr is, or casts to a string: a scalar or null, whose string form is its value
+     * where it can carry taints
+     */
+    private static function getStringFormVarId(
+        PhpParser\Node\Expr $expr,
+        ?string $this_class_name,
+        StatementsAnalyzer $source,
+    ): ?string {
+        if ($expr instanceof PhpParser\Node\Expr\Cast\String_) {
+            $type = $source->node_data->getType($expr->expr);
+
+            if ($type === null) {
+                return null;
+            }
+
+            foreach ($type->getAtomicTypes() as $atomic) {
+                if (!$atomic instanceof Scalar && !$atomic instanceof TNull) {
+                    return null;
+                }
+            }
+
+            $expr = $expr->expr;
+        }
+
+        return ExpressionIdentifier::getExtendedVarId($expr, $this_class_name, $source);
+    }
+
+    /**
+     * The variable cast to a string an in_array() check is given as its needle (`in_array((string) $x, ["ls"])`),
+     * if only a string has the string form of each value it can find: none is empty, numeric, `INF` or `NAN`.
+     * Its value is then the one found.
+     */
+    private static function getStringCastNeedleVarId(
+        PhpParser\Node\Expr\FuncCall $expr,
+        StatementsAnalyzer $source,
+        ?string $this_class_name,
+    ): ?string {
+        $args = $expr->getArgs();
+
+        if (!isset($args[0], $args[1]) || !$args[0]->value instanceof PhpParser\Node\Expr\Cast\String_) {
+            return null;
+        }
+
+        $needle = $args[0]->value;
+        $haystack_type = $source->node_data->getType($args[1]->value);
+
+        if ($haystack_type === null) {
+            return null;
+        }
+
+        foreach ($haystack_type->getAtomicTypes() as $haystack) {
+            if (!$haystack instanceof TKeyedArray || $haystack->fallback_params !== null) {
+                return null;
+            }
+
+            foreach ($haystack->getGenericValueType()->getAtomicTypes() as $value) {
+                if (!$value instanceof TLiteralString
+                    || $value->value === ''
+                    || is_numeric($value->value)
+                    || in_array($value->value, ['INF', '-INF', 'NAN'], true)
+                ) {
+                    return null;
+                }
+            }
+        }
+
+        return self::getStringFormVarId($needle, $this_class_name, $source);
     }
 
     /**

@@ -14,4 +14,7 @@ use Psalm\Type\TaintKind;
 return [
     // the strings it is given are length-prefixed: they can't change which values unserializing it creates
     'serialize' => ['unserialize'],
+    // the last component of a path holds no directory separator: appended to a directory, it can't name a file
+    // outside of it
+    'basename' => ['file'],
 ];

@@ -75,6 +75,29 @@ if (isKnownCity($city)) {
 }
 ```
 
+A string that matches a pattern anchored at both ends can only hold the characters the pattern allows, so it can't carry the taints that need others. Psalm understands literals, character classes, `.`, `\d`, `\w`, `\s`, groups of alternatives and quantifiers, checked with `preg_match()`, either truthy or compared to `1`:
+
+```php
+<?php
+
+$sort = getParam('sort');
+if (preg_match('/^(asc|desc|name)$/', $sort)) {
+    echo '<a href="?sort=' . $sort . '">'; // no quotes or angle brackets: no issue
+}
+
+$id = getParam('id');
+if (preg_match('/^[a-z0-9 _.-]+$/i', $id)) {
+    $xpath->query("//user[@id='" . $id . "']"); // no quotes: no issue
+    shell_exec('grep -r ' . $id . ' /var/log'); // TaintedShell: a space starts another argument
+}
+
+if (preg_match('/[a-z]+/', $id)) {
+    echo $id; // TaintedHtml: the pattern isn't anchored
+}
+```
+
+`$` also matches before a final newline, unless the pattern has the `D` modifier or ends with `\z`: that newline ends a shell command. `basename()` returns a name with no directory separator, which can't name a file outside the directory it is appended to.
+
 ## Conditionally escaping tainted input
 
 A slightly modified version of the previous example is using a condition to determine whether the return value
