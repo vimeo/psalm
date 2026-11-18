@@ -2056,6 +2056,7 @@ final class UnusedCodeTest extends TestCase
                         "name",
                         "value",
                     );',
+                'ignored_issues' => ['InsecureCookie'],
             ],
             'usedUsort' => [
                 'code' => '<?php

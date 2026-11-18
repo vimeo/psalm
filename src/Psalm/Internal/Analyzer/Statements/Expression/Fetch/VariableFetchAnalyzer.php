@@ -112,7 +112,6 @@ final class VariableFetchAnalyzer
 
             if ($codebase->store_node_types
                     && !$context->collect_initializations
-                    && !$context->collect_mutations
                 && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
             ) {
                 $codebase->analyzer->addNodeType(
@@ -382,7 +381,6 @@ final class VariableFetchAnalyzer
 
                 if ($codebase->store_node_types
                     && !$context->collect_initializations
-                    && !$context->collect_mutations
                 ) {
                     $codebase->analyzer->addNodeReference(
                         $statements_analyzer->getFilePath(),
@@ -522,7 +520,6 @@ final class VariableFetchAnalyzer
 
             if ($codebase->store_node_types
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 $codebase->analyzer->addNodeType(
                     $statements_analyzer->getFilePath(),
@@ -533,7 +530,6 @@ final class VariableFetchAnalyzer
 
             if ($codebase->store_node_types
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 $first_appearance = $statements_analyzer->getFirstAppearance($var_name);
 

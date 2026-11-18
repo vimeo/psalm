@@ -500,6 +500,23 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * The index at which the variadic $param is declared in $storage when the argument at $position comes after
+     * it, null when the node at $position is the declared one (or $param isn't declared in $storage). An argument
+     * the variadic parameter collects has a node keyed by its position, which the body reads through the declared one.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getVariadicDeclaredOffset(
+        FunctionLikeStorage $storage,
+        FunctionLikeParameter $param,
+        int $position,
+    ): ?int {
+        $declared = self::getParameterOffset($storage, $param, -1);
+
+        return $declared !== -1 && $declared < $position ? $declared : null;
+    }
+
+    /**
      * The declared parameter index that identifies $param within $storage. Argument nodes are keyed
      * by this rather than by the parameter's position in a given call, so a named argument resolves
      * to the same node as the equivalent positional one -- and as the method body's own parameter
