@@ -20114,7 +20114,7 @@ return array (
   ),
   'eventhttprequest::gethost' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'eventhttprequest::getinputbuffer' => 
   array (
@@ -20138,7 +20138,7 @@ return array (
   ),
   'eventhttprequest::geturi' => 
   array (
-    0 => 'null|string',
+    0 => 'string',
   ),
   'eventhttprequest::removeheader' => 
   array (
@@ -38355,7 +38355,7 @@ return array (
   ),
   'imagickpixel::getcolorvaluequantum' => 
   array (
-    0 => 'float',
+    0 => '5',
     'color' => 'int',
   ),
   'imagickpixel::gethsl' => 
@@ -38409,7 +38409,7 @@ return array (
   array (
     0 => 'bool',
     'color' => 'int',
-    'value' => 'float',
+    'value' => 'IMAGICK_QUANTUM_TYPE',
   ),
   'imagickpixel::sethsl' => 
   array (
@@ -38421,7 +38421,7 @@ return array (
   'imagickpixel::setindex' => 
   array (
     0 => 'bool',
-    'index' => 'float',
+    'index' => 'IMAGICK_QUANTUM_TYPE',
   ),
   'imagickpixelexception::__construct' => 
   array (
@@ -79818,7 +79818,7 @@ return array (
   ),
   'sqlite3result::columnname' => 
   array (
-    0 => 'string',
+    0 => 'false|string',
     'column' => 'int',
   ),
   'sqlite3result::columntype' => 
