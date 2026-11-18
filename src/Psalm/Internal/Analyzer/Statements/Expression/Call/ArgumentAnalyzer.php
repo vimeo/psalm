@@ -20,8 +20,10 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
@@ -2088,6 +2090,55 @@ final class ArgumentAnalyzer
         return false;
     }
 
+    /**
+     * The arguments a variadic parameter collects flow into its declared node, which the body reads
+     */
+    private static function linkArgumentToVariadicDeclaredNode(
+        Codebase $codebase,
+        TaintFlowGraph|CombinedFlowGraph|VariableUseGraph $graph,
+        DataFlowNode $method_node,
+        FunctionLikeParameter $function_param,
+        FunctionLikeStorage $function_storage,
+        int $argument_offset,
+        string $cased_method_id,
+        ?MethodIdentifier $called_declaring_method_id,
+        ?string $called_body_suffix,
+        ?CodeLocation $specialization_location,
+    ): void {
+        $variadic_declared_offset = $function_param->is_variadic
+            ? DataFlowNode::getVariadicDeclaredOffset(
+                $function_storage,
+                $function_param,
+                DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset),
+            )
+            : null;
+
+        if ($variadic_declared_offset === null) {
+            return;
+        }
+
+        $variadic_node = $called_body_suffix !== null && $called_declaring_method_id
+            ? InheritedMethodTaints::withMethodSuffix(
+                $called_declaring_method_id,
+                $called_body_suffix,
+                static fn(): DataFlowNode => DataFlowNode::getForMethodArgument(
+                    $codebase->methods->getCasedMethodId($called_declaring_method_id),
+                    $variadic_declared_offset,
+                    $codebase->methods->getStorage($called_declaring_method_id),
+                    $specialization_location,
+                ),
+            )
+            : DataFlowNode::getForMethodArgument(
+                $cased_method_id,
+                $variadic_declared_offset,
+                $function_storage,
+                $specialization_location,
+            );
+
+        $graph->addNode($variadic_node);
+        $graph->addPath($method_node, $variadic_node, 'arg');
+    }
+
     private static function processTaintedness(
         StatementsAnalyzer $statements_analyzer,
         string $cased_method_id,
@@ -2295,39 +2346,22 @@ final class ArgumentAnalyzer
 
         $graph->addNode($method_node);
 
-        $variadic_declared_offset = $function_param->is_variadic && $function_storage
-            ? DataFlowNode::getVariadicDeclaredOffset(
-                $function_storage,
+        if ($function_storage) {
+            self::linkArgumentToVariadicDeclaredNode(
+                $codebase,
+                $graph,
+                $method_node,
                 $function_param,
-                DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset),
-            )
-            : null;
-
-        if ($variadic_declared_offset !== null && $function_storage) {
-            // the arguments a variadic parameter collects flow into its declared node, which the body reads
-            $variadic_node = $called_body_suffix !== null && $called_declaring_method_id
-                ? InheritedMethodTaints::withMethodSuffix(
-                    $called_declaring_method_id,
-                    $called_body_suffix,
-                    static fn(): DataFlowNode => DataFlowNode::getForMethodArgument(
-                        $codebase->methods->getCasedMethodId($called_declaring_method_id),
-                        $variadic_declared_offset,
-                        $codebase->methods->getStorage($called_declaring_method_id),
-                        $specialization_location,
-                    ),
-                )
-                : DataFlowNode::getForMethodArgument(
-                    $cased_method_id,
-                    $variadic_declared_offset,
-                    $function_storage,
-                    $specialization_location,
-                );
-
-            $graph->addNode($variadic_node);
-            $graph->addPath($method_node, $variadic_node, 'arg');
+                $function_storage,
+                $argument_offset,
+                $cased_method_id,
+                $called_declaring_method_id,
+                $called_body_suffix,
+                $specialization_location,
+            );
         }
 
-        if ($taint_flow_graph && $function_storage && !$in_call_map) {
+        if ($taint_flow_graph && $function_storage) {
             $callable_param_method_id = $cased_method_id;
             $callable_param_storage = $function_storage;
 
@@ -2338,16 +2372,28 @@ final class ArgumentAnalyzer
                 $callable_param_storage = $codebase->methods->getStorage($declaring_method_id);
             }
 
-            FunctionCallReturnTypeFetcher::taintCallablePassedToParam(
-                $statements_analyzer,
-                $taint_flow_graph,
-                $callable_param_method_id,
-                DataFlowNode::getParameterOffset($callable_param_storage, $function_param, $argument_offset),
+            $callable_param_offset = DataFlowNode::getParameterOffset(
                 $callable_param_storage,
-                $specialization_location,
-                $input_type,
-                $arg_location,
+                $function_param,
+                $argument_offset,
             );
+
+            // a builtin calls its callables out of the analyzed code: they matter only to the flows of its stub
+            if (!$in_call_map
+                || isset($callable_param_storage->return_source_callable_params[$callable_param_offset])
+                || isset($callable_param_storage->callable_param_argument_sources[$callable_param_offset])
+            ) {
+                FunctionCallReturnTypeFetcher::taintCallablePassedToParam(
+                    $statements_analyzer,
+                    $taint_flow_graph,
+                    $callable_param_method_id,
+                    $callable_param_offset,
+                    $callable_param_storage,
+                    $specialization_location,
+                    $input_type,
+                    $arg_location,
+                );
+            }
         }
 
         $argument_value_node = DataFlowNode::getForAssignment(

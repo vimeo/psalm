@@ -1306,6 +1306,60 @@ final class TaintTest extends TestCase
                     v("", "", "safe");
                     v("", "", escaped(tainted()));',
             ],
+            'noTaintFromASpecializedPregReplaceCallbackCallbackInItsOtherCalls' => [
+                'code' => '<?php
+                    /** @psalm-taint-specialize */
+                    function first(array $matches): string {
+                        return (string) $matches[0];
+                    }
+
+                    preg_replace_callback(\'/x/\', \'first\', (string) $_GET["bad"]);
+                    echo first(["safe"]);',
+            ],
+            'noTaintPassedToAMethodClosureGivenSafeData' => [
+                'code' => '<?php
+                    final class Shell {
+                        public static function run(string $command): void {
+                            shell_exec($command);
+                        }
+                    }
+
+                    $run = Shell::run(...);
+                    $run("ls");',
+                'php_version' => '8.1',
+            ],
+            'noTaintPassedToTheListenerOfAnotherSpecializedCall' => [
+                'code' => '<?php
+                    interface Events {
+                        /**
+                         * @param callable(string): void $listener
+                         * @psalm-taint-specialize
+                         * @psalm-flow ($payload) -> $listener()
+                         */
+                        public function dispatch(string $payload, callable $listener): void;
+                    }
+
+                    function listen(Events $events): void {
+                        $events->dispatch((string) $_GET["bad"], function (string $payload): void {});
+                        $events->dispatch("safe", function (string $payload): void {
+                            echo $payload;
+                        });
+                    }',
+            ],
+            'noTaintReturnedByAnEscapingPregReplaceCallbackCallback' => [
+                'code' => '<?php
+                    function render(string $template, string $value): string {
+                        return preg_replace_callback(
+                            \'/{value}/\',
+                            function (array $matches) use ($value): string {
+                                return htmlspecialchars($value, ENT_QUOTES);
+                            },
+                            $template,
+                        );
+                    }
+
+                    echo render("<p>{value}</p>", (string) $_GET["bad"]);',
+            ],
             'anchoredPatternWithoutQuotesRemovesTheXpathTaint' => [
                 'code' => '<?php
                     $data = (string) $_GET["id"];
@@ -8121,6 +8175,18 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'names $fn, which is not a parameter',
             ],
+            'flowIntoTheArgumentsOfACallableThatIsNotAParameter' => [
+                'code' => '<?php
+                    /** @psalm-flow ($text) -> $fn() */
+                    function call(string $text, callable $callback): void {}',
+                'error_message' => 'names $fn, which is not a parameter',
+            ],
+            'flowIntoTheArgumentsOfACallableOfWhatACallableReturns' => [
+                'code' => '<?php
+                    /** @psalm-flow ($callback()) -> $callback() */
+                    function call(callable $callback): void {}',
+                'error_message' => 'is neither',
+            ],
             'proxyFlowIntoNeitherTheReturnNorNothing' => [
                 'code' => '<?php
                     /** @psalm-flow proxy exec($cmd) -> $out */
@@ -14716,6 +14782,298 @@ final class TaintTest extends TestCase
 
                     echo $b;',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByThePregReplaceCallbackCallback' => [
+                'code' => '<?php
+                    function render(string $template, string $value): string {
+                        return preg_replace_callback(
+                            \'/{value}/\',
+                            function (array $matches) use ($value): string {
+                                return $value;
+                            },
+                            $template,
+                        );
+                    }
+
+                    echo render("<p>{value}</p>", (string) $_GET["bad"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByThePregReplaceCallbackArrowFunction' => [
+                'code' => '<?php
+                    echo preg_replace_callback(\'/x/\', fn(array $matches): string => (string) $_GET["bad"], "x");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByAPregReplaceCallbackArrayCallback' => [
+                'code' => '<?php
+                    echo preg_replace_callback_array(
+                        [\'/x/\' => fn(array $matches): string => (string) $_GET["bad"]],
+                        "x",
+                    );',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByAPregReplaceCallbackCallbackNamedByAString' => [
+                'code' => '<?php
+                    function bad(array $matches): string {
+                        return (string) $_GET["bad"];
+                    }
+
+                    echo preg_replace_callback(\'/x/\', \'bad\', "x");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByAPregReplaceCallbackStaticMethodArray' => [
+                'code' => '<?php
+                    final class Replacer {
+                        public static function bad(array $matches): string {
+                            return (string) $_GET["bad"];
+                        }
+                    }
+
+                    echo preg_replace_callback(\'/x/\', [Replacer::class, \'bad\'], "x");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByAPregReplaceCallbackStaticMethodString' => [
+                'code' => '<?php
+                    final class Replacer {
+                        public static function bad(array $matches): string {
+                            return (string) $_GET["bad"];
+                        }
+                    }
+
+                    echo preg_replace_callback(\'/x/\', \'Replacer::bad\', "x");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByAPregReplaceCallbackInstanceMethodArray' => [
+                'code' => '<?php
+                    final class Replacer {
+                        public function bad(array $matches): string {
+                            return (string) $_GET["bad"];
+                        }
+
+                        public function render(): string {
+                            return preg_replace_callback(\'/x/\', [$this, \'bad\'], "x");
+                        }
+                    }
+
+                    echo (new Replacer())->render();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByAPregReplaceCallbackInvokableObject' => [
+                'code' => '<?php
+                    final class Replacer {
+                        public function __invoke(array $matches): string {
+                            return (string) $_GET["bad"];
+                        }
+                    }
+
+                    echo preg_replace_callback(\'/x/\', new Replacer(), "x");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByAPregReplaceCallbackFirstClassCallableArgument' => [
+                'code' => '<?php
+                    function bad(array $matches): string {
+                        return (string) $_GET["bad"];
+                    }
+
+                    echo preg_replace_callback(\'/x/\', bad(...), "x");',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.1',
+            ],
+            'taintReturnedByAPregReplaceCallbackFirstClassMethodCallableArgument' => [
+                'code' => '<?php
+                    final class Replacer {
+                        public static function bad(array $matches): string {
+                            return (string) $_GET["bad"];
+                        }
+                    }
+
+                    echo preg_replace_callback(\'/x/\', Replacer::bad(...), "x");',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.1',
+            ],
+            'taintReturnedByOneOfTwoPregReplaceCallbackCallbacksNamedByStrings' => [
+                'code' => '<?php
+                    function bad(array $matches): string {
+                        return (string) $_GET["bad"];
+                    }
+
+                    function good(array $matches): string {
+                        return "good";
+                    }
+
+                    $callback = rand(0, 1) ? \'bad\' : \'good\';
+                    echo preg_replace_callback(\'/x/\', $callback, "x");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByAPregReplaceCallbackCallbackGivenByName' => [
+                'code' => '<?php
+                    function bad(array $matches): string {
+                        return (string) $_GET["bad"];
+                    }
+
+                    echo preg_replace_callback(callback: \'bad\', pattern: \'/x/\', subject: "x");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintMatchedByPregReplaceCallbackPassedToItsCallback' => [
+                'code' => '<?php
+                    preg_replace_callback(
+                        \'/x/\',
+                        function (array $matches): string {
+                            echo (string) $matches[0];
+                            return "";
+                        },
+                        (string) $_GET["bad"],
+                    );',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintMatchedByPregReplaceCallbackPassedToItsCallbackNamedByAString' => [
+                'code' => '<?php
+                    function show(array $matches): string {
+                        echo (string) $matches[0];
+                        return "";
+                    }
+
+                    preg_replace_callback(\'/x/\', \'show\', (string) $_GET["bad"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintMatchedByPregReplaceCallbackArrayPassedToItsCallback' => [
+                'code' => '<?php
+                    preg_replace_callback_array(
+                        [
+                            \'/x/\' => function (array $matches): string {
+                                echo (string) $matches[0];
+                                return "";
+                            },
+                        ],
+                        (string) $_GET["bad"],
+                    );',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByACallableHeldByAnArrayGivenToAMixedParameter' => [
+                'code' => '<?php
+                    function bad(array $matches): string {
+                        return (string) $_GET["bad"];
+                    }
+
+                    /** @psalm-flow ($callbacks()) -> return */
+                    function run_all(mixed $callbacks): string {
+                        return "";
+                    }
+
+                    echo run_all([\'bad\']);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintPassedToTheListenerOfAFlowIntoACallable' => [
+                'code' => '<?php
+                    interface Events {
+                        /**
+                         * @param callable(string): void $listener
+                         * @psalm-flow ($payload) -> $listener()
+                         */
+                        public function dispatch(string $payload, callable $listener): void;
+                    }
+
+                    function listen(Events $events): void {
+                        $events->dispatch((string) $_GET["bad"], function (string $payload): void {
+                            echo $payload;
+                        });
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByAStringCallableGivenToACallableParameter' => [
+                'code' => '<?php
+                    function bad(array $matches): string {
+                        return (string) $_GET["bad"];
+                    }
+
+                    function apply(callable $callback): string {
+                        return (string) $callback([]);
+                    }
+
+                    echo apply(\'bad\');',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByAMethodArrayGivenToACallableParameter' => [
+                'code' => '<?php
+                    final class Replacer {
+                        public static function bad(array $matches): string {
+                            return (string) $_GET["bad"];
+                        }
+                    }
+
+                    function apply(callable $callback): string {
+                        return (string) $callback([]);
+                    }
+
+                    echo apply([Replacer::class, \'bad\']);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByAStringCallableGivenToATypedCallableParameter' => [
+                'code' => '<?php
+                    function bad(array $matches): string {
+                        return (string) $_GET["bad"];
+                    }
+
+                    /** @param callable(array): string $callback */
+                    function apply(callable $callback): string {
+                        return $callback([]);
+                    }
+
+                    echo apply(\'bad\');',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintReturnedByAFirstClassCallableArgumentOfAUserFunction' => [
+                'code' => '<?php
+                    function bad(array $matches): string {
+                        return (string) $_GET["bad"];
+                    }
+
+                    /** @param callable(array): string $callback */
+                    function apply(callable $callback): string {
+                        return $callback([]);
+                    }
+
+                    echo apply(bad(...));',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.1',
+            ],
+            'taintReturnedByACalledMethodClosure' => [
+                'code' => '<?php
+                    final class Replacer {
+                        public static function bad(array $matches): string {
+                            return (string) $_GET["bad"];
+                        }
+                    }
+
+                    $bad = Replacer::bad(...);
+                    echo $bad([]);',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.1',
+            ],
+            'taintPassedToTheSinkOfACalledStaticMethodClosure' => [
+                'code' => '<?php
+                    final class Shell {
+                        public static function run(string $command): void {
+                            shell_exec($command);
+                        }
+                    }
+
+                    $run = Shell::run(...);
+                    $run((string) $_GET["bad"]);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.1',
+            ],
+            'taintPassedToTheSinkOfACalledInstanceMethodClosure' => [
+                'code' => '<?php
+                    final class Shell {
+                        public function run(string $command): void {
+                            shell_exec($command);
+                        }
+                    }
+
+                    $run = (new Shell())->run(...);
+                    $run((string) $_GET["bad"]);',
+                'error_message' => 'TaintedShell',
+                'php_version' => '8.1',
             ],
             'taintedFunctionWithNoTypes' => [
                 'code' => '<?php
