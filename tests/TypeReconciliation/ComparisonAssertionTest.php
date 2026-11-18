@@ -5,9 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -19,6 +24,56 @@ final class ComparisonAssertionTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    public function testANullComparisonOfANonNullableValueIsReportedOnce(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function f(int $i): void {
+                    if ($i === null) {}
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $this->assertSame(
+            ['TypeDoesNotContainNull: int does not contain null'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testALooseComparisonOfNumericStringsIsNotAnIdentityCheck(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function f(): void {
+                    $a = "1";
+                    $b = "01";
+                    if ($a == $b) {}
+                    if ($a != $b) {}
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+
+        // "1" == "01" is true; issues of the reconciler about it are out of scope here
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $this->assertStringNotContainsString('cannot be identical', $issue->message);
+            $this->assertStringNotContainsString('can never contain', $issue->message);
+        }
+    }
+
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
@@ -385,6 +440,9 @@ final class ComparisonAssertionTest extends TestCase
         ];
     }
 
+    /**
+     * @psalm-pure
+     */
     #[Override]
     public static function providerInvalidCodeParse(): iterable
     {
@@ -485,6 +543,35 @@ final class ComparisonAssertionTest extends TestCase
                         if (get_class($o) !== Missing::class) {}
                     }',
                 'error_message' => 'UndefinedClass',
+            ],
+            'firstClassCallableComparedWithTrueOrFalse' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (strlen(...) !== false) {}
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableIdenticalToFalse' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (strlen(...) === false) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'docblockValuesThatCannotBeIdenticalComparedNotIdentical' => [
+                'code' => '<?php
+                    /**
+                     * @param 1 $a
+                     * @param 2 $b
+                     */
+                    function f($a, $b): void {
+                        if ($a !== $b) {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - Docblock-defined type 2 can never contain 1',
             ],
             'looseEqualityOfIntsThatCannotBeIdentical' => [
                 'code' => '<?php

@@ -19,8 +19,8 @@ use PhpParser\Node\Expr\UnaryPlus;
 use PhpParser\Node\Scalar\Int_;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
-use Psalm\Exception\TypeParseTreeException;
 use Psalm\Context;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\FileSource;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
@@ -643,6 +643,14 @@ final class AssertionFinder
     }
 
     /**
+     * @psalm-pure
+     */
+    private static function isNonNumericStringLiteral(Union $type): bool
+    {
+        return $type->isSingleStringLiteral() && !is_numeric($type->getSingleStringLiteral()->value);
+    }
+
+    /**
      * @param self::ASSIGNMENT_TO_RIGHT|self::ASSIGNMENT_TO_LEFT|int $position
      * @return array{PhpParser\Node\Expr, PhpParser\Node\Expr} the operand on the other side of the one found at
      *     the position, then that one
@@ -678,7 +686,10 @@ final class AssertionFinder
         }
 
         $code_location = new CodeLocation($source, $conditional);
-        $dupe_key = $var_type->getId() . ' ' . $value_type->getId();
+        // the key of the issue the reconciler reports for the same comparison, so that only one is shown
+        $dupe_key = !$negated && !$var_type->from_docblock && $value_type->isNull()
+            ? $var_type->getId()
+            : $var_type->getId() . ' ' . $value_type->getId();
 
         if ($negated) {
             $issue = $var_type->from_docblock
@@ -2309,7 +2320,9 @@ final class AssertionFinder
 
             $if_types = [[$var_name => [[self::withPolarity($assertion, $negated)]]]];
         } else {
-            if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall) {
+            if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall
+                && !$base_conditional->isFirstClassCallable()
+            ) {
                 $base_assertions = self::processFunctionCall(
                     $base_conditional,
                     $this_class_name,
@@ -2717,10 +2730,14 @@ final class AssertionFinder
         $var_type = $source->node_data->getType($var_type_expr);
         $other_type = $source->node_data->getType($other_type_expr);
 
-        // a loose comparison of two values of the same type compares them as `===` does
+        // a loose comparison of two values of the same type compares them as `===` does, but for two strings that
+        // may both be numeric (`"1" == "01"`)
         $identical = self::isStrictComparison($conditional)
             || ($other_type && $var_type
-                && (($var_type->isString(true) && $other_type->isString(true))
+                && (($var_type->isString(true)
+                        && $other_type->isString(true)
+                        && (self::isNonNumericStringLiteral($var_type)
+                            || self::isNonNumericStringLiteral($other_type)))
                     || ($var_type->isInt(true) && $other_type->isInt(true))
                     || ($var_type->isFloat() && $other_type->isFloat())
                 )
@@ -3838,11 +3855,17 @@ final class AssertionFinder
         )) {
             if ($var_type->from_docblock || $other_type->from_docblock) {
                 IssueBuffer::maybeAdd(
-                    new DocblockTypeContradiction(
-                        $var_type->getId() . ' does not contain ' . $other_type->getId(),
-                        new CodeLocation($source, $conditional),
-                        $var_type->getId() . ' ' . $other_type->getId(),
-                    ),
+                    $conditional instanceof NotEqual || $conditional instanceof NotIdentical
+                        ? new RedundantConditionGivenDocblockType(
+                            'Docblock-defined type ' . $var_type->getId() . ' can never contain ' . $other_type->getId(),
+                            new CodeLocation($source, $conditional),
+                            $var_type->getId() . ' ' . $other_type->getId(),
+                        )
+                        : new DocblockTypeContradiction(
+                            $var_type->getId() . ' does not contain ' . $other_type->getId(),
+                            new CodeLocation($source, $conditional),
+                            $var_type->getId() . ' ' . $other_type->getId(),
+                        ),
                     $source->getSuppressedIssues(),
                 );
             } else {
