@@ -22,6 +22,7 @@ final class IssueData
      * @param self::SEVERITY_* $severity
      * @param ?list<DataFlowNodeData|array{label: string, entry_path_type: string}> $taint_trace
      * @param ?list<DataFlowNodeData> $other_references
+     * @param list<positive-int> $cwe_ids
      * @psalm-mutation-free
      */
     public function __construct(
@@ -50,6 +51,8 @@ final class IssueData
         public readonly bool $is_security = false,
         /** The issues of one group are reported once, see {@see \Psalm\IssueBuffer::setIssueGroup()} */
         public readonly ?string $group_key = null,
+        /** The ids of the CWE weaknesses the issue flags, the most specific first */
+        public readonly array $cwe_ids = [],
     ) {
         $this->link = match (true) {
             $documentation_url !== null => $documentation_url,

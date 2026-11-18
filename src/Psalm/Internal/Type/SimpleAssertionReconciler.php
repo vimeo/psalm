@@ -27,6 +27,7 @@ use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsLessThan;
 use Psalm\Storage\Assertion\IsLooselyEqual;
 use Psalm\Storage\Assertion\IsType;
+use Psalm\Storage\Assertion\MatchesPattern;
 use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
 use Psalm\Storage\Assertion\Truthy;
@@ -166,7 +167,7 @@ final class SimpleAssertionReconciler extends Reconciler
         int &$failed_reconciliation = Reconciler::RECONCILIATION_OK,
         bool $inside_loop = false,
     ): ?Union {
-        if ($assertion instanceof Any) {
+        if ($assertion instanceof Any || $assertion instanceof MatchesPattern) {
             return $existing_var_type;
         }
 
