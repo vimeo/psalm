@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\FileManipulation;
 
 use Override;
+use Psalm\Tests\TestConfig;
 
 /**
  * @psalm-immutable
@@ -77,6 +78,67 @@ final class ThrowsBlockAdditionTest extends FileManipulationTestCase
                         }
                     }',
                 ],
+            ],
+            'doesNotAddThrowsWhenSuppressedForDirectory' => [
+                'input' => '<?php
+                    function foo(bool $b): void {
+                        if ($b) {
+                            throw new \LogicException();
+                        }
+                        throw new \RuntimeException();
+                    }',
+                'output' => '<?php
+                    function foo(bool $b): void {
+                        if ($b) {
+                            throw new \LogicException();
+                        }
+                        throw new \RuntimeException();
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingThrowsDocblock'],
+                'safe_types' => true,
+                'allow_backwards_incompatible_changes' => true,
+                'other_files' => [],
+                'configure' => static function (TestConfig $config): void {
+                    $config->setAdvancedErrorLevel('MissingThrowsDocblock', [
+                        [
+                            'type' => TestConfig::REPORT_SUPPRESS,
+                            'directory' => [['name' => 'src']],
+                        ],
+                    ]);
+                },
+            ],
+            'onlyAddsThrowsForUnsuppressedException' => [
+                'input' => '<?php
+                    function foo(bool $b): void {
+                        if ($b) {
+                            throw new \LogicException();
+                        }
+                        throw new \RuntimeException();
+                    }',
+                'output' => '<?php
+                    /**
+                     * @throws RuntimeException
+                     */
+                    function foo(bool $b): void {
+                        if ($b) {
+                            throw new \LogicException();
+                        }
+                        throw new \RuntimeException();
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingThrowsDocblock'],
+                'safe_types' => true,
+                'allow_backwards_incompatible_changes' => true,
+                'other_files' => [],
+                'configure' => static function (TestConfig $config): void {
+                    $config->setAdvancedErrorLevel('MissingThrowsDocblock', [
+                        [
+                            'type' => TestConfig::REPORT_SUPPRESS,
+                            'referencedClass' => [['name' => 'LogicException']],
+                        ],
+                    ]);
+                },
             ],
             'addThrowsAnnotationToFunction' => [
                 'input' => '<?php
