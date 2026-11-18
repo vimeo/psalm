@@ -456,9 +456,15 @@ final class ClassLikeDocblockParser
                     }
 
                     if (!$has_return) {
+                        $return_tree = $method_tree->children[1] ?? null;
+
+                        if ($return_tree === null) {
+                            throw new DocblockParseException($method_entry . ' is not a valid method');
+                        }
+
                         try {
                             TypeParser::getTypeFromTree(
-                                $method_tree->children[1],
+                                $return_tree,
                                 $codebase,
                                 null,
                                 $purity_template_map,
