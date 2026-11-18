@@ -10,12 +10,14 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalysisResult;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\DirectConstructorCall;
 use Psalm\Issue\InvalidMethodCall;
@@ -36,6 +38,7 @@ use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
@@ -133,6 +136,10 @@ final class MethodCallAnalyzer extends CallAnalyzer
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
         }
 
+        $receiver_type = $class_type
+            ? TypeExpander::expandTemplateKeyOfAndValueOf($statements_analyzer->getCodebase(), $class_type)
+            : null;
+
         if ($class_type
             && $stmt->name instanceof PhpParser\Node\Identifier
             && ($class_type->isNull() || $class_type->isVoid())
@@ -146,10 +153,10 @@ final class MethodCallAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($class_type
+        if ($receiver_type
             && $stmt->name instanceof PhpParser\Node\Identifier
-            && $class_type->isNullable()
-            && !$class_type->ignore_nullable_issues
+            && $receiver_type->isNullable()
+            && !$receiver_type->ignore_nullable_issues
             && !($stmt->name->name === 'offsetGet' && $context->inside_isset)
             && !$receiver_state->isNullOnlyByShortCircuit()
         ) {
@@ -162,10 +169,10 @@ final class MethodCallAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($class_type
+        if ($receiver_type
             && $stmt->name instanceof PhpParser\Node\Identifier
-            && $class_type->isFalsable()
-            && !$class_type->ignore_falsable_issues
+            && $receiver_type->isFalsable()
+            && !$receiver_type->ignore_falsable_issues
         ) {
             IssueBuffer::maybeAdd(
                 new PossiblyFalseReference(
@@ -191,7 +198,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
         // calls can still constrain it.
         $class_type = TypeVariableResolver::resolveTopLevel($class_type, $codebase);
 
-        $lhs_types = $class_type->getAtomicTypes();
+        $lhs_types = TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $class_type)->getAtomicTypes();
 
         foreach ($lhs_types as $k => $lhs_type_part) {
             if ($lhs_type_part instanceof TConditional) {
@@ -240,6 +247,9 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];
             }
         }
+
+        MethodCallPurityAnalyzer::keepPropertiesNotWrittenForEveryReceiverType($codebase, $context, $result);
+
         if ($method_var_id !== null) {
             // the initialization and mutation passes skip the purity analysis that decides it,
             // so they rely on what the normal pass of this call found
@@ -405,7 +415,9 @@ final class MethodCallAnalyzer extends CallAnalyzer
         $stmt_type = $result->return_type;
 
         // `$a?->b->c()` short-circuits the whole chain, so null from the nullsafe hop survives the call
-        if ($receiver_state !== NullsafeChainState::None && $class_type->isNullable()) {
+        if ($receiver_state !== NullsafeChainState::None
+            && TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $class_type)->isNullable()
+        ) {
             $receiver_state->afterLink($stmt_type)->markOn($stmt);
 
             if ($stmt_type && !$stmt_type->isNullable()) {
@@ -476,6 +488,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
                     && !$type instanceof TObject
                     && !$type instanceof TConditional
                     && !$type instanceof TTypeVariable
+                    && !$type instanceof TTemplateValueOf
                 ) {
                     unset($types[$key]);
                 } else {
