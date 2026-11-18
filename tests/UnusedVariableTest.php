@@ -3243,6 +3243,17 @@ final class UnusedVariableTest extends TestCase
                     function takesArray(array $_arr): void {}
                 ',
             ],
+            'arrayHoldingReferenceToOffsetIsUsed' => [ // #14112
+                'code' => '<?php
+                    /** @param array<string, int|null> $arr */
+                    function f(array $arr, string $k): array {
+                        $out = [];
+                        $out["a"] = &$arr[$k];
+                        $out["a"] = 5;
+                        return $arr;
+                    }
+                ',
+            ],
             'usedPlusInAddition' => [
                 'code' => '<?php
                     function takesAnInt(): void {

@@ -48,6 +48,7 @@ use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_fill;
@@ -355,6 +356,22 @@ final class ArrayAssignmentAnalyzer
                     ? $root_type->setPossiblyUndefined(false)
                     : $root_type;
             $context->writeToReferencesPossiblyBound($root_var_id, $root_type, $codebase);
+
+            if ($context->references_in_scope) {
+                self::updateArraysHoldingBoundItem($context, $root_var_id, $codebase);
+
+                foreach ($child_stmts as $child_stmt) {
+                    $child_var_id = ExpressionIdentifier::getExtendedVarId(
+                        $child_stmt,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer,
+                    );
+
+                    if ($child_var_id !== null) {
+                        self::updateArraysHoldingBoundItem($context, $child_var_id, $codebase);
+                    }
+                }
+            }
         }
 
         if ($root_array_expr instanceof PhpParser\Node\Expr\MethodCall
@@ -374,6 +391,103 @@ final class ArrayAssignmentAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * What is written to a variable bound by reference to an array item (`$r = &$a['k']`) is written to the arrays
+     * holding that item: their types are rebuilt from its new type
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public static function updateArraysHoldingBoundItem(Context $context, string $var_id, Codebase $codebase): void
+    {
+        $item_id = $var_id;
+        $seen = [];
+
+        while (isset($context->references_in_scope[$item_id]) && !isset($seen[$item_id])) {
+            $seen[$item_id] = true;
+            $item_id = $context->references_in_scope[$item_id];
+        }
+
+        if ($item_id === $var_id || !isset($context->vars_in_scope[$item_id])) {
+            return;
+        }
+
+        $item_type = $context->vars_in_scope[$item_id];
+        $key_parts = Reconciler::breakUpPathIntoParts($item_id);
+
+        while (count($key_parts) > 3 && end($key_parts) === ']') {
+            array_pop($key_parts);
+            $key = array_pop($key_parts);
+            array_pop($key_parts);
+            $array_id = implode('', $key_parts);
+
+            if (!isset($context->vars_in_scope[$array_id])) {
+                return;
+            }
+
+            $array_type = $context->vars_in_scope[$array_id];
+
+            foreach ($array_type->getAtomicTypes() as $atomic_type) {
+                if (!$atomic_type instanceof TKeyedArray && !$atomic_type instanceof TArray) {
+                    return;
+                }
+            }
+
+            $key_values = self::getKeyValuesOfOffset($context, $key);
+
+            if ($key_values) {
+                $array_type = self::updateTypeWithKeyValues($codebase, $array_type, $item_type, $key_values);
+            } else {
+                $key_type = $key[0] === '$' && isset($context->vars_in_scope[$key])
+                    ? $context->vars_in_scope[$key]
+                    : Type::getArrayKey();
+
+                $array_type = Type::combineUnionTypes(
+                    $array_type,
+                    new Union([new TNonEmptyArray([$key_type, $item_type])]),
+                    $codebase,
+                );
+            }
+
+            $context->vars_in_scope[$array_id] = $array_type;
+            $item_type = $array_type;
+        }
+    }
+
+    /**
+     * The literal keys the offset of a var id (`'k'`, `0`, `$k`) can be, or none when one of them isn't known
+     *
+     * @return list<TLiteralInt|TLiteralString>
+     * @psalm-mutation-free
+     */
+    private static function getKeyValuesOfOffset(Context $context, string $offset): array
+    {
+        if ($offset[0] === '\'' || $offset[0] === '"') {
+            $key_value = Type::getAtomicStringFromLiteral(ExpressionIdentifier::unquoteOffset($offset));
+
+            return $key_value instanceof TLiteralString ? [$key_value] : [];
+        }
+
+        if (preg_match('/^-?[0-9]+$/', $offset) === 1) {
+            return [new TLiteralInt((int) $offset)];
+        }
+
+        if ($offset[0] !== '$' || !isset($context->vars_in_scope[$offset])) {
+            return [];
+        }
+
+        $key_values = [];
+
+        foreach ($context->vars_in_scope[$offset]->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TLiteralInt && !$atomic_type instanceof TLiteralString) {
+                return [];
+            }
+
+            $key_values[] = $atomic_type;
+        }
+
+        return count($key_values) <= self::MAX_KEY_VALUES ? $key_values : [];
     }
 
     /**

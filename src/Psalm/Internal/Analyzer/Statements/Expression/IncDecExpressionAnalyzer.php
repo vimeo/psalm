@@ -10,6 +10,7 @@ use PhpParser\Node\Expr\PostInc;
 use PhpParser\Node\Expr\PreDec;
 use PhpParser\Node\Expr\PreInc;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -86,6 +87,7 @@ final class IncDecExpressionAnalyzer
 
             if ($var_id && isset($context->vars_in_scope[$var_id])) {
                 $context->vars_in_scope[$var_id] = $result_type;
+                ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem($context, $var_id, $codebase);
 
                 if ($codebase->find_unused_variables && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
                     $context->assigned_var_ids[$var_id] = (int) $stmt->var->getAttribute('startFilePos');
