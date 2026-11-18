@@ -146,11 +146,11 @@ final class Refactor
                     (if specified, takes priority over the --threads flag).
                     `auto` (the default) uses the scanThreads setting of the config, or else one thread per CPU core.
 
-                --memory-limit=LIMIT
-                    Use a specific memory limit.
-
                 --use-ini-defaults
-                    Use the PHP ini defaults instead of Psalm memory and error settings.
+                    Use PHP-provided ini defaults for memory and error display
+
+                --memory-limit=LIMIT
+                    Use a specific memory limit. Cannot be combined with --use-ini-defaults
 
                 --move "[Identifier]" --into "[Class]"
                     Moves the specified item into the class. More than one item can be moved into a class
