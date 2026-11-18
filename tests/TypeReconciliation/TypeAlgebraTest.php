@@ -4207,6 +4207,26 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }',
             ],
+            'truthyCheckOfAGlobalIsForgottenWhenAConstructorWritesIt' => [
+                'code' => '<?php
+                    final class G {
+                        public function __construct() {
+                            global $g;
+                            $g = 0;
+                        }
+                    }
+
+                    function f(): void {
+                        global $g;
+                        /** @var int $g */
+                        if ($g) {
+                            new G();
+                            if (!$g) {
+                                echo "reached";
+                            }
+                        }
+                    }',
+            ],
             'truthyCheckOfAGlobalIsForgottenWhenAStaticMethodWritesIt' => [
                 'code' => '<?php
                     final class G {

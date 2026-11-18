@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
@@ -758,6 +759,8 @@ final class NewAnalyzer extends CallAnalyzer
                     $method_id,
                     $template_result,
                 );
+
+                GlobalAnalyzer::readGlobalsWrittenBy($statements_analyzer, $context, $method_storage);
 
                 if ($method_storage->if_true_assertions) {
                     $statements_analyzer->node_data->setIfTrueAssertions(
