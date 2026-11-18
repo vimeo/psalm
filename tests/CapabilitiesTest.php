@@ -5682,6 +5682,23 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'possibly-mutating method Name::__toString',
             ],
+            'impureToStringInCaseInsensitiveNaturalSort' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     * @return array<Name>
+                     */
+                    function f(array $names): array {
+                        asort($names, SORT_NATURAL | SORT_FLAG_CASE);
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
             'impureToStringInNatsort' => [
                 'code' => '<?php
                     final class Name {
