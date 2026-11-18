@@ -384,6 +384,7 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame('', $process->getErrorOutput());
         $this->assertStringContainsString('--memory-limit=LIMIT', $process->getOutput());
         $this->assertStringContainsString('--use-ini-defaults', $process->getOutput());
+        $this->assertStringContainsString('Cannot be combined with --use-ini-defaults', $process->getOutput());
     }
 
     public function testRefactorAppliesMemoryLimitBeforeProjectSetup(): void
@@ -442,7 +443,6 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
                     '-d',
                     'auto_prepend_file=' . $prepend_file,
                     __DIR__ . '/../../psalm-refactor',
-                    '--memory-limit=32M',
                     '--use-ini-defaults',
                     '--root=missing-project',
                 ],
