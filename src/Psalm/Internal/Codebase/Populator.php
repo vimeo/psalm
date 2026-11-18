@@ -13,6 +13,7 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Scanner\UnresolvedConstant\ClassConstant;
+use Psalm\Internal\Scanner\UnresolvedConstant\EnumPropertyFetch;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\PurityArguments;
@@ -1265,7 +1266,7 @@ final class Populator
      */
     private function registerClassConstantDependencies(mixed $node, string $file_path): void
     {
-        if ($node instanceof ClassConstant) {
+        if ($node instanceof ClassConstant || $node instanceof EnumPropertyFetch) {
             $this->file_reference_provider->addFileInheritanceToClass($file_path, strtolower($node->fqcln));
         }
 

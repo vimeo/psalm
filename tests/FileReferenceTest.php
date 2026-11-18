@@ -404,6 +404,19 @@ final class FileReferenceTest extends TestCase
         self::assertContains($files['e.php'], $dependents);
     }
 
+    public function testFileOfAClassDependsOnTheEnumsWhoseCasePropertiesItsConstantExpressionsRead(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.2', 'tests');
+
+        $files = $this->analyzeProject([
+            'a.php' => '<?php enum A: int { case Y = 10; }',
+            'b.php' => '<?php final class B { public const X = A::Y->value * 2; }',
+            'd.php' => '<?php final class D { public function f(): bool { return B::X === 22; } }',
+        ]);
+
+        self::assertContains($files['d.php'], $this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']]));
+    }
+
     public function testFileOfAClassDependsOnTheClassesItImportsTypesFrom(): void
     {
         $files = $this->analyzeProject([
