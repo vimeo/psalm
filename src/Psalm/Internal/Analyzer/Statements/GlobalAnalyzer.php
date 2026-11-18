@@ -297,6 +297,7 @@ final class GlobalAnalyzer
                 )
                 : $declared_type;
 
+            $context->removeVarFromConflictingClauses($var_id, $type, $statements_analyzer);
             $context->vars_in_scope[$var_id] = self::taintGlobalRead($statements_analyzer, $context, $var_id, $type);
             $context->vars_possibly_in_scope[$var_id] = true;
         }

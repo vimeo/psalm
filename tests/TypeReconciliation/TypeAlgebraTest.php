@@ -4169,6 +4169,161 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'truthyCheckOfAGlobalIsForgottenWhenAFunctionWritesIt' => [
+                'code' => '<?php
+                    function resetG(): void {
+                        global $g;
+                        $g = 0;
+                    }
+
+                    function f(): void {
+                        global $g;
+                        /** @var int $g */
+                        if ($g) {
+                            resetG();
+                            if (!$g) {
+                                echo "reached";
+                            }
+                        }
+                    }',
+            ],
+            'truthyCheckOfAGlobalIsForgottenWhenAMethodWritesIt' => [
+                'code' => '<?php
+                    final class G {
+                        public function reset(): void {
+                            global $g;
+                            $g = 0;
+                        }
+                    }
+
+                    function f(G $o): void {
+                        global $g;
+                        /** @var int $g */
+                        if ($g) {
+                            $o->reset();
+                            if (!$g) {
+                                echo "reached";
+                            }
+                        }
+                    }',
+            ],
+            'truthyCheckOfAGlobalIsForgottenWhenAStaticMethodWritesIt' => [
+                'code' => '<?php
+                    final class G {
+                        public static function reset(): void {
+                            global $g;
+                            $g = 0;
+                        }
+                    }
+
+                    function f(): void {
+                        global $g;
+                        /** @var int $g */
+                        if ($g) {
+                            G::reset();
+                            if (!$g) {
+                                echo "reached";
+                            }
+                        }
+                    }',
+            ],
+            'truthyCheckOfAGlobalStoredInVariableIsForgottenWhenAFunctionWritesIt' => [
+                'code' => '<?php
+                    function resetG(): void {
+                        global $g;
+                        $g = 0;
+                    }
+
+                    function f(): void {
+                        global $g;
+                        /** @var int $g */
+                        $t = $g !== 0;
+                        if ($t) {
+                            resetG();
+                            if ($g === 0) {
+                                echo "reached";
+                            }
+                        }
+                    }',
+            ],
+            'nullCheckStoredInVariableIsKeptWhenAClosureCapturingItByValueIsPassedToAFunction' => [
+                'code' => '<?php
+                    function run(callable $c): void {
+                        $c();
+                    }
+
+                    function f(?string $x): int {
+                        $f = function () use ($x): void {
+                            echo (string) $x;
+                        };
+                        $notNull = $x !== null;
+                        run($f);
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'nullCheckStoredInVariableIsKeptWhenAClosureCapturingAnotherVariableByReferenceIsPassedToAFunction' => [
+                'code' => '<?php
+                    function run(callable $c): void {
+                        $c();
+                    }
+
+                    function f(?string $x, ?string $y): int {
+                        $f = function () use (&$y): void {
+                            $y = null;
+                        };
+                        $notNull = $x !== null;
+                        run($f);
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return (int) $y;
+                    }',
+            ],
+            'nullCheckStoredInVariableIsKeptWhenAClosureCapturingItByReferenceIsNotPassed' => [
+                'code' => '<?php
+                    function run(callable $c): void {
+                        $c();
+                    }
+
+                    function f(?string $x): int {
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+                        $notNull = $x !== null;
+                        run("rand");
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        $f();
+
+                        return 0;
+                    }',
+            ],
+            'nullCheckThatABooleanAssignmentPassesByReferenceIsForgotten' => [
+                'code' => '<?php
+                    function setNull(?int &$x): bool {
+                        $x = null;
+                        return true;
+                    }
+
+                    function f(?int $a): void {
+                        $r = ($a !== null && setNull($a));
+                        if ($r) {
+                            if ($a === null) {
+                                echo "reached";
+                            }
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -4504,6 +4659,219 @@ final class TypeAlgebraTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckStoredInVariableIsForgottenWhenAClosureCapturingItByReferenceIsPassedToAFunction' => [
+                'code' => '<?php
+                    function run(callable $c): void {
+                        $c();
+                    }
+
+                    function f(?string $x): int {
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+                        $notNull = $x !== null;
+                        run($f);
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckStoredInVariableIsForgottenWhenAClosureLiteralCapturingItByReferenceIsPassedToAFunction' => [
+                'code' => '<?php
+                    function run(callable $c): void {
+                        $c();
+                    }
+
+                    function f(?string $x): int {
+                        $notNull = $x !== null;
+                        run(function () use (&$x): void {
+                            $x = null;
+                        });
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckStoredInVariableIsForgottenWhenAClosureCapturingItByReferenceIsPassedToAMethod' => [
+                'code' => '<?php
+                    final class Runner {
+                        public function run(callable $c): void {
+                            $c();
+                        }
+                    }
+
+                    function f(?string $x, Runner $r): int {
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+                        $notNull = $x !== null;
+                        $r->run($f);
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckStoredInVariableIsForgottenWhenAClosureCapturingItByReferenceIsPassedToAStaticMethod' => [
+                'code' => '<?php
+                    final class Runner {
+                        public static function run(callable $c): void {
+                            $c();
+                        }
+                    }
+
+                    function f(?string $x): int {
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+                        $notNull = $x !== null;
+                        Runner::run($f);
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckStoredInVariableIsForgottenWhenAClosureCapturingItByReferenceIsPassedToAConstructor' => [
+                'code' => '<?php
+                    final class Runner {
+                        public function __construct(callable $c) {
+                            $c();
+                        }
+                    }
+
+                    function f(?string $x): int {
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+                        $notNull = $x !== null;
+                        new Runner($f);
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckAssignedWithACallOfAClosureCapturingItByReferenceIsForgotten' => [
+                'code' => '<?php
+                    function f(?string $x): int {
+                        $f = function () use (&$x): bool {
+                            $x = null;
+                            return (bool) rand(0, 1);
+                        };
+                        $r = $x !== null && $f();
+
+                        if ($r) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckOredWithACallOfAClosureCapturingItByReferenceIsForgotten' => [
+                'code' => '<?php
+                    function f(?string $x): int {
+                        $f = function () use (&$x): bool {
+                            $x = null;
+                            return (bool) rand(0, 1);
+                        };
+
+                        if ($x === null || $f()) {
+                            return 0;
+                        }
+
+                        return strlen($x);
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckOredWithACallTakingAClosureCapturingItByReferenceIsForgotten' => [
+                'code' => '<?php
+                    function run(callable $c): bool {
+                        $c();
+                        return (bool) rand(0, 1);
+                    }
+
+                    function f(?string $x): int {
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+
+                        if ($x === null || run($f)) {
+                            return 0;
+                        }
+
+                        return strlen($x);
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'truthyCheckOfAGlobalIsKeptByACallThatDoesNotWriteIt' => [
+                'code' => '<?php
+                    function noop(): void {}
+
+                    function f(): void {
+                        global $g;
+                        /** @var int $g */
+                        if ($g) {
+                            noop();
+                            if (!$g) {
+                                echo "unreachable";
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition',
+            ],
+            'clauseOnAnotherVariableIsKeptByACallWritingAGlobal' => [
+                'code' => '<?php
+                    function resetG(): void {
+                        global $g;
+                        $g = 0;
+                    }
+
+                    function f(?int $x): void {
+                        global $g;
+                        /** @var ?int $g */
+                        if ($g !== null && $x !== null) {
+                            resetG();
+                            if ($x === null) {
+                                echo "unreachable";
+                            }
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainNull',
+            ],
+            'returnOfAVariableSetToNullThroughAReferenceIsNullable' => [
+                'code' => '<?php
+                    function f(?string $s, bool $b): string {
+                        $r = &$s;
+                        if ($s === null && !$b) {
+                            return "";
+                        }
+                        $r = null;
+                        if (!$b) {
+                            return $s;
+                        }
+                        return "";
+                    }',
+                'error_message' => 'NullableReturnStatement',
             ],
             'nullCheckStoredInVariableIsForgottenWhenALoopAssignsNull' => [
                 'code' => '<?php
