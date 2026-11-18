@@ -11,9 +11,11 @@ use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function array_any;
 use function array_column;
 use function array_filter;
 use function array_values;
+use function str_contains;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -105,6 +107,41 @@ final class ClassTest extends TestCase
         $this->analyzeFile($file_path, new Context(), false);
 
         self::assertContains('ReservedWord', array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'));
+    }
+
+    public function testArrayOfClassStringWithMembersThatDoNotTakeTheLiteralStillChecksItsLiterals(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param array<class-string|null> $input */
+                function a(array $input): void {}
+
+                /** @param array<int, class-string|int> $input */
+                function b(array $input): void {}
+
+                /** @param array<class-string<Countable>|Closure> $input */
+                function c(array $input): void {}
+
+                a(["NoSuchClassA"]);
+                b(["NoSuchClassB"]);
+                c(["NoSuchClassC"]);',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $messages = array_column(IssueBuffer::getIssuesDataForFile($file_path), 'message');
+
+        foreach (['NoSuchClassA', 'NoSuchClassB', 'NoSuchClassC'] as $class) {
+            self::assertTrue(
+                array_any($messages, static fn(string $message): bool => str_contains($message, $class)
+                    && str_contains($message, 'does not exist')),
+                $class,
+            );
+        }
     }
 
     /**
