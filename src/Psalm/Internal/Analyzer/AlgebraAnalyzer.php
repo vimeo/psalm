@@ -80,8 +80,41 @@ final class AlgebraAnalyzer
     }
 
     /**
-     * Whether the types make the clause certain. Only a lone `Truthy`/`Falsy` clause is checked: types can't express
-     * that an int or a float is not zero, and the negations of other assertions are not all exact
+     * Context::removeReconciledClauses() that keeps the clauses linking several variables the new types do not express
+     *
+     * @param list<Clause> $clauses
+     * @param array<string, bool> $changed_var_ids
+     * @param array<string, Union> $vars_in_scope
+     * @return array{list<Clause>, list<Clause>}
+     */
+    public static function removeReconciledClausesOfOneVariable(
+        array $clauses,
+        array $changed_var_ids,
+        array $vars_in_scope,
+        StatementsAnalyzer $statements_analyzer,
+    ): array {
+        [$included_clauses, $rejected_clauses] = Context::removeReconciledClauses($clauses, $changed_var_ids);
+
+        $expressed_clauses = [];
+
+        foreach ($rejected_clauses as $clause) {
+            if (count($clause->possibilities) === 1
+                || self::isExpressedByTypes($clause, $vars_in_scope, $statements_analyzer)
+            ) {
+                $expressed_clauses[] = $clause;
+            } else {
+                $included_clauses[] = $clause;
+            }
+        }
+
+        return [$included_clauses, $expressed_clauses];
+    }
+
+    /**
+     * Whether the types make the clause certain. A lone assertion is only checked when it is `Truthy`/`Falsy`: types
+     * can't express that an int or a float is not zero. A clause linking several variables
+     * (`!$is_array || is_array($x)`) is only known not to be when each of its assertions holds for some of the values
+     * of its variable's type, and not for others
      *
      * @param array<string, Union> $vars_in_scope
      */
@@ -90,14 +123,38 @@ final class AlgebraAnalyzer
         array $vars_in_scope,
         StatementsAnalyzer $statements_analyzer,
     ): bool {
-        $assertion = self::getSingleAssertion($clause);
+        if (count($clause->possibilities) === 1) {
+            $assertion = self::getSingleAssertion($clause);
 
-        if ($assertion === null || !($assertion[1] instanceof Truthy || $assertion[1] instanceof Falsy)) {
-            return true;
+            return $assertion === null
+                || !($assertion[1] instanceof Truthy || $assertion[1] instanceof Falsy)
+                || self::isCertain($assertion[0], $assertion[1], $vars_in_scope, $statements_analyzer);
         }
 
-        [$var_id, $possibility] = $assertion;
+        foreach ($clause->possibilities as $var_id => $possibilities) {
+            // several assertions on one variable can be implied as a whole
+            if (count($possibilities) !== 1
+                || self::isCertain($var_id, reset($possibilities), $vars_in_scope, $statements_analyzer)
+            ) {
+                return true;
+            }
+        }
 
+        return false;
+    }
+
+    /**
+     * Whether the assertion may hold for every value of the variable's type, or for none: only false when it is known
+     * to hold for some of them and not for others
+     *
+     * @param array<string, Union> $vars_in_scope
+     */
+    private static function isCertain(
+        string $var_id,
+        Assertion $possibility,
+        array $vars_in_scope,
+        StatementsAnalyzer $statements_analyzer,
+    ): bool {
         $type = $vars_in_scope[$var_id] ?? null;
 
         // reconciling a type variable records bounds on it
@@ -112,8 +169,12 @@ final class AlgebraAnalyzer
 
         $failed_reconciliation = Reconciler::RECONCILIATION_OK;
 
-        $negated_type = AssertionReconciler::reconcile(
-            $possibility->getNegation(),
+        // truthiness is uncertain when its negation narrows the type. The negations of the other assertions are not
+        // all exact: they are uncertain when they narrow the type themselves
+        $is_truthiness = $possibility instanceof Truthy || $possibility instanceof Falsy;
+
+        $narrowed_type = AssertionReconciler::reconcile(
+            $is_truthiness ? $possibility->getNegation() : $possibility,
             $type,
             $var_id,
             $statements_analyzer,
@@ -126,13 +187,14 @@ final class AlgebraAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        // the negation is only known to be possible when it narrows the type: the reconciler may return the asserted
-        // type or an empty union instead of never when it is impossible, or the type unchanged when it can't tell
+        // the assertion is only known to be uncertain when this narrows the type: the reconciler may return the
+        // asserted type or an empty union instead of never when it is impossible, or the type unchanged when it
+        // can't tell
         return $failed_reconciliation === Reconciler::RECONCILIATION_EMPTY
-            || $negated_type->isUnionEmpty()
-            || $negated_type->isNever()
-            || !UnionTypeComparator::isContainedBy($codebase, $negated_type, $type)
-            || UnionTypeComparator::isContainedBy($codebase, $type, $negated_type);
+            || $narrowed_type->isUnionEmpty()
+            || $narrowed_type->isNever()
+            || !UnionTypeComparator::isContainedBy($codebase, $narrowed_type, $type)
+            || UnionTypeComparator::isContainedBy($codebase, $type, $narrowed_type);
     }
 
     /**

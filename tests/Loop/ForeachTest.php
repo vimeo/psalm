@@ -242,6 +242,38 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'foreachArrayNestedInItselfOnEveryIterationSettles' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<mixed> $e
+                     * @param array<mixed> $opts
+                     */
+                    function g(array $e, array $opts): array {
+                        foreach ($opts as $k => $_) {
+                            if (rand(0, 1)) {
+                                $u1 = $e['k1'] ?? null;
+                                $u2 = $e['k2'] ?? null;
+                                $u3 = $e['k3'] ?? null;
+                                $u4 = $e['k4'] ?? null;
+                                $u5 = $e['k5'] ?? null;
+                                $u6 = $e['k6'] ?? null;
+                            }
+                            $e[$k] = [
+                                'k1' => $u1 ?? null,
+                                'k2' => $u2 ?? null,
+                                'k3' => $u3 ?? null,
+                                'k4' => $u4 ?? null,
+                                'k5' => $u5 ?? null,
+                                'k6' => $u6 ?? null,
+                            ];
+                        }
+                        return $e;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'foreachIntRangeSummedByEveryIterationIsWidened' => [
                 'code' => '<?php
                     /** @param list<int<1, 3>> $values */
@@ -674,6 +706,36 @@ final class ForeachTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'foreachOverTraversableInterfaceOfSelf' => [
+                'code' => '<?php
+                    /** @extends Traversable<self, self> */
+                    interface Tr extends Traversable {
+                        public function value(): int;
+                    }
+
+                    function f(Tr $t): int {
+                        foreach ($t as $k => $v) {
+                            return $k->value() + $v->value();
+                        }
+                        return 0;
+                    }',
+            ],
+            'foreachOverTraversableInterfaceOfStatic' => [
+                'code' => '<?php
+                    /** @extends Traversable<int, static> */
+                    interface Tr extends Traversable {}
+
+                    interface SubTr extends Tr {
+                        public function value(): int;
+                    }
+
+                    function f(SubTr $t): int {
+                        foreach ($t as $v) {
+                            return $v->value();
+                        }
+                        return 0;
+                    }',
             ],
             'foreachOverListKeepsTheEmptyStringOfAnEmptyOrNumericString' => [
                 'code' => '<?php
@@ -2768,6 +2830,43 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'foreachOverNonEmptyArrayVarAssignedBeforeContinueAndAtTheEndOfTheBody' => [
+                'code' => '<?php
+                    foreach ([1, 2] as $_) {
+                        if (rand(0, 1)) {
+                            $z = 1;
+                            continue;
+                        }
+                        $z = 2;
+                    }',
+                'assertions' => [
+                    '$z===' => '1|2',
+                ],
+            ],
+            'foreachOverNonEmptyArrayOffsetNotAssignedBeforeOneOfTheContinuesKeepsItsType' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var array<string, ?int> */
+                        public array $arr = [];
+                    }
+
+                    function f(C $c): void {
+                        foreach ([1, 2] as $_) {
+                            if (rand(0, 1)) {
+                                $c->arr["x"] = 1;
+                                continue;
+                            }
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $c->arr["x"] = 2;
+                        }
+
+                        if (isset($c->arr["x"]) && $c->arr["x"] === 3) {
+                            echo "three";
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -3343,6 +3442,20 @@ final class ForeachTest extends TestCase
 
                     echo $car;',
                 'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:26',
+            ],
+            'foreachOverNonEmptyArrayVarNotAssignedBeforeContinue' => [
+                'code' => '<?php
+                    function f(): int {
+                        foreach ([1, 2] as $_) {
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $z = 2;
+                        }
+
+                        return $z;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }
