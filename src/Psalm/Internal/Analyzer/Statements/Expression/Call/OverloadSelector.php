@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function count;
@@ -108,6 +109,26 @@ final class OverloadSelector
     }
 
     /**
+     * Whether the parameter type accepts the argument type, a template of the parameter standing for its bound
+     */
+    private static function isAccepted(Codebase $codebase, Union $arg_type, Union $param_type): bool
+    {
+        $atomic_types = [];
+
+        foreach ($param_type->getAtomicTypes() as $param_atomic_type) {
+            if ($param_atomic_type instanceof TTemplateParam) {
+                foreach ($param_atomic_type->as->getAtomicTypes() as $bound_atomic_type) {
+                    $atomic_types[] = $bound_atomic_type;
+                }
+            } else {
+                $atomic_types[] = $param_atomic_type;
+            }
+        }
+
+        return UnionTypeComparator::isContainedBy($codebase, $arg_type, new Union($atomic_types));
+    }
+
+    /**
      * Whether the arguments, placed on the parameters by position and by name, fit the overload: each parameter
      * gets at most one argument of an accepted type, and every required one gets one. The arguments from an
      * unpacked one on can't be placed, so they are left out.
@@ -153,7 +174,7 @@ final class OverloadSelector
                     $param_type = $params[$last_offset]->type;
 
                     if ($param_type && $arg_types[$offset]
-                        && !UnionTypeComparator::isContainedBy($codebase, $arg_types[$offset], $param_type)
+                        && !self::isAccepted($codebase, $arg_types[$offset], $param_type)
                     ) {
                         return false;
                     }
@@ -176,7 +197,7 @@ final class OverloadSelector
             $param_type = $params[$param_offset]->type;
 
             if ($param_type && $arg_types[$offset]
-                && !UnionTypeComparator::isContainedBy($codebase, $arg_types[$offset], $param_type)
+                && !self::isAccepted($codebase, $arg_types[$offset], $param_type)
             ) {
                 return false;
             }
