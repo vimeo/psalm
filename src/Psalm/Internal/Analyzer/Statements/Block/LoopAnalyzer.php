@@ -231,6 +231,10 @@ final class LoopAnalyzer
             // record all the vars that existed before we did the first pass through the loop
             $pre_loop_context = clone $loop_context;
 
+            $type_variable_tracker = $statements_analyzer->type_variable_tracker;
+            $bounds_before_loop = $type_variable_tracker->snapshotBounds();
+            $bounds_at_kept_pass_start = $bounds_before_loop;
+
             IssueBuffer::startRecording();
 
             // what the condition writes is recorded by the passes below, which start with the values before the loop
@@ -308,6 +312,10 @@ final class LoopAnalyzer
             $max_passes = $assignment_depth;
             $data_flow_pass_added = false;
             $widening_passes = 0;
+            $propagation_passes = 0;
+            $feeding_var_ids = $assignment_mapper->getFeedingVarIds();
+            $max_propagation_passes = count($feeding_var_ids);
+            $previously_changed_feeding_var_ids = [];
             $widening_bounds = null;
             $force_pass = false;
 
@@ -459,6 +467,7 @@ final class LoopAnalyzer
                 $vars_at_iteration_start = $continue_context->vars_in_scope;
 
                 $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
+                $bounds_at_kept_pass_start = $type_variable_tracker->snapshotBounds();
                 IssueBuffer::startRecording();
 
                 // what a pass computed of the condition (the assertions of its operands too) and of the body is no
@@ -605,6 +614,28 @@ final class LoopAnalyzer
                     }
                 }
 
+                // the passes counted from the assignment map don't cover every chain of copies (`$a = $b; $b = $c;
+                // $c = "s";`): a type still changing in the last pass is carried to the variables it goes into by
+                // one more pass. Along a chain, the variables a pass changes aren't those the previous one changed:
+                // the same ones changing again keep changing on their own (`$e[$k] = [$e[$k] ?? null]`) and would
+                // never settle.
+                if ($i + 1 === $max_passes && $propagation_passes < $max_propagation_passes) {
+                    $changed_feeding_var_ids = self::getChangedFeedingVarIds(
+                        $feeding_var_ids,
+                        $vars_at_iteration_start,
+                        self::getVarsStartingNextIteration($continue_context, $loop_scope, $post_expressions),
+                    );
+
+                    if ($changed_feeding_var_ids
+                        && $changed_feeding_var_ids != $previously_changed_feeding_var_ids
+                    ) {
+                        ++$max_passes;
+                        ++$propagation_passes;
+                    }
+
+                    $previously_changed_feeding_var_ids = $changed_feeding_var_ids;
+                }
+
                 if ($i + 1 === $max_passes
                     && !$data_flow_pass_added
                     && $codebase->find_unused_variables
@@ -619,6 +650,15 @@ final class LoopAnalyzer
             if (!$condition_written_var_ids) {
                 $condition_written_var_ids = $first_condition_written_var_ids;
             }
+
+            // like their issues, the bounds the passes before the last one gave the type variables minted before the
+            // loop are dropped: the last pass records them again with the types the loop leaves. They stay until then,
+            // as the last pass reads them before recording its own (a value taken from a collection a previous
+            // iteration filled).
+            $type_variable_tracker->discardBoundsRecordedBetween(
+                $bounds_before_loop,
+                $bounds_at_kept_pass_start,
+            );
 
             if ($recorded_issues) {
                 foreach ($recorded_issues as $recorded_issue) {
@@ -2037,6 +2077,38 @@ final class LoopAnalyzer
         }
 
         return $bounds;
+    }
+
+    /**
+     * @param array<string, true> $feeding_var_ids
+     * @param array<string, Union> $vars_at_start
+     * @param array<string, Union> $vars_at_end
+     * @return array<string, true>
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function getChangedFeedingVarIds(
+        array $feeding_var_ids,
+        array $vars_at_start,
+        array $vars_at_end,
+    ): array {
+        $changed_var_ids = [];
+
+        foreach ($feeding_var_ids as $var_id => $_) {
+            if (!isset($vars_at_end[$var_id])) {
+                continue;
+            }
+
+            if (!isset($vars_at_start[$var_id])
+                || self::differ(
+                    Type::combineUnionTypes($vars_at_start[$var_id], $vars_at_end[$var_id]),
+                    $vars_at_start[$var_id],
+                )
+            ) {
+                $changed_var_ids[$var_id] = true;
+            }
+        }
+
+        return $changed_var_ids;
     }
 
     /**

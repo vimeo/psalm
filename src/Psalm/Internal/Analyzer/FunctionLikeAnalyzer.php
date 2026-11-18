@@ -593,6 +593,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             $ref_context->vars_in_scope[$tmp_var_id] = Type::getBool();
 
+            $bounds_before = $statements_analyzer->type_variable_tracker->snapshotBounds();
+
             $var = new VirtualVariable(
                 substr($tmp_var_id, 1),
             );
@@ -636,6 +638,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 IssueBuffer::clearRecordingLevel();
                 IssueBuffer::stopRecording();
             }
+
+            // the analysis of the body below records the bounds of these passes again, with the types they found
+            $statements_analyzer->type_variable_tracker->discardBoundsRecordedBetween($bounds_before);
 
             foreach ($byref_uses as $var_id => $_) {
                 $byref_vars[$var_id] = self::combineByRefPathTypes(

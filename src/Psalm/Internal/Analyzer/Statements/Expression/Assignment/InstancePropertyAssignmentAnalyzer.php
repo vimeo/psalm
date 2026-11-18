@@ -256,6 +256,10 @@ final class InstancePropertyAssignmentAnalyzer
                     $upper_bound->property_requirement_id = $assigned_property->id;
                 }
 
+                foreach ($union_comparison_results->type_variable_lower_bounds as [$_, $lower_bound]) {
+                    $lower_bound->property_value_id = $assigned_property->id;
+                }
+
                 $statements_analyzer->type_variable_tracker->addBounds(
                     $union_comparison_results->type_variable_lower_bounds,
                     $union_comparison_results->type_variable_upper_bounds,
