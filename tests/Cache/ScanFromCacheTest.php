@@ -8,6 +8,7 @@ use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Codebase\Scanner;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
@@ -163,7 +164,7 @@ final class ScanFromCacheTest extends TestCase
         $config = $this->createConfig();
         $paths = $this->paths(600);
         $file_provider = new HashRecordingFileProvider(array_fill_keys($paths, '<?php'));
-        $providers = $this->providersFor($config, $file_provider, new FileStorageCacheProvider($config, '', false));
+        $providers = $this->providersFor($config, $file_provider, new FileStorageCacheProvider($config, '', CacheMode::Memory));
 
         self::assertTrue($this->scanPaths($config, $providers, 2, $paths));
         self::assertSame([], $file_provider->hashed);
@@ -233,7 +234,7 @@ final class ScanFromCacheTest extends TestCase
 
     public function testFileWithoutACachedStorageIsNotRead(): void
     {
-        $cache = new FileStorageCacheProvider(new TestConfig(), '', false);
+        $cache = new FileStorageCacheProvider(new TestConfig(), '', CacheMode::Memory);
         $cache->writeToCache(new FileStorage('/src/A.php'), 'old');
         $file_provider = new HashRecordingFileProvider(['/src/B.php' => 'new']);
 
@@ -243,7 +244,7 @@ final class ScanFromCacheTest extends TestCase
 
     public function testFileStorageCachedForTheContents(): void
     {
-        $cache = new FileStorageCacheProvider(new TestConfig(), '', false);
+        $cache = new FileStorageCacheProvider(new TestConfig(), '', CacheMode::Memory);
         $cache->writeToCache(new FileStorage('/src/A.php'), 'old');
         $provider = new FileStorageProvider($cache);
         $file_provider = new HashRecordingFileProvider(['/SRC/a.php' => 'old', '/src/A.php' => 'new']);
@@ -330,7 +331,7 @@ final class ScanFromCacheTest extends TestCase
      */
     private function providersWithStaleStorages(Config $config, FileProvider $file_provider, array $paths): Providers
     {
-        $cache = new FileStorageCacheProvider($config, '', false);
+        $cache = new FileStorageCacheProvider($config, '', CacheMode::Memory);
 
         foreach ($paths as $path) {
             $cache->writeToCache(new FileStorage($path), '<?php');
@@ -467,7 +468,7 @@ final class ScanFromCacheTest extends TestCase
         return [
             $config,
             $file_provider,
-            $this->providersFor($config, $file_provider, new FileStorageCacheProvider($config, '', false)),
+            $this->providersFor($config, $file_provider, new FileStorageCacheProvider($config, '', CacheMode::Memory)),
         ];
     }
 
@@ -478,10 +479,10 @@ final class ScanFromCacheTest extends TestCase
     ): Providers {
         return new Providers(
             $file_provider,
-            new ParserCacheProvider($config, '', false),
+            new ParserCacheProvider($config, '', CacheMode::Memory),
             $file_storage_cache,
-            new ClassLikeStorageCacheProvider($config, '', false),
-            new FileReferenceCacheProvider($config, '', false),
+            new ClassLikeStorageCacheProvider($config, '', CacheMode::Memory),
+            new FileReferenceCacheProvider($config, '', CacheMode::Memory),
             new ProjectCacheProvider(),
         );
     }

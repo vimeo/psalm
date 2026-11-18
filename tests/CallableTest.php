@@ -3666,6 +3666,23 @@ final class CallableTest extends TestCase
                         }
                     }',
             ],
+            'protectedCallbackOfASubclassGivenToAParentMethod' => [
+                'code' => '<?php
+                    class Command
+                    {
+                        public function setCode(callable $code): void {}
+                    }
+
+                    abstract class EndlessCommand extends Command
+                    {
+                        public function __construct()
+                        {
+                            parent::setCode([$this, "runLoop"]);
+                        }
+
+                        protected function runLoop(): void {}
+                    }',
+            ],
         ];
     }
 
@@ -5158,6 +5175,71 @@ final class CallableTest extends TestCase
                     function foo($arg): void {}
 
                     foo([\DateTime::class, "wrongMethod"]);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'privateCallbackOfASubclassGivenToAParentMethod' => [
+                'code' => '<?php
+                    class Command
+                    {
+                        public function setCode(callable $code): void {}
+                    }
+
+                    abstract class EndlessCommand extends Command
+                    {
+                        public function __construct()
+                        {
+                            parent::setCode([$this, "runLoop"]);
+                        }
+
+                        private function runLoop(): void {}
+                    }',
+                'error_message' => 'expects a public callable',
+            ],
+            'protectedCallbackGivenToAnUnrelatedClassMethod' => [
+                'code' => '<?php
+                    class Other
+                    {
+                        public function take(callable $code): void {}
+                    }
+
+                    class Runner
+                    {
+                        public function __construct(private Other $other)
+                        {
+                            $this->other->take([$this, "runLoop"]);
+                        }
+
+                        protected function runLoop(): void {}
+                    }',
+                'error_message' => 'expects a public callable',
+            ],
+            'emptyStringIsNotCallable' => [
+                'code' => '<?php
+                    function takesCallable(callable $c): void {}
+
+                    takesCallable("");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'zeroStringIsNotCallable' => [
+                'code' => '<?php
+                    function takesCallable(callable $c): void {}
+
+                    takesCallable("0");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'numericStringIsNotCallable' => [
+                'code' => '<?php
+                    function takesCallable(callable $c): void {}
+
+                    takesCallable("1e3");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'numericStringIsNotACallableForABuiltin' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): void {
+                        usort($a, "123");
+                    }',
                 'error_message' => 'InvalidArgument',
             ],
         ];
