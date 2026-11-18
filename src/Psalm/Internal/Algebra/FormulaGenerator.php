@@ -44,6 +44,7 @@ use function array_filter;
 use function array_map;
 use function array_values;
 use function count;
+use function in_array;
 use function spl_object_id;
 use function str_starts_with;
 use function strcspn;
@@ -517,6 +518,24 @@ final class FormulaGenerator
             );
         }
 
+        // `$a?->b() ?? false` is truthy exactly when `$a?->b()` is, and falsy where it is falsy or null
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+            && ($conditional->left instanceof PhpParser\Node\Expr\NullsafeMethodCall
+                || $conditional->left instanceof PhpParser\Node\Expr\NullsafePropertyFetch)
+            && self::isFalsyLiteral($conditional->right)
+        ) {
+            return self::getFormula(
+                $conditional_object_id,
+                $creating_object_id,
+                $conditional->left,
+                $this_class_name,
+                $source,
+                $codebase,
+                $inside_negation,
+                $cache,
+            );
+        }
+
         $conditional_ref = '*' . (int) $conditional->getAttribute('startFilePos')
             . ':' . (int) $conditional->getAttribute('endFilePos');
 
@@ -851,6 +870,58 @@ final class FormulaGenerator
             $codebase,
             false,
         );
+    }
+
+    /**
+     * Where the negation of a condition only holds if a mixed variable that may be unset is set
+     * (`if (!isset($a["k"])) return;`), clauses saying it is set: the negation of a clause on its offset is otherwise
+     * unknown
+     *
+     * @param list<Clause> $cond_clauses the clauses of the condition, with those on mixed variables
+     * @param array<string, bool> $mixed_vars whether each mixed variable may be unset
+     * @return list<Clause>
+     */
+    public static function getNegatedSetMixedVarClauses(
+        array $cond_clauses,
+        array $mixed_vars,
+        PhpParser\Node\Expr $conditional,
+        int $conditional_object_id,
+        ?string $this_class_name,
+        FileSource $source,
+        ?Codebase $codebase,
+    ): array {
+        if (!in_array(true, $mixed_vars, true)) {
+            return [];
+        }
+
+        try {
+            $negated_clauses = self::getNegatedFormula(
+                Algebra::simplifyCNF($cond_clauses),
+                $conditional,
+                $conditional_object_id,
+                $this_class_name,
+                $source,
+                $codebase,
+                true,
+            );
+        } catch (ComplicatedExpressionException) {
+            return [];
+        }
+
+        $set_clauses = [];
+
+        foreach ($negated_clauses as $clause) {
+            $set_clause = $clause->forgetItemsOfMixedVars(
+                array_diff_key($mixed_vars, $clause->possibilities),
+                $conditional_object_id,
+            );
+
+            if ($set_clause !== $clause && !$set_clause->wedge) {
+                $set_clauses[] = $set_clause;
+            }
+        }
+
+        return $set_clauses;
     }
 
     /**
@@ -1392,5 +1463,15 @@ final class FormulaGenerator
     private static function isNullLiteral(PhpParser\Node\Expr $expr): bool
     {
         return $expr instanceof PhpParser\Node\Expr\ConstFetch && strtolower($expr->name->getFirst()) === 'null';
+    }
+
+    private static function isFalsyLiteral(PhpParser\Node\Expr $expr): bool
+    {
+        return ($expr instanceof PhpParser\Node\Expr\ConstFetch
+                && in_array(strtolower($expr->name->getFirst()), ['false', 'null'], true))
+            || ($expr instanceof PhpParser\Node\Scalar\Int_ && $expr->value === 0)
+            || ($expr instanceof PhpParser\Node\Scalar\Float_ && $expr->value === 0.0)
+            || ($expr instanceof PhpParser\Node\Scalar\String_ && in_array($expr->value, ['', '0'], true))
+            || ($expr instanceof PhpParser\Node\Expr\Array_ && $expr->items === []);
     }
 }

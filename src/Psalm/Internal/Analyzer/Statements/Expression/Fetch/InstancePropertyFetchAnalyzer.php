@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\ImpurePropertyFetch;
@@ -142,6 +143,7 @@ final class InstancePropertyFetchAnalyzer
         // MethodCallAnalyzer does for method-call receivers. Only top-level
         // variables resolve: one nested in a generic object stays live.
         $stmt_var_type = TypeVariableResolver::resolveTopLevel($stmt_var_type, $codebase);
+        $stmt_var_type = TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $stmt_var_type);
 
         if ($stmt_var_type->isNull()) {
             return !IssueBuffer::accepts(

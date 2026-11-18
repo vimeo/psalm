@@ -1945,6 +1945,7 @@ final class ClassLikeNodeScanner
                 $enum_value,
                 $case_location,
                 $deprecated,
+                $attrs,
             );
         } else {
             $this->file_storage->scan_issues[] = new DuplicateEnumCase(

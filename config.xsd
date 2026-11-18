@@ -33,6 +33,7 @@
         <xs:attribute name="maxStringLength" type="xs:string" />
         <xs:attribute name="maxShapedArraySize" type="xs:integer" default="100" />
         <xs:attribute name="longScanWarning" type="xs:float" default="10.0" />
+        <xs:attribute name="minTypeCoverage" type="TypeCoveragePercentageType" />
         <xs:attribute name="name" type="xs:string" />
         <xs:attribute name="phpVersion" type="xs:string" />
         <xs:attribute name="serializer" type="SerializerType" />
@@ -809,6 +810,14 @@
             <xs:enumeration value="default"/>
             <xs:enumeration value="never"/>
             <xs:enumeration value="always"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="TypeCoveragePercentageType">
+        <!-- a percentage from 0 to 100 with at most two decimals, the same pattern as for the command line option;
+             a string, so that whitespace isn't collapsed -->
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[0-9]{1,2}(\.[0-9]{1,2})?|100(\.0{1,2})?"/>
         </xs:restriction>
     </xs:simpleType>
 

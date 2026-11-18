@@ -1653,6 +1653,19 @@ final class Populator
                 $aliased_constant_name_lc = strtolower($constant_name);
                 $aliased_constant_name = $constant_name;
             }
+            // The class's own declaration wins over the constant of the trait. A plain isset() can't tell it from
+            // an inherited one: when a storage is populated again (the Populator resets `populated`), constants
+            // already holds the copies of the parent and of the trait from the first run.
+            $own_location = ($storage->constants[$aliased_constant_name] ?? null)?->location;
+            if ($own_location !== null
+                && $storage->stmt_location !== null
+                && $own_location->file_path === $storage->stmt_location->file_path
+                && $own_location->raw_file_start >= $storage->stmt_location->raw_file_start
+                && $own_location->raw_file_end <= $storage->stmt_location->raw_file_end
+            ) {
+                continue;
+            }
+
             $visibility = $storage->trait_visibility_map[$aliased_constant_name_lc]
                 ?? $class_constant_storage->visibility;
             $final = $storage->trait_final_map[$aliased_constant_name_lc] ?? $class_constant_storage->final;

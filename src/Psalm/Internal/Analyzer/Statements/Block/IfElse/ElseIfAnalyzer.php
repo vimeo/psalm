@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Block\IfElse;
 
+use Closure;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
@@ -25,7 +26,6 @@ use Psalm\Type\Reconciler;
 
 use function array_any;
 use function array_combine;
-use function array_diff;
 use function array_diff_key;
 use function array_filter;
 use function array_key_exists;
@@ -46,30 +46,10 @@ use function spl_object_id;
 final class ElseIfAnalyzer
 {
     /**
-     * @param list<Clause> $elseif_clauses
-     * @return list<Clause>
-     */
-    private static function getNegatedClauses(
-        StatementsAnalyzer $statements_analyzer,
-        Codebase $codebase,
-        PhpParser\Node\Stmt\ElseIf_ $elseif,
-        Context $else_context,
-        array $elseif_clauses,
-    ): array {
-        return FormulaGenerator::getNegatedFormula(
-            $elseif_clauses,
-            $elseif->cond,
-            spl_object_id($elseif->cond),
-            $else_context->self,
-            $statements_analyzer,
-            $codebase,
-        );
-    }
-
-    /**
-     * The clauses of the condition, where a clause about an offset or a property of a mixed variable is unknown
+     * The clauses of the condition, where a clause about an offset or a property of a mixed variable is unknown, and
+     * a function returning those of its negation
      *
-     * @return list<Clause>
+     * @return array{list<Clause>, Closure(): list<Clause>}
      */
     private static function getClauses(
         StatementsAnalyzer $statements_analyzer,
@@ -80,15 +60,16 @@ final class ElseIfAnalyzer
     ): array {
         $elseif_cond_id = spl_object_id($elseif->cond);
 
-        $mixed_var_ids = [];
+        // whether each mixed variable may be unset
+        $mixed_vars = [];
 
         foreach ($elseif_context->vars_in_scope as $var_id => $type) {
             if ($type->hasMixed()) {
-                $mixed_var_ids[] = $var_id;
+                $mixed_vars[$var_id] = $type->possibly_undefined || $type->possibly_undefined_from_try;
             }
         }
 
-        $elseif_clauses = FormulaGenerator::getFormula(
+        $cond_clauses = FormulaGenerator::getFormula(
             $elseif_cond_id,
             $elseif_cond_id,
             $elseif->cond,
@@ -97,29 +78,39 @@ final class ElseIfAnalyzer
             $codebase,
         );
 
-        if (count($elseif_clauses) > 200) {
-            $elseif_clauses = [];
+        if (count($cond_clauses) > 200) {
+            $cond_clauses = [];
         }
 
-        $elseif_clauses_handled = [];
+        $elseif_clauses = [];
 
-        foreach ($elseif_clauses as $clause) {
-            $keys = array_keys($clause->possibilities);
-            $mixed_var_ids = array_diff($mixed_var_ids, $keys);
+        foreach ($cond_clauses as $clause) {
+            $mixed_vars = array_diff_key($mixed_vars, $clause->possibilities);
 
-            foreach ($keys as $key) {
-                foreach ($mixed_var_ids as $mixed_var_id) {
-                    if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                        $clause = new Clause([], $elseif_cond_id, $elseif_cond_id, true);
-                        break 2;
-                    }
-                }
-            }
-
-            $elseif_clauses_handled[] = $clause;
+            $elseif_clauses[] = $clause->forgetItemsOfMixedVars($mixed_vars, $elseif_cond_id);
         }
 
-        return $elseif_clauses_handled;
+        $get_negated_clauses = static fn(): array => [
+            ...FormulaGenerator::getNegatedFormula(
+                Algebra::simplifyCNF($elseif_clauses),
+                $elseif->cond,
+                $elseif_cond_id,
+                $else_context->self,
+                $statements_analyzer,
+                $codebase,
+            ),
+            ...FormulaGenerator::getNegatedSetMixedVarClauses(
+                $cond_clauses,
+                $mixed_vars,
+                $elseif->cond,
+                $elseif_cond_id,
+                $else_context->self,
+                $statements_analyzer,
+                $codebase,
+            ),
+        ];
+
+        return [$elseif_clauses, $get_negated_clauses];
     }
 
     /**
@@ -193,7 +184,13 @@ final class ElseIfAnalyzer
 
         $elseif_cond_id = spl_object_id($elseif->cond);
 
-        $elseif_clauses = self::getClauses($statements_analyzer, $codebase, $elseif, $elseif_context, $else_context);
+        [$elseif_clauses, $get_negated_clauses] = self::getClauses(
+            $statements_analyzer,
+            $codebase,
+            $elseif,
+            $elseif_context,
+            $else_context,
+        );
 
         $entry_clauses = [];
 
@@ -278,9 +275,7 @@ final class ElseIfAnalyzer
                 $cond_referenced_var_ids,
                 $active_elseif_types,
             );
-            $negated_elseif_types = Algebra::getTruthsFromFormula(
-                self::getNegatedClauses($statements_analyzer, $codebase, $elseif, $else_context, $elseif_clauses),
-            );
+            $negated_elseif_types = Algebra::getTruthsFromFormula($get_negated_clauses());
         } catch (ComplicatedExpressionException) {
             $reconcilable_elseif_types = [];
             $negated_elseif_types = [];
@@ -518,13 +513,7 @@ final class ElseIfAnalyzer
             $if_scope->negated_clauses = Algebra::simplifyCNF(
                 [
                     ...$if_scope->negated_clauses,
-                    ...self::getNegatedClauses(
-                        $statements_analyzer,
-                        $codebase,
-                        $elseif,
-                        $else_context,
-                        $elseif_clauses,
-                    ),
+                    ...$get_negated_clauses(),
                 ],
             );
         } catch (ComplicatedExpressionException) {

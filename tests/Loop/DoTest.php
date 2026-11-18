@@ -30,6 +30,22 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'doChainThroughNestedForeachValuesIsAnalysedUntilItReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        do {
+                            foreach ([$b] as $a) {}
+                            foreach ([$c] as $b) {}
+                            $c = "s";
+                        } while (rand(0, 1));
+                        /** @psalm-check-type-exact $a = 0|'s' */;
+                    }
+                    PHP,
+            ],
             'postDecrementInConditionHoldsTheValueTheLoopExitsWith' => [
                 'code' => '<?php
                     $i = 5;
