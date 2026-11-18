@@ -945,7 +945,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $function_call_info->function_storage = $function_storage = $codebase_functions->getStorage(
                     $statements_analyzer,
                     strtolower($function_call_info->function_id),
-                    context: $context,
                 );
 
                 $function_call_info->function_params = $function_call_info->function_storage->params;
@@ -1705,18 +1704,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $fq_class_name = (string) preg_replace('/^\\\/', '', $fq_class_name, 1);
                             $potential_method_id = new MethodIdentifier($fq_class_name, $parts[1]);
                         } else {
-                            // the call is analysed with the function the last literal names, but may call any: the
-                            // lookup references it
-                            try {
-                                $codebase->functions->getStorage(
-                                    $statements_analyzer,
-                                    strtolower($var_type_part->value),
-                                    context: $context,
-                                );
-                            } catch (UnexpectedValueException) {
-                                // an unknown function references nothing
-                            }
-
                             $function_call_info->new_function_name = new VirtualFullyQualified(
                                 $var_type_part->value,
                                 $function_name->getAttributes(),

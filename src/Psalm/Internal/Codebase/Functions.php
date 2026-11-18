@@ -72,8 +72,6 @@ final class Functions
 
     /**
      * @param non-empty-lowercase-string $function_id
-     * @param Context|null $context the context of the use: when given, the use is recorded as a reference from the
-     *                              analysed code to the function
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function getStorage(
@@ -81,43 +79,6 @@ final class Functions
         string $function_id,
         ?string $root_file_path = null,
         ?string $checked_file_path = null,
-        ?Context $context = null,
-    ): FunctionStorage {
-        $storage = $this->findStorage($statements_analyzer, $function_id, $root_file_path, $checked_file_path);
-
-        if ($context === null || $statements_analyzer === null) {
-            return $storage;
-        }
-
-        $codebase = $statements_analyzer->getCodebase();
-
-        // an edge to a stub function would be one per builtin call; a changed stub is not followed to its users
-        if ($codebase->code_use_graph->record_edges
-            && $storage->location
-            && !$codebase->scanner->isStubFile($storage->location->file_path)
-            && ($function_node = CodeUseGraph::functionLikeNodeForStorage($storage)) !== null
-        ) {
-            $codebase->code_use_graph->addReference(
-                $function_node,
-                $context,
-                null,
-                CodeUseGraph::EDGE_USE,
-                $statements_analyzer->getFilePath(),
-            );
-        }
-
-        return $storage;
-    }
-
-    /**
-     * @param non-empty-lowercase-string $function_id
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
-     */
-    private function findStorage(
-        ?StatementsAnalyzer $statements_analyzer,
-        string $function_id,
-        ?string $root_file_path,
-        ?string $checked_file_path,
     ): FunctionStorage {
         if ($function_id[0] === '\\') {
             $function_id = substr($function_id, 1);
