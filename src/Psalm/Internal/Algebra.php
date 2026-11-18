@@ -430,6 +430,11 @@ final class Algebra
             }
 
             foreach ($anded_types as $key => $orred_types) {
+                // a negation among alternatives is one of them: `$a is list || $a is not array` allows non-arrays
+                if (count($orred_types) > 1) {
+                    continue;
+                }
+
                 foreach ($orred_types as $index => $assertion) {
                     // we only need to check negations
                     // due to type collapsing, any negations for arrays are irrelevant

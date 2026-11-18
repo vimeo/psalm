@@ -96,6 +96,108 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'notIdenticalKeepsNullOfBothOperandsWhereTheyDiffer' => [
+                'code' => '<?php
+                    function f(int|null $a, string|null $b): void {
+                        if ($a !== $b) {
+                            /** @psalm-check-type-exact $a = int|null */
+                            /** @psalm-check-type-exact $b = null|string */
+                        } else {
+                            /** @psalm-check-type-exact $a = int|null */
+                            /** @psalm-check-type-exact $b = null|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalKeepsFalseOfBothOperandsWhereTheyDiffer' => [
+                'code' => '<?php
+                    function f(array|false $a, string|false $b): void {
+                        if ($a !== $b) {
+                            /** @psalm-check-type-exact $a = array<array-key, mixed>|false */
+                            /** @psalm-check-type-exact $b = false|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalKeepsNullOfAScalarWhereTheyDiffer' => [
+                'code' => '<?php
+                    /**
+                     * @param \'int\'|\'string\' $scalar
+                     * @param \'int\'|\'string\'|null $other
+                     */
+                    function f($scalar, $other): void {
+                        if ($scalar !== $other) {
+                            /** @psalm-check-type-exact $other = \'int\'|\'string\'|null */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'assertionOfADocblockNotIdenticalIsNotNegated' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true !=string $x */
+                    function notStr(mixed $x): bool {
+                        return !is_string($x);
+                    }
+
+                    function g(int|string|null $x): void {
+                        if (!notStr($x)) {
+                            /** @psalm-check-type-exact $x = int|null|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalToAnArrayKeepsTheNonArrayOfTheOtherOperand' => [
+                'code' => '<?php
+                    /** @param bool|list<string> $skip */
+                    function k($skip): void {
+                        if (is_array($skip) && [\'*\'] !== $skip) {
+                        } else {
+                            /** @psalm-check-type-exact $skip = bool|list{\'*\'} */
+                        }
+
+                        if (!is_array($skip) || [\'*\'] === $skip) {
+                            /** @psalm-check-type-exact $skip = bool|list{\'*\'} */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalKeepsTheArrayKeyOfAVariableComparedWithANullableString' => [
+                'code' => '<?php
+                    /** @param array-key $dir */
+                    function t($dir, ?string $skip): void {
+                        if ($dir !== $skip) {
+                            /** @psalm-check-type-exact $dir = array-key */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalOfTwoPartiallyOverlappingUnionsKeepsBothUnions' => [
+                'code' => '<?php
+                    function h(int|string $a, string|bool $b): string {
+                        if ($a !== $b) {
+                            return "";
+                        }
+
+                        /** @psalm-check-type-exact $a = int|string */
+                        /** @psalm-check-type-exact $b = bool|string */
+                        return (string) $a;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'notIdenticalOfAnOrChainGivesTheOperandsTheTypeOfTheComparedValues' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $metadata */

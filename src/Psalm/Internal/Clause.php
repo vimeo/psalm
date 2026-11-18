@@ -302,11 +302,10 @@ final class Clause implements Stringable
             $impossibility = [];
 
             foreach ($possibility as $type) {
-                // `$a !== $b` being false makes the two identical, so `$a` has the type of `$b`: this
-                // is not so for `$a === $b` being false, nor for the null of an assertion that only holds when
-                // a function returns true
+                // `$a !== $b` being false makes the two identical, so `$a` has the type of `$b`: this is so for a
+                // comparison with an operand, not for `$a === $b` being false, nor for an assertion of a docblock
                 if (!$type->hasEquality()
-                    || ($type instanceof IsNotIdentical && !$type->getAtomicType() instanceof TNull)
+                    || ($type instanceof IsNotIdentical && $type->comparand !== null)
                     || (($inner_type = $type->getAtomicType())
                         && ($inner_type instanceof TLiteralInt
                             || $inner_type instanceof TLiteralFloat

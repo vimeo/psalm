@@ -795,21 +795,30 @@ final class AssertionFinder
             if ($intersection_type !== null) {
                 $if_types = [];
 
-                $anded_types = [];
-                foreach ($intersection_type->getAtomicTypes() as $atomic_type) {
-                    $anded_types[] = [new IsNotIdentical($atomic_type)];
-                }
+                $left_id = self::getOperandId($conditional->left, $this_class_name, $source);
+                $right_id = self::getOperandId($conditional->right, $this_class_name, $source);
 
-                foreach ([[$conditional->left, $var_type], [$conditional->right, $other_type]] as [$operand, $type]) {
+                foreach ([
+                    [$conditional->left, $var_type, $right_id],
+                    [$conditional->right, $other_type, $left_id],
+                ] as [$operand, $type, $comparand]) {
                     $operand_name = ExpressionIdentifier::getExtendedVarId(
                         $operand,
                         $this_class_name,
                         $source,
                     );
 
-                    if ($operand_name !== null && $type->getId() !== $intersection_type->getId()) {
-                        $if_types[$operand_name] = $anded_types;
+                    if ($operand_name === null || $type->getId() === $intersection_type->getId()) {
+                        continue;
                     }
+
+                    $anded_types = [];
+
+                    foreach ($intersection_type->getAtomicTypes() as $atomic_type) {
+                        $anded_types[] = [new IsNotIdentical($atomic_type, $comparand, true)];
+                    }
+
+                    $if_types[$operand_name] = $anded_types;
                 }
 
                 return $if_types ? [$if_types] : [];

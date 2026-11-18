@@ -140,6 +140,11 @@ final class AssertionReconciler extends Reconciler
             );
         }
 
+        // `$a !== $b` narrows only where it is false: where it is true, the operands may hold what they share
+        if ($assertion instanceof IsNotIdentical && $assertion->of_operands) {
+            return $existing_var_type;
+        }
+
         $old_var_type_string = $existing_var_type->getId();
 
         $type_variables = [];
