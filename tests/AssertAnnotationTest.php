@@ -4102,6 +4102,35 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'assertOfAMethodCalledInTheArgumentOfAParentOrNamedClassCall' => [
+                'code' => '<?php
+                    class Base {
+                        public function consume(int $id): void {}
+                    }
+
+                    class Entity extends Base {
+                        public ?int $id = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->id
+                         */
+                        public function getIdAssert(): int {
+                            return 1;
+                        }
+
+                        public function viaParent(): void {
+                            parent::consume($this->getIdAssert());
+                        }
+
+                        public function viaName(): void {
+                            Entity::consume($this->getIdAssert());
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assertNonEmptyArrayOnAPossiblyEmptyArray' => [
                 'code' => '<?php
                     /**
