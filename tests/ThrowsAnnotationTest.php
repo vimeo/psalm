@@ -257,6 +257,55 @@ final class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testUndocumentedCallInDoWhileCondition(): void
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @throws Exception */
+                function documented(): bool {
+                    return (bool) rand(0, 1);
+                }
+
+                function foo(): void {
+                    do {
+                        echo "";
+                    } while (documented());
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testUndocumentedCallInDoWhileConditionAfterAnAssigningBody(): void
+    {
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @throws Exception */
+                function documented(): bool {
+                    return (bool) rand(0, 1);
+                }
+
+                function foo(): void {
+                    $i = 0;
+                    do {
+                        $i++;
+                    } while (documented());
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testUndocumentedThrowInForLoop(): void
     {
         $this->expectExceptionMessage('MissingThrowsDocblock');

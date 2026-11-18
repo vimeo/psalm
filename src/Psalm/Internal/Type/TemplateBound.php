@@ -56,6 +56,25 @@ final class TemplateBound
     public bool $from_argument_requirement = false;
 
     /**
+     * True for a lower bound recorded by a value passed as an argument
+     * (`$storage[$o] = $v` passes `$v` to offsetSet()).
+     */
+    public bool $from_argument_value = false;
+
+    /**
+     * The id of the property (`Box::$value`) whose assignment recorded this
+     * lower bound; null for bounds recorded elsewhere.
+     */
+    public ?string $property_value_id = null;
+
+    /**
+     * When the place that recorded this bound on a type variable was first
+     * reached in the function-like (0 for construction-site bounds): of two
+     * conflicting bounds, the later one is where the conflict is reported.
+     */
+    public int $recorded_order = 0;
+
+    /**
      * True for a lower bound that is only the template's own constraint,
      * standing in for an argument that did not bind the template (it was
      * rejected, and reported, as invalid): a placeholder shape, not a value

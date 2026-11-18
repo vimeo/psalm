@@ -358,6 +358,8 @@ return [
     // well-known functions
     'libxml_use_internal_errors' => Capabilities::WRITE_GLOBALS | Capabilities::READ_GLOBALS,
     'libxml_disable_entity_loader' => Capabilities::WRITE_GLOBALS | Capabilities::READ_GLOBALS,
+    'libxml_set_external_entity_loader' => Capabilities::WRITE_GLOBALS | Capabilities::READ_GLOBALS,
+    'libxml_get_external_entity_loader' => Capabilities::READ_GLOBALS,
     'curl_exec' => Capabilities::IO,
     'mt_srand' => Capabilities::WRITE_GLOBALS | Capabilities::READ_GLOBALS,
     'openssl_pkcs7_sign' => Capabilities::IO,
