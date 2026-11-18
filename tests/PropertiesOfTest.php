@@ -66,7 +66,7 @@ final class PropertiesOfTest extends TestCase
                 'assertions' => [
                     '$open===' => 'array<string, mixed>',
                     '$sealed===' => 'array<never, never>',
-                    '$untyped===' => 'properties-of<Untyped>',
+                    '$untyped===' => 'array{a: mixed}',
                 ],
                 'ignored_issues' => ['MissingPropertyType'],
             ],
@@ -370,6 +370,52 @@ final class PropertiesOfTest extends TestCase
                         }
                     }
                 ',
+            ],
+            'propertiesOfAClassWithOnlyUntypedPropertiesIsAShape' => [
+                'code' => '<?php
+                    final class OnlyUntyped {
+                        public $b = 1;
+                    }
+
+                    final class Both {
+                        public int $a = 1;
+                        public $b = 1;
+                    }
+
+                    /**
+                     * @param properties-of<OnlyUntyped> $u
+                     * @param properties-of<Both> $m
+                     */
+                    function f(array $u, array $m): void {
+                        /** @psalm-check-type-exact $u = array{b: mixed} */
+                        /** @psalm-check-type-exact $m = array{a: int, b: mixed} */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingPropertyType'],
+                'php_version' => '8.1',
+            ],
+            'propertiesOfAnOpenClassWithOnlyStaticOrPrivatePropertiesIsAnArrayOfMixed' => [
+                'code' => '<?php
+                    class OnlyStatic {
+                        /** @var mixed */
+                        public static $foo;
+                    }
+
+                    class OnlyPrivate {
+                        private int $p = 1;
+                    }
+
+                    /**
+                     * @param properties-of<OnlyStatic> $s
+                     * @param public-properties-of<OnlyPrivate> $p
+                     */
+                    function f(array $s, array $p): void {
+                        /** @psalm-check-type-exact $s = array<string, mixed> */
+                        /** @psalm-check-type-exact $p = array<string, mixed> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedProperty', 'PossiblyUnusedProperty'],
+                'php_version' => '8.1',
             ],
         ];
     }

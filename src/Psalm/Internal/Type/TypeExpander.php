@@ -1358,7 +1358,6 @@ final class TypeExpander
         }
 
         $all_sealed = true;
-        $has_untyped_properties = false;
         $properties = [];
         foreach ([$class_storage->name, ...array_values($class_storage->parent_classes)] as $class) {
             if (!$codebase->classExists($class)) {
@@ -1402,30 +1401,24 @@ final class TypeExpander
                 if ($property->is_static) {
                     continue;
                 }
-                if (!$property->type) {
-                    $has_untyped_properties = true;
-
-                    continue;
-                }
+                // an untyped property exists and holds anything
+                $property_type = $property->type ?? Type::getMixed();
                 $type = $return_type->classlike_type instanceof TGenericObject
                     ? AtomicPropertyFetchAnalyzer::localizePropertyType(
                         $codebase,
-                        $property->type,
+                        $property_type,
                         $return_type->classlike_type,
                         $storage,
                         $storage,
                     )
-                    : $property->type
+                    : $property_type
                 ;
                 $properties[$key] = $type;
             }
         }
 
         if ($properties === []) {
-            if ($has_untyped_properties) {
-                return [$return_type];
-            }
-
+            // an empty `properties` is no shape: a sealed class without properties has none, another may have some
             return [
                 $all_sealed
                     ? Type::getEmptyArrayAtomic()
