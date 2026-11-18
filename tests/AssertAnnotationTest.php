@@ -4487,6 +4487,22 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'callAssertingSeveralArgumentsIsNotRedundantIfOneOfThemChangesAType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert string $a
+                     * @psalm-assert int $b
+                     */
+                    function assertBoth(mixed $a, mixed $b): void {}
+
+                    function f(string $a, mixed $b): void {
+                        assertBoth($a, $b);
+                        /** @psalm-check-type-exact $b = int */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
