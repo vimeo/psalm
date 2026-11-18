@@ -108,8 +108,6 @@ final class ConcatAnalyzer
      * literal open (`"[@id='" . $id`, not `"[@a='x'" . $id`), followed by a value that isn't built here from other
      * parts, which could hold quotes of their own, and doesn't start with one. A string the concatenation is put after
      * is assumed to leave no literal open, and a value a quote of the code is in the middle of isn't told apart.
-     *
-     * @psalm-capabilities read-props
      */
     public static function isQuotedOperand(
         StatementsAnalyzer $statements_analyzer,
