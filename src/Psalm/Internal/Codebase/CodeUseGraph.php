@@ -922,6 +922,25 @@ final class CodeUseGraph
     }
 
     /**
+     * Class member node id => referencing node id => edge type
+     *
+     * @return array<string, array<string, string>>
+     * @psalm-mutation-free
+     */
+    public function getReferencesToMembers(): array
+    {
+        $result = [];
+
+        foreach ($this->backward_edges as $target_node => $sources) {
+            if (self::getOwnerClass($target_node) !== null && str_contains($target_node, '::')) {
+                $result[$target_node] = $sources;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Returns, for each referenced class member id (in the statement differ
      * format), the ids of the function-likes referencing it. Used to find the
      * methods to re-analyse when a member changes.

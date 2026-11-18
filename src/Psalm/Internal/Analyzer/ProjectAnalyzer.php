@@ -141,6 +141,13 @@ final class ProjectAnalyzer
     /** Whether a full run records the code use edges and writes the reference index of overlay analysis */
     public bool $record_references = false;
 
+    /**
+     * The stamps of the files a run recording references reads, taken before it reads them
+     *
+     * @var array<string, ?string>|null
+     */
+    private ?array $reference_stamps = null;
+
     public bool $only_replace_php_types_with_non_docblock_types = false;
 
     public ?int $onchange_line_limit = null;
@@ -485,6 +492,15 @@ final class ProjectAnalyzer
 
         $project_files = $this->initProjectFiles();
         $this->initExtraFiles();
+
+        if ($this->record_references) {
+            // a file saved during the run then makes the index stale
+            $this->reference_stamps = ReferenceIndex::stampFiles([
+                ...array_values($project_files),
+                ...array_values($this->extra_files),
+                ...ReferenceIndex::getInputFiles($this->config),
+            ]);
+        }
 
         $diff_files = null;
         $deleted_files = null;
@@ -1168,8 +1184,9 @@ final class ProjectAnalyzer
             $this->project_cache_provider->processSuccessfulRun($start_time, $psalm_version);
         }
 
-        if ($this->record_references && $this->file_reference_provider->cache) {
-            ReferenceIndex::build($this)->save($this->file_reference_provider->cache);
+        if ($this->reference_stamps !== null && $this->file_reference_provider->cache) {
+            ReferenceIndex::build($this->codebase, array_values($this->initProjectFiles()), $this->reference_stamps)
+                ->save($this->file_reference_provider->cache);
         }
     }
 

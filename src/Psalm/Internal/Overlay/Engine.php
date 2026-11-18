@@ -7,6 +7,7 @@ namespace Psalm\Internal\Overlay;
 use Closure;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Composer;
 use Psalm\Internal\RuntimeCaches;
 use Symfony\Component\Filesystem\Path;
 
@@ -84,8 +85,10 @@ final class Engine
     public function validate(Request $request): void
     {
         $config = $this->project_analyzer->getConfig();
-        $snapshot_inputs = ReferenceIndex::getConfigurationFiles($config);
-        $snapshot_inputs[] = Path::join($config->base_dir, 'composer.json');
+        $snapshot_inputs = [...ReferenceIndex::getInputFiles($config), Composer::getLockFilePath($config->base_dir)];
+        if ($config->source_filename !== null) {
+            $snapshot_inputs[] = $config->source_filename;
+        }
         $snapshot_inputs = array_map(self::canonical(...), $snapshot_inputs);
 
         foreach (array_keys($request->overlays) as $path) {

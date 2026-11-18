@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\CacheMode;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Overlay\ReferenceIndex;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -481,6 +482,26 @@ final class FileReferenceTest extends TestCase
         ]);
 
         self::assertContains($files['imp.php'], $this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']]));
+    }
+
+    public function testTheReferenceIndexKeepsTheDependentsOfAFullRun(): void
+    {
+        $files = $this->analyzeProject([
+            'a.php' => '<?php class A { public function foo(): void {} }',
+            'b.php' => '<?php final class B extends A {}',
+            'c.php' => '<?php final class C { public function f(A $a): void { $a->foo(); } }',
+        ]);
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $index = ReferenceIndex::build($codebase, array_values($files), [$files['a.php'] => 'hash']);
+
+        self::assertSame([$files['b.php']], $index->files[$files['a.php']]['i']);
+        self::assertContains($files['c.php'], $index->files[$files['a.php']]['a']);
+        self::assertSame([$files['c.php']], $index->members[CodeUseGraph::functionLikeNode('a::foo')]);
+
+        $cache = new FileReferenceCacheProvider($codebase->config, '', CacheMode::Memory);
+        $index->save($cache);
+        self::assertEquals($index, ReferenceIndex::load($cache));
     }
 
     /**
