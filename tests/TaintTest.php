@@ -1284,6 +1284,53 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'annotatedStatementExecutedIntoAResultGivesOnlyTheColumnsStored' => [
+                'code' => '<?php
+                    final class Result {
+                        /**
+                         * @return array<string, mixed>|false
+                         * @psalm-database-fetch result
+                         */
+                        public function fetchAssociative(): array|false {
+                            return false;
+                        }
+                    }
+
+                    final class Statement {
+                        /**
+                         * @psalm-database-bind $param $value
+                         */
+                        public function bindValue(int|string $param, mixed $value): void {}
+
+                        /**
+                         * @psalm-database-execute result
+                         */
+                        public function executeQuery(): Result {
+                            return new Result();
+                        }
+                    }
+
+                    final class Connection {
+                        /**
+                         * @psalm-database-prepare $sql
+                         */
+                        public function prepare(string $sql): Statement {
+                            return new Statement();
+                        }
+                    }
+
+                    function run(Connection $db): void {
+                        $insert = $db->prepare("INSERT INTO users (name, bio) VALUES (?, ?)");
+                        $insert->bindValue(1, "guest");
+                        $insert->bindValue(2, $_GET["bio"]);
+                        $insert->executeQuery();
+
+                        $row = $db->prepare("SELECT name, bio FROM users")->executeQuery()->fetchAssociative();
+                        if ($row !== false) {
+                            echo (string) $row["name"];
+                        }
+                    }',
+            ],
             'noTaintFromASpecializedPregReplaceCallbackCallbackInItsOtherCalls' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -6852,6 +6899,54 @@ final class TaintTest extends TestCase
                         $db->all("UPDATE users SET bio = ? WHERE id = ?", [$_GET["bio"], 1]);
                         foreach ($db->all("SELECT bio, name FROM users") as $user) {
                             echo (string) $user["bio"];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'annotatedStatementExecutedIntoAResult' => [
+                'code' => '<?php
+                    final class Result {
+                        /**
+                         * @return array<string, mixed>|false
+                         * @psalm-database-fetch result
+                         */
+                        public function fetchAssociative(): array|false {
+                            return false;
+                        }
+                    }
+
+                    final class Statement {
+                        /**
+                         * @psalm-database-bind $param $value
+                         */
+                        public function bindValue(int|string $param, mixed $value): void {}
+
+                        /**
+                         * @psalm-database-execute result
+                         */
+                        public function executeQuery(): Result {
+                            return new Result();
+                        }
+                    }
+
+                    final class Connection {
+                        /**
+                         * @psalm-database-prepare $sql
+                         */
+                        public function prepare(string $sql): Statement {
+                            return new Statement();
+                        }
+                    }
+
+                    function run(Connection $db): void {
+                        $insert = $db->prepare("INSERT INTO users (name, bio) VALUES (?, ?)");
+                        $insert->bindValue(1, "guest");
+                        $insert->bindValue(2, $_GET["bio"]);
+                        $insert->executeQuery();
+
+                        $row = $db->prepare("SELECT name, bio FROM users")->executeQuery()->fetchAssociative();
+                        if ($row !== false) {
+                            echo (string) $row["bio"];
                         }
                     }',
                 'error_message' => 'TaintedHtml',

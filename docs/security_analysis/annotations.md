@@ -83,8 +83,9 @@ row), `column` (a list of the first columns) or `none`. See [Databases](taint_fl
 ## `@psalm-database-prepare $sql`
 
 The method prepares the SQL query given to `$sql` and returns the statement, whose methods give the values of the
-placeholders: `@psalm-database-execute [$params]` and `@psalm-database-bind $key $value` (a positional placeholder
-numbered from 1) or `@psalm-database-bind ...$values` (in their order).
+placeholders: `@psalm-database-execute [$params] [result]` and `@psalm-database-bind $key $value` (a positional
+placeholder numbered from 1) or `@psalm-database-bind ...$values` (in their order). With `result`, `execute` returns
+what the statement holds of the rows, as `@psalm-database-fetch` does.
 
 ## `@psalm-database-insert $table $data`, `@psalm-database-update $table $data` and `@psalm-database-select $table`
 

@@ -476,6 +476,22 @@ final class DatabaseTaints
         if ($spec[0] === 'execute' && isset($spec['name']) && ($spec['result'] ?? 'result') !== 'none') {
             $rows_node = self::getNamedStatementRows($statements_analyzer, $graph, $spec, $args);
             $return_type = $return_type->addParentNodes([$rows_node->id => $rows_node]);
+        } elseif ($spec[0] === 'execute' && ($spec['result'] ?? 'none') !== 'none') {
+            // a result apart from the statement, which holds the rows (`@psalm-database-execute $params result`)
+            $fetch_spec = ['fetch', 'result' => $spec['result'] ?? 'result'];
+            if (isset($spec['statement'])) {
+                $fetch_spec['from'] = $spec['statement'];
+            }
+
+            $return_type = self::taintFetch(
+                $statements_analyzer,
+                $graph,
+                $fetch_spec,
+                $args,
+                $call_location,
+                $return_type,
+                $receiver_type,
+            );
         }
         $has_values = false;
 
