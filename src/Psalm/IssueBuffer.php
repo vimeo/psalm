@@ -9,6 +9,7 @@ use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\BaselineMatcher;
 use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\Internal\ExecutionEnvironment\GitInfoCollector;
 use Psalm\Internal\Provider\FileProvider;
@@ -52,7 +53,6 @@ use function array_splice;
 use function array_sum;
 use function array_values;
 use function arsort;
-use function count;
 use function debug_print_backtrace;
 use function dirname;
 use function explode;
@@ -60,10 +60,12 @@ use function file_put_contents;
 use function fwrite;
 use function implode;
 use function in_array;
+use function intdiv;
 use function is_dir;
 use function is_int;
 use function is_string;
 use function ksort;
+use function max;
 use function memory_get_peak_usage;
 use function microtime;
 use function mkdir;
@@ -78,7 +80,6 @@ use function str_repeat;
 use function str_replace;
 use function str_starts_with;
 use function strlen;
-use function trim;
 use function usort;
 
 use const ARRAY_FILTER_USE_KEY;
@@ -116,6 +117,14 @@ final class IssueBuffer
     private static array $recorded_issues = [];
 
     /**
+     * The issues raised while collecting them, before the config or a suppression filters them, keyed by
+     * getIssueLocationKey()
+     *
+     * @var list<array<string, true>>
+     */
+    private static array $raised_issue_keys = [];
+
+    /**
      * @var array<string, array<int, int>>
      */
     private static array $unused_suppressions = [];
@@ -128,6 +137,27 @@ final class IssueBuffer
     /** @var array<array-key,mixed> */
     private static array $server = [];
 
+    /** The group of the issues being added, see setIssueGroup() */
+    private static ?string $issue_group = null;
+
+    /**
+     * The issue reported for each group, by issue type, group and message
+     *
+     * @var array<string, IssueData>
+     */
+    private static array $grouped_issues = [];
+
+    /**
+     * By file, the issues of a group that one at an earlier location is reported for. They go to the cache and
+     * the worker merge, where an analysis that no longer adds that one (its file changed) reports one of them.
+     *
+     * @var array<string, list<IssueData>>
+     */
+    private static array $held_back_issues = [];
+
+    /** How many issues accepts() was given, suppressed ones included */
+    private static int $accepted_issue_count = 0;
+
     /**
      * This will add an issue to be emitted if it's not suppressed and return if it has been added
      *
@@ -135,6 +165,16 @@ final class IssueBuffer
      */
     public static function accepts(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false): bool
     {
+        ++self::$accepted_issue_count;
+        $e->group_key ??= self::$issue_group;
+
+        $raised_issue_keys = array_pop(self::$raised_issue_keys);
+
+        if ($raised_issue_keys !== null) {
+            $raised_issue_keys[self::getIssueLocationKey($e::getIssueType(), $e)] = true;
+            self::$raised_issue_keys[] = $raised_issue_keys;
+        }
+
         $config = Config::getInstance();
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
@@ -360,9 +400,9 @@ final class IssueBuffer
             . ' ' . ($e->dupe_key ?? $e->message);
 
         if ($reporting_level === Config::REPORT_INFO) {
-            if ($is_tainted || !self::alreadyEmitted($emitted_key)) {
-                self::$issues_data[$e->getFilePath()][] = $e->toIssueData(IssueData::SEVERITY_INFO);
-
+            if (($is_tainted || !self::alreadyEmitted($emitted_key))
+                && self::addIssueData($e->getFilePath(), $e->toIssueData(IssueData::SEVERITY_INFO))
+            ) {
                 if ($is_fixable) {
                     self::addFixableIssue($issue_type);
                 }
@@ -388,9 +428,10 @@ final class IssueBuffer
             );
         }
 
-        if ($is_tainted || !self::alreadyEmitted($emitted_key)) {
+        if (($is_tainted || !self::alreadyEmitted($emitted_key))
+            && self::addIssueData($e->getFilePath(), $e->toIssueData(IssueData::SEVERITY_ERROR))
+        ) {
             ++self::$error_count;
-            self::$issues_data[$e->getFilePath()][] = $e->toIssueData(IssueData::SEVERITY_ERROR);
 
             if ($is_fixable) {
                 self::addFixableIssue($issue_type);
@@ -398,6 +439,78 @@ final class IssueBuffer
         }
 
         return true;
+    }
+
+    /**
+     * @return bool whether the issue adds to the issues: not one held back for its group, or one that replaces the
+     *              issue reported for its group
+     * @psalm-capabilities read-props|read-globals|write-globals
+     */
+    private static function addIssueData(string $file_path, IssueData $issue): bool
+    {
+        if ($issue->group_key === null) {
+            self::$issues_data[$file_path][] = $issue;
+
+            return true;
+        }
+
+        $group = $issue->type . ' ' . $issue->group_key . ' ' . $issue->message;
+        $reported = self::$grouped_issues[$group] ?? null;
+
+        if ($reported !== null
+            && [$issue->file_path, $issue->line_from, $issue->column_from]
+                >= [$reported->file_path, $reported->line_from, $reported->column_from]
+        ) {
+            self::$held_back_issues[$file_path][] = $issue;
+
+            return false;
+        }
+
+        self::$grouped_issues[$group] = $issue;
+        self::$issues_data[$file_path][] = $issue;
+
+        if ($reported === null) {
+            return true;
+        }
+
+        $position = array_search($reported, self::$issues_data[$reported->file_path], true);
+
+        if ($position !== false) {
+            array_splice(self::$issues_data[$reported->file_path], $position, 1);
+
+            if (self::$issues_data[$reported->file_path] === []) {
+                unset(self::$issues_data[$reported->file_path]);
+            }
+        }
+
+        self::$held_back_issues[$reported->file_path][] = $reported;
+
+        return false;
+    }
+
+    /**
+     * Puts the issues added until the next call in a group that is reported once, at its issue with the earliest
+     * location (by file path, line and column), whichever order the files are analysed in
+     *
+     * @internal
+     * @return ?string the group before, to restore
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public static function setIssueGroup(?string $group_key): ?string
+    {
+        $previous_group_key = self::$issue_group;
+        self::$issue_group = $group_key;
+
+        return $previous_group_key;
+    }
+
+    /**
+     * @internal
+     * @psalm-capabilities read-globals
+     */
+    public static function getAcceptedIssueCount(): int
+    {
+        return self::$accepted_issue_count;
     }
 
     /**
@@ -477,6 +590,24 @@ final class IssueBuffer
     public static function getIssuesDataForFile(string $file_path): array
     {
         return self::$issues_data[$file_path] ?? [];
+    }
+
+    /**
+     * The issues, and those held back for their group: for the cache and the worker merge
+     *
+     * @internal
+     * @return array<string, list<IssueData>>
+     * @psalm-capabilities read-props|read-globals
+     */
+    public static function getAllIssuesData(): array
+    {
+        $issues_data = self::$issues_data;
+
+        foreach (self::$held_back_issues as $file_path => $file_issues) {
+            $issues_data[$file_path] = [...$issues_data[$file_path] ?? [], ...$file_issues];
+        }
+
+        return $issues_data;
     }
 
     /**
@@ -604,7 +735,7 @@ final class IssueBuffer
                     . ' ' . ($issue->dupe_key ?? $issue->message);
 
                 if (!self::alreadyEmitted($emitted_key)) {
-                    self::$issues_data[$file_path][] = $issue;
+                    self::addIssueData($file_path, $issue);
                 }
             }
         }
@@ -664,31 +795,14 @@ final class IssueBuffer
             // Set severity for issues in baseline to INFO
             foreach ($issues_data as $file_path => $file_issues) {
                 foreach ($file_issues as $key => $issue_data) {
-                    $file = $issue_data->file_name;
-                    $file = str_replace('\\', '/', $file);
-                    $type = $issue_data->type;
-
-                    if (isset($issue_baseline[$file][$type])
-                        && $issue_baseline[$file][$type]['o'] > 0
-                        && $codebase->config->isSuppressible($type)
-                    ) {
-                        if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
-                            $position = array_search(
-                                str_replace("\r\n", "\n", trim($issue_data->selected_text)),
-                                $issue_baseline[$file][$type]['s'],
-                                true,
-                            );
-
-                            if ($position !== false) {
-                                $issue_data->severity = IssueData::SEVERITY_INFO;
-                                array_splice($issue_baseline[$file][$type]['s'], $position, 1);
-                                $issue_baseline[$file][$type]['o']--;
-                            }
-                        } else {
-                            $issue_baseline[$file][$type]['s'] = [];
-                            $issue_data->severity = IssueData::SEVERITY_INFO;
-                            $issue_baseline[$file][$type]['o']--;
-                        }
+                    if (BaselineMatcher::consume(
+                        $codebase->config,
+                        $issue_baseline,
+                        $issue_data->file_name,
+                        $issue_data->type,
+                        $issue_data->selected_text,
+                    )) {
+                        $issue_data->severity = IssueData::SEVERITY_INFO;
                     }
 
                     $issues_data[$file_path][$key] = $issue_data;
@@ -765,7 +879,6 @@ final class IssueBuffer
                         );
                     }
                 }
-            } else {
             }
         }
 
@@ -830,10 +943,19 @@ final class IssueBuffer
             );
         }
 
-        if (in_array(
+        $prints_to_console = in_array(
             $project_analyzer->stdout_report_options->format,
             [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM, Report::TYPE_GITHUB_ACTIONS],
-        )) {
+        );
+
+        if ($prints_to_console && $codebase->alter_code && !$error_count) {
+            self::printAlterSummary(
+                $codebase->analyzer->getChangedFilesCount(),
+                $project_analyzer->dry_run,
+                $project_analyzer->stdout_report_options->use_color,
+                $start_time,
+            );
+        } elseif ($prints_to_console) {
             echo str_repeat('-', 30) . "\n";
 
             if ($error_count) {
@@ -880,8 +1002,7 @@ final class IssueBuffer
             echo str_repeat('-', 30) . "\n" . "\n";
 
             if ($start_time) {
-                echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
-                echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
+                self::printTiming($start_time);
 
                 $analysis_summary = $codebase->analyzer->getTypeInferenceSummary($codebase);
                 echo $analysis_summary . "\n";
@@ -933,12 +1054,35 @@ final class IssueBuffer
         // runs), so cached taint sinks/sources keep matching after the analysis is reused from cache.
         $project_analyzer->persistCustomTaints();
 
+        $min_type_coverage = $codebase->config->min_type_coverage;
+
+        // a run of specific files doesn't measure the type coverage of the whole project
+        $type_coverage_message = $is_full && $min_type_coverage !== null
+            ? self::getTypeCoverageBelowMinimumMessage(
+                $codebase->analyzer->getTotalTypeCoverage($codebase),
+                $min_type_coverage,
+            )
+            : null;
+
+        if ($type_coverage_message !== null) {
+            fwrite(STDERR, $type_coverage_message . PHP_EOL);
+        }
+
         // a taint analysis run in GitHub Actions that writes a SARIF report exits successfully, so that a following
-        // step can upload the report; every other combination exits with an error when issues were found
-        if ($error_count
+        // step can upload the report; every other combination exits with an error when issues were found or the
+        // type coverage is below the minimum
+        if (($error_count || $type_coverage_message !== null)
             && !($codebase->taint_flow_graph
                 && self::hasSarifReport($project_analyzer->generated_report_options)
                 && isset($_SERVER['GITHUB_WORKFLOW']))
+        ) {
+            exit(2);
+        }
+
+        // like Rector, a dry run that would change files exits with an error so it can gate CI
+        if ($codebase->alter_code
+            && $project_analyzer->dry_run
+            && $codebase->analyzer->getChangedFilesCount() > 0
         ) {
             exit(2);
         }
@@ -959,26 +1103,86 @@ final class IssueBuffer
         return false;
     }
 
+    /**
+     * @internal
+     * @param array{int, int} $type_coverage the counts of mixed and of non-mixed expressions
+     * @psalm-pure
+     */
+    public static function getTypeCoverageBelowMinimumMessage(array $type_coverage, float $min_type_coverage): ?string
+    {
+        [$mixed_count, $nonmixed_count] = $type_coverage;
+        $total = $mixed_count + $nonmixed_count;
+
+        // without expressions there is no type that Psalm couldn't infer
+        if ($total === 0) {
+            return null;
+        }
+
+        // in hundredths of a percent, the coverage rounded down, so that a coverage below the minimum never prints
+        // as reaching it; the minimum has at most two decimals
+        $coverage = intdiv(10_000 * $nonmixed_count, $total);
+        $minimum = (int) round($min_type_coverage * 100.0);
+
+        if ($coverage >= $minimum) {
+            return null;
+        }
+
+        return sprintf(
+            'Type coverage %s%% is below the minimum of %s%%',
+            number_format($coverage / 100, 2),
+            number_format($minimum / 100, 2),
+        );
+    }
+
+    private static function printAlterSummary(
+        int $changed_files_count,
+        bool $dry_run,
+        bool $use_color,
+        float $start_time,
+    ): void {
+        if ($changed_files_count === 0) {
+            $message = 'No changes';
+        } else {
+            $message = $changed_files_count . ($changed_files_count === 1 ? ' file ' : ' files ')
+                . ($dry_run ? 'would be changed (dry run)' : 'changed');
+        }
+
+        echo str_repeat('-', 30) . "\n";
+        self::printResultBlock($message, $use_color);
+        echo str_repeat('-', 30) . "\n\n";
+
+        if ($start_time) {
+            self::printTiming($start_time);
+        }
+    }
+
+    private static function printTiming(float $start_time): void
+    {
+        echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
+        echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
+    }
+
     public static function printSuccessMessage(ProjectAnalyzer $project_analyzer): void
     {
         if (!$project_analyzer->stdout_report_options) {
             throw new UnexpectedValueException('Cannot print success message without stdout report options');
         }
 
-        // this message will be printed
-        $message = "No errors found!";
+        self::printResultBlock('No errors found!', $project_analyzer->stdout_report_options->use_color);
+    }
 
-        // color block will contain this amount of characters
-        $blockSize = 30;
+    private static function printResultBlock(string $message, bool $use_color): void
+    {
+        // color block will contain at least this amount of characters
+        $blockSize = max(30, strlen($message) + 14);
 
         // message with prepended and appended whitespace to be same as $blockSize
-        $messageWithPadding = str_repeat(' ', 7) . $message . str_repeat(' ', 7);
+        $leftPadding = intdiv($blockSize - strlen($message), 2);
+        $messageWithPadding = str_repeat(' ', $leftPadding) . $message
+            . str_repeat(' ', $blockSize - strlen($message) - $leftPadding);
 
-        // top side of the color block
-        $paddingTop = str_repeat(' ', $blockSize);
-
-        // bottom side of the color block
-        $paddingBottom = str_repeat(' ', $blockSize);
+        // top and bottom sides of the color block
+        $paddingTop = $paddingBottom = str_repeat(' ', $blockSize);
 
         // background color, 42 = green
         $background = "42";
@@ -989,7 +1193,7 @@ final class IssueBuffer
         // text style, 1 = bold
         $style = "2";
 
-        if ($project_analyzer->stdout_report_options->use_color) {
+        if ($use_color) {
             echo "\e[{$background};{$style}m{$paddingTop}\e[0m" . "\n";
             echo "\e[{$background};{$foreground};{$style}m{$messageWithPadding}\e[0m" . "\n";
             echo "\e[{$background};{$style}m{$paddingBottom}\e[0m" . "\n";
@@ -1136,6 +1340,8 @@ final class IssueBuffer
     public static function clearCache(): void
     {
         self::$issues_data = [];
+        self::$grouped_issues = [];
+        self::$held_back_issues = [];
         self::$emitted = [];
         self::$error_count = 0;
         self::$recording_level = 0;
@@ -1152,6 +1358,8 @@ final class IssueBuffer
     {
         $current_data = self::$issues_data;
         self::$issues_data = [];
+        self::$grouped_issues = [];
+        self::$held_back_issues = [];
         self::$emitted = [];
 
         return $current_data;
@@ -1210,6 +1418,48 @@ final class IssueBuffer
         self::$recorded_issues[self::$recording_level] = [];
 
         return $recorded_issues;
+    }
+
+    /**
+     * Start collecting the issues raised, whether they are reported or not
+     *
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public static function startCollectingRaisedIssues(): void
+    {
+        self::$raised_issue_keys[] = [];
+    }
+
+    /**
+     * @return array<string, true> the getIssueLocationKey() of the issues raised since startCollectingRaisedIssues(),
+     *                             which an enclosing collection gets too
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public static function stopCollectingRaisedIssues(): array
+    {
+        $raised_issue_keys = array_pop(self::$raised_issue_keys);
+
+        if ($raised_issue_keys === null) {
+            throw new UnexpectedValueException('Not currently collecting raised issues');
+        }
+
+        $enclosing_raised_issue_keys = array_pop(self::$raised_issue_keys);
+
+        if ($enclosing_raised_issue_keys !== null) {
+            self::$raised_issue_keys[] = $enclosing_raised_issue_keys + $raised_issue_keys;
+        }
+
+        return $raised_issue_keys;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public static function getIssueLocationKey(string $issue_type, CodeIssue $e): string
+    {
+        [$from, $to] = $e->code_location->getSelectionBounds();
+
+        return $issue_type . ':' . $e->getFilePath() . ':' . $from . '-' . $to;
     }
 
     /**
