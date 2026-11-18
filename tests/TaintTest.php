@@ -1310,6 +1310,21 @@ final class TaintTest extends TestCase
                         exec("convert page" . $page . ".png");
                     }',
             ],
+            'anchoredPatternMatchedWithArgumentsGivenByName' => [
+                'code' => '<?php
+                    $name = (string) $_GET["name"];
+                    if (preg_match(subject: $name, pattern: "/^[a-z]+$/")) {
+                        echo $name;
+                    }',
+            ],
+            'anchoredPatternMatchComparedLooselyToFalse' => [
+                'code' => '<?php
+                    $name = (string) $_GET["name"];
+                    if (preg_match("/^[a-z]+$/", $name) == false) {
+                        exit;
+                    }
+                    echo $name;',
+            ],
             'stringCastNeedleFoundInAListOfWords' => [
                 'code' => '<?php
                     $command = str_replace("\\0", "", (string) $_GET["command"]);
@@ -6458,6 +6473,31 @@ final class TaintTest extends TestCase
                     }
                     exec("run " . (string) $command);',
                 'error_message' => 'TaintedShell',
+            ],
+            'patternMatchComparedStrictlyToFalseKeepsTheTaints' => [
+                'code' => '<?php
+                    $name = (string) $_GET["name"];
+                    if (preg_match("/^[a-z]+$/", $name) !== false) {
+                        echo $name;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'patternMatchIdenticalToFalseKeepsTheTaintsOtherwise' => [
+                'code' => '<?php
+                    $name = (string) $_GET["name"];
+                    if (preg_match("/^[a-z]+$/", $name) === false) {
+                        exit;
+                    }
+                    echo $name;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'valueGivenAsThePatternByNameKeepsItsTaints' => [
+                'code' => '<?php
+                    $name = (string) $_GET["name"];
+                    if (preg_match(subject: "/^[a-z]+$/", pattern: $name)) {
+                        echo $name;
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
             'patternMatchedFromAnOffsetKeepsTheTaints' => [
                 'code' => '<?php

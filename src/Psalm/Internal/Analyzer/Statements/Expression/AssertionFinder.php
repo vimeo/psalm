@@ -92,6 +92,7 @@ use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
@@ -2508,6 +2509,11 @@ final class AssertionFinder
             }
 
             $if_types = [$if_types];
+        } elseif ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+            && self::canBeFalsyButNotFalse($base_conditional, $source)
+        ) {
+            // `preg_match() !== false` is also true when it found no match
+            $if_types = [];
         } else {
             $if_types = null;
 
@@ -3380,7 +3386,13 @@ final class AssertionFinder
             throw new UnexpectedValueException('$false_position value');
         }
 
-        if ($base_conditional instanceof PhpParser\Node\Expr\FuncCall) {
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            && !ExpressionIdentifier::getExtendedVarId($base_conditional, $this_class_name, $source)
+            && self::canBeFalsyButNotFalse($base_conditional, $source)
+        ) {
+            // `preg_match() === false` is also false when it found no match
+            $notif_types = [];
+        } elseif ($base_conditional instanceof PhpParser\Node\Expr\FuncCall) {
             $notif_types = self::processFunctionCall(
                 $base_conditional,
                 $this_class_name,
@@ -4158,26 +4170,64 @@ final class AssertionFinder
         bool $negated = false,
     ): array {
         $args = $expr->getArgs();
+        $pattern_arg = self::getPregMatchArg($args, 0, 'pattern');
+        $subject_arg = self::getPregMatchArg($args, 1, 'subject');
 
         // from an offset, the start of the subject isn't matched
-        if (!isset($args[0], $args[1]) || self::hasNonZeroOffsetArg($expr, $source)) {
+        if ($pattern_arg === null || $subject_arg === null || self::hasNonZeroOffsetArg($expr, $source)) {
             return [];
         }
 
-        $pattern_type = $source->node_data->getType($args[0]->value);
+        $pattern_type = $source->node_data->getType($pattern_arg->value);
 
         if ($pattern_type === null || !$pattern_type->isSingleStringLiteral()) {
             return [];
         }
 
         $removed_taints = PatternCharacters::getTaintsRemoved($pattern_type->getSingleStringLiteral()->value);
-        $subject_var_id = self::getStringFormVarId($args[1]->value, $this_class_name, $source);
+        $subject_var_id = self::getStringFormVarId($subject_arg->value, $this_class_name, $source);
 
         if ($removed_taints === 0 || $subject_var_id === null) {
             return [];
         }
 
         return [[$subject_var_id => [[new MatchesPattern($removed_taints, $negated)]]]];
+    }
+
+    /**
+     * Whether $expr can be falsy other than by being false, so that comparing it to false strictly doesn't tell
+     * whether it is truthy
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function canBeFalsyButNotFalse(PhpParser\Node\Expr $expr, FileSource $source): bool
+    {
+        $type = $source instanceof StatementsAnalyzer ? $source->node_data->getType($expr) : null;
+
+        foreach ($type?->getAtomicTypes() ?? [] as $atomic) {
+            if (!($atomic instanceof TBool && !$atomic instanceof TTrue) && !$atomic->isTruthy()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The argument of preg_match() given to the parameter at $position, named $name
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     * @psalm-mutation-free
+     */
+    private static function getPregMatchArg(array $args, int $position, string $name): ?PhpParser\Node\Arg
+    {
+        foreach ($args as $offset => $arg) {
+            if ($arg->name !== null ? $arg->name->name === $name : $offset === $position) {
+                return $arg;
+            }
+        }
+
+        return null;
     }
 
     /**
