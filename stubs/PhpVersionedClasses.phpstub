@@ -200,7 +200,8 @@ namespace {
     /**
      * TPurity is what running the fiber's callback may do: starting or resuming the fiber runs it
      * until it suspends or returns, so it costs what the callback costs and nothing else. Like the
-     * position of a generator, where a fiber is suspended is engine state, not an effect.
+     * position of a generator, where a fiber is suspended is engine state, not an effect: what its
+     * getters return is forgotten when it is started or resumed.
      *
      * @psalm-purity-template TPurity(impure)
      *
@@ -539,6 +540,30 @@ namespace {
         public function getErrorCode(): int {}
 
         public function getErrorMessage(): string {}
+    }
+
+    /** @since 8.6 */
+    final class SodiumCryptoXofShake128State
+    {
+        private function __construct() {}
+    }
+
+    /** @since 8.6 */
+    final class SodiumCryptoXofShake256State
+    {
+        private function __construct() {}
+    }
+
+    /** @since 8.6 */
+    final class SodiumCryptoXofTurboshake128State
+    {
+        private function __construct() {}
+    }
+
+    /** @since 8.6 */
+    final class SodiumCryptoXofTurboshake256State
+    {
+        private function __construct() {}
     }
 }
 
