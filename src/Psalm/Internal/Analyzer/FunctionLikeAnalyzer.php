@@ -103,11 +103,11 @@ use function array_search;
 use function array_values;
 use function count;
 use function end;
+use function hash;
 use function in_array;
 use function is_string;
 use function krsort;
 use function mb_strpos;
-use function md5;
 use function microtime;
 use function preg_match;
 use function reset;
@@ -1332,7 +1332,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 && $this instanceof MethodAnalyzer
                 && !$context->collect_initializations
             ) {
-                $new_hash = md5($real_method_id . '::' . $context->getScopeSummary());
+                $new_hash = hash('xxh3', $real_method_id . '::' . $context->getScopeSummary());
 
                 if ($new_hash === $hash) {
                     self::$no_effects_hashes[$hash] = true;
@@ -2903,7 +2903,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             if ($add_mutations) {
                 if (!$context->collect_initializations) {
-                    $hash = md5($real_method_id . '::' . $context->getScopeSummary());
+                    $hash = hash('xxh3', $real_method_id . '::' . $context->getScopeSummary());
 
                     // if we know that the function has no effects on vars, we don't bother rechecking
                     if (isset(self::$no_effects_hashes[$hash])) {
