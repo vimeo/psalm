@@ -1284,6 +1284,55 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'anchoredPatternWithoutQuotesRemovesTheXpathTaint' => [
+                'code' => '<?php
+                    $data = (string) $_GET["id"];
+                    if (!preg_match("#^[a-zA-Z0-9_.%~\\\\-]+$#", $data)) {
+                        exit;
+                    }
+                    (new DOMXPath(new DOMDocument()))->query("//user[@id=\'" . $data . "\']");',
+            ],
+            'anchoredPatternOfWordsRemovesTheHtmlTaint' => [
+                'code' => '<?php
+                    $sort = (string) $_GET["sort"];
+                    if (!preg_match("/^(asc|desc|name|created)$/", $sort)) {
+                        exit;
+                    }
+                    echo "<div>" . $sort . "</div>";',
+            ],
+            'anchoredPatternMatchedThroughAStringCast' => [
+                'code' => '<?php
+                    function show(?string $page): void {
+                        $page ??= (string) $_GET["page"];
+                        if (preg_match("/^\\d+$/D", (string) $page) !== 1) {
+                            return;
+                        }
+                        exec("convert page" . $page . ".png");
+                    }',
+            ],
+            'anchoredPatternMatchedWithArgumentsGivenByName' => [
+                'code' => '<?php
+                    $name = (string) $_GET["name"];
+                    if (preg_match(subject: $name, pattern: "/^[a-z]+$/")) {
+                        echo $name;
+                    }',
+            ],
+            'anchoredPatternMatchComparedLooselyToFalse' => [
+                'code' => '<?php
+                    $name = (string) $_GET["name"];
+                    if (preg_match("/^[a-z]+$/", $name) == false) {
+                        exit;
+                    }
+                    echo $name;',
+            ],
+            'stringCastNeedleFoundInAListOfWords' => [
+                'code' => '<?php
+                    $command = str_replace("\\0", "", (string) $_GET["command"]);
+                    if (!in_array((string) $command, ["ls", "cat", "date"], true)) {
+                        exit;
+                    }
+                    exec("run " . (string) $command);',
+            ],
             'propertyOfAnObjectTheCodeBuiltIsNotTainted' => [
                 'code' => '<?php
                     $row = new stdClass();
@@ -6386,6 +6435,94 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'valueThatMayNotMatchThePatternKeepsItsTaints' => [
+                'code' => '<?php
+                    $name = (string) $_GET["name"];
+                    if (preg_match("/^[a-z]+$/", $name)) {
+                        echo $name;
+                    }
+                    echo $name;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'unanchoredPatternKeepsTheTaints' => [
+                'code' => '<?php
+                    $name = (string) $_GET["name"];
+                    if (!preg_match("/[a-z]+/", $name)) {
+                        exit;
+                    }
+                    echo $name;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'patternAllowingSpacesKeepsTheXpathTaint' => [
+                'code' => '<?php
+                    $id = (string) $_GET["id"];
+                    if (!preg_match("/^[a-z0-9 ]+$/D", $id)) {
+                        exit;
+                    }
+                    (new DOMXPath(new DOMDocument()))->query("//user[@id=" . $id . "]");',
+                'error_message' => 'TaintedXpath',
+            ],
+            'patternAllowingSpacesKeepsTheShellTaint' => [
+                'code' => '<?php
+                    $term = (string) $_GET["term"];
+                    if (!preg_match("/^[a-zA-Z0-9 _.-]+$/D", $term)) {
+                        exit;
+                    }
+                    shell_exec("grep -r " . $term . " /var/log");',
+                'error_message' => 'TaintedShell',
+            ],
+            'patternEndingWithADollarAllowsATrailingNewline' => [
+                'code' => '<?php
+                    $file = (string) $_GET["file"];
+                    if (!preg_match("/^[a-z]+$/", $file)) {
+                        exit;
+                    }
+                    exec("gzip " . $file . " && echo done");',
+                'error_message' => 'TaintedShell',
+            ],
+            'stringCastNeedleOfAnArrayKeepsItsTaints' => [
+                'code' => '<?php
+                    $command = $_GET["command"];
+                    if (!in_array((string) $command, ["ls"], true)) {
+                        exit;
+                    }
+                    exec("run " . (string) $command);',
+                'error_message' => 'TaintedShell',
+            ],
+            'patternMatchComparedStrictlyToFalseKeepsTheTaints' => [
+                'code' => '<?php
+                    $name = (string) $_GET["name"];
+                    if (preg_match("/^[a-z]+$/", $name) !== false) {
+                        echo $name;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'patternMatchIdenticalToFalseKeepsTheTaintsOtherwise' => [
+                'code' => '<?php
+                    $name = (string) $_GET["name"];
+                    if (preg_match("/^[a-z]+$/", $name) === false) {
+                        exit;
+                    }
+                    echo $name;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'valueGivenAsThePatternByNameKeepsItsTaints' => [
+                'code' => '<?php
+                    $name = (string) $_GET["name"];
+                    if (preg_match(subject: "/^[a-z]+$/", pattern: $name)) {
+                        echo $name;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'patternMatchedFromAnOffsetKeepsTheTaints' => [
+                'code' => '<?php
+                    $name = (string) $_GET["name"];
+                    if (!preg_match("/^[a-z]+$/A", $name, $matches, 0, 3)) {
+                        exit;
+                    }
+                    echo $name;',
+                'error_message' => 'TaintedHtml',
+            ],
             'dynamicPropertyOfATaintedObjectIsTainted' => [
                 'code' => '<?php
                     /** @psalm-taint-source input */

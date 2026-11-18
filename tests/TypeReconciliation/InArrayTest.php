@@ -51,6 +51,32 @@ final class InArrayTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'stringCastOfAScalarFoundInAListOfWords' => [
+                'code' => '<?php
+                    /** @return string|int|null */
+                    function value() {
+                        return null;
+                    }
+
+                    $value = value();
+                    $found = in_array((string) $value, ["ls", "cat"], true) ? $value : "none";',
+                'assertions' => [
+                    '$found===' => "'cat'|'ls'|'none'",
+                ],
+            ],
+            'stringCastOfAScalarFoundInAListWithANumber' => [
+                'code' => '<?php
+                    /** @return string|int|null */
+                    function value() {
+                        return null;
+                    }
+
+                    $value = value();
+                    $found = in_array((string) $value, ["ls", "1"], true) ? $value : "none";',
+                'assertions' => [
+                    '$found===' => 'int|null|string',
+                ],
+            ],
             'notInTwoDifferentArraysOfTheSameType' => [
                 'code' => '<?php
                     class User {}
