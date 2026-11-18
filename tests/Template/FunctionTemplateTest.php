@@ -3083,6 +3083,24 @@ final class FunctionTemplateTest extends TestCase
                         withCallback($string_or_array, $callback);
                     }',
             ],
+            'omittedNullDefaultOfATemplateNoArgumentBindsIsNull' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|null $x
+                     * @return T
+                     */
+                    function f($x = null) {
+                        return $x;
+                    }
+
+                    $a = f();',
+                'assertions' => [
+                    '$a===' => 'null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 

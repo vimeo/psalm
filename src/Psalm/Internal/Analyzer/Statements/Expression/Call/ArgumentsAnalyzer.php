@@ -2728,14 +2728,20 @@ final class ArgumentsAnalyzer
                     }
 
                     // a default that is one of the own atomic types of the parameter (`null` for `T|null`) says
-                    // nothing about a template that has no default of its own to fall back to
+                    // nothing about a template that an argument bound already, and that has no default of its own
+                    // to fall back to
                     if ($default_type->isSingle()
                         && !$param->type->isSingle()
                         && isset($param->type->getAtomicTypes()[$default_type->getSingleAtomic()->getKey()])
                         && array_all(
                             $param->type->getTemplateTypes(),
                             static fn(TTemplateParam $template_type): bool
-                                => !isset($function_storage?->template_defaults[$template_type->param_name]),
+                                => !isset($function_storage?->template_defaults[$template_type->param_name])
+                                && isset(
+                                    $template_result->lower_bounds[$template_type->param_name][
+                                        $template_type->defining_class
+                                    ],
+                                ),
                         )
                     ) {
                         continue;
