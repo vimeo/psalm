@@ -381,9 +381,13 @@ final class ArgumentAnalyzer
             // don’t get overwritten
             $readonly_template_result->readonly = true;
 
+            $receiver_template_result = new TemplateResult($class_generic_params, []);
+            $receiver_template_result->readonly = true;
+            $receiver_template_result->of_receiver = true;
+
             $param_type = TemplateStandinTypeReplacer::replace(
                 $param_type,
-                $readonly_template_result,
+                $receiver_template_result,
                 $codebase,
                 $statements_analyzer,
                 $arg_value_type,

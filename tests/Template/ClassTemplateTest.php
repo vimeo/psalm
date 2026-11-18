@@ -6429,7 +6429,8 @@ final class ClassTemplateTest extends TestCase
                             $this->add(5);
                         }
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:40 - '
+                    . 'Argument 1 of ArrayList::add expects T:ArrayList as mixed, but 5 provided',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
@@ -6446,7 +6447,47 @@ final class ClassTemplateTest extends TestCase
                             $other->add(5);
                         }
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:41 - '
+                    . 'Argument 1 of ArrayList::add expects T:ArrayList as mixed, but 5 provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'argumentOfTheClassOwnTemplateGivenToAnotherInstanceWithAKnownTypeStaysRigid' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Lst {
+                        public function takeInt(int $i): void {}
+
+                        /**
+                         * @param T $mine
+                         * @param Lst<int> $ints
+                         */
+                        public function f(mixed $mine, Lst $ints): void {
+                            $ints->takeInt($mine);
+                        }
+                    }',
+                'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:44 - '
+                    . 'Argument 1 of Lst::takeInt expects int, but parent type T:Lst as mixed provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'listOfTheClassOwnTemplateGivenToAnotherInstanceWithAKnownTypeKeepsItsProvidedType' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class ArrayList {
+                        /** @param T $value */
+                        public function add(mixed $value): void {}
+
+                        /**
+                         * @param list<T> $mine
+                         * @param ArrayList<list<int>> $ints
+                         */
+                        public function f(array $mine, ArrayList $ints): void {
+                            $ints->add($mine);
+                        }
+                    }',
+                'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:40 - '
+                    . 'Argument 1 of ArrayList::add expects list<int>, but parent type list<T:ArrayList as mixed> provided',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
