@@ -6,6 +6,7 @@ namespace Psalm\Tests;
 
 use Override;
 use PhpParser\Node\Stmt;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\IssueBuffer;
@@ -38,7 +39,7 @@ final class StatementsProviderTest extends TestCase
 
         $this->statements_provider = new StatementsProvider(
             $this->file_provider,
-            new ParserCacheProvider($this->testConfig, '', false),
+            new ParserCacheProvider($this->testConfig, '', CacheMode::Memory),
         );
     }
 
