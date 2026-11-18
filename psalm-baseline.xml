@@ -64,7 +64,6 @@
       <code><![CDATA[$aliases->namespace_first_stmt_start]]></code>
       <code><![CDATA[$aliases->uses_end]]></code>
       <code><![CDATA[$file_path]]></code>
-      <code><![CDATA[$item->insertText]]></code>
       <code><![CDATA[strpos($reference->symbol, '()')]]></code>
       <code><![CDATA[strpos($reference->symbol, '()')]]></code>
       <code><![CDATA[strpos($reference->symbol, '()')]]></code>

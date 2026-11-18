@@ -1058,7 +1058,7 @@ final class Config
     ): void {
         $config->config_issues = [];
 
-        // Attributes to be removed in Psalm 6
+        // Attributes to be removed in the next major version
         $deprecated_attributes = [];
 
         /** @var list<string> */
