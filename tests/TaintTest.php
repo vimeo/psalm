@@ -6770,6 +6770,28 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'valueAfterAClosedXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@a=\'x\'" . $id . "\']");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'valueBuiltWithQuotesOfItsOwnInAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@a=\'" . ("\' or @b=" . $id) . "\']");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
             'valueWithSpacesOutsideAnXpathStringLiteral' => [
                 'code' => '<?php
                     function find(DOMXPath $xpath): void {
@@ -6778,17 +6800,6 @@ final class TaintTest extends TestCase
                             return;
                         }
                         $xpath->query("//user[@id=" . $id . "]");
-                    }',
-                'error_message' => 'TaintedXpath',
-            ],
-            'valueBetweenDifferentQuotesInAnXpathQuery' => [
-                'code' => '<?php
-                    function find(DOMXPath $xpath): void {
-                        $id = trim((string) $_GET["id"]);
-                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
-                            return;
-                        }
-                        $xpath->query("//user[@id=\'" . $id . "\"]");
                     }',
                 'error_message' => 'TaintedXpath',
             ],

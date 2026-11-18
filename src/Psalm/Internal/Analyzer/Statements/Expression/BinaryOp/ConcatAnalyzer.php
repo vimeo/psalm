@@ -55,11 +55,12 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function count;
+use function in_array;
 use function preg_match;
 use function reset;
 use function strlen;
 use function strpbrk;
-use function substr;
+use function strtolower;
 
 /**
  * @internal
@@ -102,8 +103,10 @@ final class ConcatAnalyzer
     }
 
     /**
-     * Whether the left operand of the concatenation is a value between quotes: a literal ending with a quote followed
-     * by a value (`"[@id='" . $id`), and a right operand starting with that quote (`"']"`)
+     * Whether the left operand of the concatenation is a value in a string literal: a literal leaving a string
+     * literal open (`"[@id='" . $id`, not `"[@a='x'" . $id`), followed by a value that isn't built here from other
+     * parts, which could hold quotes of their own. A string the concatenation is put after is assumed to leave no
+     * literal open.
      *
      * @psalm-capabilities read-props
      */
@@ -113,7 +116,17 @@ final class ConcatAnalyzer
     ): bool {
         $left = $stmt->left;
 
-        if (!$left instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
+        if (!$left instanceof PhpParser\Node\Expr\BinaryOp\Concat
+            || $left->right instanceof PhpParser\Node\Expr\BinaryOp\Concat
+            || $left->right instanceof PhpParser\Node\Scalar\InterpolatedString
+            || ($left->right instanceof PhpParser\Node\Expr\FuncCall
+                && $left->right->name instanceof PhpParser\Node\Name
+                && in_array(
+                    strtolower($left->right->name->toString()),
+                    ['sprintf', 'vsprintf', 'implode', 'join', 'str_replace', 'strtr', 'substr_replace'],
+                    true,
+                ))
+        ) {
             return false;
         }
 
@@ -124,18 +137,36 @@ final class ConcatAnalyzer
             return false;
         }
 
-        $closings = self::getLiteralPrefixes($statements_analyzer, $stmt->right);
-        $quotes = [];
-
         foreach (self::getLiteralValues($opening_type) as $opening) {
-            $quotes[substr($opening, -1)] = true;
+            if (self::getOpenLiteralQuote($opening) === null) {
+                return false;
+            }
         }
 
-        foreach ($closings as $closing) {
-            $quotes[substr($closing, 0, 1)] = true;
+        return true;
+    }
+
+    /**
+     * The quote of the string literal the text leaves open, if any
+     *
+     * @psalm-pure
+     */
+    private static function getOpenLiteralQuote(string $text): ?string
+    {
+        $quote = null;
+        $length = strlen($text);
+
+        for ($offset = 0; $offset < $length; $offset++) {
+            $character = $text[$offset];
+
+            if ($quote === null && ($character === '\'' || $character === '"')) {
+                $quote = $character;
+            } elseif ($character === $quote) {
+                $quote = null;
+            }
         }
 
-        return $closings !== [] && count($quotes) === 1 && (isset($quotes['\'']) || isset($quotes['"']));
+        return $quote;
     }
 
     /**
