@@ -311,6 +311,56 @@ final class WhileTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'whileTypeGoingIntoAByReferenceArgumentOfANullsafeMethodReachesTheVariablesItFeeds' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Box {
+                        /**
+                         * @template T
+                         * @param T $from
+                         * @param-out T $to
+                         */
+                        public function copy(mixed $from, mixed &$to): void {
+                            $to = $from;
+                        }
+                    }
+                    function f(?Box $o): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            $z = 1;
+                            $a = $b;
+                            $o?->copy($c, $b);
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 's'|0 */;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'whileTypeWrittenThroughAByReferenceForeachReachesTheVariablesTheArrayFeeds' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = [0];
+                        $b = [0];
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            $z = 1;
+                            $a = $b;
+                            foreach ($b as &$v) {
+                                $v = $c;
+                            }
+                            unset($v);
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = list{'s'|0} */;
+                    }
+                    PHP,
+            ],
             'whileTypeGoingIntoAByReferenceArgumentOfAConstructorReachesTheVariablesItFeeds' => [
                 'code' => <<<'PHP'
                     <?php

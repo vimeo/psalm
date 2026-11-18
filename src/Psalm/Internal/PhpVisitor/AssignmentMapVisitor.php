@@ -48,8 +48,8 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
     private array $feeding_var_ids = [];
 
     /**
-     * The variables assigned, incremented or unset: a call doesn't change the type of the variables it is given
-     * other than by an assertion, which holds on the next iteration too
+     * The variables assigned, incremented, unset or iterated by reference: a call doesn't change the type of the
+     * variables it is given other than by an assertion, which holds on the next iteration too
      *
      * @var array<string, true>
      */
@@ -194,6 +194,7 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
 
         if (($node instanceof PhpParser\Node\Expr\FuncCall
                 || $node instanceof PhpParser\Node\Expr\MethodCall
+                || $node instanceof PhpParser\Node\Expr\NullsafeMethodCall
                 || $node instanceof PhpParser\Node\Expr\StaticCall
                 || $node instanceof PhpParser\Node\Expr\New_)
             && !$node->isPartialFunctionApplication()
@@ -204,6 +205,8 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
                 $arg_var_id = ExpressionIdentifier::getRootVarId($arg->value, $this->this_class_name);
 
                 if ($arg_var_id !== null) {
+                    // left out of the map for constructors, which rarely write their arguments: the propagation
+                    // passes follow such a write
                     if (!$node instanceof PhpParser\Node\Expr\New_) {
                         $this->assignment_map[$arg_var_id][$arg_var_id] = true;
                     }
@@ -239,6 +242,15 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
             }
         } elseif ($node instanceof PhpParser\Node\Stmt\Foreach_) {
             $this->addFeedingVarIds(self::getReadVarIds([$node->expr]));
+
+            if ($node->byRef) {
+                // written through the value
+                $iterated_var_id = ExpressionIdentifier::getRootVarId($node->expr, $this->this_class_name);
+
+                if ($iterated_var_id !== null) {
+                    $this->written_var_ids[$iterated_var_id] = true;
+                }
+            }
 
             foreach ([$node->keyVar, $node->valueVar] as $target) {
                 if ($target) {
