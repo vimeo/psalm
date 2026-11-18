@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -105,8 +106,8 @@ final class ConcatAnalyzer
     /**
      * Whether the left operand of the concatenation is a value in a string literal: a literal leaving a string
      * literal open (`"[@id='" . $id`, not `"[@a='x'" . $id`), followed by a value that isn't built here from other
-     * parts, which could hold quotes of their own. A string the concatenation is put after is assumed to leave no
-     * literal open.
+     * parts, which could hold quotes of their own, and doesn't start with one. A string the concatenation is put after
+     * is assumed to leave no literal open, and a value a quote of the code is in the middle of isn't told apart.
      *
      * @psalm-capabilities read-props
      */
@@ -143,7 +144,10 @@ final class ConcatAnalyzer
             }
         }
 
-        return true;
+        // a value starting with a quote of its own (`$value = "' or @b=" . $id`) ends the literal
+        $start = TaintStore::getKnownStart($statements_analyzer, $left->right);
+
+        return $start === null || strpbrk($start, '\'"') === false;
     }
 
     /**

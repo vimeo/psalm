@@ -6770,6 +6770,18 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'valueAssignedWithAQuoteOfItsOwnInAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
+                            return;
+                        }
+                        $condition = "\' or @b=" . $id;
+                        $xpath->query("//user[@a=\'" . $condition . "\']");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
             'valueAfterAClosedXpathStringLiteral' => [
                 'code' => '<?php
                     function find(DOMXPath $xpath): void {
