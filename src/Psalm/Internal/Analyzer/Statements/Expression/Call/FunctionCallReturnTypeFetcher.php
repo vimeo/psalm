@@ -41,17 +41,8 @@ use Psalm\Storage\FunctionStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
-use Psalm\Type\Atomic\TFalse;
-use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TLiteralInt;
-use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TString;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -273,13 +264,7 @@ final class FunctionCallReturnTypeFetcher
                     throw new UnexpectedValueException('We should have a callmap callable here');
                 }
 
-                $stmt_type = self::getReturnTypeFromCallMapWithArgs(
-                    $statements_analyzer,
-                    $function_id,
-                    $stmt->getArgs(),
-                    $callmap_callable,
-                    $context,
-                );
+                $stmt_type = self::getReturnTypeFromCallMap($codebase, $function_id, $callmap_callable);
             }
         }
 
@@ -401,223 +386,35 @@ final class FunctionCallReturnTypeFetcher
         return $stmt_type;
     }
 
-    /**
-     * @param  list<PhpParser\Node\Arg>   $call_args
-     */
-    private static function getReturnTypeFromCallMapWithArgs(
-        StatementsAnalyzer $statements_analyzer,
+    // functions whose false return stays reported with ignoreInternalFunctionFalseReturn
+    private const ALWAYS_FALSABLE_FUNCTIONS = [
+        'mb_strpos' => true,
+        'mb_strrpos' => true,
+        'mb_stripos' => true,
+        'mb_strripos' => true,
+        'strpos' => true,
+        'strrpos' => true,
+        'stripos' => true,
+        'strripos' => true,
+        'strstr' => true,
+        'stristr' => true,
+        'strrchr' => true,
+        'strpbrk' => true,
+        'array_search' => true,
+    ];
+
+    private static function getReturnTypeFromCallMap(
+        Codebase $codebase,
         string $function_id,
-        array $call_args,
         TCallable $callmap_callable,
-        Context $context,
     ): Union {
-        $call_map_key = strtolower($function_id);
-
-        $codebase = $statements_analyzer->getCodebase();
-
-        if (!$call_args) {
-            switch ($call_map_key) {
-                case 'hrtime':
-                    $keyed_array = TKeyedArray::make([
-                        Type::getInt(),
-                        Type::getInt(),
-                    ], null, null, true);
-                    return new Union([$keyed_array]);
-
-                case 'get_called_class':
-                    return new Union([
-                        new TClassString(
-                            $context->self ?: 'object',
-                            $context->self ? new TNamedObject($context->self, true) : null,
-                        ),
-                    ]);
-
-                case 'get_parent_class':
-                    if ($context->self && $codebase->classExists($context->self, null, $context)) {
-                        $classlike_storage = $codebase->classlike_storage_provider->get($context->self);
-
-                        if ($classlike_storage->parent_classes) {
-                            return new Union([
-                                new TClassString(
-                                    array_values($classlike_storage->parent_classes)[0],
-                                ),
-                            ]);
-                        }
-                    }
-            }
-        } else {
-            switch ($call_map_key) {
-                case 'count':
-                case 'sizeof':
-                    if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
-                        $atomic_types = $first_arg_type->getAtomicTypes();
-
-                        if (count($atomic_types) === 1) {
-                            if (isset($atomic_types['array'])) {
-                                if ($atomic_types['array'] instanceof TNonEmptyArray) {
-                                    return new Union([
-                                        $atomic_types['array']->count !== null
-                                            ? new TLiteralInt($atomic_types['array']->count)
-                                            : new TIntRange(1, null),
-                                    ]);
-                                }
-
-                                if ($atomic_types['array'] instanceof TKeyedArray) {
-                                    if ($atomic_types['array']->is_callable) {
-                                        return Type::getInt(false, 2);
-                                    }
-                                    $min = $atomic_types['array']->getMinCount();
-                                    $max = $atomic_types['array']->getMaxCount();
-
-                                    if ($min === $max) {
-                                        return new Union([new TLiteralInt($max)]);
-                                    }
-                                    return Type::getIntRange($min, $max);
-                                }
-
-                                if ($atomic_types['array'] instanceof TArray
-                                    && $atomic_types['array']->isEmptyArray()
-                                ) {
-                                    return Type::getInt(false, 0);
-                                }
-
-                                return new Union([
-                                    new TIntRange(0, null),
-                                ]);
-                            }
-                        }
-                    }
-
-                    break;
-
-                case 'hrtime':
-                    if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
-                        if ((string) $first_arg_type === 'true') {
-                            return Type::getInt(true);
-                        }
-
-                        $keyed_array = TKeyedArray::make([
-                            Type::getInt(),
-                            Type::getInt(),
-                        ], null, null, true);
-
-                        if ((string) $first_arg_type === 'false') {
-                            return new Union([$keyed_array]);
-                        }
-
-                        return new Union([
-                            $keyed_array,
-                            new TInt(),
-                        ]);
-                    }
-
-                    return Type::getInt(true);
-
-                case 'min':
-                case 'max':
-                    if (isset($call_args[0])) {
-                        $first_arg = $call_args[0]->value;
-
-                        if ($first_arg_type = $statements_analyzer->node_data->getType($first_arg)) {
-                            if ($first_arg_type->hasArray()) {
-                                $array_type = $first_arg_type->getArray();
-                                if ($array_type instanceof TKeyedArray) {
-                                    return $array_type->getGenericValueType();
-                                }
-
-                                if ($array_type instanceof TArray) {
-                                    return $array_type->type_params[1];
-                                }
-                            } elseif ($first_arg_type->hasScalarType()
-                                && ($second_arg = ($call_args[1]->value ?? null))
-                                && ($second_arg_type = $statements_analyzer->node_data->getType($second_arg))
-                                && $second_arg_type->hasScalarType()
-                            ) {
-                                return Type::combineUnionTypes($first_arg_type, $second_arg_type);
-                            }
-                        }
-                    }
-
-                    break;
-
-                case 'get_parent_class':
-                    // this is unreliable, as it's hard to know exactly what's wanted - attempted this in
-                    // https://github.com/vimeo/psalm/commit/355ed831e1c69c96bbf9bf2654ef64786cbe9fd7
-                    // but caused problems where it didn’t know exactly what level of child we
-                    // were receiving.
-                    //
-                    // Really this should only work on instances we've created with new Foo(),
-                    // but that requires more work
-                    break;
-
-                case 'fgetcsv':
-                    $string_type = new Union([
-                        new TString,
-                        new TNull,
-                    ], [
-                        'ignore_nullable_issues' => true,
-                    ]);
-
-                    $call_map_return_type = new Union([
-                        Type::getNonEmptyListAtomic(
-                            $string_type,
-                        ),
-                        new TFalse,
-                        new TNull,
-                    ], [
-                        'ignore_nullable_issues' => $codebase->config->ignore_internal_nullable_issues,
-                        'ignore_falsable_issues' => $codebase->config->ignore_internal_falsable_issues,
-                    ]);
-
-                    return $call_map_return_type;
-                case 'mb_strtolower':
-                    $string_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value);
-                    if ($string_arg_type !== null && $string_arg_type->isNonEmptyString()) {
-                        $returnType = Type::getNonEmptyLowercaseString();
-                    } else {
-                        $returnType = Type::getLowercaseString();
-                    }
-                    if (count($call_args) < 2) {
-                        return $returnType;
-                    }
-
-                    $second_arg_type = $statements_analyzer->node_data->getType($call_args[1]->value);
-                    if ($second_arg_type && $second_arg_type->isNull()) {
-                        return $returnType;
-                    }
-
-                    if ($string_arg_type !== null && $string_arg_type->isNonEmptyString()) {
-                        return Type::getNonEmptyString();
-                    }
-
-                    return Type::getString();
-            }
-        }
-
         $stmt_type = $callmap_callable->return_type ?: Type::getMixed();
 
-        switch ($function_id) {
-            case 'mb_strpos':
-            case 'mb_strrpos':
-            case 'mb_stripos':
-            case 'mb_strripos':
-            case 'strpos':
-            case 'strrpos':
-            case 'stripos':
-            case 'strripos':
-            case 'strstr':
-            case 'stristr':
-            case 'strrchr':
-            case 'strpbrk':
-            case 'array_search':
-                break;
-
-            default:
-                if ($stmt_type->isFalsable()
-                    && $codebase->config->ignore_internal_falsable_issues
-                ) {
-                    $stmt_type = $stmt_type->setProperties(['ignore_falsable_issues' => true]);
-                }
+        if (!isset(self::ALWAYS_FALSABLE_FUNCTIONS[$function_id])
+            && $stmt_type->isFalsable()
+            && $codebase->config->ignore_internal_falsable_issues
+        ) {
+            $stmt_type = $stmt_type->setProperties(['ignore_falsable_issues' => true]);
         }
 
         return $stmt_type;
