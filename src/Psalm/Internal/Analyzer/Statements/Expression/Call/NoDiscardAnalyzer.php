@@ -39,7 +39,6 @@ final class NoDiscardAnalyzer
         if (!$storage->no_discard
             || $is_first_class_callable
             || $context->collect_initializations
-            || $context->collect_mutations
             || $context->inside_unset
             || $context->insideUse()
         ) {
