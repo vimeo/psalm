@@ -450,9 +450,14 @@ final class ArrayAssignmentAnalyzer
             }
 
             $array_type = $context->vars_in_scope[$array_id];
+            $key_type = null;
 
             foreach ($array_type->getAtomicTypes() as $atomic_type) {
-                if (!$atomic_type instanceof TKeyedArray && !$atomic_type instanceof TArray) {
+                if ($atomic_type instanceof TKeyedArray) {
+                    $key_type = Type::combineUnionTypes($key_type, $atomic_type->getGenericKeyType());
+                } elseif ($atomic_type instanceof TArray) {
+                    $key_type = Type::combineUnionTypes($key_type, $atomic_type->type_params[0]);
+                } else {
                     return;
                 }
             }
@@ -462,9 +467,10 @@ final class ArrayAssignmentAnalyzer
             if ($key_values) {
                 $array_type = self::updateTypeWithKeyValues($codebase, $array_type, $item_type, $key_values);
             } else {
-                $key_type = $key[0] === '$' && isset($context->vars_in_scope[$key])
-                    ? $context->vars_in_scope[$key]
-                    : Type::getArrayKey();
+                // the item binding the reference made is in the array already, under one of its keys
+                if ($key_type === null || $key_type->isNever()) {
+                    $key_type = Type::getArrayKey();
+                }
 
                 $array_type = Type::combineUnionTypes(
                     $array_type,

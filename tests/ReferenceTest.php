@@ -571,6 +571,22 @@ final class ReferenceTest extends TestCase
                     '$arr===' => 'array<string, \'s\'|int>',
                 ],
             ],
+            'writeThroughReferenceToOffsetOfUnknownKeyKeepsTheKeysOfTheArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, array<string, bool>> $form
+                     * @param string|false $id_key
+                     * @return array<string, array<string, bool>>
+                     */
+                    function f(array $form, $id_key): array {
+                        $element = &$form[$id_key];
+                        $element["#disabled"] = true;
+                        return $form;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyInvalidArrayOffset'],
+            ],
             'writeThroughReferenceToReferenceToOffsetChangesArrayType' => [
                 'code' => '<?php
                     $a = ["x" => 1];
