@@ -107,10 +107,6 @@ final class ClassConstAnalyzer
         return $types !== [] ? Type::combineUnionTypeArray($types, $codebase) : null;
     }
 
-    /**
-     * @psalm-suppress ComplexMethod to be refactored. We should probably regroup the two big if about $stmt->class and
-     * analyse the ::class int $stmt->name separately
-     */
     public static function analyzeFetch(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ClassConstFetch $stmt,
@@ -662,7 +658,9 @@ final class ClassConstAnalyzer
         // code of the trait can rely on is the values they give it together
         if ($class_keyword === 'self'
             || $class_keyword === 'static'
-            || ($stmt->class instanceof PhpParser\Node\Expr\Variable && $stmt->class->name === 'this')
+            || ($stmt->class instanceof PhpParser\Node\Expr\Variable
+                && $stmt->class->name === 'this'
+                && $fq_class_name === $context->self)
         ) {
             $class_constant_type = self::getConstantTypeOfTheClassesUsingTheTrait(
                 $statements_analyzer,

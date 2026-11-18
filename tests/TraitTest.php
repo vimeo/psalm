@@ -1874,6 +1874,29 @@ final class TraitTest extends TestCase
                     (new ClassOne())->testFunction();
                     (new ClassTwo())->testFunction();',
             ],
+            'traitReadsAClassConstantOnThisNarrowedToASubclass' => [
+                'code' => '<?php
+                    trait T {
+                        public function f(): void {
+                            if ($this instanceof B) {
+                                if ($this::C === "b") {
+                                    echo "b";
+                                }
+                            }
+                        }
+                    }
+
+                    class A {
+                        use T;
+
+                        /** @var string */
+                        const C = "a";
+                    }
+
+                    final class B extends A {
+                        const C = "b";
+                    }',
+            ],
             'traitReadsAClassConstantEachUsingClassDefinesDifferently' => [
                 'code' => '<?php
                     trait TestTrait {
