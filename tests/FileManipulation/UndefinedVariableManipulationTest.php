@@ -18,6 +18,32 @@ final class UndefinedVariableManipulationTest extends FileManipulationTestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'possiblyUndefinedVariableInIfElseifOfAFunction' => [
+                'input' => '<?php
+                    function g(): void {
+                        if (rand(0, 1)) {
+                            $a = 1;
+                        } elseif (rand(0, 1)) {
+                            $a = "b";
+                        }
+
+                        echo $a;
+                    }',
+                'output' => '<?php
+                    function g(): void {
+                        $a = null;
+                        if (rand(0, 1)) {
+                            $a = 1;
+                        } elseif (rand(0, 1)) {
+                            $a = "b";
+                        }
+
+                        echo $a;
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUndefinedVariable'],
+                'safe_types' => true,
+            ],
             'possiblyUndefinedVariable' => [
                 'input' => '<?php
                     $flag = rand(0, 1);

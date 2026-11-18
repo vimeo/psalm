@@ -8,10 +8,19 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report\ReportOptions;
 
 use function array_filter;
+use function assert;
 use function htmlspecialchars;
+use function implode;
+use function mb_ord;
+use function ord;
+use function preg_replace_callback;
+use function sprintf;
+use function strlen;
 use function strtoupper;
 
+use const ENT_DISALLOWED;
 use const ENT_QUOTES;
+use const ENT_SUBSTITUTE;
 use const ENT_XML1;
 
 /**
@@ -100,11 +109,54 @@ abstract class Report
     }
 
     /**
+     * Makes text taken from the analyzed code (or from a plugin) safe to print on a terminal: C0 controls (but LF,
+     * TAB and a CR followed by LF), DEL, C1 controls and bidi formatting characters become a visible `\u{NNNN}`, so
+     * what a person sees is what a program reads. Use it on what a human-readable report prints, before Psalm adds
+     * its own escape sequences.
+     *
+     * @psalm-pure
+     */
+    protected function escapeControlCharacters(string $text): string
+    {
+        return (string) preg_replace_callback(
+            '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]|\r(?!\n)|\xC2[\x80-\x9F]|\xD8\x9C'
+                . '|\xE2\x80[\x8E\x8F\xAA-\xAE]|\xE2\x81[\xA6-\xA9]/',
+            static function (array $match): string {
+                $matched = $match[0] ?? '';
+
+                $code_point = strlen($matched) === 1 ? ord($matched) : mb_ord($matched, 'UTF-8');
+
+                // the pattern only matches complete UTF-8 sequences
+                assert($code_point !== false);
+
+                return sprintf('\u{%04X}', $code_point);
+            },
+            $text,
+        );
+    }
+
+    /**
+     * The message of an issue, followed by the CWE weaknesses it flags: `Detected tainted SQL (CWE-89)`
+     *
+     * @psalm-capabilities read-props
+     */
+    protected static function getMessageWithCwe(IssueData $issue_data): string
+    {
+        if (!$issue_data->cwe_ids) {
+            return $issue_data->message;
+        }
+
+        return $issue_data->message . ' (CWE-' . implode(', CWE-', $issue_data->cwe_ids) . ')';
+    }
+
+    /**
+     * Characters XML 1.0 forbids, even as character references, and invalid UTF-8 become U+FFFD.
+     *
      * @psalm-pure
      */
     protected function xmlEncode(string $data): string
     {
-        return htmlspecialchars($data, ENT_XML1 | ENT_QUOTES);
+        return htmlspecialchars($data, ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE | ENT_DISALLOWED, 'UTF-8');
     }
 
     abstract public function create(): string;

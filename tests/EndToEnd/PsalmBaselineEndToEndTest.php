@@ -9,6 +9,9 @@ use function file_put_contents;
 use function str_replace;
 use function unlink;
 
+use const PHP_BINARY;
+use const PHP_EOL;
+
 /**
  * Tests how the psalm command writes and applies baselines,
  * by launching a new process as if invoked by a real user.
@@ -92,5 +95,25 @@ final class PsalmBaselineEndToEndTest extends PsalmEndToEndTestCase
 
         $this->assertFileExists($run_baseline);
         $this->assertSame($config_before, file_get_contents(self::$tmpDir . '/psalm.xml'));
+    }
+
+    public function testAMissingBaselineExitsOneWithWhatToDo(): void
+    {
+        $this->runPsalmInit(1);
+        $missing = self::$tmpDir . '/psalm-missing-baseline.xml';
+
+        $process = self::newProcess(
+            [PHP_BINARY, $this->psalm, '-c=' . self::$tmpDir . '/psalm.xml', '--use-baseline=' . $missing],
+            null,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(1, $process->getExitCode());
+        $this->assertStringContainsString(
+            'Could not read the baseline: ' . $missing . ' does not exist or is not readable. '
+                . 'Create it with --set-baseline=' . $missing . PHP_EOL,
+            $process->getErrorOutput(),
+        );
     }
 }

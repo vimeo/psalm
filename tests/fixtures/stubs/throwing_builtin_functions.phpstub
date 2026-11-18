@@ -1,0 +1,11 @@
+<?php
+
+/**
+ * @throws RuntimeException
+ */
+function mb_strtolower(string $string, ?string $encoding = null): string {}
+
+/**
+ * @throws RuntimeException
+ */
+function sprintf(string $format, mixed ...$values): string {}

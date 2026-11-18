@@ -74,7 +74,6 @@ use function preg_match;
 use function preg_replace;
 use function str_contains;
 use function str_ends_with;
-use function str_replace;
 use function str_starts_with;
 use function strlen;
 use function strtolower;
@@ -757,13 +756,14 @@ final class FunctionLikeDocblockScanner
 
                                 $param_type_mapping[$token_body] = $template_name;
 
+                                // a check of the param against its docblock type is still one against the docblock
                                 $param_storage->type = new Union([
                                     new TTemplateParam(
                                         $template_name,
                                         $template_as_type,
                                         $template_function_id,
                                     ),
-                                ]);
+                                ], ['from_docblock' => $template_as_type->from_docblock]);
                             }
                         }
 
@@ -848,17 +848,17 @@ final class FunctionLikeDocblockScanner
         $is_loose_equality = false;
         $is_strict_equality = false;
 
-        if ($assertion_type[0] === '!') {
+        if (str_starts_with($assertion_type, '!')) {
             $is_negation = true;
             $assertion_type = substr($assertion_type, 1);
         }
 
-        if ($assertion_type[0] === '~') {
+        if (str_starts_with($assertion_type, '~')) {
             $is_loose_equality = true;
             $assertion_type = substr($assertion_type, 1);
         }
 
-        if ($assertion_type[0] === '=') {
+        if (str_starts_with($assertion_type, '=')) {
             $is_strict_equality = true;
             $assertion_type = substr($assertion_type, 1);
         }
@@ -1319,8 +1319,10 @@ final class FunctionLikeDocblockScanner
                     && !$storage->return_type->hasConditional()
                 ) {
                     //don't add null to final type if signature type don't match the docblock type
-                    // however, we can't check for object types at this point (#6931), so we'll assume it's ok
-                    if ($storage->return_type->hasObjectType() ||
+                    // however, we can't check for object types or type aliases (whose class may not be scanned yet)
+                    // at this point (#6931), so we'll assume it's ok
+                    if ($storage->return_type->hasObjectType()
+                        || $storage->return_type->hasTypeAlias() ||
                         UnionTypeComparator::isContainedBy(
                             $codebase,
                             $storage->return_type,
@@ -1441,6 +1443,20 @@ final class FunctionLikeDocblockScanner
                     foreach ($storage->params as $i => $param_storage) {
                         if ($param_storage->name === $source_param) {
                             $storage->return_source_params[$i] = $flow->path_type;
+                        }
+                    }
+                }
+            } elseif ($flow->kind === TaintFlowAnnotation::CALLABLE_ARGUMENTS) {
+                foreach ($storage->params as $callable_offset => $callable_param_storage) {
+                    if ($callable_param_storage->name !== $flow->callable_param) {
+                        continue;
+                    }
+
+                    foreach ($flow->sources as $source_param) {
+                        foreach ($storage->params as $i => $param_storage) {
+                            if ($param_storage->name === $source_param) {
+                                $storage->callable_param_argument_sources[$callable_offset][$i] = $flow->path_type;
+                            }
                         }
                     }
                 }
@@ -1706,6 +1722,14 @@ final class FunctionLikeDocblockScanner
                         );
                         continue 2;
                     }
+
+                    if (self::isOffsetOfParameter($param, $assertion['param_name'])) {
+                        $storage->assertions[] = new Possibilities(
+                            $i . ':' . $assertion['param_name'],
+                            $assertion_type_parts,
+                        );
+                        continue 2;
+                    }
                 }
 
                 $storage->assertions[] = new Possibilities(
@@ -1763,7 +1787,15 @@ final class FunctionLikeDocblockScanner
 
                     if (str_starts_with($assertion['param_name'], $param->name.'->')) {
                         $storage->if_true_assertions[] = new Possibilities(
-                            str_replace($param->name, (string) $i, $assertion['param_name']),
+                            substr_replace($assertion['param_name'], (string) $i, 0, strlen($param->name)),
+                            $assertion_type_parts,
+                        );
+                        continue 2;
+                    }
+
+                    if (self::isOffsetOfParameter($param, $assertion['param_name'])) {
+                        $storage->if_true_assertions[] = new Possibilities(
+                            $i . ':' . $assertion['param_name'],
                             $assertion_type_parts,
                         );
                         continue 2;
@@ -1825,7 +1857,15 @@ final class FunctionLikeDocblockScanner
 
                     if (str_starts_with($assertion['param_name'], $param->name.'->')) {
                         $storage->if_false_assertions[] = new Possibilities(
-                            str_replace($param->name, (string) $i, $assertion['param_name']),
+                            substr_replace($assertion['param_name'], (string) $i, 0, strlen($param->name)),
+                            $assertion_type_parts,
+                        );
+                        continue 2;
+                    }
+
+                    if (self::isOffsetOfParameter($param, $assertion['param_name'])) {
+                        $storage->if_false_assertions[] = new Possibilities(
+                            $i . ':' . $assertion['param_name'],
                             $assertion_type_parts,
                         );
                         continue 2;
@@ -1838,6 +1878,19 @@ final class FunctionLikeDocblockScanner
                 );
             }
         }
+    }
+
+    /**
+     * An assertion on a literal offset of a parameter. A variadic parameter's offsets are the collected arguments, and
+     * an offset given by a variable is handled by {@see getArrayOffsetTarget()}.
+     *
+     * @psalm-mutation-free
+     */
+    private static function isOffsetOfParameter(FunctionLikeParameter $param, string $target): bool
+    {
+        return !$param->is_variadic
+            && str_starts_with($target, $param->name . '[')
+            && !str_contains($target, '[$');
     }
 
     /**

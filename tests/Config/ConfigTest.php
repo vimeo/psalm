@@ -1362,6 +1362,34 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         );
     }
 
+    #[DataProvider('provideInvalidMinTypeCoverage')]
+    public function testInvalidMinTypeCoverageIsAConfigError(string $min_type_coverage): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage("attribute 'minTypeCoverage'");
+        Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm minTypeCoverage="' . $min_type_coverage . '">
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+            </psalm>',
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function provideInvalidMinTypeCoverage(): iterable
+    {
+        yield 'above 100' => ['100.01'];
+        yield 'three decimals' => ['95.555'];
+        yield 'three decimals with a trailing zero' => ['95.500'];
+        yield 'whitespace' => [' 95'];
+    }
+
     public function testImpossibleIssue(): void
     {
         $this->expectExceptionMessage('This element is not expected');
@@ -2583,6 +2611,24 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                 '<psalm></psalm>',
                 ['Psalm\SymfonyPsalmPlugin\Plugin'],
             ],
+            'requiredDoctrineOrm' => [
+                ['composer.json' => '{"require": {"doctrine/orm": "^3"}}'],
+                '<psalm></psalm>',
+                ['Weirdan\DoctrinePsalmPlugin\Plugin'],
+            ],
+            'requiredDoctrineDbal' => [
+                ['composer.json' => '{"require": {"doctrine/dbal": "^4"}}'],
+                '<psalm></psalm>',
+                ['Weirdan\DoctrinePsalmPlugin\Plugin'],
+            ],
+            'requiredSeveralDoctrineLibraries' => [
+                [
+                    'composer.json' => '{"require": {"doctrine/orm": "^3", "doctrine/dbal": "^4", '
+                        . '"doctrine/collections": "^2", "doctrine/persistence": "^4"}}',
+                ],
+                '<psalm></psalm>',
+                ['Weirdan\DoctrinePsalmPlugin\Plugin'],
+            ],
             'requiredLaravel' => [
                 ['composer.json' => '{"require": {"laravel/framework": "^12"}}'],
                 '<psalm></psalm>',
@@ -2626,7 +2672,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                 [],
             ],
             'requiredOtherLibraries' => [
-                ['composer.json' => '{"require": {"symfony/console": "^7", "doctrine/orm": "^3"}}'],
+                ['composer.json' => '{"require": {"symfony/console": "^7", "guzzlehttp/guzzle": "^7"}}'],
                 '<psalm></psalm>',
                 [],
             ],

@@ -99,6 +99,13 @@ final class PropertyStorage implements HasAttributesInterface
     public bool $readonly_default = false;
 
     /**
+     * Natively readonly and declared `public(set)`: any scope may initialise it
+     *
+     * @internal
+     */
+    public bool $readonly_public_set = false;
+
+    /**
      * Whether or not to allow mutation by internal methods
      */
     public bool $allow_private_mutation = false;

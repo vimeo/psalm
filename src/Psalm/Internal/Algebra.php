@@ -10,7 +10,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use UnexpectedValueException;
 
-use function array_filter;
 use function array_intersect_key;
 use function array_keys;
 use function array_pop;
@@ -189,15 +188,21 @@ final class Algebra
                     if (isset($clause_var_possibilities[$negated_clause_type_string])) {
                         unset($clause_var_possibilities[$negated_clause_type_string]);
 
-                        unset($cloned_clauses[$clause_b_hash]);
-
                         if (!$clause_var_possibilities) {
                             $updated_clause = $clause_b->removePossibilities($clause_var);
 
-                            if ($updated_clause) {
-                                $cloned_clauses[$updated_clause->hash] = $updated_clause;
+                            // nothing is left of the clause: it contradicts the unit clause, and both stay
+                            // for the reconciler to find the contradiction
+                            if (!$updated_clause) {
+                                continue;
                             }
+
+                            unset($cloned_clauses[$clause_b_hash]);
+
+                            $cloned_clauses[$updated_clause->hash] = $updated_clause;
                         } else {
+                            unset($cloned_clauses[$clause_b_hash]);
+
                             $updated_clause = $clause_b->addPossibilities(
                                 $clause_var,
                                 $clause_var_possibilities,
@@ -442,19 +447,9 @@ final class Algebra
                     }
                 }
 
-                /**
-                 * doesn't infer the "unset" correctly
-                 *
-                 * @psalm-suppress DocblockTypeContradiction
-                 */
                 if ($truths[$var][$key] === []) {
                     unset($truths[$var][$key]);
                 } else {
-                    /**
-                     * doesn't infer the "unset" correctly
-                     *
-                     * @psalm-suppress RedundantFunctionCallGivenDocblockType
-                     */
                     $truths[$var][$key] = array_values($truths[$var][$key]);
                 }
             }
@@ -534,7 +529,40 @@ final class Algebra
                 }
             }
 
-            foreach ($seed_clauses as $grouped_clause) {
+            // a seed clause that already has one of the impossibilities stays as it is: adding any other one
+            // only gives a clause it subsumes, and those double the clauses with every clause grouped. So does adding
+            // one to another seed clause when the result holds a kept clause
+            $kept_seed_clauses = [];
+
+            foreach ($seed_clauses as $seed_index => $grouped_clause) {
+                foreach ($impossible_type_strings as $var => $var_impossible_type_strings) {
+                    foreach ($var_impossible_type_strings as $impossible_type_string) {
+                        if (isset($grouped_clause->possibilities[$var][$impossible_type_string])) {
+                            $kept_seed_clauses[$seed_index] = new Clause(
+                                $grouped_clause->possibilities,
+                                $grouped_clause->creating_conditional_id,
+                                $clause->creating_object_id,
+                                false,
+                                true,
+                                true,
+                                [],
+                            );
+
+                            continue 3;
+                        }
+                    }
+                }
+            }
+
+            foreach ($seed_clauses as $seed_index => $grouped_clause) {
+                if (isset($kept_seed_clauses[$seed_index])) {
+                    $new_clauses[] = $kept_seed_clauses[$seed_index];
+
+                    ++$complexity;
+
+                    continue;
+                }
+
                 foreach ($clause->impossibilities as $var => $impossible_types) {
                     foreach ($impossible_types as $index => $impossible_type) {
                         $impossible_type_string = $impossible_type_strings[$var][$index];
@@ -555,7 +583,7 @@ final class Algebra
                                     }
 
                                     if ($av->isNegationOf($bv)) {
-                                        break 3;
+                                        continue 3;
                                     }
                                 }
                             }
@@ -572,6 +600,12 @@ final class Algebra
                             true,
                             [],
                         );
+
+                        foreach ($kept_seed_clauses as $kept_seed_clause) {
+                            if ($new_clause->contains($kept_seed_clause)) {
+                                continue 2;
+                            }
+                        }
 
                         $new_clauses[] = $new_clause;
 
@@ -602,7 +636,7 @@ final class Algebra
         int $conditional_object_id,
     ): array {
         if (count($left_clauses) > 60_000 || count($right_clauses) > 60_000) {
-            return [];
+            return [new Clause([], $conditional_object_id, $conditional_object_id, true)];
         }
 
         $clauses = [];
@@ -646,6 +680,9 @@ final class Algebra
                     if (isset($right_clause->redefined_vars[$var])
                         || isset($right_clause->redefined_vars[substr($var, 0, strcspn($var, '[-'))])
                     ) {
+                        // the left disjunct is about the previous value: the clause no longer lists all disjuncts
+                        $can_reconcile = false;
+
                         continue;
                     }
 
@@ -716,36 +753,40 @@ final class Algebra
      *   (!$a || !$c || !$e) &&
      *   (!$a || !$c || !$f)
      *
+     * A clause that can't be reconciled doesn't list all its disjuncts (`$a === null || !f($a)`, with f() asserting
+     * nothing when false), and an equality with a non-literal value can't be negated: the negation of what is left
+     * is only implied by the negation of the formula, so a wedge is added, which keeps negating it again from
+     * asserting anything. With $exact, such clauses are left out instead, which gives a formula that implies the
+     * negation, as is needed to prove that a condition can never be true.
+     *
      * @param list<Clause>  $clauses
      * @return non-empty-list<Clause>
      */
-    public static function negateFormula(array $clauses): array
+    public static function negateFormula(array $clauses, bool $exact = false): array
     {
-        $reconcilable_clauses = array_filter(
-            $clauses,
-            static fn(Clause $clause): bool => $clause->reconcilable,
-        );
-
-        // A clause that can't be reconciled, as one of its disjuncts says nothing (`$a === null || !f($a)`, with
-        // f() asserting nothing when false), still lists disjuncts that are all false where it is: where there is
-        // nothing else to negate, that is what the negation says
-        $clauses = $reconcilable_clauses ?: array_filter(
-            $clauses,
-            static fn(Clause $clause): bool => $clause->possibilities && !$clause->wedge,
-        );
-
-        if (!$clauses) {
-            $cond_id = mt_rand(0, 100_000_000);
-            return [new Clause([], $cond_id, $cond_id, true)];
-        }
-
         $clauses_with_impossibilities = [];
+        $partial = false;
 
         foreach ($clauses as $clause) {
-            $clauses_with_impossibilities[] = $clause->calculateNegation();
+            $negated_clause = $clause->calculateNegation();
+
+            if (!$clause->reconcilable || $negated_clause->partial_negation) {
+                if ($exact) {
+                    continue;
+                }
+
+                $partial = true;
+            }
+
+            $clauses_with_impossibilities[] = $negated_clause;
         }
 
         unset($clauses);
+
+        if (!$clauses_with_impossibilities) {
+            $cond_id = mt_rand(0, 100_000_000);
+            return [new Clause([], $cond_id, $cond_id, true)];
+        }
 
         $impossible_clauses = self::groupImpossibilities($clauses_with_impossibilities);
 
@@ -759,6 +800,11 @@ final class Algebra
         if (!$negated) {
             $cond_id = mt_rand(0, 100_000_000);
             return [new Clause([], $cond_id, $cond_id, true)];
+        }
+
+        if ($partial) {
+            $cond_id = mt_rand(0, 100_000_000);
+            $negated[] = new Clause([], $cond_id, $cond_id, true);
         }
 
         return $negated;

@@ -171,6 +171,14 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         throw new InvalidArgumentException('Given $visibility not supported');
     }
 
+    /**
+     * Forgets the constants of an earlier analysis in the same process
+     */
+    public static function clearCache(): void
+    {
+        self::$public_namespace_constants = [];
+    }
+
     #[Override]
     public function getFileAnalyzer(): FileAnalyzer
     {

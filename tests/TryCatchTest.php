@@ -80,6 +80,73 @@ final class TryCatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyFetchedInTryKeepsItsTypeAfterIt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Entity {
+                        public function __construct(public string $id) {}
+                    }
+
+                    function foo(Entity $entity): string {
+                        try {
+                            echo $entity->id;
+                        } catch (Exception) {
+                        }
+
+                        /** @psalm-check-type-exact $entity->id = string */
+
+                        return "x" . $entity->id;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'propertyFetchedInTryIsNotPossiblyUndefinedInArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    final class Entity {
+                        public function __construct(public string $id) {}
+                    }
+
+                    /**
+                     * @return array{ID: string}
+                     */
+                    function foo(Entity $entity): array {
+                        try {
+                            echo $entity->id;
+                        } catch (Exception $e) {
+                        }
+
+                        return ["ID" => $entity->id];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPropertyFetchedInTryIsNotPossiblyUndefinedInArrayShape' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static string $id = "x";
+                    }
+
+                    /**
+                     * @return array{ID: string}
+                     */
+                    function foo(): array {
+                        try {
+                            echo Holder::$id;
+                        } catch (Exception $e) {
+                        }
+
+                        return ["ID" => Holder::$id];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'variableAssignedAfterABreakOfANestedLoopInADoWhileInATryIsDefinedAfterIt' => [
                 'code' => '<?php
                     function f(): string {
@@ -202,6 +269,32 @@ final class TryCatchTest extends TestCase
                         }
 
                         return $c;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyOfNewObjectFetchedInTryIsNotPossiblyUndefinedInArrayShape' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     */
+                    final class Entity {
+                        public function __construct(public string $id) {}
+                    }
+
+                    /**
+                     * @return array{ID: string, NAME: string}
+                     */
+                    function foo(): array {
+                        $entity = new Entity("1a2b3c");
+
+                        try {
+                            $entity->id;
+                        } catch (Exception $e) {
+                        }
+
+                        return ["ID" => $entity->id, "NAME" => $entity->id];
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -869,6 +962,18 @@ final class TryCatchTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'possiblyUndefinedVariableInArrayItemIsStillReported' => [
+                'code' => '<?php
+                    function foo(): array {
+                        try {
+                            $x = 1;
+                        } catch (Exception $e) {
+                        }
+
+                        return ["a" => $x];
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'variableAssignedAfterABreakTwoLevelsOutOfANestedLoopIsPossiblyUndefined' => [
                 'code' => '<?php
                     function f(): string {

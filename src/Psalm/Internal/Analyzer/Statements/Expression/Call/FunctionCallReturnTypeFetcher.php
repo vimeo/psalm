@@ -31,6 +31,7 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
@@ -38,19 +39,15 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
-use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TCallableObject;
+use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClosure;
-use Psalm\Type\Atomic\TFalse;
-use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TString;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -59,12 +56,14 @@ use function array_values;
 use function count;
 use function explode;
 use function is_string;
+use function ltrim;
 use function preg_match;
 use function preg_match_all;
 use function str_contains;
 use function str_ends_with;
 use function str_replace;
 use function strlen;
+use function strpos;
 use function strrpos;
 use function strtolower;
 use function substr;
@@ -126,6 +125,18 @@ final class FunctionCallReturnTypeFetcher
             );
         }
 
+        // a return type provider only replaces the declared return type, not the declared exceptions
+        if (!$stmt->isFirstClassCallable()
+            && (!$in_call_map || $is_stubbed)
+            && $function_storage
+            && !$context->isSuppressingExceptions($statements_analyzer)
+        ) {
+            $context->mergeFunctionExceptions(
+                $function_storage,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            );
+        }
+
         if (!$stmt_type) {
             if (!$in_call_map || $is_stubbed) {
                 if ($function_storage && $function_storage->template_types) {
@@ -171,13 +182,6 @@ final class FunctionCallReturnTypeFetcher
                     }
                 }
 
-                if ($function_storage && !$context->isSuppressingExceptions($statements_analyzer)) {
-                    $context->mergeFunctionExceptions(
-                        $function_storage,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    );
-                }
-
                 try {
                     if ($function_storage && $function_storage->return_type) {
                         $return_type = $function_storage->return_type;
@@ -209,6 +213,8 @@ final class FunctionCallReturnTypeFetcher
                             false,
                             true,
                         );
+
+                        $return_type = TypeVariableTracker::resolveTypeVariables($return_type, $codebase);
 
                         $return_type_location = $function_storage->return_type_location;
 
@@ -270,19 +276,15 @@ final class FunctionCallReturnTypeFetcher
                     throw new UnexpectedValueException('We should have a callmap callable here');
                 }
 
-                $stmt_type = self::getReturnTypeFromCallMapWithArgs(
-                    $statements_analyzer,
-                    $function_id,
-                    $stmt->getArgs(),
-                    $callmap_callable,
-                    $context,
-                );
+                $stmt_type = self::getReturnTypeFromCallMap($codebase, $function_id, $callmap_callable);
             }
         }
 
         if (!$stmt_type) {
             $stmt_type = Type::getMixed();
         }
+
+        $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
 
         if (!$stmt->isFirstClassCallable()) {
             self::taintPhpInputSource(
@@ -396,223 +398,35 @@ final class FunctionCallReturnTypeFetcher
         return $stmt_type;
     }
 
-    /**
-     * @param  list<PhpParser\Node\Arg>   $call_args
-     */
-    private static function getReturnTypeFromCallMapWithArgs(
-        StatementsAnalyzer $statements_analyzer,
+    // functions whose false return stays reported with ignoreInternalFunctionFalseReturn
+    private const ALWAYS_FALSABLE_FUNCTIONS = [
+        'mb_strpos' => true,
+        'mb_strrpos' => true,
+        'mb_stripos' => true,
+        'mb_strripos' => true,
+        'strpos' => true,
+        'strrpos' => true,
+        'stripos' => true,
+        'strripos' => true,
+        'strstr' => true,
+        'stristr' => true,
+        'strrchr' => true,
+        'strpbrk' => true,
+        'array_search' => true,
+    ];
+
+    private static function getReturnTypeFromCallMap(
+        Codebase $codebase,
         string $function_id,
-        array $call_args,
         TCallable $callmap_callable,
-        Context $context,
     ): Union {
-        $call_map_key = strtolower($function_id);
-
-        $codebase = $statements_analyzer->getCodebase();
-
-        if (!$call_args) {
-            switch ($call_map_key) {
-                case 'hrtime':
-                    $keyed_array = TKeyedArray::make([
-                        Type::getInt(),
-                        Type::getInt(),
-                    ], null, null, true);
-                    return new Union([$keyed_array]);
-
-                case 'get_called_class':
-                    return new Union([
-                        new TClassString(
-                            $context->self ?: 'object',
-                            $context->self ? new TNamedObject($context->self, true) : null,
-                        ),
-                    ]);
-
-                case 'get_parent_class':
-                    if ($context->self && $codebase->classExists($context->self, null, $context)) {
-                        $classlike_storage = $codebase->classlike_storage_provider->get($context->self);
-
-                        if ($classlike_storage->parent_classes) {
-                            return new Union([
-                                new TClassString(
-                                    array_values($classlike_storage->parent_classes)[0],
-                                ),
-                            ]);
-                        }
-                    }
-            }
-        } else {
-            switch ($call_map_key) {
-                case 'count':
-                case 'sizeof':
-                    if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
-                        $atomic_types = $first_arg_type->getAtomicTypes();
-
-                        if (count($atomic_types) === 1) {
-                            if (isset($atomic_types['array'])) {
-                                if ($atomic_types['array'] instanceof TNonEmptyArray) {
-                                    return new Union([
-                                        $atomic_types['array']->count !== null
-                                            ? new TLiteralInt($atomic_types['array']->count)
-                                            : new TIntRange(1, null),
-                                    ]);
-                                }
-
-                                if ($atomic_types['array'] instanceof TKeyedArray) {
-                                    if ($atomic_types['array']->is_callable) {
-                                        return Type::getInt(false, 2);
-                                    }
-                                    $min = $atomic_types['array']->getMinCount();
-                                    $max = $atomic_types['array']->getMaxCount();
-
-                                    if ($min === $max) {
-                                        return new Union([new TLiteralInt($max)]);
-                                    }
-                                    return Type::getIntRange($min, $max);
-                                }
-
-                                if ($atomic_types['array'] instanceof TArray
-                                    && $atomic_types['array']->isEmptyArray()
-                                ) {
-                                    return Type::getInt(false, 0);
-                                }
-
-                                return new Union([
-                                    new TIntRange(0, null),
-                                ]);
-                            }
-                        }
-                    }
-
-                    break;
-
-                case 'hrtime':
-                    if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
-                        if ((string) $first_arg_type === 'true') {
-                            return Type::getInt(true);
-                        }
-
-                        $keyed_array = TKeyedArray::make([
-                            Type::getInt(),
-                            Type::getInt(),
-                        ], null, null, true);
-
-                        if ((string) $first_arg_type === 'false') {
-                            return new Union([$keyed_array]);
-                        }
-
-                        return new Union([
-                            $keyed_array,
-                            new TInt(),
-                        ]);
-                    }
-
-                    return Type::getInt(true);
-
-                case 'min':
-                case 'max':
-                    if (isset($call_args[0])) {
-                        $first_arg = $call_args[0]->value;
-
-                        if ($first_arg_type = $statements_analyzer->node_data->getType($first_arg)) {
-                            if ($first_arg_type->hasArray()) {
-                                $array_type = $first_arg_type->getArray();
-                                if ($array_type instanceof TKeyedArray) {
-                                    return $array_type->getGenericValueType();
-                                }
-
-                                if ($array_type instanceof TArray) {
-                                    return $array_type->type_params[1];
-                                }
-                            } elseif ($first_arg_type->hasScalarType()
-                                && ($second_arg = ($call_args[1]->value ?? null))
-                                && ($second_arg_type = $statements_analyzer->node_data->getType($second_arg))
-                                && $second_arg_type->hasScalarType()
-                            ) {
-                                return Type::combineUnionTypes($first_arg_type, $second_arg_type);
-                            }
-                        }
-                    }
-
-                    break;
-
-                case 'get_parent_class':
-                    // this is unreliable, as it's hard to know exactly what's wanted - attempted this in
-                    // https://github.com/vimeo/psalm/commit/355ed831e1c69c96bbf9bf2654ef64786cbe9fd7
-                    // but caused problems where it didn’t know exactly what level of child we
-                    // were receiving.
-                    //
-                    // Really this should only work on instances we've created with new Foo(),
-                    // but that requires more work
-                    break;
-
-                case 'fgetcsv':
-                    $string_type = new Union([
-                        new TString,
-                        new TNull,
-                    ], [
-                        'ignore_nullable_issues' => true,
-                    ]);
-
-                    $call_map_return_type = new Union([
-                        Type::getNonEmptyListAtomic(
-                            $string_type,
-                        ),
-                        new TFalse,
-                        new TNull,
-                    ], [
-                        'ignore_nullable_issues' => $codebase->config->ignore_internal_nullable_issues,
-                        'ignore_falsable_issues' => $codebase->config->ignore_internal_falsable_issues,
-                    ]);
-
-                    return $call_map_return_type;
-                case 'mb_strtolower':
-                    $string_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value);
-                    if ($string_arg_type !== null && $string_arg_type->isNonEmptyString()) {
-                        $returnType = Type::getNonEmptyLowercaseString();
-                    } else {
-                        $returnType = Type::getLowercaseString();
-                    }
-                    if (count($call_args) < 2) {
-                        return $returnType;
-                    }
-
-                    $second_arg_type = $statements_analyzer->node_data->getType($call_args[1]->value);
-                    if ($second_arg_type && $second_arg_type->isNull()) {
-                        return $returnType;
-                    }
-
-                    if ($string_arg_type !== null && $string_arg_type->isNonEmptyString()) {
-                        return Type::getNonEmptyString();
-                    }
-
-                    return Type::getString();
-            }
-        }
-
         $stmt_type = $callmap_callable->return_type ?: Type::getMixed();
 
-        switch ($function_id) {
-            case 'mb_strpos':
-            case 'mb_strrpos':
-            case 'mb_stripos':
-            case 'mb_strripos':
-            case 'strpos':
-            case 'strrpos':
-            case 'stripos':
-            case 'strripos':
-            case 'strstr':
-            case 'stristr':
-            case 'strrchr':
-            case 'strpbrk':
-            case 'array_search':
-                break;
-
-            default:
-                if ($stmt_type->isFalsable()
-                    && $codebase->config->ignore_internal_falsable_issues
-                ) {
-                    $stmt_type = $stmt_type->setProperties(['ignore_falsable_issues' => true]);
-                }
+        if (!isset(self::ALWAYS_FALSABLE_FUNCTIONS[$function_id])
+            && $stmt_type->isFalsable()
+            && $codebase->config->ignore_internal_falsable_issues
+        ) {
+            $stmt_type = $stmt_type->setProperties(['ignore_falsable_issues' => true]);
         }
 
         return $stmt_type;
@@ -687,9 +501,9 @@ final class FunctionCallReturnTypeFetcher
         // named-call wiring is skipped, so nothing connects the return value to the
         // function's taint sources / return flows, and nothing connects the arguments to the
         // function's argument sinks. Re-create those connections generically here.
-        $storage = self::getCallableStorage($statements_analyzer, $callable_id);
+        $target = self::getCallableTarget($statements_analyzer, $callable_id);
 
-        if ($storage === null) {
+        if ($target === null) {
             // a closure: what its body returns (which a return type it declares doesn't hold), from what its
             // parameters are given
             $closure_storage = self::getClosureStorage($statements_analyzer, $callable_id);
@@ -731,6 +545,8 @@ final class FunctionCallReturnTypeFetcher
             return;
         }
 
+        [$storage, $target_id] = $target;
+
         $args = $stmt->getArgs();
 
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -747,7 +563,7 @@ final class FunctionCallReturnTypeFetcher
         // The body links its per-argument entry nodes (getForMethodArgument) to this return
         // node, so wiring the actual arguments to those entry nodes below completes the flow.
         $return_node = DataFlowNode::getForMethodReturn(
-            $callable_id,
+            $target_id,
             $storage,
             $specialization_location,
         );
@@ -776,7 +592,7 @@ final class FunctionCallReturnTypeFetcher
             $statements_analyzer->getCodebase(),
             $storage,
             $graph,
-            $callable_id,
+            $target_id,
             null,
             $specialization_location,
             $return_node,
@@ -788,19 +604,19 @@ final class FunctionCallReturnTypeFetcher
         self::taintCallableParams(
             $statements_analyzer,
             $graph,
-            $callable_id,
+            $target_id,
             $storage,
             $args,
             $specialization_location,
         );
 
-        ConditionalTaintSinks::taintCall($statements_analyzer, $graph, $storage, $args, $callable_id, $node_location);
+        ConditionalTaintSinks::taintCall($statements_analyzer, $graph, $storage, $args, $target_id, $node_location);
 
         self::taintCallableByRefParams(
             $statements_analyzer,
             $graph,
             $context,
-            $callable_id,
+            $target_id,
             $storage,
             $args,
             $specialization_location,
@@ -892,7 +708,9 @@ final class FunctionCallReturnTypeFetcher
 
     /**
      * A callable passed to a parameter of a function-like: the calls of the parameter in its body give what the
-     * callable returns, and what they pass flows into its parameters (see taintCallableParamCall()).
+     * callable returns, and what they pass flows into its parameters (see taintCallableParamCall()). The callables
+     * are those $input_type holds: closures and typed callables, and, given to a parameter that takes callables,
+     * callable strings and arrays, invokable objects, and the callables an array of them holds.
      *
      * When the calls of the callable are specialized, those of the parameter are a call of its own, specialized where
      * it is passed: its unspecialized nodes belong to its body, which all of its calls share, and an edge out of its
@@ -909,94 +727,262 @@ final class FunctionCallReturnTypeFetcher
         Union $input_type,
         CodeLocation $callable_location,
     ): void {
+        $param_type = isset($storage->params[$param_offset]) ? $storage->params[$param_offset]->type : null;
+
         foreach ($input_type->getAtomicTypes() as $atomic) {
-            if (!$atomic instanceof TClosure && !$atomic instanceof TCallable) {
-                continue;
-            }
-
-            $return_node = DataFlowNode::getForCallableParamReturn(
-                $cased_method_id,
-                $param_offset,
-                $storage,
-                $specialization_location,
-            );
-            $graph->addNode($return_node);
-
-            foreach ($atomic->return_type?->parent_nodes ?? [] as $parent_node) {
-                $graph->addPath($parent_node, $return_node, 'callable-return');
-            }
-
-            if ($atomic->callable_id === null) {
-                continue;
-            }
-
-            $callable_storage = self::getCallableStorage($statements_analyzer, $atomic->callable_id);
-
-            if ($callable_storage !== null) {
-                $callable_specialization_location = TaintFlowGraph::isCallSpecialized(
-                    $graph,
-                    $statements_analyzer->getCodebase(),
-                    $callable_storage,
-                    $callable_location,
-                ) ? $callable_location : null;
-
-                $callable_return_node = DataFlowNode::getForMethodReturn(
-                    $atomic->callable_id,
-                    $callable_storage,
-                    $callable_specialization_location,
-                );
-                $graph->addNode($callable_return_node);
-                self::taintUsingStorage(
-                    $callable_storage,
-                    $graph,
-                    $callable_return_node,
-                    $statements_analyzer->getCodebase()->getInputTaints(),
-                );
-                $graph->addPath($callable_return_node, $return_node, 'callable-return');
-            } else {
-                $callable_specialization_location = null;
-
-                $callable_storage = self::getClosureStorage($statements_analyzer, $atomic->callable_id);
-
-                if ($callable_storage === null) {
-                    continue;
-                }
-
-                // what the body of the closure returns, which a return type it declares doesn't hold
-                $callable_return_node = DataFlowNode::getForMethodReturn($atomic->callable_id, $callable_storage);
-                $graph->addNode($callable_return_node);
-                $graph->addPath($callable_return_node, $return_node, 'callable-return');
-            }
-
-            foreach ($callable_storage->params as $i => $param) {
-                if ($param->location === null) {
-                    continue;
-                }
-
-                $argument_node = DataFlowNode::getForCallableParamArgument(
+            if ($atomic instanceof TClosure || $atomic instanceof TCallable) {
+                $return_node = DataFlowNode::getForCallableParamReturn(
                     $cased_method_id,
                     $param_offset,
-                    $i,
                     $storage,
                     $specialization_location,
                 );
-                $graph->addNode($argument_node);
+                $graph->addNode($return_node);
 
-                $param_node = DataFlowNode::getForMethodArgument(
-                    $atomic->callable_id,
-                    $i,
-                    $callable_storage,
-                    $callable_specialization_location,
-                );
-                $graph->addNode($param_node);
-
-                if ($param->sinks) {
-                    $graph->addSink($param_node);
+                foreach ($atomic->return_type?->parent_nodes ?? [] as $parent_node) {
+                    $graph->addPath($parent_node, $return_node, 'callable-return');
                 }
 
-                $graph->addPath($argument_node, $param_node, 'arg');
+                $callable_ids = $atomic->callable_id === null ? [] : [$atomic->callable_id];
+            } else {
+                $callable_ids = self::getCallableIds($statements_analyzer->getCodebase(), $atomic, $param_type);
+            }
+
+            foreach ($callable_ids as $callable_id) {
+                self::taintCallableIdPassedToParam(
+                    $statements_analyzer,
+                    $graph,
+                    $cased_method_id,
+                    $param_offset,
+                    $storage,
+                    $specialization_location,
+                    $callable_id,
+                    $callable_location,
+                );
             }
         }
+    }
+
+    /**
+     * @param non-empty-lowercase-string $callable_id
+     */
+    private static function taintCallableIdPassedToParam(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph $graph,
+        string $cased_method_id,
+        int $param_offset,
+        FunctionLikeStorage $storage,
+        ?CodeLocation $specialization_location,
+        string $callable_id,
+        CodeLocation $callable_location,
+    ): void {
+        $return_node = DataFlowNode::getForCallableParamReturn(
+            $cased_method_id,
+            $param_offset,
+            $storage,
+            $specialization_location,
+        );
+        $graph->addNode($return_node);
+
+        $target = self::getCallableTarget($statements_analyzer, $callable_id);
+
+        if ($target !== null) {
+            [$callable_storage, $target_id] = $target;
+
+            $callable_specialization_location = TaintFlowGraph::isCallSpecialized(
+                $graph,
+                $statements_analyzer->getCodebase(),
+                $callable_storage,
+                $callable_location,
+            ) ? $callable_location : null;
+
+            $callable_return_node = DataFlowNode::getForMethodReturn(
+                $target_id,
+                $callable_storage,
+                $callable_specialization_location,
+            );
+            $graph->addNode($callable_return_node);
+            self::taintUsingStorage(
+                $callable_storage,
+                $graph,
+                $callable_return_node,
+                $statements_analyzer->getCodebase()->getInputTaints(),
+            );
+            $graph->addPath($callable_return_node, $return_node, 'callable-return');
+        } else {
+            $target_id = $callable_id;
+            $callable_specialization_location = null;
+
+            $callable_storage = self::getClosureStorage($statements_analyzer, $callable_id);
+
+            if ($callable_storage === null) {
+                return;
+            }
+
+            // what the body of the closure returns, which a return type it declares doesn't hold
+            $callable_return_node = DataFlowNode::getForMethodReturn($callable_id, $callable_storage);
+            $graph->addNode($callable_return_node);
+            $graph->addPath($callable_return_node, $return_node, 'callable-return');
+        }
+
+        // what the function-like passes them, as its body doesn't say: `@psalm-flow ($subject) -> $callback()`
+        $argument_source_nodes = [];
+        foreach ($storage->callable_param_argument_sources[$param_offset] ?? [] as $source_offset => $path_type) {
+            $source_node = DataFlowNode::getForMethodArgument(
+                $cased_method_id,
+                $source_offset,
+                $storage,
+                $specialization_location,
+            );
+            $graph->addNode($source_node);
+            $argument_source_nodes[] = [$source_node, $path_type];
+        }
+
+        foreach ($callable_storage->params as $i => $param) {
+            if ($param->location === null) {
+                continue;
+            }
+
+            $argument_node = DataFlowNode::getForCallableParamArgument(
+                $cased_method_id,
+                $param_offset,
+                $i,
+                $storage,
+                $specialization_location,
+            );
+            $graph->addNode($argument_node);
+
+            $param_node = DataFlowNode::getForMethodArgument(
+                $target_id,
+                $i,
+                $callable_storage,
+                $callable_specialization_location,
+            );
+            $graph->addNode($param_node);
+
+            if ($param->sinks) {
+                $graph->addSink($param_node);
+            }
+
+            $graph->addPath($argument_node, $param_node, 'arg');
+
+            foreach ($argument_source_nodes as [$source_node, $path_type]) {
+                $graph->addPath($source_node, $argument_node, $path_type);
+            }
+        }
+    }
+
+    /**
+     * The ids of the callables $atomic is, or holds as an array of them, given to a parameter of type $param_type:
+     * callable strings and arrays and invokable objects (closures and typed callables have theirs)
+     *
+     * @return list<non-empty-lowercase-string>
+     */
+    private static function getCallableIds(Codebase $codebase, Atomic $atomic, ?Union $param_type): array
+    {
+        if ($atomic instanceof TArray || $atomic instanceof TKeyedArray) {
+            $callable_method_id = $atomic instanceof TKeyedArray
+                ? CallableTypeComparator::getCallableMethodIdFromTKeyedArray($atomic, $codebase)
+                : null;
+
+            if ($callable_method_id instanceof MethodIdentifier && self::takesCallables($param_type)) {
+                return [strtolower((string) $callable_method_id)];
+            }
+
+            $value_type = $atomic instanceof TArray ? $atomic->type_params[1] : $atomic->getGenericValueType();
+            $param_value_type = $param_type === null || $param_type->hasMixed()
+                ? null
+                : self::getValueType($param_type) ?? Type::getNever();
+            if (!self::takesCallables($param_value_type)) {
+                return [];
+            }
+
+            $callable_ids = [];
+            foreach ($value_type->getAtomicTypes() as $value_atomic) {
+                if ($value_atomic instanceof TClosure || $value_atomic instanceof TCallable) {
+                    if ($value_atomic->callable_id !== null) {
+                        $callable_ids[] = $value_atomic->callable_id;
+                    }
+                } else {
+                    $callable_ids = [
+                        ...$callable_ids,
+                        ...self::getCallableIds($codebase, $value_atomic, $param_value_type),
+                    ];
+                }
+            }
+
+            return $callable_ids;
+        }
+
+        if (!self::takesCallables($param_type)) {
+            return [];
+        }
+
+        if ($atomic instanceof TLiteralString) {
+            $method_separator = strpos($atomic->value, '::');
+            $callable_id = strtolower(ltrim(
+                $method_separator === false
+                    ? $atomic->value
+                    : $codebase->classlikes->getUnAliasedName(
+                        ltrim(substr($atomic->value, 0, $method_separator), '\\'),
+                    ) . substr($atomic->value, $method_separator),
+                '\\',
+            ));
+
+            return $callable_id === '' ? [] : [$callable_id];
+        }
+
+        if ($atomic instanceof TNamedObject
+            && $codebase->classlike_storage_provider->has($atomic->value)
+            && $codebase->methods->getDeclaringMethodId(new MethodIdentifier($atomic->value, '__invoke')) !== null
+        ) {
+            return [strtolower($atomic->value . '::__invoke')];
+        }
+
+        return [];
+    }
+
+    /**
+     * Whether a parameter of type $param_type takes callables, which strings, arrays and objects may then be
+     *
+     * @psalm-pure
+     */
+    private static function takesCallables(?Union $param_type): bool
+    {
+        if ($param_type === null || $param_type->hasMixed() || $param_type->hasCallableType()) {
+            return true;
+        }
+
+        foreach ($param_type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TCallableString
+                || $atomic instanceof TCallableObject
+                || ($atomic instanceof TKeyedArray && $atomic->is_callable)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The type of the values of the arrays a parameter of type $param_type takes, if it takes arrays
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function getValueType(Union $param_type): ?Union
+    {
+        $value_type = null;
+
+        foreach ($param_type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TArray) {
+                $value_type = Type::combineUnionTypes($value_type, $atomic->type_params[1]);
+            } elseif ($atomic instanceof TKeyedArray && !$atomic->is_callable) {
+                $value_type = Type::combineUnionTypes($value_type, $atomic->getGenericValueType());
+            }
+        }
+
+        return $value_type;
     }
 
     /**
@@ -1202,7 +1188,10 @@ final class FunctionCallReturnTypeFetcher
     ): ?FunctionLikeStorage {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$codebase->functions->functionExists($statements_analyzer, $function_id)) {
+        // the closure of a method has the method's id
+        if (str_contains($function_id, '::')
+            || !$codebase->functions->functionExists($statements_analyzer, $function_id)
+        ) {
             return null;
         }
 
@@ -1212,6 +1201,40 @@ final class FunctionCallReturnTypeFetcher
             // callmap-only builtins have no storage
             return null;
         }
+    }
+
+    /**
+     * The function-like a callable id names, and the id the nodes of its body have: those of a method are keyed by
+     * the class its body is analyzed as one of
+     *
+     * @param non-empty-lowercase-string $callable_id
+     * @return array{FunctionLikeStorage, string}|null
+     */
+    private static function getCallableTarget(StatementsAnalyzer $statements_analyzer, string $callable_id): ?array
+    {
+        if (!str_contains($callable_id, '::')) {
+            $storage = self::getCallableStorage($statements_analyzer, $callable_id);
+
+            return $storage === null ? null : [$storage, $callable_id];
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $method_id = MethodIdentifier::wrap($callable_id);
+
+        if (!$codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
+            return null;
+        }
+
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+
+        if ($declaring_method_id === null || !$codebase->methods->hasStorage($declaring_method_id)) {
+            return null;
+        }
+
+        return [
+            $codebase->methods->getStorage($declaring_method_id),
+            FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $method_id),
+        ];
     }
 
 
@@ -1588,8 +1611,6 @@ final class FunctionCallReturnTypeFetcher
         );
         $graph->addNode($function_call_node);
 
-        $codebase = $statements_analyzer->getCodebase();
-
         $conditionally_removed_taints = self::getConditionallyRemovedTaints(
             $codebase,
             $function_storage,
@@ -1621,7 +1642,7 @@ final class FunctionCallReturnTypeFetcher
         }
 
         if ($function_storage->return_source_params && !$stmt->isFirstClassCallable()) {
-            $removed_taints = $function_storage->removed_taints;
+            $removed_taints |= $function_storage->removed_taints;
 
             $args = $stmt->getArgs();
             if ($function_id === 'preg_replace' && count($args) > 2) {
@@ -1679,11 +1700,6 @@ final class FunctionCallReturnTypeFetcher
                     $function_id === 'vsprintf',
                 )
                 : [];
-
-            $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
-
-            $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-            $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
             self::taintUsingFlows(
                 $function_storage,
