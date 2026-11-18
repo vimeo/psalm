@@ -83,6 +83,90 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'closureOfATemplateWithANullDefaultOfTheSameTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Collection {
+                        /**
+                         * @param Closure(T,mixed):bool|null $callback
+                         * @param T|null $default
+                         * @return T|null
+                         */
+                        public function last(?Closure $callback = null, $default = null) {
+                            return $default;
+                        }
+                    }
+
+                    /** @var Collection<array> $collection */
+                    $collection = new Collection();
+                    $collection->last(function (array $_item): bool {
+                        return true;
+                    });',
+            ],
+            'argumentThatIsAnAtomOfAUnionWithATemplateStillBindsIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|string $x
+                     * @return T
+                     */
+                    function withString($x) { throw new Exception(); }
+
+                    /**
+                     * @template T
+                     * @param T|array<int, string> $x
+                     * @return T
+                     */
+                    function withArray($x) { throw new Exception(); }
+
+                    /**
+                     * @template T
+                     * @param T|1 $x
+                     * @return T
+                     */
+                    function withLiteral($x) { throw new Exception(); }
+
+                    /** @param array<int, string> $arr */
+                    function check(string $s, array $arr): void {
+                        $a = withString($s);
+                        $b = withArray($arr);
+                        $c = withLiteral(1);
+
+                        /** @psalm-check-type-exact $a = string */
+                        /** @psalm-check-type-exact $b = array<int, string> */
+                        /** @psalm-check-type-exact $c = 1 */
+                        echo 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'defaultNullOfATemplateOrNullParamDoesNotBoundTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param Closure(T):void $callback
+                     * @param T|null $default
+                     */
+                    function withDefault(Closure $callback, $default = null): void {}
+
+                    /**
+                     * @template T
+                     * @param T|null $value
+                     * @return T
+                     */
+                    function identity($value) {
+                        return $value;
+                    }
+
+                    withDefault(function (array $_item): void {});
+                    $null = identity(null);
+                    $one = identity(1);',
+                'assertions' => [
+                    '$null===' => 'null',
+                    '$one===' => '1',
+                ],
+            ],
             'classStringOfAFinalClassKeepsItsTypeWhereTheValueIsNotItsClassConstant' => [
                 'code' => '<?php
                     final class Foo {}
@@ -2876,89 +2960,128 @@ final class FunctionTemplateTest extends TestCase
                     '$cars===' => 'list<Car>',
                 ],
             ],
-            'closureOfATemplateWithANullDefaultOfTheSameTemplate' => [
+            'conditionalReturnOnArgumentOnlyCoercedToTheBoundKeepsTheBoundPartsItContains' => [
                 'code' => '<?php
-                    /** @template T */
-                    final class Collection {
-                        /**
-                         * @param Closure(T,mixed):bool|null $callback
-                         * @param T|null $default
-                         * @return T|null
-                         */
-                        public function last(?Closure $callback = null, $default = null) {
-                            return $default;
-                        }
+                    /** @return array|scalar */
+                    function arrayOrScalar() {
+                        return "";
                     }
 
-                    /** @var Collection<array> $collection */
-                    $collection = new Collection();
-                    $collection->last(function (array $_item): bool {
-                        return true;
-                    });',
+                    /** @return array|int */
+                    function arrayOrInt() {
+                        return [];
+                    }
+
+                    $from_scalar = substr_replace(arrayOrScalar(), "x", 0, 1);
+                    $from_int = substr_replace(arrayOrInt(), "x", 0, 1);',
+                'assertions' => [
+                    '$from_scalar===' => 'array<array-key, string>|string',
+                    '$from_int===' => 'array<array-key, string>',
+                ],
+                'ignored_issues' => ['ArgumentTypeCoercion', 'PossiblyInvalidArgument'],
             ],
-            'argumentThatIsAnAtomOfAUnionWithATemplateStillBindsIt' => [
+            'templateBoundByArgumentOnlyCoercedToTheBoundKeepsTheStringItContains' => [
                 'code' => '<?php
                     /**
-                     * @template T
-                     * @param T|string $x
-                     * @return T
-                     */
-                    function withString($x) { throw new Exception(); }
-
-                    /**
-                     * @template T
-                     * @param T|array<int, string> $x
-                     * @return T
-                     */
-                    function withArray($x) { throw new Exception(); }
-
-                    /**
-                     * @template T
-                     * @param T|1 $x
-                     * @return T
-                     */
-                    function withLiteral($x) { throw new Exception(); }
-
-                    /** @param array<int, string> $arr */
-                    function check(string $s, array $arr): void {
-                        $a = withString($s);
-                        $b = withArray($arr);
-                        $c = withLiteral(1);
-
-                        /** @psalm-check-type-exact $a = string */
-                        /** @psalm-check-type-exact $b = array<int, string> */
-                        /** @psalm-check-type-exact $c = 1 */
-                        echo 1;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
-            'defaultNullOfATemplateOrNullParamDoesNotBoundTheTemplate' => [
-                'code' => '<?php
-                    /**
-                     * @template T
-                     * @param Closure(T):void $callback
-                     * @param T|null $default
-                     */
-                    function withDefault(Closure $callback, $default = null): void {}
-
-                    /**
-                     * @template T
-                     * @param T|null $value
+                     * @template T of string|array<string>
+                     * @param T $value
                      * @return T
                      */
                     function identity($value) {
                         return $value;
                     }
 
-                    withDefault(function (array $_item): void {});
-                    $null = identity(null);
-                    $one = identity(1);',
+                    /** @return array|scalar */
+                    function arrayOrScalar() {
+                        return "";
+                    }
+
+                    $value = identity(arrayOrScalar());',
                 'assertions' => [
-                    '$null===' => 'null',
-                    '$one===' => '1',
+                    '$value===' => 'array<array-key, mixed>|string',
                 ],
+                'ignored_issues' => ['ArgumentTypeCoercion'],
+            ],
+            'templateBoundByArgumentOnlyCoercedToTheBoundKeepsTheBoundPartsItContains' => [
+                'code' => '<?php
+                    interface I {}
+                    class A {}
+
+                    /**
+                     * @template T of I|string
+                     * @param T $value
+                     * @return T
+                     */
+                    function identity($value) {
+                        return $value;
+                    }
+
+                    /** @return A|string */
+                    function aOrString() {
+                        return "";
+                    }
+
+                    /** @return object|string */
+                    function objectOrString() {
+                        return "";
+                    }
+
+                    /**
+                     * @template T of int|array
+                     * @param T $value
+                     * @return T
+                     */
+                    function intOrArray($value) {
+                        return $value;
+                    }
+
+                    /** @return float|array */
+                    function floatOrArray() {
+                        return [];
+                    }
+
+                    $from_a = identity(aOrString());
+                    $from_object = identity(objectOrString());
+                    $from_float = intOrArray(floatOrArray());',
+                'assertions' => [
+                    '$from_a===' => 'string',
+                    '$from_object===' => 'I|string',
+                    '$from_float===' => 'array<array-key, mixed>',
+                ],
+                'ignored_issues' => ['ArgumentTypeCoercion', 'PossiblyInvalidArgument', 'InvalidScalarArgument'],
+            ],
+            'templateUpperBoundByCallableParamOnlyCoercedToTheBoundKeepsTheBoundPartsItContains' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string|array<string>
+                     * @param callable(T): void $callback
+                     * @return T
+                     */
+                    function fromCallback(callable $callback) {
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of string|array<string>
+                     * @param T $value
+                     * @param callable(T): void $callback
+                     * @return T
+                     */
+                    function withCallback($value, callable $callback) {
+                        return $value;
+                    }
+
+                    /**
+                     * @param callable(array|scalar): void $callback
+                     * @param string|array<string> $string_or_array
+                     */
+                    function takesArrayOrScalar(callable $callback, string $string, $string_or_array): void {
+                        $from_callback = fromCallback($callback);
+                        /** @psalm-check-type-exact $from_callback = array<array-key, mixed>|string */
+
+                        withCallback($string, $callback);
+                        withCallback($string_or_array, $callback);
+                    }',
             ],
         ];
     }

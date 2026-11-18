@@ -31,6 +31,15 @@ final class TryScope
     public array $post_try_parent_nodes = [];
 
     /**
+     * The nodes of the values the variables had before an assignment in the body: an exception can be thrown between
+     * any two statements, so a catch and the finally still see them, but the code of the body after the assignment
+     * does not
+     *
+     * @var array<string, array<string, DataFlowNode>>
+     */
+    public array $overwritten_parent_nodes = [];
+
+    /**
      * The classes the catches of the try name, in lowercase
      *
      * @var list<string>

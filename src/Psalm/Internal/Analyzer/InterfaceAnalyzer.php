@@ -166,6 +166,13 @@ final class InterfaceAnalyzer extends ClassLikeAnalyzer
             $class_storage->suppressed_issues + $this->getSuppressedIssues(),
         );
 
+        self::checkMixins(
+            $this,
+            $class_storage,
+            new CodeLocation($this, $this->class->name ?? $this->class, null, true),
+            $class_storage->suppressed_issues + $this->getSuppressedIssues(),
+        );
+
         $member_stmts = [];
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
