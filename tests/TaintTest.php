@@ -1393,6 +1393,53 @@ final class TaintTest extends TestCase
                     $row->name = "guest";
                     echo (string) $row->name;',
             ],
+            'rowOfATableNothingStoresIntoIsNoSource' => [
+                'code' => '<?php
+                    function show(PDO $pdo, mysqli_result $result): void {
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                        echo (string) ($result->fetch_assoc() ?? [])["name"];
+                    }',
+            ],
+            'otherColumnsOfAStoredRowAreNotTainted' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $statement = $pdo->prepare("INSERT INTO comments (author, body) VALUES (?, ?)");
+                        $statement->execute(["admin", $_GET["body"]]);
+                    }
+
+                    function show(PDO $pdo): void {
+                        $row = $pdo->query("SELECT author, body FROM comments")->fetch();
+                        echo (string) $row["author"];
+                        echo (string) $row[0];
+                    }',
+            ],
+            'annotationsOfAQueryMethodReplaceItsBody' => [
+                'code' => '<?php
+                    final class Db {
+                        public function __construct(private PDO $pdo) {}
+
+                        /**
+                         * @psalm-database-query $sql $params rows
+                         */
+                        public function all(string $sql, array $params = []): array {
+                            $statement = $this->pdo->prepare($sql);
+                            $statement->execute($params);
+                            return $statement->fetchAll();
+                        }
+                    }
+
+                    function run(Db $db): void {
+                        $db->all("UPDATE users SET bio = ? WHERE id = ?", [$_GET["bio"], 1]);
+                        foreach ($db->all("SELECT name FROM users") as $user) {
+                            echo (string) $user["name"];
+                        }
+                    }',
+            ],
+            'readOfALocalFileIsNoSource' => [
+                'code' => '<?php
+                    echo (string) file_get_contents("/etc/hosts");
+                    echo (string) file_get_contents(__DIR__ . "/https://example.com");',
+            ],
             'coalesceOnAnOffsetKeepsTheTypeOfTheArrayItReads' => [
                 'code' => '<?php
                     /** @param list<mixed> $l */
@@ -4369,7 +4416,7 @@ final class TaintTest extends TestCase
                     }
 
                     function getDefaultCity(): string {
-                        return (string) getenv("DEFAULT_CITY");
+                        return (string) ini_get("date.timezone");
                     }
 
                     $city = (string) $_GET["city"];
@@ -6593,6 +6640,219 @@ final class TaintTest extends TestCase
                     $document = json_decode((string) $_GET["document"]);
                     if ($document instanceof stdClass) {
                         echo (string) $document->title;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'getenvIsASource' => [
+                'code' => '<?php
+                    exec((string) getenv("BACKUP_COMMAND"));',
+                'error_message' => 'TaintedShell',
+            ],
+            'envSuperglobalIsASource' => [
+                'code' => '<?php
+                    exec((string) $_ENV["BACKUP_COMMAND"]);',
+                'error_message' => 'TaintedShell',
+            ],
+            'responseOfAUrlIsASource' => [
+                'code' => '<?php
+                    echo (string) file_get_contents("https://api.example.com/data");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'responseOfAUrlStartingWithALiteralIsASource' => [
+                'code' => '<?php
+                    function show(string $id): void {
+                        echo (string) file_get_contents("http://api.example.com/item/" . $id);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'valueStoredWithPdoIsReadBack' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $statement = $pdo->prepare("INSERT INTO comments (author, body) VALUES (?, ?)");
+                        $statement->execute(["admin", $_GET["body"]]);
+                    }
+
+                    function show(PDO $pdo): void {
+                        $row = $pdo->query("SELECT author, body FROM comments")->fetch();
+                        echo (string) $row["body"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'valueBoundToANamedPlaceholderIsReadBack' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $statement = $pdo->prepare("UPDATE profiles SET bio = :bio WHERE id = :id");
+                        $statement->bindValue(":bio", $_COOKIE["bio"]);
+                        $statement->execute();
+                    }
+
+                    function show(PDO $pdo): void {
+                        echo (string) $pdo->query("SELECT bio FROM profiles")->fetchColumn();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'storedRowIteratedIsTainted' => [
+                'code' => '<?php
+                    function store(PDO $pdo, string $body): void {
+                        $pdo->prepare("INSERT INTO comments (body) VALUES (?)")->execute([$body]);
+                    }
+
+                    function show(PDO $pdo): void {
+                        store($pdo, $_GET["body"]);
+                        foreach ($pdo->query("SELECT body FROM comments") as $row) {
+                            echo (string) $row["body"];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'storedRowReadThroughParentIsTainted' => [
+                'code' => '<?php
+                    final class Database extends PDO {
+                        public function store(): void {
+                            $this->prepare("INSERT INTO users (name) VALUES (?)")->execute([$_GET["name"]]);
+                        }
+
+                        public function showNames(): void {
+                            $statement = parent::query("SELECT name FROM users");
+                            if ($statement === false) {
+                                return;
+                            }
+                            foreach ($statement as $row) {
+                                echo (string) $row["name"];
+                            }
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'escapedValueStoredWithMysqliIsStillHtml' => [
+                'code' => '<?php
+                    function store(mysqli $db): void {
+                        $db->query("INSERT INTO notes (text) VALUES (\'" . $db->real_escape_string($_POST["t"]) . "\')");
+                    }
+
+                    function show(mysqli $db): void {
+                        $result = mysqli_query($db, "SELECT text FROM notes");
+                        if ($result instanceof mysqli_result) {
+                            echo (string) ($result->fetch_assoc() ?? [])["text"];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'valueBoundWithMysqliIsReadBack' => [
+                'code' => '<?php
+                    function store(mysqli $db): void {
+                        $statement = $db->prepare("INSERT INTO posts (title, body) VALUES (?, ?)");
+                        $title = "x";
+                        $body = (string) $_POST["body"];
+                        $statement->bind_param("ss", $title, $body);
+                        $statement->execute();
+                    }
+
+                    function show(mysqli $db): void {
+                        $result = $db->query("SELECT title, body FROM posts");
+                        if ($result instanceof mysqli_result) {
+                            echo (string) (mysqli_fetch_row($result) ?? [])[1];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'valueOfANamedPgsqlStatementIsReadBack' => [
+                'code' => '<?php
+                    function store(PgSql\Connection $connection): void {
+                        pg_prepare($connection, "add_tag", "INSERT INTO tags (label) VALUES ($1)");
+                        pg_execute($connection, "add_tag", [$_GET["label"]]);
+                    }
+
+                    function show(PgSql\Connection $connection): void {
+                        $result = pg_query($connection, "SELECT label FROM tags");
+                        if ($result !== false) {
+                            $row = pg_fetch_assoc($result);
+                            echo (string) ($row === false ? "" : $row["label"]);
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.1',
+            ],
+            'rowInsertedWithPgInsertIsSelected' => [
+                'code' => '<?php
+                    function store(PgSql\Connection $connection): void {
+                        pg_insert($connection, "events", ["kind" => "login", "payload" => $_GET["p"]]);
+                    }
+
+                    function show(PgSql\Connection $connection): void {
+                        $rows = pg_select($connection, "events", []);
+                        if (is_array($rows)) {
+                            echo (string) $rows[0]["payload"];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.1',
+            ],
+            'columnCopiedByInsertSelectIsTainted' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $pdo->prepare("INSERT INTO comments (body) VALUES (?)")->execute([$_GET["c"]]);
+                        $pdo->exec("INSERT INTO archive (body) SELECT body FROM comments");
+                    }
+
+                    function show(PDO $pdo): void {
+                        echo (string) $pdo->query("SELECT body FROM archive")->fetch()["body"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'selectingAllColumnsReadsEachOne' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $pdo->prepare("INSERT INTO comments (body) VALUES (?)")->execute([$_GET["c"]]);
+                    }
+
+                    function show(PDO $pdo): void {
+                        echo (string) $pdo->query("SELECT * FROM comments")->fetch()["body"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'valuesOfAStatementTheAnalysisCantTellAreStoredAnywhere' => [
+                'code' => '<?php
+                    function store(PDOStatement $statement): void {
+                        $statement->execute([$_GET["z"]]);
+                    }
+
+                    function show(PDO $pdo): void {
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'queryTheAnalysisCantParseReadsAnyColumn' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $pdo->prepare("INSERT INTO users (name) VALUES (?)")->execute([$_GET["name"]]);
+                    }
+
+                    function show(PDO $pdo, string $sql): void {
+                        echo (string) $pdo->query($sql)->fetch()["anything"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'annotatedQueryMethodStoresAndReads' => [
+                'code' => '<?php
+                    final class Db {
+                        public function __construct(private PDO $pdo) {}
+
+                        /**
+                         * @psalm-database-query $sql $params rows
+                         */
+                        public function all(string $sql, array $params = []): array {
+                            $statement = $this->pdo->prepare($sql);
+                            $statement->execute($params);
+                            return $statement->fetchAll();
+                        }
+                    }
+
+                    function run(Db $db): void {
+                        $db->all("UPDATE users SET bio = ? WHERE id = ?", [$_GET["bio"], 1]);
+                        foreach ($db->all("SELECT bio, name FROM users") as $user) {
+                            echo (string) $user["bio"];
+                        }
                     }',
                 'error_message' => 'TaintedHtml',
             ],

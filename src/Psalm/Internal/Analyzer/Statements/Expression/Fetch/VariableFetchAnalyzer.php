@@ -657,6 +657,7 @@ final class VariableFetchAnalyzer
             || $var_name === '$_POST'
             || $var_name === '$_COOKIE'
             || $var_name === '$_REQUEST'
+            || $var_name === '$_ENV'
         ) {
             $taints = $codebase->getInputTaints();
         } else {

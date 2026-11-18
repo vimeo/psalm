@@ -73,6 +73,29 @@ The callables given to the parameter `$<callable>` are called with what is given
 
 See [Keyed stores](taint_flow.md#keyed-stores)
 
+## `@psalm-database-query $sql [$params] [result]`
+
+The method runs the SQL query given to `$sql`, with the values of its placeholders given to `$params` (a list for
+`?`, an array keyed by name for `:name`). `result` says what it returns of the rows the query selects: `result` (a
+result to fetch them from, or a row; the default), `rows` (a list of rows), `value` (the first column of the first
+row), `column` (a list of the first columns) or `none`. See [Databases](taint_flow.md#databases).
+
+## `@psalm-database-prepare $sql`
+
+The method prepares the SQL query given to `$sql` and returns the statement, whose methods give the values of the
+placeholders: `@psalm-database-execute [$params]` and `@psalm-database-bind $key $value` (a positional placeholder
+numbered from 1) or `@psalm-database-bind ...$values` (in their order).
+
+## `@psalm-database-insert $table $data`, `@psalm-database-update $table $data` and `@psalm-database-select $table`
+
+The method stores the values of the array given to `$data` in the columns of the table given to `$table` named by its
+keys, or returns the rows of the table.
+
+## `@psalm-database-fetch [$result] [result]`
+
+The method returns what the result given to `$result`, or the object it is called on, holds of the rows, as
+`@psalm-database-query` says.
+
 ## `@psalm-flow ( <arg>, [ <arg>, ] ) -> $this-><name>` and `@psalm-flow $this-><name> -> return`
 
 `<name>` is a parameter giving the name of the property, like `$name`, or `*` for any property.

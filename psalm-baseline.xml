@@ -1557,11 +1557,6 @@
       <code><![CDATA[DataFlowGraph]]></code>
     </ImmutableDependency>
   </file>
-  <file src="src/Psalm/Internal/Composer.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[getenv('COMPOSER')]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="src/Psalm/Internal/DataFlow/DataFlowNode.php">
     <ImpureMethodCall>
       <code><![CDATA[self::getAssignmentSuffix($var_id)]]></code>

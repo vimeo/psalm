@@ -235,6 +235,66 @@ echo Cache::get('title_1');   // no issue
   `Codebase::getTaintStoreNames()` tells for an expression, for stores whose keys an annotation can't express (a
   table named in an SQL query).
 
+### Databases
+
+What a query stores in a column of a table flows into what the queries selecting that column read, wherever they are.
+Psalm parses the SQL of the queries `PDO`, `mysqli`, `pgsql` and `SQLite3` run: the values of an INSERT, a REPLACE or
+an UPDATE are the parts of the query the analysis doesn't know the text of and the values given to its placeholders,
+and each column a SELECT gives is a key of the rows fetched:
+
+```php
+<?php // --taint-analysis
+function store(PDO $pdo): void {
+    $statement = $pdo->prepare('INSERT INTO comments (author, body) VALUES (?, ?)');
+    $statement->execute(['admin', $_GET['body'] ?? '']);
+}
+
+function show(PDO $pdo): void {
+    $row = $pdo->query('SELECT author, body FROM comments')->fetch();
+    echo (string) $row['body'];   // TaintedHtml
+    echo (string) $row['author']; // no issue
+    echo (string) $pdo->query('SELECT name FROM users')->fetchColumn(); // no issue
+}
+```
+
++ A query the analysis can't parse, or whose table or column it doesn't know (a table name that isn't a literal,
+  `SELECT *`, `INSERT INTO t VALUES (...)` without the columns), stores into or reads from any column it can be.
++ The values given to a prepared statement the analysis can't follow back to the query that prepared it, such as a
+  statement passed to another function, are stored in any column.
++ A method running the queries it is given describes them with annotations, which replace what its body does:
+
+```php
+<?php // --taint-analysis
+final class Db
+{
+    public function __construct(private PDO $pdo) {}
+
+    /**
+     * @psalm-database-query $sql $params rows
+     */
+    public function all(string $sql, array $params = []): array {
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute($params);
+        return $statement->fetchAll();
+    }
+
+    /**
+     * @psalm-database-insert $table $data
+     */
+    public function insert(string $table, array $data): void {}
+}
+
+function run(Db $db): void {
+    $db->insert('users', ['name' => 'admin', 'bio' => $_GET['bio'] ?? '']);
+    foreach ($db->all('SELECT name, bio FROM users') as $user) {
+        echo (string) $user['bio'];  // TaintedHtml
+        echo (string) $user['name']; // no issue
+    }
+}
+```
+
+See [the annotations](annotations.md#psalm-database-query-sql-params-result) for the others.
+
 ### Properties set and got by name
 
 ORM models and other property bags often set and get properties by name. These annotations tell Psalm which property

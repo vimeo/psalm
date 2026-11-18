@@ -37,6 +37,7 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\DataFlowGraph;
+use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Codebase\VariableUseGraph;
@@ -3231,8 +3232,12 @@ final class AssignmentAnalyzer
             // the start of a string assigned, for the keys of the keyed stores it is used as
             $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
             if ($assign_value && $taint_flow_graph) {
+                $assigned_type = $statements_analyzer->node_data->getType($assign_value);
                 foreach ($context->vars_in_scope[$var_id]->parent_nodes as $var_node) {
                     TaintStore::recordAssignment($statements_analyzer, $taint_flow_graph, $assign_value, $var_node);
+                    if ($assigned_type) {
+                        DatabaseTaints::recordAssignment($taint_flow_graph, $assigned_type, $var_node);
+                    }
                 }
             }
         }
