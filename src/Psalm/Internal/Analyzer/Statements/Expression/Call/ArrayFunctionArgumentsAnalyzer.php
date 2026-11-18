@@ -108,6 +108,9 @@ final class ArrayFunctionArgumentsAnalyzer
                 true,
             );
 
+            // Any alternative that cannot be analysed makes the whole result unknown: skipping it
+            // would claim a narrower type than the callback can leave behind. Returning null makes
+            // the caller keep the default by-reference output type.
             if ($callable === null || $callable->params === null) {
                 return null;
             }

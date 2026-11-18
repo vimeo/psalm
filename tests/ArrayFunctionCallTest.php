@@ -280,6 +280,21 @@ final class ArrayFunctionCallTest extends TestCase
                     }
                     PHP,
             ],
+            'arrayWalkFallsBackWhenOneCallbackAlternativeIsUnknown' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function visit(bool $known, callable $unknown): void {
+                        $stringify = /** @param-out string $value */ static function (int &$value): void {
+                            $value = (string) $value;
+                        };
+                        $callback = $known ? $stringify : $unknown;
+                        $values = [1];
+                        array_walk($values, $callback);
+
+                        /** @psalm-check-type-exact $values = array<array-key, mixed> */
+                    }
+                    PHP,
+            ],
             'arrayWalkUsesDeclaredByRefParameterType' => [
                 'code' => <<<'PHP'
                     <?php
