@@ -30,6 +30,7 @@ use Psalm\Issue\InaccessibleClassConstant;
 use Psalm\Issue\InternalClass;
 use Psalm\Issue\InvalidClassConstantType;
 use Psalm\Issue\InvalidConstantAssignmentValue;
+use Psalm\Issue\InvalidOverride;
 use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\LessSpecificClassConstantType;
 use Psalm\Issue\NonStaticSelfCall;
@@ -43,7 +44,9 @@ use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
@@ -56,6 +59,7 @@ use ReflectionProperty;
 use function assert;
 use function explode;
 use function in_array;
+use function ltrim;
 use function strtolower;
 
 /**
@@ -63,6 +67,46 @@ use function strtolower;
  */
 final class ClassConstAnalyzer
 {
+    /**
+     * The type the constant has in the classes that use the trait the code is in, null outside a trait or where one of
+     * the classes doesn't have the constant
+     */
+    private static function getConstantTypeOfTheClassesUsingTheTrait(
+        StatementsAnalyzer $statements_analyzer,
+        string $constant_name,
+    ): ?Union {
+        $trait_analyzer = $statements_analyzer->getSource()->getSource();
+
+        if (!$trait_analyzer instanceof TraitAnalyzer) {
+            return null;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $trait_lc = strtolower($trait_analyzer->getFQCLN());
+        $types = [];
+
+        foreach ($codebase->classlike_storage_provider->getAll() as $user_storage) {
+            if (!isset($user_storage->used_traits[$trait_lc])) {
+                continue;
+            }
+
+            $type = $codebase->classlikes->getClassConstantType(
+                $user_storage->name,
+                $constant_name,
+                ReflectionProperty::IS_PRIVATE,
+                $statements_analyzer,
+            );
+
+            if ($type === null) {
+                return null;
+            }
+
+            $types[] = $type;
+        }
+
+        return $types !== [] ? Type::combineUnionTypeArray($types, $codebase) : null;
+    }
+
     /**
      * @psalm-suppress ComplexMethod to be refactored. We should probably regroup the two big if about $stmt->class and
      * analyse the ::class int $stmt->name separately
@@ -112,6 +156,9 @@ final class ClassConstAnalyzer
                 if ($stmt->name instanceof PhpParser\Node\Identifier) {
                     if ((!$context->inside_class_exists || $stmt->name->name !== 'class')
                         && !isset($context->phantom_classes[strtolower($fq_class_name)])
+                        // PHP allows the name of a class that is missing, such as in the message about it
+                        && ($stmt->name->name !== 'class'
+                            || !isset($context->negated_phantom_classes[strtolower($fq_class_name)]))
                     ) {
                         if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                             $statements_analyzer,
@@ -409,6 +456,15 @@ final class ClassConstAnalyzer
                 );
             }
 
+            // a trait is analysed for each class using it, and each class gives the constant its own value: what the
+            // code of the trait can rely on is the values they give it together
+            if ($first_part_lc === 'self' || $first_part_lc === 'static') {
+                $class_constant_type = self::getConstantTypeOfTheClassesUsingTheTrait(
+                    $statements_analyzer,
+                    $stmt->name->name,
+                ) ?? $class_constant_type;
+            }
+
             if ($first_part_lc !== 'static' || $const_class_storage->final || $class_constant_type->from_docblock
                 || (isset($const_class_storage->constants[$stmt->name->name])
                     && $const_class_storage->constants[$stmt->name->name]->final
@@ -464,6 +520,10 @@ final class ClassConstAnalyzer
             return true;
         }
 
+        $lhs_type = TypeExpander::expandTemplateKeyOfAndValueOf($statements_analyzer->getCodebase(), $lhs_type);
+
+        // ::class retrieves a class name; it is not a use of a string literal
+        // instead of ::class. In particular, do not report a class-string made by Foo::class.
         if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
             $class_string_types = [];
 
@@ -510,20 +570,13 @@ final class ClassConstAnalyzer
             return true;
         }
 
-        if ($stmt->class instanceof PhpParser\Node\Expr\Variable) {
-            $fq_class_name = null;
-            $lhs_type_definite_class = null;
-            if ($lhs_type->isSingle()) {
-                $atomic_type = $lhs_type->getSingleAtomic();
-                if ($atomic_type instanceof TNamedObject) {
-                    $fq_class_name = $atomic_type->value;
-                    $lhs_type_definite_class = $atomic_type->definite_class;
-                } elseif ($atomic_type instanceof TLiteralClassString) {
-                    $fq_class_name = $atomic_type->value;
-                    $lhs_type_definite_class = $atomic_type->definite_class;
-                } elseif ($atomic_type instanceof TString
-                    && !$atomic_type instanceof TClassString
-                    && !$codebase->config->allow_string_standin_for_class
+        // Check all union members, not just the single-type variable case below.
+        if (!$codebase->config->allow_string_standin_for_class) {
+            foreach ($lhs_type->getAtomicTypes() as $lhs_atomic_type) {
+                if ($lhs_atomic_type instanceof TString
+                    && !$lhs_atomic_type instanceof TClassString
+                    && !$lhs_atomic_type instanceof TDependentGetClass
+                    && !$lhs_atomic_type instanceof TLiteralClassString
                 ) {
                     IssueBuffer::maybeAdd(
                         new InvalidStringClass(
@@ -532,6 +585,27 @@ final class ClassConstAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
+                    break;
+                }
+            }
+        }
+
+        if ($stmt->class instanceof PhpParser\Node\Expr\Variable) {
+            $fq_class_name = null;
+            $lhs_type_definite_class = null;
+            if ($lhs_type->isSingle()) {
+                $atomic_type = $lhs_type->getSingleAtomic();
+                if ($atomic_type instanceof TNamedObject || $atomic_type instanceof TLiteralClassString) {
+                    $fq_class_name = $atomic_type->value;
+                    $lhs_type_definite_class = $atomic_type->definite_class;
+                } elseif ($atomic_type::class === TLiteralString::class
+                    && $codebase->config->allow_string_standin_for_class
+                ) {
+                    $class_name = ltrim($atomic_type->value, '\\');
+                    if ($codebase->classlike_storage_provider->has($class_name)) {
+                        $fq_class_name = $class_name;
+                        $lhs_type_definite_class = true;
+                    }
                 }
             }
 
@@ -820,6 +894,10 @@ final class ClassConstAnalyzer
         ClassLikeStorage $class_storage,
         Codebase $codebase,
     ): void {
+        if ($codebase->analysis_php_version_id >= 8_06_00) {
+            self::checkOverrideAttributes($class_storage, $codebase);
+        }
+
         foreach ($class_storage->constants as $const_name => $const_storage) {
             [$parent_classlike_storage, $parent_const_storage] = self::getOverriddenConstant(
                 $class_storage,
@@ -905,6 +983,74 @@ final class ClassConstAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * PHP 8.6 (RFC override_constants): #[\Override] on a constant or enum case needs a public or protected constant
+     * of the same name in a parent class or an interface. A trait's own #[\Override] is not checked: the constant is
+     * checked in the class using the trait, where Populator has copied it into the constants.
+     */
+    private static function checkOverrideAttributes(ClassLikeStorage $class_storage, Codebase $codebase): void
+    {
+        $constants = [];
+        foreach ($class_storage->constants as $const_name => $const_storage) {
+            if ($const_storage->attributes) {
+                $constants[$const_name] = [$const_storage, $const_storage->attributes];
+            }
+        }
+
+        foreach ($class_storage->enum_cases as $case_name => $case_storage) {
+            if ($case_storage->attributes) {
+                $constants[$case_name] = [null, $case_storage->attributes];
+            }
+        }
+
+        foreach ($constants as $const_name => [$const_storage, $attributes]) {
+            foreach ($attributes as $attribute) {
+                if ($attribute->fq_class_name !== 'Override'
+                    || self::overridesConstant($class_storage, $const_name, $const_storage, $codebase)
+                ) {
+                    continue;
+                }
+
+                IssueBuffer::maybeAdd(
+                    new InvalidOverride(
+                        ($const_storage === null ? 'Enum case ' : 'Class constant ')
+                            . "{$class_storage->name}::{$const_name} does not match any parent constant",
+                        $attribute->name_location,
+                    ),
+                    $const_storage->suppressed_issues ?? $class_storage->suppressed_issues,
+                );
+            }
+        }
+    }
+
+    /**
+     * A constant inherited as is (the very same storage) is not redeclared here, so it has nothing to check.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function overridesConstant(
+        ClassLikeStorage $class_storage,
+        string $const_name,
+        ?ClassConstantStorage $const_storage,
+        Codebase $codebase,
+    ): bool {
+        foreach ([
+            ...$class_storage->parent_classes,
+            ...$class_storage->class_implements,
+            ...$class_storage->parent_interfaces,
+        ] as $ancestor) {
+            $inherited = $codebase->classlikes->getStorageFor($ancestor)?->constants[$const_name] ?? null;
+
+            if ($inherited !== null
+                && ($inherited === $const_storage || $inherited->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

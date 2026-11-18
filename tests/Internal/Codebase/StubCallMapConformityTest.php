@@ -183,7 +183,7 @@ final class StubCallMapConformityTest extends TestCase
     }
 
     /**
-     * Call map keys look like `name`, `name=`, `...name=`, `&r name`, `&w name=`, `&rw name`.
+     * Call map keys look like `name`, `name=`, `...name=`, `&r name`, `&w name=`, `&rw name`, `&...w name=`.
      *
      * @psalm-pure
      * @return array{string, bool, bool, bool}
@@ -196,12 +196,16 @@ final class StubCallMapConformityTest extends TestCase
 
         if ($key[0] === '&') {
             $by_ref = true;
-            $key = (string) preg_replace('/^&(?:(?:rw|r|w) )?/', '', $key);
+            $key = substr($key, 1);
         }
 
         if (str_starts_with($key, '...')) {
             $variadic = true;
             $key = substr($key, 3);
+        }
+
+        if ($by_ref) {
+            $key = (string) preg_replace('/^(?:rw|r|w) /', '', $key);
         }
 
         if (str_ends_with($key, '=')) {

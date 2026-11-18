@@ -5,8 +5,16 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_map;
+use function array_values;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -16,12 +24,243 @@ final class TraitTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
+     * @param list<array{int, string}> $expected_issues line and message of each UndefinedTrait
+     */
+    #[DataProvider('providerInvalidTraitUsedByAClassWhoseMethodIsFollowed')]
+    public function testInvalidTraitIsReportedWhenMethodMutationsAreCollected(
+        string $code,
+        array $expected_issues,
+    ): void {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, $code);
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = IssueBuffer::getIssuesDataForFile($file_path);
+
+        $undefined_traits = array_map(
+            static fn(IssueData $issue): array => [$issue->line_from, $issue->message],
+            array_values(array_filter(
+                $issues,
+                static fn(IssueData $issue): bool => $issue->type === 'UndefinedTrait',
+            )),
+        );
+
+        self::assertSame($expected_issues, $undefined_traits);
+
+        self::assertSame([], array_values(array_filter(
+            $issues,
+            static fn(IssueData $issue): bool => $issue->type === 'PropertyNotSetInConstructor',
+        )));
+    }
+
+    /**
+     * @return iterable<string, array{code: string, expected_issues: list<array{int, string}>}>
+     * @psalm-pure
+     */
+    public static function providerInvalidTraitUsedByAClassWhoseMethodIsFollowed(): iterable
+    {
+        return [
+            'missingTrait' => [
+                'code' => '<?php
+                    class Base {
+                        use MissingTrait;
+
+                        protected string $name;
+
+                        protected function init(): void {
+                            $this->name = "x";
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function __construct() {
+                            $this->init();
+                        }
+                    }',
+                'expected_issues' => [[3, 'Trait MissingTrait does not exist']],
+            ],
+            'missingTraitUsedByATrait' => [
+                'code' => '<?php
+                    trait T1 {
+                        use MissingTrait;
+                    }
+
+                    class Base {
+                        use T1;
+
+                        protected string $name;
+
+                        protected function init(): void {
+                            $this->name = "x";
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function __construct() {
+                            $this->init();
+                        }
+                    }',
+                'expected_issues' => [[3, 'Trait MissingTrait does not exist']],
+            ],
+            'classUsedAsTrait' => [
+                'code' => '<?php
+                    class NotATrait {}
+
+                    class Base {
+                        use NotATrait;
+
+                        protected string $name;
+
+                        protected function init(): void {
+                            $this->name = "x";
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function __construct() {
+                            $this->init();
+                        }
+                    }',
+                'expected_issues' => [
+                    [4, 'Class NotATrait is not a trait'],
+                    [5, 'Trait NotATrait does not exist'],
+                ],
+            ],
+            'interfaceUsedAsTrait' => [
+                'code' => '<?php
+                    interface NotATrait {}
+
+                    class Base {
+                        use NotATrait;
+
+                        protected string $name;
+
+                        protected function init(): void {
+                            $this->name = "x";
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function __construct() {
+                            $this->init();
+                        }
+                    }',
+                'expected_issues' => [
+                    [4, 'Interface NotATrait is not a trait'],
+                    [5, 'Trait NotATrait does not exist'],
+                ],
+            ],
+            'missingTraitNextToAnExistingTrait' => [
+                'code' => '<?php
+                    trait SetsName {
+                        protected function init(): void {
+                            $this->name = "x";
+                        }
+                    }
+
+                    class Base {
+                        use MissingTrait, SetsName;
+
+                        protected string $name;
+                    }
+
+                    final class Child extends Base {
+                        public function __construct() {
+                            $this->init();
+                        }
+                    }',
+                'expected_issues' => [[9, 'Trait MissingTrait does not exist']],
+            ],
+        ];
+    }
+
+    /**
      * @psalm-pure
      */
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticReturnOfTraitMethodOverriddenByMethodOfLaterTrait' => [
+                'code' => '<?php
+                    trait A {
+                        public function get(): static {
+                            return $this;
+                        }
+                    }
+
+                    trait B {
+                        public function get(): static {
+                            return $this;
+                        }
+                    }
+
+                    class C {
+                        use A;
+                    }
+
+                    class D extends C {
+                        use B;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'parentReturnOfTraitMethodIsTheParentOfTheClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {}
+
+                    class C extends A {}
+
+                    trait B {
+                        public function get(): parent {
+                            return new C();
+                        }
+                    }
+
+                    class D extends C {
+                        use B;
+                    }
+
+                    class E extends D {
+                        #[\Override]
+                        public function get(): C {
+                            return new C();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'nullableStaticReturnOfTraitMethodOverriddenByChild' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait B {
+                        public function get(): ?static {
+                            return null;
+                        }
+                    }
+
+                    class D {
+                        use B;
+                    }
+
+                    class E extends D {
+                        #[\Override]
+                        public function get(): ?static {
+                            return null;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'selfReturnOfTraitMethodIsTheClassUsingTheTrait' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1581,6 +1820,69 @@ final class TraitTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'traitReadsAClassConstantWithTheLiteralTheUsingClassesGiveIt' => [
+                'code' => '<?php
+                    /** @param positive-int $i */
+                    function takesPositive(int $i): void {}
+
+                    trait TestTrait {
+                        public function run(): void {
+                            takesPositive(self::VALUE);
+                            takesPositive(static::VALUE);
+                        }
+                    }
+
+                    final class ClassOne {
+                        use TestTrait;
+
+                        public const VALUE = 1;
+                    }
+
+                    final class ClassTwo {
+                        use TestTrait;
+
+                        public const VALUE = 2;
+                    }
+
+                    (new ClassOne())->run();
+                    (new ClassTwo())->run();',
+            ],
+            'traitReadsAClassConstantEachUsingClassDefinesDifferently' => [
+                'code' => '<?php
+                    trait TestTrait {
+                        public function testFunction(): void {
+                            if (self::VALUE) {
+                                echo "True";
+                            } else {
+                                echo "False";
+                            }
+
+                            if (static::VALUE) {
+                                echo "True";
+                            } else {
+                                echo "False";
+                            }
+                        }
+                    }
+
+                    final class ClassOne {
+                        use TestTrait;
+
+                        public const VALUE = true;
+                    }
+
+                    final class ClassTwo {
+                        use TestTrait;
+
+                        public const VALUE = false;
+                    }
+
+                    (new ClassOne())->testFunction();
+                    (new ClassTwo())->testFunction();',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
         ];
     }
 
@@ -1591,6 +1893,33 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticReturnOfTraitMethodOverriddenByUnrelatedReturnTypeOfLaterTrait' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    trait A {
+                        public function get(): static {
+                            return $this;
+                        }
+                    }
+
+                    trait B {
+                        public function get(): Foo {
+                            return new Foo();
+                        }
+                    }
+
+                    class C {
+                        use A;
+                    }
+
+                    class D extends C {
+                        use B;
+                    }',
+                'error_message' => "Method B::get with return type 'Foo' is different to return type",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'selfReturnOfTraitMethodRejectsTheParentOfTheClassUsingTheTrait' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2033,6 +2362,19 @@ final class TraitTest extends TestCase
                     }
                     ',
                 'error_message' => 'DuplicateProperty',
+            ],
+            'classConstantOutsideATraitKeepsItsLiteralType' => [
+                'code' => '<?php
+                    final class ClassOne {
+                        public const VALUE = true;
+
+                        public function check(): void {
+                            if (self::VALUE) {
+                                echo "True";
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }

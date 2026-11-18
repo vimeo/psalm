@@ -327,6 +327,8 @@ final class DocumentationTest extends TestCase
 
         if ($is_taint_test) {
             $this->project_analyzer->trackTaintedInputs();
+            // the taint handlers psalm registers (AddRemoveTaints) remove and add taints of the examples too
+            $codebase->config->initializePlugins($this->project_analyzer);
         }
 
         $this->analyzeFile($file_path, new Context());
