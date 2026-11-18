@@ -24,6 +24,137 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'fileTestFunctionsKeepAMixedArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(mixed $a, mixed $b, mixed $c): void {
+                        if (is_link($a)) {
+                            /** @psalm-check-type-exact $a = mixed */
+                        }
+
+                        if (file_exists($b)) {
+                            /** @psalm-check-type-exact $b = mixed */
+                        }
+
+                        if (is_dir($c) || is_readable($c)) {
+                            /** @psalm-check-type-exact $c = mixed */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'fileTestFunctionsKeepAnArgumentContainingMixed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $a, string $s): void {
+                        $x = $a['k'];
+                        if ($x === null) {
+                            $x = $s;
+                        }
+
+                        if (is_link($x)) {
+                            /** @psalm-check-type-exact $x = mixed|string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'fileTestFunctionsKeepAnSplFileInfoArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(SplFileInfo $a, SplFileInfo $b): void {
+                        if (is_link($a)) {
+                            /** @psalm-check-type-exact $a = SplFileInfo */
+                        }
+
+                        if (is_file($b) || file_exists($b)) {
+                            /** @psalm-check-type-exact $b = SplFileInfo */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
+            'fileTestFunctionsStillNarrowAStringArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(string $a, string $b): void {
+                        if (is_link($a)) {
+                            /** @psalm-check-type-exact $a = non-empty-string */
+                        }
+
+                        if (file_exists($b)) {
+                            /** @psalm-check-type-exact $b = non-empty-string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'fileTestFunctionsAssertANonEmptyString' => [
+                'code' => '<?php
+                    /** @param non-empty-string $path */
+                    function takesNonEmptyString(string $path): void {}
+
+                    function check(string $path): void {
+                        if (file_exists($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_file($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_dir($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_link($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_readable($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_writable($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_writeable($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_executable($path)) {
+                            takesNonEmptyString($path);
+                        }
+                    }',
+            ],
+            'fileTestFunctionsKeepAPossiblyEmptyStringWhenFalse' => [
+                'code' => '<?php
+                    function check(string $path): void {
+                        if (!file_exists($path)) {
+                            $a = $path;
+                        } else {
+                            $a = "x";
+                        }
+                        if (is_dir($path)) {
+                            $b = "x";
+                        } else {
+                            $b = $path;
+                        }
+                    }
+
+                    /** @var string $path */
+                    $path = "";
+                    if (is_file($path)) {
+                        $c = "x";
+                    } else {
+                        $c = $path;
+                    }',
+                'assertions' => [
+                    '$c===' => 'string',
+                ],
+            ],
             'filterVarEmptyStringNullOnlyForAnEmptyInput' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3972,6 +4103,22 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'fileTestFunctionOnAnEmptyStringIsAlwaysFalse' => [
+                'code' => '<?php
+                    $path = "";
+                    if (is_file($path)) {
+                        echo "never";
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'fileTestFunctionsStayImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function exists(string $path): bool {
+                        return file_exists($path);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
             'filterVarEmptyStringNullIsRedundantForAFilterWithoutIt' => [
                 'code' => <<<'PHP'
                     <?php
