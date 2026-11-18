@@ -22990,11 +22990,6 @@ return array (
     'callback=' => 'callable[impure]',
     'data=' => 'mixed',
   ),
-  'empty' => 
-  array (
-    0 => 'bool',
-    'value' => 'mixed',
-  ),
   'emptyiterator::current' => 
   array (
     0 => 'never',
@@ -23397,11 +23392,6 @@ return array (
   array (
     0 => 'void',
     -2 => 'none',
-  ),
-  'eval' => 
-  array (
-    0 => 'mixed',
-    'code_str' => 'string',
   ),
   'evcheck::__construct' => 
   array (
@@ -28382,7 +28372,7 @@ return array (
     0 => 'list<mixed>',
     'stream' => 'resource',
     'format' => 'string',
-    '&...vars=' => 'mixed',
+    '&...w vars=' => 'mixed',
     -2 => 'none',
   ),
   'fscanf\'1' => 
@@ -47441,7 +47431,7 @@ return array (
   array (
     0 => 'false|string',
     'zoneId' => 'string',
-    '&isSystemID=' => 'bool',
+    '&w isSystemID=' => 'bool',
     -2 => 'none',
   ),
   'intltz_get_display_name' => 
@@ -47495,8 +47485,8 @@ return array (
     'timeZone' => 'IntlTimeZone',
     'date' => 'float',
     'local' => 'bool',
-    '&rawOffset' => 'int',
-    '&dstOffset' => 'int',
+    '&w rawOffset' => 'int',
+    '&w dstOffset' => 'int',
     -2 => 'none',
   ),
   'intltz_get_raw_offset' => 
@@ -47829,12 +47819,6 @@ return array (
     0 => 'bool',
     'filename' => 'string',
     -2 => 'none',
-  ),
-  'isset' => 
-  array (
-    0 => 'bool',
-    'value' => 'mixed',
-    '...rest=' => 'mixed',
   ),
   'iterator::current' => 
   array (
@@ -62914,7 +62898,7 @@ return array (
     '&w ekeys' => 'array<array-key, mixed>',
     'pubkeys' => 'array<array-key, mixed>',
     'method=' => 'string',
-    '&iv=' => 'string',
+    '&w iv=' => 'string',
     -2 => 'none',
   ),
   'openssl_sign' => 
@@ -69837,11 +69821,6 @@ return array (
     '&r arg' => 'array<array-key, mixed>|object',
     -2 => 'none',
   ),
-  'print' => 
-  array (
-    0 => 'int',
-    'arg' => 'string',
-  ),
   'print_r' => 
   array (
     0 => 'string',
@@ -69886,7 +69865,7 @@ return array (
     0 => 'false|resource',
     'command' => 'array<array-key, mixed>|string',
     'descriptorspec' => 'array<array-key, mixed>',
-    '&pipes' => 'array<array-key, resource>',
+    '&w pipes' => 'array<array-key, resource>',
     'cwd=' => 'null|string',
     'env=' => 'array<array-key, mixed>|null',
     'other_options=' => 'array<array-key, mixed>|null',
@@ -87646,7 +87625,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>|int',
     'format' => 'string',
-    '&...vars=' => 'float|int|string',
+    '&...w vars=' => 'float|int|string',
     -2 => 'none',
   ),
   'splfileobject::fseek' => 
@@ -88854,7 +88833,7 @@ return array (
   array (
     0 => 'array<array-key, mixed>|int',
     'format' => 'string',
-    '&...vars=' => 'float|int|string',
+    '&...w vars=' => 'float|int|string',
     -2 => 'none',
   ),
   'spltempfileobject::fseek' => 
@@ -90083,7 +90062,7 @@ return array (
     0 => 'int|list<float|int|null|string>|null',
     'str' => 'string',
     'format' => 'string',
-    '&...vars=' => 'float|int|null|string',
+    '&...w vars=' => 'float|int|null|string',
     -2 => 'none',
   ),
   'ssdeep_fuzzy_compare' => 
@@ -91098,7 +91077,7 @@ return array (
   ),
   'stream_get_meta_data' => 
   array (
-    0 => 'array{blocked: bool, crypto?: array{cipher_bits: int, cipher_name: string, cipher_version: string, protocol: string}, eof: bool, mediatype: string, mode: string, seekable: bool, stream_type: string, timed_out: bool, unread_bytes: int, uri: string, wrapper_data: mixed, wrapper_type: string}',
+    0 => 'array{base64?: bool, blocked?: bool, charset?: string, crypto?: array{cipher_bits: int, cipher_name: string, cipher_version: string, protocol: string}, eof?: bool, mediatype?: string, mode: string, seekable: bool, stream_type: string, timed_out?: bool, unread_bytes: int, uri?: string, wrapper_data?: mixed, wrapper_type?: string}',
     'fp' => 'resource',
     -2 => 'none',
   ),
@@ -110701,12 +110680,6 @@ return array (
     'variable_representation' => 'string',
     'allowed_classes=' => 'array{allowed_classes?: array<array-key, class-string>|bool, max_depth?: int}',
     -2 => 'none',
-  ),
-  'unset' => 
-  array (
-    0 => 'void',
-    'var=' => 'mixed',
-    '...args=' => 'mixed',
   ),
   'untaint' => 
   array (

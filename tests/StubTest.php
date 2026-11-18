@@ -23,12 +23,17 @@ use function array_values;
 use function assert;
 use function dirname;
 use function explode;
+use function file_put_contents;
 use function getcwd;
 use function implode;
+use function rename;
 use function reset;
 use function strlen;
 use function strpos;
 use function substr;
+use function sys_get_temp_dir;
+use function tempnam;
+use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -312,6 +317,61 @@ final class StubTest extends DeferredAnalyzerTestCase
         );
 
         $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testNativeFunctionStubbedInAPhpFileIsUndefinedBelowItsVersion(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UndefinedFunction');
+
+        $this->analyzeWithNativeFunctionStub(
+            '<?php
+                echo fdiv(1.0, 2.0);',
+        );
+    }
+
+    /**
+     * Analyses the code with a `.php` stub of a native function, written at run time since PHP cannot lint
+     * a file that redeclares it.
+     */
+    private function analyzeWithNativeFunctionStub(string $code): void
+    {
+        $temp_path = (string) tempnam(sys_get_temp_dir(), 'psalm_native_function_stub');
+        $stub_path = $temp_path . '.php';
+        rename($temp_path, $stub_path);
+        file_put_contents(
+            $stub_path,
+            '<?php
+                function fdiv(float $num1, float $num2): float {}',
+        );
+
+        try {
+            $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+                TestConfig::loadFromXML(
+                    dirname(__DIR__),
+                    '<?xml version="1.0"?>
+                    <psalm
+                        errorLevel="1"
+                    >
+                        <projectFiles>
+                            <directory name="src" />
+                        </projectFiles>
+
+                        <stubs>
+                            <file name="' . $stub_path . '" />
+                        </stubs>
+                    </psalm>',
+                ),
+            );
+
+            $file_path = (string) getcwd() . '/src/somefile.php';
+
+            $this->addFile($file_path, $code);
+
+            $this->analyzeFile($file_path, new Context());
+        } finally {
+            unlink($stub_path);
+        }
     }
 
     public function testStubFileClass(): void

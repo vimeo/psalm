@@ -41,6 +41,7 @@ use function array_slice;
 use function assert;
 use function count;
 use function end;
+use function is_numeric;
 use function ltrim;
 use function str_starts_with;
 use function strpos;
@@ -258,6 +259,12 @@ final class CallableTypeComparator
         TCallable $container_type_part,
         ?TypeComparisonResult $atomic_comparison_result,
     ): bool {
+        // the name of a function is neither empty nor numeric
+        if ($input_type_part instanceof TLiteralString
+            && ($input_type_part->value === '' || is_numeric($input_type_part->value))
+        ) {
+            return false;
+        }
 
         if ($input_type_part instanceof TArray) {
             if ($input_type_part->type_params[1]->isMixed()
@@ -961,7 +968,6 @@ final class CallableTypeComparator
                             }
 
                             if ($member_id) {
-                                /** @psalm-suppress PossiblyNullArgument Psalm bug */
                                 $codebase->analyzer->addMixedMemberName(
                                     strtolower($member_id) . '::',
                                     $calling_method_id ?: $file_name,

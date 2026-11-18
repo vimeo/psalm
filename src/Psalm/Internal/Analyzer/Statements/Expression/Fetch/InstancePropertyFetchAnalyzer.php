@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpurePropertyAssignment;
 use Psalm\Issue\ImpurePropertyFetch;
@@ -39,7 +40,6 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_shift;
 use function array_values;
-use function rtrim;
 use function strtolower;
 
 /**
@@ -143,11 +143,13 @@ final class InstancePropertyFetchAnalyzer
         // MethodCallAnalyzer does for method-call receivers. Only top-level
         // variables resolve: one nested in a generic object stays live.
         $stmt_var_type = TypeVariableResolver::resolveTopLevel($stmt_var_type, $codebase);
+        $stmt_var_type = TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $stmt_var_type);
 
         if ($stmt_var_type->isNull()) {
             return !IssueBuffer::accepts(
                 new NullPropertyFetch(
-                    'Cannot get property on null variable ' . $stmt_var_id,
+                    'Cannot get property on null variable '
+                        . ExpressionIdentifier::getNameForMessage($stmt_var_id, $stmt->var),
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -218,10 +220,11 @@ final class InstancePropertyFetchAnalyzer
             // we can only be sure that the variable is possibly null if we know the var_id
             if (!$context->inside_isset && $stmt->name instanceof PhpParser\Node\Identifier) {
                 // the null of a `?->` short-circuit is added to the result below, it is not a fetch on null
-                if ($receiver_state !== NullsafeChainState::ShortCircuit) {
+                if (!$receiver_state->isNullOnlyByShortCircuit()) {
                     IssueBuffer::maybeAdd(
                         new PossiblyNullPropertyFetch(
-                            rtrim('Cannot get property on possibly null variable ' . $stmt_var_id)
+                            'Cannot get property on possibly null variable '
+                            . ExpressionIdentifier::getNameForMessage($stmt_var_id, $stmt->var)
                             . ' of type ' . $stmt_var_type,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
@@ -306,7 +309,7 @@ final class InstancePropertyFetchAnalyzer
         $short_circuit_null = $receiver_state !== NullsafeChainState::None && $stmt_var_type->isNullable();
 
         if ($short_circuit_null) {
-            $receiver_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
+            $receiver_state->afterLink($stmt_type)->markOn($stmt);
         }
 
         // isset()/empty()/`??` only skip the null of the fetch itself, the `?->` short-circuit stays in the result
@@ -427,7 +430,7 @@ final class InstancePropertyFetchAnalyzer
         }
 
         foreach ($class_storages as $class_storage) {
-            if (isset($class_storage->methods['__construct']->this_property_mutations[$property_name])) {
+            if ($class_storage->methods['__construct']->this_property_mutations[$property_name] ?? false) {
                 return false;
             }
         }
@@ -709,6 +712,7 @@ final class InstancePropertyFetchAnalyzer
                                 $declaring_class_storage->properties[$stmt->name->name],
                                 $context,
                                 $stmt_var_type->reference_free && $stmt_var_type->allow_mutations,
+                                $stmt->getAttribute(UnsetAnalyzer::TARGET_ATTRIBUTE) !== true,
                             );
                         }
                     }
