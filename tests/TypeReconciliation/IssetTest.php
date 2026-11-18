@@ -81,6 +81,45 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOnListOffsetDefinesTheOffsetsBeforeIt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param list<int> $a
+                     * @param list<int|null> $b
+                     * @param list{0?: string, 1?: string, 2?: string} $c
+                     * @param list<object> $d
+                     * @param 1|2 $k
+                     */
+                    function f(array $a, array $b, array $c, array $d, int $k): void {
+                        if (isset($a[1])) {
+                            /** @psalm-check-type-exact $a = list{int, int, ...<int>} */
+                        } else {
+                            /** @psalm-check-type-exact $a = list<int> */
+                        }
+
+                        if (isset($b[1])) {
+                            /** @psalm-check-type-exact $b = list{int|null, int, ...<int|null>} */
+                        }
+
+                        if (isset($c[2])) {
+                            /** @psalm-check-type-exact $c = list{string, string, string} */
+                        }
+
+                        if (!empty($d[2])) {
+                            /** @psalm-check-type-exact $d = list{object, object, object, ...<object>} */
+                        }
+
+                        if (isset($a[$k])) {
+                            /** @psalm-check-type-exact $a = list<int> */
+                        }
+
+                        if (isset($a[0])) {
+                            /** @psalm-check-type-exact $a = list{int, ...<int>} */
+                        }
+                    }
+                    PHP,
+            ],
             'nullsafeCallCoalescedWithAFalsyValueKeepsTheReceiverNullableWhereItIsFalsy' => [
                 'code' => <<<'PHP'
                     <?php

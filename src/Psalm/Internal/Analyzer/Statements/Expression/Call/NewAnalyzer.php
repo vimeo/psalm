@@ -214,7 +214,6 @@ final class NewAnalyzer extends CallAnalyzer
             if ($codebase->store_node_types
                 && $fq_class_name
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
@@ -393,7 +392,6 @@ final class NewAnalyzer extends CallAnalyzer
     ): void {
         if (!$codebase->find_unused_variables
             || $context->collect_initializations
-            || $context->collect_mutations
             || $context->insideUse()
             || $context->inside_unset
             || !$codebase->classImplements($fq_class_name, 'Throwable')
@@ -575,6 +573,7 @@ final class NewAnalyzer extends CallAnalyzer
         PhpParser\Node\Expr\New_ $stmt,
         MethodStorage $method_storage,
         TemplateResult $template_result,
+        bool $strict_types,
     ): void {
         if ($method_storage->if_true_assertions) {
             $statements_analyzer->node_data->setIfTrueAssertions(
@@ -586,6 +585,8 @@ final class NewAnalyzer extends CallAnalyzer
                         $method_storage->if_true_assertions,
                         $method_storage,
                         $stmt->getArgs(),
+                        $statements_analyzer->node_data,
+                        $strict_types,
                     ),
                 ),
             );
@@ -601,6 +602,8 @@ final class NewAnalyzer extends CallAnalyzer
                         $method_storage->if_false_assertions,
                         $method_storage,
                         $stmt->getArgs(),
+                        $statements_analyzer->node_data,
+                        $strict_types,
                     ),
                 ),
             );
@@ -631,7 +634,6 @@ final class NewAnalyzer extends CallAnalyzer
         $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && !NamespaceAnalyzer::isWithinAny($caller_identifier, $storage->internal)
         ) {
             IssueBuffer::maybeAdd(
@@ -669,7 +671,13 @@ final class NewAnalyzer extends CallAnalyzer
             $stmt->class,
             null,
             self::resolveStaticPropertyAssertionClasses(
-                self::getAssertionsOnArgs($method_storage->assertions, $method_storage, $args),
+                self::getAssertionsOnArgs(
+                    $method_storage->assertions,
+                    $method_storage,
+                    $args,
+                    $statements_analyzer->node_data,
+                    $context->strict_types,
+                ),
                 $codebase,
                 $context,
                 ($codebase->methods->getAppearingMethodId($method_id) ?? $declaring_method_id)->fq_class_name,
@@ -728,7 +736,6 @@ final class NewAnalyzer extends CallAnalyzer
         )) {
             if ($codebase->store_node_types
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 ArgumentMapPopulator::recordArgumentPositions(
                     $statements_analyzer,
@@ -822,6 +829,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $stmt,
                     $method_storage,
                     $template_result,
+                    $context->strict_types,
                 );
             }
 

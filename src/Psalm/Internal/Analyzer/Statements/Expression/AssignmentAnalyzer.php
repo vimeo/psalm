@@ -694,7 +694,6 @@ final class AssignmentAnalyzer
             );
 
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)
@@ -742,7 +741,6 @@ final class AssignmentAnalyzer
             }
         } else {
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -2789,7 +2787,6 @@ final class AssignmentAnalyzer
                         && !str_contains($list_var_id, '->')
                         && !str_starts_with($list_var_id, '$_')
                         && !$context->collect_initializations
-                        && !$context->collect_mutations
                     ) {
                         IssueBuffer::maybeAdd(
                             new MixedAssignment(
@@ -2992,7 +2989,6 @@ final class AssignmentAnalyzer
 
                 if ($codebase->store_node_types
                     && !$context->collect_initializations
-                    && !$context->collect_mutations
                 ) {
                     $location = new CodeLocation($statements_analyzer, $assign_var);
                     $codebase->analyzer->addNodeReference(

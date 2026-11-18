@@ -20,7 +20,6 @@ use function strtoupper;
 use function substr;
 
 use const PHP_OS;
-use const PHP_VERSION_ID;
 
 /**
  * @psalm-type NamedArgumentsDataProviderArrayNotation = array{
@@ -51,10 +50,6 @@ trait InvalidCodeAnalysisTestTrait
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'PHP80-') !== false) {
-            if (PHP_VERSION_ID < 8_00_00) {
-                $this->markTestSkipped('Test case requires PHP 8.0.');
-            }
-
             if ($php_version === null) {
                 $php_version = '8.0';
             }
