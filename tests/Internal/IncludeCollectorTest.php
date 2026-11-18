@@ -17,9 +17,9 @@ use function dirname;
 use function file_put_contents;
 use function get_included_files;
 use function glob;
+use function hash;
 use function is_dir;
 use function is_file;
-use function md5;
 use function mkdir;
 use function realpath;
 use function rmdir;
@@ -280,7 +280,7 @@ final class IncludeCollectorTest extends TestCase
             $this->createFile($composer_dir . '/ClassLoader.php'),
             $this->createFile(
                 $composer_dir . '/autoload_real.php',
-                'class ComposerAutoloaderInit' . md5(uniqid('', true)) . " {}\n",
+                'class ComposerAutoloaderInit' . hash('xxh3', uniqid('', true)) . " {}\n",
             ),
         ];
     }

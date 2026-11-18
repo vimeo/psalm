@@ -67,7 +67,7 @@ final class TaintTest extends TestCase
         'MissingPropertyType', 'UndefinedMagicPropertyAssignment', 'InvalidStringClass', 'PossiblyInvalidIterator',
         'InvalidReturnStatement', 'ArgumentTypeCoercion', 'UnresolvableInclude', 'UndefinedClass', 'RedundantCast',
         'MixedArrayAssignment', 'InvalidReturnStatement', 'InvalidArrayOffset', 'UndefinedFunction', 'ImplicitToStringCast',
-        'InvalidArgument', 'UndefinedVariable',
+        'InvalidArgument', 'UndefinedVariable', 'WeakHash', 'InsecureCookie',
     ];
     public function testTaintKindNoHoles(): void
     {
@@ -6692,6 +6692,18 @@ final class TaintTest extends TestCase
 
                     new Runner("", "", tainted());',
                 'error_message' => 'TaintedShell',
+            ],
+            'iteratingAnArrayOrAStringKeepsTheTaintsOfTheArray' => [
+                'code' => '<?php
+                    /** @return array<array-key, mixed>|string */
+                    function rows() {
+                        return [["comment" => $_GET["comment"]]];
+                    }
+
+                    foreach (rows() as $row) {
+                        echo (string) $row["comment"];
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
             'valueThatMayNotMatchThePatternKeepsItsTaints' => [
                 'code' => '<?php
