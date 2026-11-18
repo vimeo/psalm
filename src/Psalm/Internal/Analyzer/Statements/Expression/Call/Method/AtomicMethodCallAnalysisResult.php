@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type\Union;
 
 /**
@@ -70,4 +71,32 @@ final class AtomicMethodCallAnalysisResult
      * whether it comes from a mutation-free method of a class that is not immutable
      */
     public bool $memoized_result_has_mutations = false;
+
+    /**
+     * What was known of the properties the call writes before it, by var id
+     *
+     * @var array<string, ?Union>
+     */
+    public array $property_types_before_call = [];
+
+    /**
+     * What is known of the properties the call writes after it, for the types of the receiver analysed so far
+     *
+     * @var array<string, Union>
+     */
+    public array $property_types_after_call = [];
+
+    /**
+     * For how many types of the receiver the call writes each property
+     *
+     * @var array<string, int>
+     */
+    public array $property_writer_counts = [];
+
+    /**
+     * The types of the receiver the purity of the call was analysed for, with their template types
+     *
+     * @var list<array{ClassLikeStorage, array<string, array<string, Union>>}>
+     */
+    public array $analysed_receiver_classes = [];
 }
