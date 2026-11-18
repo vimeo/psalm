@@ -188,6 +188,18 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
             'Destination class Ns\C already exists',
         ];
         yield from self::provideMalformedRefactorMappings();
+        yield '--into value that is also a directory' => [
+            ['--move', 'Ns\A::foo', '--into', 'src'],
+            'Destination class src doesn’t exist',
+        ];
+        yield 'source that is also a directory' => [
+            ['--move', 'src', '--into', 'Ns\B'],
+            'Source class src doesn’t exist',
+        ];
+        yield 'valid mapping followed by a missing destination class' => [
+            ['--rename', 'Ns\A::foo', '--to', 'Ns\A::baz', '--move', 'Ns\B::bar', '--into', 'Ns\Missing'],
+            'Destination class Ns\Missing doesn’t exist',
+        ];
         yield 'leading backslash on --into' => [
             ['--move', 'Ns\A::foo', '--into', '\Ns\Missing'],
             'Destination class Ns\Missing doesn’t exist',
@@ -298,6 +310,30 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         yield 'doubled leading backslash' => [
             ['--rename', 'Ns\A', '--to', '\\\\Ns\C'],
             'Destination for Ns\A must be a class name like Foo\Bar, got \Ns\C',
+        ];
+        yield '--to value that is also a directory' => [
+            ['--rename', 'Ns\A::foo', '--to', 'src'],
+            'Destination for Ns\A::foo must be of the form Foo\Bar::baz, got src',
+        ];
+        yield 'namespaced class renamed to a directory name' => [
+            ['--rename', 'Ns\A', '--to', 'src'],
+            'Renaming a namespaced class into the global namespace is not supported',
+        ];
+        yield 'namespaced class renamed into the global namespace' => [
+            ['--rename', 'Ns\A', '--to', 'Foo'],
+            'Renaming a namespaced class into the global namespace is not supported',
+        ];
+        yield 'namespaced class renamed to a directory name with --to=' => [
+            ['--rename', 'Ns\A', '--to=src'],
+            'Renaming a namespaced class into the global namespace is not supported',
+        ];
+        yield 'namespaced class renamed into the global namespace with --to=' => [
+            ['--rename', 'Ns\A', '--to=Foo'],
+            'Renaming a namespaced class into the global namespace is not supported',
+        ];
+        yield 'valid mapping followed by a malformed one' => [
+            ['--rename', 'Ns\A::foo', '--to', 'Ns\A::baz', '--rename', 'Ns\B', '--to', 'Foo'],
+            'Renaming a namespaced class into the global namespace is not supported',
         ];
     }
 

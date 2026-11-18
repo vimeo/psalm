@@ -42,6 +42,7 @@ use function preg_last_error_msg;
 use function preg_match;
 use function preg_split;
 use function realpath;
+use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function strpos;
@@ -486,6 +487,10 @@ final class Refactor
 
             if (!preg_match($class, $destination)) {
                 return 'Destination for ' . $source . ' must be a class name like Foo\\Bar, got ' . $destination;
+            }
+
+            if (str_contains($source, '\\') && !str_contains($destination, '\\')) {
+                return 'Renaming a namespaced class into the global namespace is not supported';
             }
 
             return null;

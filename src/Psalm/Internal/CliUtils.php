@@ -424,6 +424,9 @@ final class CliUtils
     }
 
     /**
+     * The value of --move, --into, --rename or --to is kept even when realpath() accepts it,
+     * because a symbol name can also match an existing path, such as a directory named src.
+     *
      * @return list<string>
      */
     public static function getArguments(): array
@@ -433,12 +436,13 @@ final class CliUtils
 
         for ($i = 0, $iMax = count($argv); $i < $iMax; ++$i) {
             $input_path = $argv[$i];
+            $is_refactor_value = $i > 0 && in_array($argv[$i - 1], ['--move', '--into', '--rename', '--to'], true);
 
-            if (realpath($input_path) !== false) {
+            if (!$is_refactor_value && realpath($input_path) !== false) {
                 continue;
             }
 
-            if ($input_path[0] === '-' && strlen($input_path) === 2) {
+            if (strlen($input_path) === 2 && $input_path[0] === '-') {
                 if ($input_path[1] === 'c' || $input_path[1] === 'f' || $input_path[1] === 'r') {
                     ++$i;
                 }
