@@ -36,7 +36,7 @@ final class ShutdownAnalyzerTask implements Task
 
         // @codingStandardsIgnoreStart
         return [
-            'issues'                                     => IssueBuffer::getIssuesData(),
+            'issues'                                     => IssueBuffer::getAllIssuesData(),
             'fixable_issue_counts'                       => IssueBuffer::getFixableIssues(),
             'method_dependencies'                        => $file_reference_provider->getAllMethodDependencies(),
             'method_param_uses'                          => $file_reference_provider->getAllMethodParamUses(),
