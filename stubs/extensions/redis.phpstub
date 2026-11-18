@@ -278,7 +278,6 @@ class Redis {
     public function keys(string $pattern) {}
 
     /**
-     * @param mixed $elements
      * @return false|int|Redis
      * @psalm-flow ($pivot, $value) -> Redis::$data[$key]
      */

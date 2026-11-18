@@ -69,7 +69,11 @@ final class IntMaskComparisonAnalyzer
         }
 
         foreach ([[$left_type, $right_type], [$right_type, $left_type]] as [$mask_type, $other_type]) {
-            if ($mask_type->int_mask_bits !== null && self::isAmbiguous($mask_type, $other_type, $is_equality)) {
+            // two bit sets are compared for equality to tell whether they are the same set
+            if ($mask_type->int_mask_bits !== null
+                && (!$is_equality || $other_type->int_mask_bits === null)
+                && self::isAmbiguous($mask_type, $other_type, $is_equality)
+            ) {
                 self::report(
                     $statements_analyzer,
                     $mask_type->int_mask_bits,
@@ -120,7 +124,10 @@ final class IntMaskComparisonAnalyzer
             }
 
             foreach ([[$needle_type, $value_type], [$value_type, $needle_type]] as [$mask_type, $other_type]) {
-                if ($mask_type->int_mask_bits !== null && self::isAmbiguous($mask_type, $other_type, true)) {
+                if ($mask_type->int_mask_bits !== null
+                    && $other_type->int_mask_bits === null
+                    && self::isAmbiguous($mask_type, $other_type, true)
+                ) {
                     self::report($statements_analyzer, $mask_type->int_mask_bits, true, $code_location);
 
                     return;

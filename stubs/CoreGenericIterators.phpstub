@@ -381,7 +381,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     public function setFlags($flags) { }
 
     /**
-     * @return void
+     * @return true
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template TStorage
@@ -389,7 +389,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     public function asort() { }
 
     /**
-     * @return void
+     * @return true
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template TStorage
@@ -399,7 +399,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     /**
      * @psalm-purity-template P
      * @param callable[P](TValue,TValue):int $cmp_function The compare function used for the sort.
-     * @return void
+     * @return true
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template P, TStorage
@@ -409,7 +409,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     /**
      * @psalm-purity-template P
      * @param callable[P](TKey,TKey):int $cmp_function The compare function used for the sort.
-     * @return void
+     * @return true
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template P, TStorage
@@ -417,7 +417,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     public function uksort($cmp_function) { }
 
     /**
-     * @return void
+     * @return true
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template TStorage
@@ -425,7 +425,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
     public function natsort() { }
 
     /**
-     * @return void
+     * @return true
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template TStorage
