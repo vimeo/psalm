@@ -314,6 +314,57 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => ['ImplicitToStringCast'],
                 'php_version' => '8.1',
             ],
+            'assertionOnAStringParameterOfABuiltinKeepsAnArgumentContainingMixed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $a, string $s): void {
+                        $x = $a['k'];
+                        if ($x === null) {
+                            $x = $s;
+                        }
+
+                        if (str_contains($x, 'x')) {
+                            /** @psalm-check-type-exact $x = mixed|string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'assertionOnAStringParameterOfABuiltinNarrowsAMixedArgumentInStrictMode' => [
+                'code' => <<<'PHP'
+                    <?php
+                    declare(strict_types=1);
+
+                    function f(mixed $a): void {
+                        if (str_contains($a, 'x')) {
+                            /** @psalm-check-type-exact $a = non-empty-string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'assertionOnAStringParameterOfAUserFunctionNarrowsAMixedArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-assert-if-true non-empty-string $s */
+                    function nn(string $s): bool {
+                        return $s !== '';
+                    }
+
+                    function f(mixed $a): void {
+                        if (nn($a)) {
+                            /** @psalm-check-type-exact $a = non-empty-string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.1',
+            ],
             'assertOnAMixedParameterStillNarrowsAMixedArgument' => [
                 'code' => <<<'PHP'
                     <?php
