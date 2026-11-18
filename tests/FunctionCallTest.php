@@ -4378,6 +4378,41 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'psalmOverloadWithAParameterTypeTheSignatureDoesNotAccept' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int $x): int
+                     */
+                    function pick(string $x): int {
+                        return 0;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
+                    . 'The type int of parameter $x of an @psalm-overload of pick is not accepted by its '
+                    . 'signature, which declares string',
+            ],
+            'psalmOverloadWithAParameterTheSignatureDoesNotHave' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $x, int $extra): int
+                     */
+                    function pick(string $x): int {
+                        return 0;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
+                    . 'Parameter $extra of an @psalm-overload of pick is not a parameter of its signature',
+            ],
+            'psalmOverloadWithAReturnTypeTheSignatureDoesNotDeclare' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (string $x): string
+                     */
+                    function pick(string $x): int {
+                        return 0;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
+                    . 'The return type string of an @psalm-overload of pick is not contained by the declared '
+                    . 'one, int',
+            ],
             'psalmOverloadWithAnInvalidSignature' => [
                 'code' => '<?php
                     /**
