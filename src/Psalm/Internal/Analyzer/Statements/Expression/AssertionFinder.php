@@ -3857,7 +3857,8 @@ final class AssertionFinder
                 IssueBuffer::maybeAdd(
                     $conditional instanceof NotEqual || $conditional instanceof NotIdentical
                         ? new RedundantConditionGivenDocblockType(
-                            'Docblock-defined type ' . $var_type->getId() . ' can never contain ' . $other_type->getId(),
+                            'Docblock-defined type ' . $var_type->getId()
+                                . ' can never contain ' . $other_type->getId(),
                             new CodeLocation($source, $conditional),
                             $var_type->getId() . ' ' . $other_type->getId(),
                         )
