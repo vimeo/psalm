@@ -30,7 +30,6 @@
   </file>
   <file src="src/Psalm/CodeLocation.php">
     <ImpureFunctionCall>
-      <code><![CDATA[__unserialize]]></code>
       <code><![CDATA[calculateRealLocation]]></code>
     </ImpureFunctionCall>
     <RiskyTruthyFalsyComparison>
@@ -496,7 +495,6 @@
       <code><![CDATA[$switch_var_id]]></code>
       <code><![CDATA[$switch_var_id]]></code>
       <code><![CDATA[$switch_var_id]]></code>
-      <code><![CDATA[$type_statements]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/DeclareAnalyzer.php">
@@ -728,7 +726,6 @@
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/AssignmentAnalyzer.php">
     <ImplicitToStringCast>
       <code><![CDATA[$comment_type]]></code>
-      <code><![CDATA[$context->byref_constraints[$var_id]->type]]></code>
       <code><![CDATA[$var_comment_type]]></code>
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
@@ -1092,7 +1089,6 @@
       <code><![CDATA[$arg_var_id]]></code>
       <code><![CDATA[$assertion_var_id]]></code>
       <code><![CDATA[$calling_class_storage->template_extended_params]]></code>
-      <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$declaring_class_storage->template_types]]></code>
@@ -1561,9 +1557,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[end($path_types)]]></code>
     </RiskyTruthyFalsyComparison>
-    <UnnecessaryVarAnnotation>
-      <code><![CDATA[DataFlowNode]]></code>
-    </UnnecessaryVarAnnotation>
   </file>
   <file src="src/Psalm/Internal/Codebase/VariableUseGraph.php">
     <ImmutableDependency>
@@ -1795,18 +1788,6 @@
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$method_id_parts[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
-  </file>
-  <file src="src/Psalm/Internal/PhpVisitor/AssignmentMapVisitor.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$arg_var_id]]></code>
-      <code><![CDATA[$arg_var_id]]></code>
-      <code><![CDATA[$left_var_id]]></code>
-      <code><![CDATA[$left_var_id]]></code>
-      <code><![CDATA[$right_var_id]]></code>
-      <code><![CDATA[$right_var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
-    </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/PhpVisitor/PartialParserVisitor.php">
     <PossiblyUndefinedIntArrayOffset>

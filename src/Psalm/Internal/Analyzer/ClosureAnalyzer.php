@@ -120,6 +120,17 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
      */
     public array $captured_by_ref_enclosing_types = [];
 
+    /**
+     * `A::$property::get` when this is the body of a property hook, see ClassAnalyzer::analyzePropertyHooks()
+     */
+    public function getPropertyHookId(): ?string
+    {
+        /** @var mixed $hook_id */
+        $hook_id = $this->function->getAttribute(ClassAnalyzer::PROPERTY_HOOK_ATTRIBUTE);
+
+        return is_string($hook_id) ? $hook_id : null;
+    }
+
     public function getRecursiveVarId(): ?string
     {
         /** @var mixed $var_id */

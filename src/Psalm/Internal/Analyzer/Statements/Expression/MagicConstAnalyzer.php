@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -19,6 +20,8 @@ use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Union;
 
 use function dirname;
+use function strpos;
+use function substr;
 
 /**
  * @internal
@@ -86,6 +89,16 @@ final class MagicConstAnalyzer
                 }
             } elseif ($source instanceof FunctionAnalyzer) {
                 $statements_analyzer->node_data->setType($stmt, Type::getString($source->getCorrectlyCasedMethodId()));
+            } elseif ($source instanceof ClosureAnalyzer && ($hook_id = $source->getPropertyHookId()) !== null) {
+                // `A::$property::get`, and `$property::get` for __FUNCTION__
+                $property_offset = strpos($hook_id, '::$');
+                $is_function = $stmt instanceof PhpParser\Node\Scalar\MagicConst\Function_;
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    Type::getString($is_function && $property_offset !== false
+                        ? substr($hook_id, $property_offset + 2)
+                        : $hook_id),
+                );
             } else {
                 $statements_analyzer->node_data->setType($stmt, new Union([new TCallableString]));
             }

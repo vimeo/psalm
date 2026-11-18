@@ -903,7 +903,7 @@ final class InterfaceTest extends TestCase
                      */
                     class SomeIterator extends IteratorIterator {}',
             ],
-            'SKIPPED-suppressMismatch' => [
+            'suppressMismatchOfNativeReturnType' => [
                 'code' => '<?php
                     interface I {
                         /**
@@ -922,6 +922,199 @@ final class InterfaceTest extends TestCase
                             return false;
                         }
                     }',
+            ],
+            'nativeReturnTypeRefinedByInheritedDocblock' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {
+                        /** @return int */
+                        public function nullable();
+                        /** @return list<int> */
+                        public function list();
+                        /** @return non-empty-string */
+                        public function nonEmpty();
+                        /** @return T */
+                        public function template();
+                        /** @return Iterator */
+                        public function iterator();
+                        /** @return static */
+                        public function fluent();
+                    }
+
+                    /** @psalm-suppress MissingTemplateParam */
+                    class C implements I
+                    {
+                        public function nullable(): ?int
+                        {
+                            return 1;
+                        }
+
+                        public function list(): array
+                        {
+                            return [1];
+                        }
+
+                        public function nonEmpty(): string
+                        {
+                            return "a";
+                        }
+
+                        public function template(): bool
+                        {
+                            return false;
+                        }
+
+                        public function iterator(): Countable
+                        {
+                            return new ArrayIterator([]);
+                        }
+
+                        public function fluent(): self
+                        {
+                            return $this;
+                        }
+                    }',
+            ],
+            'nativeArrayImplementsInheritedCallable' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return callable */
+                        public function get();
+                    }
+
+                    class C implements I
+                    {
+                        public function get(): array
+                        {
+                            return [$this, "run"];
+                        }
+
+                        public function run(): void {}
+                    }',
+            ],
+            'nativeIntRefinedByInheritedConstantWildcard' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class AbstractLexer {
+                        /** @return T|null */
+                        abstract protected function getType(string $value);
+                    }
+
+                    /** @template-extends AbstractLexer<DocLexer::T_*> */
+                    final class DocLexer extends AbstractLexer {
+                        public const T_NONE = 1;
+                        public const T_INTEGER = 2;
+
+                        protected function getType(string $value): int
+                        {
+                            return self::T_NONE;
+                        }
+                    }',
+            ],
+            'arrayObjectSortMethodsReturnTrue' => [
+                'code' => '<?php
+                    /**
+                     * @extends ArrayObject<int, int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    class C extends ArrayObject
+                    {
+                        public function natsort(): bool
+                        {
+                            return true;
+                        }
+                    }
+
+                    $r = (new ArrayObject([2, 1]))->asort();',
+                'assertions' => ['$r===' => 'true'],
+            ],
+            'arrayObjectAndIteratorSortMethodsReturnTruePhp83' => [
+                'code' => '<?php
+                    /** @var ArrayObject<string, int> */
+                    $o = new ArrayObject(["b" => 2, "a" => 1]);
+                    $o1 = $o->asort();
+                    $o2 = $o->ksort();
+                    $o3 = $o->natsort();
+                    $o4 = $o->natcasesort();
+                    $o5 = $o->uasort(fn(int $a, int $b): int => $a <=> $b);
+                    $o6 = $o->uksort(fn(string $a, string $b): int => $a <=> $b);
+
+                    /** @var ArrayIterator<string, int> */
+                    $i = new ArrayIterator(["b" => 2, "a" => 1]);
+                    $i1 = $i->asort();
+                    $i2 = $i->ksort();
+                    $i3 = $i->natsort();
+                    $i4 = $i->natcasesort();
+                    $i5 = $i->uasort(fn(int $a, int $b): int => $a <=> $b);
+                    $i6 = $i->uksort(fn(string $a, string $b): int => $a <=> $b);',
+                'assertions' => [
+                    '$o1===' => 'true',
+                    '$o2===' => 'true',
+                    '$o3===' => 'true',
+                    '$o4===' => 'true',
+                    '$o5===' => 'true',
+                    '$o6===' => 'true',
+                    '$i1===' => 'true',
+                    '$i2===' => 'true',
+                    '$i3===' => 'true',
+                    '$i4===' => 'true',
+                    '$i5===' => 'true',
+                    '$i6===' => 'true',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'arrayObjectAndIteratorSortFlags' => [
+                'code' => '<?php
+                    /** @param ArrayObject<string, int> $o */
+                    function sortObject(ArrayObject $o): bool
+                    {
+                        $o->ksort(SORT_STRING);
+                        return $o->asort(SORT_NUMERIC);
+                    }
+
+                    /** @param ArrayIterator<string, int> $i */
+                    function sortIterator(ArrayIterator $i): bool
+                    {
+                        $i->ksort(SORT_STRING);
+                        return $i->asort(SORT_NUMERIC);
+                    }
+
+                    /** @var ArrayObject<string, int> */
+                    $o = new ArrayObject(["b" => 2, "a" => 1]);
+                    $r = $o->asort(SORT_REGULAR);',
+                'assertions' => ['$r===' => 'true'],
+            ],
+            'arrayObjectSortFlagsKeepPurityAndOverride' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function sortLocal(): array {
+                        $o = new ArrayObject(["b" => 2, "a" => 1]);
+                        $o->asort(SORT_NUMERIC);
+                        $i = new ArrayIterator(["b" => 2, "a" => 1]);
+                        $i->ksort(SORT_STRING);
+                        return [$o->getArrayCopy(), $i->getArrayCopy()];
+                    }
+
+                    /**
+                     * @psalm-purity-template TStorage(write-props) <= write-props
+                     * @extends ArrayObject[TStorage]<string, int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    class Sorted extends ArrayObject
+                    {
+                        /**
+                         * @psalm-capabilities read-props|write-this-props
+                         * @psalm-purity-from-template TStorage
+                         */
+                        public function asort(int $flags = SORT_REGULAR): bool
+                        {
+                            return parent::asort($flags);
+                        }
+                    }
+
+                    $sorted = (new Sorted(["a" => 1]))->asort(SORT_NUMERIC);',
+                'assertions' => ['$sorted===' => 'true'],
             ],
             'implementStaticReturn' => [
                 'code' => '<?php
@@ -1163,13 +1356,68 @@ final class InterfaceTest extends TestCase
                         $i::doFoo();
                     }',
             ],
-            'SKIPPED-inheritSystemInterface' => [
+            'inheritSystemInterface' => [
                 'code' => '<?php
                     interface I extends \RecursiveIterator {}
 
                     function f(I $c): void {
                         $c->current();
+                        $c->hasChildren();
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingTemplateParam'],
+            ],
+            'inheritGrandparentMethodsOfSystemInterfaces' => [
+                'code' => '<?php
+                    /** @template-extends RecursiveIterator<int, string> */
+                    interface R extends \RecursiveIterator {}
+
+                    interface SubR extends R {}
+
+                    /** @template-extends SeekableIterator<int, float> */
+                    interface S extends \SeekableIterator {}
+
+                    /** @template-extends OuterIterator<int, bool> */
+                    interface O extends \OuterIterator {}
+
+                    function r(): SubR {
+                        throw new RuntimeException();
+                    }
+
+                    function s(): S {
+                        throw new RuntimeException();
+                    }
+
+                    function o(): O {
+                        throw new RuntimeException();
+                    }
+
+                    $r_current = r()->current();
+                    $s_key = s()->key();
+                    $s_current = s()->current();
+                    $o_current = o()->current();',
+                'assertions' => [
+                    '$r_current===' => 'null|string',
+                    '$s_key===' => 'int|null',
+                    '$s_current===' => 'float|null',
+                    '$o_current===' => 'bool|null',
+                ],
+            ],
+            'abstractClassImplementingUserInterfaceOfSystemInterface' => [
+                'code' => '<?php
+                    /** @template-extends RecursiveIterator<int, string> */
+                    interface R extends \RecursiveIterator {}
+
+                    abstract class C implements R {}
+
+                    function c(): C {
+                        throw new RuntimeException();
+                    }
+
+                    $current = c()->current();',
+                'assertions' => [
+                    '$current===' => 'null|string',
+                ],
             ],
             'intersectMixedTypes' => [
                 'code' => '<?php
@@ -1723,6 +1971,51 @@ final class InterfaceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayObjectSortOverrideWithoutFlags' => [
+                'code' => '<?php
+                    /**
+                     * @extends ArrayObject<string, int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    class NoFlags extends ArrayObject
+                    {
+                        public function asort(): bool
+                        {
+                            return true;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'arrayObjectSortFlagsMustBeInt' => [
+                'code' => '<?php
+                    /** @param ArrayObject<string, int> $o */
+                    function sortObject(ArrayObject $o): void
+                    {
+                        $o->ksort("x");
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'arrayObjectSortWithFlagsWritesIt' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayObject<string, int> $o
+                     * @psalm-mutation-free
+                     */
+                    function sortObject(ArrayObject $o): void
+                    {
+                        $o->asort(SORT_NUMERIC);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'arrayObjectNatsortTakesNoFlags' => [
+                'code' => '<?php
+                    /** @param ArrayIterator<string, int> $i */
+                    function sortIterator(ArrayIterator $i): void
+                    {
+                        $i->natsort(SORT_STRING);
+                    }',
+                'error_message' => 'TooManyArguments',
+            ],
             'hookedSetterDocblockDoesNotWidenNativeInputType' => [
                 'code' => '<?php
                     interface I {
@@ -2484,6 +2777,34 @@ final class InterfaceTest extends TestCase
                     class B implements A { }',
                 'error_message' => 'UnimplementedInterfaceMethod',
             ],
+            'unimplementedGrandparentMethodOfSystemInterface' => [
+                'code' => '<?php
+                    /** @template-extends RecursiveIterator<int, string> */
+                    interface R extends \RecursiveIterator {}
+
+                    final class C implements R {
+                        public function hasChildren(): bool {
+                            return false;
+                        }
+
+                        public function getChildren(): ?R {
+                            return null;
+                        }
+
+                        public function key(): int {
+                            return 0;
+                        }
+
+                        public function next(): void {}
+
+                        public function rewind(): void {}
+
+                        public function valid(): bool {
+                            return false;
+                        }
+                    }',
+                'error_message' => 'UnimplementedInterfaceMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33 - Method current is not defined on class C',
+            ],
             'mismatchingInterfaceMethodSignature' => [
                 'code' => '<?php
                     interface A {
@@ -2564,6 +2885,110 @@ final class InterfaceTest extends TestCase
                       }
                     }',
                 'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'nativeReturnTypeDisjointFromInheritedDocblock' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @return int
+                         */
+                        public function check();
+                    }
+
+                    class C implements I
+                    {
+                        public function check(): bool
+                        {
+                            return false;
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:50 - The inherited return type \'int\' for I::check is different to the implemented return type for C::check \'bool',
+            ],
+            'nativeReturnTypeDisjointFromInheritedTemplatedDocblock' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I {
+                        /** @return T */
+                        public function check();
+                    }
+
+                    /** @implements I<int> */
+                    class C implements I
+                    {
+                        public function check(): bool
+                        {
+                            return false;
+                        }
+                    }',
+                'error_message' => 'The inherited return type \'int\' for I::check is different to the implemented return type for C::check \'bool',
+            ],
+            'nativeReturnTypeOnlyCastToInheritedDocblock' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return Stringable */
+                        public function render();
+                    }
+
+                    class C implements I
+                    {
+                        public function render(): string
+                        {
+                            return "x";
+                        }
+                    }',
+                'error_message' => 'The inherited return type \'Stringable\' for I::render is different to the implemented return type for C::render \'string',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nativeObjectOnlyCastToInheritedString' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return non-empty-string */
+                        public function render();
+                    }
+
+                    class C implements I
+                    {
+                        public function render(): Stringable
+                        {
+                            return new Exception("x");
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayObjectSortMethodOverriddenAsVoid' => [
+                'code' => '<?php
+                    /**
+                     * @extends ArrayObject<int, int>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    class C extends ArrayObject
+                    {
+                        public function asort(): void {}
+                    }',
+                'error_message' => 'The inherited return type \'true\' for ArrayObject::asort is different to the implemented return type for C::asort \'null',
+            ],
+            'traitNativeReturnTypeDisjointFromInheritedDocblock' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return int */
+                        public function check();
+                    }
+
+                    trait T {
+                        public function check(): bool
+                        {
+                            return false;
+                        }
+                    }
+
+                    class C implements I
+                    {
+                        use T;
+                    }',
+                'error_message' => 'The inherited return type \'int\' for I::check is different to the implemented return type for T::check \'bool',
             ],
             'abstractInterfaceImplementsButCallUndefinedMethod' => [
                 'code' => '<?php
