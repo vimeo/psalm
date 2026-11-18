@@ -6,6 +6,7 @@ namespace Psalm\Internal\Scope;
 
 use Psalm\Context;
 use Psalm\Internal\Clause;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Storage\Assertion;
 use Psalm\Type\Union;
 
@@ -35,6 +36,14 @@ final class IfScope
      * @var array<string, Union>
      */
     public array $partial_new_vars = [];
+
+    /**
+     * Variables a branch reaching the end possibly defines without a type (e.g. in a loop left by a break, or in a
+     * catch): the type the other branches give them is not all of it. Each maps to its assignments in those branches
+     *
+     * @var array<string, array<string, DataFlowNode>>
+     */
+    public array $untyped_new_vars = [];
 
     /**
      * @var array<string, bool>
@@ -119,6 +128,19 @@ final class IfScope
      */
     public array $final_actions = [];
 
+    /**
+     * The classes the code after the if may use without them being reported when every other branch leaves, so it
+     * is only reached through the if block
+     *
+     * @var array<lowercase-string, true>|null
+     */
+    public ?array $phantom_classes_of_if_block = null;
+
+    /**
+     * Whether there is no else and the conditions matched every value of a variable
+     */
+    public bool $implicit_else_is_impossible = false;
+
     public ?Context $post_leaving_if_context = null;
 
     /**
@@ -129,10 +151,18 @@ final class IfScope
     public ?array $null_array_offsets_read = null;
 
     /**
+     * The contexts of the branches that reach the end of the if
+     *
+     * @var list<Context>
+     */
+    public array $end_contexts = [];
+
+    /**
      * @psalm-external-mutation-free
      */
     public function addBranchReachingTheEnd(Context $branch_context): void
     {
+        $this->end_contexts[] = $branch_context;
         $this->null_array_offsets_read = $this->null_array_offsets_read === null
             ? $branch_context->null_array_offsets_read
             : array_intersect_key($this->null_array_offsets_read, $branch_context->null_array_offsets_read);

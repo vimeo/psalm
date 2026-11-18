@@ -240,112 +240,7 @@ final class NamedFunctionCallHandler
         }
 
         if ($function_id === 'extract') {
-            $flag_value = false;
-            if (!isset($stmt->args[1])) {
-                $flag_value = EXTR_OVERWRITE;
-            } elseif (isset($stmt->args[1]->value)
-                && $stmt->args[1]->value instanceof PhpParser\Node\Expr
-                && ($flags_type = $statements_analyzer->node_data->getType($stmt->args[1]->value))
-                && $flags_type->hasLiteralInt() && count($flags_type->getAtomicTypes()) === 1) {
-                $flag_type_value = $flags_type->getSingleIntLiteral()->value;
-                if ($flag_type_value === EXTR_SKIP) {
-                    $flag_value = EXTR_SKIP;
-                } elseif ($flag_type_value === EXTR_OVERWRITE) {
-                    $flag_value = EXTR_OVERWRITE;
-                }
-                // @todo add support for other flags
-            }
-
-            $is_unsealed = true;
-            $validated_var_ids = [];
-            if ($flag_value !== false && isset($stmt->args[0]->value)
-                && $stmt->args[0]->value instanceof PhpParser\Node\Expr
-                && ($array_type_union = $statements_analyzer->node_data->getType($stmt->args[0]->value))
-                && $array_type_union->isSingle()
-            ) {
-                foreach ($array_type_union->getAtomicTypes() as $array_type) {
-                    if ($array_type instanceof TKeyedArray) {
-                        foreach ($array_type->properties as $key => $type) {
-                            // variables must start with letters or underscore
-                            if ($key === '' || is_numeric($key) || preg_match('/^[A-Za-z_]/', $key) !== 1) {
-                                continue;
-                            }
-
-                            $var_id = '$' . $key;
-                            $validated_var_ids[] = $var_id;
-
-                            if (isset($context->vars_in_scope[$var_id]) && $flag_value === EXTR_SKIP) {
-                                $existing_type = $context->vars_in_scope[$var_id];
-
-                                if (!$existing_type->possibly_undefined) {
-                                    continue;
-                                }
-
-                                // it is skipped where it is set, extracted where it is not
-                                $type = Type::combineUnionTypes(
-                                    $existing_type->setPossiblyUndefined(false, false),
-                                    $type,
-                                    $codebase,
-                                );
-                            } elseif (!isset($context->vars_in_scope[$var_id]) && $type->possibly_undefined === true) {
-                                $context->possibly_assigned_var_ids[$var_id] = true;
-                            } elseif (isset($context->vars_in_scope[$var_id])
-                                && $type->possibly_undefined === true
-                                && $flag_value === EXTR_OVERWRITE) {
-                                $type = Type::combineUnionTypes(
-                                    $context->vars_in_scope[$var_id],
-                                    $type,
-                                    $codebase,
-                                    false,
-                                    true,
-                                    500,
-                                    false,
-                                );
-                            }
-
-                            $context->vars_in_scope[$var_id] = $type;
-                            $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
-                        }
-
-                        if (!isset($array_type->fallback_params)) {
-                            $is_unsealed = false;
-                        }
-                    }
-                }
-            }
-
-            if ($flag_value === EXTR_OVERWRITE && $is_unsealed === false) {
-                return;
-            }
-
-            if ($flag_value === EXTR_SKIP && $is_unsealed === false) {
-                return;
-            }
-
-            $context->check_variables = false;
-
-            if ($flag_value === EXTR_SKIP) {
-                return;
-            }
-
-            foreach ($context->vars_in_scope as $var_id => $_) {
-                if ($var_id === '$this' || strpos($var_id, '[') || strpos($var_id, '>')) {
-                    continue;
-                }
-
-                if (in_array($var_id, $validated_var_ids, true)) {
-                    continue;
-                }
-
-                $mixed_type = new Union([new TMixed()], [
-                    'parent_nodes' => $context->vars_in_scope[$var_id]->parent_nodes,
-                ]);
-
-                $context->vars_in_scope[$var_id] = $mixed_type;
-                $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
-                $context->possibly_assigned_var_ids[$var_id] = true;
-            }
-
+            self::handleExtract($statements_analyzer, $codebase, $stmt, $context);
             return;
         }
 
@@ -661,6 +556,129 @@ final class NamedFunctionCallHandler
                     }
                 }
             }
+        }
+    }
+
+    private static function handleExtract(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        Context $context,
+    ): void {
+        $flag_value = false;
+        if (!isset($stmt->args[1])) {
+            $flag_value = EXTR_OVERWRITE;
+        } elseif (isset($stmt->args[1]->value)
+            && $stmt->args[1]->value instanceof PhpParser\Node\Expr
+            && ($flags_type = $statements_analyzer->node_data->getType($stmt->args[1]->value))
+            && $flags_type->hasLiteralInt() && count($flags_type->getAtomicTypes()) === 1) {
+            $flag_type_value = $flags_type->getSingleIntLiteral()->value;
+            if ($flag_type_value === EXTR_SKIP) {
+                $flag_value = EXTR_SKIP;
+            } elseif ($flag_type_value === EXTR_OVERWRITE) {
+                $flag_value = EXTR_OVERWRITE;
+            }
+            // @todo add support for other flags
+        }
+
+        $is_unsealed = true;
+        $validated_var_ids = [];
+        if ($flag_value !== false && isset($stmt->args[0]->value)
+            && $stmt->args[0]->value instanceof PhpParser\Node\Expr
+            && ($array_type_union = $statements_analyzer->node_data->getType($stmt->args[0]->value))
+            && $array_type_union->isSingle()
+        ) {
+            foreach ($array_type_union->getAtomicTypes() as $array_type) {
+                if ($array_type instanceof TKeyedArray) {
+                    foreach ($array_type->properties as $key => $type) {
+                        // variables must start with letters or underscore
+                        if ($key === '' || is_numeric($key) || preg_match('/^[A-Za-z_]/', $key) !== 1) {
+                            continue;
+                        }
+
+                        $var_id = '$' . $key;
+                        $validated_var_ids[] = $var_id;
+
+                        if (isset($context->vars_in_scope[$var_id]) && $flag_value === EXTR_SKIP) {
+                            $existing_type = $context->vars_in_scope[$var_id];
+
+                            if (!$existing_type->possibly_undefined) {
+                                continue;
+                            }
+
+                            // it is skipped where it is set, extracted where it is not
+                            $type = Type::combineUnionTypes(
+                                $existing_type->setPossiblyUndefined(false, false),
+                                $type,
+                                $codebase,
+                            );
+                        } elseif (!isset($context->vars_in_scope[$var_id]) && $type->possibly_undefined === true) {
+                            $context->possibly_assigned_var_ids[$var_id] = true;
+                        } elseif (isset($context->vars_in_scope[$var_id])
+                            && $type->possibly_undefined === true
+                            && $flag_value === EXTR_OVERWRITE) {
+                            $type = Type::combineUnionTypes(
+                                $context->vars_in_scope[$var_id],
+                                $type,
+                                $codebase,
+                                false,
+                                true,
+                                500,
+                                false,
+                            );
+                        }
+
+                        if (isset($context->vars_in_scope[$var_id])) {
+                            $context->removeDescendents(
+                                $var_id,
+                                $context->vars_in_scope[$var_id],
+                                $type,
+                                $statements_analyzer,
+                            );
+                        }
+
+                        $context->vars_in_scope[$var_id] = $type;
+                        $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
+                    }
+
+                    if (!isset($array_type->fallback_params)) {
+                        $is_unsealed = false;
+                    }
+                }
+            }
+        }
+
+        if ($flag_value === EXTR_OVERWRITE && $is_unsealed === false) {
+            return;
+        }
+
+        if ($flag_value === EXTR_SKIP && $is_unsealed === false) {
+            return;
+        }
+
+        $context->check_variables = false;
+
+        if ($flag_value === EXTR_SKIP) {
+            return;
+        }
+
+        foreach ($context->vars_in_scope as $var_id => $_) {
+            if ($var_id === '$this' || strpos($var_id, '[') || strpos($var_id, '>')) {
+                continue;
+            }
+
+            if (in_array($var_id, $validated_var_ids, true)) {
+                continue;
+            }
+
+            $mixed_type = new Union([new TMixed()], [
+                'parent_nodes' => $context->vars_in_scope[$var_id]->parent_nodes,
+            ]);
+
+            $context->removeDescendents($var_id, $context->vars_in_scope[$var_id], $mixed_type);
+            $context->vars_in_scope[$var_id] = $mixed_type;
+            $context->assigned_var_ids[$var_id] = (int) $stmt->getAttribute('startFilePos');
+            $context->possibly_assigned_var_ids[$var_id] = true;
         }
     }
 
