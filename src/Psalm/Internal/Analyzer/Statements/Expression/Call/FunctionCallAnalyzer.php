@@ -93,9 +93,9 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_column;
 use function array_filter;
 use function array_map;
-use function array_pop;
 use function array_shift;
 use function array_slice;
 use function array_values;
@@ -116,6 +116,7 @@ use function strtolower;
 
 use const SORT_FLAG_CASE;
 use const SORT_LOCALE_STRING;
+use const SORT_NATURAL;
 use const SORT_REGULAR;
 use const SORT_STRING;
 
@@ -142,9 +143,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     private const STRING_CONVERTED_VALUES_ARGS = [
         'implode' => 0,
         'join' => 0,
-        'vsprintf' => [[1, 'values']],
-        'vprintf' => [[1, 'values']],
-        'vfprintf' => [[2, 'values']],
+        'natsort' => [[0, 'array']],
+        'natcasesort' => [[0, 'array']],
         'array_diff' => 0,
         'array_diff_assoc' => 0,
         'array_diff_uassoc' => 1,
@@ -2059,7 +2059,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             return;
         }
 
-        $haystack_values = self::getArrayValueType(
+        $haystack_values = CastAnalyzer::getArrayValueType(
             $statements_analyzer->node_data->getType($haystack_arg->value),
         );
 
@@ -2113,6 +2113,41 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             return;
         }
 
+        if ($function_id === 'max' || $function_id === 'min') {
+            // a single argument is an array of the compared values
+            $args = $stmt->getArgs();
+            $compared = [];
+
+            foreach ($args as $arg) {
+                $type = $arg->unpack ? null : $statements_analyzer->node_data->getType($arg->value);
+
+                if ($type && count($args) === 1) {
+                    $type = CastAnalyzer::getArrayValueType($type);
+                }
+
+                if (!$type) {
+                    return;
+                }
+
+                $compared[] = [$arg, $type];
+            }
+
+            // compared like SORT_REGULAR does, an object is only converted to be compared to a string
+            if (!$compared
+                || !self::mayBeString(Type::combineUnionTypeArray(array_column($compared, 1), null))
+            ) {
+                return;
+            }
+
+            foreach ($compared as [$arg, $type]) {
+                if ($type->hasObjectType()) {
+                    CastAnalyzer::castStringAttempt($statements_analyzer, $context, $type, $arg->value, false, false);
+                }
+            }
+
+            return;
+        }
+
         // compared with SORT_REGULAR, an object is only converted to be compared to a string
         $only_compared_to_strings = false;
 
@@ -2128,7 +2163,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     : SORT_STRING;
             }
 
-            if ($flags !== SORT_STRING && $flags !== SORT_LOCALE_STRING && $flags !== SORT_REGULAR) {
+            if ($flags !== SORT_STRING
+                && $flags !== SORT_LOCALE_STRING
+                && $flags !== SORT_NATURAL
+                && $flags !== SORT_REGULAR
+            ) {
                 return;
             }
 
@@ -2161,7 +2200,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 continue;
             }
 
-            $value_type = self::getArrayValueType($statements_analyzer->node_data->getType($array_arg->value));
+            $value_type = CastAnalyzer::getArrayValueType($statements_analyzer->node_data->getType($array_arg->value));
 
             if (!$value_type
                 || !$value_type->hasObjectType()
@@ -2179,43 +2218,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 false,
             );
         }
-    }
-
-    /**
-     * The type of the values of $type, or null if it may not be an array
-     *
-     * @psalm-pure
-     */
-    private static function getArrayValueType(?Union $type): ?Union
-    {
-        if (!$type) {
-            return null;
-        }
-
-        $value_types = [];
-        $atomic_types = $type->getAtomicTypes();
-
-        while ($atomic_types) {
-            $atomic_type = array_pop($atomic_types);
-
-            if ($atomic_type instanceof TTemplateParam) {
-                $atomic_types = [...$atomic_types, ...array_values($atomic_type->as->getAtomicTypes())];
-
-                continue;
-            }
-
-            if ($atomic_type instanceof TKeyedArray) {
-                $atomic_type = $atomic_type->getGenericArrayType();
-            }
-
-            if (!$atomic_type instanceof TArray) {
-                return null;
-            }
-
-            $value_types[] = $atomic_type->type_params[1];
-        }
-
-        return $value_types ? Type::combineUnionTypeArray($value_types, null) : null;
     }
 
     /**

@@ -1456,8 +1456,16 @@ final class CapabilitiesTest extends TestCase
                      * @param list<string> $strings
                      * @param list<Name|string> $names_or_strings
                      * @param list<Name|int> $names_or_ints
+                     * @param non-empty-list<Name> $some_names
                      */
-                    function f(array $names, array $strings, array $names_or_strings, array $names_or_ints, string $s): bool {
+                    function f(
+                        array $names,
+                        array $strings,
+                        array $names_or_strings,
+                        array $names_or_ints,
+                        array $some_names,
+                        string $s
+                    ): bool {
                         $sorted = $names;
                         sort($sorted);
                         rsort($sorted, SORT_NUMERIC);
@@ -1467,7 +1475,8 @@ final class CapabilitiesTest extends TestCase
                             && in_array($s, $names_or_strings, true)
                             && in_array(1, $names_or_ints)
                             && implode(",", $strings) !== ""
-                            && array_diff_key($names, ["a"]) !== [];
+                            && array_diff_key($names, ["a"]) !== []
+                            && max($some_names) !== min($some_names[0], $some_names[0]);
                     }',
             ],
             'noToStringOfCallbackInArrayDiffUassoc' => [
@@ -5655,6 +5664,137 @@ final class CapabilitiesTest extends TestCase
                         return $names;
                     }',
                 'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInNaturalSort' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     * @return list<Name>
+                     */
+                    function f(array $names): array {
+                        rsort($names, SORT_NATURAL);
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInNatsort' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     * @return array<Name>
+                     */
+                    function f(array $names): array {
+                        natsort($names);
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInNatcasesort' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     * @return array<Name>
+                     */
+                    function f(array $names): array {
+                        natcasesort($names);
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInStrReplaceArrayArgument' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names): string {
+                        return str_replace(["a"], $names, "abc");
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => ['ImplicitToStringCast'],
+            ],
+            'impureToStringInPregReplaceSubjects' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     * @return list<string>|null
+                     */
+                    function f(array $names): ?array {
+                        return preg_replace("/a/", "b", $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => ['ImplicitToStringCast'],
+            ],
+            'impureToStringInImplodeOfNullableArray' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name>|null $names
+                     */
+                    function f(?array $names): string {
+                        return implode(",", $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => ['PossiblyNullArgument'],
+            ],
+            'impureToStringInMaxOfObjectAndString' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function f(Name $name): Name|string {
+                        return max("a", $name);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInMinOfArray' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param non-empty-list<Name|string> $values
+                     */
+                    function f(array $values): Name|string {
+                        return min($values);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'impureToStringInRegularSortOfObjectsAndStrings' => [
                 'code' => '<?php
