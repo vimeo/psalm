@@ -9,6 +9,7 @@ use Psalm\Report\ReportOptions;
 
 use function array_filter;
 use function htmlspecialchars;
+use function implode;
 use function strtoupper;
 
 use const ENT_DISALLOWED;
@@ -99,6 +100,20 @@ abstract class Report
         $label = $issue_data->is_security ? 'SECURITY' : 'ERROR';
 
         return $this->use_color ? "\e[0;31m" . $label . "\e[0m" : $label;
+    }
+
+    /**
+     * The message of an issue, followed by the CWE weaknesses it flags: `Detected tainted SQL (CWE-89)`
+     *
+     * @psalm-capabilities read-props
+     */
+    protected static function getMessageWithCwe(IssueData $issue_data): string
+    {
+        if (!$issue_data->cwe_ids) {
+            return $issue_data->message;
+        }
+
+        return $issue_data->message . ' (CWE-' . implode(', CWE-', $issue_data->cwe_ids) . ')';
     }
 
     /**
