@@ -684,8 +684,12 @@ abstract class CallAnalyzer
                 $method_id = $type_part->value . '::' . $method_name;
 
                 foreach ($type_part->extra_types as $extra_type) {
+                    // the property shape `method_exists()` adds says nothing about the class of the method
+                    if ($extra_type instanceof TObjectWithProperties) {
+                        continue;
+                    }
+
                     if ($extra_type instanceof TTemplateParam
-                        || $extra_type instanceof TObjectWithProperties
                         || $extra_type instanceof TCallableObject
                     ) {
                         throw new UnexpectedValueException('Shouldn’t get a generic param here');

@@ -3685,6 +3685,28 @@ final class CallableTest extends TestCase
                         }
                     }',
             ],
+            'callableArrayOfAMagicMethodGuardedByMethodExists' => [
+                'code' => '<?php
+                    /**
+                     * @method void magic()
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    function call(callable $_callable): void {}
+
+                    function test(Foo $foo): void {
+                        if (method_exists($foo, "magic")) {
+                            call([$foo, "magic"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'callableArrayOfAMagicMethodDeclaredByAnAnnotation' => [
                 'code' => '<?php
                     /**
