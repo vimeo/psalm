@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type\TypeAlias;
 
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Storage\ImmutableNonCloneableTrait;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 /**
  * @internal
@@ -14,6 +15,7 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
 final class InlineTypeAlias implements TypeAlias
 {
     use ImmutableNonCloneableTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     /**
      * @param list<array{0: string, 1: int, 2?: string}> $replacement_tokens
