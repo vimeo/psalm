@@ -6532,6 +6532,17 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'urlWhoseHostATernaryInTheConditionCanFixIsStillTainted' => [
+                'code' => '<?php
+                    function fetch(bool $parse): void {
+                        $url = (string) $_GET["next"];
+                        if (!preg_match("#^api\.example\.com$#", $parse ? (string) parse_url($url, PHP_URL_HOST) : "api.example.com")) {
+                            return;
+                        }
+                        fsockopen($url, 80);
+                    }',
+                'error_message' => 'TaintedSSRF',
+            ],
             'redirectToAUrlWhoseHostMatchesAListOfHostsIsStillTainted' => [
                 'code' => '<?php
                     function forward(): void {

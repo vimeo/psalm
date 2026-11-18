@@ -1329,7 +1329,7 @@ final class CastAnalyzer
                 );
             }
 
-            if ($statements_analyzer->taint_flow_graph) {
+            if ($statements_analyzer->taint_flow_graph && $cast_type === 'string') {
                 UrlHosts::recordCast($statements_analyzer->taint_flow_graph, $parent_nodes, $cast_node);
             }
 
