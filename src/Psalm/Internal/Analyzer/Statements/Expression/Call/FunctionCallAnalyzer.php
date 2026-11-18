@@ -199,8 +199,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
 
             if ($function_call_info->new_function_name) {
-                self::referenceLiteralCallables($statements_analyzer, $function_name, $context);
-
                 // a literal callable string: from here on it is a call of the named function
                 $function_name = $function_call_info->new_function_name;
 
@@ -1707,6 +1705,18 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $fq_class_name = (string) preg_replace('/^\\\/', '', $fq_class_name, 1);
                             $potential_method_id = new MethodIdentifier($fq_class_name, $parts[1]);
                         } else {
+                            // the call is analysed with the function the last literal names, but may call any: the
+                            // lookup references it
+                            try {
+                                $codebase->functions->getStorage(
+                                    $statements_analyzer,
+                                    strtolower($var_type_part->value),
+                                    context: $context,
+                                );
+                            } catch (UnexpectedValueException) {
+                                // an unknown function references nothing
+                            }
+
                             $function_call_info->new_function_name = new VirtualFullyQualified(
                                 $var_type_part->value,
                                 $function_name->getAttributes(),
@@ -1833,34 +1843,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         return $function_call_info;
-    }
-
-    /**
-     * A call of literal callable strings is analysed as a call of the function the last one names, but it may call
-     * any of them: their lookup references them
-     */
-    private static function referenceLiteralCallables(
-        StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr $function_name,
-        Context $context,
-    ): void {
-        $function_name_type = $statements_analyzer->node_data->getType($function_name);
-
-        if ($function_name_type === null) {
-            return;
-        }
-
-        foreach ($function_name_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TLiteralString && !str_contains($atomic_type->value, '::')) {
-                CallableTypeComparator::getCallableFromAtomic(
-                    $statements_analyzer->getCodebase(),
-                    $atomic_type,
-                    null,
-                    $statements_analyzer,
-                    $context,
-                );
-            }
-        }
     }
 
     private static function analyzeInvokeCall(

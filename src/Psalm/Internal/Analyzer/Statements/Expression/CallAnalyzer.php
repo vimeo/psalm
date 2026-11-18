@@ -751,7 +751,7 @@ abstract class CallAnalyzer
         // analysing an older version without a polyfill. The issue is reported without treating
         // the call as unknown, so its stubbed signature is still used for the rest of analysis.
         try {
-            $function_storage = $codebase->functions->getStorage($statements_analyzer, $function_id);
+            $function_storage = $codebase->functions->getStorage($statements_analyzer, $function_id, context: $context);
         } catch (UnexpectedValueException) {
             return true;
         }

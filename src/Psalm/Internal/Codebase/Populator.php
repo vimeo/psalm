@@ -18,7 +18,6 @@ use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
-use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\TypeVisitor\ContainsTemplateExpressionVisitor;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
@@ -1494,7 +1493,7 @@ final class Populator
             $this->populateGeneratorPurity($function_storage, null);
         }
 
-        $this->registerValueDependencies($storage);
+        $this->registerDeclarationDependencies($storage);
 
         $file_path_lc = strtolower($storage->file_path);
 
@@ -1620,21 +1619,11 @@ final class Populator
     }
 
     /**
-     * A file reading another class through a constant expression, which is resolved where it is read, or through an
-     * imported type alias depends on that class as on a parent: the file inherits from it
+     * See FileStorage::$classlikes_used_in_declarations
      */
-    private function registerValueDependencies(FileStorage $storage): void
+    private function registerDeclarationDependencies(FileStorage $storage): void
     {
-        $classes = $storage->constant_expression_classlikes;
-
-        foreach ($storage->type_aliases as $type_alias) {
-            if ($type_alias instanceof LinkableTypeAlias) {
-                $classes[strtolower($type_alias->declaring_fq_classlike_name)]
-                    = $type_alias->declaring_fq_classlike_name;
-            }
-        }
-
-        foreach ($classes as $fq_class_name) {
+        foreach ($storage->classlikes_used_in_declarations as $fq_class_name) {
             $this->file_reference_provider->addFileInheritanceToClass(
                 $storage->file_path,
                 strtolower($this->classlikes->getUnAliasedName($fq_class_name)),
