@@ -2066,6 +2066,29 @@ final class ArgumentAnalyzer
         }
     }
 
+    /**
+     * What the call taint handlers add to and remove from an argument, where taint analysis runs
+     *
+     * @return array{int, int}
+     */
+    private static function getCallTaints(
+        StatementsAnalyzer $statements_analyzer,
+        string $cased_method_id,
+        int $argument_offset,
+        Union $input_type,
+        CodeLocation $arg_location,
+    ): array {
+        if (!$statements_analyzer->getTaintFlowGraphWithSuppressed()) {
+            return [0, 0];
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        return $codebase->config->eventDispatcher->dispatchAddRemoveCallTaints(
+            new AddRemoveCallTaintsEvent($codebase, $cased_method_id, $argument_offset, $input_type, $arg_location),
+        );
+    }
+
     private static function processTaintedness(
         StatementsAnalyzer $statements_analyzer,
         string $cased_method_id,
@@ -2110,19 +2133,15 @@ final class ArgumentAnalyzer
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
         $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-        if ($taint_flow_graph) {
-            $call_event = new AddRemoveCallTaintsEvent(
-                $codebase,
-                $cased_method_id,
-                $argument_offset,
-                $input_type,
-                $arg_location,
-            );
-            [$call_added_taints, $call_removed_taints] = $codebase->config->eventDispatcher
-                ->dispatchAddRemoveCallTaints($call_event);
-            $added_taints |= $call_added_taints;
-            $removed_taints |= $call_removed_taints;
-        }
+        [$call_added_taints, $call_removed_taints] = self::getCallTaints(
+            $statements_analyzer,
+            $cased_method_id,
+            $argument_offset,
+            $input_type,
+            $arg_location,
+        );
+        $added_taints |= $call_added_taints;
+        $removed_taints |= $call_removed_taints;
 
         // printed by code only running from the command line: to a terminal
         if ($expr->getAttribute(CliOutput::PRINTED_ATTRIBUTE) === true) {
