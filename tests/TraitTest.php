@@ -1847,6 +1847,33 @@ final class TraitTest extends TestCase
                     (new ClassOne())->run();
                     (new ClassTwo())->run();',
             ],
+            'traitReadsAClassConstantOnThisWithTheLiteralsTheUsingClassesGiveIt' => [
+                'code' => '<?php
+                    trait TestTrait {
+                        public function testFunction(): void {
+                            if ($this::VALUE) {
+                                echo "True";
+                            } else {
+                                echo "False";
+                            }
+                        }
+                    }
+
+                    final class ClassOne {
+                        use TestTrait;
+
+                        public const VALUE = true;
+                    }
+
+                    final class ClassTwo {
+                        use TestTrait;
+
+                        public const VALUE = false;
+                    }
+
+                    (new ClassOne())->testFunction();
+                    (new ClassTwo())->testFunction();',
+            ],
             'traitReadsAClassConstantEachUsingClassDefinesDifferently' => [
                 'code' => '<?php
                     trait TestTrait {
