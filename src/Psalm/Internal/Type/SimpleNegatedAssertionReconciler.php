@@ -1987,6 +1987,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
 
         return $existing_var_type;
     }
+
     /**
      * Reports a redundant assertion, or one that leaves no type, and returns $result, or never when there is none
      *

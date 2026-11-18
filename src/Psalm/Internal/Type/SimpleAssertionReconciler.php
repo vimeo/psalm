@@ -3169,6 +3169,7 @@ final class SimpleAssertionReconciler extends Reconciler
 
         return $bound;
     }
+
     /**
      * Reports a redundant assertion, or one that leaves no type, and returns $result, or never when there is none
      *
