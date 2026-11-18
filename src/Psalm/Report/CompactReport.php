@@ -25,7 +25,8 @@ final class CompactReport extends Report
             $severity = $this->getSeverityLabel($issue_data);
 
             $output .= $severity . ' ' . $issue_data->file_name . ':' . $issue_data->line_from
-                . ':' . $issue_data->column_from . ' ' . $issue_data->type . ': ' . $issue_data->message . "\n";
+                . ':' . $issue_data->column_from . ' ' . $issue_data->type . ': '
+                . self::getMessageWithCwe($issue_data) . "\n";
         }
 
         return $output;

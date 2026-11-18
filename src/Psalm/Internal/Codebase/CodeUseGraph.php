@@ -17,7 +17,7 @@ use function array_keys;
 use function array_pop;
 use function array_unique;
 use function array_values;
-use function md5;
+use function hash;
 use function str_contains;
 use function strpos;
 use function strtolower;
@@ -321,8 +321,7 @@ final class CodeUseGraph
      */
     public static function useAliasNode(string $alias, string $file_path): string
     {
-        // do NOT change this to hash, it will fail on Windows for whatever reason
-        return self::KIND_USE_ALIAS . ' use:' . $alias . ':' . md5($file_path);
+        return self::KIND_USE_ALIAS . ' use:' . $alias . ':' . hash('xxh3', $file_path);
     }
 
     /**
