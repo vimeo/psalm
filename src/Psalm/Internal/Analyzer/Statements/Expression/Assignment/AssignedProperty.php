@@ -15,7 +15,12 @@ final class AssignedProperty
     /**
      * @psalm-mutation-free
      */
-    public function __construct(public Union $property_type, public string $id, public Union $assignment_type)
-    {
+    public function __construct(
+        public Union $property_type,
+        public string $id,
+        public Union $assignment_type,
+        public bool $interface_setter = false,
+        public ?Union $read_type = null,
+    ) {
     }
 }

@@ -23,9 +23,12 @@ use Psalm\Internal\Type\ParseTree\MethodParamTree;
 use Psalm\Internal\Type\ParseTree\MethodTree;
 use Psalm\Internal\Type\ParseTree\MethodWithReturnTypeTree;
 use Psalm\Internal\Type\ParseTreeCreator;
+use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\CapabilitiesParseException;
+use Psalm\Type\Atomic\TCapabilities;
+use Psalm\Type\Union;
 
 use function array_key_first;
 use function array_shift;
@@ -35,6 +38,7 @@ use function implode;
 use function preg_match;
 use function preg_replace;
 use function reset;
+use function rtrim;
 use function str_contains;
 use function str_replace;
 use function strlen;
@@ -250,6 +254,10 @@ final class ClassLikeDocblockParser
             $info->cli_only = true;
         }
 
+        if (isset($parsed_docblock->tags['psalm-cli-only-instances'])) {
+            $info->cli_only_instances = true;
+        }
+
         if (isset($parsed_docblock->tags['psalm-taint-property-bag'])) {
             $property_bag = trim((string) reset($parsed_docblock->tags['psalm-taint-property-bag']));
             if (preg_match('/^\$([A-Za-z_]\w*)$/', $property_bag, $matches) !== 1 || !isset($matches[1])) {
@@ -297,6 +305,14 @@ final class ClassLikeDocblockParser
         if (isset($parsed_docblock->combined_tags['method'])) {
             if ($info->sealed_methods === null) {
                 $info->sealed_methods = true;
+            }
+
+            // the purity templates of the class, for `Closure[P]` in a return type: only their names matter
+            // here, the return type is validated and then written as it is into the docblock of a pseudo-method
+            $purity_template_map = [];
+
+            foreach ($info->purity_templates as $purity_template) {
+                $purity_template_map[$purity_template] = ['' => new Union([new TCapabilities(Capabilities::ALL)])];
             }
 
             foreach ($parsed_docblock->combined_tags['method'] as $offset => $method_entry) {
@@ -377,9 +393,10 @@ final class ClassLikeDocblockParser
                         if (preg_match('/^ ?: ?(\S.*)$/s', $after_paren, $return_matches)
                             && isset($return_matches[1])
                         ) {
-                            $method_entry .= ':' . CommentAnalyzer::sanitizeDocblockType(
-                                CommentAnalyzer::splitDocLine($return_matches[1])[0],
-                            );
+                            $return_type = rtrim(CommentAnalyzer::splitDocLine($return_matches[1])[0], ';');
+                            if ($return_type !== '') {
+                                $method_entry .= ':' . CommentAnalyzer::sanitizeDocblockType($return_type);
+                            }
                         }
                     }
                 }
@@ -436,6 +453,23 @@ final class ClassLikeDocblockParser
                         $is_static = true;
                         $has_return = false;
                         $docblock_lines = [];
+                    }
+
+                    if (!$has_return) {
+                        try {
+                            TypeParser::getTypeFromTree(
+                                $method_tree->children[1],
+                                $codebase,
+                                null,
+                                $purity_template_map,
+                            );
+                        } catch (TypeParseTreeException $e) {
+                            throw new DocblockParseException(
+                                $method_entry . ' is not a valid method: ' . $e->getMessage(),
+                                0,
+                                $e,
+                            );
+                        }
                     }
 
                     $method_tree = $method_tree->children[0];

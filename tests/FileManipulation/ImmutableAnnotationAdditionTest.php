@@ -411,15 +411,12 @@ final class ImmutableAnnotationAdditionTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingImmutableAnnotation'],
                 'safe_types' => true,
             ],
-            'SKIPPED-addImmutableAnnotationInterface' => [
+            'noAddImmutableAnnotationInterface' => [
                 'input' => '<?php
                     interface A {
                         public function getPlus5(): int;
                     }',
                 'output' => '<?php
-                    /**
-                     * @psalm-immutable
-                     */
                     interface A {
                         public function getPlus5(): int;
                     }',
