@@ -45,6 +45,24 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => ['MixedArgument'],
                 'php_version' => '8.1',
             ],
+            'fileTestFunctionsKeepAnArgumentContainingMixed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $a, string $s): void {
+                        $x = $a['k'];
+                        if ($x === null) {
+                            $x = $s;
+                        }
+
+                        if (is_link($x)) {
+                            /** @psalm-check-type-exact $x = mixed|string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+                'php_version' => '8.1',
+            ],
             'fileTestFunctionsKeepAnSplFileInfoArgument' => [
                 'code' => <<<'PHP'
                     <?php

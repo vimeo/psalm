@@ -542,6 +542,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $function_storage,
                             $stmt->getArgs(),
                             $statements_analyzer->node_data,
+                            $context->strict_types,
                         ),
                         $codebase,
                         $context,
@@ -566,6 +567,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $function_storage,
                             $stmt->getArgs(),
                             $statements_analyzer->node_data,
+                            $context->strict_types,
                         ),
                     ),
                 );
@@ -582,6 +584,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $function_storage,
                             $stmt->getArgs(),
                             $statements_analyzer->node_data,
+                            $context->strict_types,
                         ),
                     ),
                 );

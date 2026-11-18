@@ -48,6 +48,7 @@ use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\Scalar;
@@ -793,22 +794,23 @@ abstract class CallAnalyzer
      * The assertions on a parameter with its offset replaced by the offset of the argument given for it, which differs
      * when arguments are named. Assertions on a parameter no argument is given for are dropped.
      *
-     * An assertion on a scalar parameter doesn't narrow a `mixed` argument given for it: PHP converts a scalar or a
-     * Stringable object to the type of the parameter, so the argument keeps its own type (an `SplFileInfo` passed to
-     * `is_link()` is no `non-empty-string`).
+     * An assertion on a scalar parameter of an internal function doesn't narrow an argument that may be `mixed` in
+     * coercive mode: PHP converts a scalar or a Stringable object to the type of the parameter, so the argument keeps
+     * its own type (an `SplFileInfo` passed to `is_link()` is no `non-empty-string`).
      *
      * @param array<Possibilities> $assertions
      * @param list<PhpParser\Node\Arg> $args
      * @return list<Possibilities>
-     * @psalm-capabilities read-props
+     * @psalm-capabilities read-props|write-this-props
      */
     public static function getAssertionsOnArgs(
         array $assertions,
         FunctionLikeStorage $storage,
         array $args,
         ?NodeDataProvider $node_data = null,
+        bool $strict_types = false,
     ): array {
-        if ($node_data !== null) {
+        if ($node_data !== null && !$strict_types && self::isInCallMap($storage)) {
             $assertions = array_filter(
                 $assertions,
                 static fn(Possibilities $assertion): bool
@@ -852,6 +854,25 @@ abstract class CallAnalyzer
     }
 
     /**
+     * @psalm-capabilities read-props|write-this-props
+     */
+    private static function isInCallMap(FunctionLikeStorage $storage): bool
+    {
+        $name = $storage->cased_name;
+
+        if ($name === null) {
+            return false;
+        }
+
+        if (!$storage instanceof MethodStorage) {
+            return InternalCallMapHandler::inCallMap($name);
+        }
+
+        return $storage->defining_fqcln !== null
+            && InternalCallMapHandler::inCallMap($storage->defining_fqcln . '::' . $name);
+    }
+
+    /**
      * @param list<PhpParser\Node\Arg> $args
      * @psalm-capabilities read-props
      */
@@ -886,7 +907,7 @@ abstract class CallAnalyzer
             if ($arg->name === null ? $arg_offset === $assertion->var_id : $arg->name->name === $param->name) {
                 $arg_type = $node_data->getType($arg->value);
 
-                return $arg_type !== null && $arg_type->isMixed();
+                return $arg_type !== null && $arg_type->hasMixed();
             }
         }
 
