@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Provider;
 
-use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
@@ -17,6 +16,7 @@ use function array_keys;
 use function array_merge;
 use function array_unique;
 use function array_values;
+use function strtolower;
 
 use const ARRAY_FILTER_USE_KEY;
 
@@ -151,24 +151,10 @@ final class FileReferenceProvider
      */
     private function calculateFilesReferencingFile(Codebase $codebase, string $file): array
     {
-        try {
-            $file_storage = $codebase->file_storage_provider->get($file);
-        } catch (InvalidArgumentException) {
-            return [];
-        }
-
         $referencing_nodes = [];
 
-        foreach ($file_storage->classlikes_in_file as $fq_class_name_lc => $_) {
-            $referencing_nodes += $this->code_use_graph->getNodesReferencingClass($fq_class_name_lc);
-        }
-
-        foreach ($file_storage->functions as $function_storage) {
-            $function_node = CodeUseGraph::functionLikeNodeForStorage($function_storage);
-
-            if ($function_node !== null) {
-                $referencing_nodes += $this->code_use_graph->getReferencingNodes($function_node);
-            }
+        foreach (ClassLikeAnalyzer::getClassesForFile($codebase, $file) as $fq_class_name_lc => $_) {
+            $referencing_nodes += $this->code_use_graph->getNodesReferencingClass(strtolower($fq_class_name_lc));
         }
 
         $referenced_files = $this->getFilesOfNodes($codebase, $referencing_nodes);
