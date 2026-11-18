@@ -45,6 +45,117 @@ final class TraitTemplateTest extends TestCase
                         }
                     }',
             ],
+            'traitMethodNarrowsItsTemplateWhateverTheUseTypeIs' => [
+                'code' => '<?php
+                    function takesString(string $s): void {
+                        echo $s;
+                    }
+
+                    function takesInt(int $i): void {
+                        echo $i;
+                    }
+
+                    /** @template T */
+                    trait Red {
+                        /** @param T $x */
+                        public function f($x): void {
+                            if (is_string($x)) {
+                                takesString($x);
+                            }
+                            if (is_int($x)) {
+                                takesInt($x);
+                            }
+                        }
+                    }
+
+                    final class RedStr {
+                        /** @use Red<string> */
+                        use Red;
+                    }
+
+                    final class RedInt {
+                        /** @use Red<int> */
+                        use Red;
+                    }',
+            ],
+            'traitMethodNarrowedTemplateIsStillCheckedAfterACall' => [
+                'code' => '<?php
+                    function takesString(string $s): void {
+                        echo $s;
+                    }
+
+                    /** @template T */
+                    trait Leak {
+                        /** @param T $x */
+                        public function g($x): string {
+                            if (is_string($x)) {
+                                takesString($x);
+
+                                return $x;
+                            }
+
+                            return "";
+                        }
+                    }
+
+                    final class LeakStr {
+                        /** @use Leak<string> */
+                        use Leak;
+                    }',
+            ],
+            'traitMethodPassesItsTemplatedArrayAndCallbackToATemplatedFunction' => [
+                'code' => '<?php
+                    /**
+                     * @template TIn of array-key
+                     * @template TVal
+                     * @template TInit
+                     * @template TRet
+                     * @param array<TIn, TVal> $arr
+                     * @param callable(TInit|TRet, TVal, TIn): TRet $callback
+                     * @param TInit $initial
+                     * @return TInit|TRet
+                     */
+                    function red(array $arr, callable $callback, mixed $initial = null): mixed {
+                        $acc = $initial;
+                        foreach ($arr as $k => $v) {
+                            $acc = $callback($acc, $v, $k);
+                        }
+
+                        return $acc;
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    trait Manip {
+                        /** @var array<TKey, TValue> */
+                        private array $value = [];
+
+                        /**
+                         * @template TInit
+                         * @template TRet
+                         * @param callable(TInit|TRet, TValue, TKey): TRet $callback
+                         * @param TInit $initial
+                         * @return TInit|TRet
+                         */
+                        public function reduce(callable $callback, mixed $initial = null): mixed {
+                            return red($this->value, $callback, $initial);
+                        }
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    final class Arr {
+                        /** @use Manip<TKey, TValue> */
+                        use Manip;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'traitMethodMayBranchOnItsTemplateWhateverTheUseTypeIs' => [
                 'code' => '<?php
                     /** @template T */

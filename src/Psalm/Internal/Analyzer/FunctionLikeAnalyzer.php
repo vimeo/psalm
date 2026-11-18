@@ -1808,8 +1808,29 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             return $type;
         }
 
-        return TemplateStandinTypeReplacer::replace(
-            $type,
+        // a template narrowed by a check (`T as string` after `is_string($x)`) is not the type it is bound to
+        $bound_atomic_types = [];
+        $narrowed_atomic_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam
+                && isset($declaring_storage->template_types[$atomic_type->param_name][$atomic_type->defining_class])
+                && !$atomic_type->as->equals(
+                    $declaring_storage->template_types[$atomic_type->param_name][$atomic_type->defining_class],
+                )
+            ) {
+                $narrowed_atomic_types[] = $atomic_type;
+            } else {
+                $bound_atomic_types[] = $atomic_type;
+            }
+        }
+
+        if ($bound_atomic_types === []) {
+            return $type;
+        }
+
+        $bound_type = TemplateStandinTypeReplacer::replace(
+            $narrowed_atomic_types === [] ? $type : $type->getBuilder()->setTypes($bound_atomic_types)->freeze(),
             new TemplateResult($class_template_params, []),
             $codebase,
             null,
@@ -1817,6 +1838,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             null,
             $context->self,
         );
+
+        return $narrowed_atomic_types === []
+            ? $bound_type
+            : Type::combineUnionTypes($bound_type, new Union($narrowed_atomic_types), $codebase);
     }
 
     /**
@@ -1970,7 +1995,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $check_stmts = false;
                     }
                 }
-
 
                 $param_type = $param_type->addParentNodes($parent_nodes);
             } else {

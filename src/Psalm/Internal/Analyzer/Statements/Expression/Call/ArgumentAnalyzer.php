@@ -951,11 +951,20 @@ final class ArgumentAnalyzer
         $source = $statements_analyzer->getSource();
 
         if ($source instanceof FunctionLikeAnalyzer) {
+            // the parameter type the called function inferred from an argument of a trait template type is in
+            // the trait's terms as well
+            $source_storage = $source->getFunctionLikeStorage($statements_analyzer);
             $input_type = FunctionLikeAnalyzer::bindTraitTemplatesToUse(
                 $codebase,
-                $source->getFunctionLikeStorage($statements_analyzer),
+                $source_storage,
                 $context,
                 $input_type,
+            );
+            $param_type = FunctionLikeAnalyzer::bindTraitTemplatesToUse(
+                $codebase,
+                $source_storage,
+                $context,
+                $param_type,
             );
         }
 
