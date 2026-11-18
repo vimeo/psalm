@@ -148,6 +148,8 @@ final class InsecureCallAnalyzer
             && self::isGivenASeed(
                 $statements_analyzer,
                 ArgumentsAnalyzer::getArgForParam($args, $function_params, self::RANDOM_SEED_PARAMS[$id]),
+                $id === 'random\\engine\\mt19937::__construct'
+                    || $statements_analyzer->getCodebase()->analysis_php_version_id >= 8_03_00,
             )
         ) {
             $issue = new WeakRandom(
@@ -182,14 +184,22 @@ final class InsecureCallAnalyzer
     }
 
     /**
-     * Whether a seed is given: null (since PHP 8.3) seeds randomly, as no seed does
+     * Whether a seed is given: no seed seeds randomly, and so does null where $null_seeds_randomly (a null seed of
+     * mt_srand() and srand() is 0 before PHP 8.3)
      *
      * @psalm-capabilities read-props
      */
-    private static function isGivenASeed(StatementsAnalyzer $statements_analyzer, ?PhpParser\Node\Arg $arg): bool
-    {
+    private static function isGivenASeed(
+        StatementsAnalyzer $statements_analyzer,
+        ?PhpParser\Node\Arg $arg,
+        bool $null_seeds_randomly,
+    ): bool {
         if ($arg === null) {
             return false;
+        }
+
+        if (!$null_seeds_randomly) {
+            return true;
         }
 
         $type = $statements_analyzer->node_data->getType($arg->value);

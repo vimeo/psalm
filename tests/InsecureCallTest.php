@@ -142,6 +142,14 @@ final class InsecureCallTest extends TestCase
                     }',
                 'error_message' => 'WeakRandom',
             ],
+            'mtRandSeededWithNullBeforePhp83' => [
+                'code' => '<?php
+                    mt_srand(null);
+                    echo mt_rand();',
+                'error_message' => 'WeakRandom',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'seededMersenneTwister' => [
                 'code' => '<?php
                     function token(int $seed): int {
