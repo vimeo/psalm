@@ -1591,6 +1591,28 @@ final class ArgumentAnalyzer
         return null;
     }
 
+    /**
+     * Whether the function that calls the callback does not run in the scope of the class of the method
+     * (a native function outside of PHP_NATIVE_NON_PUBLIC_CB, or a function or method of another class),
+     * so only a public callback is reachable
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isCalledOutsideOfTheClassScope(
+        MethodIdentifier $potential_method_id,
+        ?string $cased_method_id,
+        ?MethodIdentifier $method_id,
+        Context $context,
+    ): bool {
+        return $potential_method_id->fq_class_name !== $context->self
+            || ($cased_method_id !== null
+                && !$method_id
+                && !in_array($cased_method_id, self::PHP_NATIVE_NON_PUBLIC_CB, true))
+            || ($method_id
+                && $method_id->fq_class_name !== $context->self
+                && $method_id->fq_class_name !== 'Closure');
+    }
+
     private static function verifyCallableInContext(
         MethodIdentifier $potential_method_id,
         ?string $cased_method_id,
@@ -1623,14 +1645,12 @@ final class ArgumentAnalyzer
                         || ($lhs_atomic instanceof TNamedObject
                             && !$lhs_atomic->definite_class
                             && $lhs_atomic->value === $context->self))) {
-                    if ($potential_method_id->fq_class_name !== $context->self
-                        || ($cased_method_id !== null
-                            && !$method_id
-                            && !in_array($cased_method_id, self::PHP_NATIVE_NON_PUBLIC_CB, true))
-                        || ($method_id
-                            && $method_id->fq_class_name !== $context->self
-                            && $method_id->fq_class_name !== 'Closure')
-                    ) {
+                    if (self::isCalledOutsideOfTheClassScope(
+                        $potential_method_id,
+                        $cased_method_id,
+                        $method_id,
+                        $context,
+                    )) {
                         if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
                             IssueBuffer::maybeAdd(
                                 new InvalidArgument(
@@ -1646,13 +1666,12 @@ final class ArgumentAnalyzer
                     }
                 } elseif ($lhs->isSingle()) {
                     // a function calling the callback from the class of its method reaches the non-public ones
-                    $non_public_reachable = $potential_method_id->fq_class_name === $context->self
-                        && !($cased_method_id !== null
-                            && !$method_id
-                            && !in_array($cased_method_id, self::PHP_NATIVE_NON_PUBLIC_CB, true))
-                        && !($method_id
-                            && $method_id->fq_class_name !== $context->self
-                            && $method_id->fq_class_name !== 'Closure');
+                    $non_public_reachable = !self::isCalledOutsideOfTheClassScope(
+                        $potential_method_id,
+                        $cased_method_id,
+                        $method_id,
+                        $context,
+                    );
 
                     // instance from e.g. new Foo() or static string like Foo::bar
                     if ((!$method_storage->is_static && !$lhs->hasNamedObjectType())

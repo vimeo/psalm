@@ -2955,7 +2955,7 @@ final class CallableTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument',
             ],
-            'privateStaticCallbackByClassStringToAFunctionThatCannotCallIt' => [
+            'privateStaticCallbackByClassStringToANativeFunctionOutsideTheNonPublicList' => [
                 'code' => '<?php
                     final class Sorter {
                         public function run(): void {
