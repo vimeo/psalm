@@ -27,6 +27,7 @@ use Psalm\Report\ReportOptions;
 use function array_key_exists;
 use function array_slice;
 use function chdir;
+use function count;
 use function end;
 use function explode;
 use function fwrite;
@@ -38,8 +39,10 @@ use function is_array;
 use function is_string;
 use function microtime;
 use function preg_last_error_msg;
+use function preg_match;
 use function preg_split;
 use function realpath;
+use function str_ends_with;
 use function str_starts_with;
 use function strpos;
 use function substr;
@@ -62,6 +65,9 @@ require_once __DIR__ . '/../../IssueBuffer.php';
  */
 final class Refactor
 {
+    private const IDENTIFIER = '[a-zA-Z_\\x80-\\xff][a-zA-Z0-9_\\x80-\\xff]*';
+    private const CLASS_NAME = '(?:' . self::IDENTIFIER . '\\\\)*' . self::IDENTIFIER;
+
     public const LONG_OPTIONS = [
         'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'root:', 'monochrome',
         'scan-threads:', 'threads:', 'move:', 'into:', 'rename:', 'to:', 'no-progress', 'no-cache',
@@ -286,6 +292,8 @@ final class Refactor
                     exit(1);
                 }
 
+                $arg = self::stripLeadingBackslash($arg);
+
                 if ($operation === 'move_into') {
                     $last_arg_parts = preg_split('/, ?/', $last_arg);
                     if ($last_arg_parts === false) {
@@ -293,17 +301,23 @@ final class Refactor
                     }
 
                     foreach ($last_arg_parts as $last_arg_part) {
+                        $last_arg_part = self::stripLeadingBackslash($last_arg_part);
                         if (strpos($last_arg_part, '::')) {
                             [, $identifier_name] = explode('::', $last_arg_part);
-                            $to_refactor[$last_arg_part] = $arg . '::' . $identifier_name;
+                            $destination = $arg . '::' . $identifier_name;
                         } else {
                             $namespace_parts = explode('\\', $last_arg_part);
                             $class_name = end($namespace_parts);
-                            $to_refactor[$last_arg_part] = $arg . '\\' . $class_name;
+                            $destination = $arg . '\\' . $class_name;
                         }
+
+                        self::exitOnShapeError($last_arg_part, $destination);
+                        $to_refactor[$last_arg_part] = $destination;
                     }
                 } else {
-                    $to_refactor[$last_arg] = $arg;
+                    $source = self::stripLeadingBackslash($last_arg);
+                    self::exitOnShapeError($source, $arg);
+                    $to_refactor[$source] = $arg;
                 }
 
                 $last_arg = null;
@@ -414,5 +428,89 @@ final class Refactor
         }
 
         IssueBuffer::finish($project_analyzer, false, $start_time);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function stripLeadingBackslash(string $name): string
+    {
+        return str_starts_with($name, '\\') ? substr($name, 1) : $name;
+    }
+
+    private static function exitOnShapeError(string $source, string $destination): void
+    {
+        $shape_error = self::getShapeError($source, $destination);
+        if ($shape_error !== null) {
+            fwrite(STDERR, $shape_error . PHP_EOL);
+            exit(1);
+        }
+    }
+
+    /**
+     * Checks that a refactor destination has the same shape as its source, before any scanning.
+     *
+     * @psalm-pure
+     */
+    private static function getShapeError(string $source, string $destination): ?string
+    {
+        $class = '/^' . self::CLASS_NAME . '$/D';
+        $member = '/^' . self::IDENTIFIER . '$/D';
+        $property = '/^\\$' . self::IDENTIFIER . '$/D';
+
+        if (str_ends_with($source, '*')) {
+            $prefix = '/^(?:' . self::IDENTIFIER . '\\\\)*(?:' . self::IDENTIFIER . ')?$/D';
+            $source_prefix = substr($source, 0, -1);
+            if ($source_prefix === '' || !preg_match($prefix, $source_prefix)) {
+                return 'Invalid refactor source ' . $source;
+            }
+
+            $destination_prefix = substr($destination, 0, -1);
+            if (!str_ends_with($destination, '*')
+                || $destination_prefix === ''
+                || !preg_match($prefix, $destination_prefix)
+            ) {
+                return 'Destination for ' . $source . ' must be a wildcard like Foo\\*, got ' . $destination;
+            }
+
+            return null;
+        }
+
+        $source_parts = explode('::', $source);
+        $destination_parts = explode('::', $destination);
+
+        if (count($source_parts) === 1) {
+            if (!preg_match($class, $source)) {
+                return 'Invalid refactor source ' . $source;
+            }
+
+            if (!preg_match($class, $destination)) {
+                return 'Destination for ' . $source . ' must be a class name like Foo\\Bar, got ' . $destination;
+            }
+
+            return null;
+        }
+
+        if (count($source_parts) !== 2) {
+            return 'Invalid refactor source ' . $source;
+        }
+
+        [$source_class, $source_member] = $source_parts;
+        $is_property = str_starts_with($source_member, '$');
+        $member_pattern = $is_property ? $property : $member;
+
+        if (!preg_match($class, $source_class) || !preg_match($member_pattern, $source_member)) {
+            return 'Invalid refactor source ' . $source;
+        }
+
+        if (count($destination_parts) !== 2
+            || !preg_match($class, $destination_parts[0])
+            || !preg_match($member_pattern, $destination_parts[1])
+        ) {
+            return 'Destination for ' . $source . ' must be of the form '
+                . ($is_property ? 'Foo\\Bar::$baz' : 'Foo\\Bar::baz') . ', got ' . $destination;
+        }
+
+        return null;
     }
 }
