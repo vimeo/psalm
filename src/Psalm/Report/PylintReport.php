@@ -39,7 +39,7 @@ final class PylintReport extends Report
         $message = sprintf(
             '%s: %s',
             $issue_data->type,
-            $issue_data->message,
+            self::getMessageWithCwe($issue_data),
         );
 
         if ($issue_data->severity === Config::REPORT_ERROR) {
