@@ -6043,6 +6043,198 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'gettypeIntegerNarrowsBothWays' => [
+                'code' => '<?php
+                    function f(int|string $x): void {
+                        if (gettype($x) === "integer") {
+                            /** @psalm-check-type-exact $x = int */
+                        } else {
+                            /** @psalm-check-type-exact $x = string */
+                        }
+
+                        if (gettype($x) !== "integer") {
+                            /** @psalm-check-type-exact $x = string */
+                        } else {
+                            /** @psalm-check-type-exact $x = int */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'gettypeDoubleNarrowsBothWays' => [
+                'code' => '<?php
+                    function f(float|string $x): void {
+                        if (gettype($x) === "double") {
+                            /** @psalm-check-type-exact $x = float */
+                        } else {
+                            /** @psalm-check-type-exact $x = string */
+                        }
+
+                        if (gettype($x) !== "double") {
+                            /** @psalm-check-type-exact $x = string */
+                        } else {
+                            /** @psalm-check-type-exact $x = float */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'gettypeBooleanNarrowsBothWays' => [
+                'code' => '<?php
+                    function f(bool|string $x): void {
+                        if (gettype($x) === "boolean") {
+                            /** @psalm-check-type-exact $x = bool */
+                        } else {
+                            /** @psalm-check-type-exact $x = string */
+                        }
+
+                        if (gettype($x) !== "boolean") {
+                            /** @psalm-check-type-exact $x = string */
+                        } else {
+                            /** @psalm-check-type-exact $x = bool */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'gettypeNullNarrowsBothWays' => [
+                'code' => '<?php
+                    function f(?string $x): void {
+                        if (gettype($x) === "NULL") {
+                            /** @psalm-check-type-exact $x = null */
+                        } else {
+                            /** @psalm-check-type-exact $x = string */
+                        }
+
+                        if (gettype($x) !== "NULL") {
+                            /** @psalm-check-type-exact $x = string */
+                        } else {
+                            /** @psalm-check-type-exact $x = null */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'gettypeUnknownTypeDoesNotNarrow' => [
+                'code' => '<?php
+                    function f(int|string $x): void {
+                        if (gettype($x) === "unknown type") {
+                            /** @psalm-check-type-exact $x = int|string */
+                        } else {
+                            /** @psalm-check-type-exact $x = int|string */
+                        }
+
+                        if (gettype($x) !== "unknown type") {
+                            /** @psalm-check-type-exact $x = int|string */
+                        } else {
+                            /** @psalm-check-type-exact $x = int|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'gettypeOtherNamesNarrowBothWays' => [
+                'code' => '<?php
+                    /** @param array<int>|int $x */
+                    function arr($x): void {
+                        if (gettype($x) === "array") {
+                            /** @psalm-check-type-exact $x = array<array-key, int> */
+                        } else {
+                            /** @psalm-check-type-exact $x = int */
+                        }
+
+                        if (gettype($x) !== "array") {
+                            /** @psalm-check-type-exact $x = int */
+                        } else {
+                            /** @psalm-check-type-exact $x = array<array-key, int> */
+                        }
+                    }
+
+                    function str(int|string $x): void {
+                        if (gettype($x) === "string") {
+                            /** @psalm-check-type-exact $x = string */
+                        } else {
+                            /** @psalm-check-type-exact $x = int */
+                        }
+
+                        if (gettype($x) !== "string") {
+                            /** @psalm-check-type-exact $x = int */
+                        } else {
+                            /** @psalm-check-type-exact $x = string */
+                        }
+                    }
+
+                    function obj(stdClass|int $x): void {
+                        if (gettype($x) === "object") {
+                            /** @psalm-check-type-exact $x = stdClass */
+                        } else {
+                            /** @psalm-check-type-exact $x = int */
+                        }
+
+                        if (gettype($x) !== "object") {
+                            /** @psalm-check-type-exact $x = int */
+                        } else {
+                            /** @psalm-check-type-exact $x = stdClass */
+                        }
+                    }
+
+                    /** @param resource|int $x */
+                    function res($x): void {
+                        if (gettype($x) === "resource") {
+                            /** @psalm-check-type-exact $x = resource */
+                        } else {
+                            /** @psalm-check-type-exact $x = int */
+                        }
+
+                        if (gettype($x) !== "resource") {
+                            /** @psalm-check-type-exact $x = int */
+                        } else {
+                            /** @psalm-check-type-exact $x = resource */
+                        }
+                    }
+
+                    /** @param closed-resource|int $x */
+                    function closedRes($x): void {
+                        if (gettype($x) === "resource (closed)") {
+                            /** @psalm-check-type-exact $x = closed-resource */
+                        } else {
+                            /** @psalm-check-type-exact $x = int */
+                        }
+
+                        if (gettype($x) !== "resource (closed)") {
+                            /** @psalm-check-type-exact $x = int */
+                        } else {
+                            /** @psalm-check-type-exact $x = closed-resource */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'getDebugTypeIntegerIsAClassName' => [
+                'code' => '<?php
+                    class integer {
+                        public function foo(): void {}
+                    }
+
+                    function f(int|integer $x): void {
+                        if (get_debug_type($x) === "integer") {
+                            $x->foo();
+                        }
+
+                        if (get_debug_type($x) === "int") {
+                            /** @psalm-check-type-exact $x = int */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'classEqualToTheClassOfAnotherClassStillNarrows' => [
                 'code' => '<?php
                     class Bar {}

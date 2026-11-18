@@ -2064,6 +2064,26 @@ final class AssertionFinder
     }
 
     /**
+     * @psalm-pure
+     */
+    private static function getGettypeAtomic(string $gettype): ?Atomic
+    {
+        return match ($gettype) {
+            'boolean' => new Atomic\TBool(),
+            'integer' => new Atomic\TInt(),
+            'double' => new Atomic\TFloat(),
+            'string' => new Atomic\TString(),
+            'array' => new Atomic\TArray([Type::getArrayKey(), Type::getMixed()]),
+            'object' => new TObject(),
+            'resource' => new TResource(),
+            'resource (closed)' => new TClosedResource(),
+            'NULL' => new Atomic\TNull(),
+            // 'unknown type' is not returned by any supported PHP version
+            default => null,
+        };
+    }
+
+    /**
      * @return array<string, non-empty-list<non-empty-list<Assertion>>>
      */
     private static function handleIsTypeCheck(
@@ -2855,18 +2875,8 @@ final class AssertionFinder
                     new CodeLocation($source, $whichclass_expr),
                 ),
             );
-        } else {
-            if ($var_name && $var_type) {
-                if ($var_type === 'class@anonymous') {
-                    $if_types[$var_name] = [[new IsNotIdentical(new TObject())]];
-                } elseif ($var_type === 'resource (closed)') {
-                    $if_types[$var_name] = [[new IsNotType(new TClosedResource())]];
-                } elseif (str_starts_with($var_type, 'resource (')) {
-                    $if_types[$var_name] = [[new IsNotIdentical(new TResource())]];
-                } else {
-                    $if_types[$var_name] = [[new IsNotType(Atomic::create($var_type))]];
-                }
-            }
+        } elseif ($var_name && ($atomic = self::getGettypeAtomic($var_type))) {
+            $if_types[$var_name] = [[new IsNotType($atomic)]];
         }
 
         return $if_types ? [$if_types] : [];
@@ -3602,24 +3612,8 @@ final class AssertionFinder
                     new CodeLocation($source, $string_expr),
                 ),
             );
-        } else {
-            if ($var_name && $var_type) {
-                if ($var_type === 'class@anonymous') {
-                    $if_types[$var_name] = [[new IsIdentical(new TObject())]];
-                } elseif ($var_type === 'resource (closed)') {
-                    $if_types[$var_name] = [[new IsType(new TClosedResource())]];
-                } elseif (str_starts_with($var_type, 'resource (')) {
-                    $if_types[$var_name] = [[new IsIdentical(new TResource())]];
-                } elseif ($var_type === 'integer') {
-                    $if_types[$var_name] = [[new IsType(new Atomic\TInt())]];
-                } elseif ($var_type === 'double') {
-                    $if_types[$var_name] = [[new IsType(new Atomic\TFloat())]];
-                } elseif ($var_type === 'boolean') {
-                    $if_types[$var_name] = [[new IsType(new Atomic\TBool())]];
-                } else {
-                    $if_types[$var_name] = [[new IsType(Atomic::create($var_type))]];
-                }
-            }
+        } elseif ($var_name && ($atomic = self::getGettypeAtomic($var_type))) {
+            $if_types[$var_name] = [[new IsType($atomic)]];
         }
 
         return $if_types ? [$if_types] : [];
@@ -3677,12 +3671,6 @@ final class AssertionFinder
                 $if_types[$var_name] = [[new IsType(new TClosedResource())]];
             } elseif (str_starts_with($var_type, 'resource (')) {
                 $if_types[$var_name] = [[new IsIdentical(new TResource())]];
-            } elseif ($var_type === 'integer') {
-                $if_types[$var_name] = [[new IsType(new Atomic\TInt())]];
-            } elseif ($var_type === 'double') {
-                $if_types[$var_name] = [[new IsType(new Atomic\TFloat())]];
-            } elseif ($var_type === 'boolean') {
-                $if_types[$var_name] = [[new IsType(new Atomic\TBool())]];
             } else {
                 $if_types[$var_name] = [[new IsType(Atomic::create($var_type))]];
             }
