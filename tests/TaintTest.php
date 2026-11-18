@@ -7,9 +7,11 @@ namespace Psalm\Tests;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use PhpParser\Node\Expr\FuncCall;
 use PhpParser\Node\Expr\MethodCall;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
+use PhpParser\Node\Name;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
 use Psalm\Context;
@@ -17,6 +19,7 @@ use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
@@ -704,6 +707,91 @@ final class TaintTest extends TestCase
                 [24, 'TaintedTextWithQuotes'],
                 [25, 'TaintedHtml'],
                 [25, 'TaintedTextWithQuotes'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    public function testPluginTaintHandlersRunOncePerFunctionCall(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            $a = trim((string) $_GET["a"]); echo $a;
+            $b = sprintf("%s", (string) $_GET["b"]); echo $b;
+            $c = strtolower((string) $_GET["c"]); echo $c;
+        ');
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $handler = new class implements AddTaintsInterface, RemoveTaintsInterface {
+            /** @var array<string, int> */
+            public static array $calls = [];
+
+            #[Override]
+            public static function addTaints(AddRemoveTaintsEvent $event): int
+            {
+                self::count($event, 'add');
+
+                return 0;
+            }
+
+            #[Override]
+            public static function removeTaints(AddRemoveTaintsEvent $event): int
+            {
+                self::count($event, 'remove');
+
+                $expr = $event->getExpr();
+
+                return $expr instanceof FuncCall && $expr->name instanceof Name && $expr->name->toLowerString() !== 'strtolower'
+                    ? TaintKind::INPUT_HTML
+                    : 0;
+            }
+
+            private static function count(AddRemoveTaintsEvent $event, string $hook): void
+            {
+                $expr = $event->getExpr();
+
+                if ($expr instanceof FuncCall && $expr->name instanceof Name) {
+                    $key = $hook . ' ' . $expr->name->toLowerString();
+                    self::$calls[$key] = (self::$calls[$key] ?? 0) + 1;
+                }
+            }
+        };
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $socket = new PluginRegistrationSocket($codebase->config, $codebase);
+        $socket->registerHooksFromClass($handler::class);
+        $codebase->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $calls = $handler::$calls;
+        ksort($calls);
+
+        self::assertSame(
+            [
+                'add sprintf' => 1,
+                'add strtolower' => 1,
+                'add trim' => 1,
+                'remove sprintf' => 1,
+                'remove strtolower' => 1,
+                'remove trim' => 1,
+            ],
+            $calls,
+        );
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [2, 'TaintedTextWithQuotes'],
+                [3, 'TaintedTextWithQuotes'],
+                [4, 'TaintedHtml'],
+                [4, 'TaintedTextWithQuotes'],
             ],
             array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
         );
