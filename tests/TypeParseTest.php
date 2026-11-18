@@ -1744,6 +1744,19 @@ final class TypeParseTest extends TestCase
         $this->assertSame('0|1|256|257|512|513|768|769', $docblock_type->getId());
     }
 
+    public function testIntMaskWithDeprecatedBuiltInConstant(): void
+    {
+        // PHP 8.4+ reports ASSERT_ACTIVE as deprecated when its value is read
+        $this->assertSame(
+            '0|1',
+            $this->withErrorsThrown(static fn(): Union => Type::parseString('int-mask<ASSERT_ACTIVE>'))->getId(),
+        );
+        $this->assertSame(
+            '0|1|2|3',
+            $this->withErrorsThrown(static fn(): Union => Type::parseString('int-mask<ASSERT_ACTIVE, 2>'))->getId(),
+        );
+    }
+
     public function testIntMaskWithClassConstant(): void
     {
         $docblock_type = Type::parseString('int-mask<0, A::FOO, A::BAR>');
