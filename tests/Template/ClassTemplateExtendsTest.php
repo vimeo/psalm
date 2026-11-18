@@ -5497,6 +5497,135 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'untypedOverrideBindsTheMethodTemplateOfTheParentParamDocblock' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Query {}
+
+                    class Base
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T, Query<T>): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void {}
+                    }
+
+                    final class Box extends Base
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    function takesStdClass(stdClass $_s): void {}
+
+                    /** @param Query<stdClass> $_q */
+                    function takesQuery(Query $_q): void {}
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function ($item, $query): void {
+                            takesStdClass($item);
+                            takesQuery($query);
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'untypedStaticOverrideBindsTheMethodTemplateOfTheParentParamDocblock' => [
+                'code' => '<?php
+                    class Base
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T): void $callback
+                         */
+                        public static function each(string $class, Closure $callback): void {}
+                    }
+
+                    final class Box extends Base
+                    {
+                        public static function each($class, $callback): void {}
+                    }
+
+                    function takesStdClass(stdClass $_s): void {}
+
+                    Box::each(stdClass::class, function ($item): void {
+                        takesStdClass($item);
+                    });',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'untypedImplementationBindsTheMethodTemplateOfTheInterfaceParamDocblock' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Query {}
+
+                    interface Collection
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T, Query<T>): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void;
+                    }
+
+                    final class Box implements Collection
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    /** @param Query<stdClass> $_q */
+                    function takesQuery(Query $_q): void {}
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function ($_item, $query): void {
+                            takesQuery($query);
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'untypedOverrideBindsTheMethodTemplateBesideTheClassTemplate' => [
+                'code' => '<?php
+                    /** @template TKey */
+                    class Base
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T, TKey): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void {}
+                    }
+
+                    /** @extends Base<int> */
+                    final class Box extends Base
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    function takesStdClass(stdClass $_s): void {}
+
+                    function takesInt(int $_i): void {}
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function ($item, $key): void {
+                            takesStdClass($item);
+                            takesInt($key);
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -5599,6 +5728,31 @@ final class ClassTemplateExtendsTest extends TestCase
                     /** @template-extends BaseRepository<Bar> */
                     class BarRepository extends BaseRepository implements FooRepositoryInterface {}',
                 'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'untypedOverrideChecksTheClosureAgainstTheBoundMethodTemplate' => [
+                'code' => '<?php
+                    class Base
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void {}
+                    }
+
+                    final class Box extends Base
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function (int $_i): void {});
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:53 - Argument 2 of Box::each expects Closure[impure](stdClass):void',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'objectWithoutTypeParamsOfAnotherModelIsNotABaseFactoryOfTheCustomer' => [
                 'code' => <<<'PHP'
