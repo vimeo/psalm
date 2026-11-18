@@ -95,6 +95,7 @@ use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\MutableUnion;
@@ -879,6 +880,7 @@ final class ArrayFetchAnalyzer
         // inferred at its construction site; resolve it so the array it holds is
         // seen as an array here rather than as an unrecognised atomic.
         $array_type = TypeVariableResolver::resolveTopLevel($array_type, $codebase);
+        $array_type = TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $array_type);
 
         $has_array_access = false;
         $non_array_types = [];
@@ -1244,6 +1246,7 @@ final class ArrayFetchAnalyzer
             }
 
             if ($expected_offset_types) {
+                $statements_analyzer->node_data->markOffsetChecked($stmt);
                 $invalid_offset_type = $expected_offset_types[0];
 
                 $used_offset = 'using a ' . $offset_type->getId() . ' offset';
@@ -1288,6 +1291,25 @@ final class ArrayFetchAnalyzer
                         $statements_analyzer->getSuppressedIssues(),
                     );
                 }
+            } elseif (!$context->inside_isset
+                && $array_type->isArray()
+                && !$offset_type->ignore_falsable_issues
+                && isset($offset_type->getAtomicTypes()['false'])
+                && !$statements_analyzer->node_data->isOffsetChecked($stmt)
+            ) {
+                // PHP turns a false offset of an array into 0, and `false` alone is already an invalid offset. An
+                // expression that is read and written (`$a[$k]++`, a by-reference argument) is analyzed twice: it
+                // is reported once, and not when the other analysis already reported its offset
+                $statements_analyzer->node_data->markOffsetChecked($stmt);
+
+                IssueBuffer::maybeAdd(
+                    new PossiblyInvalidArrayOffset(
+                        'Cannot access value on variable ' . self::describeArrayVar($extended_var_id, $stmt)
+                            . ' using possibly false offset ' . $offset_type->getId() . ', which is 0',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
         }
 
@@ -2691,6 +2713,21 @@ final class ArrayFetchAnalyzer
                 if ($has_valid_absolute_offset) {
                     break;
                 }
+            } elseif ($atomic_offset_type instanceof TTemplateKeyOf
+                || $atomic_offset_type instanceof TTemplateValueOf
+            ) {
+                $has_valid_absolute_offset = self::checkArrayOffsetType(
+                    $offset_type,
+                    TypeExpander::expandTemplateKeyOfAndValueOf(
+                        $codebase,
+                        new Union([$atomic_offset_type]),
+                    )->getAtomicTypes(),
+                    $codebase,
+                );
+
+                if ($has_valid_absolute_offset) {
+                    break;
+                }
             }
         }
         return $has_valid_absolute_offset;
@@ -2781,6 +2818,8 @@ final class ArrayFetchAnalyzer
                 && !$atomic_key_type instanceof TArrayKey
                 && !$atomic_key_type instanceof TMixed
                 && !$atomic_key_type instanceof TTemplateParam
+                && !$atomic_key_type instanceof TTemplateKeyOf
+                && !$atomic_key_type instanceof TTemplateValueOf
                 && !(
                     $atomic_key_type instanceof TObjectWithProperties
                     && isset($atomic_key_type->methods['__tostring'])
