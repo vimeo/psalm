@@ -116,50 +116,30 @@ final class ClassLikes
         '__tostring' => true, // e.g. by array_unique()
     ];
 
+    private const KIND_CLASS = 1;
+    private const KIND_INTERFACE = 2;
+    private const KIND_TRAIT = 4;
+    private const KIND_ENUM = 8;
+
     /**
      * @var array<lowercase-string, bool>
      */
     private array $existing_classlikes_lc = [];
 
     /**
-     * @var array<lowercase-string, bool>
+     * The kind each name was last registered with; merging the data of scanner workers that disagree can
+     * leave several.
+     *
+     * @var array<lowercase-string, int-mask-of<self::KIND_*>>
      */
-    private array $existing_classes_lc = [];
+    private array $classlike_kinds_lc = [];
 
     /**
-     * @var array<string, bool>
+     * The kinds each spelling of a name was registered with.
+     *
+     * @var array<string, int-mask-of<self::KIND_*>>
      */
-    private array $existing_classes = [];
-
-    /**
-     * @var array<lowercase-string, bool>
-     */
-    private array $existing_interfaces_lc = [];
-
-    /**
-     * @var array<string, bool>
-     */
-    private array $existing_interfaces = [];
-
-    /**
-     * @var array<lowercase-string, bool>
-     */
-    private array $existing_traits_lc = [];
-
-    /**
-     * @var array<string, bool>
-     */
-    private array $existing_traits = [];
-
-    /**
-     * @var array<lowercase-string, bool>
-     */
-    private array $existing_enums_lc = [];
-
-    /**
-     * @var array<string, bool>
-     */
-    private array $existing_enums = [];
+    private array $classlike_kinds = [];
 
     /**
      * @var array<lowercase-string, string>
@@ -198,10 +178,7 @@ final class ClassLikes
             $reflection_class = new ReflectionClass($predefined_class);
 
             if (!$reflection_class->isUserDefined() && $reflection_class->name === $predefined_class) {
-                $predefined_class_lc = strtolower($predefined_class);
-                $this->existing_classlikes_lc[$predefined_class_lc] = true;
-                $this->existing_classes_lc[$predefined_class_lc] = true;
-                $this->existing_classes[$predefined_class] = true;
+                $this->addFullyQualifiedName($predefined_class, self::KIND_CLASS);
             }
         }
 
@@ -214,10 +191,7 @@ final class ClassLikes
             $reflection_class = new ReflectionClass($predefined_interface);
 
             if (!$reflection_class->isUserDefined() && $reflection_class->name === $predefined_interface) {
-                $predefined_interface_lc = strtolower($predefined_interface);
-                $this->existing_classlikes_lc[$predefined_interface_lc] = true;
-                $this->existing_interfaces_lc[$predefined_interface_lc] = true;
-                $this->existing_interfaces[$predefined_interface] = true;
+                $this->addFullyQualifiedName($predefined_interface, self::KIND_INTERFACE);
             }
         }
     }
@@ -227,18 +201,7 @@ final class ClassLikes
      */
     public function addFullyQualifiedClassName(string $fq_class_name, ?string $file_path = null): void
     {
-        $fq_class_name_lc = strtolower($fq_class_name);
-        $this->existing_classlikes_lc[$fq_class_name_lc] = true;
-        $this->existing_classes_lc[$fq_class_name_lc] = true;
-        $this->existing_classes[$fq_class_name] = true;
-
-        $this->existing_traits_lc[$fq_class_name_lc] = false;
-        $this->existing_interfaces_lc[$fq_class_name_lc] = false;
-        $this->existing_enums_lc[$fq_class_name_lc] = false;
-
-        if ($file_path) {
-            $this->scanner->setClassLikeFilePath($fq_class_name_lc, $file_path);
-        }
+        $this->addFullyQualifiedName($fq_class_name, self::KIND_CLASS, $file_path);
     }
 
     /**
@@ -246,18 +209,7 @@ final class ClassLikes
      */
     public function addFullyQualifiedInterfaceName(string $fq_class_name, ?string $file_path = null): void
     {
-        $fq_class_name_lc = strtolower($fq_class_name);
-        $this->existing_classlikes_lc[$fq_class_name_lc] = true;
-        $this->existing_interfaces_lc[$fq_class_name_lc] = true;
-        $this->existing_interfaces[$fq_class_name] = true;
-
-        $this->existing_classes_lc[$fq_class_name_lc] = false;
-        $this->existing_traits_lc[$fq_class_name_lc] = false;
-        $this->existing_enums_lc[$fq_class_name_lc] = false;
-
-        if ($file_path) {
-            $this->scanner->setClassLikeFilePath($fq_class_name_lc, $file_path);
-        }
+        $this->addFullyQualifiedName($fq_class_name, self::KIND_INTERFACE, $file_path);
     }
 
     /**
@@ -265,18 +217,7 @@ final class ClassLikes
      */
     public function addFullyQualifiedTraitName(string $fq_class_name, ?string $file_path = null): void
     {
-        $fq_class_name_lc = strtolower($fq_class_name);
-        $this->existing_classlikes_lc[$fq_class_name_lc] = true;
-        $this->existing_traits_lc[$fq_class_name_lc] = true;
-        $this->existing_traits[$fq_class_name] = true;
-
-        $this->existing_classes_lc[$fq_class_name_lc] = false;
-        $this->existing_interfaces_lc[$fq_class_name_lc] = false;
-        $this->existing_enums[$fq_class_name] = false;
-
-        if ($file_path) {
-            $this->scanner->setClassLikeFilePath($fq_class_name_lc, $file_path);
-        }
+        $this->addFullyQualifiedName($fq_class_name, self::KIND_TRAIT, $file_path);
     }
 
     /**
@@ -284,14 +225,19 @@ final class ClassLikes
      */
     public function addFullyQualifiedEnumName(string $fq_class_name, ?string $file_path = null): void
     {
+        $this->addFullyQualifiedName($fq_class_name, self::KIND_ENUM, $file_path);
+    }
+
+    /**
+     * @param self::KIND_* $kind
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private function addFullyQualifiedName(string $fq_class_name, int $kind, ?string $file_path = null): void
+    {
         $fq_class_name_lc = strtolower($fq_class_name);
         $this->existing_classlikes_lc[$fq_class_name_lc] = true;
-        $this->existing_enums_lc[$fq_class_name_lc] = true;
-        $this->existing_enums[$fq_class_name] = true;
-
-        $this->existing_traits_lc[$fq_class_name_lc] = false;
-        $this->existing_classes_lc[$fq_class_name_lc] = false;
-        $this->existing_interfaces_lc[$fq_class_name_lc] = false;
+        $this->classlike_kinds_lc[$fq_class_name_lc] = $kind;
+        $this->classlike_kinds[$fq_class_name] = ($this->classlike_kinds[$fq_class_name] ?? 0) | $kind;
 
         if ($file_path) {
             $this->scanner->setClassLikeFilePath($fq_class_name_lc, $file_path);
@@ -338,23 +284,11 @@ final class ClassLikes
             $stub = '(^|\\\)' . $stub;
         }
 
-        foreach ($this->existing_classes as $fq_classlike_name => $found) {
-            if (!$found) {
-                continue;
-            }
-
-            if (preg_match('@' . $stub . '.*@i', $fq_classlike_name)) {
-                $matching_classes[] = $fq_classlike_name;
-            }
-        }
-
-        foreach ($this->existing_interfaces as $fq_classlike_name => $found) {
-            if (!$found) {
-                continue;
-            }
-
-            if (preg_match('@' . $stub . '.*@i', $fq_classlike_name)) {
-                $matching_classes[] = $fq_classlike_name;
+        foreach ([self::KIND_CLASS, self::KIND_INTERFACE] as $kind) {
+            foreach ($this->classlike_kinds as $fq_classlike_name => $kinds) {
+                if ($kinds & $kind && preg_match('@' . $stub . '.*@i', $fq_classlike_name)) {
+                    $matching_classes[] = $fq_classlike_name;
+                }
             }
         }
 
@@ -369,38 +303,7 @@ final class ClassLikes
         ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
-        $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
-
-        // fixme: this looks like a crazy caching hack
-        if (!isset($this->existing_classes_lc[$fq_class_name_lc])
-            || !$this->existing_classes_lc[$fq_class_name_lc]
-            || !$this->classlike_storage_provider->has($fq_class_name_lc)
-        ) {
-            if ((
-                !isset($this->existing_classes_lc[$fq_class_name_lc])
-                    || $this->existing_classes_lc[$fq_class_name_lc]
-                )
-                && !$this->classlike_storage_provider->has($fq_class_name_lc)
-            ) {
-                if (!isset($this->existing_classes_lc[$fq_class_name_lc])) {
-                    $this->existing_classes_lc[$fq_class_name_lc] = false;
-
-                    return false;
-                }
-
-                return $this->existing_classes_lc[$fq_class_name_lc];
-            }
-
-            return false;
-        }
-
-        $this->file_reference_provider->code_use_graph->addReference(
-            CodeUseGraph::classNode($fq_class_name_lc),
-            $context,
-            $location,
-        );
-
-        return true;
+        return $this->hasFullyQualifiedName($fq_class_name, self::KIND_CLASS, $location, $context);
     }
 
     /**
@@ -411,38 +314,7 @@ final class ClassLikes
         ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
-        $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
-
-        // fixme: this looks like a crazy caching hack
-        if (!isset($this->existing_interfaces_lc[$fq_class_name_lc])
-            || !$this->existing_interfaces_lc[$fq_class_name_lc]
-            || !$this->classlike_storage_provider->has($fq_class_name_lc)
-        ) {
-            if ((
-                !isset($this->existing_interfaces_lc[$fq_class_name_lc])
-                    || $this->existing_interfaces_lc[$fq_class_name_lc]
-                )
-                && !$this->classlike_storage_provider->has($fq_class_name_lc)
-            ) {
-                if (!isset($this->existing_interfaces_lc[$fq_class_name_lc])) {
-                    $this->existing_interfaces_lc[$fq_class_name_lc] = false;
-
-                    return false;
-                }
-
-                return $this->existing_interfaces_lc[$fq_class_name_lc];
-            }
-
-            return false;
-        }
-
-        $this->file_reference_provider->code_use_graph->addReference(
-            CodeUseGraph::classNode($fq_class_name_lc),
-            $context,
-            $location,
-        );
-
-        return true;
+        return $this->hasFullyQualifiedName($fq_class_name, self::KIND_INTERFACE, $location, $context);
     }
 
     /**
@@ -453,38 +325,7 @@ final class ClassLikes
         ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
-        $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
-
-        // fixme: this looks like a crazy caching hack
-        if (!isset($this->existing_enums_lc[$fq_class_name_lc])
-            || !$this->existing_enums_lc[$fq_class_name_lc]
-            || !$this->classlike_storage_provider->has($fq_class_name_lc)
-        ) {
-            if ((
-                !isset($this->existing_enums_lc[$fq_class_name_lc])
-                    || $this->existing_enums_lc[$fq_class_name_lc]
-                )
-                && !$this->classlike_storage_provider->has($fq_class_name_lc)
-            ) {
-                if (!isset($this->existing_enums_lc[$fq_class_name_lc])) {
-                    $this->existing_enums_lc[$fq_class_name_lc] = false;
-
-                    return false;
-                }
-
-                return $this->existing_enums_lc[$fq_class_name_lc];
-            }
-
-            return false;
-        }
-
-        $this->file_reference_provider->code_use_graph->addReference(
-            CodeUseGraph::classNode($fq_class_name_lc),
-            $context,
-            $location,
-        );
-
-        return true;
+        return $this->hasFullyQualifiedName($fq_class_name, self::KIND_ENUM, $location, $context);
     }
 
     /**
@@ -495,12 +336,29 @@ final class ClassLikes
         ?CodeLocation $location = null,
         ?Context $context = null,
     ): bool {
+        return $this->hasFullyQualifiedName($fq_class_name, self::KIND_TRAIT, $location, $context);
+    }
+
+    /**
+     * A class, interface or enum registered without storage exists, but is not referenced.
+     *
+     * @param self::KIND_* $kind
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private function hasFullyQualifiedName(
+        string $fq_class_name,
+        int $kind,
+        ?CodeLocation $location,
+        ?Context $context,
+    ): bool {
         $fq_class_name_lc = strtolower($this->getUnAliasedName($fq_class_name));
 
-        if (!isset($this->existing_traits_lc[$fq_class_name_lc]) ||
-            !$this->existing_traits_lc[$fq_class_name_lc]
-        ) {
+        if (!(($this->classlike_kinds_lc[$fq_class_name_lc] ?? 0) & $kind)) {
             return false;
+        }
+
+        if ($kind !== self::KIND_TRAIT && !$this->classlike_storage_provider->has($fq_class_name_lc)) {
+            return true;
         }
 
         $this->file_reference_provider->code_use_graph->addReference(
@@ -758,7 +616,7 @@ final class ClassLikes
             return true;
         }
 
-        return isset($this->existing_classes[$fq_class_name]);
+        return (bool) (($this->classlike_kinds[$fq_class_name] ?? 0) & self::KIND_CLASS);
     }
 
     /**
@@ -770,7 +628,7 @@ final class ClassLikes
             return true;
         }
 
-        return isset($this->existing_interfaces[$fq_interface_name]);
+        return (bool) (($this->classlike_kinds[$fq_interface_name] ?? 0) & self::KIND_INTERFACE);
     }
 
     /**
@@ -782,7 +640,7 @@ final class ClassLikes
             return true;
         }
 
-        return isset($this->existing_enums[$fq_enum_name]);
+        return (bool) (($this->classlike_kinds[$fq_enum_name] ?? 0) & self::KIND_ENUM);
     }
 
     /**
@@ -794,7 +652,7 @@ final class ClassLikes
             return true;
         }
 
-        return isset($this->existing_traits[$fq_trait_name]);
+        return (bool) (($this->classlike_kinds[$fq_trait_name] ?? 0) & self::KIND_TRAIT);
     }
 
     public function getTraitNode(string $fq_trait_name): PhpParser\Node\Stmt\Trait_
@@ -3034,14 +2892,8 @@ final class ClassLikes
 
         unset(
             $this->existing_classlikes_lc[$fq_class_name_lc],
-            $this->existing_traits_lc[$fq_class_name_lc],
-            $this->existing_traits[$fq_class_name],
-            $this->existing_enums_lc[$fq_class_name_lc],
-            $this->existing_enums[$fq_class_name],
-            $this->existing_interfaces_lc[$fq_class_name_lc],
-            $this->existing_interfaces[$fq_class_name],
-            $this->existing_classes_lc[$fq_class_name_lc],
-            $this->existing_classes[$fq_class_name],
+            $this->classlike_kinds_lc[$fq_class_name_lc],
+            $this->classlike_kinds[$fq_class_name],
             $this->trait_nodes[$fq_class_name_lc],
         );
 
@@ -3051,14 +2903,8 @@ final class ClassLikes
     /**
      * @return array{
      *     array<lowercase-string, bool>,
-     *     array<lowercase-string, bool>,
-     *     array<lowercase-string, bool>,
-     *     array<string, bool>,
-     *     array<lowercase-string, bool>,
-     *     array<string, bool>,
-     *     array<lowercase-string, bool>,
-     *     array<string, bool>,
-     *     array<string, bool>,
+     *     array<lowercase-string, int-mask-of<self::KIND_*>>,
+     *     array<string, int-mask-of<self::KIND_*>>,
      *     array<lowercase-string, string>,
      *     array<string, bool>,
      * }
@@ -3068,14 +2914,8 @@ final class ClassLikes
     {
         return [
             $this->existing_classlikes_lc,
-            $this->existing_classes_lc,
-            $this->existing_traits_lc,
-            $this->existing_traits,
-            $this->existing_enums_lc,
-            $this->existing_enums,
-            $this->existing_interfaces_lc,
-            $this->existing_interfaces,
-            $this->existing_classes,
+            $this->classlike_kinds_lc,
+            $this->classlike_kinds,
             $this->classlike_aliases_map,
             $this->existing_classlike_aliases,
         ];
@@ -3084,16 +2924,10 @@ final class ClassLikes
     /**
      * @param array{
      *     0: array<lowercase-string, bool>,
-     *     1: array<lowercase-string, bool>,
-     *     2: array<lowercase-string, bool>,
-     *     3: array<string, bool>,
-     *     4: array<lowercase-string, bool>,
-     *     5: array<string, bool>,
-     *     6: array<lowercase-string, bool>,
-     *     7: array<string, bool>,
-     *     8: array<string, bool>,
-     *     9: array<lowercase-string, string>,
-     *     10: array<string, bool>,
+     *     1: array<lowercase-string, int-mask-of<self::KIND_*>>,
+     *     2: array<string, int-mask-of<self::KIND_*>>,
+     *     3: array<lowercase-string, string>,
+     *     4: array<string, bool>,
      * } $thread_data
      * @psalm-external-mutation-free
      */
@@ -3101,27 +2935,15 @@ final class ClassLikes
     {
         [
             $existing_classlikes_lc,
-            $existing_classes_lc,
-            $existing_traits_lc,
-            $existing_traits,
-            $existing_enums_lc,
-            $existing_enums,
-            $existing_interfaces_lc,
-            $existing_interfaces,
-            $existing_classes,
+            $classlike_kinds_lc,
+            $classlike_kinds,
             $classlike_aliases_map,
             $existing_classlike_aliases,
         ] = $thread_data;
 
         $this->existing_classlikes_lc = self::mergeThreadData($existing_classlikes_lc, $this->existing_classlikes_lc);
-        $this->existing_classes_lc = self::mergeThreadData($existing_classes_lc, $this->existing_classes_lc);
-        $this->existing_traits_lc = self::mergeThreadData($existing_traits_lc, $this->existing_traits_lc);
-        $this->existing_traits = self::mergeThreadData($existing_traits, $this->existing_traits);
-        $this->existing_enums_lc = self::mergeThreadData($existing_enums_lc, $this->existing_enums_lc);
-        $this->existing_enums = self::mergeThreadData($existing_enums, $this->existing_enums);
-        $this->existing_interfaces_lc = self::mergeThreadData($existing_interfaces_lc, $this->existing_interfaces_lc);
-        $this->existing_interfaces = self::mergeThreadData($existing_interfaces, $this->existing_interfaces);
-        $this->existing_classes = self::mergeThreadData($existing_classes, $this->existing_classes);
+        $this->classlike_kinds_lc = self::mergeKinds($classlike_kinds_lc, $this->classlike_kinds_lc);
+        $this->classlike_kinds = self::mergeKinds($classlike_kinds, $this->classlike_kinds);
         $this->classlike_aliases_map += $classlike_aliases_map;
         $this->existing_classlike_aliases = self::mergeThreadData(
             $existing_classlike_aliases,
@@ -3142,6 +2964,21 @@ final class ClassLikes
             if (!isset($old[$name]) || (!$old[$name] && $value)) {
                 $old[$name] = $value;
             }
+        }
+        return $old;
+    }
+
+    /**
+     * @template T as string|lowercase-string
+     * @param array<T, int-mask-of<self::KIND_*>> $old
+     * @param array<T, int-mask-of<self::KIND_*>> $new
+     * @return array<T, int-mask-of<self::KIND_*>>
+     * @psalm-pure
+     */
+    private static function mergeKinds(array $old, array $new): array
+    {
+        foreach ($new as $name => $kinds) {
+            $old[$name] = ($old[$name] ?? 0) | $kinds;
         }
         return $old;
     }
