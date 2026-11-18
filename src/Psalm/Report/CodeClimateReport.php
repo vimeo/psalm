@@ -12,7 +12,7 @@ use Psalm\Report;
 
 use function array_map;
 use function array_values;
-use function md5;
+use function hash;
 
 /**
  * CodeClimate format
@@ -71,7 +71,7 @@ final class CodeClimateReport extends Report
      */
     private function calculateFingerprint(IssueData $issue): string
     {
-        return md5($issue->type.$issue->message.$issue->file_name.$issue->from.$issue->to);
+        return hash('xxh3', $issue->type.$issue->message.$issue->file_name.$issue->from.$issue->to);
     }
 
     /**
