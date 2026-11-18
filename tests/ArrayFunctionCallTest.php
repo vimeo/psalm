@@ -5497,6 +5497,54 @@ final class ArrayFunctionCallTest extends TestCase
                     }',
                 'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:43 - Cannot check offset',
             ],
+            'arrayKeyExistsWithStringKeyOnListInAForeach' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): void {
+                        foreach ([1, 2] as $_) {
+                            if (array_key_exists("a", $a)) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:50 - Cannot check offset',
+            ],
+            'negatedArrayKeyExistsWithStringKeyOnListInAForeach' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): void {
+                        foreach ([1, 2] as $_) {
+                            if (!array_key_exists("a", $a)) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:51 - Cannot check offset',
+            ],
+            'arrayKeyExistsWithStringKeyOnListInAWhile' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): void {
+                        while (rand(0, 1)) {
+                            if (array_key_exists("a", $a)) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:50 - Cannot check offset',
+            ],
+            'negatedArrayKeyExistsWithStringKeyOnListInAWhile' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): void {
+                        while (rand(0, 1)) {
+                            if (!array_key_exists("a", $a)) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:51 - Cannot check offset',
+            ],
             'negatedArrayKeyExistsWithStringKeyOnList' => [
                 'code' => '<?php
                     /** @param list<int> $a */
