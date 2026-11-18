@@ -106,7 +106,7 @@ final class Php85Test extends TestCase
                     '$invokable===' => 'float',
                     '$closure===' => 'decimal-int-string',
                     '$arrow===' => 'int',
-                    '$closureVar===' => 'string',
+                    '$closureVar===' => 'non-falsy-string',
                     '$string===' => 'int<1, max>',
                 ],
                 'ignored_issues' => [],
