@@ -1333,6 +1333,12 @@ final class TaintTest extends TestCase
                     }
                     exec("run " . (string) $command);',
             ],
+            'propertyOfAnObjectTheCodeBuiltIsNotTainted' => [
+                'code' => '<?php
+                    $row = new stdClass();
+                    $row->name = "guest";
+                    echo (string) $row->name;',
+            ],
             'coalesceOnAnOffsetKeepsTheTypeOfTheArrayItReads' => [
                 'code' => '<?php
                     /** @param list<mixed> $l */
@@ -6506,6 +6512,25 @@ final class TaintTest extends TestCase
                         exit;
                     }
                     echo $name;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'dynamicPropertyOfATaintedObjectIsTainted' => [
+                'code' => '<?php
+                    /** @psalm-taint-source input */
+                    function fetchRow(): ?stdClass {
+                        return null;
+                    }
+
+                    $row = fetchRow();
+                    echo (string) $row?->name;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'propertyOfADecodedDocumentIsTainted' => [
+                'code' => '<?php
+                    $document = json_decode((string) $_GET["document"]);
+                    if ($document instanceof stdClass) {
+                        echo (string) $document->title;
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'superGlobalPassedByReferenceIsTainted' => [
