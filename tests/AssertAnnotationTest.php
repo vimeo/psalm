@@ -4587,6 +4587,43 @@ final class AssertAnnotationTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment', 'UnusedVariable'],
             ],
+            'assertAnOffsetOfAVariadicParameterDoesNotNarrowTheArgument' => [
+                'code' => '<?php
+                    final class Obj {}
+
+                    /**
+                     * @psalm-assert array{obj: Obj} $ctx[0]
+                     */
+                    function variadic(array ...$ctx): void {}
+
+                    function f(array $a): void {
+                        variadic($a);
+                    }
+
+                    function g(array $a): void {
+                        variadic($a);
+                        /** @psalm-check-type-exact $a = array<array-key, mixed> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'assertAnOffsetGivenByAVariableThatIsNoParameterDoesNotNarrowTheArgument' => [
+                'code' => '<?php
+                    final class Obj {}
+
+                    /**
+                     * @psalm-assert Obj $context[$key]
+                     */
+                    function assertObj(array $context): void {}
+
+                    function f(array $b): void {
+                        $key = "foo";
+                        assertObj($b);
+                        /** @psalm-check-type-exact $b = array<array-key, mixed> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidDocblock'],
+            ],
         ];
     }
 

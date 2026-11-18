@@ -1709,7 +1709,7 @@ final class FunctionLikeDocblockScanner
                         continue 2;
                     }
 
-                    if (str_starts_with($assertion['param_name'], $param->name.'[')) {
+                    if (self::isOffsetOfParameter($param, $assertion['param_name'])) {
                         $storage->assertions[] = new Possibilities(
                             $i . ':' . $assertion['param_name'],
                             $assertion_type_parts,
@@ -1779,7 +1779,7 @@ final class FunctionLikeDocblockScanner
                         continue 2;
                     }
 
-                    if (str_starts_with($assertion['param_name'], $param->name.'[')) {
+                    if (self::isOffsetOfParameter($param, $assertion['param_name'])) {
                         $storage->if_true_assertions[] = new Possibilities(
                             $i . ':' . $assertion['param_name'],
                             $assertion_type_parts,
@@ -1849,7 +1849,7 @@ final class FunctionLikeDocblockScanner
                         continue 2;
                     }
 
-                    if (str_starts_with($assertion['param_name'], $param->name.'[')) {
+                    if (self::isOffsetOfParameter($param, $assertion['param_name'])) {
                         $storage->if_false_assertions[] = new Possibilities(
                             $i . ':' . $assertion['param_name'],
                             $assertion_type_parts,
@@ -1864,6 +1864,19 @@ final class FunctionLikeDocblockScanner
                 );
             }
         }
+    }
+
+    /**
+     * An assertion on a literal offset of a parameter. A variadic parameter's offsets are the collected arguments, and
+     * an offset given by a variable is handled by {@see getArrayOffsetTarget()}.
+     *
+     * @psalm-mutation-free
+     */
+    private static function isOffsetOfParameter(FunctionLikeParameter $param, string $target): bool
+    {
+        return !$param->is_variadic
+            && str_starts_with($target, $param->name . '[')
+            && !str_contains($target, '[$');
     }
 
     /**
