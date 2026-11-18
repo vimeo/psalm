@@ -115,7 +115,6 @@ use function strpos;
 use function strtolower;
 
 use const SORT_FLAG_CASE;
-use const SORT_LOCALE_STRING;
 use const SORT_NATURAL;
 use const SORT_REGULAR;
 use const SORT_STRING;
@@ -164,6 +163,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         'asort' => SORT_REGULAR,
         'arsort' => SORT_REGULAR,
     ];
+
+    /**
+     * The value of `SORT_LOCALE_STRING`, which is deprecated since PHP 8.6: reading it would emit a deprecation.
+     */
+    private const SORT_LOCALE_STRING = 5;
 
     /**
      * @psalm-suppress ComplexMethod
@@ -2170,7 +2174,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
 
             if ($flags !== SORT_STRING
-                && $flags !== SORT_LOCALE_STRING
+                && $flags !== self::SORT_LOCALE_STRING
                 && $flags !== SORT_NATURAL
                 && $flags !== SORT_REGULAR
             ) {
