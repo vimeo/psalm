@@ -47,7 +47,7 @@ final class ConsoleReport extends Report
 
         $issue_string .= ': ' . $issue_data->type
             . ' - ' . $this->getFileReference($issue_data)
-            . ' - ' . $issue_data->message . $issue_reference . "\n";
+            . ' - ' . self::getMessageWithCwe($issue_data) . $issue_reference . "\n";
 
 
         if ($issue_data->taint_trace) {
