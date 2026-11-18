@@ -34,8 +34,7 @@ final class ByRefArgumentAnalyzer
      * @param CapabilitySet $capabilities
      * @param array<int, FunctionLikeParameter>|null $params the callee's parameters, null when unknown
      * @param list<Arg|PhpParser\Node\VariadicPlaceholder> $args
-     * @param bool $impure_callee whether the callee is impure, for a call that leaves out of $capabilities what it
-     *        costs the receiver (read-props, write-this-props), so that they are no longer all of them
+     * @param bool $impure_callee whether the callee is impure; the receiver adjustment can hide that from $capabilities
      * @return CapabilitySet
      */
     public static function adjustCapabilities(

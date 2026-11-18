@@ -3234,6 +3234,23 @@ final class CapabilitiesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'closureCallingAnImpureInstanceMethodIsInferredWithWriteRefs' => [
+                'code' => '<?php
+                    final class Impure {
+                        public function run(): void {}
+                    }
+
+                    function f(Impure $i): void {
+                        $c = function () use ($i): void {
+                            $i->run();
+                        };
+                        /** @psalm-check-type-exact $c = Closure[write-props|read-globals|write-globals|write-refs|io|time]():void */
+                        $c();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
