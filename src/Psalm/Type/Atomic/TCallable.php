@@ -34,8 +34,9 @@ final class TCallable extends Atomic
      * @param list<FunctionLikeParameter> $params
      * @param CapabilitySet|Union $purity A capability set or a purity type (see {@see CallableTrait::$purity})
      * @param ?non-empty-lowercase-string $callable_id The id of the underlying function/method, when
-     *                                        known. Metadata only - it does not affect the structural
-     *                                        type - and is used to re-dispatch taint sinks/sources on invocation.
+     *                                        known. It does not affect the structural type, but keeps the
+     *                                        callables of different functions apart in a union, and is used to
+     *                                        re-dispatch taint sinks/sources on invocation.
      */
     public function __construct(
         ?array $params = null,
@@ -48,6 +49,25 @@ final class TCallable extends Atomic
         $this->return_type = $return_type;
         $this->purity = self::purityFrom($purity);
         parent::__construct($from_docblock);
+    }
+
+    /**
+     * Callables of different functions or methods are kept apart, though their types read the same
+     */
+    #[Override]
+    public function getKey(bool $include_extra = true): string
+    {
+        $key = $this->getPurityString() . $this->getParamString() . $this->getReturnTypeString();
+
+        return $this->callable_id === null ? $key : $key . '#' . $this->callable_id;
+    }
+
+    #[Override]
+    public function equals(Atomic $other_type, bool $ensure_source_equality): bool
+    {
+        return $other_type instanceof self
+            && $this->callable_id === $other_type->callable_id
+            && parent::equals($other_type, $ensure_source_equality);
     }
 
     /**

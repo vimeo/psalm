@@ -1108,6 +1108,11 @@ final class ArgumentsAnalyzer
             $cased_method_id = $function_storage->cased_name;
         }
 
+        // the arguments are analysed already, and these calls are insecure whatever their types
+        if ($method_id !== null && $method_id !== '') {
+            InsecureCallAnalyzer::analyze($statements_analyzer, $method_id, $args, $function_params, $code_location);
+        }
+
         $calling_class_storage = $class_storage;
 
         $static_fq_class_name = $fq_class_name;
@@ -2003,7 +2008,7 @@ final class ArgumentsAnalyzer
      * @param array<int, FunctionLikeParameter> $function_params
      * @psalm-mutation-free
      */
-    private static function getArgForParam(array $args, array $function_params, string $param_name): ?PhpParser\Node\Arg
+    public static function getArgForParam(array $args, array $function_params, string $param_name): ?PhpParser\Node\Arg
     {
         foreach ($args as $arg) {
             if ($arg->name !== null && $arg->name->name === $param_name) {

@@ -503,9 +503,10 @@ When `true`, Psalm enables these plugins without listing them in [`<plugins>`](p
 | `psalm/plugin-mockery` | `composer.json` requires `mockery/mockery` |
 | `psalm/plugin-symfony` | `composer.json` requires `symfony/framework-bundle` |
 | `psalm/plugin-laravel` | `composer.json` requires `laravel/framework` or `orchestra/testbench` |
+| `weirdan/doctrine-psalm-plugin` | `composer.json` requires `doctrine/orm`, `doctrine/dbal`, `doctrine/collections` or `doctrine/persistence` |
 | the plugin of `webmozart/assert` (2.4 and later) | `webmozart/assert` is installed |
 
-Psalm itself requires the `psalm/*` plugins, so they don't need installing.
+Psalm itself requires these plugins, so they don't need installing.
 
 #### phpVersion
 ```xml

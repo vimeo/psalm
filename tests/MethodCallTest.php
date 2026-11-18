@@ -2162,6 +2162,8 @@ final class MethodCallTest extends TestCase
 
                     $db = new PDO("sqlite:sqlitedb");
                     $db->sqliteCreateFunction("md5rev", "md5_and_reverse", 1);',
+                'assertions' => [],
+                'ignored_issues' => ['WeakHash'],
             ],
             'dontConvertedMaybeMixedAfterCall' => [
                 'code' => '<?php
