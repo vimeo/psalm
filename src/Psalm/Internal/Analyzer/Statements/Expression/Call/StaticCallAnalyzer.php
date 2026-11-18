@@ -545,6 +545,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $codebase,
                 $method_storage,
                 $template_result,
+                $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
             )
             : 0;
 

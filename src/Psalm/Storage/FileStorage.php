@@ -98,6 +98,19 @@ final class FileStorage
      */
     public array $classlike_aliases = [];
 
+    /**
+     * The names a class_alias() call of the file gives a class, whatever it aliases, and even in code psalm skips
+     *
+     * @var array<lowercase-string, true>
+     */
+    public array $possible_class_aliases = [];
+
+    /**
+     * Whether the file may call class_alias() with a name psalm doesn't know: an alias that isn't a literal, an
+     * unpacked argument, or class_alias as a callable
+     */
+    public bool $has_dynamic_class_alias = false;
+
     public ?Aliases $aliases = null;
 
     /** @var Aliases[] */

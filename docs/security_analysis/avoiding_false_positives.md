@@ -10,8 +10,6 @@ There are a number of ways you can prevent them:
 
 Some operations remove taints from data – for example, wrapping `$_GET['name']` in an `htmlentities` call prevents cross-site-scripting attacks in that `$_GET` call.
 
-`json_encode()` removes the `html` taint when its flags are a known value including `JSON_HEX_TAG` and `JSON_HEX_AMP`: what it returns then has no `<`, `>` or `&`. It keeps the `has_quotes` taint whatever the flags, as the `"` delimiting a JSON string ends a double-quoted attribute; a function that only puts JSON in a `<script>`, or with `JSON_HEX_APOS` in an attribute in single quotes, can declare `@psalm-taint-escape has_quotes`.
-
 Psalm allows you to remove taints via a `@psalm-taint-escape <taint-type>` annotation:
 
 ```php
@@ -27,6 +25,40 @@ function echoVar(string $str) : void {
 
 echoVar($_GET["text"]);
 ```
+
+## Escaping by flags
+
+What `json_encode()`, `htmlspecialchars()` and `htmlentities()` escape depends on their flags, which Psalm only reads from constant expressions (int literals, builtin constants, class constants, variables only ever assigned such expressions, and `|`, `&` and ternaries of them), never from a type. In a namespace, write `\JSON_HEX_TAG` or import it with `use const`. The decoders give back what the escapes removed:
+
+```php
+<?php
+
+final class Json
+{
+    public const FLAGS = JSON_HEX_TAG | JSON_HEX_AMP;
+}
+
+/** @param 3 $three */
+function show(int $flags, int $three): void
+{
+    echo json_encode($_GET['a'], Json::FLAGS); // TaintedTextWithQuotes, but no TaintedHtml
+    $hex = JSON_HEX_TAG | JSON_HEX_AMP;
+    echo json_encode($_GET['a'], $hex); // TaintedTextWithQuotes, but no TaintedHtml
+    echo json_encode($_GET['a'], $flags | JSON_HEX_TAG | JSON_HEX_AMP); // TaintedTextWithQuotes
+    echo json_encode($_GET['a'], $three); // TaintedHtml
+    echo json_decode(json_encode($_GET['a'], Json::FLAGS)); // TaintedHtml
+    echo htmlspecialchars($_GET['a'], ENT_QUOTES); // safe
+    echo htmlspecialchars($_GET['a'], ENT_NOQUOTES); // TaintedTextWithQuotes
+    echo htmlspecialchars(...[$_GET['a'], ENT_QUOTES]); // TaintedTextWithQuotes
+    echo html_entity_decode(htmlspecialchars($_GET['a'], ENT_QUOTES)); // TaintedHtml
+    header('X-Data: ' . json_encode($_GET['a'])); // safe
+    header('X-Data: ' . json_encode($_GET['a'], JSON_PRETTY_PRINT)); // TaintedHeader
+}
+```
+
+`json_encode()` always keeps `has_quotes`, as the `"` around a JSON string ends a double-quoted attribute: a function that only puts JSON in a `<script>` can declare `@psalm-taint-escape has_quotes`.
+
+A class constant is only read from a project class declared once, unconditionally, under its own name, while no scanned `class_alias()` call has an alias Psalm can't tell. `static::` is only read on a natively final class or constant.
 
 ## Types
 
@@ -97,6 +129,7 @@ function processVar(string $str, bool $escape = true) : string {
 
 echo processVar($_GET['text'], false); // detects tainted HTML
 echo processVar($_GET['text'], true); // considered secure
+echo processVar(...[$_GET['text'], true]); // detects tainted HTML: an unpacked argument isn't read
 ```
 
 ## Output of command-line code
