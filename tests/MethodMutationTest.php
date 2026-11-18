@@ -276,7 +276,7 @@ final class MethodMutationTest extends TestCase
         $codebase->scanFiles();
 
         $method_context = new Context();
-        $method_context->collect_mutations = true;
+        $method_context->collect_initializations = true;
         $this->project_analyzer->getMethodMutations($method_id, $method_context, $root_file_path, 'index.php');
 
         return (string) $method_context->vars_in_scope['$this->count'];
