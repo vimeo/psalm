@@ -827,7 +827,7 @@ final class ArgTest extends TestCase
                 'code' => '<?php
                     setcookie("name", "value", nonexistent: "/");',
                 'error_message' => 'InvalidNamedArgument',
-                'error_levels' => [],
+                'error_levels' => ['InsecureCookie'],
                 'php_version' => '8.0',
             ],
             'namedArgumentUnknownToEveryCallmapOverloadIsNotTakenByTheVariadicOne' => [
