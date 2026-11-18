@@ -230,9 +230,12 @@ final class Refactor
 
         $to_refactor = [];
 
+        $expects_a_value = static fn(string $operation): string
+            => ($operation === 'move_into' ? '--into' : '--to') . ' expects a value' . PHP_EOL;
+
         foreach ($args as $arg) {
             if (($operation === 'move_into' || $operation === 'rename_to') && str_starts_with($arg, '-')) {
-                fwrite(STDERR, ($operation === 'move_into' ? '--into' : '--to') . ' expects a value' . PHP_EOL);
+                fwrite(STDERR, $expects_a_value($operation));
                 exit(1);
             }
 
@@ -279,7 +282,7 @@ final class Refactor
                 }
 
                 if (trim($arg) === '') {
-                    fwrite(STDERR, ($operation === 'move_into' ? '--into' : '--to') . ' expects a value' . PHP_EOL);
+                    fwrite(STDERR, $expects_a_value($operation));
                     exit(1);
                 }
 
@@ -319,7 +322,7 @@ final class Refactor
         }
 
         if ($operation === 'move_into' || $operation === 'rename_to') {
-            fwrite(STDERR, ($operation === 'move_into' ? '--into' : '--to') . ' expects a value' . PHP_EOL);
+            fwrite(STDERR, $expects_a_value($operation));
             exit(1);
         }
 

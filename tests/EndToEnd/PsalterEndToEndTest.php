@@ -170,9 +170,21 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
             ['--move', 'Ns\A::foo', '--into', '--rename', 'Ns\B::bar', '--to', 'Ns\C::baz'],
             '--into expects a value',
         ];
+        yield '--into followed by an unrelated option' => [
+            ['--move', 'Ns\A::foo', '--into', '--no-progress'],
+            '--into expects a value',
+        ];
         yield 'missing destination class' => [
             ['--move', 'Ns\A::foo', '--into', 'Ns\Missing'],
             'Destination class Ns\Missing doesn’t exist',
+        ];
+        yield 'missing source class' => [
+            ['--move', 'Ns\Missing', '--into', 'Ns\Other'],
+            'Source class Ns\Missing doesn’t exist',
+        ];
+        yield 'destination class already exists' => [
+            ['--rename', 'Ns\A', '--to', 'Ns\C'],
+            'Destination class Ns\C already exists',
         ];
     }
 
