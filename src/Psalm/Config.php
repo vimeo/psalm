@@ -2404,7 +2404,6 @@ final class Config
             && $e instanceof PluginIssue
             && !isset($this->issue_handlers[$issue_type])
         ) {
-            /** @var int */
             $issue_level = $e::ERROR_LEVEL;
 
             if ($issue_level > 0 && $issue_level < $this->level) {

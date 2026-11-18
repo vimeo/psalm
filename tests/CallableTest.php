@@ -176,6 +176,54 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'callableArrayOfAMagicMethodGuardedByMethodExists' => [
+                'code' => '<?php
+                    /**
+                     * @method void magic()
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    function call(callable $_callable): void {}
+
+                    function test(Foo $foo): void {
+                        if (method_exists($foo, "magic")) {
+                            call([$foo, "magic"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callableArrayOfAMagicMethodDeclaredByAnAnnotation' => [
+                'code' => '<?php
+                    /**
+                     * @method void magic()
+                     * @method static void staticMagic()
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+
+                        public static function __callStatic(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    function call(callable $_callable): void {}
+
+                    function test(Foo $foo): void {
+                        call([$foo, "magic"]);
+                        call([Foo::class, "staticMagic"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'invokeInheritedGenericFirstClassCallable' => [
                 'code' => '<?php
                     class Helpers {
@@ -3685,54 +3733,6 @@ final class CallableTest extends TestCase
                         }
                     }',
             ],
-            'callableArrayOfAMagicMethodGuardedByMethodExists' => [
-                'code' => '<?php
-                    /**
-                     * @method void magic()
-                     */
-                    class Foo {
-                        public function __call(string $name, array $arguments): mixed {
-                            return null;
-                        }
-                    }
-
-                    function call(callable $_callable): void {}
-
-                    function test(Foo $foo): void {
-                        if (method_exists($foo, "magic")) {
-                            call([$foo, "magic"]);
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'callableArrayOfAMagicMethodDeclaredByAnAnnotation' => [
-                'code' => '<?php
-                    /**
-                     * @method void magic()
-                     * @method static void staticMagic()
-                     */
-                    class Foo {
-                        public function __call(string $name, array $arguments): mixed {
-                            return null;
-                        }
-
-                        public static function __callStatic(string $name, array $arguments): mixed {
-                            return null;
-                        }
-                    }
-
-                    function call(callable $_callable): void {}
-
-                    function test(Foo $foo): void {
-                        call([$foo, "magic"]);
-                        call([Foo::class, "staticMagic"]);
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
             'protectedCallbackOfASubclassGivenToAParentMethod' => [
                 'code' => '<?php
                     class Command
@@ -3780,6 +3780,38 @@ final class CallableTest extends TestCase
                 'error_message' => 'InvalidArgument',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'callableArrayOfAMethodThatIsNotDeclaredByAnAnnotation' => [
+                'code' => '<?php
+                    /**
+                     * @method void magic()
+                     * @method static void staticMagic()
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+
+                        public static function __callStatic(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    function call(callable $_callable): void {}
+
+                    function test(Foo $foo): void {
+                        call([$foo, "missing"]);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayCallableNamingNoClass' => [
+                'code' => '<?php
+                    function call(callable $callback): void {}
+
+                    call(["", "run"]);',
+                'error_message' => 'InvalidArgument',
             ],
             'invokeGenericFirstClassCallableWithInvalidBound' => [
                 'code' => '<?php
@@ -5264,31 +5296,6 @@ final class CallableTest extends TestCase
 
                     foo([\DateTime::class, "wrongMethod"]);',
                 'error_message' => 'InvalidArgument',
-            ],
-            'callableArrayOfAMethodThatIsNotDeclaredByAnAnnotation' => [
-                'code' => '<?php
-                    /**
-                     * @method void magic()
-                     * @method static void staticMagic()
-                     */
-                    class Foo {
-                        public function __call(string $name, array $arguments): mixed {
-                            return null;
-                        }
-
-                        public static function __callStatic(string $name, array $arguments): mixed {
-                            return null;
-                        }
-                    }
-
-                    function call(callable $_callable): void {}
-
-                    function test(Foo $foo): void {
-                        call([$foo, "missing"]);
-                    }',
-                'error_message' => 'InvalidArgument',
-                'error_levels' => [],
-                'php_version' => '8.0',
             ],
             'privateCallbackOfASubclassGivenToAParentMethod' => [
                 'code' => '<?php
