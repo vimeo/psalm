@@ -39,7 +39,7 @@ trait ConsoleIssueFormatter
 
         $issue_string .= $level_label . ': ' . $issue_data->type
             . ' - ' . $this->getFileReference($issue_data)
-            . ' - ' . $issue_data->message . $issue_reference . "\n";
+            . ' - ' . self::getMessageWithCwe($issue_data) . $issue_reference . "\n";
 
         if ($issue_data->taint_trace !== null && $issue_data->taint_trace !== []) {
             $issue_string .= $this->getTaintSnippets($issue_data->taint_trace);
