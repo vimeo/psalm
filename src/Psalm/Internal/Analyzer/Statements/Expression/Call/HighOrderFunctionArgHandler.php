@@ -252,14 +252,18 @@ final class HighOrderFunctionArgHandler
             }
 
             if ($input_arg_expr instanceof PhpParser\Node\Scalar\String_) {
-                return self::fromLiteralString(Type::getString($input_arg_expr->value), $statements_analyzer);
+                return self::fromLiteralString(
+                    Type::getString($input_arg_expr->value),
+                    $statements_analyzer,
+                    $context,
+                );
             }
 
             if ($input_arg_expr instanceof PhpParser\Node\Expr\ConstFetch) {
                 $constant = $context->constants[$input_arg_expr->name->toString()] ?? null;
 
                 return null !== $constant
-                    ? self::fromLiteralString($constant, $statements_analyzer)
+                    ? self::fromLiteralString($constant, $statements_analyzer, $context)
                     : null;
             }
 
@@ -274,7 +278,7 @@ final class HighOrderFunctionArgHandler
                     : null;
 
                 return null !== $constant && null !== $constant->type
-                    ? self::fromLiteralString($constant->type, $statements_analyzer)
+                    ? self::fromLiteralString($constant->type, $statements_analyzer, $context)
                     : null;
             }
 
@@ -336,6 +340,7 @@ final class HighOrderFunctionArgHandler
     private static function fromLiteralString(
         Union $constant,
         StatementsAnalyzer $statements_analyzer,
+        Context $context,
     ): ?HighOrderFunctionArgInfo {
         $literal = $constant->isSingle() ? $constant->getSingleAtomic() : null;
 
@@ -349,7 +354,11 @@ final class HighOrderFunctionArgHandler
             HighOrderFunctionArgInfo::TYPE_STRING_CALLABLE,
             str_contains($literal->value, '::')
                 ? $codebase->methods->getStorage(MethodIdentifier::wrap($literal->value))
-                : $codebase->functions->getStorage($statements_analyzer, strtolower($literal->value)),
+                : $codebase->functions->getStorage(
+                    $statements_analyzer,
+                    strtolower($literal->value),
+                    context: $context,
+                ),
         );
     }
 }

@@ -80,7 +80,6 @@ final class ExpressionResolver
     public static function registerConstantExpressionDependencies(
         Expr $expr,
         Aliases $aliases,
-        ?string $fq_classlike_name,
         FileStorage $file_storage,
     ): void {
         foreach ((new NodeFinder())->findInstanceOf($expr, Expr\ClassConstFetch::class) as $fetch) {
@@ -92,11 +91,7 @@ final class ExpressionResolver
             }
 
             $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject($fetch->class, $aliases);
-            $fq_class_name_lc = strtolower($fq_class_name);
-
-            if ($fq_classlike_name === null || $fq_class_name_lc !== strtolower($fq_classlike_name)) {
-                $file_storage->classlikes_used_in_declarations[$fq_class_name_lc] = $fq_class_name;
-            }
+            $file_storage->classlikes_used_in_declarations[strtolower($fq_class_name)] = $fq_class_name;
         }
     }
 
