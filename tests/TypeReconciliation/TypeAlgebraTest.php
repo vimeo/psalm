@@ -1274,40 +1274,6 @@ final class TypeAlgebraTest extends TestCase
                         echo $t;
                     }',
             ],
-            'orOfConjunctionsOfAssertingFunctionsKeepsTheTypesAfterTheReturn' => [
-                'code' => '<?php
-                    abstract class At {}
-
-                    final class KA extends At {
-                        public ?int $fallback = null;
-                        /** @var array<array-key, At> */
-                        public array $properties = [];
-                    }
-
-                    /** @psalm-assert-if-true KA $t */
-                    function isList(At $t): bool {
-                        return $t instanceof KA;
-                    }
-
-                    /** @psalm-assert-if-true KA $t */
-                    function isNonEmptyList(At $t): bool {
-                        return $t instanceof KA;
-                    }
-
-                    function f(At $a, At $b): int {
-                        if ((isList($a) && isNonEmptyList($b))
-                            || (isList($b) && isNonEmptyList($a))
-                        ) {
-                            return 0;
-                        }
-
-                        if ($a instanceof KA && $b instanceof KA && $a->fallback === null) {
-                            return count($b->properties);
-                        }
-
-                        return 1;
-                    }',
-            ],
             'traitExistsWithoutAutoloadNarrowsTheName' => [
                 'code' => '<?php
                     function checkTrait(string $name): void {

@@ -16,14 +16,8 @@ use Psalm\Type\Atomic;
 final class IsNotType extends Assertion
 {
     use UnserializeMemoryUsageSuppressionTrait;
-    /**
-     * @param bool $exact the type the value is known to have is not only a bound: it is removed from a value that
-     *     is exactly of it (the cases of a `switch` that were all negated)
-     */
-    public function __construct(
-        public readonly Atomic $type,
-        public readonly bool $exact = false,
-    ) {
+    public function __construct(public readonly Atomic $type)
+    {
     }
 
     /**
@@ -54,12 +48,12 @@ final class IsNotType extends Assertion
 
     /**
      * @return static
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     #[Override]
     public function setAtomicType(Atomic $type): self
     {
-        return new static($type, $this->exact);
+        return new static($type);
     }
 
     #[Override]
