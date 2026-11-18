@@ -269,6 +269,8 @@ final class ProjectAnalyzer
         }
 
         self::$instance = $this;
+
+        NamespaceAnalyzer::clearCache();
     }
 
     private bool $extra_files_initialized = false;
@@ -405,6 +407,10 @@ final class ProjectAnalyzer
     /** @psalm-mutation-free */
     public function canReportIssues(string $file_path): bool
     {
+        if ($this->codebase->isReportableFile($file_path)) {
+            return true;
+        }
+
         // a caller that runs the analysis itself, without a check method, reports issues in every project file
         if ($this->project_files === null) {
             return $this->config->isInProjectDirs($file_path);
