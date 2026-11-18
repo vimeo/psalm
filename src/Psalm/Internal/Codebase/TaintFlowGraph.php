@@ -51,6 +51,7 @@ use Psalm\Type\Union;
 use function array_flip;
 use function array_pop;
 use function array_unshift;
+use function array_values;
 use function count;
 use function end;
 use function get_object_vars;
@@ -192,10 +193,10 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $taint_validations = [];
 
     /**
-     * The validations each call (its file and position) is the result of, which plugins record before the analysis
-     * gives the value of the call its nodes
+     * The validations each call (its file and position) is the result of, by the variable validated, which plugins
+     * record before the analysis gives the value of the call its nodes: analysing the call again replaces them
      *
-     * @var array<string, list<array{string, list<string>, int, 'validator'|'violations'}>>
+     * @var array<string, array<string, array{string, list<string>, int, 'validator'|'violations'}>>
      */
     private array $taint_validations_of_calls = [];
 
@@ -702,12 +703,12 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
-     * @param list<array{string, list<string>, int, 'validator'|'violations'}> $validations
+     * @param array{string, list<string>, int, 'validator'|'violations'} $validation
      * @psalm-capabilities read-props|write-this-props
      */
-    public function addTaintValidationsOfCall(string $call, array $validations): void
+    public function addTaintValidationOfCall(string $call, array $validation): void
     {
-        $this->taint_validations_of_calls[$call] = [...$this->taint_validations_of_calls[$call] ?? [], ...$validations];
+        $this->taint_validations_of_calls[$call][$validation[0]] = $validation;
     }
 
     /**
@@ -716,7 +717,7 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     public function getTaintValidationsOfCall(string $call): array
     {
-        return $this->taint_validations_of_calls[$call] ?? [];
+        return array_values($this->taint_validations_of_calls[$call] ?? []);
     }
 
     /**
