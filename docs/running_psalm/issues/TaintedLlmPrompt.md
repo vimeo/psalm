@@ -32,3 +32,4 @@ $agent->prompt((string) $_GET["question"]);
 ## Further resources
 
 - [OWASP LLM01: Prompt Injection](https://genai.owasp.org/llmrisk/llm01-prompt-injection/)
+- [CWE-1427](https://cwe.mitre.org/data/definitions/1427.html)

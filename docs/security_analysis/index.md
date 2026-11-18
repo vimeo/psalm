@@ -116,6 +116,14 @@ A security issue configured with `errorLevel="info"` is still shown as `INFO`. M
 
 Plugins can mark their own issues the same way by implementing the `Psalm\Issue\SecurityIssue` interface.
 
+Each issue page lists the [CWE](https://cwe.mitre.org/) weaknesses the issue flags, and reports carry them too: human-readable reports after the message, the JSON report in a `cwe_ids` field, and SARIF reports as `external/cwe/cwe-NNN` rule tags.
+
+```
+SECURITY: TaintedSql - src/index.php:2:1 - Detected tainted SQL (CWE-89)
+```
+
+A plugin issue declares its weaknesses with the `CWE_IDS` constant, the most specific first: `public const CWE_IDS = [95, 94];`.
+
 ## Using Baseline With Taint Analysis
 
 Since taint analysis is performed separately from other static code analysis, it makes sense to use a separate baseline for it.
@@ -141,6 +149,8 @@ To generate a SARIF report run Psalm with the `--report` flag and a `.sarif` ext
 ```bash
 psalm --report=results.sarif
 ```
+
+The `ruleId` of a result is the issue type, e.g. `TaintedSql`.
 
 ## Debugging the taint graph
 

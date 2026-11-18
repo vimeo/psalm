@@ -258,38 +258,52 @@ function withIssueDiff(array $judged, string $dir, string $name): array
     return $judged + ['issues' => diffIssues($base, $head), 'weighted_issues' => $weighted];
 }
 
-/** Unannotated-code suggestions: own bucket, weight 0. */
-const PURITY_SUGGESTIONS = [
-    'MissingPureAnnotation',
-    'MissingImmutableAnnotation',
-    'MissingAbstractPureAnnotation',
-    'MissingInterfaceImmutableAnnotation',
+/** Buckets in display order: L1..L8, always (-1), feature (-2). */
+const ISSUE_BUCKETS = ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8', 'always', 'feature'];
+
+// Same categories and weights as psalm-plugin-laravel's delta report, so that both reports read alike.
+// Taint and dead-code issues are reported beside the weighted type issues, not inside them.
+// Taint is every `Tainted*` type; dead code is the closed list below (all need --find-dead-code).
+const DEAD_CODE_TYPES = [
+    'UnusedClass', 'UnusedMethod', 'UnusedProperty', 'UnusedParam', 'UnusedConstructor', 'UnusedReturnValue',
+    'UnusedClosureParam', 'UnusedDocblockParam', 'UnusedForeachValue', 'UnusedVariable', 'UnevaluatedCode',
+    'PossiblyUnusedMethod', 'PossiblyUnusedParam', 'PossiblyUnusedProperty', 'PossiblyUnusedReturnValue',
+    'UnnecessaryVarAnnotation', 'UnusedPsalmSuppress',
 ];
-/** Buckets in display order: L1..L8, always (-1), feature (-2), purity. */
-const ISSUE_BUCKETS = ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8', 'always', 'feature', 'purity_suggestions'];
+const ISSUE_CATEGORIES = ['taint', 'deadcode'];
+
+/** `taint`, `deadcode` or `types` (everything else, strictness checks included). */
+function issueCategory(string $type): string
+{
+    return match (true) {
+        str_starts_with($type, 'Tainted') => 'taint',
+        in_array($type, DEAD_CODE_TYPES, true) => 'deadcode',
+        default => 'types',
+    };
+}
 
 /** @param array<string, mixed> $issue */
 function issueBucket(array $issue): string
 {
-    return match (true) {
-        in_array($issue['type'], PURITY_SUGGESTIONS, true) => 'purity_suggestions',
-        $issue['error_level'] === -1 => 'always',
-        $issue['error_level'] === -2 => 'feature',
+    return match ($issue['error_level']) {
+        -1 => 'always',
+        -2 => 'feature',
         default => 'L' . $issue['error_level'],
     };
 }
 
-/** Issue weight: level for L1..L8, 10 for always, 0 for feature and purity. */
+/** Type-issue weight: level for L1..L8, 10 for always, 1 for feature (the remaining strictness checks). */
 function bucketWeight(string $bucket): int
 {
     return match ($bucket) {
         'always' => 10,
-        'feature', 'purity_suggestions' => 0,
+        'feature' => 1,
         default => (int) substr($bucket, 1),
     };
 }
 
 /**
+ * Type issues weighted by level; taint and dead-code issues are not weighed.
  * Informational only, never feeds a verdict. `drift`: same issue count, different weight.
  *
  * @param list<array<string, mixed>> $base
@@ -301,7 +315,10 @@ function bucketWeight(string $bucket): int
  */
 function weightedIssues(array $base, array $head): array
 {
-    $counts = static fn(array $issues): array => array_count_values(array_map(issueBucket(...), $issues));
+    $counts = static fn(array $issues): array => array_count_values(array_map(
+        issueBucket(...),
+        array_filter($issues, static fn(array $i): bool => issueCategory($i['type']) === 'types'),
+    ));
     $weight = static fn(array $counts): int => array_sum(array_map(
         static fn(string $bucket, int $n): int => bucketWeight($bucket) * $n,
         array_keys($counts),
@@ -394,6 +411,7 @@ function surplus(array $from, array $against): array
  * @return array{
  *     base: int, head: int, added: int, removed: int,
  *     types: array<string, array{added: int, removed: int}>,
+ *     categories: array<string, array{base: int, head: int, added: int, removed: int}>,
  *     added_examples: list<string>, removed_examples: list<string>
  * }
  */
@@ -412,6 +430,24 @@ function diffIssues(array $base, array $head): array
     }
 
     ksort($types);
+    $categories = array_fill_keys(ISSUE_CATEGORIES, ['base' => 0, 'head' => 0, 'added' => 0, 'removed' => 0]);
+    $count = static function (string $type, string $key, int $n) use (&$categories): void {
+        $category = issueCategory($type);
+        if (isset($categories[$category])) {
+            $categories[$category][$key] += $n;
+        }
+    };
+    foreach (['base' => $base, 'head' => $head] as $side => $issues) {
+        foreach ($issues as $issue) {
+            $count($issue['type'], $side, 1);
+        }
+    }
+
+    foreach ($types as $type => $n) {
+        $count($type, 'added', $n['added']);
+        $count($type, 'removed', $n['removed']);
+    }
+
     $example = static fn(array $p): string => mb_strimwidth(
         "{$p[0]}:{$p[1]} {$p[3]} ({$p[4]}): " . preg_replace('/\s+/u', ' ', $p[5]),
         0,
@@ -425,6 +461,7 @@ function diffIssues(array $base, array $head): array
         'added' => count($added),
         'removed' => count($removed),
         'types' => $types,
+        'categories' => $categories,
         'added_examples' => array_map($example, array_slice($added, 0, EXAMPLES_PER_LIST)),
         'removed_examples' => array_map($example, array_slice($removed, 0, EXAMPLES_PER_LIST)),
     ];
