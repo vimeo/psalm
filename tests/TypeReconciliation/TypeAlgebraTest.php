@@ -171,6 +171,46 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'notIdenticalToAListAfterArrayIsListKeepsTheArrayInTheElse' => [
+                'code' => '<?php
+                    /** @return array<string> */
+                    function g(): array {
+                        return [];
+                    }
+
+                    $x = g();
+
+                    if (array_is_list($x) && [\'*\'] !== $x) {
+                        $r = 0;
+                    } else {
+                        $r = $x;
+                    }',
+                'assertions' => [
+                    '$r===' => '0|array<array-key, string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'notIdenticalToAListAfterIsArrayAndArrayIsListKeepsTheArrayAfterTheExit' => [
+                'code' => '<?php
+                    /** @return array<string>|false */
+                    function g() {
+                        return false;
+                    }
+
+                    $x = g();
+
+                    if (is_array($x) && array_is_list($x) && [\'*\'] !== $x) {
+                        exit;
+                    }
+
+                    $r = $x;',
+                'assertions' => [
+                    '$r===' => 'array<array-key, string>|false',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'notIdenticalKeepsTheArrayKeyOfAVariableComparedWithANullableString' => [
                 'code' => '<?php
                     /** @param array-key $dir */
