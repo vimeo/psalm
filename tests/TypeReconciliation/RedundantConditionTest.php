@@ -58,6 +58,44 @@ final class RedundantConditionTest extends TestCase
         );
     }
 
+    public function testTypeCheckInTheArgumentOfACallInAssertIsStillReported(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class K {
+                    public function m(bool $b): bool {
+                        return $b;
+                    }
+                }
+
+                function foo(bool $b): bool {
+                    return $b;
+                }
+
+                function f(int $i, K $k): void {
+                    assert(foo(is_int($i)));
+                    assert($k->m(is_int($i)));
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            [
+                ['RedundantCondition', 13, 32],
+                ['RedundantCondition', 14, 34],
+            ],
+            array_map(
+                static fn($issue): array => [$issue->type, $issue->line_from, $issue->column_from],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     public function testPropertyThatAMethodCalledInTheConditionWritesWithoutRememberingPropertyAssignments(): void
     {
         Config::getInstance()->remember_property_assignments_after_call = false;

@@ -126,6 +126,10 @@ final class ArgumentsAnalyzer
         $was_inside_negation = $context->inside_negation;
         $context->inside_negation = false;
 
+        // assert() reconciles its own argument, not the arguments of another call inside it
+        $was_inside_assert = $context->inside_assert;
+        $context->inside_assert = $was_inside_assert && $method_id === 'assert';
+
         try {
             return self::analyzeArguments(
                 $statements_analyzer,
@@ -138,6 +142,7 @@ final class ArgumentsAnalyzer
             );
         } finally {
             $context->inside_negation = $was_inside_negation;
+            $context->inside_assert = $was_inside_assert;
         }
     }
 

@@ -198,7 +198,9 @@ final class Context
     public bool $inside_conditional = false;
 
     /**
-     * Whether or not we're inside the argument of assert(), whose own check reports what its condition asserts
+     * Whether or not we're inside the argument of assert(), whose own check reports what its condition asserts.
+     * Not `inside_conditional`: that is also set for every `if`, where an is_*() call reports itself, and it is
+     * not reset in the arguments of a call inside assert()
      */
     public bool $inside_assert = false;
 
