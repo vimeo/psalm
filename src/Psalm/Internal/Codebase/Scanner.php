@@ -56,7 +56,6 @@ use const PHP_EOL;
 use const SORT_STRING;
 
 /**
- * @psalm-import-type ClassLikesThreadData from ClassLikes
  * @psalm-type  ThreadData = array{
  *     array<string, string>,
  *     array<string, string>,
@@ -91,6 +90,7 @@ use const SORT_STRING;
  * @internal
  *
  * Contains methods that aid in the scanning of Psalm's codebase
+ * @psalm-import-type ClassLikesThreadData from ClassLikes
  */
 final class Scanner
 {
