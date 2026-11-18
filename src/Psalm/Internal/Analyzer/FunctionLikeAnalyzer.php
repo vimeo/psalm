@@ -593,6 +593,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             $ref_context->vars_in_scope[$tmp_var_id] = Type::getBool();
 
+            $bounds_before = $statements_analyzer->type_variable_tracker->snapshotBounds();
+
             $var = new VirtualVariable(
                 substr($tmp_var_id, 1),
             );
@@ -636,6 +638,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 IssueBuffer::clearRecordingLevel();
                 IssueBuffer::stopRecording();
             }
+
+            // the analysis of the body below records the bounds of these passes again, with the types they found
+            $statements_analyzer->type_variable_tracker->discardBoundsRecordedBetween($bounds_before);
 
             foreach ($byref_uses as $var_id => $_) {
                 $byref_vars[$var_id] = self::combineByRefPathTypes(
@@ -1505,11 +1510,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * The by-reference parameter $var_id stops referencing the variable passed to it (unset(), =&, global,
      * static, ...): that variable keeps what the parameter holds now. Also the case for a variable bound to
-     * a global.
+     * a global. What it was bound to no longer limits what it may hold.
      */
     public static function unbindByRefParam(Codebase $codebase, Context $context, string $var_id): void
     {
-        unset($context->bound_globals[$var_id]);
+        unset(
+            $context->bound_globals[$var_id],
+            $context->byref_constraints[$var_id],
+            $context->references_rebound_in_blocks[$var_id],
+        );
 
         if (isset($context->by_ref_param_out_nodes[$var_id])) {
             self::taintByRefParamOut($codebase, $context, $var_id);
