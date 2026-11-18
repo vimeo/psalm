@@ -402,11 +402,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer = new StatementsAnalyzer($this, $type_provider, true);
 
-        // A method can be analyzed again to collect the properties it initializes or mutates, in the context of a
+        // A method can be analyzed again to collect the properties it initializes, in the context of a
         // class calling or inheriting it (see CallAnalyzer::collectSpecialInformation()): its parameters stay those of
         // every call, so linking its nodes to those of that class there would make any call to it, on any object,
         // reach the properties of that class. Its regular analysis adds its taint paths.
-        if ($context->collect_initializations || $context->collect_mutations) {
+        if ($context->collect_initializations) {
             $statements_analyzer->taint_flow_graph = null;
             $statements_analyzer->data_flow_graph = $statements_analyzer->variable_use_graph;
         }
@@ -733,9 +733,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        // a signature that fails the check skips the body, but what the body initialises or mutates still counts:
+        // a signature that fails the check skips the body, but what the body initialises still counts:
         // its regular analysis reports the signature
-        if (!$check_stmts && !$context->collect_initializations && !$context->collect_mutations) {
+        if (!$check_stmts && !$context->collect_initializations) {
             // the body is not analysed, so its uses of the params are unknown
             if ($storage instanceof MethodStorage
                 && $this instanceof MethodAnalyzer
@@ -747,7 +747,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             return false;
         }
 
-        if ($context->collect_initializations || $context->collect_mutations) {
+        if ($context->collect_initializations) {
             $statements_analyzer->addSuppressedIssues([
                 'DocblockTypeContradiction',
                 'InvalidReturnStatement',
@@ -756,15 +756,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 'TypeDoesNotContainNull',
                 'TypeDoesNotContainType',
                 'LoopInvalidation',
+                'UndefinedInterfaceMethod',
+                'UndefinedMethod',
+                'PossiblyUndefinedMethod',
             ]);
-
-            if ($context->collect_initializations) {
-                $statements_analyzer->addSuppressedIssues([
-                    'UndefinedInterfaceMethod',
-                    'UndefinedMethod',
-                    'PossiblyUndefinedMethod',
-                ]);
-            }
         } elseif ($cased_method_id && strpos($cased_method_id, '__destruct')) {
             $statements_analyzer->addSuppressedIssues([
                 'InvalidPropertyAssignmentValue',
@@ -826,7 +821,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         if (!$this->function instanceof VirtualNode
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             if ($storage instanceof MethodStorage
                 && $storage->has_mutations_annotation
@@ -956,7 +950,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && $project_analyzer->debug_performance
             && $cased_method_id
         ) {
@@ -1129,7 +1122,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         if ($codebase->collect_references
             && !$context->collect_initializations
-            && !$context->collect_mutations
             && $codebase->find_unused_variables
         ) {
             $this->checkParamReferences(
@@ -3106,7 +3098,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             if ($overridden_method_ids
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 foreach ($overridden_method_ids as $overridden_method_id) {
                     $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);

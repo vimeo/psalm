@@ -347,7 +347,7 @@ final class Context
     public array $reconciled_expression_clauses = [];
 
     /**
-     * Whether or not to do a deep analysis and collect mutations to this context
+     * @deprecated Has no effect; will be removed in a future version.
      */
     public bool $collect_mutations = false;
 

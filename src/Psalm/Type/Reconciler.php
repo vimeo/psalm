@@ -2098,6 +2098,23 @@ class Reconciler
                                 $properties[$array_key_offset] = $result_type;
                             }
 
+                            // a list that has an offset has all the offsets before it
+                            if ($base_atomic_type->is_list
+                                && !$result_type->possibly_undefined
+                                && !$result_type->isNever()
+                                && ($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
+                                    !== false
+                            ) {
+                                for ($x = 0; $x < $int_array_key_offset; $x++) {
+                                    if (isset($properties[$x]) && $properties[$x]->possibly_undefined) {
+                                        $properties[$x] = $properties[$x]->isNever()
+                                            && $base_atomic_type->fallback_params
+                                            ? $base_atomic_type->fallback_params[1]
+                                            : $properties[$x]->setPossiblyUndefined(false);
+                                    }
+                                }
+                            }
+
                             if ($base_atomic_type->is_list
                             && (($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
                                     === false
