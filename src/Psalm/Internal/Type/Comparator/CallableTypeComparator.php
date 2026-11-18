@@ -958,9 +958,11 @@ final class CallableTypeComparator
         $class_name = null;
 
         if ($lhs->isSingleStringLiteral()) {
-            $class_name = $lhs->getSingleStringLiteral()->value;
-            if ($class_name[0] === '\\') {
-                $class_name = substr($class_name, 1);
+            $class_name = ltrim($lhs->getSingleStringLiteral()->value, '\\');
+
+            // names no class
+            if ($class_name === '') {
+                return 'not-callable';
             }
 
             if ($codebase) {
