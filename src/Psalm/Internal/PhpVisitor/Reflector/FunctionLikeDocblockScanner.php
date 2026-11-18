@@ -108,6 +108,8 @@ final class FunctionLikeDocblockScanner
             // so `@throws Foo<Bar>` is treated like `@throws Foo`
             $throw_classes = CommentAnalyzer::sanitizeDocblockType($throw);
             $throw_classes = preg_replace('/<(?:[^<>]++|(?R))*+>/', '', $throw_classes) ?? $throw_classes;
+            // the parentheses of `(A&B)|C` only group: `&` binds tighter than `|`
+            $throw_classes = str_replace(['(', ')'], '', $throw_classes);
 
             foreach (explode('|', $throw_classes) as $throw_union_part) {
                 // an exception of an intersection type (`A&B`) is thrown as each of its types

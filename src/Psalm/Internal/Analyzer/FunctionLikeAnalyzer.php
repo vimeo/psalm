@@ -91,7 +91,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_any;
 use function array_combine;
 use function array_diff_key;
 use function array_filter;
@@ -103,6 +102,8 @@ use function array_search;
 use function array_values;
 use function count;
 use function end;
+use function explode;
+use function implode;
 use function in_array;
 use function is_string;
 use function krsort;
@@ -111,6 +112,7 @@ use function md5;
 use function microtime;
 use function preg_match;
 use function reset;
+use function sort;
 use function str_ends_with;
 use function str_starts_with;
 use function strpos;
@@ -1107,6 +1109,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
+        $reported_throw_groups = [];
+
         foreach ($storage->throws as $expected_exception => $_) {
             if (($expected_exception === 'self'
                     || $expected_exception === 'static')
@@ -1134,36 +1138,44 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $container_type = new Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);
 
                     // each intersection type (`A&B`) the class is part of has to be a throwable
-                    $thrown_types = [$input_type];
+                    $thrown_types = [$expected_exception => $input_type];
 
-                    if (isset($storage->throw_intersections[$expected_exception])) {
-                        $thrown_types = [];
+                    foreach ($storage->throw_intersections[$expected_exception] ?? [] as $intersected_exceptions) {
+                        $intersected_types = [];
 
-                        foreach ($storage->throw_intersections[$expected_exception] as $intersected_exceptions) {
-                            $intersected_types = [];
-
-                            foreach ($intersected_exceptions as $intersected_exception) {
-                                $intersected_type = new TNamedObject($intersected_exception);
-                                $intersected_types[$intersected_type->getKey()] = $intersected_type;
-                            }
-
-                            $thrown_types[] = new Union([
-                                new TNamedObject($expected_exception, false, false, $intersected_types),
-                            ]);
+                        foreach ($intersected_exceptions as $intersected_exception) {
+                            $intersected_type = new TNamedObject($intersected_exception);
+                            $intersected_types[$intersected_type->getKey()] = $intersected_type;
                         }
+
+                        $thrown_types[implode('&', [$expected_exception, ...$intersected_exceptions])] = new Union([
+                            new TNamedObject($expected_exception, false, false, $intersected_types),
+                        ]);
                     }
 
-                    if (array_any(
-                        $thrown_types,
-                        static fn(Union $thrown_type): bool => !UnionTypeComparator::isContainedBy(
-                            $codebase,
-                            $thrown_type,
-                            $container_type,
-                        ),
-                    )) {
+                    if (isset($storage->throw_intersections[$expected_exception])) {
+                        unset($thrown_types[$expected_exception]);
+                    }
+
+                    foreach ($thrown_types as $thrown_name => $thrown_type) {
+                        if (UnionTypeComparator::isContainedBy($codebase, $thrown_type, $container_type)) {
+                            continue;
+                        }
+
+                        // a group is reported once, not for each of its classes
+                        $group_members = explode('&', $thrown_name);
+                        sort($group_members);
+                        $group_key = implode('&', $group_members);
+
+                        if (isset($reported_throw_groups[$group_key])) {
+                            continue;
+                        }
+
+                        $reported_throw_groups[$group_key] = true;
+
                         IssueBuffer::maybeAdd(
                             new InvalidThrow(
-                                'Class supplied for @throws ' . $expected_exception
+                                'Class supplied for @throws ' . $thrown_name
                                     . ' does not implement Throwable',
                                 $storage->throw_locations[$expected_exception],
                                 $expected_exception,
