@@ -259,11 +259,7 @@ final class ClassLikeDocblockParser
             $info->consistent_templates = true;
         }
 
-        $named_args_tag = DocblockParser::getNamedArgumentsTag($parsed_docblock);
-        $info->no_named_args = $named_args_tag === 'no-named-arguments';
-        $info->args_by_name = $named_args_tag === 'arguments-by-name';
-        $info->optional_args_by_name = $named_args_tag === 'optional-arguments-by-name';
-        $info->stable_param_names = $named_args_tag === 'stable-parameter-names';
+        $info->named_arguments = DocblockParser::getNamedArguments($parsed_docblock);
 
         if (count($info->psalm_internal = DocblockParser::handlePsalmInternal($parsed_docblock)) !== 0) {
             $info->internal = true;

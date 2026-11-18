@@ -44,6 +44,7 @@ use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\NamedArguments;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -156,25 +157,16 @@ final class FunctionLikeDocblockScanner
         }
 
         // a tag on the method replaces the one on its class
-        if ($docblock_info->no_named_args
-            || $docblock_info->args_by_name
-            || $docblock_info->optional_args_by_name
-            || $docblock_info->stable_param_names
-        ) {
-            $storage->allow_named_arg_calls = !$docblock_info->no_named_args;
-            $storage->args_by_name = $docblock_info->args_by_name;
-            $storage->optional_args_by_name = $docblock_info->optional_args_by_name;
-            $storage->stable_param_names = $docblock_info->stable_param_names;
+        if ($docblock_info->named_arguments !== null) {
+            $storage->named_arguments = $docblock_info->named_arguments;
         }
 
         // the tags that make parameter names part of the API apply to internal code too
         if (($storage->internal || ($classlike_storage && $classlike_storage->internal))
             && !$config->allow_internal_named_arg_calls
-            && !$storage->args_by_name
-            && !$storage->optional_args_by_name
-            && !$storage->stable_param_names
+            && $storage->named_arguments === null
         ) {
-            $storage->allow_named_arg_calls = false;
+            $storage->named_arguments = NamedArguments::NOT_ALLOWED;
         }
 
         if ($docblock_info->variadic) {

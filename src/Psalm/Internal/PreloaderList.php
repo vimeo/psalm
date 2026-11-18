@@ -1741,6 +1741,7 @@ final class PreloaderList {
         \Psalm\Storage\HasAttributesInterface::class,
         \Psalm\Storage\ImmutableNonCloneableTrait::class,
         \Psalm\Storage\MethodStorage::class,
+        \Psalm\Storage\NamedArguments::class,
         \Psalm\Storage\Possibilities::class,
         \Psalm\Storage\PropertyHookStorage::class,
         \Psalm\Storage\PropertyStorage::class,

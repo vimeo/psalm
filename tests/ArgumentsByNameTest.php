@@ -109,6 +109,28 @@ final class ArgumentsByNameTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testArgumentsByNameAllowRenamedVariadicParametersWhenNamedArgumentCallsAreDisallowed(): void
+    {
+        $this->project_analyzer->getConfig()->allow_named_arg_calls = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class A {
+                    /** @arguments-by-name */
+                    public function foo(int ...$a): void {}
+                }
+
+                final class B extends A {
+                    public function foo(int ...$b): void {}
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testInterfaceTagReportsRenamesWhenNamedArgumentCallsAreDisallowed(): void
     {
         $this->expectException(CodeException::class);
@@ -578,6 +600,29 @@ final class ArgumentsByNameTest extends TestCase
                 'error_message' => 'Argument for optional parameter $a of foo must be passed by name',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'unpackedUnionIsPositional' => [
+                'code' => '<?php
+                    /** @optional-arguments-by-name */
+                    function foo(int $a = 0, int $b = 0): void {}
+
+                    /** @param list<int>|ArrayIterator<int, int> $values */
+                    function bar(iterable $values): void {
+                        foo(...$values);
+                    }',
+                'error_message' => 'Argument for optional parameter $a of foo must be passed by name',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'untypedParameter' => [
+                'code' => '<?php
+                    /** @optional-arguments-by-name */
+                    function foo($a, $b = 0): void {}
+
+                    foo(1, 2);',
+                'error_message' => 'Argument for optional parameter $b of foo must be passed by name',
+                'error_levels' => ['MissingParamType'],
+                'php_version' => '8.0',
             ],
             'classNoNamedArguments' => [
                 'code' => '<?php

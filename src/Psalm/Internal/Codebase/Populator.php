@@ -25,6 +25,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\NamedArguments;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TCapabilities;
@@ -747,15 +748,12 @@ final class Populator
 
                     // a method without its own tag keeps the tag of the method it overrides, while a method that
                     // disallows named arguments is reported as MethodSignatureMismatch, as the parent allows them
-                    if ($method_storage->allow_named_arg_calls
-                        && !$method_storage->args_by_name
-                        && !$method_storage->optional_args_by_name
-                        && !$method_storage->stable_param_names
+                    if ($method_storage->named_arguments === null
+                        && $declaring_method_storage->named_arguments !== null
+                        && $declaring_method_storage->named_arguments !== NamedArguments::NOT_ALLOWED
                         && ($method_name !== '__construct' || $declaring_class_storage->preserve_constructor_signature)
                     ) {
-                        $method_storage->args_by_name = $declaring_method_storage->args_by_name;
-                        $method_storage->optional_args_by_name = $declaring_method_storage->optional_args_by_name;
-                        $method_storage->stable_param_names = $declaring_method_storage->stable_param_names;
+                        $method_storage->named_arguments = $declaring_method_storage->named_arguments;
                     }
                 }
             }

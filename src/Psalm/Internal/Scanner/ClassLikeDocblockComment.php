@@ -6,6 +6,7 @@ namespace Psalm\Internal\Scanner;
 
 use PhpParser\Node\Stmt\ClassMethod;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\NamedArguments;
 
 /**
  * @internal
@@ -138,17 +139,8 @@ final class ClassLikeDocblockComment
 
     public bool $consistent_templates = false;
 
-    /** Whether the methods forbid named arguments, per `@no-named-arguments` */
-    public bool $no_named_args = false;
-
-    /** Whether the methods require all arguments by name, per `@arguments-by-name` */
-    public bool $args_by_name = false;
-
-    /** Whether the methods require the arguments of optional parameters by name, per `@optional-arguments-by-name` */
-    public bool $optional_args_by_name = false;
-
-    /** Whether parameter names of the methods are part of the API, per `@stable-parameter-names` */
-    public bool $stable_param_names = false;
+    /** How the arguments of the methods can be passed */
+    public ?NamedArguments $named_arguments = null;
 
     public bool $stub_override = false;
 

@@ -42,6 +42,7 @@ use Psalm\Issue\NamedArgumentNotAllowed;
 use Psalm\Issue\NoValue;
 use Psalm\Issue\NullArgument;
 use Psalm\Issue\ParentNotFound;
+use Psalm\Issue\PositionalArgumentNotAllowed;
 use Psalm\Issue\PossiblyFalseArgument;
 use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\PossiblyNullArgument;
@@ -165,6 +166,25 @@ final class ArgumentAnalyzer
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
+        // virtual arguments are those of calls PHP makes itself, such as offsetGet() or __get()
+        if ($function_param
+            && $function_storage
+            && !$arg instanceof VirtualArg
+            && $codebase->analysis_php_version_id >= 8_00_00
+            && $function_storage->requiresNamedArgument($function_param)
+            && self::isPassedByPosition($codebase, $arg, $arg_value_type, $unpacked_argument_offset)
+        ) {
+            IssueBuffer::maybeAdd(
+                new PositionalArgumentNotAllowed(
+                    'Argument for ' . ($function_param->is_optional ? 'optional ' : '') . 'parameter $'
+                        . $function_param->name . ' of ' . $cased_method_id . ' must be passed by name',
+                    new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                    $cased_method_id,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
         if (!$arg_value_type) {
             if ($function_param && !$function_param->by_ref) {
                 if (!$context->collect_initializations
@@ -276,6 +296,66 @@ final class ArgumentAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Whether the argument gives the parameter its value by position. An unpacked array passes its integer keys by
+     * position and its string keys by name; $unpacked_argument_offset is the position of the parameter among those
+     * the unpacked array fills
+     */
+    private static function isPassedByPosition(
+        Codebase $codebase,
+        PhpParser\Node\Arg $arg,
+        ?Union $arg_value_type,
+        int $unpacked_argument_offset,
+    ): bool {
+        if (!$arg->unpack) {
+            return $arg->name === null;
+        }
+
+        foreach ($arg_value_type?->getAtomicTypes() ?? [] as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray
+                && ($atomic_type->is_list || !$atomic_type->fallback_params)
+            ) {
+                $position = 0;
+
+                foreach ($atomic_type->properties as $key => $property) {
+                    if (is_string($key)) {
+                        break;
+                    }
+
+                    if ($position === $unpacked_argument_offset) {
+                        return true;
+                    }
+
+                    // the positions of the values after one that may be missing are not known
+                    if ($property->possibly_undefined) {
+                        break;
+                    }
+
+                    $position++;
+                }
+
+                continue;
+            }
+
+            if ($atomic_type instanceof TKeyedArray) {
+                $key_type = $atomic_type->getGenericKeyType();
+            } elseif ($atomic_type instanceof TArray) {
+                $key_type = $atomic_type->type_params[0];
+            } elseif ($atomic_type->isIterable($codebase)) {
+                $key_type = $codebase->getKeyValueParamsForTraversableObject($atomic_type)[0];
+            } else {
+                continue;
+            }
+
+            // the first value goes to the first parameter, the positions of the others are not known
+            if ($unpacked_argument_offset === 0 && $key_type->isInt()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

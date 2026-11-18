@@ -567,10 +567,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        if ($storage instanceof MethodStorage && $storage->location && !$storage->allow_named_arg_calls) {
+        if ($storage instanceof MethodStorage && $storage->location && !$storage->allowsNamedArguments()) {
             foreach ($overridden_method_ids as $overridden_method_id) {
                 $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
-                if ($overridden_storage->allow_named_arg_calls) {
+                if ($overridden_storage->allowsNamedArguments()) {
                     IssueBuffer::maybeAdd(new MethodSignatureMismatch(
                         'Method ' . (string) $method_id . ' should accept named arguments '
                             . ' as ' . (string) $overridden_method_id . ' does',
@@ -1691,7 +1691,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $var_type = $param_type;
 
             if ($function_param->is_variadic) {
-                if ($storage->allow_named_arg_calls) {
+                if ($storage->allowsNamedArguments()) {
                     $var_type = new Union([
                         new TArray([self::getVariadicKeyType($storage), $param_type]),
                     ], [
@@ -1911,11 +1911,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     private static function getVariadicKeyType(FunctionLikeStorage $storage): Union
     {
         foreach ($storage->params as $param) {
-            if ($param->is_variadic) {
-                break;
-            }
-
-            if ($storage->args_by_name || ($storage->optional_args_by_name && $param->is_optional)) {
+            if ($storage->requiresNamedArgument($param)) {
                 return Type::getString();
             }
         }

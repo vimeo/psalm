@@ -50,6 +50,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\NamedArguments;
 use Psalm\Storage\Possibilities;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
@@ -446,15 +447,14 @@ final class FunctionLikeNodeScanner
             $storage->internal = [...$classlike_storage->internal, ...$storage->internal];
         }
 
-        if ($classlike_storage && $stmt instanceof PhpParser\Node\Stmt\ClassMethod) {
-            $storage->allow_named_arg_calls = $classlike_storage->allow_named_arg_calls;
-
-            // private methods are only called by their class, except in traits where the using classes call them
-            if (!$stmt->isPrivate() || $classlike_storage->is_trait) {
-                $storage->args_by_name = $classlike_storage->args_by_name;
-                $storage->optional_args_by_name = $classlike_storage->optional_args_by_name;
-                $storage->stable_param_names = $classlike_storage->stable_param_names;
-            }
+        // private methods are only called by their class, except in traits where the using classes call them
+        if ($classlike_storage
+            && $stmt instanceof PhpParser\Node\Stmt\ClassMethod
+            && ($classlike_storage->named_arguments === NamedArguments::NOT_ALLOWED
+                || !$stmt->isPrivate()
+                || $classlike_storage->is_trait)
+        ) {
+            $storage->named_arguments = $classlike_storage->named_arguments;
         }
 
         if ($doc_comment) {

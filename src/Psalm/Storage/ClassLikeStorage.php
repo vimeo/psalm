@@ -433,17 +433,8 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $preserve_constructor_signature = false;
 
-    /** Whether the methods accept named arguments, false with `@no-named-arguments` */
-    public bool $allow_named_arg_calls = true;
-
-    /** Whether the methods require all arguments by name, per `@arguments-by-name` */
-    public bool $args_by_name = false;
-
-    /** Whether the methods require the arguments of optional parameters by name, per `@optional-arguments-by-name` */
-    public bool $optional_args_by_name = false;
-
-    /** Whether parameter names of the methods are part of the API, per `@stable-parameter-names` */
-    public bool $stable_param_names = false;
+    /** How the arguments of the methods can be passed, unless a method has its own tag */
+    public ?NamedArguments $named_arguments = null;
 
     public bool $enforce_template_inheritance = false;
 

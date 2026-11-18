@@ -38,6 +38,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\NamedArguments;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -608,7 +609,7 @@ final class MethodComparator
             }
 
             if ($guide_param->name !== $implementer_param->name
-                && $guide_method_storage->allow_named_arg_calls
+                && $guide_method_storage->allowsNamedArguments()
                 && $implementer_classlike_storage->user_defined
                 && $implementer_param->location
                 && $guide_method_storage->cased_name
@@ -624,9 +625,8 @@ final class MethodComparator
                     || ($guide_classlike_storage->location
                         && !$config->isInProjectDirs($guide_classlike_storage->location->file_path)
                     )
-                    || $guide_method_storage->stable_param_names
-                    || $guide_method_storage->args_by_name
-                    || ($guide_method_storage->optional_args_by_name && $guide_param->is_optional)
+                    || $guide_method_storage->named_arguments === NamedArguments::STABLE
+                    || $guide_method_storage->requiresNamedArgument($guide_param)
                 ) {
                     if ($codebase->alter_code) {
                         $project_analyzer = ProjectAnalyzer::getInstance();

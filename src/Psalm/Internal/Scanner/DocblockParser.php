@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Scanner;
 
 use Psalm\Exception\DocblockParseException;
+use Psalm\Storage\NamedArguments;
 
 use function array_filter;
 use function array_map;
@@ -39,10 +40,10 @@ use const PREG_OFFSET_CAPTURE;
 final class DocblockParser
 {
     private const NAMED_ARGUMENTS_TAGS = [
-        'no-named-arguments',
-        'arguments-by-name',
-        'optional-arguments-by-name',
-        'stable-parameter-names',
+        'no-named-arguments' => NamedArguments::NOT_ALLOWED,
+        'arguments-by-name' => NamedArguments::REQUIRED,
+        'optional-arguments-by-name' => NamedArguments::REQUIRED_FOR_OPTIONAL,
+        'stable-parameter-names' => NamedArguments::STABLE,
     ];
 
     /**
@@ -321,19 +322,20 @@ final class DocblockParser
     }
 
     /**
-     * Returns the tag that says how arguments can be passed: by name, by position or both
+     * Returns how arguments can be passed (by name, by position or both), per the tag that says it
      *
-     * @return 'no-named-arguments'|'arguments-by-name'|'optional-arguments-by-name'|'stable-parameter-names'|null
      * @throws DocblockParseException when more than one of these tags is used
      * @psalm-mutation-free
      */
-    public static function getNamedArgumentsTag(ParsedDocblock $parsed_docblock): ?string
+    public static function getNamedArguments(ParsedDocblock $parsed_docblock): ?NamedArguments
     {
         $tags = [];
+        $named_arguments = null;
 
-        foreach (self::NAMED_ARGUMENTS_TAGS as $tag) {
+        foreach (self::NAMED_ARGUMENTS_TAGS as $tag => $tag_named_arguments) {
             if (isset($parsed_docblock->tags[$tag])) {
                 $tags[] = $tag;
+                $named_arguments = $tag_named_arguments;
             }
         }
 
@@ -341,7 +343,7 @@ final class DocblockParser
             throw new DocblockParseException('@' . implode(' and @', $tags) . ' cannot be used together');
         }
 
-        return $tags[0] ?? null;
+        return $named_arguments;
     }
 
     /**

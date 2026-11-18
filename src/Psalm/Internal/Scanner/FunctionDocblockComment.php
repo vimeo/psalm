@@ -6,6 +6,7 @@ namespace Psalm\Internal\Scanner;
 
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\NamedArguments;
 
 /**
  * @internal
@@ -202,16 +203,8 @@ final class FunctionDocblockComment
      */
     public array $capabilities_expressions = [];
 
-    public bool $no_named_args = false;
-
-    /** Whether all arguments must be passed by name, per `@arguments-by-name` */
-    public bool $args_by_name = false;
-
-    /** Whether the arguments of optional parameters must be passed by name, per `@optional-arguments-by-name` */
-    public bool $optional_args_by_name = false;
-
-    /** Whether parameter names are part of the API, per `@stable-parameter-names` */
-    public bool $stable_param_names = false;
+    /** How the arguments can be passed */
+    public ?NamedArguments $named_arguments = null;
 
     public bool $stub_override = false;
 
