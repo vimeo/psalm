@@ -49,6 +49,28 @@ final class FunctionCallInfo
      */
     public array $callable_ids = [];
 
+    /**
+     * @param non-empty-lowercase-string $callable_id
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function addCallableId(string $callable_id): void
+    {
+        $this->callable_ids[$callable_id] = true;
+    }
+
+    /**
+     * The templates a call of a first-class callable infers, as a call of the function or method it was made from
+     *
+     * @var array<string, non-empty-array<string, Union>>
+     */
+    public array $callable_template_types = [];
+
+    /**
+     * The return type of the function or method a first-class callable was made from, with the templates in
+     * $callable_template_types
+     */
+    public ?Union $callable_return_type = null;
+
     public bool $allow_named_args = true;
 
     public array $byref_uses = [];

@@ -103,6 +103,7 @@ use function get_defined_constants;
 use function get_defined_functions;
 use function getcwd;
 use function glob;
+use function hash;
 use function implode;
 use function in_array;
 use function interface_exists;
@@ -128,7 +129,6 @@ use function reset;
 use function rmdir;
 use function rtrim;
 use function scandir;
-use function sha1;
 use function simplexml_import_dom;
 use function sort;
 use function str_contains;
@@ -201,6 +201,10 @@ final class Config
         'symfony/framework-bundle' => 'Psalm\SymfonyPsalmPlugin\Plugin',
         'laravel/framework' => 'Psalm\LaravelPlugin\Plugin',
         'orchestra/testbench' => 'Psalm\LaravelPlugin\Plugin',
+        'doctrine/orm' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
+        'doctrine/dbal' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
+        'doctrine/collections' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
+        'doctrine/persistence' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
     ];
 
     /**
@@ -468,6 +472,8 @@ final class Config
 
     public bool $find_unused_code = true;
 
+    public bool $mark_all_non_internal_code_as_api = false;
+
     public bool $find_unused_variables = false;
 
     public bool $find_unused_psalm_suppress = false;
@@ -522,6 +528,12 @@ final class Config
     public int $max_shaped_array_size = 100;
 
     public float $long_scan_warning = 10.0;
+
+    /**
+     * The type coverage in percent below which a full run fails, with at most two decimals: from the minTypeCoverage
+     * attribute, the --min-type-coverage option, or set through the API
+     */
+    public ?float $min_type_coverage = null;
 
     /**
      * @var string[]
@@ -813,7 +825,7 @@ final class Config
 
         try {
             $config = self::loadFromXML($base_dir, $file_contents, $current_dir, $file_path);
-            $config->hash = sha1($file_contents . PSALM_VERSION);
+            $config->hash = hash('xxh3', $file_contents . PSALM_VERSION);
         } catch (ConfigException $e) {
             throw new ConfigException(
                 'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage(),
@@ -830,7 +842,7 @@ final class Config
      */
     public function computeHash(): string
     {
-        return sha1($this->hash . ':' . $this->level);
+        return hash('xxh3', $this->hash . ':' . $this->level);
     }
 
     /**
@@ -1151,6 +1163,7 @@ final class Config
             'allowInternalNamedArgumentsCalls' => 'allow_internal_named_arg_calls',
             'allowNamedArgumentCalls' => 'allow_named_arg_calls',
             'findUnusedPsalmSuppress' => 'find_unused_psalm_suppress',
+            'markAllNonInternalCodeAsApi' => 'mark_all_non_internal_code_as_api',
             'findUnusedBaselineEntry' => 'find_unused_baseline_entry',
             'findUnusedIssueHandlerSuppression' => 'find_unused_issue_handler_suppression',
             'reportInfo' => 'report_info',
@@ -1259,7 +1272,7 @@ final class Config
         $config->global_cache_directory = $config->cache_directory;
 
         if ($config->cache_directory !== null) {
-            $config->cache_directory .= DIRECTORY_SEPARATOR . sha1($base_dir);
+            $config->cache_directory .= DIRECTORY_SEPARATOR . hash('xxh3', $base_dir);
         }
 
         if (isset($config_xml['serializer'])) {
@@ -1356,6 +1369,10 @@ final class Config
         if (isset($config_xml['longScanWarning'])) {
             $attribute_text = (float)$config_xml['longScanWarning'];
             $config->long_scan_warning = $attribute_text;
+        }
+
+        if (isset($config_xml['minTypeCoverage'])) {
+            $config->min_type_coverage = (float) $config_xml['minTypeCoverage'];
         }
 
         if (isset($config_xml['inferPropertyTypesFromConstructor'])) {
@@ -2391,7 +2408,6 @@ final class Config
             && $e instanceof PluginIssue
             && !isset($this->issue_handlers[$issue_type])
         ) {
-            /** @var int */
             $issue_level = $e::ERROR_LEVEL;
 
             if ($issue_level > 0 && $issue_level < $this->level) {

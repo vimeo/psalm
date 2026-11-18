@@ -569,6 +569,19 @@ final class ConstantTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment'],
             ],
+            'classConstantTypeNamingAnUndefinedConstant' => [
+                'code' => '<?php
+                    final class A {
+                        public const X = UNDEF_CONST;
+                    }
+
+                    /** @return A::X */
+                    function g() {
+                        return 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedConstant', 'MixedReturnStatement', 'MissingClassConstType'],
+            ],
             'hardToDefineClassConstant' => [
                 'code' => '<?php
                     class A {
@@ -2725,6 +2738,52 @@ final class ConstantTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'docblockTypeOfAConstantFetchedOnAnInstance' => [
+                'code' => '<?php
+                    class A {
+                        /** @var int */
+                        const C = 1;
+                    }
+
+                    function f(A $a): int {
+                        return $a::C;
+                    }
+
+                    function g(A $a): int {
+                        $c = $a::C;
+                        /** @psalm-check-type-exact $c = int */
+                        return $c;
+                    }
+                ',
+            ],
+            'valueOfAConstantFetchedOnAFinalClassInstance' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var int */
+                        const C = 1;
+                    }
+
+                    function f(A $a): int {
+                        $c = $a::C;
+                        /** @psalm-check-type-exact $c = 1 */
+                        return $c;
+                    }
+                ',
+            ],
+            'valueOfAStaticConstantFetchInAFinalClass' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var int */
+                        const C = 1;
+
+                        public function f(): int {
+                            $c = static::C;
+                            /** @psalm-check-type-exact $c = 1 */
+                            return $c;
+                        }
+                    }
+                ',
+            ],
         ];
     }
 
@@ -3391,6 +3450,32 @@ final class ConstantTest extends TestCase
                     }
 
                     $a = C::{"A"};
+                ',
+                'error_message' => 'ParseError',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'unsupportedDynamicFetchOnAnInstance' => [
+                'code' => '<?php
+                    class C {
+                        const A = 0;
+                    }
+
+                    function f(C $c): void {
+                        echo $c::{"A"};
+                    }
+                ',
+                'error_message' => 'ParseError',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'unsupportedDynamicFetchOnAnExpression' => [
+                'code' => '<?php
+                    class C {
+                        const A = 0;
+                    }
+
+                    $a = (new C())::{"A"};
                 ',
                 'error_message' => 'ParseError',
                 'error_levels' => [],
