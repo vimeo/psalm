@@ -3693,6 +3693,13 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayCallableNamingNoClass' => [
+                'code' => '<?php
+                    function call(callable $callback): void {}
+
+                    call(["", "run"]);',
+                'error_message' => 'InvalidArgument',
+            ],
             'invokeGenericFirstClassCallableWithInvalidBound' => [
                 'code' => '<?php
                     /**

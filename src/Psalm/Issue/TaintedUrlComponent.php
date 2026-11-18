@@ -10,4 +10,5 @@ namespace Psalm\Issue;
 final class TaintedUrlComponent extends TaintedInput
 {
     public const SHORTCODE = 371;
+    public const CWE_IDS = [235];
 }
