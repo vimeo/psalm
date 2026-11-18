@@ -130,7 +130,9 @@ final class PackSinks
             }
 
             // what is left of the arguments, whatever the count says
-            $repetitions = $count === '*' || strlen($count) > 9 ? $arg_count - $offset : ($count === '' ? 1 : (int) $count);
+            $repetitions = $count === '*' || strlen($count) > 9
+                ? $arg_count - $offset
+                : ($count === '' ? 1 : (int) $count);
             $repetitions = min($repetitions, $arg_count - $offset);
 
             for ($repetition = 0; $repetition < $repetitions; $repetition++) {
