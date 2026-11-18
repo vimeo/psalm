@@ -16,6 +16,7 @@ use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
+use Psalm\Internal\FileManipulation\UnifiedDiffRenderer;
 use Psalm\Internal\Fork\AnalyzerTask;
 use Psalm\Internal\Fork\InitAnalyzerTask;
 use Psalm\Internal\Fork\Pool;
@@ -29,14 +30,13 @@ use Psalm\Progress\Progress;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Union;
-use SebastianBergmann\Diff\Differ;
-use SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder;
 use UnexpectedValueException;
 
 use function Amp\Future\await;
 use function array_filter;
 use function array_intersect_key;
 use function array_merge;
+use function array_unique;
 use function array_values;
 use function count;
 use function explode;
@@ -45,7 +45,9 @@ use function ksort;
 use function number_format;
 use function pathinfo;
 use function preg_replace;
+use function sort;
 use function str_ends_with;
+use function str_replace;
 use function str_starts_with;
 use function strlen;
 use function strpos;
@@ -109,8 +111,6 @@ final class Analyzer
      */
     private array $mixed_member_names = [];
 
-    private bool $count_mixed = true;
-
     /**
      * Used to store debug performance data
      *
@@ -139,6 +139,11 @@ final class Analyzer
      * @var array<string>|null
      */
     private ?array $files_to_update = null;
+
+    /**
+     * @var array<string, true>
+     */
+    private array $changed_files = [];
 
     /**
      * @var array<string, array<string, int>>
@@ -211,6 +216,8 @@ final class Analyzer
      */
     public function setFilesToUpdate(array $files_to_update): void
     {
+        $files_to_update = array_unique($files_to_update);
+        sort($files_to_update);
         $this->files_to_update = $files_to_update;
     }
 
@@ -257,7 +264,7 @@ final class Analyzer
             $project_analyzer->consolidateAnalyzedData();
         }
 
-        foreach (IssueBuffer::getIssuesData() as $file_path => $file_issues) {
+        foreach (IssueBuffer::getAllIssuesData() as $file_path => $file_issues) {
             $codebase->file_reference_provider->clearExistingIssuesForFile($file_path);
 
             foreach ($file_issues as $issue_data) {
@@ -285,8 +292,14 @@ final class Analyzer
 
             $files_to_update = $this->files_to_update ?? $this->files_to_analyze;
 
+            $diff_renderer = new UnifiedDiffRenderer(
+                $project_analyzer->stdout_report_options->use_color ?? false,
+                $project_analyzer->stdout_report_options->in_ci ?? false,
+                $project_analyzer->show_diff,
+            );
+
             foreach ($files_to_update as $file_path) {
-                $this->updateFile($file_path, $project_analyzer->dry_run);
+                $this->updateFile($file_path, $project_analyzer->dry_run, $diff_renderer);
             }
 
             $project_analyzer->migrateCode();
@@ -914,10 +927,6 @@ final class Analyzer
      */
     public function incrementMixedCount(string $file_path): void
     {
-        if (!$this->count_mixed) {
-            return;
-        }
-
         if (!isset($this->mixed_counts[$file_path])) {
             $this->mixed_counts[$file_path] = [0, 0];
         }
@@ -930,10 +939,6 @@ final class Analyzer
      */
     public function decrementMixedCount(string $file_path): void
     {
-        if (!$this->count_mixed) {
-            return;
-        }
-
         if (!isset($this->mixed_counts[$file_path])) {
             return;
         }
@@ -950,10 +955,6 @@ final class Analyzer
      */
     public function incrementNonMixedCount(string $file_path): void
     {
-        if (!$this->count_mixed) {
-            return;
-        }
-
         if (!isset($this->mixed_counts[$file_path])) {
             $this->mixed_counts[$file_path] = [0, 0];
         }
@@ -1157,23 +1158,26 @@ final class Analyzer
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-mutation-free
      */
-    public function disableMixedCounts(): void
+    public function getChangedFilesCount(): int
     {
-        $this->count_mixed = false;
+        return count($this->changed_files);
     }
 
     /**
      * @psalm-external-mutation-free
      */
-    public function enableMixedCounts(): void
+    public function markFileChanged(string $file_path): void
     {
-        $this->count_mixed = true;
+        $this->changed_files[$file_path] = true;
     }
 
-    public function updateFile(string $file_path, bool $dry_run): void
-    {
+    public function updateFile(
+        string $file_path,
+        bool $dry_run,
+        ?UnifiedDiffRenderer $diff_renderer = null,
+    ): void {
         FileManipulationBuffer::add(
             $file_path,
             FunctionDocblockManipulator::getManipulationsForFile($file_path),
@@ -1211,7 +1215,8 @@ final class Analyzer
         );
 
         $last_start = PHP_INT_MAX;
-        $existing_contents = $this->file_provider->getContents($file_path);
+        $original_contents = $this->file_provider->getContents($file_path);
+        $existing_contents = $original_contents;
 
         foreach ($file_manipulations as $manipulation) {
             if ($manipulation->start <= $last_start) {
@@ -1220,22 +1225,31 @@ final class Analyzer
             }
         }
 
-        if ($dry_run) {
-            echo $file_path . ':' . "\n";
-
-            $differ = new Differ(
-                new StrictUnifiedDiffOutputBuilder([
-                    'fromFile' => $file_path,
-                    'toFile' => $file_path,
-                ]),
-            );
-
-            echo $differ->diff($this->file_provider->getContents($file_path), $existing_contents);
-
+        if ($existing_contents === $original_contents) {
             return;
         }
 
-        $this->progress->alterFileDone($file_path);
+        $this->markFileChanged($file_path);
+        $relative_path = str_replace('\\', '/', $this->config->shortenFileName($file_path));
+
+        if ($diff_renderer) {
+            echo $diff_renderer->render(
+                $this->getChangedFilesCount(),
+                $relative_path,
+                $file_path,
+                $original_contents,
+                $existing_contents,
+            );
+        }
+
+        if ($dry_run) {
+            return;
+        }
+
+        // the title of a shown diff already tells which file is altered
+        if (!$diff_renderer?->show_diff) {
+            $this->progress->alterFileDone($relative_path);
+        }
 
         $this->file_provider->setContents($file_path, $existing_contents);
     }

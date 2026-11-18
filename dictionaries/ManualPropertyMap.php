@@ -21,11 +21,11 @@ return [
     ],
     'domnode' => [
         // documented as 'DomNodeList' in doc-en/reference/dom/domnode.xml:57.
-        'childnodes' => 'DomNodeList<DomNode>'
+        'childNodes' => 'DomNodeList<DomNode>'
     ],
     'tidy' => [
         // documented via <xi:include> in doc-en/reference/tidy/tidy.xml:33
-        'errorbuffer' => 'string',
+        'errorBuffer' => 'string',
     ],
     //
     // Undocumented classes from here on.
@@ -120,7 +120,7 @@ return [
         'wtimeout' => 'integer',
     ],
     'mongocursor' => [
-        'slaveokay' => 'boolean',
+        'slaveOkay' => 'boolean',
         'timeout' => 'integer',
     ],
     'mongodb' => [
@@ -128,7 +128,7 @@ return [
         'wtimeout' => 'integer',
     ],
     'mongodb-driver-exception-writeexception' => [
-        'writeresult' => 'MongoDBDriverWriteResult',
+        'writeResult' => 'MongoDBDriverWriteResult',
     ],
     'mongoid' => [
         'id' => 'string',

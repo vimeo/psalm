@@ -37,7 +37,7 @@ final class IsNotType extends Assertion
 
     public function __toString(): string
     {
-        return '!' . $this->type->getId();
+        return '!' . IsType::getTypeKey($this->type);
     }
 
     #[Override]
@@ -59,6 +59,7 @@ final class IsNotType extends Assertion
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
-        return $assertion instanceof IsType && $this->type->getId() === $assertion->type->getId();
+        return $assertion instanceof IsType
+            && IsType::getTypeKey($this->type) === IsType::getTypeKey($assertion->type);
     }
 }
