@@ -359,7 +359,9 @@ final class ArrayAssignmentAnalyzer
             $context->writeToReferencesPossiblyBound($root_var_id, $root_type, $codebase);
 
             if ($context->references_in_scope) {
-                self::updateArraysHoldingBoundItem($context, $root_var_id, $codebase);
+                $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+                self::updateArraysHoldingBoundItem($statements_analyzer, $context, $root_var_id, $location);
 
                 foreach ($child_stmts as $child_stmt) {
                     $child_var_id = ExpressionIdentifier::getExtendedVarId(
@@ -369,7 +371,7 @@ final class ArrayAssignmentAnalyzer
                     );
 
                     if ($child_var_id !== null) {
-                        self::updateArraysHoldingBoundItem($context, $child_var_id, $codebase);
+                        self::updateArraysHoldingBoundItem($statements_analyzer, $context, $child_var_id, $location);
                     }
                 }
             }
@@ -398,8 +400,12 @@ final class ArrayAssignmentAnalyzer
      * What is written to a variable bound by reference to array items (`$r = &$a['k']`, `$a['k'] = &$r`) is written
      * to the arrays holding those items: their types are rebuilt from its new type
      */
-    public static function updateArraysHoldingBoundItem(Context $context, string $var_id, Codebase $codebase): void
-    {
+    public static function updateArraysHoldingBoundItem(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        string $var_id,
+        CodeLocation $location,
+    ): void {
         if (!isset($context->references_in_scope[$var_id]) && !($context->referenced_counts[$var_id] ?? 0)) {
             return;
         }
@@ -412,7 +418,7 @@ final class ArrayAssignmentAnalyzer
                 && isset($context->vars_in_scope[$item_id])
                 && self::getReferencedVarId($context, $item_id) === $referenced_id
             ) {
-                self::updateArraysHoldingItem($context, $item_id, $codebase);
+                self::updateArraysHoldingItem($statements_analyzer, $context, $item_id, $location);
             }
         }
     }
@@ -434,8 +440,13 @@ final class ArrayAssignmentAnalyzer
         return $var_id;
     }
 
-    private static function updateArraysHoldingItem(Context $context, string $item_id, Codebase $codebase): void
-    {
+    private static function updateArraysHoldingItem(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        string $item_id,
+        CodeLocation $location,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
         $item_type = $context->vars_in_scope[$item_id];
         $key_parts = Reconciler::breakUpPathIntoParts($item_id);
 
@@ -498,8 +509,36 @@ final class ArrayAssignmentAnalyzer
                 );
             }
 
-            // the array holds what was written
-            $array_type = $array_type->addParentNodes($item_type->parent_nodes);
+            if ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
+                // the array holds what was written under the key, as for an assignment of the item
+                $array_node = DataFlowNode::getForAssignment($array_id, $location);
+                $graph->addNode($array_node);
+
+                $old_array_type = $context->vars_in_scope[$array_id];
+                $copy_path_type = count($key_values) === 1
+                    ? self::getOverwritePathType($old_array_type, $key_values[0])
+                    : '=';
+
+                foreach ($old_array_type->parent_nodes as $old_array_node) {
+                    $graph->addPath($old_array_node, $array_node, $copy_path_type);
+                }
+
+                foreach ($item_type->parent_nodes as $item_node) {
+                    if (count($key_values) > 1) {
+                        self::taintAssignmentUnderKeys($graph, $item_node, $array_node, $key_values, $location, 0);
+                    } else {
+                        $graph->addPath(
+                            $item_node,
+                            $array_node,
+                            $key_values
+                                ? 'arrayvalue-assignment-\'' . $key_values[0]->value . '\''
+                                : 'arrayvalue-assignment',
+                        );
+                    }
+                }
+
+                $array_type = $array_type->setParentNodes([$array_node->id => $array_node]);
+            }
 
             $context->vars_in_scope[$array_id] = $array_type;
             $item_type = $array_type;

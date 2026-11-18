@@ -408,7 +408,12 @@ final class TryAnalyzer
                     );
                 }
 
-                ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem($catch_context, $catch_var_id, $codebase);
+                ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem(
+                    $statements_analyzer,
+                    $catch_context,
+                    $catch_var_id,
+                    $location,
+                );
 
                 $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
                 if ($taint_flow_graph) {
