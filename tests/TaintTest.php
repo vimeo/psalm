@@ -1287,7 +1287,7 @@ final class TaintTest extends TestCase
             'anchoredPatternWithoutQuotesRemovesTheXpathTaint' => [
                 'code' => '<?php
                     $data = (string) $_GET["id"];
-                    if (!preg_match("#^[a-zA-Z0-9 _.%~\\\\-]+$#", $data)) {
+                    if (!preg_match("#^[a-zA-Z0-9_.%~\\\\-]+$#", $data)) {
                         exit;
                     }
                     (new DOMXPath(new DOMDocument()))->query("//user[@id=\'" . $data . "\']");',
@@ -6452,6 +6452,15 @@ final class TaintTest extends TestCase
                     }
                     echo $name;',
                 'error_message' => 'TaintedHtml',
+            ],
+            'patternAllowingSpacesKeepsTheXpathTaint' => [
+                'code' => '<?php
+                    $id = (string) $_GET["id"];
+                    if (!preg_match("/^[a-z0-9 ]+$/D", $id)) {
+                        exit;
+                    }
+                    (new DOMXPath(new DOMDocument()))->query("//user[@id=" . $id . "]");',
+                'error_message' => 'TaintedXpath',
             ],
             'patternAllowingSpacesKeepsTheShellTaint' => [
                 'code' => '<?php

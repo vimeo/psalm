@@ -86,9 +86,14 @@ if (preg_match('/^(asc|desc|name)$/', $sort)) {
 }
 
 $id = getParam('id');
-if (preg_match('/^[a-z0-9 _.-]+$/i', $id)) {
+if (preg_match('/^[a-z0-9_.-]+$/iD', $id)) {
     $xpath->query("//user[@id='" . $id . "']"); // no quotes: no issue
-    shell_exec('grep -r ' . $id . ' /var/log'); // TaintedShell: a space starts another argument
+    shell_exec('grep -r ' . $id . ' /var/log'); // TaintedShell: a dash starts an option
+}
+
+$name = getParam('name');
+if (preg_match('/^[a-z0-9 ]+$/i', $name)) {
+    $xpath->query('//user[@id=' . $name . ']'); // TaintedXpath: a space makes `1 or 1`
 }
 
 if (preg_match('/[a-z]+/', $id)) {

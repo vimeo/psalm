@@ -42,7 +42,8 @@ final class PatternCharacters
         TaintKind::INPUT_HTML => '<>',
         TaintKind::INPUT_HAS_QUOTES => '\'"`',
         TaintKind::INPUT_LDAP => "*()\\,+\"<>;=\0",
-        TaintKind::INPUT_XPATH => '\'"[]()=|*@/:<>!$,',
+        // whitespace makes an unquoted predicate `1 or 1`
+        TaintKind::INPUT_XPATH => "'\"[]()=|*@/:<>!$, \t\n\r\x0B\x0C",
         // `..` is the parent directory wherever the path puts it
         TaintKind::INPUT_FILE => "/\\.\0",
         TaintKind::INPUT_INCLUDE => "/\\.\0",
@@ -52,6 +53,11 @@ final class PatternCharacters
         TaintKind::INPUT_HEADER => "\r\n",
         TaintKind::INPUT_COOKIE => ";,= \r\n",
     ];
+
+    /**
+     * The taints a newline can carry even as the last character, which `$` lets a string end with
+     */
+    private const TAINTS_OF_A_TRAILING_NEWLINE = TaintKind::INPUT_HEADER | TaintKind::INPUT_COOKIE;
 
     /**
      * The characters a value can hold and still be no SQL or shell syntax: a word, a number, a dotted name; for a
@@ -95,7 +101,9 @@ final class PatternCharacters
         $removed_taints = 0;
 
         foreach (self::TAINT_CHARACTERS as $taint => $needed) {
-            if (!self::holdsAnyOf($chars, $needed) && !($trailing_newline && str_contains($needed, "\n"))) {
+            if (!self::holdsAnyOf($chars, $needed)
+                && !($trailing_newline && ($taint & self::TAINTS_OF_A_TRAILING_NEWLINE) !== 0)
+            ) {
                 $removed_taints |= $taint;
             }
         }
