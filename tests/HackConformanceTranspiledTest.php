@@ -557,17 +557,12 @@ final class HackConformanceTranspiledTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
-            'SKIPPED-type_variables/typed_closure_param_empty_construction' => [
+            'type_variables/typed_closure_param_empty_construction' => [
                 // an empty construction assigned to an `ArrayCollection<int, DateTime>`
                 // property, then handed a lambda whose param is typed DateTime. The typed
                 // lambda param constrains the variable from above; the empty `dict[]`
                 // only gives it the lower bound `nothing`. (The original form of
                 // ClassTemplateTest::allowPropertyCoercion before PR #11972 changed it.)
-                // Skipped, Psalm does not agree with HHVM yet:
-                // Psalm types the empty construction ArrayCollection<never, never>
-                // and keeps that type after the assignment to the property, so the lambda
-                // parameter is checked against never (ParadoxicalCondition) instead of the
-                // variable taking DateTime as its upper bound.
                 'code' => '<?php
                     /**
                      * @template TKey of array-key

@@ -28,12 +28,14 @@ use Psalm\Type\Union;
 
 use function array_diff_key;
 use function array_filter;
+use function array_intersect_key;
 use function array_key_first;
 use function array_merge;
 use function array_values;
 use function count;
 use function explode;
 use function in_array;
+use function is_string;
 use function spl_object_id;
 
 /**
@@ -50,6 +52,8 @@ final class IfConditionalAnalyzer
         int $branch_point,
     ): IfConditionalScope {
         $entry_clauses = [];
+        $condition_context = $outer_context;
+        $negated_phantom_classes_before_cond = $outer_context->negated_phantom_classes;
 
         // used when evaluating elseifs
         if ($if_scope->negated_clauses) {
@@ -165,6 +169,13 @@ final class IfConditionalAnalyzer
         // to $outer_context don't mess with elseif/else blocks
         $post_if_context = clone $outer_context;
 
+        // the condition may have been analysed on a copy of the context it was given
+        $condition_context->phantom_classes += $outer_context->phantom_classes;
+        $condition_context->negated_phantom_classes += $outer_context->negated_phantom_classes;
+
+        // where a negated condition about a class holds, the class is missing
+        $if_context->demoteNegatedPhantomClasses($negated_phantom_classes_before_cond);
+
         if ($internally_applied_if_cond_expr !== $cond
             || $externally_applied_if_cond_expr !== $cond
         ) {
@@ -178,11 +189,37 @@ final class IfConditionalAnalyzer
 
             $if_conditional_context->inside_conditional = true;
 
+            $pre_cond_remove_vars = $if_conditional_context->parent_remove_vars;
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $cond, $if_conditional_context) === false) {
                 throw new ScopeAnalysisException();
             }
 
             $if_conditional_context->inside_conditional = $was_inside_conditional;
+
+            // the operands analysed only here may be skipped, so what they write or forget may have changed after
+            // the condition
+            $post_if_context->mergeChangesOfPossiblySkippedBranch(
+                $if_conditional_context,
+                $pre_cond_remove_vars,
+                $codebase,
+            );
+            $outer_context->mergeChangesOfPossiblySkippedBranch(
+                $if_conditional_context,
+                $pre_cond_remove_vars,
+                $codebase,
+            );
+
+            // what the operands analysed only here changed is dropped by the analyser of the condition once checked,
+            // and by the scope enclosing an elseif once its body was analysed
+            $outer_context->parent_remove_vars = [
+                ...$outer_context->parent_remove_vars,
+                ...$if_conditional_context->parent_remove_vars,
+            ];
+            $if_context->parent_remove_vars = [
+                ...$if_context->parent_remove_vars,
+                ...$if_conditional_context->parent_remove_vars,
+            ];
 
             /** @var array<string, bool> */
             $more_cond_referenced_var_ids = $if_conditional_context->cond_referenced_var_ids;
@@ -298,6 +335,78 @@ final class IfConditionalAnalyzer
             $assigned_in_conditional_var_ids,
             $entry_clauses,
         );
+    }
+
+    /**
+     * The clauses that analysing the condition added to the context: what its own assignments say of the new values.
+     * A clause of a variable the condition always assigns is new even if an identical one was there before: the
+     * assignment removed the old ones.
+     *
+     * @param list<Clause> $pre_condition_clauses
+     * @param list<Clause> $clauses
+     * @return list<Clause>
+     * @psalm-capabilities read-props
+     */
+    public static function getClausesAddedByCondition(
+        PhpParser\Node\Expr $cond,
+        array $pre_condition_clauses,
+        array $clauses,
+    ): array {
+        $pre_condition_hashes = [];
+
+        foreach ($pre_condition_clauses as $clause) {
+            $pre_condition_hashes[$clause->hash] = true;
+        }
+
+        $always_assigned_var_ids = self::getAlwaysAssignedVarIds($cond);
+
+        return array_values(array_filter(
+            $clauses,
+            static fn(Clause $clause): bool => !isset($pre_condition_hashes[$clause->hash])
+                || array_intersect_key($clause->possibilities, $always_assigned_var_ids) !== [],
+        ));
+    }
+
+    /**
+     * The variables the expression assigns wherever it is evaluated
+     *
+     * @return array<string, true>
+     * @psalm-capabilities read-props
+     */
+    private static function getAlwaysAssignedVarIds(PhpParser\Node\Expr $expr): array
+    {
+        if ($expr instanceof PhpParser\Node\Expr\Assign) {
+            $var_ids = self::getAlwaysAssignedVarIds($expr->expr);
+
+            if ($expr->var instanceof PhpParser\Node\Expr\Variable && is_string($expr->var->name)) {
+                $var_ids['$' . $expr->var->name] = true;
+            }
+
+            return $var_ids;
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BooleanNot || $expr instanceof PhpParser\Node\Expr\Cast) {
+            return self::getAlwaysAssignedVarIds($expr->expr);
+        }
+
+        // the right side of these isn't always evaluated
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+        ) {
+            return self::getAlwaysAssignedVarIds($expr->left);
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp) {
+            return [
+                ...self::getAlwaysAssignedVarIds($expr->left),
+                ...self::getAlwaysAssignedVarIds($expr->right),
+            ];
+        }
+
+        return [];
     }
 
     /**
