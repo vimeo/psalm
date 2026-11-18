@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class NativeUnionsTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -20,6 +22,88 @@ final class NativeUnionsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'legalNativeUnionsAreNotReportedAsDuplicates' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {}
+                    final class B {}
+
+                    function f(int|string|null $a, A|B $b, ?A $c, int|float|bool $d): void {
+                        echo gettype($a), gettype($b), gettype($c), gettype($d);
+                    }
+
+                    class C {
+                        public function f(): static|C {
+                            return $this;
+                        }
+
+                        public function g(): self|static {
+                            return $this;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classNameAndSelfOrParentInAUnionBeforePhp85AreNotDuplicates' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class P {}
+
+                    final class A extends P {
+                        public function f(): A|self {
+                            return $this;
+                        }
+
+                        public function g(): parent|P {
+                            return $this;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'classNameAndSelfInAClosureUnionAreNotDuplicates' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public function m(): void {
+                            $f = function (): A|self {
+                                return $this;
+                            };
+                            $g = fn(): A|self => $this;
+                            $h = function (A|self $a): void {
+                                echo get_class($a);
+                            };
+
+                            echo get_class($f()), get_class($g());
+                            $h($this);
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'classNameAndSelfInATraitUnionAreNotDuplicates' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait T {
+                        public function f(): A|self {
+                            return $this;
+                        }
+                    }
+
+                    final class A {
+                        use T;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'nativeTypeUnionInConstructor' => [
                 'code' => '<?php
                     interface A {
@@ -79,6 +163,77 @@ final class NativeUnionsTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'duplicateTypeInAParamUnion' => [
+                'code' => '<?php
+                    function bar(string|string $foo): void {
+                        echo $foo;
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:34 - Duplicate type string is redundant',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'duplicateTypeInAReturnUnion' => [
+                'code' => '<?php
+                    function bar(): int|string|int {
+                        return 1;
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:37 - Duplicate type int is redundant',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'duplicateClassInAPropertyUnion' => [
+                'code' => '<?php
+                    class A {
+                        public A|null|A $a = null;
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - Duplicate type A is redundant',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'classNameAndSelfInAReturnUnion' => [
+                'code' => '<?php
+                    class A {
+                        public function f(): A|self {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:46 - Duplicate type A is redundant',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'parentAndTheParentClassInAReturnUnion' => [
+                'code' => '<?php
+                    class P {}
+
+                    final class A extends P {
+                        public function f(): parent|P {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:46 - Duplicate type P is redundant',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'staticTwiceInAReturnUnion' => [
+                'code' => '<?php
+                    class A {
+                        public function f(): static|static {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:46 - Duplicate type static is redundant',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'callableTwiceInAParamUnion' => [
+                'code' => '<?php
+                    function f(callable|callable $c): void {
+                        $c();
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32 - Duplicate type callable is redundant',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'invalidNativeUnionArgument' => [
                 'code' => '<?php
                     function test(string|null $in): string|null {
