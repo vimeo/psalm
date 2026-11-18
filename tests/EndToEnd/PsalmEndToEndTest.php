@@ -11,6 +11,7 @@ use Symfony\Component\Process\Process;
 
 use function assert;
 use function basename;
+use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
 use function json_decode;
@@ -23,6 +24,7 @@ use function substr_count;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
+use function var_export;
 
 use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
