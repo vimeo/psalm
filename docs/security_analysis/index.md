@@ -265,6 +265,28 @@ if (preg_match('/^api.example.com$/', $host)) {
 }
 ```
 
+A path that starts with a directory (`str_starts_with()`, or `strpos()` compared to `0` with `===`) is a local file,
+not a server. The path `realpath()` returns has no `..` left, so it is also in that directory:
+
+```php
+<?php
+/** @psalm-taint-source input */
+function getParam(string $name): string {
+    return (string) ($_GET[$name] ?? '');
+}
+
+$path = realpath('/var/app/data/' . getParam('name'));
+if ($path !== false && str_starts_with($path, '/var/app/data/')) {
+    file_put_contents($path, 'data'); // no issue
+}
+
+$path = getParam('path');
+if (str_starts_with($path, '/var/app/data/')) {
+    fsockopen($path, 80);             // no issue
+    file_put_contents($path, 'data'); // TaintedFile: /var/app/data/../../etc/passwd
+}
+```
+
 #### Allowlist helper functions
 
 If a helper validates input against a list of allowed values, annotate it with `@psalm-assert-if-true` and those

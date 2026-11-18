@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CanonicalPaths;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -356,13 +357,18 @@ final class FunctionCallReturnTypeFetcher
         if (!$statements_analyzer->data_flow_graph || !$function_storage) {
             return $stmt->isFirstClassCallable()
                 ? $stmt_type
-                : UrlHosts::recordParseUrl(
+                : CanonicalPaths::recordRealpath(
                     $statements_analyzer,
-                    $context,
                     $stmt,
                     $function_id,
-                    $stmt->getArgs(),
-                    $stmt_type,
+                    UrlHosts::recordParseUrl(
+                        $statements_analyzer,
+                        $context,
+                        $stmt,
+                        $function_id,
+                        $stmt->getArgs(),
+                        $stmt_type,
+                    ),
                 );
         }
 
@@ -422,7 +428,7 @@ final class FunctionCallReturnTypeFetcher
         }
 
         // the host of a URL, which a list of hosts can fix
-        return UrlHosts::recordParseUrl(
+        $stmt_type = UrlHosts::recordParseUrl(
             $statements_analyzer,
             $context,
             $stmt,
@@ -430,6 +436,8 @@ final class FunctionCallReturnTypeFetcher
             $stmt->getArgs(),
             $stmt_type,
         );
+
+        return CanonicalPaths::recordRealpath($statements_analyzer, $stmt, $function_id, $stmt_type);
     }
 
     // functions whose false return stays reported with ignoreInternalFunctionFalseReturn
