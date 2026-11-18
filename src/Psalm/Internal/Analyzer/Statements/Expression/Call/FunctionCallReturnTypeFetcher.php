@@ -1808,8 +1808,6 @@ final class FunctionCallReturnTypeFetcher
         );
         $graph->addNode($function_call_node);
 
-        $codebase = $statements_analyzer->getCodebase();
-
         $conditionally_removed_taints = self::getConditionallyRemovedTaints(
             $codebase,
             $function_storage,
@@ -1841,7 +1839,7 @@ final class FunctionCallReturnTypeFetcher
         }
 
         if ($function_storage->return_source_params && !$stmt->isFirstClassCallable()) {
-            $removed_taints = $function_storage->removed_taints;
+            $removed_taints |= $function_storage->removed_taints;
 
             $args = $stmt->getArgs();
             if ($function_id === 'preg_replace' && count($args) > 2) {
@@ -1899,11 +1897,6 @@ final class FunctionCallReturnTypeFetcher
                     $function_id === 'vsprintf',
                 )
                 : [];
-
-            $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
-
-            $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-            $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
             self::taintUsingFlows(
                 $function_storage,

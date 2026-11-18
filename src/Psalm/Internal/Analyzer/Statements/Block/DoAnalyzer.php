@@ -21,16 +21,13 @@ use Psalm\IssueBuffer;
 use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
-use function array_diff;
+use function array_diff_key;
 use function array_filter;
-use function array_keys;
 use function array_map;
 use function array_values;
 use function count;
 use function in_array;
 use function is_array;
-use function preg_match;
-use function preg_quote;
 use function spl_object_id;
 
 /**
@@ -58,11 +55,12 @@ final class DoAnalyzer
 
         $first_iteration_issues = self::analyzeDoNaively($statements_analyzer, $stmt, $do_context, $loop_scope);
 
-        $mixed_var_ids = [];
+        // whether each mixed variable may be unset
+        $mixed_vars = [];
 
         foreach ($do_context->vars_in_scope as $var_id => $type) {
             if ($type->hasMixed()) {
-                $mixed_var_ids[] = $var_id;
+                $mixed_vars[$var_id] = $type->possibly_undefined || $type->possibly_undefined_from_try;
             }
         }
 
@@ -117,23 +115,14 @@ final class DoAnalyzer
             cache: false,
         );
 
+        $cond_clauses = $while_clauses;
+
         // a clause on an offset or property of a mixed variable says nothing, but its negation is not true either
         $while_clauses = array_map(
-            static function (Clause $c) use ($mixed_var_ids, $cond_id): Clause {
-                $keys = array_keys($c->possibilities);
-
-                $mixed_var_ids = array_diff($mixed_var_ids, $keys);
-
-                foreach ($keys as $key) {
-                    foreach ($mixed_var_ids as $mixed_var_id) {
-                        if (preg_match('/^' . preg_quote($mixed_var_id, '/') . '(\[|-)/', $key)) {
-                            return new Clause([], $cond_id, $cond_id, true);
-                        }
-                    }
-                }
-
-                return $c;
-            },
+            static fn(Clause $c): Clause => $c->forgetItemsOfMixedVars(
+                array_diff_key($mixed_vars, $c->possibilities),
+                $cond_id,
+            ),
             $while_clauses,
         );
 
@@ -142,14 +131,25 @@ final class DoAnalyzer
         }
 
         try {
-            $negated_while_clauses = FormulaGenerator::getNegatedFormula(
-                $while_clauses,
-                $stmt->cond,
-                $cond_id,
-                $context->self,
-                $statements_analyzer,
-                $codebase,
-            );
+            $negated_while_clauses = [
+                ...FormulaGenerator::getNegatedFormula(
+                    $while_clauses,
+                    $stmt->cond,
+                    $cond_id,
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                ),
+                ...FormulaGenerator::getNegatedSetMixedVarClauses(
+                    $cond_clauses,
+                    $mixed_vars,
+                    $stmt->cond,
+                    $cond_id,
+                    $context->self,
+                    $statements_analyzer,
+                    $codebase,
+                ),
+            ];
         } catch (ComplicatedExpressionException) {
             $negated_while_clauses = [];
         }
@@ -246,12 +246,17 @@ final class DoAnalyzer
 
         $do_context->loop_scope = $loop_scope;
 
+        $bounds_before = $statements_analyzer->type_variable_tracker->snapshotBounds();
+
         IssueBuffer::startRecording();
 
         $statements_analyzer->analyze($stmt->stmts, $do_context);
 
         $issues = IssueBuffer::clearRecordingLevel();
         IssueBuffer::stopRecording();
+
+        // the loop analysis records the bounds of the first iteration again, with the types of all of them
+        $statements_analyzer->type_variable_tracker->discardBoundsRecordedBetween($bounds_before);
 
         if (!isset($suppressed_issues['RedundantCondition'])) {
             $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
