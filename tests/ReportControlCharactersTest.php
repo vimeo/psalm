@@ -24,6 +24,8 @@ use Psalm\Report\TextReport;
 
 use function json_decode;
 use function preg_match;
+use function strlen;
+use function substr;
 
 final class ReportControlCharactersTest extends TestCase
 {
@@ -240,6 +242,71 @@ final class ReportControlCharactersTest extends TestCase
                 . "  \$a$escaped - src/file.php:3:5\nfoo(bar);\n\n"
                 . "\n  \$a$escaped - src/file.php:3:5\nfoo(bar);\n\n\n\n",
             (new ConsoleReport([$issue], [], $options))->create(),
+        );
+    }
+
+    public function testTheTaintTraceOfThePhpStormReportIsEscapedAndKeepsItsFormat(): void
+    {
+        $file = 'src/' . self::DANGEROUS . '.php';
+        $node = new DataFlowNodeData(
+            '$a' . self::DANGEROUS,
+            3,
+            3,
+            $file,
+            '/p/' . $file,
+            "foo('" . self::DANGEROUS . "');",
+            4,
+            7,
+            0,
+            5,
+            8,
+        );
+        $issue = new IssueData(
+            IssueData::SEVERITY_ERROR,
+            3,
+            3,
+            'TaintedHtml',
+            'a message',
+            'src/file.php',
+            '/p/src/file.php',
+            'foo(bar);',
+            'bar',
+            4,
+            7,
+            0,
+            9,
+            5,
+            8,
+            12,
+            2,
+            [$node, ['label' => '$b' . self::DANGEROUS, 'entry_path_type' => 'x']],
+            null,
+            null,
+            null,
+            true,
+        );
+
+        $options = new ReportOptions();
+        $options->use_color = false;
+        $options->show_snippet = true;
+
+        $escaped = self::DANGEROUS_ESCAPED;
+
+        self::assertSame(
+            "SECURITY: TaintedHtml\nat /p/src/file.php:3:5\na message (see https://psalm.dev/012)\n"
+                . "  \$a$escaped - src/$escaped.php:3:5\nfoo('$escaped');\n\n"
+                . "  \$b$escaped\n    <no known location>\n\n\n\n",
+            (new PhpStormReport([$issue], [], $options))->create(),
+        );
+
+        $options->use_color = true;
+
+        self::assertSame(
+            "\e[0;31mSECURITY\e[0m: TaintedHtml\nat /p/src/file.php:3:5\na message (see https://psalm.dev/012)\n"
+                . "  \$a$escaped - src/$escaped.php:3:5\nfoo(\e[30;47m'\\u{001B}[\e[0m"
+                . substr($escaped, strlen('\u{001B}[')) . "');\n\n"
+                . "  \$b$escaped\n    <no known location>\n\n\n\n",
+            (new PhpStormReport([$issue], [], $options))->create(),
         );
     }
 

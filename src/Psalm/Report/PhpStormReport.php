@@ -83,8 +83,8 @@ final class PhpStormReport extends Report
 
         foreach ($taint_trace as $node_data) {
             if ($node_data instanceof DataFlowNodeData) {
-                $snippets .= '  ' . $node_data->label
-                    . ' - ' . $node_data->file_name
+                $snippets .= '  ' . $this->escapeControlCharacters($node_data->label)
+                    . ' - ' . $this->escapeControlCharacters($node_data->file_name)
                     . ':' . $node_data->line_from
                     . ':' . $node_data->column_from . "\n";
 
@@ -92,18 +92,21 @@ final class PhpStormReport extends Report
                     $snippet = $node_data->snippet;
 
                     if (!$this->use_color) {
-                        $snippets .= $snippet . "\n\n";
+                        $snippets .= $this->escapeControlCharacters($snippet) . "\n\n";
                     } else {
                         $selection_start = $node_data->from - $node_data->snippet_from;
                         $selection_length = $node_data->to - $node_data->from;
 
-                        $snippets .= substr($snippet, 0, $selection_start)
-                            . "\e[30;47m" . substr($snippet, $selection_start, $selection_length)
-                            . "\e[0m" . substr($snippet, $selection_length + $selection_start) . "\n\n";
+                        $snippets .= $this->escapeControlCharacters(substr($snippet, 0, $selection_start))
+                            . "\e[30;47m"
+                            . $this->escapeControlCharacters(substr($snippet, $selection_start, $selection_length))
+                            . "\e[0m"
+                            . $this->escapeControlCharacters(substr($snippet, $selection_length + $selection_start))
+                            . "\n\n";
                     }
                 }
             } else {
-                $snippets .= '  ' . $node_data['label'] . "\n";
+                $snippets .= '  ' . $this->escapeControlCharacters($node_data['label']) . "\n";
                 $snippets .= '    <no known location>' . "\n\n";
             }
         }
