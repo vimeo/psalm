@@ -473,6 +473,70 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
                 ],
             ],
+            'argumentListSpreadInAMethodOfAFileNotAnalyzed' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        (new Response())->cookie("name", "value", 0);',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        final class Response {
+                            /** @psalm-mutation-free */
+                            public function cookie(string $cookie): self {
+                                return $this->withCookie(...func_get_args());
+                            }
+
+                            /**
+                             * @param mixed ...$cookie
+                             * @psalm-mutation-free
+                             */
+                            public function withCookie(...$cookie): self {
+                                return $this;
+                            }
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+            ],
+            'argumentListReadInATraitMethodOfAFileNotAnalyzed' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        (new Response())->cookie("name", "value", 0);',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        trait ResponseTrait {
+                            /** @psalm-mutation-free */
+                            public function cookie(string $cookie): array {
+                                return array_slice(func_get_args(), 1);
+                            }
+                        }
+
+                        final class Response {
+                            use ResponseTrait;
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+            ],
+            'argumentCountReadInANestedConditionOfAMethodOfAFileNotAnalyzed' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        Options::get(true, 2);',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        final class Options {
+                            /** @psalm-pure */
+                            public static function get(bool $flag): int {
+                                if ($flag && func_num_args() > 1) {
+                                    return (int) func_get_arg(1);
+                                }
+
+                                return 0;
+                            }
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+            ],
             'globalIncludedVar' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
@@ -856,6 +920,25 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php',
                 ],
                 'error_message' => 'MissingFile',
+            ],
+            'argumentListReadByAClosureOfAMethodOfAFileNotAnalyzed' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        Callbacks::make(1, 2);',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        final class Callbacks {
+                            /** @psalm-pure */
+                            public static function make(int $a): Closure {
+                                return function (): array {
+                                    return func_get_args();
+                                };
+                            }
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'error_message' => 'TooManyArguments',
             ],
             'undefinedMethodInRequire' => [
                 'files' => [

@@ -29,6 +29,7 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\PhpVisitor\ArgumentListReadVisitor;
 use Psalm\Internal\PhpVisitor\ThisReturnVisitor;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\FileScanner;
@@ -314,43 +315,15 @@ final class FunctionLikeNodeScanner
             }
         }
 
+        // the body of a function that isn't analysed isn't scanned either
         if (!$this->file_scanner->will_analyze
             && ($stmt instanceof PhpParser\Node\Stmt\Function_
                 || $stmt instanceof PhpParser\Node\Stmt\ClassMethod
                 || $stmt instanceof PhpParser\Node\Expr\Closure)
             && $stmt->stmts
+            && ArgumentListReadVisitor::readsArgumentList($stmt->stmts)
         ) {
-            // pick up func_get_args that would otherwise be missed
-            foreach ($stmt->stmts as $function_stmt) {
-                if ($function_stmt instanceof PhpParser\Node\Stmt\Expression
-                    && $function_stmt->expr instanceof PhpParser\Node\Expr\Assign
-                    && $function_stmt->expr->expr instanceof PhpParser\Node\Expr\FuncCall
-                    && $function_stmt->expr->expr->name instanceof PhpParser\Node\Name
-                ) {
-                    $inner_function_id = $function_stmt->expr->expr->name->toString();
-
-                    if ($inner_function_id === 'func_get_arg'
-                        || $inner_function_id === 'func_get_args'
-                        || $inner_function_id === 'func_num_args'
-                    ) {
-                        $storage->variadic = true;
-                    }
-                } elseif ($function_stmt instanceof PhpParser\Node\Stmt\If_
-                    && $function_stmt->cond instanceof PhpParser\Node\Expr\BinaryOp
-                    && $function_stmt->cond->left instanceof PhpParser\Node\Expr\BinaryOp\Equal
-                    && $function_stmt->cond->left->left instanceof PhpParser\Node\Expr\FuncCall
-                    && $function_stmt->cond->left->left->name instanceof PhpParser\Node\Name
-                ) {
-                    $inner_function_id = $function_stmt->cond->left->left->name->toString();
-
-                    if ($inner_function_id === 'func_get_arg'
-                        || $inner_function_id === 'func_get_args'
-                        || $inner_function_id === 'func_num_args'
-                    ) {
-                        $storage->variadic = true;
-                    }
-                }
-            }
+            $storage->variadic = true;
         }
 
         $parser_return_type = $stmt->getReturnType();
