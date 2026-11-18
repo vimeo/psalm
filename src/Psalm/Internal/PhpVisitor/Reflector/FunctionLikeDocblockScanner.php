@@ -75,6 +75,7 @@ use function preg_match;
 use function preg_replace;
 use function str_contains;
 use function str_ends_with;
+use function str_replace;
 use function str_starts_with;
 use function strlen;
 use function strtolower;
