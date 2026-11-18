@@ -47,7 +47,7 @@ final class PhpStormReport extends Report
 
         $issue_string .= ': ' . $issue_data->type
             . "\nat " . $issue_data->file_path . ':' . $issue_data->line_from . ':' . $issue_data->column_from
-            . "\n" . $issue_data->message . $issue_reference . "\n";
+            . "\n" . self::getMessageWithCwe($issue_data) . $issue_reference . "\n";
 
 
         if ($issue_data->taint_trace) {

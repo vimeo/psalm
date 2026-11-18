@@ -1352,7 +1352,7 @@ final class ProjectAnalyzer
     }
 
     /**
-     * Parsed statements of files whose methods getMethodMutations() inlined, least recently used first.
+     * Parsed statements of files whose methods analyzeInFileOfClassLike() analyzed again, least recently used first.
      * Inlining $this->method() and parent::method() calls made by a constructor fetched the declaring file
      * every time: a full unserialize from the parser cache when arrayCache is off, and for vendor files, which
      * StatementsProvider keeps serialized, whatever arrayCache says.
@@ -1471,32 +1471,51 @@ final class ProjectAnalyzer
             return;
         }
 
-        $file_analyzer = $this->getFileAnalyzerForClassLike($fq_class_name);
-
-        $file_analyzer->setRootFilePath($root_file_path, $root_file_name);
-
-        if ($appearing_fq_class_name !== $fq_class_name) {
-            $file_analyzer = $this->getFileAnalyzerForClassLike($appearing_fq_class_name);
-        }
-
-        // the files being analysed when the method is called: what the method's file includes of them is not
-        // included again
-        $calling_file_analyzer?->passIncludeChainTo($file_analyzer);
-
-        $stmts = $this->getStatementsForMutations($file_analyzer->getFilePath());
-
-        $file_analyzer->populateCheckers($stmts, false);
-
         if (!$this_context->self) {
             $this_context->self = $fq_class_name;
             $this_context->vars_in_scope['$this'] = Type::parseString($fq_class_name);
         }
 
-        $file_analyzer->getMethodMutations($appearing_method_id, $this_context, true);
+        $this->analyzeInFileOfClassLike(
+            $appearing_fq_class_name,
+            $root_file_path,
+            $root_file_name,
+            static function (FileAnalyzer $file_analyzer) use ($appearing_method_id, $this_context): void {
+                $file_analyzer->getMethodMutations($appearing_method_id, $this_context, true);
+            },
+            $calling_file_analyzer,
+        );
+    }
 
-        $file_analyzer->class_analyzers_to_analyze = [];
-        $file_analyzer->interface_analyzers_to_analyze = [];
-        $file_analyzer->clearSourceBeforeDestruction();
+    /**
+     * Runs $analyze on an analyzer of the file declaring $fq_class_name, with the checkers of that file, as part of
+     * the analysis of $root_file_path
+     *
+     * @param callable(FileAnalyzer): void $analyze
+     */
+    public function analyzeInFileOfClassLike(
+        string $fq_class_name,
+        string $root_file_path,
+        string $root_file_name,
+        callable $analyze,
+        ?FileAnalyzer $calling_file_analyzer = null,
+    ): void {
+        $file_analyzer = $this->getFileAnalyzerForClassLike($fq_class_name);
+        $file_analyzer->setRootFilePath($root_file_path, $root_file_name);
+
+        // the files being analysed when the method is called: what the method's file includes of them is not
+        // included again
+        $calling_file_analyzer?->passIncludeChainTo($file_analyzer);
+
+        $file_analyzer->populateCheckers($this->getStatementsForMutations($file_analyzer->getFilePath()), false);
+
+        try {
+            $analyze($file_analyzer);
+        } finally {
+            $file_analyzer->class_analyzers_to_analyze = [];
+            $file_analyzer->interface_analyzers_to_analyze = [];
+            $file_analyzer->clearSourceBeforeDestruction();
+        }
     }
 
     public function getFunctionLikeAnalyzer(
