@@ -1393,6 +1393,17 @@ final class TaintTest extends TestCase
                     $row->name = "guest";
                     echo (string) $row->name;',
             ],
+            'locationHeaderWithAFixedServerIsNoRedirect' => [
+                'code' => '<?php
+                    header("Location: https://example.com/" . (string) $_GET["page"]);
+                    header("Location: /account?tab=" . (string) $_GET["tab"]);
+                    header("location : /docs/" . (string) $_GET["page"]);',
+            ],
+            'sessionItemOfAValueThatCantBeTainted' => [
+                'code' => '<?php
+                    $_SESSION["page"] = (int) $_GET["page"];
+                    $_SESSION["user"] = "guest";',
+            ],
             'coalesceOnAnOffsetKeepsTheTypeOfTheArrayItReads' => [
                 'code' => '<?php
                     /** @param list<mixed> $l */
@@ -6607,6 +6618,44 @@ final class TaintTest extends TestCase
                         echo (string) $document->title;
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintedLocationHeader' => [
+                'code' => '<?php
+                    header("Location: " . (string) $_GET["next"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintedLocationHeaderAfterARootSlash' => [
+                'code' => '<?php
+                    // `//evil.example` is another server
+                    header("Location: /" . (string) $_GET["next"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintedRedirectSinkAnnotation' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    redirectTo((string) $_GET["next"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'headerWhoseNameIsTaintedIsNoRedirect' => [
+                'code' => '<?php
+                    header((string) $_GET["header"] . ": /");',
+                'error_message' => 'TaintedHeader',
+            ],
+            'taintedSessionItem' => [
+                'code' => '<?php
+                    $_SESSION["user"] = $_GET["user"];',
+                'error_message' => 'TaintedSession',
+            ],
+            'taintedNestedSessionItem' => [
+                'code' => '<?php
+                    function remember(string $role): void {
+                        $_SESSION["auth"]["role"] = $role;
+                    }
+
+                    remember((string) $_GET["role"]);',
+                'error_message' => 'TaintedSession',
             ],
             'superGlobalPassedByReferenceIsTainted' => [
                 'code' => '<?php // --taint-analysis
