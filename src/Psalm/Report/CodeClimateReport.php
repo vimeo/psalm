@@ -96,7 +96,7 @@ final class CodeClimateReport extends Report
         return [
             'type' => 'issue',
             'check_name' => $issue->type,
-            'description' => $issue->message,
+            'description' => self::getMessageWithCwe($issue),
             'categories' => [$issue->type],
             'severity' => $this->convertSeverity($issue->severity),
             'fingerprint' => $this->calculateFingerprint($issue),
