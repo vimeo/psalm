@@ -5708,6 +5708,9 @@ final class FunctionCallTest extends TestCase
                 return ['count'];
             }
 
+            /**
+             * @psalm-pure
+             */
             #[Override]
             public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
             {
