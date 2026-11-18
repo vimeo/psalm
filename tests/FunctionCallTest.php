@@ -89,6 +89,26 @@ final class FunctionCallTest extends TestCase
                     '$byId===' => 'string',
                 ],
             ],
+            'psalmOverloadOfAFunctionWithATemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-overload (T $x): T
+                     * @psalm-overload (T $x, int $n): list<T>
+                     */
+                    function dup(mixed $x, int $n = 0): mixed {
+                        return $x;
+                    }
+
+                    $one = dup("a");
+                    $many = dup(5, 2);',
+                'assertions' => [
+                    '$one===' => "'a'",
+                    '$many===' => 'list<5>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'psalmOverloadOfAUnionArgumentFallsBackToTheRealSignature' => [
                 'code' => '<?php
                     /**

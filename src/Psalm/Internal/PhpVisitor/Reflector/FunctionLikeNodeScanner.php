@@ -59,6 +59,7 @@ use Psalm\Type\Union;
 use ReflectionFunction;
 use UnexpectedValueException;
 
+use function array_fill_keys;
 use function array_keys;
 use function array_pop;
 use function array_search;
@@ -112,6 +113,14 @@ final class FunctionLikeNodeScanner
         array $overloads,
         string $cased_function_id,
     ): void {
+        // the templates of the class and of the function itself, which the overload's parameter types may use
+        $template_types = [
+            ...$this->existing_function_template_types,
+            ...($this->classlike_storage->template_types ?? []),
+            ...($storage->template_types ?? []),
+        ];
+        $template_map = array_fill_keys(array_keys($template_types), true);
+
         foreach ($overloads as ['entry' => $entry, 'offset' => $offset]) {
             try {
                 $overload_node = PseudoMethodParser::parse(
@@ -123,7 +132,7 @@ final class FunctionLikeNodeScanner
                     'overload' . $entry,
                     $offset,
                     [],
-                    [],
+                    $template_map,
                 );
             } catch (DocblockParseException $e) {
                 $storage->docblock_issues[] = new InvalidDocblock(
@@ -143,7 +152,7 @@ final class FunctionLikeNodeScanner
                 $this->aliases,
                 $this->type_aliases,
                 null,
-                [],
+                $template_types,
             );
 
             /** @var MethodStorage $overload_storage */
