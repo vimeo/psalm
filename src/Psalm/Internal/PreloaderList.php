@@ -1413,6 +1413,8 @@ final class PreloaderList {
         \Psalm\Issue\TaintedLdap::class,
         \Psalm\Issue\TaintedLlmPrompt::class,
         \Psalm\Issue\TaintedNosql::class,
+        \Psalm\Issue\TaintedRedirect::class,
+        \Psalm\Issue\TaintedSession::class,
         \Psalm\Issue\TaintedSSRF::class,
         \Psalm\Issue\TaintedShell::class,
         \Psalm\Issue\TaintedSleep::class,
