@@ -2093,6 +2093,28 @@ final class ReferenceTest extends TestCase
                     '$b===' => '\'z\'|1',
                 ],
             ],
+            'writeAfterLoopKeepsItemOfArrayHoldingItemsOfUnknownKeyBoundSince' => [
+                'code' => '<?php
+                    /** @var array<string, int> */
+                    $elements = [];
+                    /** @var string */
+                    $key = "";
+                    /** @var list<string> */
+                    $keys = [];
+                    $x = 1;
+                    foreach ($keys as $k) {
+                        if (rand(0, 1)) {
+                            $elements[$k] = &$x;
+                        }
+                    }
+                    $r = &$elements[$key];
+                    $x = 2;
+                    $r = "s";
+                ',
+                'assertions' => [
+                    '$elements===' => 'array<string, \'s\'|int>',
+                ],
+            ],
             'writeAfterLoopLeavesArrayAssignedSinceUnchanged' => [
                 'code' => '<?php
                     /** @var list<string> */
@@ -2102,11 +2124,45 @@ final class ReferenceTest extends TestCase
                     foreach ($keys as $k) {
                         $out[$k] = &$x;
                     }
-                    $out = [];
+                    $out = ["a" => 5];
                     $x = "z";
                 ',
                 'assertions' => [
-                    '$out===' => 'array<never, never>',
+                    '$out===' => 'array{a: 5}',
+                ],
+            ],
+            'writeAfterLoopLeavesArrayUnsetAndAssignedSinceUnchanged' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $keys = [];
+                    $x = 1;
+                    $out = [];
+                    foreach ($keys as $k) {
+                        $out[$k] = &$x;
+                    }
+                    unset($out);
+                    $out = ["b" => 5];
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$out===' => 'array{b: 5}',
+                ],
+            ],
+            'writeAfterLoopToVariableBoundToItemLeavesArrayAssignedSinceUnchanged' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $keys = [];
+                    $out = ["a" => 1];
+                    $r = 0;
+                    foreach ($keys as $_k) {
+                        $r = &$out["a"];
+                    }
+                    $out = ["a" => 7];
+                    /** @psalm-suppress ReferenceReusedFromConfusingScope */
+                    $r = "z";
+                ',
+                'assertions' => [
+                    '$out===' => 'array{a: 7}',
                 ],
             ],
         ];

@@ -641,6 +641,7 @@ final class AssignmentAnalyzer
 
         if ($extended_var_id !== null) {
             $context->forgetMethodResultsDependingOn($extended_var_id);
+            $context->forgetReferencesPossiblyBoundUnder($extended_var_id);
         }
 
         if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {

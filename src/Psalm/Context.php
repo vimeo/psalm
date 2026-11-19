@@ -897,7 +897,11 @@ final class Context
     private function forgetDescendantsOf(string $var_id): void
     {
         foreach ($this->vars_in_scope as $descendant_id => $_type) {
-            if (str_starts_with($descendant_id, $var_id . '[') || str_starts_with($descendant_id, $var_id . '->')) {
+            if ((str_starts_with($descendant_id, $var_id . '[') || str_starts_with($descendant_id, $var_id . '->'))
+                // the slot of an item bound by reference is what the references to it are tracked through
+                && !isset($this->references_in_scope[$descendant_id])
+                && !($this->referenced_counts[$descendant_id] ?? 0)
+            ) {
                 unset($this->vars_in_scope[$descendant_id]);
             }
         }
@@ -942,6 +946,10 @@ final class Context
             $keys[] = $key;
         }
 
+        if (!$keys) {
+            return;
+        }
+
         $array_type = self::addToItemsUnderKeys($this->vars_in_scope[$array_id], $keys, $type, $codebase);
 
         if ($array_type === null) {
@@ -979,6 +987,7 @@ final class Context
      * such item
      *
      * @param non-empty-list<int|string|null> $keys
+     * @psalm-external-mutation-free
      */
     private static function addToItemsUnderKeys(
         Union $array_type,
@@ -990,34 +999,27 @@ final class Context
         $atomic_types = [];
         $holds_item = false;
 
-        $add_to_item = static function (Union $item_type) use ($keys, $type, $codebase, &$holds_item): Union {
-            $new_item_type = $keys
-                ? self::addToItemsUnderKeys($item_type, $keys, $type, $codebase)
-                : Type::combineUnionTypes($item_type, $type, $codebase);
-
-            if ($new_item_type === null) {
-                return $item_type;
-            }
-
-            $holds_item = true;
-
-            return $new_item_type->setPossiblyUndefined($item_type->possibly_undefined);
-        };
-
         foreach ($array_type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TKeyedArray) {
                 $properties = $atomic_type->properties;
 
                 foreach ($properties as $property_key => $property_type) {
-                    if ($key === null || $property_key === $key) {
-                        $properties[$property_key] = $add_to_item($property_type);
+                    if (($key === null || $property_key === $key)
+                        && ($new_property_type = self::addToItem($property_type, $keys, $type, $codebase))
+                    ) {
+                        $properties[$property_key] = $new_property_type;
+                        $holds_item = true;
                     }
                 }
 
                 $fallback_params = $atomic_type->fallback_params;
 
-                if ($fallback_params !== null && ($key === null || !isset($properties[$key]))) {
-                    $fallback_params[1] = $add_to_item($fallback_params[1]);
+                if ($fallback_params !== null
+                    && ($key === null || !isset($properties[$key]))
+                    && ($new_value_type = self::addToItem($fallback_params[1], $keys, $type, $codebase))
+                ) {
+                    $fallback_params[1] = $new_value_type;
+                    $holds_item = true;
                 }
 
                 $atomic_type = TKeyedArray::make(
@@ -1027,11 +1029,12 @@ final class Context
                     $atomic_type->is_list,
                     $atomic_type->from_docblock,
                 );
-            } elseif ($atomic_type instanceof TArray && !$atomic_type->isEmptyArray()) {
-                $atomic_type = $atomic_type->setTypeParams([
-                    $atomic_type->type_params[0],
-                    $add_to_item($atomic_type->type_params[1]),
-                ]);
+            } elseif ($atomic_type instanceof TArray
+                && !$atomic_type->isEmptyArray()
+                && ($new_value_type = self::addToItem($atomic_type->type_params[1], $keys, $type, $codebase))
+            ) {
+                $atomic_type = $atomic_type->setTypeParams([$atomic_type->type_params[0], $new_value_type]);
+                $holds_item = true;
             }
 
             $atomic_types[] = $atomic_type;
@@ -1043,6 +1046,19 @@ final class Context
 
         // what is written through the item is used where the array is
         return $array_type->setTypes($atomic_types)->addParentNodes($type->parent_nodes);
+    }
+
+    /**
+     * @param list<int|string|null> $keys the keys of the item under this one
+     * @psalm-external-mutation-free
+     */
+    private static function addToItem(Union $item_type, array $keys, Union $type, Codebase $codebase): ?Union
+    {
+        $new_item_type = $keys
+            ? self::addToItemsUnderKeys($item_type, $keys, $type, $codebase)
+            : Type::combineUnionTypes($item_type, $type, $codebase);
+
+        return $new_item_type?->setPossiblyUndefined($item_type->possibly_undefined);
     }
 
     /**
@@ -1061,6 +1077,21 @@ final class Context
         }
 
         unset($this->references_possibly_bound_to[$var_id]);
+    }
+
+    /**
+     * The variable is assigned or released: the items and properties it held are gone, and with them what they were
+     * possibly still bound to
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function forgetReferencesPossiblyBoundUnder(string $var_id): void
+    {
+        foreach ($this->references_possibly_bound_to as $descendant_id => $_) {
+            if (str_starts_with($descendant_id, $var_id . '[') || str_starts_with($descendant_id, $var_id . '->')) {
+                $this->forgetReferencesPossiblyBound($descendant_id);
+            }
+        }
     }
 
     /**
@@ -1259,6 +1290,7 @@ final class Context
 
         // detached first: what the variable was bound to by reference keeps its value
         $this->removePossibleReference($remove_var_id);
+        $this->forgetReferencesPossiblyBoundUnder($remove_var_id);
 
         if ($existing_type && $removeDescendents) {
             $this->removeDescendents($remove_var_id, $existing_type);

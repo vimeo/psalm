@@ -4732,7 +4732,7 @@ final class UnusedVariableTest extends TestCase
                         foreach ($keys as $k) {
                             $out[$k] = &$x;
                         }
-                        $out = [];
+                        $out = ["a" => 5];
                         $x = "z";
                         return $out;
                     }
