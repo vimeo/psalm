@@ -1584,6 +1584,23 @@ final class ValueTest extends TestCase
                     '$c1===' => 'callable[impure]|null',
                 ],
             ],
+            'offsetOfPropertyIsNotOfIntOrBool' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        /** @var scalar */
+                        public $v = 1;
+                    }
+                    function a(): A { return new A(); }
+
+                    $a = a();
+                    $r = isset($a->v[0]) ? $a->v : null;
+                    PHP,
+                'assertions' => [
+                    '$r===' => 'null|string',
+                ],
+                'ignored_issues' => ['InvalidArrayAccess'],
+            ],
             'notIdenticalToObjectKeepsCallableAndIterable' => [
                 'code' => <<<'PHP'
                     <?php
