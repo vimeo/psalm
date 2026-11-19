@@ -381,6 +381,60 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'memoizedResultForgottenWhenAPropertyOfTheObjectIsWritten' => [
+                'code' => '<?php
+                    final class Tokens {
+                        /** @var list<string> */
+                        private array $tokens = ["update", "set"];
+                        private int $position = 0;
+                        private ?string $name = null;
+
+                        /** @psalm-capabilities read-props */
+                        private function peek(): ?string {
+                            return $this->tokens[$this->position] ?? null;
+                        }
+
+                        /** @psalm-capabilities read-props */
+                        private function hasName(): bool {
+                            return $this->name !== null;
+                        }
+
+                        public function increment(): void {
+                            if ($this->peek() === "update") {
+                                $this->position++;
+                                if ($this->peek() === "set") {}
+                            }
+                        }
+
+                        public function assign(): void {
+                            if ($this->peek() === "update") {
+                                $this->position = $this->position + 1;
+                                if ($this->peek() === "set") {}
+                            }
+                        }
+
+                        public function assignElement(): void {
+                            if ($this->peek() === "update") {
+                                $this->tokens[0] = "set";
+                                if ($this->peek() === "set") {}
+                            }
+                        }
+
+                        public function sortProperty(): void {
+                            if ($this->peek() === "update") {
+                                sort($this->tokens);
+                                if ($this->peek() === "set") {}
+                            }
+                        }
+
+                        public function unsetProperty(): void {
+                            if ($this->hasName()) {
+                                unset($this->name);
+                                if ($this->hasName()) {}
+                            }
+                        }
+                    }',
+            ],
             'nullsafeChainWithPlainLinkNotIdenticalToNullNarrowsReceiver' => [
                 'code' => '<?php
                     final class P {
@@ -2162,6 +2216,8 @@ final class MethodCallTest extends TestCase
 
                     $db = new PDO("sqlite:sqlitedb");
                     $db->sqliteCreateFunction("md5rev", "md5_and_reverse", 1);',
+                'assertions' => [],
+                'ignored_issues' => ['WeakHash'],
             ],
             'dontConvertedMaybeMixedAfterCall' => [
                 'code' => '<?php

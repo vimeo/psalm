@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
@@ -213,7 +214,6 @@ final class NewAnalyzer extends CallAnalyzer
             if ($codebase->store_node_types
                 && $fq_class_name
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
@@ -268,7 +268,6 @@ final class NewAnalyzer extends CallAnalyzer
                         $stmt->getArgs(),
                         null,
                         null,
-                        true,
                         $context,
                     );
 
@@ -288,7 +287,6 @@ final class NewAnalyzer extends CallAnalyzer
                         $stmt->getArgs(),
                         null,
                         null,
-                        true,
                         $context,
                     );
 
@@ -353,7 +351,6 @@ final class NewAnalyzer extends CallAnalyzer
                     $stmt->getArgs(),
                     null,
                     null,
-                    true,
                     $context,
                 );
 
@@ -392,7 +389,6 @@ final class NewAnalyzer extends CallAnalyzer
     ): void {
         if (!$codebase->find_unused_variables
             || $context->collect_initializations
-            || $context->collect_mutations
             || $context->insideUse()
             || $context->inside_unset
             || !$codebase->classImplements($fq_class_name, 'Throwable')
@@ -574,7 +570,6 @@ final class NewAnalyzer extends CallAnalyzer
         $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && !NamespaceAnalyzer::isWithinAny($caller_identifier, $storage->internal)
         ) {
             IssueBuffer::maybeAdd(
@@ -591,7 +586,10 @@ final class NewAnalyzer extends CallAnalyzer
         CliOutput::checkInstantiation($statements_analyzer, $context, $storage, $stmt);
     }
 
-    private static function applyConstructorAssertions(
+    /**
+     * What the constructor leaves in the context: the globals it writes, then what it asserts
+     */
+    private static function applyConstructorEffects(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\New_ $stmt,
         Context $context,
@@ -601,6 +599,8 @@ final class NewAnalyzer extends CallAnalyzer
         $codebase = $statements_analyzer->getCodebase();
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
         $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+        GlobalAnalyzer::readGlobalsWrittenBy($statements_analyzer, $context, $method_storage);
 
         if (!$method_storage->assertions || !$stmt->class instanceof PhpParser\Node\Name) {
             return;
@@ -612,7 +612,13 @@ final class NewAnalyzer extends CallAnalyzer
             $stmt->class,
             null,
             self::resolveStaticPropertyAssertionClasses(
-                self::getAssertionsOnArgs($method_storage->assertions, $method_storage, $args),
+                self::getAssertionsOnArgs(
+                    $method_storage->assertions,
+                    $method_storage,
+                    $args,
+                    $statements_analyzer->node_data,
+                    $context->strict_types,
+                ),
                 $codebase,
                 $context,
                 ($codebase->methods->getAppearingMethodId($method_id) ?? $declaring_method_id)->fq_class_name,
@@ -671,7 +677,6 @@ final class NewAnalyzer extends CallAnalyzer
         )) {
             if ($codebase->store_node_types
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 ArgumentMapPopulator::recordArgumentPositions(
                     $statements_analyzer,
@@ -749,7 +754,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $can_extend,
                 );
 
-                self::applyConstructorAssertions(
+                self::applyConstructorEffects(
                     $statements_analyzer,
                     $stmt,
                     $context,
@@ -767,6 +772,8 @@ final class NewAnalyzer extends CallAnalyzer
                                 $method_storage->if_true_assertions,
                                 $method_storage,
                                 $stmt->getArgs(),
+                                $statements_analyzer->node_data,
+                                $context->strict_types,
                             ),
                         ),
                     );
@@ -782,6 +789,8 @@ final class NewAnalyzer extends CallAnalyzer
                                 $method_storage->if_false_assertions,
                                 $method_storage,
                                 $stmt->getArgs(),
+                                $statements_analyzer->node_data,
+                                $context->strict_types,
                             ),
                         ),
                     );
@@ -1356,7 +1365,6 @@ final class NewAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             );
 
@@ -1452,7 +1460,6 @@ final class NewAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             );
 

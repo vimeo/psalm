@@ -639,6 +639,10 @@ final class AssignmentAnalyzer
             $assign_value_type = $assign_value_type->setByRef(false);
         }
 
+        if ($extended_var_id !== null) {
+            $context->forgetMethodResultsDependingOn($extended_var_id);
+        }
+
         if ($extended_var_id && isset($context->vars_in_scope[$extended_var_id])) {
             if ($context->vars_in_scope[$extended_var_id]->by_ref
                 && !isset($context->captured_by_ref[$extended_var_id])
@@ -694,7 +698,6 @@ final class AssignmentAnalyzer
             );
 
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)
@@ -742,7 +745,6 @@ final class AssignmentAnalyzer
             }
         } else {
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -1566,6 +1568,46 @@ final class AssignmentAnalyzer
             $context->references_to_external_scope[$lhs_var_id] = true;
         }
 
+        if ($stmt->var instanceof ArrayDimFetch) {
+            // the binding puts the item in the array, and replaces what the item was bound to before without writing it
+            unset($context->vars_in_scope[$lhs_var_id]);
+
+            $referenced_type = $context->vars_in_scope[$rhs_var_id];
+
+            ArrayAssignmentAnalyzer::updateArrayType(
+                $statements_analyzer,
+                $stmt->var,
+                null,
+                $referenced_type,
+                $context,
+                true,
+            );
+
+            // an item of the same array, which the write of an item of unknown key forgets, still holds its value
+            $context->vars_in_scope[$rhs_var_id] ??= $referenced_type;
+
+            // what is written through the item can't be tracked: the array holding it counts as used
+            $root_var = $stmt->var->var;
+            while ($root_var instanceof ArrayDimFetch) {
+                $root_var = $root_var->var;
+            }
+
+            $root_var_id = ExpressionIdentifier::getExtendedVarId(
+                $root_var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+
+            if ($root_var_id !== null
+                && isset($context->vars_in_scope[$root_var_id])
+                && ($variable_use_graph = $statements_analyzer->variable_use_graph)
+            ) {
+                foreach ($context->vars_in_scope[$root_var_id]->parent_nodes as $parent_node) {
+                    $variable_use_graph->addPath($parent_node, DataFlowNode::getForVariableUse(), 'variable-use');
+                }
+            }
+        }
+
         $context->vars_in_scope[$lhs_var_id] = &$context->vars_in_scope[$rhs_var_id];
         $context->hasVariable($lhs_var_id);
         $context->references_in_scope[$lhs_var_id] = $rhs_var_id;
@@ -1688,14 +1730,6 @@ final class AssignmentAnalyzer
 
         $context->vars_in_scope[$lhs_var_id] =
             $context->vars_in_scope[$lhs_var_id]->addParentNodes([$lhs_node->id => $lhs_node]);
-
-        if ($stmt->var instanceof ArrayDimFetch && $stmt->var->dim !== null) {
-            // Analyze offset so that variables in the offset get marked as used
-            $was_inside_general_use = $context->inside_general_use;
-            $context->inside_general_use = true;
-            ExpressionAnalyzer::analyze($statements_analyzer, $stmt->var->dim, $context);
-            $context->inside_general_use = $was_inside_general_use;
-        }
 
         // The assignment expression itself evaluates to the referenced value.
         if ($from_stmt === null && isset($context->vars_in_scope[$lhs_var_id])) {
@@ -2061,6 +2095,7 @@ final class AssignmentAnalyzer
                     $by_ref_out_type,
                     $statements_analyzer,
                 );
+                $context->forgetMethodResultsDependingOn($property_var_id);
             }
 
             return;
@@ -2253,6 +2288,14 @@ final class AssignmentAnalyzer
                     $context->possibly_assigned_var_ids[$var_id] = true;
                     $context->vars_in_scope[$var_id] = $by_ref_out_type;
                     $context->writeToReferencesPossiblyBound($var_id, $by_ref_out_type, $codebase);
+                    if ($context->references_in_scope) {
+                        ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem(
+                            $statements_analyzer,
+                            $context,
+                            $var_id,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        );
+                    }
 
                     if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))
                         || $stmt_type->isNever()
@@ -2268,6 +2311,14 @@ final class AssignmentAnalyzer
 
             $context->vars_in_scope[$var_id] = $by_ref_out_type;
             $context->writeToReferencesPossiblyBound($var_id, $by_ref_out_type, $codebase);
+            if ($context->references_in_scope) {
+                ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem(
+                    $statements_analyzer,
+                    $context,
+                    $var_id,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                );
+            }
 
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
@@ -2789,7 +2840,6 @@ final class AssignmentAnalyzer
                         && !str_contains($list_var_id, '->')
                         && !str_starts_with($list_var_id, '$_')
                         && !$context->collect_initializations
-                        && !$context->collect_mutations
                     ) {
                         IssueBuffer::maybeAdd(
                             new MixedAssignment(
@@ -2974,6 +3024,14 @@ final class AssignmentAnalyzer
                 $context->vars_in_scope[$var_id] = $assign_value_type;
                 $context->vars_possibly_in_scope[$var_id] = true;
                 $context->writeToReferencesPossiblyBound($var_id, $assign_value_type, $codebase);
+                if ($context->references_in_scope) {
+                    ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem(
+                        $statements_analyzer,
+                        $context,
+                        $var_id,
+                        new CodeLocation($statements_analyzer, $assign_var),
+                    );
+                }
 
                 $location = new CodeLocation($statements_analyzer, $assign_var);
 
@@ -2992,7 +3050,6 @@ final class AssignmentAnalyzer
 
                 if ($codebase->store_node_types
                     && !$context->collect_initializations
-                    && !$context->collect_mutations
                 ) {
                     $location = new CodeLocation($statements_analyzer, $assign_var);
                     $codebase->analyzer->addNodeReference(
