@@ -487,9 +487,9 @@ final class ArrayFetchAnalyzer
 
     /**
      * Most entries of $_SERVER, and of the server params of a PSR-7 request built from it, come from the server, but
-     * the client sends the request headers and the URI. The
-     * client also chooses the type of the files it uploads, and their path in a directory it uploads, in $_FILES
-     * (their names are tainted from $_FILES itself, see VariableFetchAnalyzer::taintFiles()).
+     * the client sends the request headers and the URI (see ServerVariableTaints). The client also chooses the type
+     * of the files it uploads, and their path in a directory it uploads, in $_FILES (their names are tainted from
+     * $_FILES itself, see VariableFetchAnalyzer::taintFiles()).
      */
     private static function taintSuperGlobalFetch(
         StatementsAnalyzer $statements_analyzer,
