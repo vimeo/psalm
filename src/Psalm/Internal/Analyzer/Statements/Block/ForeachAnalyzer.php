@@ -82,6 +82,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_any;
+use function array_diff;
 use function array_filter;
 use function array_keys;
 use function array_map;
@@ -1248,11 +1249,7 @@ final class ForeachAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
-
-            return null;
-        }
-
-        if ($iterator_type->isFalsable() && !$iterator_type->ignore_falsable_issues) {
+        } elseif ($iterator_type->isFalsable() && !$iterator_type->ignore_falsable_issues) {
             $always_non_empty_array = false;
 
             IssueBuffer::maybeAdd(
@@ -1262,9 +1259,9 @@ final class ForeachAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
-
-            return null;
         }
+
+        // the loop body only runs for the iterable part: null and false are skipped below
 
         $has_valid_iterator = false;
         $invalid_iterator_types = [];
@@ -1635,52 +1632,12 @@ final class ForeachAnalyzer
                 ) {
                     $has_valid_iterator = true;
 
-                    $old_data_provider = $statements_analyzer->node_data;
-
-                    $statements_analyzer->node_data = clone $statements_analyzer->node_data;
-
-                    $fake_method_call = new VirtualMethodCall(
-                        $foreach_expr,
-                        new VirtualIdentifier('getIterator', $foreach_expr->getAttributes()),
-                    );
-
-                    $suppressed_issues = $statements_analyzer->getSuppressedIssues();
-
-                    if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
-                        $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
-                    }
-
-                    if (!isset($suppressed_issues['PossiblyUndefinedMethod'])) {
-                        $statements_analyzer->addSuppressedIssues(['PossiblyUndefinedMethod']);
-                    }
-
-                    $was_inside_call = $context->inside_call;
-                    $was_inside_type_only_call = $context->inside_type_only_call;
-
-                    $context->inside_call = true;
-                    // only the iterator's type is wanted here: the loop is charged for the call
-                    $context->inside_type_only_call = true;
-
-                    MethodCallAnalyzer::analyze(
+                    $iterator_class_type = self::getFakeMethodCallType(
                         $statements_analyzer,
-                        $fake_method_call,
+                        $foreach_expr,
                         $context,
+                        'getIterator',
                     );
-
-                    $context->inside_call = $was_inside_call;
-                    $context->inside_type_only_call = $was_inside_type_only_call;
-
-                    if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
-                        $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
-                    }
-
-                    if (!isset($suppressed_issues['PossiblyUndefinedMethod'])) {
-                        $statements_analyzer->removeSuppressedIssues(['PossiblyUndefinedMethod']);
-                    }
-
-                    $iterator_class_type = $statements_analyzer->node_data->getType($fake_method_call) ?? null;
-
-                    $statements_analyzer->node_data = $old_data_provider;
 
                     if ($iterator_class_type) {
                         foreach ($iterator_class_type->getAtomicTypes() as $array_atomic_type) {
@@ -1719,7 +1676,10 @@ final class ForeachAnalyzer
                                         self::handleIterable(
                                             $statements_analyzer,
                                             $array_atomic_type,
-                                            $fake_method_call,
+                                            new VirtualMethodCall(
+                                                $foreach_expr,
+                                                new VirtualIdentifier('getIterator', $foreach_expr->getAttributes()),
+                                            ),
                                             $codebase,
                                             $context,
                                             $key_type,
@@ -2238,21 +2198,20 @@ final class ForeachAnalyzer
             new VirtualIdentifier($method_name, $foreach_expr->getAttributes()),
         );
 
-        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+        // the call is made on the whole iterated expression: its other parts (null, false, arrays…) are
+        // reported by checkIteratorType()
+        $added_suppressions = array_values(array_diff(
+            ['PossiblyInvalidMethodCall', 'PossiblyUndefinedMethod', 'PossiblyNullReference', 'PossiblyFalseReference'],
+            array_keys($statements_analyzer->getSuppressedIssues()),
+        ));
 
-        if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
-            $statements_analyzer->addSuppressedIssues(['PossiblyInvalidMethodCall']);
-        }
-
-        if (!isset($suppressed_issues['PossiblyUndefinedMethod'])) {
-            $statements_analyzer->addSuppressedIssues(['PossiblyUndefinedMethod']);
-        }
+        $statements_analyzer->addSuppressedIssues($added_suppressions);
 
         $was_inside_call = $context->inside_call;
         $was_inside_type_only_call = $context->inside_type_only_call;
 
         $context->inside_call = true;
-        // only the value's type is wanted here: the loop is charged for the call
+        // only the type is wanted here: the loop is charged for the call
         $context->inside_type_only_call = true;
 
         MethodCallAnalyzer::analyze(
@@ -2264,13 +2223,7 @@ final class ForeachAnalyzer
         $context->inside_call = $was_inside_call;
         $context->inside_type_only_call = $was_inside_type_only_call;
 
-        if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
-            $statements_analyzer->removeSuppressedIssues(['PossiblyInvalidMethodCall']);
-        }
-
-        if (!isset($suppressed_issues['PossiblyUndefinedMethod'])) {
-            $statements_analyzer->removeSuppressedIssues(['PossiblyUndefinedMethod']);
-        }
+        $statements_analyzer->removeSuppressedIssues($added_suppressions);
 
         $iterator_class_type = $statements_analyzer->node_data->getType($fake_method_call) ?? null;
 

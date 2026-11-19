@@ -2865,6 +2865,78 @@ final class ForeachTest extends TestCase
                         }
                     }',
             ],
+            'foreachOverANullableArrayTakesTheKeyAndValueOfTheArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string>|null $a */
+                    function f(?array $a): void {
+                        foreach ($a as $k => $v) {
+                            /** @psalm-check-type-exact $k = int<0, max> */
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
+            'foreachOverANullableAndFalsableArrayReportsOnlyTheNull' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<int, string>|null|false $a */
+                    function f($a): void {
+                        foreach ($a as $k => $v) {
+                            /** @psalm-check-type-exact $k = int */
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
+            'foreachOverANullableIteratorTakesItsKeyAndValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param ArrayIterator<int, string>|null $a */
+                    function f(?ArrayIterator $a): void {
+                        foreach ($a as $k => $v) {
+                            /** @psalm-check-type-exact $k = int */
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
+            'foreachOverAFalsableIteratorAggregateTakesItsKeyAndValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param IteratorAggregate<int, string>|false $a */
+                    function f($a): void {
+                        foreach ($a as $k => $v) {
+                            /** @psalm-check-type-exact $k = int */
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyFalseIterator'],
+            ],
+            'foreachOverANullableTemplateTakesTheValueOfItsBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of null|list<int>
+                     * @param T $a
+                     */
+                    function f($a): void {
+                        foreach ($a as $v) {
+                            /** @psalm-check-type-exact $v = int */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
         ];
     }
 
@@ -2875,6 +2947,22 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'foreachOverANullableIteratorInAPureFunctionIsImpure' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-pure
+                     * @param ArrayIterator<int, string>|null $a
+                     */
+                    function f(?ArrayIterator $a): int {
+                        /** @psalm-suppress PossiblyNullIterator */
+                        foreach ($a as $_) {}
+
+                        return 1;
+                    }
+                    PHP,
+                'error_message' => 'ImpureMethodCall',
+            ],
             'foreachLiteralSelectedByAComparisonOfItselfStaysAUnionOfLiterals' => [
                 'code' => <<<'PHP'
                     <?php
