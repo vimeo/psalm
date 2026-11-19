@@ -7061,6 +7061,14 @@ final class TaintTest extends TestCase
                     echo $row->name;',
                 'error_message' => 'TaintedHtml',
             ],
+            'valueAssignedToADynamicPropertyIsTaintedThroughACopy' => [
+                'code' => '<?php
+                    $row = new stdClass();
+                    $row->name = (string) $_GET["name"];
+                    $copy = $row;
+                    echo $copy->name;',
+                'error_message' => 'TaintedHtml',
+            ],
             'dynamicPropertyOfATaintedObjectIsTainted' => [
                 'code' => '<?php
                     /** @psalm-taint-source input */
