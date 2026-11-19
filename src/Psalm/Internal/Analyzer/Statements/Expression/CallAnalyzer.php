@@ -364,7 +364,7 @@ abstract class CallAnalyzer
             $args,
             $method_params,
             (string) $method_id,
-            $method_storage->allow_named_arg_calls ?? true,
+            $method_storage?->allowsNamedArguments() ?? true,
             $context,
             $template_result,
         ) === false) {

@@ -1255,7 +1255,7 @@ final class ArgumentsAnalyzer
                             $function_params[$i],
                             $i,
                             $i,
-                            $function_storage->allow_named_arg_calls ?? true,
+                            $function_storage?->allowsNamedArguments() ?? true,
                             new VirtualArg(
                                 StubsGenerator::getExpressionFromType($default_type),
                             ),
@@ -1360,7 +1360,7 @@ final class ArgumentsAnalyzer
 
                         foreach ($key_types as $key_type) {
                             if (!$key_type instanceof TLiteralString
-                                || ($function_storage && !$function_storage->allow_named_arg_calls)) {
+                                || ($function_storage && !$function_storage->allowsNamedArguments())) {
                                 continue;
                             }
 
@@ -1410,7 +1410,7 @@ final class ArgumentsAnalyzer
                         }
                     }
                 }
-            } elseif ($arg->name && (!$function_storage || $function_storage->allow_named_arg_calls)) {
+            } elseif ($arg->name && (!$function_storage || $function_storage->allowsNamedArguments())) {
                 $named_args_was_used = true;
 
                 foreach ($function_params as $candidate_offset => $candidate_param) {
@@ -1514,7 +1514,7 @@ final class ArgumentsAnalyzer
                     $function_param,
                     $param_offset,
                     $param_offset - $param_offsets[$argument_offset],
-                    $function_storage->allow_named_arg_calls ?? true,
+                    $function_storage?->allowsNamedArguments() ?? true,
                     $arg,
                     $arg_value_type,
                     $context,
@@ -2521,7 +2521,7 @@ final class ArgumentsAnalyzer
         foreach ($args as $argument_offset => $arg) {
             $function_param = null;
 
-            if ($arg->name && $function_storage->allow_named_arg_calls) {
+            if ($arg->name && $function_storage->allowsNamedArguments()) {
                 foreach ($function_params as $candidate_param) {
                     if ($candidate_param->name === $arg->name->name) {
                         $function_param = $candidate_param;

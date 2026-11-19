@@ -992,7 +992,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         if ($dynamic_function_storage) {
             $function_call_info->function_storage = $dynamic_function_storage;
             $function_call_info->function_params = $dynamic_function_storage->params;
-            $function_call_info->allow_named_args = $dynamic_function_storage->allow_named_arg_calls;
+            $function_call_info->allow_named_args = $dynamic_function_storage->allowsNamedArguments();
             $function_call_info->defined_constants = $dynamic_function_storage->defined_constants;
         } elseif (!$function_call_info->in_call_map || $function_call_info->is_stubbed) {
             try {
@@ -1003,7 +1003,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                 $function_call_info->function_params = $function_call_info->function_storage->params;
 
-                if (!$function_storage->allow_named_arg_calls) {
+                if (!$function_storage->allowsNamedArguments()) {
                     $function_call_info->allow_named_args = false;
                 }
 
