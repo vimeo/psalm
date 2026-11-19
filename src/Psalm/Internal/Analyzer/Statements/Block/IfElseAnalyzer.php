@@ -39,7 +39,10 @@ use function array_slice;
 use function array_unique;
 use function count;
 use function in_array;
+use function preg_match;
+use function preg_quote;
 use function str_contains;
+use function str_starts_with;
 use function strpbrk;
 use function substr;
 
@@ -80,6 +83,7 @@ final class IfElseAnalyzer
 
         $if_scope = new IfScope();
 
+        $parent_remove_vars_before_if = $context->parent_remove_vars;
         $pre_if_vars = $context->vars_in_scope;
 
         // We need to clone the original context for later use if we're exiting in this if conditional
@@ -374,6 +378,8 @@ final class IfElseAnalyzer
             $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true);
         }
 
+        $vars_before_redefinitions = $context->vars_in_scope;
+
         if ($if_scope->redefined_vars) {
             foreach ($if_scope->redefined_vars as $var_id => $type) {
                 $previous_type = $context->vars_in_scope[$var_id] ?? null;
@@ -441,21 +447,36 @@ final class IfElseAnalyzer
             }
         }
 
-        // Context::update() left the type the if ends with for an offset or a property it narrowed: nothing is
-        // known of it once another branch reaching the end has forgotten it
-        foreach ($if_scope->updated_vars as $var_id => $_) {
-            if (!isset($context->vars_in_scope[$var_id])
-                || !isset($if_context->vars_in_scope[$var_id])
-                || (!str_contains($var_id, '[') && !str_contains($var_id, '->'))
-            ) {
+        // an offset or a property is known after the if as the branches reaching its end leave it: not at all once
+        // one of them forgot it or the type Context::update() left, and as they all leave it when the redefinition of
+        // a variable a branch wrote to dropped it (a variable only narrowed is narrowed again, which forgets it)
+        foreach ($vars_before_redefinitions + $context->vars_in_scope as $var_id => $_) {
+            if (!str_contains($var_id, '[') && !str_contains($var_id, '->')) {
                 continue;
             }
 
+            $end_types = [];
+
             foreach ($if_scope->end_contexts as $end_context) {
                 if (!isset($end_context->vars_in_scope[$var_id])) {
-                    unset($context->vars_in_scope[$var_id]);
-                    break;
+                    if (self::isForgottenIn($end_context, $var_id, $parent_remove_vars_before_if)
+                        || (isset($if_scope->updated_vars[$var_id]) && isset($if_context->vars_in_scope[$var_id]))
+                    ) {
+                        // what was bound to it by reference stays bound together
+                        $context->removePossibleReference($var_id);
+                    }
+
+                    continue 2;
                 }
+
+                $end_types[] = $end_context->vars_in_scope[$var_id];
+            }
+
+            if ($end_types
+                && !isset($context->vars_in_scope[$var_id])
+                && self::isUnderAssignedVar($var_id, $if_scope->possibly_assigned_var_ids)
+            ) {
+                $context->vars_in_scope[$var_id] = Type::combineUnionTypeArray($end_types, $codebase);
             }
         }
 
@@ -468,6 +489,44 @@ final class IfElseAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * @param array<string, bool> $assigned_var_ids
+     * @psalm-pure
+     */
+    private static function isUnderAssignedVar(string $var_id, array $assigned_var_ids): bool
+    {
+        foreach ($assigned_var_ids as $assigned_var_id => $_) {
+            if (str_starts_with($var_id, $assigned_var_id . '[') || str_starts_with($var_id, $assigned_var_id . '->')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether a branch that no longer has the variable forgot it since the stamps $parent_remove_vars were taken: it
+     * changed something the variable depends on (its variable, a key), or forgot it after a call. A variable it unset
+     * is not forgotten, nor one it only narrowed the variable of
+     *
+     * @param array<string, int> $parent_remove_vars
+     * @psalm-mutation-free
+     */
+    private static function isForgottenIn(Context $branch_context, string $var_id, array $parent_remove_vars): bool
+    {
+        foreach ($branch_context->parent_remove_vars as $changed_var_id => $stamp) {
+            if ($stamp !== ($parent_remove_vars[$changed_var_id] ?? null)
+                && ($changed_var_id === $var_id
+                    ? isset($branch_context->vars_possibly_in_scope[$var_id])
+                    : preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id) === 1)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
