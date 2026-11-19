@@ -22,7 +22,8 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
     - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
       with:
-        php-version: '8.5'
+        # the newest PHP: Psalm's error handler turns every PHP notice, warning and deprecation into a crash
+        php-version: '8.6'
         ini-values: zend.assertions=1, assert.exception=1, opcache.enable_cli=1, opcache.jit=off
         tools: composer:v2
         coverage: none
@@ -37,28 +38,3 @@ jobs:
     - name: Run Psalm
       #run: ./psalm --output-format=github --shepherd --force-jit
       run: ./psalm --output-format=github --shepherd
-
-  # Psalm's error handler turns every PHP notice, warning and deprecation into a crash,
-  # so it analyzes itself on the newest PHP too
-  php-next:
-    name: Run Psalm - PHP 8.6
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
-    - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
-      with:
-        php-version: '8.6'
-        ini-values: zend.assertions=1, assert.exception=1, opcache.enable_cli=1, opcache.jit=off
-        tools: composer:v2
-        coverage: none
-      env:
-        fail-fast: true
-
-    - name: Install dependencies
-      run: composer install --prefer-dist --no-progress --no-suggest
-      env:
-        COMPOSER_ROOT_VERSION: dev-master
-
-    - name: Run Psalm
-      run: ./psalm --output-format=github
