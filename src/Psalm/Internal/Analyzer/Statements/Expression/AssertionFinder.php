@@ -3038,7 +3038,7 @@ final class AssertionFinder
      *
      * @psalm-pure
      */
-    private static function getComparand(Atomic $type, string $operand_id): ?string
+    public static function getComparand(Atomic $type, string $operand_id): ?string
     {
         return $type instanceof TLiteralInt
             || $type instanceof TLiteralFloat
