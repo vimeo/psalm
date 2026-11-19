@@ -129,7 +129,7 @@ final class ArgumentsAnalyzer
         $context->inside_negation = false;
 
         try {
-            return self::analyzeArguments(
+            $result = self::analyzeArguments(
                 $statements_analyzer,
                 $args,
                 $function_params,
@@ -141,6 +141,27 @@ final class ArgumentsAnalyzer
         } finally {
             $context->inside_negation = $was_inside_negation;
         }
+
+        // the callee may call a closure it is given, which may write what the closure captured by reference
+        foreach ($args as $arg) {
+            foreach ($statements_analyzer->node_data->getType($arg->value)?->getAtomicTypes() ?? [] as $atomic) {
+                if (!$atomic instanceof TClosure) {
+                    continue;
+                }
+
+                foreach ($atomic->byref_uses as $use_name => $_) {
+                    $use_var_id = '$' . $use_name;
+
+                    $context->removeVarFromConflictingClauses(
+                        $use_var_id,
+                        $context->vars_in_scope[$use_var_id] ?? null,
+                        $statements_analyzer,
+                    );
+                }
+            }
+        }
+
+        return $result;
     }
 
     /**
