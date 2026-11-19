@@ -6796,6 +6796,20 @@ final class ConditionalTest extends TestCase
                     }',
                 'error_message' => 'PossiblyUndefinedVariable',
             ],
+            'varAssignedInNestedIfIsPossiblyUndefinedUnderTheOuterCondition' => [
+                'code' => '<?php
+                    function f(bool $b, bool $c): void {
+                        if ($b) {
+                            if ($c) {
+                                $x = 1;
+                            }
+                        }
+                        if ($b) {
+                            echo $x;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'varAssignedUnderConditionIsPossiblyUndefinedAfterUnset' => [
                 'code' => '<?php
                     function f(bool $b): void {

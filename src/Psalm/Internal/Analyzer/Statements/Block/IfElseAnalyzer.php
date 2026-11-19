@@ -460,7 +460,7 @@ final class IfElseAnalyzer
         }
 
         if (!$stmt->else && !$stmt->elseifs) {
-            self::addConditionallyDefinedVarClauses($context, $if_scope, $pre_if_vars);
+            self::addConditionallyDefinedVarClauses($context, $if_context, $if_scope, $pre_if_vars);
         }
 
         if (!in_array(ScopeAnalyzer::ACTION_NONE, $if_scope->final_actions, true)) {
@@ -478,6 +478,7 @@ final class IfElseAnalyzer
      */
     private static function addConditionallyDefinedVarClauses(
         Context $context,
+        Context $if_context,
         IfScope $if_scope,
         array $pre_if_vars,
     ): void {
@@ -498,6 +499,8 @@ final class IfElseAnalyzer
             if (isset($pre_if_vars[$var_id])
                 || !$type->possibly_undefined
                 || $type->possibly_undefined_from_try
+                || !isset($if_context->vars_in_scope[$var_id])
+                || $if_context->vars_in_scope[$var_id]->possibly_undefined
                 || strpbrk($var_id, '[-:') !== false
             ) {
                 continue;
