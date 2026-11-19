@@ -428,7 +428,6 @@ final class AtomicPropertyFetchAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
@@ -749,7 +748,6 @@ final class AtomicPropertyFetchAnalyzer
                     ? new CodeLocation($statements_analyzer->getSource(), $stmt)
                     : null,
                 !$context->collect_initializations
-                    && !$context->collect_mutations
                     ? $statements_analyzer
                     : null,
                 $statements_analyzer->getFilePath(),

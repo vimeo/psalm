@@ -23,6 +23,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\PropertyBagTaints;
+use Psalm\Internal\Codebase\ServerVariableTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -108,14 +109,11 @@ use function array_pop;
 use function array_values;
 use function count;
 use function implode;
-use function in_array;
 use function is_int;
 use function spl_object_id;
-use function str_starts_with;
 use function strlen;
 use function strpbrk;
 use function strtolower;
-use function substr;
 
 /**
  * @internal
@@ -488,37 +486,10 @@ final class ArrayFetchAnalyzer
     }
 
     /**
-     * The entries of $_SERVER the client sends, besides the request headers (HTTP_*): the URI, and what is taken
-     * from it (the CGI SAPI keeps the values it rewrites with an ORIG_ prefix, Apache those of a redirected request
-     * with a REDIRECT_ one), and argv, which PHP builds from the query string with register_argc_argv.
-     */
-    private const USER_CONTROLLED_SERVER_KEYS = [
-        'REQUEST_URI',
-        'UNENCODED_URL',
-        'DOCUMENT_URI',
-        'QUERY_STRING',
-        'argv',
-        'PATH_INFO',
-        'ORIG_PATH_INFO',
-        'PATH_TRANSLATED',
-        'ORIG_PATH_TRANSLATED',
-        'ORIG_SCRIPT_NAME',
-        'ORIG_SCRIPT_FILENAME',
-        'PHP_SELF',
-        'SCRIPT_URI',
-        'SCRIPT_URL',
-        'REDIRECT_URL',
-        'REQUEST_METHOD',
-        'CONTENT_TYPE',
-        'PHP_AUTH_USER',
-        'PHP_AUTH_PW',
-        'PHP_AUTH_DIGEST',
-    ];
-
-    /**
-     * Most entries of $_SERVER come from the server, but the client sends the request headers and the URI. The
-     * client also chooses the type of the files it uploads, and their path in a directory it uploads, in $_FILES
-     * (their names are tainted from $_FILES itself, see VariableFetchAnalyzer::taintFiles()).
+     * Most entries of $_SERVER, and of the server params of a PSR-7 request built from it, come from the server, but
+     * the client sends the request headers and the URI (see ServerVariableTaints). The client also chooses the type
+     * of the files it uploads, and their path in a directory it uploads, in $_FILES (their names are tainted from
+     * $_FILES itself, see VariableFetchAnalyzer::taintFiles()).
      */
     private static function taintSuperGlobalFetch(
         StatementsAnalyzer $statements_analyzer,
@@ -532,22 +503,17 @@ final class ArrayFetchAnalyzer
 
         $key = $offset_type->isSingleStringLiteral() ? $offset_type->getSingleStringLiteral()->value : null;
         if ($var instanceof PhpParser\Node\Expr\Variable && $var->name === '_SERVER') {
-            $server_key = $key;
-            while ($server_key !== null
-                && $server_key !== 'REDIRECT_URL'
-                && str_starts_with($server_key, 'REDIRECT_')
-            ) {
-                $server_key = substr($server_key, 9);
-            }
-
-            if ($server_key !== null
-                && !str_starts_with($server_key, 'HTTP_')
-                && !in_array($server_key, self::USER_CONTROLLED_SERVER_KEYS, true)
-            ) {
+            if ($key !== null && !ServerVariableTaints::isUserControlled($key)) {
                 return;
             }
 
             $label = $key === null ? '$_SERVER[]' : '$_SERVER[\'' . $key . '\']';
+        } elseif (ServerVariableTaints::isServerParamsCall($statements_analyzer, $var)) {
+            if ($key !== null && !ServerVariableTaints::isUserControlled($key)) {
+                return;
+            }
+
+            $label = 'getServerParams()' . ($key === null ? '[]' : '[\'' . $key . '\']');
         } elseif ($var instanceof PhpParser\Node\Expr\ArrayDimFetch
             && $var->var instanceof PhpParser\Node\Expr\Variable
             && $var->var->name === '_FILES'
@@ -892,7 +858,6 @@ final class ArrayFetchAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeType(
                 $statements_analyzer->getFilePath(),
@@ -1135,7 +1100,6 @@ final class ArrayFetchAnalyzer
             }
 
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -1217,7 +1181,6 @@ final class ArrayFetchAnalyzer
 
         if ($offset_type->hasMixed()) {
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -1236,7 +1199,6 @@ final class ArrayFetchAnalyzer
             );
         } else {
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -1486,7 +1448,6 @@ final class ArrayFetchAnalyzer
         bool $by_reference = false,
     ): Union {
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
                     instanceof FunctionLikeAnalyzer)
@@ -2584,7 +2545,6 @@ final class ArrayFetchAnalyzer
         if ($in_assignment && $replacement_type) {
             if ($replacement_type->hasMixed()) {
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)
@@ -2602,7 +2562,6 @@ final class ArrayFetchAnalyzer
                 );
             } else {
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)

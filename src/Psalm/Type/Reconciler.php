@@ -155,7 +155,8 @@ class Reconciler
             // To work around the issue, if there are any references, we have to recreate the array and fix the
             // references so they're properly scoped and won't affect the caller. Starting with a new array is
             // required for some unclear reason, just cloning elements of the existing array doesn't work properly.
-            $old_existing_types = $existing_types;
+            // The offsets of the variables bound (see below) are references to each other too.
+            $old_existing_types = Context::copyVarsInScope($existing_types);
             $existing_types = [];
 
             $cloned_referenceds = [];
@@ -2096,6 +2097,23 @@ class Reconciler
                             // not known: the items it may be keep the types they have
                             if (count($array_key_offsets) === 1 || !isset($properties[$array_key_offset])) {
                                 $properties[$array_key_offset] = $result_type;
+                            }
+
+                            // a list that has an offset has all the offsets before it
+                            if ($base_atomic_type->is_list
+                                && !$result_type->possibly_undefined
+                                && !$result_type->isNever()
+                                && ($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
+                                    !== false
+                            ) {
+                                for ($x = 0; $x < $int_array_key_offset; $x++) {
+                                    if (isset($properties[$x]) && $properties[$x]->possibly_undefined) {
+                                        $properties[$x] = $properties[$x]->isNever()
+                                            && $base_atomic_type->fallback_params
+                                            ? $base_atomic_type->fallback_params[1]
+                                            : $properties[$x]->setPossiblyUndefined(false);
+                                    }
+                                }
                             }
 
                             if ($base_atomic_type->is_list

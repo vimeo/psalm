@@ -251,9 +251,9 @@ final class MethodCallAnalyzer extends CallAnalyzer
         MethodCallPurityAnalyzer::keepPropertiesNotWrittenForEveryReceiverType($codebase, $context, $result);
 
         if ($method_var_id !== null) {
-            // the initialization and mutation passes skip the purity analysis that decides it,
-            // so they rely on what the normal pass of this call found
-            $was_memoizable = ($context->collect_initializations || $context->collect_mutations)
+            // the initialization pass skips the purity analysis that decides it,
+            // so it relies on what the normal pass of this call found
+            $was_memoizable = $context->collect_initializations
                 && $stmt->getAttribute('memoizable', false);
 
             if ($codebase->config->memoize_method_calls || $result->can_memoize || $was_memoizable) {
@@ -439,7 +439,6 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
             && $stmt_type
         ) {
             $codebase->analyzer->addNodeType(
