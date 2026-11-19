@@ -1282,6 +1282,44 @@ final class InstancePropertyAssignmentAnalyzer
                 }
             }
 
+            // the object holds the value under the name of the property, as an array does under a key
+            $graph = $statements_analyzer->getDataFlowGraphWithSuppressed();
+            if ($graph
+                && $lhs_var_id !== null
+                && $lhs_var_id !== '$this'
+                && isset($context->vars_in_scope[$lhs_var_id])
+                && $assignment_value_type->parent_nodes !== []
+            ) {
+                $object_type = $context->vars_in_scope[$lhs_var_id];
+                $object_node = DataFlowNode::getForAssignment(
+                    $lhs_var_id,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->var),
+                );
+                $graph->addNode($object_node);
+
+                foreach ($object_type->parent_nodes as $parent_node) {
+                    $graph->addPath($parent_node, $object_node, '=');
+                }
+
+                $removed_taints = $graph instanceof VariableUseGraph
+                    ? 0
+                    : $assignment_value_type->getTaintsToRemove($codebase->getInputTaints());
+
+                foreach ($assignment_value_type->parent_nodes as $parent_node) {
+                    $graph->addPath(
+                        $parent_node,
+                        $object_node,
+                        'arrayvalue-assignment-\'' . $prop_name . '\'',
+                        0,
+                        $removed_taints,
+                    );
+                }
+
+                $context->vars_in_scope[$lhs_var_id] = $object_type->setParentNodes(
+                    [$object_node->id => $object_node],
+                );
+            }
+
             return null;
         }
 

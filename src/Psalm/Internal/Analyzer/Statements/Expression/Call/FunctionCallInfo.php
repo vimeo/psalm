@@ -71,8 +71,6 @@ final class FunctionCallInfo
      */
     public ?Union $callable_return_type = null;
 
-    public bool $allow_named_args = true;
-
     public array $byref_uses = [];
 
     /**

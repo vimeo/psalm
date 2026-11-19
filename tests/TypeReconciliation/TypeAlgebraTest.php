@@ -96,6 +96,81 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'aTernaryBranchKnowsTheOrOfItsCondition' => [
+                'code' => '<?php
+                    final class A {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?A $a, ?A $b): int {
+                        return $a !== null || $b !== null ? ($a === null ? $b->get() : 1) : 0;
+                    }',
+            ],
+            'aTernaryBranchKnowsTheNegatedAndOfItsCondition' => [
+                'code' => '<?php
+                    final class A {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?A $a, ?A $b): int {
+                        return !($a === null && $b === null) ? ($a === null ? $b->get() : 1) : 0;
+                    }',
+            ],
+            'aTernaryBranchKnowsTheOrInAnAndOfItsCondition' => [
+                'code' => '<?php
+                    final class A {
+                        public function get(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(?A $a, ?A $b, bool $c): int {
+                        return ($a !== null || $b !== null) && $c ? ($a === null ? $b->get() : 1) : 0;
+                    }',
+            ],
+            'aTernaryBranchDoesNotCheckAgainTheConditionOfTheTernaryInACoalesce' => [
+                'code' => '<?php
+                    function f(?string $id, array $vars): mixed {
+                        return $id !== null ? $vars[$id] ?? null : null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'aTernaryBranchDoesNotCheckAgainTheConditionOfTheTernaryInANestedTernary' => [
+                'code' => '<?php
+                    function f(int $n): string {
+                        return $n > 0 ? ($n === 1 ? "a" : "b") : "c";
+                    }',
+            ],
+            'aTernaryConditionOnAnOffsetOfAVariableSetInALoopNarrowsIt' => [
+                'code' => '<?php
+                    function f(array $files): string {
+                        foreach ($files as $file) {
+                            echo (string) $file;
+                        }
+
+                        return isset($file["a"]) && is_string($file["a"]) ? $file["a"] : "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'theNegatedTernaryConditionOnAnOffsetOfAVariableSetInALoopNarrowsIt' => [
+                'code' => '<?php
+                    function f(array $files): string {
+                        foreach ($files as $file) {
+                            echo (string) $file;
+                        }
+
+                        return !isset($file["a"]) ? "" : (is_string($file["a"]) ? $file["a"] : "");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'isAAndItsNegationAreDifferentConditions' => [
                 'code' => '<?php
                     final class A {}
@@ -218,6 +293,92 @@ final class TypeAlgebraTest extends TestCase
                         if (in_array($a, getList(), true)) {
                             /** @psalm-check-type-exact $b = int|null */
                             echo "in";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'comparisonWithAValueThatChangedIsForgotten' => [
+                'code' => '<?php
+                    final class C {
+                        public string $p = "";
+
+                        public function change(): void {
+                            $this->p = "other";
+                        }
+
+                        public function f(string $x, ?int $b): void {
+                            if ($x === $this->p || $b !== null) {
+                                $this->change();
+                                if ($x !== $this->p) {
+                                    /** @psalm-check-type-exact $b = int|null */
+                                    echo 1;
+                                }
+                            }
+                        }
+                    }
+
+                    /** @param list<string> $arr */
+                    function inArray(string $a, array $arr, ?int $b): void {
+                        if (in_array($a, $arr, true) || $b !== null) {
+                            $arr[] = "q";
+                            if (!in_array($a, $arr, true)) {
+                                /** @psalm-check-type-exact $b = int|null */
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function reassigned(string $x, string $y, string $z, ?int $b): void {
+                        if ($x === $y || $b !== null) {
+                            $y = $z;
+                            if ($x !== $y) {
+                                /** @psalm-check-type-exact $b = int|null */
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function reassignedInABranch(string $x, string $y, ?int $b, bool $c): void {
+                        if ($x === $y || $b !== null) {
+                            if ($c) {
+                                $y = "a";
+                            }
+                            if ($x !== $y) {
+                                /** @psalm-check-type-exact $b = int|null */
+                                echo 1;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'comparisonWithAnUnchangedValueIsKept' => [
+                'code' => '<?php
+                    final class A {
+                        public function m(): void {}
+                    }
+
+                    function f(string $x, string $y, ?int $b): void {
+                        if ($x === $y || $b !== null) {
+                            $z = 1;
+                            if ($x !== $y) {
+                                /** @psalm-check-type-exact $b = int */
+                                echo $z;
+                            }
+                        }
+                    }
+
+                    /** @param A $p */
+                    function narrowedByACall(A $o, $p, ?int $b): void {
+                        if ($o === $p || $b !== null) {
+                            $p->m();
+                            if ($o !== $p) {
+                                /** @psalm-check-type-exact $b = int */
+                                echo 1;
+                            }
                         }
                     }',
                 'assertions' => [],
@@ -4354,6 +4515,21 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'aTernaryConditionReassigningAVariableDropsTheEarlierClausesOfIt' => [
+                'code' => '<?php
+                    function g(): ?int {
+                        return rand(0, 1) ? 5 : null;
+                    }
+
+                    function f(?int $m, ?int $y): int {
+                        if ($m !== null && $y === null) {
+                            return 0;
+                        }
+
+                        return ($m = g()) !== null || rand(0, 1) ? ($m !== null ? $y : 1) : 1;
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
             'onlyTheOperandOfAnOrContradictedByAnEarlierConditionIsAParadox' => [
                 'code' => '<?php
                     final class A {}
