@@ -681,10 +681,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        if ($storage instanceof MethodStorage && $storage->location && !$storage->allow_named_arg_calls) {
+        if ($storage instanceof MethodStorage && $storage->location && !$storage->allowsNamedArguments()) {
             foreach ($overridden_method_ids as $overridden_method_id) {
                 $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
-                if ($overridden_storage->allow_named_arg_calls) {
+                if ($overridden_storage->allowsNamedArguments()) {
                     IssueBuffer::maybeAdd(new MethodSignatureMismatch(
                         'Method ' . (string) $method_id . ' should accept named arguments '
                             . ' as ' . (string) $overridden_method_id . ' does',
@@ -1111,6 +1111,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $closure_atomic->extra_types,
                             $closure_atomic->from_docblock,
                             $closure_atomic->callable_id,
+                            $closure_atomic->byref_use_scopes,
                         ),
                     ], ['reference_free' => true]),
                 );
@@ -1866,13 +1867,29 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         null,
                     );
 
+                    $removed_taints = $function_param->signature_type?->getTaintsToRemove($codebase->getInputTaints())
+                        ?? 0;
+
                     $statements_analyzer->data_flow_graph->addPath(
                         $type_source,
                         $param_assignment,
                         'param',
                         0,
-                        $function_param->signature_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0,
+                        $removed_taints,
                     );
+
+                    // the arguments after the first, see ArgumentAnalyzer::addVariadicArgumentPath()
+                    if ($function_param->is_variadic) {
+                        $variadic_source = DataFlowNode::getForVariadicArguments($type_source);
+
+                        $statements_analyzer->data_flow_graph->addPath(
+                            $variadic_source,
+                            $param_assignment,
+                            'param',
+                            0,
+                            $removed_taints,
+                        );
+                    }
                 }
 
                 if ($storage->variadic) {
@@ -1949,9 +1966,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $var_type = $param_type;
 
             if ($function_param->is_variadic) {
-                if ($storage->allow_named_arg_calls) {
+                if ($storage->allowsNamedArguments()) {
                     $var_type = new Union([
-                        new TArray([Type::getArrayKey(), $param_type]),
+                        new TArray([self::getVariadicKeyType($storage), $param_type]),
                     ], [
                         'by_ref' => $function_param->by_ref,
                         'parent_nodes' => $parent_nodes,
@@ -2169,6 +2186,21 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         return $check_stmts;
+    }
+
+    /**
+     * A variadic parameter gets arguments passed by position only when the parameters before it are passed by
+     * position too, which `@arguments-by-name` and `@optional-arguments-by-name` may forbid
+     */
+    private static function getVariadicKeyType(FunctionLikeStorage $storage): Union
+    {
+        foreach ($storage->params as $param) {
+            if ($storage->requiresNamedArgument($param)) {
+                return Type::getString();
+            }
+        }
+
+        return Type::getArrayKey();
     }
 
     /**
@@ -3167,12 +3199,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     : $param;
             }
 
+            $byref_uses = $storage instanceof FunctionStorage ? $storage->byref_uses : [];
+
             $closure_type = new TClosure(
                 $closure_params,
                 $closure_return_type,
                 $storage->capabilities,
-                $storage instanceof FunctionStorage ? $storage->byref_uses : [],
+                $byref_uses,
                 callable_id: $this->getClosureId(),
+                byref_use_scopes: ClosureAnalyzer::getByRefUseScopes($this->source, $byref_uses),
             );
 
             $type_provider->setType(

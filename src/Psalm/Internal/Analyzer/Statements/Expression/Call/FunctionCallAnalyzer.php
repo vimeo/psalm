@@ -115,7 +115,6 @@ use function strpos;
 use function strtolower;
 
 use const SORT_FLAG_CASE;
-use const SORT_LOCALE_STRING;
 use const SORT_NATURAL;
 use const SORT_REGULAR;
 use const SORT_STRING;
@@ -164,6 +163,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         'asort' => SORT_REGULAR,
         'arsort' => SORT_REGULAR,
     ];
+
+    /**
+     * The value of `SORT_LOCALE_STRING`, which is deprecated since PHP 8.6: reading it would emit a deprecation.
+     */
+    private const SORT_LOCALE_STRING = 5;
 
     /**
      * @psalm-suppress ComplexMethod
@@ -338,7 +342,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 $function_call_info->function_params,
                 $function_call_info->function_id,
-                $function_call_info->allow_named_args,
                 $context,
                 $template_result,
             );
@@ -530,12 +533,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         // a called closure may write what it captured by reference
-        foreach ($function_call_info->byref_uses as $use_name => $_) {
-            $use_var_id = '$' . $use_name;
-
+        foreach ($function_call_info->closure_written_var_ids as $var_id => $_) {
             $context->removeVarFromConflictingClauses(
-                $use_var_id,
-                $context->vars_in_scope[$use_var_id] ?? null,
+                $var_id,
+                $context->vars_in_scope[$var_id] ?? null,
                 $statements_analyzer,
             );
         }
@@ -957,7 +958,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $args,
                         null,
                         null,
-                        true,
                         $context,
                     );
                 }
@@ -988,7 +988,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         if ($dynamic_function_storage) {
             $function_call_info->function_storage = $dynamic_function_storage;
             $function_call_info->function_params = $dynamic_function_storage->params;
-            $function_call_info->allow_named_args = $dynamic_function_storage->allow_named_arg_calls;
             $function_call_info->defined_constants = $dynamic_function_storage->defined_constants;
         } elseif (!$function_call_info->in_call_map || $function_call_info->is_stubbed) {
             try {
@@ -998,10 +997,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 );
 
                 $function_call_info->function_params = $function_call_info->function_storage->params;
-
-                if (!$function_storage->allow_named_arg_calls) {
-                    $function_call_info->allow_named_args = false;
-                }
 
                 if (!$is_predefined) {
                     $function_call_info->defined_constants = $function_storage->defined_constants;
@@ -1533,7 +1528,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $context->inside_call = $was_in_call;
 
-        $function_call_info->byref_uses = [];
+        $function_call_info->closure_written_var_ids = ClosureAnalyzer::analyzeVarIdsWrittenByCall(
+            $statements_analyzer,
+            $context,
+            $function_name,
+            false,
+        );
 
         if ($stmt_name_type = $statements_analyzer->node_data->getType($function_name)) {
             if ($stmt_name_type->isNull()) {
@@ -1663,10 +1663,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $real_stmt,
                             $closure_return_type ?? Type::getMixed(),
                         );
-                    }
-
-                    if ($var_type_part instanceof TClosure) {
-                        $function_call_info->byref_uses += $var_type_part->byref_uses;
                     }
 
                     if ($var_type_part->callable_id !== null) {
@@ -2170,7 +2166,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
 
             if ($flags !== SORT_STRING
-                && $flags !== SORT_LOCALE_STRING
+                && $flags !== self::SORT_LOCALE_STRING
                 && $flags !== SORT_NATURAL
                 && $flags !== SORT_REGULAR
             ) {

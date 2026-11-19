@@ -2906,6 +2906,123 @@ final class ForeachTest extends TestCase
                         }
                     }',
             ],
+            'foreachOverANullableArrayTakesTheKeyAndValueOfTheArray' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string>|null $a */
+                    function f(?array $a): void {
+                        foreach ($a as $k => $v) {
+                            /** @psalm-check-type-exact $k = int<0, max> */
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
+            'foreachOverANullableAndFalsableArrayReportsOnlyTheNull' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<int, string>|null|false $a */
+                    function f($a): void {
+                        foreach ($a as $k => $v) {
+                            /** @psalm-check-type-exact $k = int */
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
+            'foreachOverANullableIteratorTakesItsKeyAndValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param ArrayIterator<int, string>|null $a */
+                    function f(?ArrayIterator $a): void {
+                        foreach ($a as $k => $v) {
+                            /** @psalm-check-type-exact $k = int */
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
+            'foreachOverAFalsableIteratorAggregateTakesItsKeyAndValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param IteratorAggregate<int, string>|false $a */
+                    function f($a): void {
+                        foreach ($a as $k => $v) {
+                            /** @psalm-check-type-exact $k = int */
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyFalseIterator'],
+            ],
+            'foreachOverANullableTemplateTakesTheValueOfItsBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of null|list<int>
+                     * @param T $a
+                     */
+                    function f($a): void {
+                        foreach ($a as $v) {
+                            /** @psalm-check-type-exact $v = int */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
+            'foreachOverANullableIterableTakesItsKeyAndValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable<int, string>|null $a */
+                    function f(?iterable $a): void {
+                        foreach ($a as $k => $v) {
+                            /** @psalm-check-type-exact $k = int */
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
+            'foreachOverATemplateTakesTheValuesOfEveryTypeOfItsBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of list<int>|IteratorAggregate<int, string>
+                     * @param T $a
+                     */
+                    function f($a): void {
+                        foreach ($a as $v) {
+                            /** @psalm-check-type-exact $v = int|string */
+                        }
+                    }
+                    PHP,
+            ],
+            'foreachOverANullableTemplateBoundByATemplateTakesTheValueOfTheInnerBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template U of list<string>
+                     * @template T of U|null
+                     * @param T $a
+                     */
+                    function f($a): void {
+                        foreach ($a as $v) {
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
         ];
     }
 
@@ -2937,6 +3054,56 @@ final class ForeachTest extends TestCase
                 'error_message' => 'RedundantConditionGivenDocblockType',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'foreachOverATemplateReportsEveryTypeOfItsBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of int|stdClass
+                     * @param T|list<int> $a
+                     */
+                    function f($a): void {
+                        foreach ($a as $_) {}
+                    }
+                    PHP,
+                'error_message' => 'PossibleRawObjectIteration',
+            ],
+            'foreachOverANullableIntReportsTheInt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param int|null $a */
+                    function f($a): void {
+                        /** @psalm-suppress PossiblyNullIterator */
+                        foreach ($a as $_) {}
+                    }
+                    PHP,
+                'error_message' => 'InvalidIterator',
+            ],
+            'foreachOverANullableRegularObjectReportsTheObject' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(?stdClass $a): void {
+                        /** @psalm-suppress PossiblyNullIterator */
+                        foreach ($a as $_) {}
+                    }
+                    PHP,
+                'error_message' => 'RawObjectIteration',
+            ],
+            'foreachOverANullableIteratorInAPureFunctionIsImpure' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-pure
+                     * @param ArrayIterator<int, string>|null $a
+                     */
+                    function f(?ArrayIterator $a): int {
+                        /** @psalm-suppress PossiblyNullIterator */
+                        foreach ($a as $_) {}
+
+                        return 1;
+                    }
+                    PHP,
+                'error_message' => 'ImpureMethodCall',
             ],
             'foreachLiteralSelectedByAComparisonOfItselfStaysAUnionOfLiterals' => [
                 'code' => <<<'PHP'
