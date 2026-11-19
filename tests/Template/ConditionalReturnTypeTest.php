@@ -1399,6 +1399,57 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'owningSideAssertionPreservesManyToManyConditionalReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    abstract class Association {
+                        /**
+                         * @psalm-assert-if-true Owning $this
+                         * @psalm-assert-if-false Inverse $this
+                         */
+                        public function isOwning(): bool {
+                            return $this instanceof Owning;
+                        }
+                    }
+                    interface Many {}
+                    abstract class Owning extends Association {}
+                    abstract class Inverse extends Association {}
+                    final class InverseMany extends Inverse implements Many {}
+                    final class OwningMany extends Owning implements Many {
+                        public string $joinTable = '';
+                        public string $joinTableColumns = '';
+                    }
+                    final class Other extends Owning {}
+
+                    final class Factory {
+                        /**
+                         * @template A of Association
+                         * @param A $mapping
+                         * @return (A is Many ? OwningMany : Other)
+                         */
+                        public function getOwningSide(Association $mapping): Owning {
+                            if ($mapping instanceof Many) {
+                                return new OwningMany();
+                            }
+                            return new Other();
+                        }
+                    }
+
+                    function acceptMany(Many $mapping): void {}
+
+                    /** @param Association&Many $mapping */
+                    function test(Factory $factory, Association $mapping): string {
+                        if (!$mapping->isOwning()) {
+                            acceptMany($mapping);
+                            return '';
+                        }
+                        /** @psalm-check-type-exact $mapping = Owning&Many */
+                        $owning = $factory->getOwningSide($mapping);
+                        /** @psalm-check-type-exact $owning = OwningMany */
+                        return $owning->joinTable . $owning->joinTableColumns;
+                    }
+                    PHP,
+            ],
         ];
     }
 
