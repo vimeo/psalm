@@ -44,8 +44,10 @@ final class TClosure extends TNamedObject
      *                                        different functions apart. It is used to re-dispatch taint
      *                                        sinks/sources on invocation, and to infer the templates of a
      *                                        generic function or method there.
-     * @param ?string $byref_uses_scope The scope the closure was made in, whose variables $byref_uses names (see
-     *                                  {@see \Psalm\Internal\Analyzer\ClosureAnalyzer::getScopeId()})
+     * @param array<string, non-empty-list<string>> $byref_use_scopes For a name of $byref_uses, the scopes whose
+     *                                  variable it is (see
+     *                                  {@see \Psalm\Internal\Analyzer\ClosureAnalyzer::getByRefUseScopes()}); a
+     *                                  name without scopes is taken to be a variable of any scope
      */
     public function __construct(
         ?array $params = null,
@@ -55,7 +57,7 @@ final class TClosure extends TNamedObject
         array $extra_types = [],
         bool $from_docblock = false,
         public ?string $callable_id = null,
-        public ?string $byref_uses_scope = null,
+        public array $byref_use_scopes = [],
     ) {
         $this->params = $params;
         $this->return_type = $return_type;
@@ -119,7 +121,7 @@ final class TClosure extends TNamedObject
             $intersection ?? $this->extra_types,
             $this->from_docblock,
             $this->callable_id,
-            $this->byref_uses_scope,
+            $this->byref_use_scopes,
         );
     }
 
@@ -174,7 +176,7 @@ final class TClosure extends TNamedObject
             $intersection ?? $this->extra_types,
             $this->from_docblock,
             $this->callable_id,
-            $this->byref_uses_scope,
+            $this->byref_use_scopes,
         );
     }
 

@@ -179,8 +179,6 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
     /**
      * The id of the function-like the source's code is in, or '' outside of any: the scope of its variables
-     *
-     * @psalm-capabilities read-props
      */
     public static function getScopeId(StatementsSource $source): string
     {
@@ -192,10 +190,52 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
+     * The ids of the scopes (see getScopeId()) whose variable each name is, for a closure made in the source that
+     * captures them by reference: a closure the source is in shares a variable it captured by reference with the
+     * scope it was made in
+     *
+     * @param array<string, bool> $byref_uses
+     * @return array<string, non-empty-list<string>>
+     */
+    public static function getByRefUseScopes(StatementsSource $source, array $byref_uses): array
+    {
+        $scopes = [];
+
+        foreach ($byref_uses as $use_name => $_) {
+            $scope = $source;
+
+            while (true) {
+                $scope_statements_analyzer = null;
+
+                while ($scope instanceof StatementsAnalyzer) {
+                    $scope_statements_analyzer = $scope;
+                    $scope = $scope->getSource();
+                }
+
+                if (!$scope instanceof FunctionLikeAnalyzer) {
+                    $scopes[$use_name][] = '';
+                    break;
+                }
+
+                $scopes[$use_name][] = $scope->getId();
+
+                if (!$scope instanceof self || !isset($scope_statements_analyzer?->byref_uses['$' . $use_name])) {
+                    break;
+                }
+
+                $scope = $scope->getSource();
+            }
+        }
+
+        return $scopes;
+    }
+
+    /**
      * The variables of the current scope that calling the analysed callable may write, also recorded for
      * {@see \Psalm\Internal\Algebra\FormulaGenerator}. What a closure captured by reference are variables of the
-     * scope it was made in: elsewhere, a variable of the same name is only that one when this scope binds it by
-     * reference outside (`use (&$x)`, `global $x`)
+     * scopes it was made in (see getByRefUseScopes()): elsewhere, a variable of the same name is taken to be one
+     * when this scope binds it by reference to a variable outside (`use (&$x)`, `global $x`, a by-reference
+     * parameter or foreach value, ...)
      *
      * @return array<string, true>
      */
@@ -213,12 +253,14 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             }
 
             $scope_id ??= self::getScopeId($statements_analyzer);
-            $in_scope = $atomic->byref_uses_scope === null || $atomic->byref_uses_scope === $scope_id;
 
             foreach ($atomic->byref_uses as $use_name => $_) {
                 $var_id = '$' . $use_name;
 
-                if ($in_scope || isset($context->references_to_external_scope[$var_id])) {
+                if (!isset($atomic->byref_use_scopes[$use_name])
+                    || in_array($scope_id, $atomic->byref_use_scopes[$use_name], true)
+                    || isset($context->references_to_external_scope[$var_id])
+                ) {
                     $var_ids[$var_id] = true;
                 }
             }

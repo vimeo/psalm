@@ -5121,6 +5121,70 @@ final class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullArgument',
             ],
+            'nullCheckIsForgottenWhenAClosureMadeInAClosureCapturingItByReferenceIsCalled' => [
+                'code' => '<?php
+                    function f(?string $x): int {
+                        $mk = function () use (&$x): Closure {
+                            return function () use (&$x): void {
+                                $x = null;
+                            };
+                        };
+                        $g = $mk();
+                        $notNull = $x !== null;
+                        $g();
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckIsForgottenWhenAClosureMadeInAClosureCapturingItByReferenceIsPassedToAFunction' => [
+                'code' => '<?php
+                    function run(callable $c): void {
+                        $c();
+                    }
+
+                    function f(?string $x): int {
+                        $mk = function () use (&$x): Closure {
+                            return function () use (&$x): void {
+                                $x = null;
+                            };
+                        };
+                        $g = $mk();
+                        $notNull = $x !== null;
+                        run($g);
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckIsForgottenWhenAssignedWithACallOfAClosureMadeInAClosureCapturingItByReference' => [
+                'code' => '<?php
+                    function f(?string $x): int {
+                        $mk = function () use (&$x): Closure {
+                            return function () use (&$x): bool {
+                                $x = null;
+                                return (bool) rand(0, 1);
+                            };
+                        };
+                        $g = $mk();
+                        $r = $x !== null && $g();
+
+                        if ($r) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
             'truthyCheckOfAGlobalIsKeptByACallThatDoesNotWriteIt' => [
                 'code' => '<?php
                     function noop(): void {}

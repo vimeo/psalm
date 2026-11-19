@@ -1319,12 +1319,17 @@ final class FormulaGenerator
                     $this->targets[] = $node->value;
                 }
 
-                if ($node instanceof PhpParser\Node\Arg
-                    || ($node instanceof PhpParser\Node\Expr\FuncCall
-                        && $node->name instanceof PhpParser\Node\Expr)
-                ) {
-                    $callable = $node instanceof PhpParser\Node\Arg ? $node->value : $node->name;
+                $callable = null;
 
+                if ($node instanceof PhpParser\Node\Arg) {
+                    $callable = $node->value;
+                } elseif ($node instanceof PhpParser\Node\Expr\FuncCall
+                    && $node->name instanceof PhpParser\Node\Expr
+                ) {
+                    $callable = $node->name;
+                }
+
+                if ($callable !== null) {
                     foreach ($this->node_data?->getVarIdsWrittenByCall($callable) ?? [] as $var_id => $_) {
                         $this->targets[] = $var_id;
                     }
