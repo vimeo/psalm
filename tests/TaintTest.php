@@ -1462,6 +1462,27 @@ final class TaintTest extends TestCase
                     }
                     exec("run " . (string) $command);',
             ],
+            'dynamicPropertyIsWhatTheObjectHoldsUnderItsName' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function toObject(array $a): stdClass {
+                        return (object) $a;
+                    }
+
+                    $row = toObject(["name" => $_GET["name"], "id" => "1"]);
+                    echo $row->id;',
+            ],
+            'dynamicPropertyOfAValueOfUnknownTypeIsWhatItHoldsUnderItsName' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function toObject(array $a): mixed {
+                        return (object) $a;
+                    }
+
+                    $row = toObject(["name" => $_GET["name"], "id" => "1"]);
+                    /** @psalm-suppress MixedPropertyFetch */
+                    echo $row->id;',
+            ],
             'propertyOfAnObjectTheCodeBuiltIsNotTainted' => [
                 'code' => '<?php
                     $row = new stdClass();
@@ -7020,6 +7041,17 @@ final class TaintTest extends TestCase
                         exit;
                     }
                     echo $name;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'dynamicPropertyCastToAStringIsTainted' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function toObject(array $a): stdClass {
+                        return (object) $a;
+                    }
+
+                    $row = toObject(["name" => $_GET["name"], "id" => "1"]);
+                    echo (string) $row->name;',
                 'error_message' => 'TaintedHtml',
             ],
             'dynamicPropertyOfATaintedObjectIsTainted' => [
