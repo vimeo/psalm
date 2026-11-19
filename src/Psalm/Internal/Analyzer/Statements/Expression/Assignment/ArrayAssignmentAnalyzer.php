@@ -496,7 +496,7 @@ final class ArrayAssignmentAnalyzer
                         $key_type = $key_type->addType(Type::getAtomicStringFromLiteral(''))->freeze();
                     }
 
-                    $key_type = ArrayFetchAnalyzer::castInvalidOffsetTypes(
+                    $key_type = ArrayFetchAnalyzer::castOffsetTypeOfAWrite(
                         ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type),
                     );
                 }

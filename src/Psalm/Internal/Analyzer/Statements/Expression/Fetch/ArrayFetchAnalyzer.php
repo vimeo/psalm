@@ -70,6 +70,8 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
@@ -1503,6 +1505,10 @@ final class ArrayFetchAnalyzer
             ) {
                 $changed = true;
                 continue;
+            } elseif ($atomic_type instanceof TCallable) {
+                // only a callable that is a string is a key
+                $atomic_type = new TCallableString();
+                $changed = true;
             }
 
             $atomic_types[$atomic_type->getKey()] ??= $atomic_type;
