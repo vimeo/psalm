@@ -34,7 +34,7 @@ of the flow:
   itself. Unless the function is specialized, they are shared by all its calls, so what one caller passes in comes out
   at every other caller.
 + *Specialized* nodes (`wrap#1 specialized in …`) belong to one call only. For a function that is
-  [specialized](avoiding_false_positives.md#specializing-taints-in-functions), or that Psalm infers to be pure, the
+  [specialized](index.md#specializing-functions), or that Psalm infers to be pure, the
   taints go from the arguments of a call to its result without leaving that call, which is why the flow above ends in
   `$x` and not in the other callers of `wrap()`.
 
@@ -292,7 +292,7 @@ function show(Model $model): void {
   `foreach ($values as $name => $value) { $model->set($name, $value); }`, sets each property to what is under its
   name in `$values`, as `($values) -> $this->{key}` does, when `$name` and `$value` are still the key and the value of
   the loop.
-+ For a class with [`@psalm-taint-specialize`](avoiding_false_positives.md#specializing-taints-in-classes), properties
++ For a class with [`@psalm-taint-specialize`](index.md#specializing-classes), properties
   are tracked per object.
 
 ### Properties held in an array property

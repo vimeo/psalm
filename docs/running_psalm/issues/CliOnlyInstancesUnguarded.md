@@ -68,5 +68,26 @@ final class ConsoleRequest
 }
 ```
 
-See [Classes only instantiated from the command line](../../security_analysis/avoiding_false_positives.md#classes-only-instantiated-from-the-command-line)
-for what is checked, and what is trusted.
+## What is checked
+
+The class must:
+
+- be final, so that no subclass adds a constructor or an `__unserialize()` of its own, and not implement
+  `Serializable`, whose `unserialize()` runs on an object created without the constructor;
+- declare its constructor, and `__unserialize()` if it or a class it extends has one, or `__wakeup()` otherwise (in the
+  class itself or a trait it uses);
+- start each of them with the guard: their first statement throws, or leaves `PHP_SAPI` narrowed to `'cli'`, like
+  `if (PHP_SAPI !== 'cli') { throw ...; }` or a call of a function
+  [asserting](../../annotating_code/adding_assertions.md#asserting-the-sapi) `'cli' PHP_SAPI`, and doesn't use `$this`
+  (directly, through `self::`, `static::` or `parent::`, or in a closure binding it). A promoted constructor property
+  can't have hooks, which run before the body. A `__wakeup()` that always throws forbids unserializing the class
+  instead.
+
+This is checked where the class is analyzed: a class in a stub or in a dependency Psalm doesn't analyze is trusted.
+What Psalm can't see is trusted too: an object made without its constructor through Reflection
+(`newInstanceWithoutConstructor()`, lazy objects), an extension calling `__set()` before the constructor (PDO's
+`FETCH_CLASS` without `FETCH_PROPS_LATE`), or another object unserialized with an instance calling it from its own
+`__wakeup()` or `__unserialize()` before the guard of the instance ran (unserializing data a client can change is
+reported as [TaintedUnserialize](TaintedUnserialize.md) already).
+
+See [Command-line code](../../security_analysis/index.md#command-line-code) for what counts as command-line code.
