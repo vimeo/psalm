@@ -27,6 +27,7 @@ use Override;
 use Psalm\Config;
 use Psalm\Progress\Progress;
 use Revolt\EventLoop;
+use Revolt\EventLoop\Driver\StreamSelectDriver;
 use RuntimeException;
 
 use function Amp\Future\await;
@@ -72,6 +73,12 @@ final class Pool
         private readonly float $timeLimit,
         private readonly Progress $progress,
     ) {
+        // Forked workers keep this process's event loop driver. A kernel-backed one (epoll, kqueue, libuv, …)
+        // would be shared between the parent and its workers, which then get each other's events.
+        if (!EventLoop::getDriver() instanceof StreamSelectDriver) {
+            EventLoop::setDriver(new StreamSelectDriver());
+        }
+
         $this->pool = new ContextWorkerPool(
             $threads,
             new ContextWorkerFactory(
