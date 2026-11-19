@@ -94,6 +94,7 @@ final class TaintKind
         'session' => self::INPUT_SESSION,
         // an XPath query is injected through a value outside a string literal, or one ending it
         'xpath' => self::INPUT_XPATH | self::INPUT_XPATH_LITERAL,
+        'xpath_query' => self::INPUT_XPATH,
         'xpath_literal' => self::INPUT_XPATH_LITERAL,
         'sleep' => self::INPUT_SLEEP,
         'extract' => self::INPUT_EXTRACT,

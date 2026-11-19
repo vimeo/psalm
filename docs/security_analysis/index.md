@@ -26,7 +26,7 @@ Psalm recognises a number of taint types by default, defined in the [Psalm\Type\
 - `sql` - used for strings that could contain SQL
 - `nosql` - used for values that could set the structure of a NoSQL query (e.g. a MongoDB filter, update or pipeline). Only arrays and objects can carry it: a scalar can never be a query document, so casting user input to `string`, `int`, `float` or `bool` removes it
 - `ldap` - used for strings that could contain a ldap DN or filter
-- `xpath` - used for strings that could contain an XPath expression. It is also the name of `xpath_literal`, which is all a value in a string literal of the query (`"//user[@id='" . $id . "']"`) keeps: it can only change the query with a quote
+- `xpath` - used for strings that could contain an XPath expression: the name of both `xpath_query`, what a value outside a string literal of the query can change it with, and `xpath_literal`, which is all a value in a string literal of the query (`"//user[@id='" . $id . "']"`) keeps: it can only change the query with a quote
 - `html` - used for strings that could contain angle brackets or unquoted strings
 - `has_quotes` - used for strings that could contain unquoted strings
 - `shell` - used for strings that could contain shell commands
