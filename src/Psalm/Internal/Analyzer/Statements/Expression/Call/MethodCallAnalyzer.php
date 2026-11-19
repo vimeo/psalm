@@ -501,7 +501,13 @@ final class MethodCallAnalyzer extends CallAnalyzer
             }
 
             // narrowed, not written: the enclosing scopes keep their clauses about it
-            $context->clauses = Context::filterClauses($lhs_var_id, $context->clauses, null, $statements_analyzer);
+            $context->clauses = Context::filterClauses(
+                $lhs_var_id,
+                $context->clauses,
+                null,
+                $statements_analyzer,
+                value_changed: false,
+            );
 
             $class_type = $class_type->getBuilder()->setTypes($types);
             $class_type->from_docblock = false;
