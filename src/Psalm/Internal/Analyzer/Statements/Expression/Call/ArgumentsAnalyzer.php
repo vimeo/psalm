@@ -141,8 +141,8 @@ final class ArgumentsAnalyzer
             $context->inside_negation = $was_inside_negation;
         }
 
-        // the callee may call a closure it is given, also inside an array, which may write what the closure captured
-        // by reference
+        // the callee may call a closure it is given, also inside an array or an object, which may write what the
+        // closure captured by reference
         foreach ($args as $arg) {
             $type = $statements_analyzer->node_data->getType($arg->value);
 

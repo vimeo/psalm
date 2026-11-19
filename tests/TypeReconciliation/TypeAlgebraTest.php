@@ -4425,31 +4425,6 @@ final class TypeAlgebraTest extends TestCase
                         return (int) $y;
                     }',
             ],
-            'nullCheckStoredInVariableIsKeptWhenAClosureReturningAClosureCapturingItByReferenceIsPassed' => [
-                'code' => '<?php
-                    function run(callable $c): void {
-                        $c();
-                    }
-
-                    function f(?string $x): int {
-                        $g = function () use (&$x): void {
-                            $x = null;
-                        };
-                        $f = fn() => $g;
-                        $notNull = $x !== null;
-                        run($f);
-
-                        if ($notNull) {
-                            return strlen($x);
-                        }
-
-                        $g();
-
-                        return 0;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['MissingClosureReturnType'],
-            ],
             'nullCheckStoredInVariableIsKeptWhenAClosureCapturingItByReferenceIsNotPassed' => [
                 'code' => '<?php
                     function run(callable $c): void {
@@ -5072,6 +5047,29 @@ final class TypeAlgebraTest extends TestCase
                 'error_message' => 'PossiblyNullArgument',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'nullCheckStoredInVariableIsForgottenWhenAClosureReturningAClosureCapturingItByReferenceIsPassed' => [
+                'code' => '<?php
+                    function runReturned(callable $c): void {
+                        $c()();
+                    }
+
+                    function f(?string $x): int {
+                        $g = function () use (&$x): void {
+                            $x = null;
+                        };
+                        $f = fn() => $g;
+                        $notNull = $x !== null;
+                        runReturned($f);
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+                'error_levels' => ['MissingClosureReturnType', 'MixedFunctionCall'],
             ],
             'nullCheckAssignedWithACallGivenAnArrayOfAClosureCapturingItByReferenceIsForgotten' => [
                 'code' => '<?php

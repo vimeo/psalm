@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psalm\Internal\TypeVisitor;
 
 use Override;
-use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\TypeNode;
 use Psalm\Type\TypeVisitor;
@@ -14,7 +13,7 @@ use function array_keys;
 
 /**
  * Collects the variables captured by reference by the closures a value is, or contains, like the elements of an
- * array. The parameter and return types of callables are not values, so they are not looked into.
+ * array or what a closure returns.
  *
  * @internal
  */
@@ -33,18 +32,13 @@ final class ClosureByRefUsesCollector extends TypeVisitor
             foreach ($type->byref_uses as $use_name => $_) {
                 $this->var_ids['$' . $use_name] = true;
             }
-
-            return self::DONT_TRAVERSE_CHILDREN;
-        }
-
-        if ($type instanceof TCallable) {
-            return self::DONT_TRAVERSE_CHILDREN;
         }
 
         return null;
     }
 
     /**
+     * @psalm-pure
      * @return list<string>
      */
     public static function collect(?TypeNode $type): array
