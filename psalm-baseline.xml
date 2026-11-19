@@ -1649,11 +1649,6 @@
       <code><![CDATA[__construct]]></code>
     </PossiblyUnusedMethod>
   </file>
-  <file src="src/Psalm/Internal/Json/Json.php">
-    <ImpureByReferenceAssignment>
-      <code><![CDATA[$value]]></code>
-    </ImpureByReferenceAssignment>
-  </file>
   <file src="src/Psalm/Internal/LanguageServer/Client/Progress/LegacyProgress.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[empty($message)]]></code>

@@ -118,7 +118,6 @@ final class ArgumentsAnalyzer
         array $args,
         ?array $function_params,
         ?string $method_id,
-        bool $allow_named_args,
         Context $context,
         ?TemplateResult $template_result = null,
     ): ?bool {
@@ -128,18 +127,38 @@ final class ArgumentsAnalyzer
         $context->inside_negation = false;
 
         try {
-            return self::analyzeArguments(
+            $result = self::analyzeArguments(
                 $statements_analyzer,
                 $args,
                 $function_params,
                 $method_id,
-                $allow_named_args,
                 $context,
                 $template_result,
             );
         } finally {
             $context->inside_negation = $was_inside_negation;
         }
+
+        // the callee may call a closure it is given, which may write what the closure captured by reference
+        foreach ($args as $arg) {
+            foreach ($statements_analyzer->node_data->getType($arg->value)?->getAtomicTypes() ?? [] as $atomic) {
+                if (!$atomic instanceof TClosure) {
+                    continue;
+                }
+
+                foreach ($atomic->byref_uses as $use_name => $_) {
+                    $use_var_id = '$' . $use_name;
+
+                    $context->removeVarFromConflictingClauses(
+                        $use_var_id,
+                        $context->vars_in_scope[$use_var_id] ?? null,
+                        $statements_analyzer,
+                    );
+                }
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -152,7 +171,6 @@ final class ArgumentsAnalyzer
         array $args,
         ?array $function_params,
         ?string $method_id,
-        bool $allow_named_args,
         Context $context,
         ?TemplateResult $template_result = null,
     ): ?bool {
@@ -221,7 +239,7 @@ final class ArgumentsAnalyzer
                 continue;
             }
 
-            $param = self::getParamOfArg($function_params, $last_param, $allow_named_args, $arg, $argument_offset);
+            $param = self::getParamOfArg($function_params, $last_param, $arg, $argument_offset);
 
             // the operands of the `$eq` of the fields of a MongoDB filter literal
             if ($arg->value instanceof PhpParser\Node\Expr\Array_ && $statements_analyzer->taint_flow_graph) {
@@ -308,7 +326,6 @@ final class ArgumentsAnalyzer
                         $args,
                         $function_params,
                         $last_param,
-                        $allow_named_args,
                         $argument_offset,
                         $context,
                         $template_result ?? new TemplateResult([], []),
@@ -541,8 +558,8 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * The parameter an argument is passed to: the one it is named after (when the function allows named arguments),
-     * else the one at its position, a variadic one taking the rest
+     * The parameter an argument is passed to: the one it is named after, else the one at its position, a variadic one
+     * taking the rest
      *
      * @param array<int, FunctionLikeParameter> $function_params
      * @psalm-capabilities read-props
@@ -550,11 +567,10 @@ final class ArgumentsAnalyzer
     private static function getParamOfArg(
         array $function_params,
         ?FunctionLikeParameter $last_param,
-        bool $allow_named_args,
         PhpParser\Node\Arg $arg,
         int $argument_offset,
     ): ?FunctionLikeParameter {
-        if ($arg->name && $allow_named_args) {
+        if ($arg->name) {
             foreach ($function_params as $candidate_param) {
                 if ($candidate_param->name === $arg->name->name) {
                     return $candidate_param;
@@ -583,7 +599,6 @@ final class ArgumentsAnalyzer
         array $args,
         array $function_params,
         ?FunctionLikeParameter $last_param,
-        bool $allow_named_args,
         int $argument_offset,
         Context $context,
         TemplateResult $template_result,
@@ -595,7 +610,7 @@ final class ArgumentsAnalyzer
                 break;
             }
 
-            $param = self::getParamOfArg($function_params, $last_param, $allow_named_args, $arg, $offset);
+            $param = self::getParamOfArg($function_params, $last_param, $arg, $offset);
             $input_type = $statements_analyzer->node_data->getType($arg->value);
 
             if (!$param || !$param->by_ref || !$param->type || !$input_type || !$param->type->hasTemplate()) {
@@ -1221,7 +1236,7 @@ final class ArgumentsAnalyzer
                             $function_params[$i],
                             $i,
                             $i,
-                            $function_storage->allow_named_arg_calls ?? true,
+                            $function_storage?->allowsNamedArguments() ?? true,
                             new VirtualArg(
                                 StubsGenerator::getExpressionFromType($default_type),
                             ),
@@ -1325,8 +1340,7 @@ final class ArgumentsAnalyzer
                         $key_types = $array_type->type_params[0]->getAtomicTypes();
 
                         foreach ($key_types as $key_type) {
-                            if (!$key_type instanceof TLiteralString
-                                || ($function_storage && !$function_storage->allow_named_arg_calls)) {
+                            if (!$key_type instanceof TLiteralString) {
                                 continue;
                             }
 
@@ -1376,7 +1390,7 @@ final class ArgumentsAnalyzer
                         }
                     }
                 }
-            } elseif ($arg->name && (!$function_storage || $function_storage->allow_named_arg_calls)) {
+            } elseif ($arg->name) {
                 $named_args_was_used = true;
 
                 foreach ($function_params as $candidate_offset => $candidate_param) {
@@ -1480,7 +1494,7 @@ final class ArgumentsAnalyzer
                     $function_param,
                     $param_offset,
                     $param_offset - $param_offsets[$argument_offset],
-                    $function_storage->allow_named_arg_calls ?? true,
+                    $function_storage?->allowsNamedArguments() ?? true,
                     $arg,
                     $arg_value_type,
                     $context,
@@ -2487,7 +2501,7 @@ final class ArgumentsAnalyzer
         foreach ($args as $argument_offset => $arg) {
             $function_param = null;
 
-            if ($arg->name && $function_storage->allow_named_arg_calls) {
+            if ($arg->name) {
                 foreach ($function_params as $candidate_param) {
                     if ($candidate_param->name === $arg->name->name) {
                         $function_param = $candidate_param;

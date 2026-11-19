@@ -31,6 +31,7 @@ use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
@@ -45,6 +46,7 @@ use function array_map;
 use function array_values;
 use function count;
 use function in_array;
+use function is_string;
 use function spl_object_id;
 use function str_starts_with;
 use function strcspn;
@@ -1116,7 +1118,7 @@ final class FormulaGenerator
         $var_ids = [];
 
         foreach (self::getWrittenExprs([$expr], false, $node_data) as $target) {
-            $var_id = ExpressionIdentifier::getRootVarId($target, $this_class_name);
+            $var_id = is_string($target) ? $target : ExpressionIdentifier::getRootVarId($target, $this_class_name);
 
             if ($var_id !== null) {
                 $var_ids[$var_id] = true;
@@ -1251,7 +1253,9 @@ final class FormulaGenerator
         }
 
         foreach (self::getWrittenExprs($call->getArgs(), true) as $target) {
-            $target_id = ExpressionIdentifier::getExtendedVarId($target, $this_class_name, $source);
+            $target_id = is_string($target)
+                ? $target
+                : ExpressionIdentifier::getExtendedVarId($target, $this_class_name, $source);
 
             if ($target_id !== null
                 && ($target_id === $receiver_id
@@ -1268,10 +1272,11 @@ final class FormulaGenerator
     /**
      * The expressions the nodes assign in the current scope, and with $with_arguments what they pass to calls, which
      * may take them by reference (with $node_data, only what they pass to by-reference parameters). The body of a
-     * closure assigns its own variables: only what it uses by reference is the outer scope's.
+     * closure assigns its own variables: only what it uses by reference is the outer scope's. With $node_data, the ids
+     * of the variables a closure that is called, or passed to a call, captures by reference are included too.
      *
      * @param array<PhpParser\Node> $nodes
-     * @return list<PhpParser\Node\Expr>
+     * @return list<PhpParser\Node\Expr|string>
      */
     private static function getWrittenExprs(
         array $nodes,
@@ -1279,7 +1284,7 @@ final class FormulaGenerator
         ?NodeDataProvider $node_data = null,
     ): array {
         $visitor = new class ($with_arguments, $node_data) extends PhpParser\NodeVisitorAbstract {
-            /** @var list<PhpParser\Node\Expr> */
+            /** @var list<PhpParser\Node\Expr|string> */
             public array $targets = [];
 
             public function __construct(
@@ -1313,6 +1318,21 @@ final class FormulaGenerator
                     && ($this->with_arguments || $this->node_data?->isWrittenByReference($node->value))
                 ) {
                     $this->targets[] = $node->value;
+                }
+
+                if ($node instanceof PhpParser\Node\Arg
+                    || ($node instanceof PhpParser\Node\Expr\FuncCall
+                        && $node->name instanceof PhpParser\Node\Expr)
+                ) {
+                    $callable = $node instanceof PhpParser\Node\Arg ? $node->value : $node->name;
+
+                    foreach ($this->node_data?->getType($callable)?->getAtomicTypes() ?? [] as $atomic) {
+                        if ($atomic instanceof TClosure) {
+                            foreach ($atomic->byref_uses as $use_name => $_) {
+                                $this->targets[] = '$' . $use_name;
+                            }
+                        }
+                    }
                 }
 
                 if ($node instanceof PhpParser\Node\Expr\Assign

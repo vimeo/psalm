@@ -228,7 +228,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
                         $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
                         null,
                         null,
-                        true,
                         $context,
                     );
 
@@ -271,7 +270,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
                             $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
                             null,
                             null,
-                            true,
                             $context,
                         );
                     }
@@ -311,7 +309,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             ) === false) {
                 return false;
