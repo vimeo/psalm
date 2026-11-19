@@ -967,7 +967,7 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * The matching types of the parts of two types neither of which contains the other: e.g. callable filtered with
-     * string is a callable-string
+     * string is a callable-string, A&I filtered with a subclass B of A is B&I
      *
      * @return list<Atomic>
      */
@@ -981,7 +981,14 @@ final class AssertionReconciler extends Reconciler
         $type_2_parts = $type_1_parts === null ? AtomicParts::split($type_2_atomic, $type_1_atomic, $codebase) : null;
 
         if ($type_1_parts === null && $type_2_parts === null) {
-            return [];
+            $refined_type = self::refineWithIntersectionParts(
+                $type_1_atomic,
+                $type_2_atomic,
+                $codebase,
+                $any_scalar_type_match_found,
+            );
+
+            return $refined_type ? [$refined_type] : [];
         }
 
         $matching_atomic_types = [];
@@ -1228,33 +1235,6 @@ final class AssertionReconciler extends Reconciler
         }
 
         $matching_atomic_type = null;
-
-        // refine with each part of an intersection, e.g. A&I narrowed to a subclass B of A gives B&I
-        if ($type_1_atomic instanceof TNamedObject
-            && $type_1_atomic->extra_types
-            && $type_2_atomic instanceof TNamedObject
-            && self::hasOnlyNamedObjectParts($type_1_atomic)
-        ) {
-            $type_1_parts = [$type_1_atomic->setIntersectionTypes([]), ...array_values($type_1_atomic->extra_types)];
-            $refined_type = $type_2_atomic;
-
-            foreach ($type_1_parts as $type_1_part) {
-                $refined_type = self::filterAtomicWithAnother(
-                    $type_1_part,
-                    $refined_type,
-                    $codebase,
-                    $any_scalar_type_match_found,
-                );
-
-                if (!$refined_type instanceof TNamedObject) {
-                    break;
-                }
-            }
-
-            if ($refined_type instanceof TNamedObject) {
-                return $refined_type;
-            }
-        }
 
         if ($type_1_atomic instanceof TNamedObject
             && $type_2_atomic instanceof TNamedObject
@@ -2482,22 +2462,53 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
+     * The second type refined with each part of the first, an intersection of named objects
+     */
+    private static function refineWithIntersectionParts(
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+        Codebase $codebase,
+        bool &$any_scalar_type_match_found,
+    ): ?TNamedObject {
+        if (!$type_1_atomic instanceof TNamedObject
+            || !$type_1_atomic->extra_types
+            || !$type_2_atomic instanceof TNamedObject
+        ) {
+            return null;
+        }
+
+        $type_1_parts = [$type_1_atomic->setIntersectionTypes([])];
+
+        foreach ($type_1_atomic->extra_types as $extra_type) {
+            if (!$extra_type instanceof TNamedObject || $extra_type->extra_types) {
+                return null;
+            }
+
+            $type_1_parts[] = $extra_type;
+        }
+
+        foreach ($type_1_parts as $type_1_part) {
+            $type_2_atomic = self::filterAtomicWithAnother(
+                $type_1_part,
+                $type_2_atomic,
+                $codebase,
+                $any_scalar_type_match_found,
+            );
+
+            if (!$type_2_atomic instanceof TNamedObject) {
+                return null;
+            }
+        }
+
+        return $type_2_atomic;
+    }
+
+    /**
      * No object is an instance of two classes that don't extend one another, or of a final class and an interface
      * it doesn't implement
      *
      * @psalm-capabilities read-props|write-props
      */
-    private static function hasOnlyNamedObjectParts(TNamedObject $type): bool
-    {
-        foreach ($type->extra_types as $extra_type) {
-            if (!$extra_type instanceof TNamedObject || $extra_type->extra_types) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     private static function canBeIntersected(
         Codebase $codebase,
         TNamedObject $existing_type_part,

@@ -6865,6 +6865,19 @@ final class ConditionalTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'narrowClassAndInterfaceIntersectionToUnrelatedClass' => [
+                'code' => '<?php
+                    abstract class A {}
+                    class C {}
+                    interface I {}
+
+                    function f(A $a): void {
+                        if ($a instanceof I && $a instanceof C) {
+                            echo "unreachable";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'varAssignedUnderConditionIsPossiblyUndefinedAfterTheConditionChanges' => [
                 'code' => '<?php
                     function f(bool $b): void {
