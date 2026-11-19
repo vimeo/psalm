@@ -48,6 +48,7 @@ use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_fill;
@@ -66,6 +67,7 @@ use function preg_match;
 use function sort;
 use function spl_object_id;
 use function str_contains;
+use function str_ends_with;
 use function str_starts_with;
 use function strlen;
 use function substr;
@@ -355,6 +357,24 @@ final class ArrayAssignmentAnalyzer
                     ? $root_type->setPossiblyUndefined(false)
                     : $root_type;
             $context->writeToReferencesPossiblyBound($root_var_id, $root_type, $codebase);
+
+            if ($context->references_in_scope) {
+                $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+                self::updateArraysHoldingBoundItem($statements_analyzer, $context, $root_var_id, $location);
+
+                foreach ($child_stmts as $child_stmt) {
+                    $child_var_id = ExpressionIdentifier::getExtendedVarId(
+                        $child_stmt,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer,
+                    );
+
+                    if ($child_var_id !== null) {
+                        self::updateArraysHoldingBoundItem($statements_analyzer, $context, $child_var_id, $location);
+                    }
+                }
+            }
         }
 
         if ($root_array_expr instanceof PhpParser\Node\Expr\MethodCall
@@ -374,6 +394,227 @@ final class ArrayAssignmentAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * What is written to a variable bound by reference to array items (`$r = &$a['k']`, `$a['k'] = &$r`) is written
+     * to the arrays holding those items: their types are rebuilt from its new type
+     */
+    public static function updateArraysHoldingBoundItem(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        string $var_id,
+        CodeLocation $location,
+    ): void {
+        if (!isset($context->references_in_scope[$var_id]) && !($context->referenced_counts[$var_id] ?? 0)) {
+            return;
+        }
+
+        $referenced_id = self::getReferencedVarId($context, $var_id);
+
+        foreach ([$referenced_id => $referenced_id] + $context->references_in_scope as $item_id => $_) {
+            if ($item_id !== $var_id
+                && str_ends_with($item_id, ']')
+                && isset($context->vars_in_scope[$item_id])
+                && self::getReferencedVarId($context, $item_id) === $referenced_id
+            ) {
+                self::updateArraysHoldingItem($statements_analyzer, $context, $item_id, $location);
+            }
+        }
+    }
+
+    /**
+     * The variable the reference chain from $var_id ends at
+     *
+     * @psalm-mutation-free
+     */
+    private static function getReferencedVarId(Context $context, string $var_id): string
+    {
+        $seen = [];
+
+        while (isset($context->references_in_scope[$var_id]) && !isset($seen[$var_id])) {
+            $seen[$var_id] = true;
+            $var_id = $context->references_in_scope[$var_id];
+        }
+
+        return $var_id;
+    }
+
+    private static function updateArraysHoldingItem(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        string $item_id,
+        CodeLocation $location,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $item_type = $context->vars_in_scope[$item_id];
+        $key_parts = Reconciler::breakUpPathIntoParts($item_id);
+
+        while (count($key_parts) > 3 && end($key_parts) === ']') {
+            array_pop($key_parts);
+            $key = array_pop($key_parts);
+            array_pop($key_parts);
+            $array_id = implode('', $key_parts);
+
+            if ($key === null || !isset($context->vars_in_scope[$array_id])) {
+                return;
+            }
+
+            $array_type = $context->vars_in_scope[$array_id];
+            $holds_mixed = $item_type->hasMixed();
+
+            foreach ($array_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TKeyedArray) {
+                    $holds_mixed = $holds_mixed || $atomic_type->getGenericValueType()->hasMixed();
+                } elseif ($atomic_type instanceof TArray) {
+                    $holds_mixed = $holds_mixed || $atomic_type->type_params[1]->hasMixed();
+                } else {
+                    return;
+                }
+            }
+
+            $key_values = self::getKeyValuesOfOffset($context, $key);
+
+            if (count($key_values) === 1) {
+                $array_type = self::setItemOfKey($codebase, $array_type, $key_values[0], $item_type);
+            } elseif ($key_values) {
+                $array_type = self::updateTypeWithKeyValues($codebase, $array_type, $item_type, $key_values);
+            } else {
+                // the key the item is under, as an assignment to it has it
+                $key_type = Type::getArrayKey();
+
+                if ($key[0] === '$'
+                    && isset($context->vars_in_scope[$key])
+                    && !$context->vars_in_scope[$key]->hasMixed()
+                ) {
+                    $key_type = $context->vars_in_scope[$key];
+
+                    // PHP takes null as the empty string
+                    if ($key_type->isNullable()) {
+                        $key_type = $key_type->getBuilder();
+                        $key_type->removeType('null');
+                        $key_type = $key_type->addType(Type::getAtomicStringFromLiteral(''))->freeze();
+                    }
+
+                    $key_type = ArrayFetchAnalyzer::castInvalidOffsetTypes(
+                        ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type),
+                    );
+                }
+
+                // as for an assignment, an item under any of the keys that may be anything is mixed
+                $array_type = Type::combineUnionTypes(
+                    $array_type,
+                    new Union([new TNonEmptyArray([$key_type, $holds_mixed ? Type::getMixed() : $item_type])]),
+                    $codebase,
+                );
+            }
+
+            if ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
+                // the array holds what was written under the key, as for an assignment of the item
+                $array_node = DataFlowNode::getForAssignment($array_id . ' through ' . $item_id, $location);
+                $graph->addNode($array_node);
+
+                $old_array_type = $context->vars_in_scope[$array_id];
+                $copy_path_type = count($key_values) === 1
+                    ? self::getOverwritePathType($old_array_type, $key_values[0])
+                    : '=';
+
+                foreach ($old_array_type->parent_nodes as $old_array_node) {
+                    $graph->addPath($old_array_node, $array_node, $copy_path_type);
+                }
+
+                foreach ($item_type->parent_nodes as $item_node) {
+                    if (count($key_values) > 1) {
+                        self::taintAssignmentUnderKeys($graph, $item_node, $array_node, $key_values, $location, 0);
+                    } else {
+                        $graph->addPath(
+                            $item_node,
+                            $array_node,
+                            $key_values
+                                ? 'arrayvalue-assignment-\'' . $key_values[0]->value . '\''
+                                : 'arrayvalue-assignment',
+                        );
+                    }
+                }
+
+                $array_type = $array_type->setParentNodes([$array_node->id => $array_node]);
+            }
+
+            $context->vars_in_scope[$array_id] = $array_type;
+            $item_type = $array_type;
+        }
+    }
+
+    /**
+     * The array with $item_type under the key, which it holds whether it had it before or not, as an assignment to
+     * the item leaves it
+     */
+    private static function setItemOfKey(
+        Codebase $codebase,
+        Union $array_type,
+        TLiteralInt|TLiteralString $key_value,
+        Union $item_type,
+    ): Union {
+        $key = $key_value->value;
+        $item_type = $item_type->setPossiblyUndefined(false);
+        $atomic_types = [];
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray) {
+                if ($atomic_type->is_list && !isset($atomic_type->properties[$key])) {
+                    // which keys the list holds then depends on the ones before
+                    return self::updateTypeWithKeyValues($codebase, $array_type, $item_type, [$key_value]);
+                }
+
+                $properties = $atomic_type->properties;
+                $properties[$key] = $item_type;
+                $atomic_types[] = $atomic_type->setProperties($properties);
+            } elseif ($atomic_type instanceof TArray) {
+                $atomic_types[] = TKeyedArray::make(
+                    [$key => $item_type],
+                    null,
+                    $atomic_type->isEmptyArray() ? null : $atomic_type->type_params,
+                );
+            } else {
+                return self::updateTypeWithKeyValues($codebase, $array_type, $item_type, [$key_value]);
+            }
+        }
+
+        return (new Union($atomic_types))->setParentNodes($array_type->parent_nodes);
+    }
+
+    /**
+     * The literal keys the offset of a var id (`'k'`, `0`, `$k`) can be, or none when one of them isn't known
+     *
+     * @return list<TLiteralInt|TLiteralString>
+     */
+    private static function getKeyValuesOfOffset(Context $context, string $offset): array
+    {
+        if ($offset[0] === '\'' || $offset[0] === '"') {
+            $key_value = Type::getAtomicStringFromLiteral(ExpressionIdentifier::unquoteOffset($offset));
+
+            return $key_value instanceof TLiteralString ? [$key_value] : [];
+        }
+
+        if (preg_match('/^-?[0-9]+$/', $offset) === 1) {
+            return [new TLiteralInt((int) $offset)];
+        }
+
+        if ($offset[0] !== '$' || !isset($context->vars_in_scope[$offset])) {
+            return [];
+        }
+
+        $key_values = [];
+
+        foreach ($context->vars_in_scope[$offset]->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TLiteralInt && !$atomic_type instanceof TLiteralString) {
+                return [];
+            }
+
+            $key_values[] = $atomic_type;
+        }
+
+        return count($key_values) <= self::MAX_KEY_VALUES ? $key_values : [];
     }
 
     /**

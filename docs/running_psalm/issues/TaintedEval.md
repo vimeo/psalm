@@ -31,3 +31,4 @@ function evalCode(string $name) {
 
 - [OWASP Wiki for Code Injection](https://owasp.org/www-community/attacks/Code_Injection)
 - [CWE-95](https://cwe.mitre.org/data/definitions/95.html)
+- [CWE-94](https://cwe.mitre.org/data/definitions/94.html)

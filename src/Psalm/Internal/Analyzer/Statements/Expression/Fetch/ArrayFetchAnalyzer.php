@@ -892,7 +892,6 @@ final class ArrayFetchAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeType(
                 $statements_analyzer->getFilePath(),
@@ -1140,7 +1139,6 @@ final class ArrayFetchAnalyzer
             }
 
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -1222,7 +1220,6 @@ final class ArrayFetchAnalyzer
 
         if ($offset_type->hasMixed()) {
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -1241,7 +1238,6 @@ final class ArrayFetchAnalyzer
             );
         } else {
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -1534,7 +1530,6 @@ final class ArrayFetchAnalyzer
         bool $by_reference = false,
     ): Union {
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
                     instanceof FunctionLikeAnalyzer)
@@ -2632,7 +2627,6 @@ final class ArrayFetchAnalyzer
         if ($in_assignment && $replacement_type) {
             if ($replacement_type->hasMixed()) {
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)
@@ -2650,7 +2644,6 @@ final class ArrayFetchAnalyzer
                 );
             } else {
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)
