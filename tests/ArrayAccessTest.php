@@ -1493,6 +1493,44 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'emptyNestedOffsetIsForgottenWhenItsParentOffsetIsAssigned' => [
+                'code' => '<?php
+                    function g(array $m, string $l, string $p): string {
+                        if (!empty($m[$l][$p])) {
+                            return $p;
+                        }
+
+                        $m[$l] = array_merge($m[$l] ?? [], ["x" => 1]);
+
+                        if (!empty($m[$l][$p])) {
+                            return $p;
+                        }
+
+                        return $p;
+                    }
+
+                    final class B {
+                        /** @var array */
+                        protected $m = [];
+
+                        public function h(string $l, string $p): string {
+                            if (!empty($this->m[$l][$p])) {
+                                return $p;
+                            }
+
+                            $this->m[$l] = ["x" => 1];
+
+                            if (!empty($this->m[$l][$p])) {
+                                return $p;
+                            }
+
+                            return $p;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument', 'MixedAssignment', 'MixedArrayAccess', 'MixedArrayAssignment', 'MixedArrayOffset'],
+                'php_version' => '8.0',
+            ],
             'emptyOffsetOfArrayKeepsValueType' => [
                 'code' => '<?php
                     /** @var array<string, int> $arr */

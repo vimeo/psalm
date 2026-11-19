@@ -116,6 +116,8 @@ use function count;
 use function implode;
 use function is_int;
 use function is_string;
+use function preg_match;
+use function preg_quote;
 use function reset;
 use function spl_object_id;
 use function str_contains;
@@ -669,6 +671,15 @@ final class AssignmentAnalyzer
                     $assign_value_type,
                     $statements_analyzer,
                 );
+
+                // what was asserted of an offset or a property of it (`empty($a[$k][$p])`) holds no longer
+                $descendent_pattern = '/' . preg_quote($extended_var_id, '/') . '[\]\[\-]/';
+
+                foreach ($context->vars_in_scope as $descendent_id => $_) {
+                    if (preg_match($descendent_pattern, $descendent_id)) {
+                        $context->remove($descendent_id, false);
+                    }
+                }
             }
 
             $root_var_id = ExpressionIdentifier::getRootVarId(
