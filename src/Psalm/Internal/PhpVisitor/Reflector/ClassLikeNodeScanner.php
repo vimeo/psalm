@@ -896,6 +896,7 @@ final class ClassLikeNodeScanner
 
 
             $storage->deprecated = $docblock_info->deprecated;
+            $storage->named_arguments = $docblock_info->named_arguments;
 
             if (count($docblock_info->psalm_internal) !== 0) {
                 $storage->internal = $docblock_info->psalm_internal;

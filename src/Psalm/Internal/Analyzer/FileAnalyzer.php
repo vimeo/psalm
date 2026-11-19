@@ -439,7 +439,6 @@ class FileAnalyzer extends SourceAnalyzer
         }
 
         $call_context = new Context($this_context->self);
-        $call_context->collect_mutations = $this_context->collect_mutations;
         $call_context->collect_initializations = $this_context->collect_initializations;
         $call_context->collect_nonprivate_initializations = $this_context->collect_nonprivate_initializations;
         $call_context->initialized_methods = $this_context->initialized_methods;
