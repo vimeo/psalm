@@ -2429,6 +2429,20 @@ final class ArgumentAnalyzer
             $removed_taints,
         );
 
+        if ($taint_flow_graph && $method_id && $function_storage) {
+            self::addInheritedParamSinks(
+                $codebase,
+                $taint_flow_graph,
+                $method_id,
+                $function_storage,
+                $function_param,
+                $argument_offset,
+                $cased_method_id,
+                $arg_location,
+                $argument_value_node,
+            );
+        }
+
         if ($taint_flow_graph) {
             foreach ($dispatch_routes as [$dispatch_node, $element_type]) {
                 if ($element_type === null) {
@@ -2465,6 +2479,80 @@ final class ArgumentAnalyzer
             $taint_source = $argument_value_node->setTaints($taints);
             $taint_flow_graph->addSource($taint_source);
         }
+    }
+
+    /**
+     * The sinks of the parameters of the methods $method_id implements or overrides, through the ones that don't say
+     * it themselves, on a node of this call: the node of the parameter is also where the calls of the methods it
+     * overrides go, which their own sinks report already
+     */
+    private static function addInheritedParamSinks(
+        Codebase $codebase,
+        TaintFlowGraph $taint_flow_graph,
+        MethodIdentifier $method_id,
+        FunctionLikeStorage $function_storage,
+        FunctionLikeParameter $function_param,
+        int $argument_offset,
+        string $cased_method_id,
+        CodeLocation $arg_location,
+        DataFlowNode $argument_value_node,
+    ): void {
+        $inherited_sinks = self::getInheritedParamSinks(
+            $codebase,
+            $method_id,
+            DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset),
+            [],
+        ) & ~$function_param->sinks;
+
+        if ($inherited_sinks === 0) {
+            return;
+        }
+
+        $inherited_sink = DataFlowNode::getForTaint(
+            $cased_method_id . '#' . ($argument_offset + 1),
+            $arg_location,
+            $inherited_sinks,
+        );
+        $taint_flow_graph->addSink($inherited_sink);
+        $taint_flow_graph->addPath($argument_value_node, $inherited_sink, 'arg');
+    }
+
+    /**
+     * The sinks of the parameter at $offset of the methods $method_id implements or overrides
+     * (`@psalm-taint-sink`), through the ones that don't say it themselves
+     *
+     * @param array<string, true> $visited
+     * @psalm-capabilities read-props
+     */
+    private static function getInheritedParamSinks(
+        Codebase $codebase,
+        MethodIdentifier $method_id,
+        int $offset,
+        array $visited,
+    ): int {
+        $visited[(string) $method_id] = true;
+
+        if (!$codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
+            return 0;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+        $sinks = 0;
+
+        foreach ($class_storage->overridden_method_ids[$method_id->method_name] ?? [] as $overridden_method_id) {
+            if (isset($visited[(string) $overridden_method_id])
+                || !$codebase->methods->hasStorage($overridden_method_id)
+            ) {
+                continue;
+            }
+
+            $overridden_param = $codebase->methods->getStorage($overridden_method_id)->params[$offset] ?? null;
+            $sinks |= $overridden_param !== null && $overridden_param->sinks !== 0
+                ? $overridden_param->sinks
+                : self::getInheritedParamSinks($codebase, $overridden_method_id, $offset, $visited);
+        }
+
+        return $sinks;
     }
 
     /**

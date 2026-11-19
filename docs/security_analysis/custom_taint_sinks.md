@@ -19,6 +19,24 @@ class PDOWrapper {
 }
 ```
 
+A parameter of a method implementing or overriding one with a sink is a sink too:
+
+```php
+<?php
+interface Runner {
+    /** @psalm-taint-sink shell $command */
+    public function run(string $command): void;
+}
+
+final class LocalRunner implements Runner {
+    public function run(string $command): void {}
+}
+
+function deploy(LocalRunner $runner): void {
+    $runner->run((string) $_GET["command"]); // TaintedShell
+}
+```
+
 ### Values of an array
 
 Append `[*]` to the parameter name to make only the values of the array given to the parameter a sink, not its keys:
