@@ -1162,6 +1162,8 @@ final class Context
 
     /**
      * @param  Clause[]               $clauses
+     * @param  bool                   $value_changed false when the variable is only narrowed: the comparisons with
+     *                                               it still hold
      * @return list<Clause>
      */
     public static function filterClauses(
@@ -1169,6 +1171,7 @@ final class Context
         array $clauses,
         ?Union $new_type = null,
         ?StatementsAnalyzer $statements_analyzer = null,
+        bool $value_changed = true,
     ): array {
         $new_type_string = $new_type ? $new_type->getId() : '';
         $clauses_to_keep = [];
@@ -1184,7 +1187,7 @@ final class Context
                 }
             }
 
-            if ($clause->comparesWith($remove_var_id)) {
+            if ($value_changed && $clause->comparesWith($remove_var_id)) {
                 continue;
             }
 

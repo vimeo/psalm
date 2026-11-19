@@ -654,7 +654,13 @@ final class AssignmentAnalyzer
                 $assign_value_type = $assign_value_type->setByRef(true);
             }
 
-            // removes dependent vars from $context
+            // what depended on the variable, or on a variable bound to it, no longer holds
+            foreach ($context->getVarsBoundTo($extended_var_id) as $bound_var_id) {
+                if (isset($context->vars_in_scope[$bound_var_id])) {
+                    $context->removeDescendents($bound_var_id, $context->vars_in_scope[$bound_var_id]);
+                }
+            }
+
             $context->removeDescendents(
                 $extended_var_id,
                 $context->vars_in_scope[$extended_var_id],

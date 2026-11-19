@@ -1659,6 +1659,84 @@ final class ArrayAccessTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'offsetIsUnknownAfterABranchChangingWhatItDependsOn' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $a */
+                    function keyChanged(array $a, string $k, bool $c): void {
+                        if (is_int($a[$k])) {
+                            if ($c) {
+                                $k = "zz";
+                            }
+                            $t = $a[$k];
+                            /** @psalm-check-type-exact $t = mixed */
+                        }
+                    }
+
+                    /** @param array<string, mixed> $a */
+                    function arrayReassigned(array $a, string $k, bool $c): void {
+                        if (is_int($a[$k])) {
+                            if ($c) {
+                                $a = ["other" => "s"];
+                            }
+                            $t = $a[$k];
+                            /** @psalm-check-type-exact $t = mixed */
+                        }
+                    }
+
+                    /** @param array<string, int|string> $a */
+                    function offsetUnset(array $a, string $k, bool $c): void {
+                        if (!is_int($a[$k])) {
+                            return;
+                        }
+                        if ($c) {
+                            unset($a[$k]);
+                        }
+                        $t = $a[$k];
+                        /** @psalm-check-type-exact $t = int|string */
+                    }
+
+                    final class O {
+                        public ?int $p = null;
+                    }
+
+                    function objectReassigned(O $o, bool $c): void {
+                        if ($o->p !== null) {
+                            if ($c) {
+                                $o = new O();
+                            }
+                            $t = $o->p;
+                            /** @psalm-check-type-exact $t = int|null */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'PossiblyUndefinedArrayOffset'],
+                'php_version' => '8.0',
+            ],
+            'propertyIsKeptAfterABranchOnlyNarrowingItsObject' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function bar(): void {}
+                    }
+
+                    class S {
+                        public ?Foo $r = null;
+                    }
+
+                    final class M extends S {
+                        public bool $h = false;
+                    }
+
+                    function f(S $s): void {
+                        $s->r = new Foo();
+                        if ($s instanceof M) {
+                            $s->h = true;
+                        }
+                        $s->r->bar();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'offsetWithAVariableKeyIsUnknownAfterABranchReassigningItsArray' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $config */

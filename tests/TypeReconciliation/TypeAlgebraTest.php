@@ -282,12 +282,27 @@ final class TypeAlgebraTest extends TestCase
             ],
             'comparisonWithAnUnchangedValueIsKept' => [
                 'code' => '<?php
+                    final class A {
+                        public function m(): void {}
+                    }
+
                     function f(string $x, string $y, ?int $b): void {
                         if ($x === $y || $b !== null) {
                             $z = 1;
                             if ($x !== $y) {
                                 /** @psalm-check-type-exact $b = int */
                                 echo $z;
+                            }
+                        }
+                    }
+
+                    /** @param A $p */
+                    function narrowedByACall(A $o, $p, ?int $b): void {
+                        if ($o === $p || $b !== null) {
+                            $p->m();
+                            if ($o !== $p) {
+                                /** @psalm-check-type-exact $b = int */
+                                echo 1;
                             }
                         }
                     }',

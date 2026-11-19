@@ -87,6 +87,8 @@ final class IfElseAnalyzer
 
         $if_scope = new IfScope();
 
+        $parent_remove_vars_before_if = $context->parent_remove_vars;
+
         // We need to clone the original context for later use if we're exiting in this if conditional
         if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp
             || ($stmt->cond instanceof PhpParser\Node\Expr\BooleanNot
@@ -537,18 +539,18 @@ final class IfElseAnalyzer
         }
 
         // an offset or a property is known after the if as the branches reaching its end leave it: not at all once
-        // one of them forgot it (not unset it) or forgot the type Context::update() left, and as they all leave it
-        // when the redefinition of its variable dropped it
+        // one of them forgot it or the type Context::update() left, and as they all leave it when the redefinition of
+        // its variable dropped it
         foreach ($vars_before_redefinitions + $context->vars_in_scope as $var_id => $_) {
-            if (!$if_scope->end_contexts || (!str_contains($var_id, '[') && !str_contains($var_id, '->'))) {
+            if (!str_contains($var_id, '[') && !str_contains($var_id, '->')) {
                 continue;
             }
 
-            $end_type = null;
+            $end_types = [];
 
             foreach ($if_scope->end_contexts as $end_context) {
                 if (!isset($end_context->vars_in_scope[$var_id])) {
-                    if (isset($end_context->vars_possibly_in_scope[$var_id])
+                    if (self::isForgottenIn($end_context, $var_id, $parent_remove_vars_before_if)
                         || (isset($if_scope->updated_vars[$var_id]) && isset($if_context->vars_in_scope[$var_id]))
                     ) {
                         unset($context->vars_in_scope[$var_id]);
@@ -557,11 +559,11 @@ final class IfElseAnalyzer
                     continue 2;
                 }
 
-                $end_type = Type::combineUnionTypes($end_context->vars_in_scope[$var_id], $end_type, $codebase);
+                $end_types[] = $end_context->vars_in_scope[$var_id];
             }
 
-            if (!isset($context->vars_in_scope[$var_id])) {
-                $context->vars_in_scope[$var_id] = $end_type;
+            if ($end_types && !isset($context->vars_in_scope[$var_id])) {
+                $context->vars_in_scope[$var_id] = Type::combineUnionTypeArray($end_types, $codebase);
             }
         }
 
@@ -570,6 +572,29 @@ final class IfElseAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Whether a branch that no longer has the variable forgot it since the stamps $parent_remove_vars were taken: it
+     * changed something the variable depends on (its variable, a key), or forgot it after a call. A variable it unset
+     * is not forgotten, nor one it only narrowed the variable of
+     *
+     * @param array<string, int> $parent_remove_vars
+     * @psalm-mutation-free
+     */
+    private static function isForgottenIn(Context $branch_context, string $var_id, array $parent_remove_vars): bool
+    {
+        foreach ($branch_context->parent_remove_vars as $changed_var_id => $stamp) {
+            if ($stamp !== ($parent_remove_vars[$changed_var_id] ?? null)
+                && ($changed_var_id === $var_id
+                    ? isset($branch_context->vars_possibly_in_scope[$var_id])
+                    : preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id) === 1)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
