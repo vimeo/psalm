@@ -19,11 +19,13 @@ use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\GuardedClasses;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Clause;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\Scope\IfConditionalScope;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
@@ -38,6 +40,7 @@ use function array_unique;
 use function count;
 use function in_array;
 use function str_contains;
+use function strpbrk;
 use function substr;
 
 /**
@@ -76,6 +79,8 @@ final class IfElseAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         $if_scope = new IfScope();
+
+        $pre_if_vars = $context->vars_in_scope;
 
         // We need to clone the original context for later use if we're exiting in this if conditional
         if ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp
@@ -454,11 +459,71 @@ final class IfElseAnalyzer
             }
         }
 
+        if (!$stmt->else && !$stmt->elseifs) {
+            self::addConditionallyDefinedVarClauses($context, $if_scope, $pre_if_vars);
+        }
+
         if (!in_array(ScopeAnalyzer::ACTION_NONE, $if_scope->final_actions, true)) {
             $context->has_returned = true;
         }
 
         return null;
+    }
+
+    /**
+     * A variable only the if assigns is defined whenever its condition held: `!cond || defined($x)`, added as one
+     * clause per clause of the negated condition, so that the same condition checked again defines it.
+     *
+     * @param array<string, Union> $pre_if_vars
+     */
+    private static function addConditionallyDefinedVarClauses(
+        Context $context,
+        IfScope $if_scope,
+        array $pre_if_vars,
+    ): void {
+        if (!$if_scope->negated_clauses) {
+            return;
+        }
+
+        foreach ($if_scope->negated_clauses as $negated_clause) {
+            if ($negated_clause->wedge || !$negated_clause->reconcilable) {
+                return;
+            }
+        }
+
+        $defined = new ArrayKeyExists();
+        $new_clauses = [];
+
+        foreach ($context->vars_in_scope as $var_id => $type) {
+            if (isset($pre_if_vars[$var_id])
+                || !$type->possibly_undefined
+                || $type->possibly_undefined_from_try
+                || strpbrk($var_id, '[-:') !== false
+            ) {
+                continue;
+            }
+
+            foreach ($if_scope->negated_clauses as $negated_clause) {
+                if (isset($negated_clause->possibilities[$var_id])) {
+                    continue 2;
+                }
+            }
+
+            foreach ($if_scope->negated_clauses as $negated_clause) {
+                $possibilities = $negated_clause->possibilities;
+                $possibilities[$var_id] = [(string) $defined => $defined];
+
+                $new_clauses[] = new Clause(
+                    $possibilities,
+                    $negated_clause->creating_conditional_id,
+                    $negated_clause->creating_object_id,
+                );
+            }
+        }
+
+        if ($new_clauses) {
+            $context->clauses = Algebra::simplifyCNF([...$context->clauses, ...$new_clauses]);
+        }
     }
 
     /**

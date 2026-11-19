@@ -196,6 +196,56 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'varAssignedUnderConditionIsDefinedUnderTheSameCondition' => [
+                'code' => '<?php
+                    function f(bool $b): void {
+                        if ($b) {
+                            $x = 1;
+                        }
+                        if ($b) {
+                            echo $x;
+                        }
+                    }',
+            ],
+            'varAssignedUnderNotNullIsDefinedUnderTheSameCheck' => [
+                'code' => '<?php
+                    interface Span {
+                        public function child(): Span;
+                        public function finish(): void;
+                    }
+
+                    function process(?Span $parent): void {
+                        if ($parent !== null) {
+                            $span = $parent->child();
+                        }
+                        if ($parent !== null) {
+                            $span->finish();
+                        }
+                    }',
+            ],
+            'varAssignedUnderConjunctionIsDefinedUnderTheSameConjunction' => [
+                'code' => '<?php
+                    function f(bool $b, bool $c): void {
+                        if ($b && $c) {
+                            $x = 1;
+                        }
+                        if ($b && $c) {
+                            echo $x;
+                        }
+                    }',
+            ],
+            'varAssignedUnderNegatedConditionIsDefinedAfterLeavingOtherwise' => [
+                'code' => '<?php
+                    function f(bool $b): void {
+                        if (!$b) {
+                            $x = 1;
+                        }
+                        if ($b) {
+                            return;
+                        }
+                        echo $x;
+                    }',
+            ],
             'getClassComparedToAClassStringConstantNarrowsToItsBound' => [
                 'code' => <<<'PHP'
                     <?php
@@ -6709,6 +6759,58 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'varAssignedUnderConditionIsPossiblyUndefinedAfterTheConditionChanges' => [
+                'code' => '<?php
+                    function f(bool $b): void {
+                        if ($b) {
+                            $x = 1;
+                        }
+                        $b = !$b;
+                        if ($b) {
+                            echo $x;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varAssignedUnderConditionIsPossiblyUndefinedUnderAnotherCondition' => [
+                'code' => '<?php
+                    function f(bool $b, bool $c): void {
+                        if ($b) {
+                            $x = 1;
+                        }
+                        if ($c) {
+                            echo $x;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varAssignedUnderConjunctionIsPossiblyUndefinedUnderOneOperand' => [
+                'code' => '<?php
+                    function f(bool $b, bool $c): void {
+                        if ($b && $c) {
+                            $x = 1;
+                        }
+                        if ($b) {
+                            echo $x;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varAssignedUnderConditionIsPossiblyUndefinedAfterUnset' => [
+                'code' => '<?php
+                    function f(bool $b): void {
+                        if ($b) {
+                            $x = 1;
+                        }
+                        if ($b) {
+                            unset($x);
+                        }
+                        if ($b) {
+                            echo $x;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'gettypeNotIdenticalToTheOnlyPossibleType' => [
                 'code' => '<?php
                     function f(int $x): void {
