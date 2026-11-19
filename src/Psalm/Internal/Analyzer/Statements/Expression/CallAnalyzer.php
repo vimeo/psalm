@@ -44,6 +44,9 @@ use Psalm\Node\VirtualName;
 use Psalm\StatementsSource;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsIdentical;
+use Psalm\Storage\Assertion\IsLooselyEqual;
+use Psalm\Storage\Assertion\IsNotIdentical;
+use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\ClassLikeStorage;
@@ -1098,7 +1101,26 @@ abstract class CallAnalyzer
                                     continue;
                                 }
 
-                                $assertion_rule = $assertion_rule->setAtomicType($atomic_type);
+                                if ($assertion_type_atomic instanceof TTemplateParam
+                                    && ($assertion_rule instanceof IsIdentical
+                                        || $assertion_rule instanceof IsNotIdentical
+                                        || $assertion_rule instanceof IsLooselyEqual
+                                        || $assertion_rule instanceof IsNotLooselyEqual)
+                                ) {
+                                    // the template stands for the value of an argument, the one compared with
+                                    $assertion_rule = new ($assertion_rule::class)(
+                                        $atomic_type,
+                                        AssertionFinder::getComparand(
+                                            $atomic_type,
+                                            '*' . (int) $expr->getAttribute('startFilePos')
+                                                . ':' . (int) $expr->getAttribute('endFilePos')
+                                                . ':' . $assertion_type_atomic->param_name,
+                                        ),
+                                    );
+                                } else {
+                                    $assertion_rule = $assertion_rule->setAtomicType($atomic_type);
+                                }
+
                                 $orred_rules[] = $assertion_rule;
                             }
                         } elseif ($assertion_rule instanceof IsType) {

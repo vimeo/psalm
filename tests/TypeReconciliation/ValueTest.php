@@ -1584,20 +1584,56 @@ final class ValueTest extends TestCase
                     '$c1===' => 'callable[impure]|null',
                 ],
             ],
+            'notIdenticalTemplatedAssertionKeepsWiderTypes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T
+                     * @param T $expected
+                     * @param mixed $actual
+                     * @psalm-assert !=T $actual
+                     */
+                    function assertNotSameValue($expected, $actual): void {}
+                    /** @return array-key */
+                    function k() { return 1; }
+                    function s(): string { return ""; }
+                    function c(): callable { return "strlen"; }
+
+                    $s = s();
+                    $k = k();
+                    $c1 = c();
+                    $c2 = c();
+
+                    assertNotSameValue($s, $k);
+                    assertNotSameValue($c2, $c1);
+                    PHP,
+                'assertions' => [
+                    '$k===' => 'array-key',
+                    '$c1===' => 'callable[impure]',
+                ],
+            ],
             'offsetOfPropertyIsNotOfIntOrBool' => [
                 'code' => <<<'PHP'
                     <?php
                     final class A {
                         /** @var scalar */
                         public $v = 1;
+                        /** @var numeric */
+                        public $n = 1;
+                        /** @var array-key */
+                        public $k = 1;
                     }
                     function a(): A { return new A(); }
 
                     $a = a();
                     $r = isset($a->v[0]) ? $a->v : null;
+                    $rn = isset($a->n[0]) ? $a->n : null;
+                    $rk = isset($a->k[0]) ? $a->k : null;
                     PHP,
                 'assertions' => [
                     '$r===' => 'null|string',
+                    '$rn===' => 'null|string',
+                    '$rk===' => 'null|string',
                 ],
                 'ignored_issues' => ['InvalidArrayAccess'],
             ],
