@@ -830,10 +830,11 @@ final class MethodCallReturnTypeFetcher
             $codebase->getInputTaints(),
         );
 
-        // a method implementing or overriding a source is one too, unless it says what it returns itself
+        // a method implementing or overriding a source is one too, unless it says what it returns itself: a source
+        // replaces the one of the node taintUsingStorage() added, so it adds the taints of the method too
         if ($method_storage->taint_source_types === 0) {
             $inherited_taints = self::getInheritedTaintSources($codebase, $method_id, []);
-            $taints = $inherited_taints
+            $taints = ($inherited_taints === 0 ? 0 : $inherited_taints | $method_storage->added_taints)
                 & ~$method_storage->removed_taints
                 & ~($method_storage->signature_return_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0);
 

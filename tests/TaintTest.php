@@ -6549,6 +6549,63 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'methodImplementingASourceKeepsWhatItAdds' => [
+                'code' => '<?php
+                    interface Input {
+                        /** @psalm-taint-source sql */
+                        public function get(): string;
+                    }
+
+                    final class QueryInput implements Input {
+                        /** @psalm-taint-unescape html */
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    function show(QueryInput $input, PDO $pdo): void {
+                        echo $input->get();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'methodAddingTaintsImplementingASourceIsASource' => [
+                'code' => '<?php
+                    interface Input {
+                        /** @psalm-taint-source sql */
+                        public function get(): string;
+                    }
+
+                    final class QueryInput implements Input {
+                        /** @psalm-taint-unescape html */
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    function show(QueryInput $input, PDO $pdo): void {
+                        $pdo->query($input->get());
+                    }',
+                'error_message' => 'TaintedSql',
+            ],
+            'methodImplementingASourceAnalyzedAfterTheCallIsASource' => [
+                'code' => '<?php
+                    function show(QueryInput $input, PDO $pdo): void {
+                        $pdo->query($input->get());
+                    }
+
+                    interface Input {
+                        /** @psalm-taint-source sql */
+                        public function get(): string;
+                    }
+
+                    final class QueryInput implements Input {
+                        /** @psalm-taint-unescape html */
+                        public function get(): string {
+                            return "";
+                        }
+                    }',
+                'error_message' => 'TaintedSql',
+            ],
             'methodOverridingASourceIsASource' => [
                 'code' => '<?php
                     class Input {
