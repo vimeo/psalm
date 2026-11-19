@@ -847,12 +847,23 @@ final class NewAnalyzer extends CallAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
-        } elseif (($type_params = array_values(TemplateDefaults::bindOmitted($storage, [], true, false))) !== []) {
-            $result_atomic_type = new TGenericObject($fq_class_name, $type_params, false, $from_static);
-
+        } elseif ($storage->template_types) {
+            // nothing binds the templates, as with a constructor without parameters
             $statements_analyzer->node_data->setType(
                 $stmt,
-                new Union([$result_atomic_type]),
+                new Union([new TGenericObject(
+                    $fq_class_name,
+                    self::getGenericParamTypes(
+                        $statements_analyzer,
+                        $stmt,
+                        $storage,
+                        new TemplateResult([], []),
+                        $fq_class_name,
+                        null,
+                    ),
+                    false,
+                    $from_static,
+                )]),
             );
         }
 
