@@ -346,7 +346,7 @@ final class Context
     public array $reconciled_expression_clauses = [];
 
     /**
-     * Whether or not to do a deep analysis and collect mutations to this context
+     * @deprecated Has no effect; will be removed in a future version.
      */
     public bool $collect_mutations = false;
 
@@ -549,25 +549,39 @@ final class Context
      */
     public function __clone()
     {
-        if (!$this->references_in_scope) {
-            return;
+        if ($this->references_in_scope) {
+            $this->vars_in_scope = self::copyVarsInScope($this->vars_in_scope);
         }
+    }
 
-        $vars_in_scope = [];
+    /**
+     * A copy of the variables where those bound by reference to each other (references_in_scope, and the offsets of
+     * such variables that Reconciler binds) are still bound to each other, but no longer to the given ones: a copy of
+     * an array keeps the PHP references it holds
+     *
+     * @internal
+     * @param array<string, Union> $vars_in_scope
+     * @return array<string, Union>
+     */
+    public static function copyVarsInScope(array $vars_in_scope): array
+    {
+        $copy = [];
         $slots = [];
 
-        foreach ($this->vars_in_scope as $var_id => $_) {
-            $reference = ReflectionReference::fromArrayElement($this->vars_in_scope, $var_id);
+        foreach ($vars_in_scope as $var_id => $_) {
+            $reference = ReflectionReference::fromArrayElement($vars_in_scope, $var_id);
             $slot_var_id = $reference === null ? $var_id : ($slots[$reference->getId()] ??= $var_id);
 
             if ($slot_var_id === $var_id) {
-                $vars_in_scope[$var_id] = $this->vars_in_scope[$var_id];
+                $copy[$var_id] = $vars_in_scope[$var_id];
             } else {
-                $vars_in_scope[$var_id] = &$vars_in_scope[$slot_var_id];
+                // copied when the first variable of the slot was
+                assert(isset($copy[$slot_var_id]));
+                $copy[$var_id] = &$copy[$slot_var_id];
             }
         }
 
-        $this->vars_in_scope = $vars_in_scope;
+        return $copy;
     }
 
     /**

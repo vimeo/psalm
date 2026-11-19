@@ -50,6 +50,7 @@ use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotIsset;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\IsType;
+use Psalm\Storage\Assertion\MatchesPattern;
 use Psalm\Storage\Assertion\NestedAssertions;
 use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
@@ -155,7 +156,8 @@ class Reconciler
             // To work around the issue, if there are any references, we have to recreate the array and fix the
             // references so they're properly scoped and won't affect the caller. Starting with a new array is
             // required for some unclear reason, just cloning elements of the existing array doesn't work properly.
-            $old_existing_types = $existing_types;
+            // The offsets of the variables bound (see below) are references to each other too.
+            $old_existing_types = Context::copyVarsInScope($existing_types);
             $existing_types = [];
 
             $cloned_referenceds = [];
@@ -498,7 +500,8 @@ class Reconciler
                 // parent nodes, that no taint goes through. One that can't carry some taints the type it is
                 // narrowed from could (e.g. a scalar, nosql) gets nodes those don't go through.
                 $narrowed_taints = $can_carry_taints
-                    ? $taints_to_remove & ~($before_adjustment?->getTaintsToRemove($input_taints) ?? 0)
+                    ? ($taints_to_remove | (self::getTaintsRemovedByPatterns($new_type_parts) & $input_taints))
+                        & ~($before_adjustment?->getTaintsToRemove($input_taints) ?? 0)
                     : TaintKind::ALL;
 
                 if ($parent_nodes !== null
@@ -2111,6 +2114,23 @@ class Reconciler
                                 $properties[$array_key_offset] = $result_type;
                             }
 
+                            // a list that has an offset has all the offsets before it
+                            if ($base_atomic_type->is_list
+                                && !$result_type->possibly_undefined
+                                && !$result_type->isNever()
+                                && ($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
+                                    !== false
+                            ) {
+                                for ($x = 0; $x < $int_array_key_offset; $x++) {
+                                    if (isset($properties[$x]) && $properties[$x]->possibly_undefined) {
+                                        $properties[$x] = $properties[$x]->isNever()
+                                            && $base_atomic_type->fallback_params
+                                            ? $base_atomic_type->fallback_params[1]
+                                            : $properties[$x]->setPossiblyUndefined(false);
+                                    }
+                                }
+                            }
+
                             if ($base_atomic_type->is_list
                             && (($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
                                     === false
@@ -2259,5 +2279,34 @@ class Reconciler
             return $key_type->getBuilder()->setTypes($types)->freeze();
         }
         return null;
+    }
+
+    /**
+     * The taints a value can't carry once it matches the patterns of $new_type_parts (see MatchesPattern): those
+     * of a pattern it must match, or that every alternative of a clause removes
+     *
+     * @param array<array<Assertion>> $new_type_parts
+     * @psalm-pure
+     */
+    private static function getTaintsRemovedByPatterns(array $new_type_parts): int
+    {
+        $removed_taints = 0;
+
+        foreach ($new_type_parts as $alternatives) {
+            $removed_by_alternatives = null;
+
+            foreach ($alternatives as $alternative) {
+                $removed = $alternative instanceof MatchesPattern && !$alternative->negated
+                    ? $alternative->removed_taints
+                    : 0;
+                $removed_by_alternatives = $removed_by_alternatives === null
+                    ? $removed
+                    : $removed_by_alternatives & $removed;
+            }
+
+            $removed_taints |= $removed_by_alternatives ?? 0;
+        }
+
+        return $removed_taints;
     }
 }

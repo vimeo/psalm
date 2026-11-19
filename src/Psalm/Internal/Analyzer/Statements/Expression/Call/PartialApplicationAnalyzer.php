@@ -150,7 +150,6 @@ final class PartialApplicationAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeType($statements_analyzer->getFilePath(), $stmt, $type->getId());
         }
