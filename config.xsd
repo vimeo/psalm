@@ -312,6 +312,7 @@
             <xs:element name="InaccessibleProperty" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="IncompatibleTypeParameters" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InheritorViolation" type="ClassIssueHandlerType" minOccurs="0" />
+            <xs:element name="InsecureCookie" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InterfaceInstantiation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="InternalClass" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="InternalMethod" type="MethodIssueHandlerType" minOccurs="0" />
@@ -440,6 +441,7 @@
             <xs:element name="ParentNotFound" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ParseError" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PluginIssue" type="PluginIssueHandlerType" minOccurs="0" />
+            <xs:element name="PositionalArgumentNotAllowed" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="PossibleRawObjectIteration" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyFalseArgument" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyFalseIterator" type="IssueHandlerType" minOccurs="0" />
@@ -580,6 +582,10 @@
             <xs:element name="UnusedPsalmSuppress" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedReturnValue" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="UnusedVariable" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="WeakCipher" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="WeakHash" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="WeakRandom" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="XmlExternalEntity" type="IssueHandlerType" minOccurs="0" />
         </xs:choice>
         <xs:anyAttribute processContents="skip" />
     </xs:complexType>

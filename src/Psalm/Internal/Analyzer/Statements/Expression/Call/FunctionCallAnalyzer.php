@@ -115,7 +115,6 @@ use function strpos;
 use function strtolower;
 
 use const SORT_FLAG_CASE;
-use const SORT_LOCALE_STRING;
 use const SORT_NATURAL;
 use const SORT_REGULAR;
 use const SORT_STRING;
@@ -164,6 +163,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         'asort' => SORT_REGULAR,
         'arsort' => SORT_REGULAR,
     ];
+
+    /**
+     * The value of `SORT_LOCALE_STRING`, which is deprecated since PHP 8.6: reading it would emit a deprecation.
+     */
+    private const SORT_LOCALE_STRING = 5;
 
     /**
      * @psalm-suppress ComplexMethod
@@ -338,7 +342,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 $function_call_info->function_params,
                 $function_call_info->function_id,
-                $function_call_info->allow_named_args,
                 $context,
                 $template_result,
             );
@@ -559,7 +562,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
             && ($stmt_type = $statements_analyzer->node_data->getType($real_stmt))
         ) {
             $codebase->analyzer->addNodeType(
@@ -613,7 +615,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $function_name,
                     null,
                     self::resolveStaticPropertyAssertionClasses(
-                        self::getAssertionsOnArgs($function_storage->assertions, $function_storage, $stmt->getArgs()),
+                        self::getAssertionsOnArgs(
+                            $function_storage->assertions,
+                            $function_storage,
+                            $stmt->getArgs(),
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
+                        ),
                         $codebase,
                         $context,
                         null,
@@ -636,6 +644,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $function_storage->if_true_assertions,
                             $function_storage,
                             $stmt->getArgs(),
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
                         ),
                     ),
                 );
@@ -651,6 +661,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $function_storage->if_false_assertions,
                             $function_storage,
                             $stmt->getArgs(),
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
                         ),
                     ),
                 );
@@ -910,7 +922,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             && !$stmt->isFirstClassCallable()
             && $codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             ArgumentMapPopulator::recordArgumentPositions(
                 $statements_analyzer,
@@ -949,7 +960,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                         $args,
                         null,
                         null,
-                        true,
                         $context,
                     );
                 }
@@ -980,7 +990,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         if ($dynamic_function_storage) {
             $function_call_info->function_storage = $dynamic_function_storage;
             $function_call_info->function_params = $dynamic_function_storage->params;
-            $function_call_info->allow_named_args = $dynamic_function_storage->allow_named_arg_calls;
             $function_call_info->defined_constants = $dynamic_function_storage->defined_constants;
         } elseif (!$function_call_info->in_call_map || $function_call_info->is_stubbed) {
             try {
@@ -990,10 +999,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 );
 
                 $function_call_info->function_params = $function_call_info->function_storage->params;
-
-                if (!$function_storage->allow_named_arg_calls) {
-                    $function_call_info->allow_named_args = false;
-                }
 
                 if (!$is_predefined) {
                     $function_call_info->defined_constants = $function_storage->defined_constants;
@@ -1026,7 +1031,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
@@ -1990,7 +1994,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     && $context->vars_in_scope[$var_id]->hasMixed()
                 ) {
                     if (!$context->collect_initializations
-                        && !$context->collect_mutations
                         && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                         && (!(($parent_source = $statements_analyzer->getSource())
                                     instanceof FunctionLikeAnalyzer)
@@ -2164,7 +2167,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
 
             if ($flags !== SORT_STRING
-                && $flags !== SORT_LOCALE_STRING
+                && $flags !== self::SORT_LOCALE_STRING
                 && $flags !== SORT_NATURAL
                 && $flags !== SORT_REGULAR
             ) {
@@ -2285,7 +2288,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         $config = $codebase->config;
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && ($context->isExternalMutationFree()
                 || $codebase->find_unused_variables
                 || !$config->remember_property_assignments_after_call
