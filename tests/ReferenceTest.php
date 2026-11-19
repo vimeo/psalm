@@ -332,22 +332,6 @@ final class ReferenceTest extends TestCase
                         preg_match("/x/", "x", $o[0]);
                     }',
             ],
-            'itemOfAMixinArrayObjectPassedByReference' => [
-                'code' => '<?php
-                    /** @mixin ArrayObject<int, list<int>> */
-                    final class Lists {
-                        public function __call(string $name, array $args): mixed {
-                            return [];
-                        }
-                    }
-
-                    function sortFirst(Lists $o): bool {
-                        return sort($o[0]);
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
             'itemOfAnArrayObjectOfNeverPassedByReference' => [
                 'code' => '<?php
                     /** @param ArrayObject<int, never> $o */
@@ -361,21 +345,6 @@ final class ReferenceTest extends TestCase
                      * @template T
                      * @mixin ArrayObject<int, T>
                      */
-                    final class Lists {
-                        public function __call(string $name, array $args): mixed {
-                            return null;
-                        }
-                    }
-
-                    /** @param Lists<list<int>> $o */
-                    function sortFirst(Lists $o): void {
-                        sort($o[0]);
-                    }
-
-                    /**
-                     * @template T
-                     * @mixin ArrayObject<int, T>
-                     */
                     abstract class Wrapper {
                         public function __call(string $name, array $args): mixed {
                             return [];
@@ -385,27 +354,6 @@ final class ReferenceTest extends TestCase
                     /** @param Wrapper<list<int>>&ArrayAccess<int, mixed> $w */
                     function sortWrapped(Wrapper $w): void {
                         sort($w[0]);
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'itemOfAnObjectWithAPseudoOffsetSetPassedByReference' => [
-                'code' => '<?php
-                    /** @method void offsetSet(int $key, list<int> $value) */
-                    final class Box {
-                        /** @return list<int> */
-                        public function offsetGet(int $key): array {
-                            return [];
-                        }
-
-                        public function __call(string $name, array $args): mixed {
-                            return null;
-                        }
-                    }
-
-                    function sortFirst(Box $b): void {
-                        sort($b[0]);
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -2063,6 +2011,63 @@ final class ReferenceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'itemOfAMixinArrayObjectPassedByReference' => [
+                'code' => '<?php
+                    /** @mixin ArrayObject<int, list<int>> */
+                    final class Lists {
+                        public function __call(string $name, array $args): mixed {
+                            return [];
+                        }
+                    }
+
+                    function sortFirst(Lists $o): bool {
+                        return sort($o[0]);
+                    }',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:37 - Cannot access array value on non-array variable $o of type Lists',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfATemplatedMixinArrayObjectPassedByReference' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @mixin ArrayObject<int, T>
+                     */
+                    final class Lists {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    /** @param Lists<list<int>> $o */
+                    function sortFirst(Lists $o): void {
+                        sort($o[0]);
+                    }',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:30 - Cannot access array value on non-array variable $o of type Lists',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfAnObjectWithAPseudoOffsetSetPassedByReference' => [
+                'code' => '<?php
+                    /** @method void offsetSet(int $key, list<int> $value) */
+                    final class Box {
+                        /** @return list<int> */
+                        public function offsetGet(int $key): array {
+                            return [];
+                        }
+
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    function sortFirst(Box $b): void {
+                        sort($b[0]);
+                    }',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:30 - Cannot access array value on non-array variable $b of type Box',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'referenceBoundInConditionIsNullWhereTheConditionIsFalse' => [
                 'code' => '<?php
                     /** @param array<string, list<int>|null> $arr */
