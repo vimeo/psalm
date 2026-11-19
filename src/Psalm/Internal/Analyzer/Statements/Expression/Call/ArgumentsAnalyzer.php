@@ -10,6 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\AttributesAnalyzer;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
@@ -38,7 +39,6 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
-use Psalm\Internal\TypeVisitor\ClosureByRefUsesCollector;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\InvalidPassByReference;
@@ -144,12 +144,17 @@ final class ArgumentsAnalyzer
         // the callee may call a closure it is given, also inside an array or an object, which may write what the
         // closure captured by reference
         foreach ($args as $arg) {
-            $type = $statements_analyzer->node_data->getType($arg->value);
+            $written_var_ids = ClosureAnalyzer::analyzeVarIdsWrittenByCall(
+                $statements_analyzer,
+                $context,
+                $arg->value,
+                true,
+            );
 
-            foreach (ClosureByRefUsesCollector::collect($type) as $use_var_id) {
+            foreach ($written_var_ids as $var_id => $_) {
                 $context->removeVarFromConflictingClauses(
-                    $use_var_id,
-                    $context->vars_in_scope[$use_var_id] ?? null,
+                    $var_id,
+                    $context->vars_in_scope[$var_id] ?? null,
                     $statements_analyzer,
                 );
             }

@@ -16,7 +16,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Provider\NodeDataProvider;
-use Psalm\Internal\TypeVisitor\ClosureByRefUsesCollector;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\BinaryOp\VirtualEqual;
@@ -1320,14 +1319,19 @@ final class FormulaGenerator
                     $this->targets[] = $node->value;
                 }
 
-                if ($node instanceof PhpParser\Node\Arg
-                    || ($node instanceof PhpParser\Node\Expr\FuncCall
-                        && $node->name instanceof PhpParser\Node\Expr)
-                ) {
-                    $callable = $node instanceof PhpParser\Node\Arg ? $node->value : $node->name;
+                $callable = null;
 
-                    foreach (ClosureByRefUsesCollector::collect($this->node_data?->getType($callable)) as $use_var_id) {
-                        $this->targets[] = $use_var_id;
+                if ($node instanceof PhpParser\Node\Arg) {
+                    $callable = $node->value;
+                } elseif ($node instanceof PhpParser\Node\Expr\FuncCall
+                    && $node->name instanceof PhpParser\Node\Expr
+                ) {
+                    $callable = $node->name;
+                }
+
+                if ($callable !== null) {
+                    foreach ($this->node_data?->getVarIdsWrittenByCall($callable) ?? [] as $var_id => $_) {
+                        $this->targets[] = $var_id;
                     }
                 }
 

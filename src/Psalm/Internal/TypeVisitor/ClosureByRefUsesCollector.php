@@ -9,18 +9,16 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\TypeNode;
 use Psalm\Type\TypeVisitor;
 
-use function array_keys;
-
 /**
- * Collects the variables captured by reference by the closures a value is, or contains, like the elements of an
+ * Collects the closures capturing variables by reference that a value is, or contains, like the elements of an
  * array or what a closure returns.
  *
  * @internal
  */
 final class ClosureByRefUsesCollector extends TypeVisitor
 {
-    /** @var array<string, true> */
-    private array $var_ids = [];
+    /** @var list<TClosure> */
+    private array $closures = [];
 
     /**
      * @psalm-external-mutation-free
@@ -28,10 +26,8 @@ final class ClosureByRefUsesCollector extends TypeVisitor
     #[Override]
     protected function enterNode(TypeNode $type): ?int
     {
-        if ($type instanceof TClosure) {
-            foreach ($type->byref_uses as $use_name => $_) {
-                $this->var_ids['$' . $use_name] = true;
-            }
+        if ($type instanceof TClosure && $type->byref_uses) {
+            $this->closures[] = $type;
         }
 
         return null;
@@ -39,7 +35,7 @@ final class ClosureByRefUsesCollector extends TypeVisitor
 
     /**
      * @psalm-pure
-     * @return list<string>
+     * @return list<TClosure>
      */
     public static function collect(?TypeNode $type): array
     {
@@ -50,6 +46,6 @@ final class ClosureByRefUsesCollector extends TypeVisitor
         $collector = new self();
         $collector->traverse($type);
 
-        return array_keys($collector->var_ids);
+        return $collector->closures;
     }
 }
