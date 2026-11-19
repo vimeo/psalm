@@ -796,6 +796,56 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'propertyOfThisIsNarrowedAgainWithThisAfterAnIfOnlyNarrowingThis' => [
+                'code' => '<?php
+                    final class A {
+                        public array $uses = [];
+                    }
+
+                    final class B {
+                        public array $params = [];
+                    }
+
+                    final class C {
+                        public string $name = "";
+                    }
+
+                    /** @template-covariant T as A|B|C */
+                    abstract class Analyzer {
+                        /** @param T $function */
+                        public function __construct(protected A|B|C $function) {}
+
+                        /** @param list<int> $ids */
+                        public function run(array $ids): void {
+                            if ($this instanceof ClosureAnalyzer && $this->function instanceof A) {
+                                foreach ($this->function->uses as $_) {
+                                    $this->touch();
+                                }
+                            } elseif ($this instanceof ClosureAnalyzer && $this->function instanceof B) {
+                                foreach ($this->function->params as $_) {
+                                    echo 1;
+                                }
+                            }
+
+                            foreach ($ids as $id) {
+                                if ($this instanceof MethodAnalyzer && $id === 1) {
+                                    echo $this->function->name;
+                                }
+                            }
+                        }
+
+                        public function touch(): void {}
+                    }
+
+                    /** @extends Analyzer<A|B> */
+                    final class ClosureAnalyzer extends Analyzer {}
+
+                    /** @extends Analyzer<C> */
+                    final class MethodAnalyzer extends Analyzer {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'declaredPropertyOfAStdClassSubclassKeepsItsTypeAndAnUndeclaredOneStaysDynamic' => [
                 'code' => '<?php
                     final class Item extends stdClass {

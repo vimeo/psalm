@@ -40,6 +40,7 @@ use function in_array;
 use function preg_match;
 use function preg_quote;
 use function str_contains;
+use function str_starts_with;
 use function substr;
 
 /**
@@ -444,7 +445,7 @@ final class IfElseAnalyzer
 
         // an offset or a property is known after the if as the branches reaching its end leave it: not at all once
         // one of them forgot it or the type Context::update() left, and as they all leave it when the redefinition of
-        // its variable dropped it
+        // a variable a branch wrote to dropped it (a variable only narrowed is narrowed again, which forgets it)
         foreach ($vars_before_redefinitions + $context->vars_in_scope as $var_id => $_) {
             if (!str_contains($var_id, '[') && !str_contains($var_id, '->')) {
                 continue;
@@ -466,7 +467,10 @@ final class IfElseAnalyzer
                 $end_types[] = $end_context->vars_in_scope[$var_id];
             }
 
-            if ($end_types && !isset($context->vars_in_scope[$var_id])) {
+            if ($end_types
+                && !isset($context->vars_in_scope[$var_id])
+                && self::isUnderAssignedVar($var_id, $if_scope->possibly_assigned_var_ids)
+            ) {
                 $context->vars_in_scope[$var_id] = Type::combineUnionTypeArray($end_types, $codebase);
             }
         }
@@ -476,6 +480,21 @@ final class IfElseAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * @param array<string, bool> $assigned_var_ids
+     * @psalm-pure
+     */
+    private static function isUnderAssignedVar(string $var_id, array $assigned_var_ids): bool
+    {
+        foreach ($assigned_var_ids as $assigned_var_id => $_) {
+            if (str_starts_with($var_id, $assigned_var_id . '[') || str_starts_with($var_id, $assigned_var_id . '->')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
