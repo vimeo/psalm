@@ -1279,6 +1279,23 @@ final class ReferenceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'referenceToAnOffsetForgottenInABranchStaysBound' => [
+                'code' => '<?php
+                    function f(bool $c, string $k, string $j): int {
+                        $a = [$k => ["links" => []]];
+                        $r = &$a[$k]["links"];
+                        if ($c) {
+                            $k = $j;
+                        }
+                        if ($c) {
+                            return count($r);
+                        }
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assignmentThroughAReferenceForgetsTheOffsetsOfTheReferencedArray' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $a */

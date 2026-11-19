@@ -458,7 +458,8 @@ final class IfElseAnalyzer
                     if (self::isForgottenIn($end_context, $var_id, $parent_remove_vars_before_if)
                         || (isset($if_scope->updated_vars[$var_id]) && isset($if_context->vars_in_scope[$var_id]))
                     ) {
-                        unset($context->vars_in_scope[$var_id]);
+                        // what was bound to it by reference stays bound together
+                        $context->removePossibleReference($var_id);
                     }
 
                     continue 2;
