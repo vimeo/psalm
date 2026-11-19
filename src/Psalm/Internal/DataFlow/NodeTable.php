@@ -8,6 +8,7 @@ use Psalm\CodeLocation;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 
 use function array_flip;
+use function assert;
 use function count;
 use function is_bool;
 use function is_int;
@@ -41,6 +42,10 @@ use function unpack;
  */
 final class NodeTable
 {
+    private const INT32_MIN = -0x8000_0000;
+    private const INT32_MAX = 0x7FFF_FFFF;
+    private const UINT32_MAX = 0xFFFF_FFFF;
+
     private const SPECIALIZED = 1;
     private const LOCATED = 2;
     private const STATEFUL = 4;
@@ -170,13 +175,16 @@ final class NodeTable
             }
 
             $flags |= self::LOCATED;
-            $location = pack(
-                'Vlll',
-                $this->internFile($code_location->file_path, $code_location->file_name),
-                $code_location->raw_file_start,
-                $code_location->raw_file_end,
-                $code_location->raw_line_number,
-            );
+            $file = $this->internFile($code_location->file_path, $code_location->file_name);
+            $start = $code_location->raw_file_start;
+            $end = $code_location->raw_file_end;
+            $line = $code_location->raw_line_number;
+            // a row keeps them in 32 bits: no file analysed has 2 GB
+            assert($file >= 0 && $file <= self::UINT32_MAX);
+            assert($start >= self::INT32_MIN && $start <= self::INT32_MAX);
+            assert($end >= self::INT32_MIN && $end <= self::INT32_MAX);
+            assert($line >= self::INT32_MIN && $line <= self::INT32_MAX);
+            $location = pack('Vlll', $file, $start, $end, $line);
 
             if ($state !== []) {
                 $flags |= self::STATEFUL;
@@ -233,11 +241,12 @@ final class NodeTable
     }
 
     /**
+     * @return int<0, 255>
      * @psalm-pure
      */
     private static function flags(string $row): int
     {
-        /** @var array{1: int} $values */
+        /** @var array{1: int<0, 255>} $values */
         $values = unpack('C', $row);
 
         return $values[1];
@@ -538,16 +547,22 @@ final class NodeTable
         }
 
         $flags = self::flags($row);
-        $imported = pack('CV', $flags, $strings[self::uint32($row, self::LABEL_OFFSET)]);
+        $label = $strings[self::uint32($row, self::LABEL_OFFSET)];
+        assert($label >= 0 && $label <= self::UINT32_MAX);
+        $imported = pack('CV', $flags, $label);
         $rest = self::FILE_OFFSET;
 
         if (($flags & self::LOCATED) !== 0) {
-            $imported .= pack('V', $files[self::uint32($row, self::FILE_OFFSET)])
+            $file = $files[self::uint32($row, self::FILE_OFFSET)];
+            assert($file >= 0 && $file <= self::UINT32_MAX);
+            $imported .= pack('V', $file)
                 . substr($row, self::START_OFFSET, 12);
             $rest = self::STATE_OFFSET;
 
             if (($flags & self::STATEFUL) !== 0) {
-                $imported .= pack('V', $strings[self::uint32($row, self::STATE_OFFSET)]);
+                $state = $strings[self::uint32($row, self::STATE_OFFSET)];
+                assert($state >= 0 && $state <= self::UINT32_MAX);
+                $imported .= pack('V', $state);
                 $rest += 4;
             }
         }

@@ -26,6 +26,7 @@ use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
 use Psalm\Internal\Codebase\NosqlEqualityOperand;
+use Psalm\Internal\Codebase\PackSinks;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -85,6 +86,7 @@ use function is_string;
 use function ksort;
 use function max;
 use function min;
+use function preg_match;
 use function reset;
 use function str_contains;
 use function strtolower;
@@ -1539,6 +1541,15 @@ final class ArgumentsAnalyzer
                 $args,
             );
 
+            if ($in_call_map && strtolower($cased_method_id) === 'pack') {
+                PackSinks::addSinks(
+                    $statements_analyzer,
+                    $statements_analyzer->taint_flow_graph,
+                    $args,
+                    $code_location,
+                );
+            }
+
             foreach ($args as $argument_offset => $_) {
                 if (!isset($arg_function_params[$argument_offset])) {
                     continue;
@@ -1560,6 +1571,7 @@ final class ArgumentsAnalyzer
 
                 foreach ($arg_function_params[$argument_offset] as $param_offset => $function_param) {
                     $sinks = self::getArgumentSinks(
+                        $statements_analyzer,
                         $cased_method_id,
                         $param_offset,
                         $args,
@@ -2887,19 +2899,27 @@ final class ArgumentsAnalyzer
     /**
      * The sinks of the argument passed as the parameter at $param_offset of a call of $function_id. The value given
      * to curl_setopt() is the sink of its option (see CURL_OPTION_SINKS). An option the analysis can't tell may be
-     * any of them.
+     * any of them. A `Location` header given to header() is a redirect (see getLocationHeaderSinks()).
      *
      * @param array<int, PhpParser\Node\Arg> $args
      * @param array<int, FunctionLikeParameter> $function_params
      * @psalm-capabilities read-props
      */
     private static function getArgumentSinks(
+        StatementsAnalyzer $statements_analyzer,
         string $function_id,
         int $param_offset,
         array $args,
         array $function_params,
         int $sinks,
     ): int {
+        if ($param_offset === 0
+            && strtolower($function_id) === 'header'
+            && ($header_arg = self::getArgForParam($args, $function_params, 'header'))
+        ) {
+            return self::getLocationHeaderSinks($statements_analyzer, $header_arg->value) ?? $sinks;
+        }
+
         if ($param_offset !== 2
             || strtolower($function_id) !== 'curl_setopt'
             || !($option_arg = self::getArgForParam($args, $function_params, 'option'))
@@ -2914,6 +2934,39 @@ final class ArgumentsAnalyzer
         }
 
         return self::CURL_OPTION_SINKS[strtoupper($option->name->toString())] ?? 0;
+    }
+
+    /**
+     * The sinks of a header given to header() that the analysis can tell is a `Location` header: its value is where
+     * the client is sent (`redirect` taint), unless it starts with a URL fixing the server (see
+     * ConcatAnalyzer::getTaintsRemovedAfterUrlOrigin()). The name of the header is fixed, and header() rejects a
+     * line break, so it can't add another header. Null if it can be any header.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getLocationHeaderSinks(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $header,
+    ): ?int {
+        $prefixes = ConcatAnalyzer::getLiteralPrefixes($statements_analyzer, $header);
+
+        if ($prefixes === []) {
+            return null;
+        }
+
+        $urls = [];
+
+        foreach ($prefixes as $prefix) {
+            if (preg_match('/^\s*location\s*:\s*(.*)$/is', $prefix, $matches) !== 1) {
+                return null;
+            }
+
+            $urls[] = $matches[1] ?? '';
+        }
+
+        return ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($urls) & TaintKind::INPUT_SSRF
+            ? 0
+            : TaintKind::INPUT_REDIRECT;
     }
 
     /**

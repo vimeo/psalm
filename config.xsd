@@ -511,10 +511,13 @@
             <xs:element name="TaintedHeader" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedHtml" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedInclude" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedIntegerOverflow" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedInput" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedLdap" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedLlmPrompt" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedNosql" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedRedirect" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedSession" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedShell" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedSleep" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedSql" type="IssueHandlerType" minOccurs="0" />

@@ -22,10 +22,13 @@ use Psalm\Issue\TaintedFile;
 use Psalm\Issue\TaintedHeader;
 use Psalm\Issue\TaintedHtml;
 use Psalm\Issue\TaintedInclude;
+use Psalm\Issue\TaintedIntegerOverflow;
 use Psalm\Issue\TaintedLdap;
 use Psalm\Issue\TaintedLlmPrompt;
 use Psalm\Issue\TaintedNosql;
+use Psalm\Issue\TaintedRedirect;
 use Psalm\Issue\TaintedSSRF;
+use Psalm\Issue\TaintedSession;
 use Psalm\Issue\TaintedShell;
 use Psalm\Issue\TaintedSleep;
 use Psalm\Issue\TaintedSql;
@@ -1395,7 +1398,8 @@ final class TaintFlowGraph extends DataFlowGraph
         $max = $codebase->taint_count;
         for ($x = 0; $x < $max; $x++) {
             $t = 1 << $x;
-            if (!($taints & $t)) {
+            // both are reported as a tainted XPath query
+            if (!($taints & $t) || ($t === TaintKind::INPUT_XPATH_LITERAL && ($taints & TaintKind::INPUT_XPATH))) {
                 continue;
             }
             $issue = match ($t) {
@@ -1507,7 +1511,25 @@ final class TaintFlowGraph extends DataFlowGraph
                     $issue_trace,
                     $path,
                 ),
-                TaintKind::INPUT_XPATH => new TaintedXpath(
+                TaintKind::INPUT_REDIRECT => new TaintedRedirect(
+                    'Detected tainted redirect target',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_SESSION => new TaintedSession(
+                    'Detected tainted session data',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_INT_OVERFLOW => new TaintedIntegerOverflow(
+                    'Detected an integer the user chooses packed into a fixed size it can overflow',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_XPATH, TaintKind::INPUT_XPATH_LITERAL => new TaintedXpath(
                     'Detected tainted xpath query',
                     $issue_location,
                     $issue_trace,

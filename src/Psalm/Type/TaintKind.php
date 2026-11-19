@@ -35,8 +35,18 @@ final class TaintKind
     public const INPUT_NOSQL = (1 << 17);
     public const INPUT_URL_COMPONENT = (1 << 18);
     public const INPUT_URL_PATH = (1 << 19);
-    public const USER_SECRET = (1 << 20);
-    public const SYSTEM_SECRET = (1 << 21);
+    public const INPUT_REDIRECT = (1 << 20);
+    public const INPUT_SESSION = (1 << 21);
+    /** What can end a string literal of an XPath query: a quote */
+    public const INPUT_XPATH_LITERAL = (1 << 22);
+    /**
+     * A number parsed from a string (`(int) $string`), whose range the code doesn't bound, which a fixed-size integer
+     * can wrap around. It is added by the cast, not given by the sources: an integer the code computes from user
+     * input (a length, an offset) isn't chosen by the user.
+     */
+    public const INPUT_INT_OVERFLOW = (1 << 23);
+    public const USER_SECRET = (1 << 24);
+    public const SYSTEM_SECRET = (1 << 25);
 
     /**
      * Bitmask of all INPUT_* taint types. Used as the default taint for
@@ -45,10 +55,10 @@ final class TaintKind
      * Excludes USER_SECRET and SYSTEM_SECRET, which represent
      * sensitive data leaking out rather than untrusted data flowing in.
      */
-    public const ALL_INPUT = (1 << 20) - 1;
+    public const ALL_INPUT = ((1 << 24) - 1) & ~self::INPUT_INT_OVERFLOW;
 
     /** @internal */
-    public const NUMERIC_ONLY = self::INPUT_SLEEP;
+    public const NUMERIC_ONLY = self::INPUT_SLEEP | self::INPUT_INT_OVERFLOW;
     /** @internal */
     public const BOOL_ONLY = self::INPUT_SLEEP;
     /**
@@ -65,7 +75,7 @@ final class TaintKind
     public const ALL = -1;
 
     /** @internal Keep this synced with the above */
-    public const BUILTIN_TAINT_COUNT = 22;
+    public const BUILTIN_TAINT_COUNT = 26;
 
 
     // Map of taint kind names to their bitmask values, used in taint annotations
@@ -83,11 +93,17 @@ final class TaintKind
         'ssrf' => self::INPUT_SSRF,
         'url_component' => self::INPUT_URL_COMPONENT,
         'url_path' => self::INPUT_URL_PATH,
+        'redirect' => self::INPUT_REDIRECT,
         'file' => self::INPUT_FILE,
         'cookie' => self::INPUT_COOKIE,
         'header' => self::INPUT_HEADER,
-        'xpath' => self::INPUT_XPATH,
+        'session' => self::INPUT_SESSION,
+        // an XPath query is injected through a value outside a string literal, or one ending it
+        'xpath' => self::INPUT_XPATH | self::INPUT_XPATH_LITERAL,
+        'xpath_query' => self::INPUT_XPATH,
+        'xpath_literal' => self::INPUT_XPATH_LITERAL,
         'sleep' => self::INPUT_SLEEP,
+        'int_overflow' => self::INPUT_INT_OVERFLOW,
         'extract' => self::INPUT_EXTRACT,
         'user_secret' => self::USER_SECRET,
         'system_secret' => self::SYSTEM_SECRET,

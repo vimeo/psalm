@@ -1827,6 +1827,15 @@ trait UnionTrait
             return $input_taints;
         }
 
+        // an integer the code wrote, or bounded to what every fixed size holds (`c` is 8 bits, signed), can't overflow
+        if ($atomic instanceof TLiteralInt
+            || ($atomic instanceof TIntRange
+                && $atomic->min_bound !== null && $atomic->min_bound >= 0
+                && $atomic->max_bound !== null && $atomic->max_bound <= 127)
+        ) {
+            return $input_taints & ~TaintKind::INPUT_SLEEP;
+        }
+
         // numeric types can't be tainted (except sleep & the custom taints not added to `input`), neither can bool
         if ($atomic instanceof TInt || $atomic instanceof TFloat) {
             return $input_taints & ~TaintKind::NUMERIC_ONLY;
@@ -1839,7 +1848,7 @@ trait UnionTrait
         // a plain string can't carry a NoSQL query (only arrays/objects can),
         // so casting user input to string escapes the nosql taint
         if ($atomic instanceof TString) {
-            return TaintKind::ARRAY_ONLY;
+            return TaintKind::ARRAY_ONLY | TaintKind::INPUT_INT_OVERFLOW;
         }
 
         // neither can any other scalar, such as scalar, array-key or numeric

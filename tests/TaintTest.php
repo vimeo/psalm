@@ -1284,6 +1284,33 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'integerOfTheUserInAStringDoesNotOverflow' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return T
+                     * @psalm-impure
+                     */
+                    function keep(mixed $value): mixed {
+                        return $value;
+                    }
+
+                    keep("#" . (int) $_GET["n"]);
+                    echo pack("N", keep(strlen("label")));',
+            ],
+            'integerOfTheUserBoundedByTheCodeDoesNotOverflow' => [
+                'code' => '<?php
+                    function header8(int $ttl): string {
+                        return pack("C", $ttl);
+                    }
+
+                    $ttl = (int) $_GET["ttl"];
+                    if ($ttl < 0 || $ttl > 127) {
+                        exit;
+                    }
+                    echo header8($ttl);',
+            ],
             'untaintedArgumentAfterTheFirstOneAVariadicCollects' => [
                 'code' => '<?php
                     /** @psalm-taint-source input */
@@ -1305,6 +1332,50 @@ final class TaintTest extends TestCase
 
                     v("", "", "safe");
                     v("", "", escaped(tainted()));',
+            ],
+            'boundedIntegerPackedInItsSize' => [
+                'code' => '<?php
+                    function allocate(): string {
+                        $requested = (int) $_GET["size"];
+                        return pack("N", max(0, min($requested, 1048576)) + 1)
+                            . pack("a*", (string) $_GET["name"])
+                            . pack("J", $requested);
+                    }',
+            ],
+            'valueEscapedForXpathByTheCodeInAStringLiteral' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape xpath
+                     */
+                    function xpathLiteral(string $value): string {
+                        return "concat(\'" . str_replace("\'", "\', \"\'\", \'", $value) . "\', \'\')";
+                    }
+
+                    function find(DOMXPath $xpath): void {
+                        $xpath->query("//user[@id=" . xpathLiteral((string) $_GET["id"]) . "]");
+                        $xpath->query("//user[@id=\'" . xpathLiteral((string) $_GET["id"]) . "\']");
+                    }',
+            ],
+            'valueWithoutQuotesInAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 _.%~\-]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@id=\'" . $id . "\']");
+                        $xpath->query(\'//user[@id="\' . $id . \'"]\');
+                    }',
+            ],
+            'valueWithoutQuotesInAnXpathStringLiteralFollowedByAnotherQuote' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 _.%~\-]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@id=\'" . $id . "\"]");
+                    }',
             ],
             'noTaintFromASpecializedPregReplaceCallbackCallbackInItsOtherCalls' => [
                 'code' => '<?php
@@ -1414,6 +1485,26 @@ final class TaintTest extends TestCase
                     $row = new stdClass();
                     $row->name = "guest";
                     echo (string) $row->name;',
+            ],
+            'locationHeaderWithAFixedServerIsNoRedirect' => [
+                'code' => '<?php
+                    header("Location: https://example.com/" . (string) $_GET["page"]);
+                    header("Location: /account?tab=" . (string) $_GET["tab"]);
+                    header("location : /docs/" . (string) $_GET["page"]);',
+            ],
+            'sessionItemWhereTaintedInputIsSuppressed' => [
+                'code' => '<?php
+                    /** @psalm-suppress TaintedInput */
+                    function remember(string $user): void {
+                        $_SESSION["user"] = $user;
+                    }
+
+                    remember((string) $_GET["user"]);',
+            ],
+            'sessionItemOfAValueThatCantBeTainted' => [
+                'code' => '<?php
+                    $_SESSION["page"] = (int) $_GET["page"];
+                    $_SESSION["user"] = "guest";',
             ],
             'coalesceOnAnOffsetKeepsTheTypeOfTheArrayItReads' => [
                 'code' => '<?php
@@ -6531,6 +6622,28 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'integerOfTheUserBoundedToMoreThanASizeHoldsCanOverflow' => [
+                'code' => '<?php
+                    function header8(int $value): string {
+                        return pack("C", $value);
+                    }
+
+                    $port = (int) $_GET["port"];
+                    if ($port < 0 || $port > 65535) {
+                        exit;
+                    }
+                    echo header8($port);',
+                'error_message' => 'TaintedIntegerOverflow',
+            ],
+            'integerOfTheUserBoundedOnOneSideCanOverflow' => [
+                'code' => '<?php
+                    $port = (int) $_GET["port"];
+                    if ($port > 65535) {
+                        exit;
+                    }
+                    echo pack("n", $port);',
+                'error_message' => 'TaintedIntegerOverflow',
+            ],
             'taintOfAnArgumentAfterTheFirstOneReachesAVariadicOverrideCalledThroughTheParentType' => [
                 'code' => '<?php
                     /** @psalm-taint-source input */
@@ -6725,6 +6838,73 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'integerOfTheUserPackedInAFixedSize' => [
+                'code' => '<?php
+                    function wrap(): int {
+                        $requested = (int) trim((string) $_GET["size"]);
+                        return unpack("l", pack("l", $requested + 1))[1];
+                    }',
+                'error_message' => 'TaintedIntegerOverflow',
+            ],
+            'integerOfTheUserPackedAfterAString' => [
+                'code' => '<?php
+                    function fileHeader(): string {
+                        return pack("a4n", "PSLM", (int) $_GET["version"]);
+                    }',
+                'error_message' => 'TaintedIntegerOverflow',
+            ],
+            'valueAssignedWithAQuoteOfItsOwnInAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
+                            return;
+                        }
+                        $condition = "\' or @b=" . $id;
+                        $xpath->query("//user[@a=\'" . $condition . "\']");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'valueAfterAClosedXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@a=\'x\'" . $id . "\']");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'valueBuiltWithQuotesOfItsOwnInAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@a=\'" . ("\' or @b=" . $id) . "\']");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'valueWithSpacesOutsideAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@id=" . $id . "]");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'valueWithQuotesInAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $xpath->query("//user[@id=\'" . (string) $_GET["id"] . "\']");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
             'valueThatMayNotMatchThePatternKeepsItsTaints' => [
                 'code' => '<?php
                     $name = (string) $_GET["name"];
@@ -6831,6 +7011,44 @@ final class TaintTest extends TestCase
                         echo (string) $document->title;
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintedLocationHeader' => [
+                'code' => '<?php
+                    header("Location: " . (string) $_GET["next"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintedLocationHeaderAfterARootSlash' => [
+                'code' => '<?php
+                    // `//evil.example` is another server
+                    header("Location: /" . (string) $_GET["next"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintedRedirectSinkAnnotation' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    redirectTo((string) $_GET["next"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'headerWhoseNameIsTaintedIsNoRedirect' => [
+                'code' => '<?php
+                    header((string) $_GET["header"] . ": /");',
+                'error_message' => 'TaintedHeader',
+            ],
+            'taintedSessionItem' => [
+                'code' => '<?php
+                    $_SESSION["user"] = $_GET["user"];',
+                'error_message' => 'TaintedSession',
+            ],
+            'taintedNestedSessionItem' => [
+                'code' => '<?php
+                    function remember(string $role): void {
+                        $_SESSION["auth"]["role"] = $role;
+                    }
+
+                    remember((string) $_GET["role"]);',
+                'error_message' => 'TaintedSession',
             ],
             'superGlobalPassedByReferenceIsTainted' => [
                 'code' => '<?php // --taint-analysis
