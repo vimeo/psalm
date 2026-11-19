@@ -426,6 +426,8 @@ final class FunctionLikeDocblockScanner
                     continue;
                 }
 
+                $param_storage->declares_sinks = true;
+
                 if ($values_only) {
                     $param_storage->value_sinks |= $taint_sink_param['taint'];
                 } else {
@@ -1565,6 +1567,7 @@ final class FunctionLikeDocblockScanner
             );
 
             if ($conditional !== null) {
+                $storage->params[$sink_offset]->declares_sinks = true;
                 $storage->conditional_taint_sinks[] = ['param' => $sink_offset, 'type' => $conditional];
             }
         }

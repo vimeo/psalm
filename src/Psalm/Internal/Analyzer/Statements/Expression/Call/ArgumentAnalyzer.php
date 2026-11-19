@@ -2497,7 +2497,7 @@ final class ArgumentAnalyzer
         CodeLocation $arg_location,
         DataFlowNode $argument_value_node,
     ): void {
-        if (($function_param->sinks | $function_param->value_sinks) !== 0) {
+        if (self::declaresSinks($function_param)) {
             return;
         }
 
@@ -2543,9 +2543,19 @@ final class ArgumentAnalyzer
     }
 
     /**
+     * Whether the parameter has sinks of its own: `@psalm-taint-sink` names it (`none` included), or the sink map of
+     * the builtin functions gives it some
+     *
+     * @psalm-mutation-free
+     */
+    private static function declaresSinks(FunctionLikeParameter $param): bool
+    {
+        return $param->declares_sinks || ($param->sinks | $param->value_sinks) !== 0;
+    }
+
+    /**
      * The parameters at $offset (see DataFlowNode::getParameterOffset()) of the methods $method_id implements or
-     * overrides that have sinks (`@psalm-taint-sink`, `@psalm-taint-sink <taint-type> $param[*]`), by the lowercase
-     * name of their class
+     * overrides that have sinks of their own (see declaresSinks()), by the lowercase name of their class
      *
      * @param array<string, true> $visited
      * @return array<lowercase-string, FunctionLikeParameter>
@@ -2579,7 +2589,7 @@ final class ArgumentAnalyzer
             // an argument after the first its variadic parameter is given has the offset of its own position
             $overridden_param = $overridden_params[$offset] ?? ($last_param?->is_variadic ? $last_param : null);
 
-            if ($overridden_param !== null && ($overridden_param->sinks | $overridden_param->value_sinks) !== 0) {
+            if ($overridden_param !== null && self::declaresSinks($overridden_param)) {
                 $declarations[strtolower($overridden_method_id->fq_class_name)] = $overridden_param;
             }
 

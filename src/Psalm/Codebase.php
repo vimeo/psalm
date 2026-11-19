@@ -604,6 +604,11 @@ final class Codebase
             return $this->getTaintComplement($taint_type, $location);
         }
 
+        // `@psalm-taint-sink none $param`: a parameter without sinks
+        if ($taint_type === 'none') {
+            return $this->reportTaintRegistrationError('"none" is not a taint: it means no taint', $location);
+        }
+
         // When scanning runs in forked worker processes, register new taints in the parent's single
         // authoritative registry so that every worker resolves a given taint name to the same bit. Workers
         // assign bits from independent counters, so without this two brand-new taints first seen by

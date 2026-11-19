@@ -1813,6 +1813,11 @@ final class Config
                 throw new ConfigException('The custom taint "' . $name . '" has the name of a built-in taint');
             }
 
+            // `@psalm-taint-sink none $param`: a parameter without sinks
+            if ($name === 'none') {
+                throw new ConfigException('A custom taint can\'t be named "none", which means no taint');
+            }
+
             if (isset($this->custom_taints[$name])) {
                 throw new ConfigException('The custom taint "' . $name . '" is declared twice');
             }

@@ -38,6 +38,27 @@ function deploy(LocalRunner $runner): void {
 }
 ```
 
+`@psalm-taint-sink none <param-name>` gives such a parameter no sink. A call through `Runner` is still reported:
+
+```php
+<?php
+interface Runner {
+    /** @psalm-taint-sink shell $command */
+    public function run(string $command): void;
+}
+
+final class EscapingRunner implements Runner {
+    /** @psalm-taint-sink none $command */
+    public function run(string $command): void {
+        exec("run " . escapeshellarg($command));
+    }
+}
+
+function deploy(EscapingRunner $runner): void {
+    $runner->run((string) $_GET["command"]); // no issue
+}
+```
+
 ### Values of an array
 
 Append `[*]` to the parameter name to make only the values of the array given to the parameter a sink, not its keys:

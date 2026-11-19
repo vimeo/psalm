@@ -1506,6 +1506,7 @@ final class FunctionLikeNodeScanner
                 $overridden_param = $overridden_params[$param_storage->name];
                 $param_storage->sinks = $overridden_param->sinks;
                 $param_storage->value_sinks = $overridden_param->value_sinks;
+                $param_storage->declares_sinks = $overridden_param->declares_sinks;
                 $param_storage->assert_untainted = $overridden_param->assert_untainted;
             }
 
