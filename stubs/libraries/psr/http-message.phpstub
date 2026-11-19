@@ -72,9 +72,9 @@ namespace Psr\Http\Message
     interface ServerRequestInterface extends RequestInterface
     {
         /**
-         * @return array
+         * The entries the client sends are sources, as those of $_SERVER (see ServerVariableTaints)
          *
-         * @psalm-taint-source input
+         * @return array
          */
         public function getServerParams();
 
@@ -157,13 +157,6 @@ namespace Psr\Http\Message
          * @psalm-taint-source input
          */
         public function getContents();
-
-        /**
-         * @return mixed
-         *
-         * @psalm-taint-source input
-         */
-        public function getMetadata(?string $key = null);
     }
 
     interface UriInterface

@@ -169,17 +169,53 @@ final class HttpLibraryStubsTest extends LibraryStubsTestCase
                     'TaintedTextWithQuotes on line 9',
                 ],
             ],
+            'serverParams' => [
+                '<?php
+                    function handle(Psr\Http\Message\ServerRequestInterface $request, string $key): void {
+                        echo (string) ($request->getServerParams()["REQUEST_URI"] ?? "");
+                        echo (string) ($request->getServerParams()["HTTP_REFERER"] ?? "");
+                        echo (string) ($request->getServerParams()["REDIRECT_QUERY_STRING"] ?? "");
+                        echo (string) ($request->getServerParams()["DOCUMENT_ROOT"] ?? "");
+                        echo (string) ($request->getServerParams()["REMOTE_ADDR"] ?? "");
+                        echo (string) ($request->getServerParams()[$key] ?? "");
+                    }',
+                [
+                    'TaintedHtml on line 3',
+                    'TaintedHtml on line 4',
+                    'TaintedHtml on line 5',
+                    'TaintedHtml on line 8',
+                    'TaintedTextWithQuotes on line 3',
+                    'TaintedTextWithQuotes on line 4',
+                    'TaintedTextWithQuotes on line 5',
+                    'TaintedTextWithQuotes on line 8',
+                ],
+            ],
+            'uploadedFileStreamMetadata' => [
+                '<?php
+                    function handle(Psr\Http\Message\UploadedFileInterface $file): void {
+                        file_get_contents((string) $file->getStream()->getMetadata("uri"));
+                        echo $file->getStream()->getContents();
+                    }',
+                [
+                    'TaintedHtml on line 4',
+                    'TaintedTextWithQuotes on line 4',
+                ],
+            ],
             'serverRequestImplementation' => [
                 '<?php
                     function handle(Laminas\Diactoros\ServerRequest $request): void {
                         echo (string) ($request->getQueryParams()["q"] ?? "");
                         echo $request->getHeaderLine("Referer");
+                        echo (string) ($request->getServerParams()["QUERY_STRING"] ?? "");
+                        echo (string) ($request->getServerParams()["SERVER_NAME"] ?? "");
                     }',
                 [
                     'TaintedHtml on line 3',
                     'TaintedHtml on line 4',
+                    'TaintedHtml on line 5',
                     'TaintedTextWithQuotes on line 3',
                     'TaintedTextWithQuotes on line 4',
+                    'TaintedTextWithQuotes on line 5',
                 ],
             ],
             'requestUri' => [
