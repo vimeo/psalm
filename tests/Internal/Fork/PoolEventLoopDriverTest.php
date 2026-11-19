@@ -10,8 +10,11 @@ use Psalm\Internal\Fork\Pool;
 use Psalm\Progress\VoidProgress;
 use Revolt\EventLoop;
 use Revolt\EventLoop\Driver;
+use Revolt\EventLoop\Driver\IoPollDriver;
 use Revolt\EventLoop\Driver\StreamSelectDriver;
 use Revolt\EventLoop\Driver\TracingDriver;
+
+use function class_exists;
 
 final class PoolEventLoopDriverTest extends TestCase
 {
@@ -33,18 +36,22 @@ final class PoolEventLoopDriverTest extends TestCase
         parent::tearDown();
     }
 
-    public function testWorkersAreForkedWithTheStreamSelectDriver(): void
+    public function testADriverHoldingAKernelHandleIsReplaced(): void
     {
-        EventLoop::setDriver(new TracingDriver(new StreamSelectDriver()));
+        if (!class_exists(IoPollDriver::class) || !IoPollDriver::isSupported()) {
+            $this->markTestSkipped('IoPollDriver needs revolt/event-loop >= 1.1 and the Io\Poll API of PHP 8.6');
+        }
+
+        EventLoop::setDriver(new IoPollDriver());
 
         new Pool(2, 1000.0, new VoidProgress());
 
-        $this->assertInstanceOf(StreamSelectDriver::class, EventLoop::getDriver());
+        $this->assertNull(EventLoop::getDriver()->getHandle());
     }
 
-    public function testAStreamSelectDriverInPlaceIsKept(): void
+    public function testADriverWithoutKernelHandleIsKept(): void
     {
-        $driver = new StreamSelectDriver();
+        $driver = new TracingDriver(new StreamSelectDriver());
         EventLoop::setDriver($driver);
 
         new Pool(2, 1000.0, new VoidProgress());

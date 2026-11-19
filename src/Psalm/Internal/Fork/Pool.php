@@ -73,9 +73,9 @@ final class Pool
         private readonly float $timeLimit,
         private readonly Progress $progress,
     ) {
-        // Forked workers keep this process's event loop driver. A kernel-backed one (epoll, kqueue, libuv, …)
-        // would be shared between the parent and its workers, which then get each other's events.
-        if (!EventLoop::getDriver() instanceof StreamSelectDriver) {
+        // Forked workers keep this process's event loop driver. One holding a kernel handle (epoll, kqueue,
+        // libuv, …) would be shared between the parent and its workers, which then get each other's events.
+        if (EventLoop::getDriver()->getHandle() !== null) {
             EventLoop::setDriver(new StreamSelectDriver());
         }
 
