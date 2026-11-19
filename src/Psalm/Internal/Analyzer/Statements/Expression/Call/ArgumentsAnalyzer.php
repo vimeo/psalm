@@ -55,6 +55,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
@@ -640,9 +641,8 @@ final class ArgumentsAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         $static_class_type = $template_result->static_class_type;
-        $expand_static = static fn(Union $type, bool $final): Union => $static_class_type !== null
-            ? TypeExpander::expandStatic($codebase, $type, $static_class_type, $final)
-            : $type;
+        $expand_static = static fn(Union $type, string|TNamedObject|null $static_type, bool $final): Union =>
+            $static_type !== null ? TypeExpander::expandStatic($codebase, $type, $static_type, $final) : $type;
 
         if (($argument_offset === 1 && in_array($method_id, self::ARRAY_FILTERLIKE, true) && count($args) === 2)
             || ($argument_offset === 0 && $method_id === 'array_map' && count($args) >= 2)
@@ -743,7 +743,10 @@ final class ArgumentsAnalyzer
 
         // a closure param takes the declared types with `static` of the call, as the argument is checked against
         // them, before the bounds, which may hold the `static` of the caller, are put in them
-        $replace_static_of_call = static function (bool $final) use (
+        $replace_static_of_call = static function (
+            string|TNamedObject|null $static_type,
+            bool $final,
+        ) use (
             $template_result,
             $new_bounds,
             $replaced_type,
@@ -754,26 +757,32 @@ final class ArgumentsAnalyzer
             foreach ($template_result->template_types as $k => $template_map) {
                 foreach ($template_map as $kk => $template_type) {
                     if (($new_bounds[$k][$kk] ?? null) === $template_type) {
-                        $bounds[$k][$kk] = $expand_static($template_type, $final);
+                        $bounds[$k][$kk] = $expand_static($template_type, $static_type, $final);
                     }
                 }
             }
 
-            $type = $expand_static($replaced_type, $final);
+            $type = $expand_static($replaced_type, $static_type, $final);
 
             return $type === $replaced_type && $bounds === $new_bounds ? null : $replace($type, $bounds);
         };
 
-        $untyped_replaced_type = $replace_static_of_call($template_result->static_class_is_final);
+        $untyped_replaced_type = $replace_static_of_call($static_class_type, $template_result->static_class_is_final);
         // a typed param is narrowed to the hint, where `static` is read as the closure's own: it takes the class of the
-        // call as final, unless the receiver is a `static` of the closure's class (`$this`, `static::make()`)
+        // call as final, unless the receiver is a `static` of the closure's class (`$this`, `static::make()`); a
+        // generic receiver gives the class without its type arguments, as the argument may be checked against others
         $receiver_is_closure_static = $static_class_type instanceof TNamedObject
             && $static_class_type->is_static
             && $context->self !== null
             && strtolower($static_class_type->value) === strtolower($context->self);
-        $typed_replaced_type = $receiver_is_closure_static
+        $typed_replaced_type = $receiver_is_closure_static && !$static_class_type instanceof TGenericObject
             ? $untyped_replaced_type
-            : $replace_static_of_call(true);
+            : $replace_static_of_call(
+                $static_class_type instanceof TGenericObject
+                    ? new TNamedObject($static_class_type->value)
+                    : $static_class_type,
+                true,
+            );
         $replaced_type = $replace($replaced_type, $new_bounds);
         $untyped_replaced_type ??= $replaced_type;
         $typed_replaced_type ??= $replaced_type;

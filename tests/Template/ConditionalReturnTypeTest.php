@@ -1963,6 +1963,51 @@ final class ConditionalReturnTypeTest extends TestCase
                         }
                     }',
             ],
+            'typedClosureParamOfCallableOfListOfStaticOnGenericReceiverIsTheCalledClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Coll {
+                        /** @param callable(list<static>): mixed $callback */
+                        public function visit(callable $callback): void {}
+
+                        public function collOnly(): void {}
+                    }
+
+                    /** @param Coll<int> $coll */
+                    function run(Coll $coll): void {
+                        $coll->visit(function (array $items): void {
+                            foreach ($items as $item) {
+                                /** @psalm-check-type-exact $item = Coll */
+                                $item->collOnly();
+                            }
+                        });
+                    }',
+            ],
+            'typedClosureParamOfCallableOfStaticOnThisOfBoundedGenericClassIsAccepted' => [
+                'code' => '<?php
+                    class Model {}
+
+                    /** @template TModel of Model */
+                    class Builder {
+                        /**
+                         * @param (Closure(static): mixed)|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function whereKey(int $id) {
+                            return $this;
+                        }
+
+                        /** @return $this */
+                        public function orWhereKey(int $id) {
+                            return $this->where(fn (self $query) => $query->whereKey($id));
+                        }
+                    }',
+            ],
             'typedClosureParamOfCallableOfListOfStaticOnThisKeepsTheStaticOfTheClosure' => [
                 'code' => '<?php
                     class Base {
