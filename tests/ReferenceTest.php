@@ -2115,6 +2115,22 @@ final class ReferenceTest extends TestCase
                     '$elements===' => 'array<string, \'s\'|int>',
                 ],
             ],
+            'writeAfterLoopReachesItemsBoundUnderLoopKeyOfArrayUnitedSince' => [
+                'code' => '<?php
+                    /** @var list<string> */
+                    $keys = [];
+                    $x = 1;
+                    $out = [];
+                    foreach ($keys as $k) {
+                        $out[$k] = &$x;
+                    }
+                    $out += ["q" => 3];
+                    $x = "z";
+                ',
+                'assertions' => [
+                    '$out===' => 'non-empty-array<string, \'z\'|1|3>',
+                ],
+            ],
             'writeAfterLoopLeavesArrayAssignedSinceUnchanged' => [
                 'code' => '<?php
                     /** @var list<string> */

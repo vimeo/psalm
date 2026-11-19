@@ -3408,6 +3408,21 @@ final class UnusedVariableTest extends TestCase
                 'ignored_issues' => ['RedundantCondition'],
                 'php_version' => '8.0',
             ],
+            'writeAfterLoopToVariableBoundToItemsOfArrayUnitedSinceIsUsed' => [
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): array {
+                        $x = 1;
+                        $out = [];
+                        foreach ($keys as $k) {
+                            $out[$k] = &$x;
+                        }
+                        $out = $out + ["q" => 3];
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+            ],
             'writeAfterLoopToVariableBoundToArrayItemsIsUsed' => [ // #14206
                 'code' => '<?php
                     /** @param list<string> $keys */
