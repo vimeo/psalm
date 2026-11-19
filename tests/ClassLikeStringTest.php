@@ -11,6 +11,8 @@ use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ClassLikeStringTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
