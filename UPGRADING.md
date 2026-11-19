@@ -120,6 +120,8 @@
 
 - [BC] Class Psalm\Type\Atomic\TCallableInterface has been deleted, use `\Psalm\Type\Atomic::isCallableType()` instead
 
+- [BC] An unquoted object shape key that names a template in scope can resolve to the template's binding. For example, `object{T: int}` on `Box<'a'>` resolves to `object{a: int}`. Quote the key as `object{'T': int}` to keep the property named `T`. `TObjectWithProperties` stores pending entries in `$template_keys` and `$template_properties`. Plugins that copy an object shape must pass both maps to the constructor.
+
 - `MissingPureAnnotation`, `MissingImmutableAnnotation`, `MissingAbstractPureAnnotation` and `MissingInterfaceImmutableAnnotation` are suggestions that are off by default: they are only reported with the new config attribute `suggestPurityAnnotations="true"` (`Psalm\Config#$suggest_purity_annotations`), and their `ERROR_LEVEL` is now `-2` (feature-specific errors). Capability checks are unchanged (they use declared annotations only), and taint analysis still uses the purity it infers for unannotated code. `psalm --alter --issues=MissingPureAnnotation` and `--issues=MissingImmutableAnnotation` work without the attribute. If your baseline contains these issues, either set the attribute, or run `--update-baseline` to drop their entries (`UnusedBaselineEntry` reports them otherwise). A `@psalm-suppress` of one of them, or a nested `<errorLevel>` handler for it, is reported as unused while the attribute is off (`UnusedPsalmSuppress`, `UnusedIssueHandlerSuppression`).
 
 ## Removed

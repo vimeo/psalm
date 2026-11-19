@@ -390,6 +390,35 @@ A default must be within its template's bound and may only use templates declare
 
 A default that names its own class (`@template TNext of Node = Node<T>`) expands one level only: `Node<int>` is `Node<int, Node<int>>`, and if another default is computed, such as `@template TKey of array-key = key-of<self::MAP>`, passing a `Node<int>` where `Node<int, Node<int>, 'a'>` is written out reports MixedArgumentTypeCoercion.
 
+## Templates as shape keys
+
+An unquoted object shape key can name a template in scope. A quoted key always names the literal property.
+
+```php
+<?php
+/** @template T of string */
+final class Box
+{
+    /** @return object{T: int, 'T': string} */
+    public function obj(): object { throw new RuntimeException(); }
+}
+
+/** @var Box<'a'> $a */
+$a->obj(); // object{T: string, a: int}
+
+/** @var Box<'a'|'b'> $ab */
+$ab->obj(); // object{T: string, a?: int, b?: int}
+
+/** @var Box<string> $s */
+$s->obj(); // object{T: string}
+```
+
+In a return type, a union of literals makes each resulting property optional unless it is also declared as required. In a directly bound parameter type, each resulting property is required unless the declaration marks it optional. Keys can remain optional when the binding is inherited or the shape is a parameter of a returned callable.
+
+If a template resolves to the name of a written literal property, the written property's value type takes precedence. When two template keys resolve to the same name in one substitution, the property uses the union of their value types. If they resolve in separate substitutions, the property named earlier keeps its value type.
+
+A binding without a literal property name, such as `string`, does not add a named property. If the template's bound cannot name a property at all, as in `@template T of object`, the key remains the literal `T`. Array shape keys and keys of a [type alias](type_syntax/utility_types.md#type-aliases) also stay literal.
+
 ## Template covariance
 
 Imagine you have code like this:
