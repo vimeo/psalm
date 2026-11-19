@@ -1227,6 +1227,53 @@ final class ReferenceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'referenceToAnOffsetForgottenInABranchStaysBound' => [
+                'code' => '<?php
+                    function f(bool $c, string $k, string $j): int {
+                        $a = [$k => ["links" => []]];
+                        $r = &$a[$k]["links"];
+                        if ($c) {
+                            $k = $j;
+                        }
+                        if ($c) {
+                            return count($r);
+                        }
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assignmentThroughAReferenceForgetsTheOffsetsOfTheReferencedArray' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $a */
+                    function f(array $a, string $k): void {
+                        $r = &$a;
+                        if (is_int($a[$k])) {
+                            $r = [$k => "s"];
+                            $u = $a[$k];
+                            /** @psalm-check-type-exact $u = \'s\' */
+                        }
+                    }
+
+                    final class O {
+                        public ?int $p = null;
+                    }
+
+                    function g(O $o, bool $c): void {
+                        $r = &$o;
+                        if ($o->p !== null) {
+                            if ($c) {
+                                $r = new O();
+                            }
+                            $t = $o->p;
+                            /** @psalm-check-type-exact $t = int|null */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedVariable'],
+                'php_version' => '8.0',
+            ],
             'referenceToAnItemStaysBoundAfterAnIfAssertingOnTheArray' => [
                 'code' => '<?php
                     $a = rand(0, 1) ? ["x" => 1] : ["x" => 1, "y" => 2];

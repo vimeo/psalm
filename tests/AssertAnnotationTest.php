@@ -294,6 +294,92 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'parentCallKeepsTemplatedAssertIfTrueOfAnUndocumentedOverride' => [
+                'code' => '<?php
+                    interface Item { public function name(): string; }
+
+                    /** @template T */
+                    abstract class Coll {
+                        /** @psalm-assert-if-true T $item */
+                        abstract protected function isValid(mixed $item): bool;
+                    }
+
+                    /** @extends Coll<Item> */
+                    class ItemColl extends Coll {
+                        protected function isValid(mixed $item): bool {
+                            return $item instanceof Item;
+                        }
+                    }
+
+                    final class NamedItemColl extends ItemColl {
+                        protected function isValid(mixed $item): bool {
+                            if (!parent::isValid($item)) {
+                                return false;
+                            }
+
+                            return $item->name() === "x";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticCallKeepsAssertIfTrueOfAnUndocumentedOverride' => [
+                'code' => '<?php
+                    abstract class Coll {
+                        /** @psalm-assert-if-true \DateTime $item */
+                        public static function isDate(mixed $item): bool {
+                            return $item instanceof \DateTime;
+                        }
+                    }
+
+                    final class DColl extends Coll {
+                        public static function isDate(mixed $item): bool {
+                            return $item instanceof \DateTime;
+                        }
+                    }
+
+                    function year(mixed $x): string {
+                        if (DColl::isDate($x)) {
+                            return $x->format("Y");
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'parentCallKeepsTemplatedAssertIfFalseOfAnUndocumentedOverride' => [
+                'code' => '<?php
+                    interface Item { public function name(): string; }
+
+                    /** @template T */
+                    abstract class Coll {
+                        /** @psalm-assert-if-false T $item */
+                        abstract protected function isInvalid(mixed $item): bool;
+                    }
+
+                    /** @extends Coll<Item> */
+                    class ItemColl extends Coll {
+                        protected function isInvalid(mixed $item): bool {
+                            return !$item instanceof Item;
+                        }
+                    }
+
+                    final class NamedItemColl extends ItemColl {
+                        protected function isInvalid(mixed $item): bool {
+                            if (parent::isInvalid($item)) {
+                                return true;
+                            }
+
+                            return $item->name() !== "x";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assertionOnAStringParameterOfABuiltinKeepsAMixedArgument' => [
                 'code' => <<<'PHP'
                     <?php

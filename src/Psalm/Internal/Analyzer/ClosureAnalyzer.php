@@ -14,6 +14,7 @@ use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\PhpVisitor\ShortClosureVisitor;
 use Psalm\Internal\TypeVisitor\CapturedValueVisitor;
+use Psalm\Internal\TypeVisitor\ClosureByRefUsesCollector;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\PossiblyUndefinedVariable;
@@ -26,7 +27,6 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
-use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -231,8 +231,9 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
-     * The variables of the current scope that calling the analysed callable may write, also recorded for
-     * {@see \Psalm\Internal\Algebra\FormulaGenerator}. What a closure captured by reference are variables of the
+     * The variables of the current scope that calling the analysed callable, or a closure it contains or returns,
+     * may write, also recorded for {@see \Psalm\Internal\Algebra\FormulaGenerator}. What a closure captured by
+     * reference are variables of the
      * scopes it was made in (see getByRefUseScopes()): elsewhere, a variable of the same name is taken to be one
      * when this scope binds it by reference to a variable outside (`use (&$x)`, `global $x`, a by-reference
      * parameter or foreach value, ...)
@@ -247,18 +248,14 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         $var_ids = [];
         $scope_id = null;
 
-        foreach ($statements_analyzer->node_data->getType($callable)?->getAtomicTypes() ?? [] as $atomic) {
-            if (!$atomic instanceof TClosure || !$atomic->byref_uses) {
-                continue;
-            }
-
+        foreach (ClosureByRefUsesCollector::collect($statements_analyzer->node_data->getType($callable)) as $closure) {
             $scope_id ??= self::getScopeId($statements_analyzer);
 
-            foreach ($atomic->byref_uses as $use_name => $_) {
+            foreach ($closure->byref_uses as $use_name => $_) {
                 $var_id = '$' . $use_name;
 
-                if (!isset($atomic->byref_use_scopes[$use_name])
-                    || in_array($scope_id, $atomic->byref_use_scopes[$use_name], true)
+                if (!isset($closure->byref_use_scopes[$use_name])
+                    || in_array($scope_id, $closure->byref_use_scopes[$use_name], true)
                     || isset($context->references_to_external_scope[$var_id])
                 ) {
                     $var_ids[$var_id] = true;
