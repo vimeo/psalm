@@ -1229,6 +1229,33 @@ final class AssertionReconciler extends Reconciler
 
         $matching_atomic_type = null;
 
+        // refine with each part of an intersection, e.g. A&I narrowed to a subclass B of A gives B&I
+        if ($type_1_atomic instanceof TNamedObject
+            && $type_1_atomic->extra_types
+            && $type_2_atomic instanceof TNamedObject
+            && self::hasOnlyNamedObjectParts($type_1_atomic)
+        ) {
+            $type_1_parts = [$type_1_atomic->setIntersectionTypes([]), ...array_values($type_1_atomic->extra_types)];
+            $refined_type = $type_2_atomic;
+
+            foreach ($type_1_parts as $type_1_part) {
+                $refined_type = self::filterAtomicWithAnother(
+                    $type_1_part,
+                    $refined_type,
+                    $codebase,
+                    $any_scalar_type_match_found,
+                );
+
+                if (!$refined_type instanceof TNamedObject) {
+                    break;
+                }
+            }
+
+            if ($refined_type instanceof TNamedObject) {
+                return $refined_type;
+            }
+        }
+
         if ($type_1_atomic instanceof TNamedObject
             && $type_2_atomic instanceof TNamedObject
             && ($codebase->interfaceExists($type_1_atomic->value)
@@ -2460,6 +2487,17 @@ final class AssertionReconciler extends Reconciler
      *
      * @psalm-capabilities read-props|write-props
      */
+    private static function hasOnlyNamedObjectParts(TNamedObject $type): bool
+    {
+        foreach ($type->extra_types as $extra_type) {
+            if (!$extra_type instanceof TNamedObject || $extra_type->extra_types) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private static function canBeIntersected(
         Codebase $codebase,
         TNamedObject $existing_type_part,
