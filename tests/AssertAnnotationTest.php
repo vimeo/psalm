@@ -344,6 +344,78 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'assertionOfABuiltinThatReturnsZeroHoldsWhenItIsComparedToFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(string $a, string $b): void {
+                        if (stripos($a, 'x') !== false) {
+                            /** @psalm-check-type-exact $a = non-empty-string */
+                        }
+
+                        if (false !== strpos($b, 'x')) {
+                            /** @psalm-check-type-exact $b = non-empty-string */
+                        }
+                    }
+                    PHP,
+            ],
+            'assertionOfABuiltinThatReturnsZeroIsNotNegatedWhenItReturnsFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(string $a, string $b): void {
+                        if (strpos($a, 'x') === false) {
+                            /** @psalm-check-type-exact $a = string */
+                        }
+
+                        if (false === stripos($b, 'x')) {
+                            /** @psalm-check-type-exact $b = string */
+                        }
+                    }
+                    PHP,
+            ],
+            'assertionOfAUserFunctionThatReturnsZeroHoldsWhenItIsComparedToFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-assert-if-true non-empty-string $s
+                     */
+                    function position(string $s): int|false {
+                        return $s === '' ? false : 0;
+                    }
+
+                    final class Finder {
+                        /**
+                         * @psalm-assert-if-true non-empty-string $s
+                         */
+                        public function position(string $s): int|false {
+                            return $s === '' ? false : 0;
+                        }
+
+                        /**
+                         * @psalm-assert-if-true non-empty-string $s
+                         */
+                        public static function staticPosition(string $s): int|false {
+                            return $s === '' ? false : 0;
+                        }
+                    }
+
+                    function f(string $a, string $b, string $c, Finder $finder): void {
+                        if (position($a) !== false) {
+                            /** @psalm-check-type-exact $a = non-empty-string */
+                        }
+
+                        if ($finder->position($b) !== false) {
+                            /** @psalm-check-type-exact $b = non-empty-string */
+                        }
+
+                        if (Finder::staticPosition($c) !== false) {
+                            /** @psalm-check-type-exact $c = non-empty-string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assertionOnAStringParameterOfABuiltinKeepsAnObjectArgument' => [
                 'code' => <<<'PHP'
                     <?php

@@ -624,6 +624,21 @@ final class InstancePropertyFetchAnalyzer
                         $override_property_visibility = $interface_storage->override_property_visibility;
                     }
 
+                    // the dynamic property holds what was assigned to it and what the object holds under its name
+                    if ($codebase->classlikes->isUniversalObjectCrate($lhs_type_part->value, $stmt->name->name)) {
+                        $stmt_type = $stmt_type->addParentNodes(AtomicPropertyFetchAnalyzer::getDynamicPropertyType(
+                            $statements_analyzer,
+                            $stmt,
+                            $stmt_var_type,
+                            $stmt->name->name,
+                        )->parent_nodes);
+
+                        $context->vars_in_scope[$var_id] = $stmt_type;
+                        $statements_analyzer->node_data->setType($stmt, $stmt_type);
+
+                        continue;
+                    }
+
                     $property_id = $lhs_type_part->value . '::$' . $stmt->name->name;
 
 
