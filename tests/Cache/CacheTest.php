@@ -1361,5 +1361,47 @@ final class CacheTest extends TestCase
             false,
             'allConstantsGlobal="true"',
         ];
+
+        $gy = static fn(int $value): string => "<?php const GY = $value;";
+        $consumers = [
+            'classConstant' => ['<?php final class B { public const X = GY; }', 'B::X'],
+            'enumCase' => ['<?php enum B: int { case X = GY; }', 'B::X->value'],
+            'parameterDefault' => [
+                <<<'PHP'
+                    <?php
+                    final class B {
+                        /**
+                         * @template T
+                         * @param T $i
+                         * @return T
+                         */
+                        public function f($i = GY) { return $i; }
+                    }
+                    PHP,
+                '(new B())->f()',
+            ],
+            'globalConstant' => ['<?php const GX = GY;', 'GX'],
+        ];
+
+        foreach ($consumers as $consumer => [$code, $expression]) {
+            yield $consumer . 'FollowsTheGlobalConstantOfAnotherFile' => [
+                [
+                    [
+                        'files' => [
+                            'src/A.php' => $gy(10),
+                            'src/B.php' => $code,
+                            'src/D.php' => $returns('D', '10', $expression),
+                        ],
+                        'issues' => [],
+                    ],
+                    [
+                        'files' => ['src/A.php' => $gy(11)],
+                        'issues' => ['src/D.php' => $wrong_return('D', '10', '11')],
+                    ],
+                ],
+                false,
+                'allConstantsGlobal="true"',
+            ];
+        }
     }
 }

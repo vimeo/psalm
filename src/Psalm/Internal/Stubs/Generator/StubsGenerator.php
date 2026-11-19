@@ -3,6 +3,8 @@
 namespace Psalm\Internal\Stubs\Generator;
 
 use Psalm\Codebase;
+use Psalm\Exception\CircularReferenceException;
+use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Storage\FunctionLikeStorage;
@@ -131,24 +133,14 @@ final class StubsGenerator
             );
         }
 
-        foreach ($codebase->getAllStubbedConstants() as $fq_name => $type) {
-            if ($type->isMixed()) {
-                continue;
+        $const_names = $codebase->getAllStubbedConstants();
+
+        foreach ($codebase->getAllDefinitionsResolvedLater() as $fq_name => $definitions) {
+            foreach ($definitions as [$file_path]) {
+                if (!str_starts_with($file_path, $psalm_base)) {
+                    $const_names[$fq_name] = true;
+                }
             }
-
-            $name_parts = explode('\\', $fq_name);
-            $constant_name = array_pop($name_parts);
-
-            $namespace_name = implode('\\', $name_parts);
-
-            $namespaced_nodes[$namespace_name][$fq_name] = new StmtVirtualConst_(
-                [
-                    new VirtualConst(
-                        $constant_name,
-                        self::getExpressionFromType($type)
-                    )
-                ]
-            );
         }
 
         foreach ($file_provider->getAll() as $file_storage) {
@@ -182,25 +174,33 @@ final class StubsGenerator
                 );
             }
 
-            foreach ($file_storage->constants as $fq_name => $type) {
-                if ($type->isMixed()) {
-                    continue;
-                }
+            $const_names += $file_storage->constants;
+        }
 
-                $name_parts = explode('\\', $fq_name);
-                $constant_name = array_pop($name_parts);
-
-                $namespace_name = implode('\\', $name_parts);
-
-                $namespaced_nodes[$namespace_name][$fq_name] = new StmtVirtualConst_(
-                    [
-                        new VirtualConst(
-                            $constant_name,
-                            self::getExpressionFromType($type)
-                        )
-                    ]
-                );
+        foreach ($const_names as $fq_name => $_) {
+            try {
+                $type = ConstantTypeResolver::resolveGlobalConstant($codebase, [$fq_name]);
+            } catch (CircularReferenceException) {
+                continue;
             }
+
+            if ($type === null || $type->isMixed()) {
+                continue;
+            }
+
+            $name_parts = explode('\\', $fq_name);
+            $constant_name = array_pop($name_parts);
+
+            $namespace_name = implode('\\', $name_parts);
+
+            $namespaced_nodes[$namespace_name][$fq_name] = new StmtVirtualConst_(
+                [
+                    new VirtualConst(
+                        $constant_name,
+                        self::getExpressionFromType($type)
+                    )
+                ]
+            );
         }
 
         ksort($namespaced_nodes);

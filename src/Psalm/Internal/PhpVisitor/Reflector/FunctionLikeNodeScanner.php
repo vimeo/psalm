@@ -1066,7 +1066,7 @@ final class FunctionLikeNodeScanner
                 $param->default,
                 $this->aliases,
                 null,
-                null,
+                [],
                 $fq_classlike_name,
             ) ?? ExpressionResolver::getUnresolvedClassConstExpr(
                 $param->default,

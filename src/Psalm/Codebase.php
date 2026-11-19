@@ -30,7 +30,6 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\NativeClassTaintAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
@@ -220,6 +219,15 @@ final class Codebase
      * @var array<string, array<string, Union>>
      */
     public array $global_constant_types_by_wildcard = [];
+
+    /**
+     * The types of the global constants resolved since the files were last scanned, by the names they were looked up
+     * with and the files reading them (see ConstantTypeResolver::resolveGlobalConstant())
+     *
+     * @internal
+     * @var array<string, ?Union>
+     */
+    public array $global_constant_types = [];
 
     /**
      * @see getAllDefinitionsResolvedLater()
@@ -947,6 +955,7 @@ final class Codebase
         $this->populator->populateCodebase();
         // the files scanned again may declare other constants
         $this->global_constant_types_by_wildcard = [];
+        $this->global_constant_types = [];
         $this->definitions_resolved_later = null;
     }
 
@@ -1068,6 +1077,7 @@ final class Codebase
             $this->populator->populateCodebase();
             // the files scanned again may declare other constants
             $this->global_constant_types_by_wildcard = [];
+            $this->global_constant_types = [];
             $this->definitions_resolved_later = null;
         }
     }
@@ -1310,17 +1320,18 @@ final class Codebase
      */
     public function getAllDefinitionsResolvedLater(): array
     {
-        if ($this->definitions_resolved_later === null) {
-            $this->definitions_resolved_later = [];
+        if (!$this->scanner->is_scanning && $this->definitions_resolved_later !== null) {
+            return $this->definitions_resolved_later;
+        }
 
-            foreach ($this->file_storage_provider->getAll() as $file_storage) {
-                foreach ($file_storage->unresolved_defined_constants as [$name, $value, $global]) {
-                    $this->definitions_resolved_later[$name][] = [$file_storage->file_path, $value, $global];
-                }
+        $definitions = [];
+        foreach ($this->file_storage_provider->getAll() as $file_storage) {
+            foreach ($file_storage->unresolved_defined_constants as [$name, $value, $global]) {
+                $definitions[$name][] = [$file_storage->file_path, $value, $global];
             }
         }
 
-        return $this->definitions_resolved_later;
+        return $this->scanner->is_scanning ? $definitions : ($this->definitions_resolved_later = $definitions);
     }
 
     /**
@@ -1708,6 +1719,7 @@ final class Codebase
 
         $this->file_storage_provider->remove($file_path);
         $this->global_constant_types_by_wildcard = [];
+        $this->global_constant_types = [];
         $this->definitions_resolved_later = null;
     }
 
@@ -1927,38 +1939,17 @@ final class Codebase
                 );
             }
         } else {
-            $file_storage = $this->file_storage_provider->get(
-                $reference->file_path,
-            );
-            if (isset($file_storage->constants[$reference->symbol])) {
-                $type = $file_storage->constants[$reference->symbol];
-
-                if (isset($file_storage->unresolved_constants[$reference->symbol])) {
-                    try {
-                        $type = ConstantTypeResolver::resolveToUnion(
-                            $this,
-                            $file_storage->unresolved_constants[$reference->symbol],
-                        );
-                    } catch (CircularReferenceException) {
-                        // reported where the constants are declared
-                    }
-                }
-
-                return new PHPMarkdownContent(
-                    'const ' . $reference->symbol . ' ' . $type->__toString(),
-                    $reference->symbol,
-                );
+            try {
+                $type = ConstantTypeResolver::resolveGlobalConstant($this, [$reference->symbol]);
+            } catch (CircularReferenceException) {
+                // reported where the constants are declared
+                $type = null;
             }
-            $type = ConstFetchAnalyzer::getGlobalConstType(
-                $this,
-                $reference->symbol,
-                $reference->symbol,
-            );
 
             //Global Constant
             if ($type) {
                 return new PHPMarkdownContent(
-                    'const ' . $reference->symbol . ' ' . $type,
+                    'const ' . $reference->symbol . ' ' . $type->__toString(),
                     $reference->symbol,
                 );
             }

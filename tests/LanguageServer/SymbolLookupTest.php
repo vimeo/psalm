@@ -262,15 +262,18 @@ final class SymbolLookupTest extends TestCase
                     public const Y = 10;
                 }',
         );
+        $this->addFile('otherfile.php', '<?php echo APPLE;');
 
         $this->analyzeFile('somefile.php', new Context());
 
-        $information = $this->codebase->getMarkupContentForSymbolByReference(
-            new Reference('somefile.php', 'APPLE', new Range(new Position(1, 1), new Position(1, 1))),
-        );
-        $this->assertNotNull($information);
-        // as when the class is declared first
-        $this->assertSame('const APPLE int', $information->code);
+        foreach (['somefile.php', 'otherfile.php'] as $file_path) {
+            $information = $this->codebase->getMarkupContentForSymbolByReference(
+                new Reference($file_path, 'APPLE', new Range(new Position(1, 1), new Position(1, 1))),
+            );
+            $this->assertNotNull($information);
+            // as when the class is declared first
+            $this->assertSame('const APPLE int', $information->code);
+        }
     }
 
     public function testSimpleSymbolLocation(): void

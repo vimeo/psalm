@@ -1595,6 +1595,20 @@ final class EnumTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'caseValueWithANestedDivisionByZero' => [
+                'code' => '<?php
+                    final class A {
+                        public const NUM = 10;
+                    }
+
+                    enum B: int {
+                        case X = (A::NUM / 0) + 10;
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'duplicateValueOfTheConstantOfAClassDeclaredLater' => [
                 'code' => '<?php
                     enum Status: int {

@@ -552,6 +552,13 @@ final class Config
     /** @var array<string, mixed> */
     private array $predefined_constants = [];
 
+    /**
+     * The constants PHP code defined in this process: those of the files the autoloader included, and Psalm's
+     *
+     * @var array<string, mixed>
+     */
+    private array $predefined_user_constants = [];
+
     /** @var array<callable-string, bool> */
     private array $predefined_functions = [];
 
@@ -3159,6 +3166,21 @@ final class Config
     public function collectPredefinedConstants(): void
     {
         $this->predefined_constants = get_defined_constants();
+        /** @var array<string, mixed> */
+        $this->predefined_user_constants = get_defined_constants(true)['user'] ?? [];
+    }
+
+    /**
+     * Whether PHP itself or one of its extensions defines the constant, and not a file: not a stub, a project file,
+     * or one the autoloader included
+     *
+     * @internal
+     * @psalm-mutation-free
+     */
+    public function isConstantOfPhp(string $const_name): bool
+    {
+        return array_key_exists($const_name, $this->predefined_constants)
+            && !array_key_exists($const_name, $this->predefined_user_constants);
     }
 
     /**

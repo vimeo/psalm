@@ -15,6 +15,7 @@ use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitorAbstract;
 use Psalm\Aliases;
 use Psalm\Codebase;
+use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayOffsetFetch;
@@ -40,6 +41,7 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Storage\ClassConstantStorage;
+use Psalm\Type;
 use ReflectionClass;
 use ReflectionFunction;
 
@@ -77,24 +79,36 @@ use const T_WHITESPACE;
 final class ExpressionResolver
 {
     /**
-     * While a file is scanned, the value of an expression reading a class constant whose value is not known yet (one
-     * of another class, or one of the class being scanned not inferred so far) is left as it is written, to be
-     * inferred when it is read: the storage of the file is cached for its own contents, and the other class may not
-     * be scanned yet.
+     * While a file is scanned, the value of an expression reading a constant whose value is not known yet is left as
+     * it is written, to be inferred when it is read: the storage of the file is cached for its own contents, and the
+     * file declaring the constant may not be scanned yet. Those are the global constants that files declare (PHP
+     * defines the others), and the class constants of another class, or of the class being scanned not inferred so
+     * far.
      *
-     * @param array<string, ClassConstantStorage> $known_constants the constants of the class being scanned so far
+     * @param ?array<string, ClassConstantStorage> $known_constants the constants of the class being scanned so far;
+     *        null where the class constants an expression reads are left to their own resolution
      */
     public static function getUnresolvedExpression(
         PhpParser\Node\Expr $expr,
         Aliases $aliases,
         ?string $fq_classlike_name,
         ?string $parent_fq_class_name,
-        array $known_constants,
+        ?array $known_constants,
     ): ?UnresolvedExpression {
+        $config = Config::getInstance();
+
         $reads_unknown_constant = (new NodeFinder())->findFirst(
             $expr,
-            static function (PhpParser\Node $node) use ($aliases, $fq_classlike_name, $known_constants): bool {
-                if (!$node instanceof PhpParser\Node\Expr\ClassConstFetch
+            static function (PhpParser\Node $node) use ($config, $aliases, $fq_classlike_name, $known_constants): bool {
+                if ($node instanceof PhpParser\Node\Expr\ConstFetch) {
+                    $name = ltrim($node->name->toString(), '\\');
+
+                    return !in_array(strtolower($name), ['true', 'false', 'null'], true)
+                        && !$config->isConstantOfPhp($name);
+                }
+
+                if ($known_constants === null
+                    || !$node instanceof PhpParser\Node\Expr\ClassConstFetch
                     || !$node->class instanceof PhpParser\Node\Name
                     || !$node->name instanceof PhpParser\Node\Identifier
                     || strtolower($node->name->name) === 'class'
@@ -135,6 +149,19 @@ final class ExpressionResolver
                     $node->class = new PhpParser\Node\Name\FullyQualified(
                         ClassLikeAnalyzer::getFQCLNFromNameObject($node->class, $this->aliases),
                     );
+                }
+
+                // an unqualified name that `use const` doesn't import is resolved in the namespace, then globally
+                if ($node instanceof PhpParser\Node\Expr\ConstFetch && !$node->name->isFullyQualified()) {
+                    $name = $node->name->toString();
+
+                    if (isset($this->aliases->constants[$name])) {
+                        $node->name = new PhpParser\Node\Name\FullyQualified($this->aliases->constants[$name]);
+                    } elseif ($node->name->isQualified()) {
+                        $node->name = new PhpParser\Node\Name\FullyQualified(
+                            Type::getFQCLNFromString($name, $this->aliases),
+                        );
+                    }
                 }
 
                 return $node;
@@ -272,8 +299,15 @@ final class ExpressionResolver
                 return new ScalarValue($aliases->namespace);
             }
 
+            $name = $stmt->name->toString();
+
+            // the constant is the one of the scope it is written in, wherever its value is read
+            if (!$stmt->name instanceof PhpParser\Node\Name\FullyQualified && isset($aliases->constants[$name])) {
+                return new Constant($aliases->constants[$name], true);
+            }
+
             return new Constant(
-                $stmt->name->toString(),
+                $name,
                 $stmt->name instanceof PhpParser\Node\Name\FullyQualified,
                 $aliases->namespace ?? '',
             );

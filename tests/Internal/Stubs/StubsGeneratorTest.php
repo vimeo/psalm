@@ -165,6 +165,43 @@ final class StubsGeneratorTest extends TestCase
         self::assertStringContainsString('function late(int $i = 10)', $stub);
     }
 
+    public function testTheGeneratedStubHasTheGlobalConstantsTheScannerLeftUnresolved(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                const FLAG = A::FLAG;
+                const ELEVEN = BASE + 1;
+                const BASE = 10;
+                define("DEFINED_FLAG", A::FLAG);
+                // known, without a value a stub can write, as when the class is declared first
+                const NEGATED = ~A::NUM;
+                define("DEFINED_NEGATED", ~A::NUM);
+                const PATH = ROOT . "/src";
+                define("ROOT", __DIR__);
+
+                final class A {
+                    public const FLAG = true;
+                    public const NUM = 10;
+                }',
+        );
+        $this->analyzeFile('somefile.php', new Context());
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $stub = StubsGenerator::getAll(
+            $codebase,
+            $codebase->classlike_storage_provider,
+            $codebase->file_storage_provider,
+        );
+
+        self::assertStringContainsString('const FLAG = true;', $stub);
+        self::assertStringContainsString('const ELEVEN = 11;', $stub);
+        self::assertStringContainsString('const DEFINED_FLAG = true;', $stub);
+        self::assertStringContainsString("const NEGATED = 'Psalm could not infer this type';", $stub);
+        self::assertStringContainsString("const DEFINED_NEGATED = 'Psalm could not infer this type';", $stub);
+        self::assertStringContainsString("const PATH = 'Psalm could not infer this type';", $stub);
+    }
+
     public function testAnIntIsAnIdentifier(): void
     {
         $type = StubsGenerator::getParserTypeFromPsalmType(Type::getInt());
