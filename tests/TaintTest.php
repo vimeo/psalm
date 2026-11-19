@@ -1301,15 +1301,15 @@ final class TaintTest extends TestCase
             ],
             'integerOfTheUserBoundedByTheCodeDoesNotOverflow' => [
                 'code' => '<?php
-                    function header16(int $port): string {
-                        return pack("n", $port);
+                    function header8(int $ttl): string {
+                        return pack("C", $ttl);
                     }
 
-                    $port = (int) $_GET["port"];
-                    if ($port < 0 || $port > 65535) {
+                    $ttl = (int) $_GET["ttl"];
+                    if ($ttl < 0 || $ttl > 127) {
                         exit;
                     }
-                    echo header16($port);',
+                    echo header8($ttl);',
             ],
             'untaintedArgumentAfterTheFirstOneAVariadicCollects' => [
                 'code' => '<?php
@@ -6622,6 +6622,19 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'integerOfTheUserBoundedToMoreThanASizeHoldsCanOverflow' => [
+                'code' => '<?php
+                    function header8(int $value): string {
+                        return pack("C", $value);
+                    }
+
+                    $port = (int) $_GET["port"];
+                    if ($port < 0 || $port > 65535) {
+                        exit;
+                    }
+                    echo header8($port);',
+                'error_message' => 'TaintedIntegerOverflow',
+            ],
             'integerOfTheUserBoundedOnOneSideCanOverflow' => [
                 'code' => '<?php
                     $port = (int) $_GET["port"];

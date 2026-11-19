@@ -1827,9 +1827,11 @@ trait UnionTrait
             return $input_taints;
         }
 
-        // an integer the code bounds (`int<0, 65535>`) or wrote can't overflow what holds that range
+        // an integer the code wrote, or bounded to what every fixed size holds (`c` is 8 bits, signed), can't overflow
         if ($atomic instanceof TLiteralInt
-            || ($atomic instanceof TIntRange && $atomic->min_bound !== null && $atomic->max_bound !== null)
+            || ($atomic instanceof TIntRange
+                && $atomic->min_bound !== null && $atomic->min_bound >= 0
+                && $atomic->max_bound !== null && $atomic->max_bound <= 127)
         ) {
             return $input_taints & ~TaintKind::INPUT_SLEEP;
         }
