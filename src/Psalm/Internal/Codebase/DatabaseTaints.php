@@ -18,6 +18,7 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Union;
 
+use function array_unique;
 use function count;
 use function dirname;
 use function is_int;
@@ -31,7 +32,8 @@ use function substr;
  * What the database holds: the values an INSERT, REPLACE or UPDATE stores in a column flow into what the SELECTs of
  * that column give, wherever they are (see SqlStatement). The database is a keyed store (see TaintStore) whose names
  * are `table.column`: a query the analysis can't parse, or whose table or column isn't known, writes or reads under
- * the names starting with what it knows (any name, `table.`), so that no value is lost.
+ * the names starting with what it knows (any name, `table.`), so that no value is lost. The rows of a table, each
+ * column under its name, are another keyed store, whose names are the tables: `SELECT *` reads them.
  *
  * The calls that run queries are described by `@psalm-database-*` annotations (see
  * FunctionLikeStorage::$database_calls)
@@ -76,6 +78,8 @@ use function substr;
 final class DatabaseTaints
 {
     public const STORE = 'database';
+
+    private const ROWS_STORE = 'database rows';
 
     private const RESULTS = ['result', 'rows', 'value', 'column', 'any_value', 'any_column', 'value_or_row', 'none'];
 
@@ -361,6 +365,7 @@ final class DatabaseTaints
                 'reads' => [[
                     'keys' => [],
                     'any_key' => true,
+                    'all_columns' => false,
                     'value' => ['holes' => [], 'placeholders' => [], 'columns' => [[null, null]]],
                 ]],
             ];
@@ -381,13 +386,7 @@ final class DatabaseTaints
                 continue;
             }
 
-            TaintStore::addWrite(
-                $graph,
-                self::STORE,
-                [self::getName($write['table'], $write['column'])],
-                $write_node,
-                '=',
-            );
+            self::addWrite($graph, $write['table'], $write['column'], $write_node, $call_location);
         }
 
         $result = $spec['result'] ?? 'result';
@@ -441,6 +440,15 @@ final class DatabaseTaints
                 $graph->addNode($key_node);
                 $graph->addPath($read_node, $key_node, '=');
                 $graph->addPath($key_node, $row_node, 'arrayvalue-assignment-\'' . $key . '\'');
+            }
+
+            if ($read['all_columns']) {
+                $tables = [];
+                foreach ($read['value']['columns'] as [$table]) {
+                    $tables[] = $table;
+                }
+
+                self::addAllColumns($graph, $tables, $read_node, $row_node, 'database column #' . $offset, $call_location);
             }
         }
 
@@ -552,7 +560,7 @@ final class DatabaseTaints
             $write_node = DataFlowNode::getForAssignment('database write', $call_location);
             $graph->addNode($write_node);
             $graph->addPath($values_node, $write_node, 'arrayvalue-fetch');
-            TaintStore::addWrite($graph, self::STORE, [[false, '']], $write_node, '=');
+            self::addWrite($graph, null, null, $write_node, $call_location);
 
             return $return_type;
         }
@@ -608,13 +616,7 @@ final class DatabaseTaints
                     $write_node,
                     $column === null ? 'arrayvalue-fetch' : 'arrayvalue-fetch-\'' . $column . '\'',
                 );
-                TaintStore::addWrite(
-                    $graph,
-                    self::STORE,
-                    [self::getName($table, $column === null ? null : strtolower($column))],
-                    $write_node,
-                    '=',
-                );
+                self::addWrite($graph, $table, $column, $write_node, $call_location);
             }
         }
 
@@ -637,9 +639,13 @@ final class DatabaseTaints
     ): Union {
         $table = self::getTableName($statements_analyzer, $args[$spec['table'] ?? -1][0] ?? null);
 
+        $columns_node = DataFlowNode::getForAssignment('database columns', $call_location);
+        $graph->addNode($columns_node);
+        TaintStore::addRead($graph, self::STORE, [self::getName($table, null)], $columns_node, '=');
+
         $row_node = DataFlowNode::getForAssignment('database row', $call_location);
         $graph->addNode($row_node);
-        TaintStore::addRead($graph, self::STORE, [self::getName($table, null)], $row_node, '=');
+        self::addAllColumns($graph, [$table], $columns_node, $row_node, 'database columns', $call_location);
 
         $result_node = DataFlowNode::getForAssignment('database result', $call_location);
         $graph->addNode($result_node);
@@ -703,6 +709,62 @@ final class DatabaseTaints
         }
 
         return $return_type->addParentNodes([$return_node->id => $return_node]);
+    }
+
+    /**
+     * Stores what flows into $write in the column of the table, and in the rows of the table under the column's name
+     */
+    private static function addWrite(
+        TaintFlowGraph $graph,
+        ?string $table,
+        ?string $column,
+        DataFlowNode $write,
+        CodeLocation $call_location,
+    ): void {
+        TaintStore::addWrite($graph, self::STORE, [self::getName($table, $column)], $write, '=');
+
+        $rows = [$table === null ? [false, ''] : [true, $table]];
+
+        if ($column === null) {
+            TaintStore::addWrite($graph, self::ROWS_STORE, $rows, $write, 'arrayvalue-assignment');
+
+            return;
+        }
+
+        // the rows name a column as the table does, which is how the query writes it or (PostgreSQL) lowercase
+        foreach (array_unique([$column, strtolower($column)]) as $name) {
+            $name_node = DataFlowNode::getForAssignment($write->label . ' ' . $name, $call_location);
+            $graph->addNode($name_node);
+            $graph->addPath($write, $name_node, '=');
+            TaintStore::addWrite($graph, self::ROWS_STORE, $rows, $name_node, 'arrayvalue-assignment-\'' . $name . '\'');
+        }
+    }
+
+    /**
+     * Adds the columns of the tables to $row, as `*` gives them: under their names, and at positions not known (any
+     * integer key) what $columns holds, any column of the tables
+     *
+     * @param list<?string> $tables
+     */
+    private static function addAllColumns(
+        TaintFlowGraph $graph,
+        array $tables,
+        DataFlowNode $columns,
+        DataFlowNode $row,
+        string $label,
+        CodeLocation $call_location,
+    ): void {
+        $names = [];
+        foreach ($tables as $table) {
+            $names[] = $table === null ? [false, ''] : [true, $table];
+        }
+
+        $named_node = DataFlowNode::getForAssignment($label . ' by name', $call_location);
+        $graph->addNode($named_node);
+        TaintStore::addRead($graph, self::ROWS_STORE, $names, $named_node, '=');
+        $graph->addPath($named_node, $row, '=');
+
+        $graph->addPath($columns, $row, 'arrayvalue-assignment-' . DataFlowGraph::INTEGER_KEY);
     }
 
     /**
@@ -959,7 +1021,7 @@ final class DatabaseTaints
             return [false, $table . '.'];
         }
 
-        return [true, $table . '.' . $column];
+        return [true, $table . '.' . strtolower($column)];
     }
 
     /**

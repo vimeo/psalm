@@ -19,7 +19,8 @@ final class SqlStatementTest extends TestCase
 {
     /**
      * The query, where `%n%` is the hole n, and what it writes (`W table.column <- value`) and reads
-     * (`R [keys] <- value`), a value being made of holes (`h`), placeholders (`p`) and columns (`c`)
+     * (`R [keys] <- value`, `all` for all the columns under their names), a value being made of holes (`h`),
+     * placeholders (`p`) and columns (`c`)
      *
      * @return iterable<string, array{string, string}>
      * @psalm-pure
@@ -34,9 +35,25 @@ final class SqlStatementTest extends TestCase
             'SELECT u.name AS n, o.total FROM users u JOIN orders AS o ON o.user_id = u.id WHERE u.id = ?',
             'R [n,0] <- h[] p[] c[users.name]; R [total,1] <- h[] p[] c[orders.total]',
         ];
-        yield 'all columns, whose names and positions are unknown' => [
+        yield 'all columns, each under its name' => [
             'SELECT * FROM users WHERE id = :id',
-            'R [any] <- h[] p[] c[users.*]',
+            'R [all] <- h[] p[] c[users.*]',
+        ];
+        yield 'all columns of a table' => [
+            'SELECT u.*, o.total FROM users u JOIN orders o ON o.user_id = u.id',
+            'R [all] <- h[] p[] c[users.*]; R [total] <- h[] p[] c[orders.total]',
+        ];
+        yield 'all columns of the parts of a UNION, under the names of the first part\'s' => [
+            'SELECT * FROM t1 UNION SELECT * FROM t2',
+            'R [any] <- h[] p[] c[t1.*,t2.*]',
+        ];
+        yield 'names as written, and lowercase' => [
+            'SELECT userName, u.Bio AS "Text" FROM users u',
+            'R [userName,username,0] <- h[] p[] c[users.username]; R [Text,text,1] <- h[] p[] c[users.bio]',
+        ];
+        yield 'the column of a write as written' => [
+            'UPDATE users SET userName = ?',
+            'W users.userName <- h[] p[0] c[]',
         ];
         yield 'an expression, whose name is its text' => [
             'SELECT COUNT(*), MAX(age) oldest FROM `users`',
@@ -139,6 +156,10 @@ final class SqlStatementTest extends TestCase
             $keys = $read['keys'];
             if ($read['any_key']) {
                 $keys[] = 'any';
+            }
+
+            if ($read['all_columns']) {
+                $keys[] = 'all';
             }
 
             $parts[] = 'R [' . implode(',', $keys) . '] <- ' . self::formatValue($read['value']);

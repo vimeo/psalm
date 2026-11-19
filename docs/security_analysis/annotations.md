@@ -213,7 +213,7 @@ on (a statement, a result). The last word says how, as in the table of `@psalm-d
 ### `@psalm-database-insert $table $data`, `@psalm-database-update $table $data` and `@psalm-database-select $table`
 
 `insert` and `update` store each value of the array given to `$data` in the column its key names, in the table given
-to `$table`. `select` returns the rows of that table, each holding every column of it under any key.
+to `$table`. `select` returns the rows of that table, as `SELECT *` gives them.
 
 ```php
 <?php // --taint-analysis
@@ -242,7 +242,7 @@ function run(Table $db): void {
 
     foreach ($db->select('users') as $user) {
         echo (string) $user['bio'];  // TaintedHtml
-        echo (string) $user['name']; // TaintedHtml: the rows of select hold every column under any key
+        echo (string) $user['name']; // no issue
     }
 
     foreach ($db->select('posts') as $post) {

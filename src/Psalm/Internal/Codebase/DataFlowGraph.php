@@ -11,6 +11,8 @@ use function abs;
 use function array_keys;
 use function array_sum;
 use function count;
+use function ctype_digit;
+use function ltrim;
 use function str_ends_with;
 use function str_starts_with;
 use function strlen;
@@ -33,6 +35,12 @@ abstract class DataFlowGraph
      */
     public const SERIALIZATION_PATH_TYPE = 'serialization';
     public const UNSERIALIZATION_PATH_TYPE = 'unserialization';
+
+    /**
+     * The key of an array value assigned under any integer key (see keysMayBeEqual()), as the columns of a row
+     * whose positions aren't known
+     */
+    public const INTEGER_KEY = '#';
 
     /** @var array<string, array<string, Path>> */
     protected array $forward_edges = [];
@@ -153,12 +161,21 @@ abstract class DataFlowGraph
      * the same.
      *
      * An array key known exactly is quoted ('k'), and one whose start only is known is quoted and followed by
-     * a star ('k'*: any key starting with k). A property name is bare. An array key fetch fetches the key ''.
+     * a star ('k'*: any key starting with k). INTEGER_KEY is any integer key. A property name is bare. An array
+     * key fetch fetches the key ''.
      *
      * @psalm-pure
      */
     public static function keysMayBeEqual(string $assigned_key, string $fetched_key): bool
     {
+        if ($assigned_key === self::INTEGER_KEY || $fetched_key === self::INTEGER_KEY) {
+            $other = $assigned_key === self::INTEGER_KEY ? $fetched_key : $assigned_key;
+            $prefix = self::getKeyPrefix($other);
+            $digits = ltrim($prefix ?? self::getKeyValue($other), '-');
+
+            return $other === self::INTEGER_KEY || ($prefix !== null && $digits === '') || ctype_digit($digits);
+        }
+
         $assigned_prefix = self::getKeyPrefix($assigned_key);
         $fetched_prefix = self::getKeyPrefix($fetched_key);
 

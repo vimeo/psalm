@@ -25,12 +25,16 @@ use function substr;
  * without `:` and numbered from 0), and of the columns it copies.
  *
  * A table or column the query doesn't name (`INSERT INTO t VALUES (...)`, `SELECT *`, a name with a hole) is null:
- * any of them. A query parse() doesn't model gives null.
+ * any of them. Tables, and the columns of values, are lowercase; the column of a write and the keys of a read are
+ * named as written. A query parse() doesn't model gives null.
+ *
+ * The keys of a read are those of the rows fetched it is under: its name and its position, or any key. A read of
+ * `all_columns` (`*`, `t.*`) gives each column of the tables of its value under the column's name.
  *
  * @psalm-type Column = array{?string, ?string}
  * @psalm-type Value = array{holes: list<int>, placeholders: list<int|string>, columns: list<Column>}
  * @psalm-type Write = array{table: ?string, column: ?string, value: Value}
- * @psalm-type Read = array{keys: list<int|string>, any_key: bool, value: Value}
+ * @psalm-type Read = array{keys: list<int|string>, any_key: bool, all_columns: bool, value: Value}
  * @psalm-type Token = array{0: string, 1: string, 2: list<int>, 3?: bool}
  * @psalm-capabilities read-props|write-this-props|write-refs
  * @internal
@@ -475,9 +479,11 @@ final class SqlStatement
             }
 
             foreach ($reads as $offset => $read) {
+                // the columns of the other parts are under the names of those of the first, by position
                 $reads[$offset] = [
                     'keys' => $read['keys'],
-                    'any_key' => $read['any_key'],
+                    'any_key' => $read['any_key'] || $read['all_columns'],
+                    'all_columns' => false,
                     'value' => self::mergeValues($read['value'], $part_reads[$offset]['value'] ?? self::NO_VALUE),
                 ];
             }
@@ -608,7 +614,8 @@ final class SqlStatement
         if (count($item) === 1 && $item[0][0] === '*' && $alias === null) {
             return [
                 'keys' => [],
-                'any_key' => true,
+                'any_key' => false,
+                'all_columns' => true,
                 'value' => ['holes' => [], 'placeholders' => [], 'columns' => self::getAllTablesColumns($tables, null)],
             ];
         }
@@ -619,19 +626,20 @@ final class SqlStatement
 
             return [
                 'keys' => [],
-                'any_key' => true,
+                'any_key' => false,
+                'all_columns' => true,
                 'value' => ['holes' => [], 'placeholders' => [], 'columns' => [[$table, null]]],
             ];
         }
 
         $value = $this->getValue($item, $tables);
 
-        if ($alias !== null) {
-            $keys[] = self::unquote($alias);
-        } else {
-            $column = self::getColumnName($item);
-            if ($column !== false && $column !== null) {
-                $keys[] = $column;
+        $name = $alias !== null ? self::unquote($alias) : self::getColumnName($item);
+        if ($name !== false && $name !== null) {
+            $keys[] = $name;
+            // PostgreSQL lowercases the names not quoted
+            if (strtolower($name) !== $name) {
+                $keys[] = strtolower($name);
             }
         }
 
@@ -643,6 +651,7 @@ final class SqlStatement
             'keys' => $keys,
             // the name PDO gives an expression without an alias is its text, which isn't modelled
             'any_key' => $keys === [] || ($alias === null && self::getColumnName($item) === false),
+            'all_columns' => false,
             'value' => $value,
         ];
     }
@@ -981,7 +990,7 @@ final class SqlStatement
             return false;
         }
 
-        return $token[2] === [] ? strtolower($name) : null;
+        return $token[2] === [] ? $name : null;
     }
 
     /**

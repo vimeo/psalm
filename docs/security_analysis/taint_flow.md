@@ -243,7 +243,8 @@ queries selecting that column read, wherever they are. Psalm reads the SQL of th
 
 - an `INSERT`, `REPLACE` or `UPDATE` stores in each column the value of its placeholder, or the part of the SQL the
   analysis doesn't know the text of (a variable concatenated into it);
-- a `SELECT` reads each column it names into the key of that name of the rows fetched.
+- a `SELECT` reads each column it names into the key of that name of the rows fetched. `SELECT *` reads each
+  column of the table under its name, and any of them by position, as the order of the columns isn't known.
 
 ```php
 <?php // --taint-analysis
@@ -257,6 +258,11 @@ function show(PDO $pdo): void {
     echo (string) $row['body'];   // TaintedHtml
     echo (string) $row['author']; // no issue
     echo (string) $pdo->query('SELECT name FROM users')->fetchColumn(); // no issue
+
+    $row = $pdo->query('SELECT * FROM comments')->fetch();
+    echo (string) $row['body'];   // TaintedHtml
+    echo (string) $row['author']; // no issue
+    echo (string) $row[0];        // TaintedHtml
 }
 ```
 
@@ -269,14 +275,15 @@ function store(PDO $pdo): void {
 }
 
 function show(PDO $pdo, string $table): void {
-    echo (string) $pdo->query('SELECT * FROM comments')->fetch()['author']; // TaintedHtml
-    echo (string) $pdo->query("SELECT name FROM $table")->fetchColumn();    // TaintedHtml
-    echo (string) $pdo->query('SELECT name FROM users')->fetchColumn();     // no issue
+    echo (string) $pdo->query("SELECT name FROM $table")->fetchColumn(); // TaintedHtml
+    echo (string) $pdo->query("SELECT * FROM $table")->fetch()['body'];  // TaintedHtml
+    echo (string) $pdo->query("SELECT * FROM $table")->fetch()['name'];  // no issue
 }
 ```
 
-- A query it can't parse, a table name that isn't a literal, `SELECT *` and `INSERT INTO t VALUES (...)` without
-  the column list all read or write any column.
+- A query it can't parse, a table name that isn't a literal and `INSERT INTO t VALUES (...)` without the column
+  list read or write any column. A table name that isn't a literal can be any table.
+- A column a `UNION` of `SELECT *` gives can be any column of their tables.
 - The values given to a prepared statement it can't follow back to the query that prepared it (a statement passed
   to another function) are stored in every column of every table.
 

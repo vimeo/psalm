@@ -1482,6 +1482,54 @@ final class TaintTest extends TestCase
                         }
                     }',
             ],
+            'selectingAllColumnsKeepsThemApart' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $pdo->prepare("INSERT INTO users (name, bio) VALUES (?, ?)")->execute(["admin", $_GET["bio"]]);
+                    }
+
+                    function show(PDO $pdo): void {
+                        echo (string) $pdo->query("SELECT * FROM users")->fetch()["name"];
+                        foreach ($pdo->query("SELECT u.* FROM users u")->fetchAll() as $user) {
+                            echo (string) $user["name"];
+                        }
+                    }',
+            ],
+            'selectingAllColumnsOfATableNotKnownKeepsThemApart' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $pdo->prepare("INSERT INTO users (name, bio) VALUES (?, ?)")->execute(["admin", $_GET["bio"]]);
+                    }
+
+                    function show(PDO $pdo, string $table): void {
+                        echo (string) $pdo->query("SELECT * FROM $table")->fetch()["name"];
+                    }',
+            ],
+            'columnsStoredFromOneValueStayApartInAllColumns' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $name = $_GET["name"];
+                        $pdo->prepare("UPDATE accounts SET username = ?, nick = ?")->execute([$name, $name]);
+                    }
+
+                    function show(PDO $pdo): void {
+                        echo (string) $pdo->query("SELECT * FROM accounts")->fetch()["email"];
+                    }',
+            ],
+            'pgSelectKeepsTheColumnsApart' => [
+                'code' => '<?php
+                    function store(PgSql\Connection $connection): void {
+                        pg_insert($connection, "events", ["kind" => "login", "payload" => $_GET["p"]]);
+                    }
+
+                    function show(PgSql\Connection $connection): void {
+                        $rows = pg_select($connection, "events", []);
+                        if (is_array($rows)) {
+                            echo (string) $rows[0]["kind"];
+                        }
+                    }',
+                'php_version' => '8.1',
+            ],
             'readOfALocalFileIsNoSource' => [
                 'code' => '<?php
                     echo (string) file_get_contents("/etc/hosts");
@@ -6857,6 +6905,87 @@ final class TaintTest extends TestCase
                         echo (string) $pdo->query("SELECT * FROM comments")->fetch()["body"];
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'allColumnsHoldEachColumnAtAnyPosition' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $pdo->prepare("INSERT INTO users (name, bio) VALUES (?, ?)")->execute(["admin", $_GET["bio"]]);
+                    }
+
+                    function show(PDO $pdo): void {
+                        echo (string) $pdo->query("SELECT * FROM users")->fetch()[1];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'allColumnsHoldEachColumnUnderItsNameAsWritten' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $pdo->prepare("UPDATE accounts SET userName = ?")->execute([$_GET["name"]]);
+                    }
+
+                    function show(PDO $pdo): void {
+                        echo (string) $pdo->query("SELECT * FROM accounts")->fetch()["userName"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'allColumnsHoldEachColumnUnderItsNameLowercase' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $pdo->prepare("UPDATE accounts SET userName = ?")->execute([$_GET["name"]]);
+                    }
+
+                    function show(PDO $pdo): void {
+                        echo (string) $pdo->query("SELECT * FROM accounts")->fetch()["username"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'columnSelectedIsUnderItsNameAsWritten' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $pdo->prepare("UPDATE accounts SET username = ?")->execute([$_GET["name"]]);
+                    }
+
+                    function show(PDO $pdo): void {
+                        echo (string) $pdo->query("SELECT userName FROM accounts")->fetch()["userName"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'allColumnsOfAUnionAreUnderAnyKey' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $pdo->prepare("INSERT INTO users (name, bio) VALUES (?, ?)")->execute(["admin", $_GET["bio"]]);
+                    }
+
+                    function show(PDO $pdo): void {
+                        echo (string) $pdo->query("SELECT * FROM users UNION SELECT * FROM posts")->fetch()["name"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'allColumnsOfATableWrittenWithoutColumnNamesAreUnderAnyKey' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $pdo->prepare("INSERT INTO logs VALUES (?, ?)")->execute(["info", $_GET["message"]]);
+                    }
+
+                    function show(PDO $pdo): void {
+                        echo (string) $pdo->query("SELECT * FROM logs")->fetch()["level"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'pgSelectHoldsEachColumnAtAnyPosition' => [
+                'code' => '<?php
+                    function store(PgSql\Connection $connection): void {
+                        pg_insert($connection, "events", ["kind" => "login", "payload" => $_GET["p"]]);
+                    }
+
+                    function show(PgSql\Connection $connection): void {
+                        $rows = pg_select($connection, "events", [], PGSQL_NUM);
+                        if (is_array($rows)) {
+                            echo (string) $rows[0][1];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+                'php_version' => '8.1',
             ],
             'valuesOfAStatementTheAnalysisCantTellAreStoredAnywhere' => [
                 'code' => '<?php
