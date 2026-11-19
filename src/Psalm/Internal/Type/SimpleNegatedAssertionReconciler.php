@@ -441,7 +441,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
             );
         }
 
-        if ($assertion_type instanceof TCallable) {
+        if ($assertion_type instanceof TCallable && !$is_equality) {
             return self::reconcileCallable(
                 $existing_var_type,
                 $codebase,
@@ -531,7 +531,10 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
             } elseif (!$type instanceof TBool
                 || ($is_equality && $type::class === TBool::class)
             ) {
-                if ($type instanceof TScalar) {
+                if ($type instanceof TScalar && $is_equality) {
+                    $redundant = false;
+                    $non_bool_types[] = $type;
+                } elseif ($type instanceof TScalar) {
                     $redundant = false;
                     $non_bool_types[] = new TString();
                     $non_bool_types[] = new TInt();
@@ -1127,6 +1130,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     $redundant = false;
                     $non_object_types[] = $type;
                 }
+            } elseif ($is_equality && ($type instanceof TCallable || $type instanceof TIterable)) {
+                $redundant = false;
+                $non_object_types[] = $type;
             } elseif ($type instanceof TCallable) {
                 $non_object_types[] = TKeyedArray::makeCallable([
                     new Union([new TClassString, new TObject]),
@@ -1216,6 +1222,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     $redundant = false;
                     $non_numeric_types[] = $type;
                 }
+            } elseif ($is_equality && ($type instanceof TArrayKey || $type instanceof TScalar)) {
+                $redundant = false;
+                $non_numeric_types[] = $type;
             } elseif ($type instanceof TArrayKey) {
                 $redundant = false;
                 $non_numeric_types[] = new TString();
@@ -1298,6 +1307,11 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     $redundant = false;
                     $non_int_types[] = $type;
                 }
+            } elseif ($is_equality
+                && ($type instanceof TArrayKey || $type instanceof TScalar || $type instanceof TNumeric)
+            ) {
+                $redundant = false;
+                $non_int_types[] = $type;
             } elseif ($type instanceof TArrayKey) {
                 $redundant = false;
                 $non_int_types[] = new TString();
@@ -1387,6 +1401,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     $redundant = false;
                     $non_float_types[] = $type;
                 }
+            } elseif ($is_equality && ($type instanceof TScalar || $type instanceof TNumeric)) {
+                $redundant = false;
+                $non_float_types[] = $type;
             } elseif ($type instanceof TScalar) {
                 $redundant = false;
                 $non_float_types[] = new TString();
@@ -1471,6 +1488,11 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     $redundant = false;
                     $non_string_types[] = $type;
                 }
+            } elseif ($is_equality
+                && ($type instanceof TArrayKey || $type instanceof TCallable || $type instanceof TScalar)
+            ) {
+                $redundant = false;
+                $non_string_types[] = $type;
             } elseif ($type instanceof TArrayKey) {
                 $non_string_types[] = new TInt();
                 $redundant = false;
@@ -1564,6 +1586,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     $redundant = false;
                     $non_array_types[] = $type;
                 }
+            } elseif ($is_equality && ($type instanceof TCallable || $type instanceof TIterable)) {
+                $redundant = false;
+                $non_array_types[] = $type;
             } elseif ($type instanceof TCallable) {
                 $non_array_types[] = new TCallableString();
                 $non_array_types[] = new TCallableObject($type->from_docblock, $type);
@@ -1630,7 +1655,10 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
 
         if (isset($types['resource'])) {
             $redundant = false;
-            unset($types['resource']);
+
+            if (!$is_equality) {
+                unset($types['resource']);
+            }
         }
 
         foreach ($types as &$type) {

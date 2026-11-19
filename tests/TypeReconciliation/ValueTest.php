@@ -1430,6 +1430,191 @@ final class ValueTest extends TestCase
                     '$a===' => 'callable-array{0: class-string|object, 1: non-empty-string}',
                 ],
             ],
+            'notIdenticalToStringKeepsWiderTypes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array-key */
+                    function k() { return 1; }
+                    /** @return scalar */
+                    function sc() { return 1; }
+                    function c(): callable { return "strlen"; }
+                    function s(): string { return ""; }
+
+                    $s = s();
+                    $k = k();
+                    $loose = k();
+                    $sc = sc();
+                    $c = c();
+
+                    $k = $k !== $s ? $k : null;
+                    $loose = $loose != $s ? $loose : null;
+                    $sc = $sc !== $s ? $sc : null;
+                    $c = $c !== $s ? $c : null;
+                    PHP,
+                'assertions' => [
+                    '$k===' => 'array-key|null',
+                    '$loose===' => 'array-key|null',
+                    '$sc===' => 'null|scalar',
+                    '$c===' => 'callable[impure]|null',
+                ],
+            ],
+            'notIdenticalToIntKeepsWiderTypes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array-key */
+                    function k() { return 1; }
+                    /** @return scalar */
+                    function sc() { return 1; }
+                    /** @return numeric */
+                    function n() { return 1; }
+                    function i(): int { return 1; }
+
+                    $i = i();
+                    $k = k();
+                    $sc = sc();
+                    $n = n();
+
+                    $k = $k !== $i ? $k : null;
+                    $sc = $sc !== $i ? $sc : null;
+                    $n = $n !== $i ? $n : null;
+                    PHP,
+                'assertions' => [
+                    '$k===' => 'array-key|null',
+                    '$sc===' => 'null|scalar',
+                    '$n===' => 'null|numeric',
+                ],
+            ],
+            'notIdenticalToFloatKeepsWiderTypes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return scalar */
+                    function sc() { return 1; }
+                    /** @return numeric */
+                    function n() { return 1; }
+                    function f(): float { return 1.0; }
+
+                    $f = f();
+                    $sc = sc();
+                    $n = n();
+
+                    $sc = $sc !== $f ? $sc : null;
+                    $n = $n !== $f ? $n : null;
+                    PHP,
+                'assertions' => [
+                    '$sc===' => 'null|scalar',
+                    '$n===' => 'null|numeric',
+                ],
+            ],
+            'notIdenticalToNumericKeepsWiderTypes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array-key */
+                    function k() { return 1; }
+                    /** @return scalar */
+                    function sc() { return 1; }
+                    /** @return numeric */
+                    function n() { return 1; }
+
+                    $n = n();
+                    $k = k();
+                    $sc = sc();
+
+                    $k = $k !== $n ? $k : null;
+                    $sc = $sc !== $n ? $sc : null;
+                    PHP,
+                'assertions' => [
+                    '$k===' => 'array-key|null',
+                    '$sc===' => 'null|scalar',
+                ],
+            ],
+            'notIdenticalToBoolKeepsScalar' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return scalar */
+                    function sc() { return 1; }
+                    function b(): bool { return true; }
+
+                    $b = b();
+                    $sc = sc();
+
+                    $sc = $sc !== $b ? $sc : null;
+                    PHP,
+                'assertions' => [
+                    '$sc===' => 'null|scalar',
+                ],
+            ],
+            'notIdenticalToObjectKeepsCallableAndIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function c(): callable { return "strlen"; }
+                    function it(): iterable { return []; }
+                    function o(): object { return new stdClass(); }
+
+                    $o = o();
+                    $c = c();
+                    $it = it();
+
+                    $c = $c !== $o ? $c : null;
+                    $it = $it !== $o ? $it : null;
+                    PHP,
+                'assertions' => [
+                    '$c===' => 'callable[impure]|null',
+                    '$it===' => 'iterable<mixed, mixed>|null',
+                ],
+            ],
+            'notIdenticalToArrayKeepsCallableAndIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function c(): callable { return "strlen"; }
+                    function it(): iterable { return []; }
+                    function a(): array { return []; }
+
+                    $a = a();
+                    $c = c();
+                    $it = it();
+
+                    $c = $c !== $a ? $c : null;
+                    $it = $it !== $a ? $it : null;
+                    PHP,
+                'assertions' => [
+                    '$c===' => 'callable[impure]|null',
+                    '$it===' => 'iterable<mixed, mixed>|null',
+                ],
+            ],
+            'notIdenticalToResourceKeepsResource' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return resource */
+                    function r() { return STDIN; }
+                    /** @return resource|int */
+                    function ri() { return 1; }
+
+                    $r = r();
+                    $ri = ri();
+
+                    $ri = $ri !== $r ? $ri : null;
+                    PHP,
+                'assertions' => [
+                    '$ri===' => 'int|null|resource',
+                ],
+            ],
+            'notIdenticalToCallableKeepsCallable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function c(): callable { return "strlen"; }
+                    function ci(): callable|int { return 1; }
+
+                    $c = c();
+                    $ci = ci();
+
+                    $ci = $ci !== $c ? $ci : null;
+                    PHP,
+                'assertions' => [
+                    '$ci===' => 'callable[impure]|int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
