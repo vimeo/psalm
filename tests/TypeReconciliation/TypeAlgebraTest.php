@@ -4542,6 +4542,26 @@ final class TypeAlgebraTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MissingClosureReturnType'],
             ],
+            'nullCheckIsKeptWhenAClosureCapturingAStaticVariableOfTheSameNameByReferenceIsCalled' => [
+                'code' => '<?php
+                    function f(?string $x): int {
+                        $mk = function (): Closure {
+                            static $x = null;
+                            return function () use (&$x): void {
+                                $x = null;
+                            };
+                        };
+                        $k = $mk();
+                        $notNull = $x !== null;
+                        $k();
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+            ],
         ];
     }
 

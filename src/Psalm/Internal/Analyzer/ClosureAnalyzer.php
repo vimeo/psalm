@@ -21,6 +21,7 @@ use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -205,10 +206,7 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             $scope = $source;
 
             while (true) {
-                $scope_statements_analyzer = null;
-
                 while ($scope instanceof StatementsAnalyzer) {
-                    $scope_statements_analyzer = $scope;
                     $scope = $scope->getSource();
                 }
 
@@ -218,8 +216,10 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                 }
 
                 $scopes[$use_name][] = $scope->getId();
-
-                if (!$scope instanceof self || !isset($scope_statements_analyzer?->byref_uses['$' . $use_name])) {
+                if (!$scope instanceof self
+                    || !$scope->storage instanceof FunctionStorage
+                    || !isset($scope->storage->byref_uses[$use_name])
+                ) {
                     break;
                 }
 
