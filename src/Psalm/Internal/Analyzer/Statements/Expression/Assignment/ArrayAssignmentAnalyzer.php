@@ -358,6 +358,24 @@ final class ArrayAssignmentAnalyzer
                     : $root_type;
             $context->writeToReferencesPossiblyBound($root_var_id, $root_type, $codebase);
 
+            if ($context->references_possibly_bound_to) {
+                foreach ($child_stmts as $child_stmt) {
+                    $child_var_id = ExpressionIdentifier::getExtendedVarId(
+                        $child_stmt,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer,
+                    );
+
+                    if ($child_var_id !== null && isset($context->vars_in_scope[$child_var_id])) {
+                        $context->writeToReferencesPossiblyBound(
+                            $child_var_id,
+                            $context->vars_in_scope[$child_var_id],
+                            $codebase,
+                        );
+                    }
+                }
+            }
+
             if ($context->references_in_scope) {
                 $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 

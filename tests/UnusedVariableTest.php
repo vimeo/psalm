@@ -3408,6 +3408,20 @@ final class UnusedVariableTest extends TestCase
                 'ignored_issues' => ['RedundantCondition'],
                 'php_version' => '8.0',
             ],
+            'writeAfterLoopToVariableBoundToArrayItemsIsUsed' => [ // #14206
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): array {
+                        $x = 1;
+                        $out = [];
+                        foreach ($keys as $k) {
+                            $out[$k] = &$x;
+                        }
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+            ],
         ];
     }
 
@@ -4708,6 +4722,22 @@ final class UnusedVariableTest extends TestCase
                 'error_message' => 'UnusedVariable',
                 'error_levels' => [],
                 'php_version' => '8.4',
+            ],
+            'writeAfterLoopToVariableBoundToItemsOfArrayAssignedSinceIsUnused' => [
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): array {
+                        $x = 1;
+                        $out = [];
+                        foreach ($keys as $k) {
+                            $out[$k] = &$x;
+                        }
+                        $out = [];
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:25',
             ],
         ];
     }

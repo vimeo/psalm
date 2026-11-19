@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use PhpParser;
 use Psalm\Internal\Analyzer\ConstructorExits;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -23,7 +24,9 @@ use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\DependentType;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Reconciler;
@@ -38,10 +41,12 @@ use function array_keys;
 use function array_map;
 use function array_search;
 use function array_shift;
+use function array_slice;
 use function array_unique;
 use function array_values;
 use function assert;
 use function count;
+use function implode;
 use function in_array;
 use function is_array;
 use function is_int;
@@ -203,11 +208,20 @@ final class Context
 
     /**
      * The variables a variable may still be bound to by reference: those it was bound to before a block that rebound
-     * one of them, where the block did not run. A write to the variable is combined into their types.
+     * one of them, where the block did not run, and those a block that may not run bound it to. A write to the
+     * variable is combined into their types.
      *
      * @var array<string, array<string, true>>
      */
     public array $references_possibly_bound_to = [];
+
+    /**
+     * The variables bound to each other before a block that rebound one of them
+     *
+     * @internal
+     * @var array<string, true>
+     */
+    public array $references_detached_by_blocks = [];
 
     /**
      * Whether or not we're inside the conditional of an if/where etc.
@@ -701,7 +715,8 @@ final class Context
             if (!isset($this->references_in_scope[$reference_id])
                 && !isset($this->references_to_external_scope[$reference_id])
                 // a reference before the block that the block rebound
-                && !isset($this->references_possibly_bound_to[$reference_id])
+                && !(isset($this->references_possibly_bound_to[$reference_id])
+                    && isset($this->references_detached_by_blocks[$reference_id]))
                 && $reference_location = $statements_analyzer->getFirstAppearance($reference_id)
             ) {
                 $this->references_possibly_from_confusing_scope[$reference_id] = $reference_location;
@@ -709,6 +724,36 @@ final class Context
         }
         $this->references_possibly_from_confusing_scope +=
             $confusing_scope_context->references_possibly_from_confusing_scope;
+
+        foreach ($confusing_scope_context->references_in_scope as $reference_id => $referenced_id) {
+            if (($this->references_in_scope[$reference_id] ?? null) === $referenced_id) {
+                continue;
+            }
+
+            // a binding the block may not have made: what is written to either may be written to the other, and to
+            // the variables along the chain it is bound through
+            $seen = [$reference_id => true];
+
+            while (!isset($seen[$referenced_id])) {
+                $seen[$referenced_id] = true;
+                $this->references_possibly_bound_to[$reference_id][$referenced_id] = true;
+                $this->references_possibly_bound_to[$referenced_id][$reference_id] = true;
+
+                if (!isset($confusing_scope_context->references_in_scope[$referenced_id])) {
+                    break;
+                }
+
+                $referenced_id = $confusing_scope_context->references_in_scope[$referenced_id];
+            }
+        }
+
+        // those of the blocks nested in it
+        foreach ($confusing_scope_context->references_possibly_bound_to as $var_id => $target_ids) {
+            $this->references_possibly_bound_to[$var_id] = ($this->references_possibly_bound_to[$var_id] ?? [])
+                + $target_ids;
+        }
+
+        $this->references_detached_by_blocks += $confusing_scope_context->references_detached_by_blocks;
     }
 
     /**
@@ -801,6 +846,8 @@ final class Context
             unset($this->references_in_scope[$reference_id]);
             $this->references_possibly_bound_to[$reference_id][$referenced_id] = true;
             $this->references_possibly_bound_to[$referenced_id][$reference_id] = true;
+            $this->references_detached_by_blocks[$reference_id] = true;
+            $this->references_detached_by_blocks[$referenced_id] = true;
 
             if (isset($this->vars_in_scope[$reference_id])) {
                 // the entry is a PHP reference to the one of the variable it was bound to
@@ -828,24 +875,174 @@ final class Context
     public function writeToReferencesPossiblyBound(string $var_id, Union $type, Codebase $codebase): void
     {
         foreach ($this->references_possibly_bound_to[$var_id] ?? [] as $target_id => $_) {
-            if (!isset($this->vars_in_scope[$target_id])) {
-                continue;
+            if (isset($this->vars_in_scope[$target_id])) {
+                $this->vars_in_scope[$target_id] = Type::combineUnionTypes(
+                    $this->vars_in_scope[$target_id],
+                    $type,
+                    $codebase,
+                );
+
+                $this->forgetDescendantsOf($target_id);
             }
 
-            $this->vars_in_scope[$target_id] = Type::combineUnionTypes(
-                $this->vars_in_scope[$target_id],
-                $type,
-                $codebase,
-            );
-
-            foreach ($this->vars_in_scope as $descendant_id => $_type) {
-                if (str_starts_with($descendant_id, $target_id . '[')
-                    || str_starts_with($descendant_id, $target_id . '->')
-                ) {
-                    unset($this->vars_in_scope[$descendant_id]);
-                }
+            if (str_ends_with($target_id, ']')) {
+                $this->writeToArrayPossiblyHoldingItem($target_id, $type, $codebase);
             }
         }
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function forgetDescendantsOf(string $var_id): void
+    {
+        foreach ($this->vars_in_scope as $descendant_id => $_type) {
+            if (str_starts_with($descendant_id, $var_id . '[') || str_starts_with($descendant_id, $var_id . '->')) {
+                unset($this->vars_in_scope[$descendant_id]);
+            }
+        }
+    }
+
+    /**
+     * The item may be under any key its offsets can be: the array holding it gets the type besides its own under
+     * each of them. An array that can't hold the item anymore (one assigned since, empty) is left as it is.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function writeToArrayPossiblyHoldingItem(string $item_id, Union $type, Codebase $codebase): void
+    {
+        $parts = Reconciler::breakUpPathIntoParts($item_id);
+        $first_bracket = array_search('[', $parts, true);
+
+        if (!is_int($first_bracket) || $first_bracket === 0) {
+            return;
+        }
+
+        $array_id = implode('', array_slice($parts, 0, $first_bracket));
+
+        if (!isset($this->vars_in_scope[$array_id])) {
+            return;
+        }
+
+        $keys = [];
+        $changed_id = $item_id;
+
+        for ($i = $first_bracket, $count = count($parts); $i < $count; $i += 3) {
+            if ($parts[$i] !== '[' || !isset($parts[$i + 2]) || $parts[$i + 2] !== ']') {
+                return;
+            }
+
+            $key = self::getLiteralKeyOfOffset($parts[$i + 1]);
+
+            if ($key === null && $changed_id === $item_id) {
+                // an item of unknown key may be any of the items cached there
+                $changed_id = implode('', array_slice($parts, 0, $i));
+            }
+
+            $keys[] = $key;
+        }
+
+        $array_type = self::addToItemsUnderKeys($this->vars_in_scope[$array_id], $keys, $type, $codebase);
+
+        if ($array_type === null) {
+            return;
+        }
+
+        $this->vars_in_scope[$array_id] = $array_type;
+
+        if ($changed_id !== $item_id) {
+            $this->forgetDescendantsOf($changed_id);
+        }
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getLiteralKeyOfOffset(string $offset): int|string|null
+    {
+        if (preg_match('/^-?[0-9]+$/', $offset) === 1) {
+            return (int) $offset;
+        }
+
+        if ($offset[0] !== '\'' && $offset[0] !== '"') {
+            return null;
+        }
+
+        $key = ExpressionIdentifier::unquoteOffset($offset);
+
+        // PHP takes a decimal integer string key as that integer
+        return preg_match('/^(0|-?[1-9][0-9]*)$/', $key) === 1 ? (int) $key : $key;
+    }
+
+    /**
+     * The type of the array with $type added to the items under the keys (null: any key), or null when it holds no
+     * such item
+     *
+     * @param non-empty-list<int|string|null> $keys
+     */
+    private static function addToItemsUnderKeys(
+        Union $array_type,
+        array $keys,
+        Union $type,
+        Codebase $codebase,
+    ): ?Union {
+        $key = array_shift($keys);
+        $atomic_types = [];
+        $holds_item = false;
+
+        $add_to_item = static function (Union $item_type) use ($keys, $type, $codebase, &$holds_item): Union {
+            $new_item_type = $keys
+                ? self::addToItemsUnderKeys($item_type, $keys, $type, $codebase)
+                : Type::combineUnionTypes($item_type, $type, $codebase);
+
+            if ($new_item_type === null) {
+                return $item_type;
+            }
+
+            $holds_item = true;
+
+            return $new_item_type->setPossiblyUndefined($item_type->possibly_undefined);
+        };
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray) {
+                $properties = $atomic_type->properties;
+
+                foreach ($properties as $property_key => $property_type) {
+                    if ($key === null || $property_key === $key) {
+                        $properties[$property_key] = $add_to_item($property_type);
+                    }
+                }
+
+                $fallback_params = $atomic_type->fallback_params;
+
+                if ($fallback_params !== null && ($key === null || !isset($properties[$key]))) {
+                    $fallback_params[1] = $add_to_item($fallback_params[1]);
+                }
+
+                $atomic_type = TKeyedArray::make(
+                    $properties,
+                    $atomic_type->class_strings,
+                    $fallback_params,
+                    $atomic_type->is_list,
+                    $atomic_type->from_docblock,
+                );
+            } elseif ($atomic_type instanceof TArray && !$atomic_type->isEmptyArray()) {
+                $atomic_type = $atomic_type->setTypeParams([
+                    $atomic_type->type_params[0],
+                    $add_to_item($atomic_type->type_params[1]),
+                ]);
+            }
+
+            $atomic_types[] = $atomic_type;
+        }
+
+        if (!$holds_item) {
+            return null;
+        }
+
+        // what is written through the item is used where the array is
+        return $array_type->setTypes($atomic_types)->addParentNodes($type->parent_nodes);
     }
 
     /**
