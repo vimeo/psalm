@@ -1340,6 +1340,25 @@ final class TaintTest extends TestCase
                     v("", "", "safe");
                     v("", "", escaped(tainted()));',
             ],
+            'arrayOrStringCastToAStringFoundInAListOfWords' => [
+                'code' => '<?php
+                    function backup(array|string $data): void {
+                        if (!in_array((string) $data, ["ls", "cat", "date"], true)) {
+                            return;
+                        }
+                        exec("tar -czf /tmp/backup.tgz " . (string) $data);
+                    }
+
+                    backup($_GET["bin"]);',
+            ],
+            'stringCastToAStringFoundInAListWithANumber' => [
+                'code' => '<?php
+                    $level = (string) $_GET["level"];
+                    if (!in_array((string) $level, ["1", "fast"], true)) {
+                        exit;
+                    }
+                    exec("gzip -" . (string) $level . " /tmp/backup.tar");',
+            ],
             'noTaintFromASpecializedPregReplaceCallbackCallbackInItsOtherCalls' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -6769,6 +6788,42 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'intOrStringCastToAStringFoundInAListWithANumberKeepsItsTaints' => [
+                'code' => '<?php
+                    function level(int|string $level): void {
+                        if (!in_array((string) $level, ["1", "fast"], true)) {
+                            exit;
+                        }
+                        exec("gzip -" . (string) $level . " /tmp/backup.tar");
+                    }
+
+                    level($_GET["level"]);',
+                'error_message' => 'TaintedShell',
+            ],
+            'nullOrStringCastToAStringFoundInAListWithAnEmptyStringKeepsItsTaints' => [
+                'code' => '<?php
+                    function level(?string $level): void {
+                        if (!in_array((string) $level, ["", "fast"], true)) {
+                            exit;
+                        }
+                        exec("gzip " . (string) $level . " /tmp/backup.tar");
+                    }
+
+                    level($_GET["level"]);',
+                'error_message' => 'TaintedShell',
+            ],
+            'arrayCastToAStringFoundInAListHoldingArray' => [
+                'code' => '<?php
+                    function backup(array|string $data): void {
+                        if (!in_array((string) $data, ["ls", "Array"], true)) {
+                            return;
+                        }
+                        exec("tar -czf /tmp/backup.tgz " . implode(" ", (array) $data));
+                    }
+
+                    backup($_GET["bin"]);',
+                'error_message' => 'TaintedShell',
+            ],
             'valueThatMayNotMatchThePatternKeepsItsTaints' => [
                 'code' => '<?php
                     $name = (string) $_GET["name"];
@@ -6812,15 +6867,6 @@ final class TaintTest extends TestCase
                         exit;
                     }
                     exec("gzip " . $file . " && echo done");',
-                'error_message' => 'TaintedShell',
-            ],
-            'stringCastNeedleOfAnArrayKeepsItsTaints' => [
-                'code' => '<?php
-                    $command = $_GET["command"];
-                    if (!in_array((string) $command, ["ls"], true)) {
-                        exit;
-                    }
-                    exec("run " . (string) $command);',
                 'error_message' => 'TaintedShell',
             ],
             'patternMatchComparedStrictlyToFalseKeepsTheTaints' => [
