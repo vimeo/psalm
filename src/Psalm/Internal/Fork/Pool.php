@@ -73,9 +73,17 @@ final class Pool
         private readonly float $timeLimit,
         private readonly Progress $progress,
     ) {
-        // Forked workers keep this process's event loop driver. One holding a kernel handle (epoll, kqueue,
-        // libuv, …) would be shared between the parent and its workers, which then get each other's events.
-        if (EventLoop::getDriver()->getHandle() !== null) {
+        // Workers can't use a driver with a native handle (see ForkContext::isSupported()): a forked worker
+        // shares an epoll instance with its parent, which crashes the parent, and doesn't inherit a kqueue.
+        $driver = EventLoop::getDriver();
+        if ($driver->getHandle() !== null) {
+            if ($driver->isRunning()) {
+                throw new RuntimeException(
+                    "Can't fork workers while the event loop runs on " . $driver::class . ': set'
+                    . ' REVOLT_DRIVER=Revolt\EventLoop\Driver\StreamSelectDriver or use --threads=1',
+                );
+            }
+
             EventLoop::setDriver(new StreamSelectDriver());
         }
 
