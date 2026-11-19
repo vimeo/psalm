@@ -10,6 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\AttributesAnalyzer;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
@@ -142,20 +143,14 @@ final class ArgumentsAnalyzer
 
         // the callee may call a closure it is given, which may write what the closure captured by reference
         foreach ($args as $arg) {
-            foreach ($statements_analyzer->node_data->getType($arg->value)?->getAtomicTypes() ?? [] as $atomic) {
-                if (!$atomic instanceof TClosure) {
-                    continue;
-                }
+            $written_var_ids = ClosureAnalyzer::analyzeVarIdsWrittenByCall($statements_analyzer, $context, $arg->value);
 
-                foreach ($atomic->byref_uses as $use_name => $_) {
-                    $use_var_id = '$' . $use_name;
-
-                    $context->removeVarFromConflictingClauses(
-                        $use_var_id,
-                        $context->vars_in_scope[$use_var_id] ?? null,
-                        $statements_analyzer,
-                    );
-                }
+            foreach ($written_var_ids as $var_id => $_) {
+                $context->removeVarFromConflictingClauses(
+                    $var_id,
+                    $context->vars_in_scope[$var_id] ?? null,
+                    $statements_analyzer,
+                );
             }
         }
 

@@ -533,12 +533,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         // a called closure may write what it captured by reference
-        foreach ($function_call_info->byref_uses as $use_name => $_) {
-            $use_var_id = '$' . $use_name;
-
+        foreach ($function_call_info->closure_written_var_ids as $var_id => $_) {
             $context->removeVarFromConflictingClauses(
-                $use_var_id,
-                $context->vars_in_scope[$use_var_id] ?? null,
+                $var_id,
+                $context->vars_in_scope[$var_id] ?? null,
                 $statements_analyzer,
             );
         }
@@ -1530,7 +1528,11 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $context->inside_call = $was_in_call;
 
-        $function_call_info->byref_uses = [];
+        $function_call_info->closure_written_var_ids = ClosureAnalyzer::analyzeVarIdsWrittenByCall(
+            $statements_analyzer,
+            $context,
+            $function_name,
+        );
 
         if ($stmt_name_type = $statements_analyzer->node_data->getType($function_name)) {
             if ($stmt_name_type->isNull()) {
@@ -1660,10 +1662,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $real_stmt,
                             $closure_return_type ?? Type::getMixed(),
                         );
-                    }
-
-                    if ($var_type_part instanceof TClosure) {
-                        $function_call_info->byref_uses += $var_type_part->byref_uses;
                     }
 
                     if ($var_type_part->callable_id !== null) {

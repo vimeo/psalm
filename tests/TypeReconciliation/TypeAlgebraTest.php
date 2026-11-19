@@ -4419,6 +4419,129 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }',
             ],
+            'nullCheckOfAParameterIsKeptWhenAClosureCapturingAVariableOfTheSameNameByReferenceIsCalled' => [
+                'code' => '<?php
+                    function f(?string $x): Closure {
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+
+                        return function (?string $x) use ($f): int {
+                            $notNull = $x !== null;
+                            $f();
+
+                            if ($notNull) {
+                                return strlen($x);
+                            }
+
+                            return 0;
+                        };
+                    }',
+            ],
+            'nullCheckOfAParameterIsKeptWhenAClosureCapturingAVariableOfTheSameNameByReferenceIsPassedToAFunction' => [
+                'code' => '<?php
+                    function run(callable $c): void {
+                        $c();
+                    }
+
+                    function f(?string $x): Closure {
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+
+                        return function (?string $x) use ($f): int {
+                            $notNull = $x !== null;
+                            run($f);
+
+                            if ($notNull) {
+                                return strlen($x);
+                            }
+
+                            return 0;
+                        };
+                    }',
+            ],
+            'nullCheckOfAParameterIsKeptWhenAssignedWithACallOfAClosureCapturingAVariableOfTheSameNameByReference' => [
+                'code' => '<?php
+                    function f(?string $x): Closure {
+                        $f = function () use (&$x): bool {
+                            $x = null;
+                            return (bool) rand(0, 1);
+                        };
+
+                        return function (?string $x) use ($f): int {
+                            $r = $x !== null && $f();
+
+                            if ($r) {
+                                return strlen($x);
+                            }
+
+                            return 0;
+                        };
+                    }',
+            ],
+            'nullCheckOfAParameterIsKeptWhenOredWithACallTakingAClosureCapturingAVariableOfTheSameNameByReference' => [
+                'code' => '<?php
+                    function run(callable $c): bool {
+                        $c();
+                        return (bool) rand(0, 1);
+                    }
+
+                    function f(?string $x): Closure {
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+
+                        return function (?string $x) use ($f): int {
+                            if ($x === null || run($f)) {
+                                return 0;
+                            }
+
+                            return strlen($x);
+                        };
+                    }',
+            ],
+            'nullCheckOfAVariableCapturedByValueIsKeptWhenAClosureCapturingItByReferenceIsCalled' => [
+                'code' => '<?php
+                    function f(?string $x): Closure {
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+
+                        return function () use ($x, $f): int {
+                            $notNull = $x !== null;
+                            $f();
+
+                            if ($notNull) {
+                                return strlen($x);
+                            }
+
+                            return 0;
+                        };
+                    }',
+            ],
+            'nullCheckIsKeptWhenAReturnedClosureCapturingAVariableOfTheSameNameByReferenceIsCalled' => [
+                'code' => '<?php
+                    function f(?string $x): int {
+                        $makeResetter = function () {
+                            $x = "a";
+                            return function () use (&$x): void {
+                                $x = null;
+                            };
+                        };
+                        $f = $makeResetter();
+                        $notNull = $x !== null;
+                        $f();
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
         ];
     }
 
@@ -4930,6 +5053,71 @@ final class TypeAlgebraTest extends TestCase
                         }
 
                         return strlen($x);
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckIsForgottenWhenAClosureCapturingItByReferenceIsCalledInAnotherClosureCapturingItByReference' => [
+                'code' => '<?php
+                    function f(?string $x): Closure {
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+
+                        return function () use (&$x, $f): int {
+                            $notNull = $x !== null;
+                            $f();
+
+                            if ($notNull) {
+                                return strlen($x);
+                            }
+
+                            return 0;
+                        };
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckIsForgottenWhenAClosureCapturingItByReferenceIsPassedInAnotherClosureCapturingItByReference' => [
+                'code' => '<?php
+                    function run(callable $c): bool {
+                        $c();
+                        return (bool) rand(0, 1);
+                    }
+
+                    function f(?string $x): Closure {
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+
+                        return function () use (&$x, $f): int {
+                            if ($x === null || run($f)) {
+                                return 0;
+                            }
+
+                            return strlen($x);
+                        };
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckOfAGlobalIsForgottenWhenAClosureCapturingItByReferenceIsCalledInAnotherClosureBindingIt' => [
+                'code' => '<?php
+                    function f(): Closure {
+                        global $x;
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+
+                        return function () use ($f): int {
+                            global $x;
+                            /** @var ?string $x */
+                            $notNull = $x !== null;
+                            $f();
+
+                            if ($notNull) {
+                                return strlen($x);
+                            }
+
+                            return 0;
+                        };
                     }',
                 'error_message' => 'PossiblyNullArgument',
             ],
