@@ -1107,7 +1107,7 @@ abstract class CallAnalyzer
                                         || $assertion_rule instanceof IsLooselyEqual
                                         || $assertion_rule instanceof IsNotLooselyEqual)
                                 ) {
-                                    // the template stands for the value of an argument, the one compared with
+                                    // =T and !=T compare with one value of the type T stands for, not with all of them
                                     $assertion_rule = new ($assertion_rule::class)(
                                         $atomic_type,
                                         AssertionFinder::getComparand(
