@@ -19,7 +19,8 @@ class PDOWrapper {
 }
 ```
 
-A parameter of a method implementing or overriding one with a sink is a sink too:
+A parameter of a method implementing or overriding one with a sink is a sink too, unless it has a
+`@psalm-taint-sink` of its own:
 
 ```php
 <?php

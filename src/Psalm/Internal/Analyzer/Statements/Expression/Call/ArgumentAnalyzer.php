@@ -2482,9 +2482,9 @@ final class ArgumentAnalyzer
     }
 
     /**
-     * The sinks of the parameters of the methods $method_id implements or overrides, through the ones that don't say
-     * it themselves, on a node of this call: the node of the parameter is also where the calls of the methods it
-     * overrides go, which their own sinks report already
+     * The sinks of the parameters of the methods $method_id implements or overrides, unless the parameter has sinks of
+     * its own, through the ones that don't say it themselves, on nodes of this call: the node of the parameter is also
+     * where the calls of the methods it overrides go, which their own sinks report already
      */
     private static function addInheritedParamSinks(
         Codebase $codebase,
@@ -2497,31 +2497,39 @@ final class ArgumentAnalyzer
         CodeLocation $arg_location,
         DataFlowNode $argument_value_node,
     ): void {
-        $inherited_sinks = self::getInheritedParamSinks(
+        if (($function_param->sinks | $function_param->value_sinks) !== 0) {
+            return;
+        }
+
+        [$sinks, $value_sinks] = self::getInheritedParamSinks(
             $codebase,
             $method_id,
             DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset),
             [],
-        ) & ~$function_param->sinks;
+        );
 
-        if ($inherited_sinks === 0) {
-            return;
+        if ($sinks !== 0) {
+            $inherited_sink = DataFlowNode::getForTaint(
+                $cased_method_id . '#' . ($argument_offset + 1),
+                $arg_location,
+                $sinks,
+            );
+            $taint_flow_graph->addSink($inherited_sink);
+            $taint_flow_graph->addPath($argument_value_node, $inherited_sink, 'arg');
         }
 
-        $inherited_sink = DataFlowNode::getForTaint(
-            $cased_method_id . '#' . ($argument_offset + 1),
-            $arg_location,
-            $inherited_sinks,
-        );
-        $taint_flow_graph->addSink($inherited_sink);
-        $taint_flow_graph->addPath($argument_value_node, $inherited_sink, 'arg');
+        if ($value_sinks !== 0) {
+            $taint_flow_graph->addArgumentValuesSink($argument_value_node, $value_sinks);
+        }
     }
 
     /**
-     * The sinks of the parameter at $offset of the methods $method_id implements or overrides
-     * (`@psalm-taint-sink`), through the ones that don't say it themselves
+     * The sinks of the parameter at $offset (see DataFlowNode::getParameterOffset()) of the methods $method_id
+     * implements or overrides (`@psalm-taint-sink`), through the ones that don't say it themselves, and those of
+     * the values of the array it is given (`@psalm-taint-sink <taint> $param[*]`)
      *
      * @param array<string, true> $visited
+     * @return array{int, int}
      * @psalm-capabilities read-props
      */
     private static function getInheritedParamSinks(
@@ -2529,15 +2537,16 @@ final class ArgumentAnalyzer
         MethodIdentifier $method_id,
         int $offset,
         array $visited,
-    ): int {
+    ): array {
         $visited[(string) $method_id] = true;
 
         if (!$codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
-            return 0;
+            return [0, 0];
         }
 
         $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
         $sinks = 0;
+        $value_sinks = 0;
 
         foreach ($class_storage->overridden_method_ids[$method_id->method_name] ?? [] as $overridden_method_id) {
             if (isset($visited[(string) $overridden_method_id])
@@ -2546,13 +2555,23 @@ final class ArgumentAnalyzer
                 continue;
             }
 
-            $overridden_param = $codebase->methods->getStorage($overridden_method_id)->params[$offset] ?? null;
-            $sinks |= $overridden_param !== null && $overridden_param->sinks !== 0
-                ? $overridden_param->sinks
-                : self::getInheritedParamSinks($codebase, $overridden_method_id, $offset, $visited);
+            $overridden_params = $codebase->methods->getStorage($overridden_method_id)->params;
+            $last_param = $overridden_params === [] ? null : $overridden_params[count($overridden_params) - 1];
+            // an argument after the first its variadic parameter is given has the offset of its own position
+            $overridden_param = $overridden_params[$offset] ?? ($last_param?->is_variadic ? $last_param : null);
+
+            if ($overridden_param !== null && ($overridden_param->sinks | $overridden_param->value_sinks) !== 0) {
+                $sinks |= $overridden_param->sinks;
+                $value_sinks |= $overridden_param->value_sinks;
+            } else {
+                [$overridden_sinks, $overridden_value_sinks]
+                    = self::getInheritedParamSinks($codebase, $overridden_method_id, $offset, $visited);
+                $sinks |= $overridden_sinks;
+                $value_sinks |= $overridden_value_sinks;
+            }
         }
 
-        return $sinks;
+        return [$sinks, $value_sinks];
     }
 
     /**
