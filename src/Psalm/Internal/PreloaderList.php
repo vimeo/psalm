@@ -797,6 +797,7 @@ final class PreloaderList {
         \Psalm\Internal\Codebase\ReferenceMapGenerator::class,
         \Psalm\Internal\Codebase\Reflection::class,
         \Psalm\Internal\Codebase\Scanner::class,
+        \Psalm\Internal\Codebase\ServerVariableTaints::class,
         \Psalm\Internal\Codebase\StorageByPatternResolver::class,
         \Psalm\Internal\Codebase\TaintFlowAnnotation::class,
         \Psalm\Internal\Codebase\TaintFlowGraph::class,
