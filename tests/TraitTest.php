@@ -1581,6 +1581,43 @@ final class TraitTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'traitClassTemplateAndMethodTemplateAreKeptInAClosureOfTheTraitMethod' => [
+                'code' => '<?php
+                    interface Base {}
+
+                    /** @template T of Base */
+                    trait Tr {
+                        /** @param class-string<T> $c */
+                        public function useIt(string $c): string {
+                            $f = function () use ($c): string {
+                                return $c;
+                            };
+
+                            return $f();
+                        }
+
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return U
+                         */
+                        public function other($u) {
+                            $g = function (mixed $x): mixed {
+                                return $x;
+                            };
+
+                            return $g($u);
+                        }
+                    }
+
+                    final class Impl implements Base {
+                        /** @use Tr<Impl> */
+                        use Tr;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'traitMethodTemplatePassedThroughAClosureParam' => [
                 'code' => '<?php
                     class Service
