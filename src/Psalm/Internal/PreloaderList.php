@@ -1031,6 +1031,7 @@ final class PreloaderList {
         \Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseXor::class,
         \Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedConcatOp::class,
         \Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedDivisionOp::class,
+        \Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedExpression::class,
         \Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp::class,
         \Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShift::class,
         \Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShiftLeft::class,

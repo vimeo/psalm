@@ -21,7 +21,6 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
@@ -1206,22 +1205,10 @@ final class ArgumentsAnalyzer
 
         if (count($function_params) > count($args) && !$has_packed_var) {
             for ($i = count($args), $iMax = count($function_params); $i < $iMax; $i++) {
-                if ($function_params[$i]->default_type
-                    && $function_params[$i]->type
+                if ($function_params[$i]->type
                     && $function_params[$i]->type->hasTemplate()
+                    && ($default_type = $function_params[$i]->getDefaultType($codebase, $statements_analyzer))
                 ) {
-                    if ($function_params[$i]->default_type instanceof Union) {
-                        $default_type = $function_params[$i]->default_type;
-                    } else {
-                        $default_type_atomic = ConstantTypeResolver::resolve(
-                            $codebase->classlikes,
-                            $function_params[$i]->default_type,
-                            $statements_analyzer,
-                        );
-
-                        $default_type = new Union([$default_type_atomic]);
-                    }
-
                     if ($default_type->hasLiteralValue()) {
                         ArgumentAnalyzer::checkArgumentMatches(
                             $statements_analyzer,
@@ -2711,22 +2698,10 @@ final class ArgumentsAnalyzer
                 }
 
                 if ($param->type
-                    && $param->default_type
                     && !$param->is_variadic
                     && $template_result
+                    && ($default_type = $param->getDefaultType($codebase, $statements_analyzer))
                 ) {
-                    if ($param->default_type instanceof Union) {
-                        $default_type = $param->default_type;
-                    } else {
-                        $default_type_atomic = ConstantTypeResolver::resolve(
-                            $codebase->classlikes,
-                            $param->default_type,
-                            $statements_analyzer,
-                        );
-
-                        $default_type = new Union([$default_type_atomic]);
-                    }
-
                     TemplateStandinTypeReplacer::fillTemplateResult(
                         $param->type,
                         $template_result,

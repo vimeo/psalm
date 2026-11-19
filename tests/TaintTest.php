@@ -5645,6 +5645,17 @@ final class TaintTest extends TestCase
                         function (string $content, int $mode = 0): void {};
                     $closure($input, 2);',
             ],
+            'conditionalSinkOfAnEscapingDefaultModeOfAClassDeclaredLater' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink ($mode is 0|1|2 ? null : \'html\') $content */
+                    function render(string $content, int $mode = Mode::ESCAPED): void {}
+
+                    render((string) $_GET["x"]);
+
+                    final class Mode {
+                        public const ESCAPED = 1;
+                    }',
+            ],
             'lateBoundKeyedStoreKeepsTheStoresOfUnrelatedClassesApart' => [
                 'code' => '<?php
                     abstract class Model {
@@ -8713,6 +8724,18 @@ final class TaintTest extends TestCase
                     function render(string $content, int $mode = 3): void {}
 
                     render((string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionalSinkOfARawDefaultModeOfAClassDeclaredLater' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink ($mode is 0|1|2 ? null : \'html\') $content */
+                    function render(string $content, int $mode = Mode::RAW): void {}
+
+                    render((string) $_GET["x"]);
+
+                    final class Mode {
+                        public const RAW = 3;
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'conditionalSinkOfAMethod' => [

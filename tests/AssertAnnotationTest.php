@@ -2944,6 +2944,38 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }',
             ],
+            'assertResolvesLikeCallWithoutArgumentsWithADefaultOfAClassDeclaredLater' => [
+                'code' => '<?php
+                    final class Item {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template T
+                     */
+                    final class Box {
+                        /**
+                         * @template D
+                         * @param D|(Closure(): D)|null $default
+                         * @return ($default is Closure ? D : (D|T))
+                         */
+                        public function first($default = Defaults::NONE) { throw new LogicException(); }
+
+                        /** @psalm-assert-if-false null $this->first() */
+                        public function isNotEmpty(): bool { return true; }
+                    }
+
+                    /** @param Box<Item> $box */
+                    function check(Box $box): void {
+                        if ($box->isNotEmpty()) {
+                            $x = $box->first();
+                            /** @psalm-check-type-exact $x = Item */;
+                        }
+                    }
+
+                    final class Defaults {
+                        public const NONE = null;
+                    }',
+            ],
             'assertOnIfThisIsMethodKeepsDeclaredReturnType' => [
                 'code' => '<?php
                     final class Item {}

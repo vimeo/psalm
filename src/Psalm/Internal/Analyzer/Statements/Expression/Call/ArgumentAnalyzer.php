@@ -21,7 +21,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
-use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -585,18 +584,10 @@ final class ArgumentAnalyzer
                         $arg_value_type = $unpacked_atomic_array->properties[$unpacked_argument_offset];
                     } elseif ($unpacked_atomic_array->fallback_params) {
                         $arg_value_type = $unpacked_atomic_array->fallback_params[1];
-                    } elseif ($function_param->is_optional && $function_param->default_type) {
-                        if ($function_param->default_type instanceof Union) {
-                            $arg_value_type = $function_param->default_type;
-                        } else {
-                            $arg_value_type_atomic = ConstantTypeResolver::resolve(
-                                $codebase->classlikes,
-                                $function_param->default_type,
-                                $statements_analyzer,
-                            );
-
-                            $arg_value_type = new Union([$arg_value_type_atomic]);
-                        }
+                    } elseif ($function_param->is_optional
+                        && ($default_type = $function_param->getDefaultType($codebase, $statements_analyzer))
+                    ) {
+                        $arg_value_type = $default_type;
                     } elseif ($codebase->analysis_php_version_id >= 8_00_00
                         && $allow_named_args
                         && $unpacked_atomic_array->getGenericKeyType()->allStringLiterals()

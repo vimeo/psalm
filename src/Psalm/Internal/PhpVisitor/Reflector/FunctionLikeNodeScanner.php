@@ -1054,7 +1054,13 @@ final class FunctionLikeNodeScanner
         $default_type = null;
 
         if ($param->default) {
-            $default_type = SimpleTypeInferer::infer(
+            $default_type = ExpressionResolver::getUnresolvedExpression(
+                $param->default,
+                $this->aliases,
+                $fq_classlike_name,
+                $this->classlike_storage?->parent_class,
+                [],
+            ) ?? SimpleTypeInferer::infer(
                 $this->codebase,
                 new NodeDataProvider(),
                 $param->default,
@@ -1062,15 +1068,11 @@ final class FunctionLikeNodeScanner
                 null,
                 null,
                 $fq_classlike_name,
+            ) ?? ExpressionResolver::getUnresolvedClassConstExpr(
+                $param->default,
+                $this->aliases,
+                $fq_classlike_name,
             );
-
-            if (!$default_type) {
-                $default_type = ExpressionResolver::getUnresolvedClassConstExpr(
-                    $param->default,
-                    $this->aliases,
-                    $fq_classlike_name,
-                );
-            }
         }
 
         return new FunctionLikeParameter(

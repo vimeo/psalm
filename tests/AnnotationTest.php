@@ -194,6 +194,94 @@ final class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testParamDefaultOfASelfOrParentObjectIsAddedToTheDocblockType(): void
+    {
+        Config::getInstance()->add_param_default_to_docblock_type = true;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Base {
+                    public function __construct(public int $x = 0) {}
+                }
+
+                final class Opt extends Base {
+                    /** @param string $_o */
+                    public static function make($_o = new self(A::X)): void {}
+
+                    /** @param string $_o */
+                    public static function makeParent($_o = new parent(A::X)): void {}
+                }
+
+                Opt::make();
+                Opt::makeParent();
+
+                final class A {
+                    public const X = 10;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testParamDefaultOfAnObjectIsAddedToTheDocblockType(): void
+    {
+        Config::getInstance()->add_param_default_to_docblock_type = true;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace ObjTest;
+
+                use ObjTest\Payload as P;
+
+                final class Payload {
+                    public function __construct(public int $x) {}
+                }
+
+                /** @param string $v */
+                function describe($v = new P(Num::TEN)): int {
+                    return is_string($v) ? 0 : $v->x;
+                }
+
+                describe(new P(10));
+
+                final class Num {
+                    public const TEN = 10;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testParamDefaultOfCompoundConstantExpressionsIsAddedToTheDocblockType(): void
+    {
+        Config::getInstance()->add_param_default_to_docblock_type = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class A {
+                    public const VALUE = 1;
+                    public const FLAGS = 1;
+                    public const MORE = 2;
+
+                    /** @param string $_f */
+                    public static function bits($_f = self::FLAGS | self::MORE): void {}
+                }
+
+                /** @param string $_v */
+                function format($_v = A::VALUE + 1): void {}
+
+                format(2);
+                A::bits(3);',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testInvalidTypehintParamDefaultButAllowedInConfig(): void
     {
         $this->expectException(CodeException::class);

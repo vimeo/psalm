@@ -6,6 +6,9 @@ namespace Psalm\Storage;
 
 use Override;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type\MutableTypeVisitor;
 use Psalm\Type\TypeNode;
@@ -74,6 +77,19 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
         return ($this->type ? $this->type->getId() : 'mixed')
             . ($this->is_variadic ? '...' : '')
             . ($this->is_optional ? '=' : '');
+    }
+
+    /**
+     * The type of the default value. A default reading constants of classes is resolved when it is asked for, so that
+     * it follows the constants of other files.
+     */
+    public function getDefaultType(Codebase $codebase, ?StatementsAnalyzer $statements_analyzer = null): ?Union
+    {
+        if ($this->default_type instanceof UnresolvedConstantComponent) {
+            return ConstantTypeResolver::resolveToUnion($codebase, $this->default_type, $statements_analyzer);
+        }
+
+        return $this->default_type;
     }
 
     /** @psalm-mutation-free */
