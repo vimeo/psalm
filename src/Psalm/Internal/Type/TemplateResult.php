@@ -42,6 +42,9 @@ final class TemplateResult
      */
     public bool $readonly = false;
 
+    /** Declared return type of the callable whose arguments are being inferred. */
+    public ?Union $conditional_return_context = null;
+
     /**
      * @var list<Union>
      */

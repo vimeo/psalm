@@ -815,6 +815,8 @@ final class ArgumentsAnalyzer
             }
         }
 
+        $template_result->conditional_return_context = $function_storage->return_type ?? null;
+
         if ($function_storage) {
             $template_result = self::getProvisionalTemplateResultForFunctionLike(
                 $statements_analyzer,

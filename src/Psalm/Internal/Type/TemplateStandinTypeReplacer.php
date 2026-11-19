@@ -12,6 +12,7 @@ use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\KeyedArrayComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\TypeVisitor\ConditionalTemplateVisitor;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -636,17 +637,10 @@ final class TemplateStandinTypeReplacer
     }
 
     private static function normalizeStringInput(
-        ?Union $input_type,
+        Union $input_type,
         Union $as,
         Codebase $codebase,
-    ): ?Union {
-        if ($input_type === null) {
-            return null;
-        }
-        if (!$as->hasString()) {
-            return $input_type;
-        }
-
+    ): Union {
         $non_string_types = [];
         foreach ($as->getAtomicTypes() as $bound_type) {
             if (!$bound_type instanceof Atomic\TString) {
@@ -879,11 +873,18 @@ final class TemplateStandinTypeReplacer
 
             $atomic_type = $atomic_type->replaceAs($as);
 
-            $input_type = self::normalizeStringInput(
-                $input_type,
-                $as,
-                $codebase,
-            );
+            // Use the converted argument only for the template tested by the return condition.
+            if ($input_type !== null
+                && $input_arg_offset !== null
+                && $depth === 1
+                && !$add_lower_bound
+                && !$template_result->readonly
+                && $as->hasString()
+                && $template_result->conditional_return_context !== null
+                && ConditionalTemplateVisitor::contains($template_result->conditional_return_context, $atomic_type)
+            ) {
+                $input_type = self::normalizeStringInput($input_type, $as, $codebase);
+            }
 
             if ($input_type
                 && !$template_result->readonly

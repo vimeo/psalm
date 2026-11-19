@@ -1450,6 +1450,92 @@ final class ConditionalReturnTypeTest extends TestCase
                     }
                     PHP,
             ],
+            'stringableMethodWithConditionalReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Converter {
+                        /**
+                         * @template T of array|string
+                         * @param T $value
+                         * @return (T is array ? array : false|string)
+                         */
+                        public function convert(array|string $value): array|false|string {
+                            return $value;
+                        }
+                    }
+                    function test(Converter $converter, Throwable $error): void {
+                        $value = $converter->convert($error);
+                        /** @psalm-check-type-exact $value = false|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableOrdinaryGenericReturnKeepsExistingInference' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of array|string
+                     * @param T $value
+                     * @return T
+                     */
+                    function identity(array|string $value): array|string {
+                        return $value;
+                    }
+                    function test(Throwable $error): void {
+                        $value = identity($error);
+                        /** @psalm-check-type-exact $value = array<array-key, mixed>|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableTemplateUsedOnlyInNestedConditional' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of array|string
+                     * @template U of bool
+                     * @param T $value
+                     * @param U $keep
+                     * @return (U is true ? (T is array ? array : string) : null)
+                     */
+                    function choose(array|string $value, bool $keep): array|string|null {
+                        return $keep ? $value : null;
+                    }
+                    function test(Throwable $error): void {
+                        $value = choose($error, true);
+                        /** @psalm-check-type-exact $value = string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
+            'stringableUnrelatedTemplateKeepsExistingInference' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of array|string
+                     * @template U of bool
+                     * @param T $value
+                     * @param U $keep
+                     * @return (U is true ? T : null)
+                     */
+                    function choose(array|string $value, bool $keep): array|string|null {
+                        return $keep ? $value : null;
+                    }
+                    function test(Throwable $error): void {
+                        $value = choose($error, true);
+                        /** @psalm-check-type-exact $value = array<array-key, mixed>|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.2',
+            ],
         ];
     }
 
