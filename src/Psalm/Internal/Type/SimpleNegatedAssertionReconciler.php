@@ -528,13 +528,11 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     $redundant = false;
                     $non_bool_types[] = $type;
                 }
-            } elseif (!$type instanceof TBool
-                || ($is_equality && $type::class === TBool::class)
-            ) {
-                if ($type instanceof TScalar && $is_equality) {
-                    $redundant = false;
-                    $non_bool_types[] = $type;
-                } elseif ($type instanceof TScalar) {
+            } elseif ($is_equality && ($type instanceof TBool || $type instanceof TScalar)) {
+                $redundant = false;
+                $non_bool_types[] = $type;
+            } elseif (!$type instanceof TBool) {
+                if ($type instanceof TScalar) {
                     $redundant = false;
                     $non_bool_types[] = new TString();
                     $non_bool_types[] = new TInt();

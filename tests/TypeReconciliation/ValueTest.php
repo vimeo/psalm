@@ -1543,6 +1543,47 @@ final class ValueTest extends TestCase
                     '$sc===' => 'null|scalar',
                 ],
             ],
+            'notIdenticalToBoolKeepsBoolLiterals' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return true|int */
+                    function ti() { return rand(0, 1) ? true : 1; }
+                    /** @return false|string */
+                    function fs() { return rand(0, 1) ? false : ""; }
+                    function b(): bool { return true; }
+
+                    $b = b();
+                    $ti = ti();
+                    $fs = fs();
+
+                    $ti = $ti !== $b ? $ti : null;
+                    $fs = $fs !== $b ? $fs : null;
+                    PHP,
+                'assertions' => [
+                    '$ti===' => 'int|null|true',
+                    '$fs===' => 'false|null|string',
+                ],
+            ],
+            'notIdenticalToSameWideTypeKeepsIt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return resource */
+                    function r() { return STDIN; }
+                    function c(): callable { return "strlen"; }
+
+                    $r1 = r();
+                    $r2 = r();
+                    $c1 = c();
+                    $c2 = c();
+
+                    $r1 = $r1 !== $r2 ? $r1 : null;
+                    $c1 = $c1 !== $c2 ? $c1 : null;
+                    PHP,
+                'assertions' => [
+                    '$r1===' => 'null|resource',
+                    '$c1===' => 'callable[impure]|null',
+                ],
+            ],
             'notIdenticalToObjectKeepsCallableAndIterable' => [
                 'code' => <<<'PHP'
                     <?php
