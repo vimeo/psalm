@@ -268,7 +268,6 @@ final class NewAnalyzer extends CallAnalyzer
                         $stmt->getArgs(),
                         null,
                         null,
-                        true,
                         $context,
                     );
 
@@ -288,7 +287,6 @@ final class NewAnalyzer extends CallAnalyzer
                         $stmt->getArgs(),
                         null,
                         null,
-                        true,
                         $context,
                     );
 
@@ -353,7 +351,6 @@ final class NewAnalyzer extends CallAnalyzer
                     $stmt->getArgs(),
                     null,
                     null,
-                    true,
                     $context,
                 );
 
@@ -1368,7 +1365,6 @@ final class NewAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             );
 
@@ -1464,7 +1460,6 @@ final class NewAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             );
 

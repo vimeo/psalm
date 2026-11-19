@@ -303,7 +303,6 @@ abstract class CallAnalyzer
                 $args,
                 null,
                 null,
-                true,
                 $context,
                 $template_result,
             ) !== false;
@@ -368,7 +367,6 @@ abstract class CallAnalyzer
             $args,
             $method_params,
             (string) $method_id,
-            $method_storage?->allowsNamedArguments() ?? true,
             $context,
             $template_result,
         ) === false) {
