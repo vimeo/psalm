@@ -26,7 +26,7 @@ Psalm recognises a number of taint types by default, defined in the [Psalm\Type\
 - `sql` - used for strings that could contain SQL
 - `nosql` - used for values that could set the structure of a NoSQL query (e.g. a MongoDB filter, update or pipeline). Only arrays and objects can carry it: a scalar can never be a query document, so casting user input to `string`, `int`, `float` or `bool` removes it
 - `ldap` - used for strings that could contain a ldap DN or filter
-- `xpath` - used for strings that could contain an XPath expression
+- `xpath` - used for strings that could contain an XPath expression: the name of both `xpath_query`, what a value outside a string literal of the query can change it with, and `xpath_literal`, which is all a value in a string literal of the query (`"//user[@id='" . $id . "']"`) keeps: it can only change the query with a quote
 - `html` - used for strings that could contain angle brackets or unquoted strings
 - `has_quotes` - used for strings that could contain unquoted strings
 - `shell` - used for strings that could contain shell commands
@@ -41,6 +41,8 @@ Psalm recognises a number of taint types by default, defined in the [Psalm\Type\
 - `file` - used for strings that could contain a path
 - `cookie` - used for strings that could contain a http cookie
 - `header` - used for strings that could contain a http header
+- `redirect` - used for strings that could choose where a redirect sends the client (a `Location` header)
+- `session` - used for values that could be stored in the session, which the code reading it back trusts
 - `sleep` - used for values that could set how long the code waits (`sleep()`, curl timeouts, ...). Unlike the other taints, `int` and `float` values carry it
 - `llm_prompt` - used for strings that could contain instructions passed to an LLM prompt (prompt injection)
 - `user_secret` - used for strings that could contain user-supplied secrets
@@ -74,6 +76,8 @@ You can also [define your own taint sources](custom_taint_sources.md).
 Psalm currently defines a number of different sinks for builtin functions and methods, including `echo`, `include`, `header`.
 
 What is written to a stream opened on a literal `php://output` path, which is the response, or `php://stdout`, which is the response under the CGI SAPI, is a sink as what `echo` outputs is: `file_put_contents()` to such a path, and `fwrite()`, `fputs()`, `fputcsv()`, `fprintf()`, `vfprintf()`, `stream_copy_to_stream()` and the `fwrite()` and `fputcsv()` methods of `SplFileObject` on a stream opened with `fopen()` or `new SplFileObject()` on such a path in the same function, and held by its variables.
+
+What is stored in `$_SESSION` is a `session` sink, and a `Location` header given to `header()` a `redirect` sink rather than a `header` one, unless what follows `Location:` fixes the server (`https://example.com/`, or a path such as `/account?`).
 
 You can also [define your own taint sinks](custom_taint_sinks.md).
 

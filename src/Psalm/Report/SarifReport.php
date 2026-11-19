@@ -47,10 +47,12 @@ final class SarifReport extends Report
         'TaintedHtml' => '6.1',
         'TaintedTextWithQuotes' => '6.1',
         'TaintedHeader' => '6.1',
+        'TaintedRedirect' => '6.1',
         'TaintedCookie' => '6.1',
         'TaintedUrlComponent' => '5.3',
         'TaintedUrlPath' => '5.3',
         'TaintedSleep' => '5.3',
+        'TaintedSession' => '5.3',
         // not taint issues, but security ones all the same
         'WeakHash' => '5.3',
         'WeakCipher' => '5.9',

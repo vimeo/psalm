@@ -1306,6 +1306,41 @@ final class TaintTest extends TestCase
                     v("", "", "safe");
                     v("", "", escaped(tainted()));',
             ],
+            'valueEscapedForXpathByTheCodeInAStringLiteral' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape xpath
+                     */
+                    function xpathLiteral(string $value): string {
+                        return "concat(\'" . str_replace("\'", "\', \"\'\", \'", $value) . "\', \'\')";
+                    }
+
+                    function find(DOMXPath $xpath): void {
+                        $xpath->query("//user[@id=" . xpathLiteral((string) $_GET["id"]) . "]");
+                        $xpath->query("//user[@id=\'" . xpathLiteral((string) $_GET["id"]) . "\']");
+                    }',
+            ],
+            'valueWithoutQuotesInAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 _.%~\-]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@id=\'" . $id . "\']");
+                        $xpath->query(\'//user[@id="\' . $id . \'"]\');
+                    }',
+            ],
+            'valueWithoutQuotesInAnXpathStringLiteralFollowedByAnotherQuote' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 _.%~\-]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@id=\'" . $id . "\"]");
+                    }',
+            ],
             'noTaintFromASpecializedPregReplaceCallbackCallbackInItsOtherCalls' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -1414,6 +1449,26 @@ final class TaintTest extends TestCase
                     $row = new stdClass();
                     $row->name = "guest";
                     echo (string) $row->name;',
+            ],
+            'locationHeaderWithAFixedServerIsNoRedirect' => [
+                'code' => '<?php
+                    header("Location: https://example.com/" . (string) $_GET["page"]);
+                    header("Location: /account?tab=" . (string) $_GET["tab"]);
+                    header("location : /docs/" . (string) $_GET["page"]);',
+            ],
+            'sessionItemWhereTaintedInputIsSuppressed' => [
+                'code' => '<?php
+                    /** @psalm-suppress TaintedInput */
+                    function remember(string $user): void {
+                        $_SESSION["user"] = $user;
+                    }
+
+                    remember((string) $_GET["user"]);',
+            ],
+            'sessionItemOfAValueThatCantBeTainted' => [
+                'code' => '<?php
+                    $_SESSION["page"] = (int) $_GET["page"];
+                    $_SESSION["user"] = "guest";',
             ],
             'coalesceOnAnOffsetKeepsTheTypeOfTheArrayItReads' => [
                 'code' => '<?php
@@ -6725,6 +6780,58 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'valueAssignedWithAQuoteOfItsOwnInAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
+                            return;
+                        }
+                        $condition = "\' or @b=" . $id;
+                        $xpath->query("//user[@a=\'" . $condition . "\']");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'valueAfterAClosedXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@a=\'x\'" . $id . "\']");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'valueBuiltWithQuotesOfItsOwnInAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@a=\'" . ("\' or @b=" . $id) . "\']");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'valueWithSpacesOutsideAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $id = trim((string) $_GET["id"]);
+                        if (!preg_match("#^[a-zA-Z0-9 ]+$#", $id)) {
+                            return;
+                        }
+                        $xpath->query("//user[@id=" . $id . "]");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
+            'valueWithQuotesInAnXpathStringLiteral' => [
+                'code' => '<?php
+                    function find(DOMXPath $xpath): void {
+                        $xpath->query("//user[@id=\'" . (string) $_GET["id"] . "\']");
+                    }',
+                'error_message' => 'TaintedXpath',
+            ],
             'valueThatMayNotMatchThePatternKeepsItsTaints' => [
                 'code' => '<?php
                     $name = (string) $_GET["name"];
@@ -6831,6 +6938,44 @@ final class TaintTest extends TestCase
                         echo (string) $document->title;
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'taintedLocationHeader' => [
+                'code' => '<?php
+                    header("Location: " . (string) $_GET["next"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintedLocationHeaderAfterARootSlash' => [
+                'code' => '<?php
+                    // `//evil.example` is another server
+                    header("Location: /" . (string) $_GET["next"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'taintedRedirectSinkAnnotation' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    redirectTo((string) $_GET["next"]);',
+                'error_message' => 'TaintedRedirect',
+            ],
+            'headerWhoseNameIsTaintedIsNoRedirect' => [
+                'code' => '<?php
+                    header((string) $_GET["header"] . ": /");',
+                'error_message' => 'TaintedHeader',
+            ],
+            'taintedSessionItem' => [
+                'code' => '<?php
+                    $_SESSION["user"] = $_GET["user"];',
+                'error_message' => 'TaintedSession',
+            ],
+            'taintedNestedSessionItem' => [
+                'code' => '<?php
+                    function remember(string $role): void {
+                        $_SESSION["auth"]["role"] = $role;
+                    }
+
+                    remember((string) $_GET["role"]);',
+                'error_message' => 'TaintedSession',
             ],
             'superGlobalPassedByReferenceIsTainted' => [
                 'code' => '<?php // --taint-analysis
