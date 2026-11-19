@@ -3176,6 +3176,26 @@ final class TaintTest extends TestCase
                         echo $item["city"];
                     }',
             ],
+            'dontTaintOtherKeysOfArrayItemWrittenThroughAReference' => [
+                'code' => '<?php // --taint-analysis
+                    function build(): array {
+                        $a = ["x" => "", "y" => "safe"];
+                        $r = &$a["x"];
+                        $r = (string) $_GET["x"];
+                        return $a;
+                    }
+
+                    function buildFromVariable(): array {
+                        $x = "";
+                        $a = ["y" => "safe"];
+                        $a["x"] = &$x;
+                        $x = (string) $_GET["x"];
+                        return $a;
+                    }
+
+                    echo build()["y"];
+                    echo buildFromVariable()["y"];',
+            ],
             'dontTaintArrayItemsOverwrittenByAForeachByReference' => [
                 'code' => '<?php // --taint-analysis
                     $values = ["key" => ""];
@@ -11867,6 +11887,45 @@ final class TaintTest extends TestCase
                     $data = $_GET;
                     $data["city"] = "msk";
                     echo (string) $data["zip"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintArrayItemWrittenThroughAReference' => [
+                'code' => '<?php // --taint-analysis
+                    function build(): array {
+                        $a = ["x" => "", "y" => "safe"];
+                        $r = &$a["x"];
+                        $r = (string) $_GET["x"];
+                        return $a;
+                    }
+
+                    echo build()["x"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintArrayItemBoundToAVariableWrittenAfterwards' => [
+                'code' => '<?php // --taint-analysis
+                    function build(): array {
+                        $x = "";
+                        $a = ["y" => "safe"];
+                        $a["x"] = &$x;
+                        $x = (string) $_GET["x"];
+                        return $a;
+                    }
+
+                    echo build()["x"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintEachArrayItemBoundToTheSameVariable' => [
+                'code' => '<?php // --taint-analysis
+                    function build(): array {
+                        $x = "";
+                        $a = ["y" => "safe"];
+                        $a["a"] = &$x;
+                        $a["b"] = &$x;
+                        $x = (string) $_GET["x"];
+                        return $a;
+                    }
+
+                    echo build()["a"];',
                 'error_message' => 'TaintedHtml',
             ],
             'taintArrayItemWrittenByAForeachByReference' => [
