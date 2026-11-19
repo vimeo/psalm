@@ -1669,6 +1669,131 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'coalesceAssignmentComparedWithNullNarrowsTheVariable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function make(): ?object { return null; }
+
+                    function notIdentical(?string $x, ?string $y): void {
+                        if (null !== ($x ??= $y)) {
+                            /** @psalm-check-type-exact $x = string */;
+                        } else {
+                            /** @psalm-check-type-exact $x = null */;
+                        }
+                    }
+
+                    function identicalEarlyReturn(?string $x, ?string $y): string {
+                        if (($x ??= $y) === null) {
+                            /** @psalm-check-type-exact $x = null */;
+                            return '';
+                        }
+
+                        return $x;
+                    }
+
+                    function notEqual(?object $x): object {
+                        if (($x ??= make()) != null) {
+                            return $x;
+                        }
+
+                        throw new Exception();
+                    }
+
+                    function inOr(?string $x, ?string $y): bool {
+                        return null === ($x ??= $y) || strlen($x) > 1;
+                    }
+
+                    function inAnd(?string $x, ?string $y): bool {
+                        return null !== ($x ??= $y) && strlen($x) > 1;
+                    }
+
+                    /** @param array{k?: object|null} $arr */
+                    function arrayItem(array $arr): object {
+                        if (null === ($arr['k'] ??= make())) {
+                            exit;
+                        }
+
+                        return $arr['k'];
+                    }
+
+                    final class Holder {
+                        private ?object $item = null;
+
+                        public function item(): object {
+                            if (null !== ($this->item ??= make())) {
+                                return $this->item;
+                            }
+
+                            throw new Exception();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'coalesceAssignmentOfMixedComparedWithNullNarrowsTheVariable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function m(): mixed { return 1; }
+                    function n(): ?string { return null; }
+
+                    $x = m();
+
+                    if (null === ($x ??= n())) {
+                        exit;
+                    }
+                    PHP,
+                'assertions' => ['$x===' => 'mixed|string'],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
+            'coalesceAssignmentComparedWithAValueNarrowsTheVariable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function identical(?string $x, ?string $y): void {
+                        if ('a' === ($x ??= $y)) {
+                            /** @psalm-check-type-exact $x = 'a' */;
+                        }
+                    }
+
+                    function typeCheck(int|string|null $x, ?string $y): void {
+                        if (is_string($x ??= $y)) {
+                            /** @psalm-check-type-exact $x = string */;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'coalesceAssignmentComparedWithNullForgetsTheOldValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(?string $x, ?string $y, bool $b): string {
+                        if ($x !== null && $b) {
+                            echo $x;
+                        } elseif (null !== ($x ??= $y)) {
+                            /** @psalm-check-type-exact $b = bool */;
+                            return $x;
+                        }
+
+                        return '';
+                    }
+
+                    function g(?string $x, ?string $y): string {
+                        if (($x === null || $x === 'a') && null !== ($x ??= $y)) {
+                            /** @psalm-check-type-exact $x = string */;
+                            return $x;
+                        }
+
+                        return '';
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'instanceofStoredInVariableNarrowsInIfBody' => [
                 'code' => '<?php
                     interface Foo {}
