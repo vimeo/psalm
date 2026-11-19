@@ -3423,6 +3423,21 @@ final class UnusedVariableTest extends TestCase
                     }
                 ',
             ],
+            'writeAfterLoopToVariableBoundToItemsOfArrayUnitedSinceOnTheRightIsUsed' => [
+                'code' => '<?php
+                    /** @param list<string> $keys */
+                    function f(array $keys): array {
+                        $x = 1;
+                        $out = [];
+                        foreach ($keys as $k) {
+                            $out[$k] = &$x;
+                        }
+                        $out = ["q" => 3] + $out;
+                        $x = "z";
+                        return $out;
+                    }
+                ',
+            ],
             'writeAfterLoopToVariableBoundToArrayItemsIsUsed' => [ // #14206
                 'code' => '<?php
                     /** @param list<string> $keys */

@@ -642,13 +642,18 @@ final class AssignmentAnalyzer
         if ($extended_var_id !== null) {
             $context->forgetMethodResultsDependingOn($extended_var_id);
 
-            // the union of an array with another (`$a += $b`) keeps the slots of its items
+            // the union of an array with another (`$a += $b`, `$a = $b + $a`) keeps the slots of its items
             if (!$assign_value instanceof PhpParser\Node\Expr\BinaryOp\Plus
-                || ExpressionIdentifier::getExtendedVarId(
+                || (ExpressionIdentifier::getExtendedVarId(
                     $assign_value->left,
                     $statements_analyzer->getFQCLN(),
                     $statements_analyzer,
                 ) !== $extended_var_id
+                    && ExpressionIdentifier::getExtendedVarId(
+                        $assign_value->right,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer,
+                    ) !== $extended_var_id)
             ) {
                 $context->forgetReferencesPossiblyBoundUnder($extended_var_id);
             }
