@@ -175,6 +175,8 @@ final class ClassLikeDocblockParser
             $info->consistent_templates = true;
         }
 
+        $info->named_arguments = DocblockParser::getNamedArguments($parsed_docblock);
+
         if (count($info->psalm_internal = DocblockParser::handlePsalmInternal($parsed_docblock)) !== 0) {
             $info->internal = true;
         }

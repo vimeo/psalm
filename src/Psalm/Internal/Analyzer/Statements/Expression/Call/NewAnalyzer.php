@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
@@ -267,7 +268,6 @@ final class NewAnalyzer extends CallAnalyzer
                         $stmt->getArgs(),
                         null,
                         null,
-                        true,
                         $context,
                     );
 
@@ -287,7 +287,6 @@ final class NewAnalyzer extends CallAnalyzer
                         $stmt->getArgs(),
                         null,
                         null,
-                        true,
                         $context,
                     );
 
@@ -352,7 +351,6 @@ final class NewAnalyzer extends CallAnalyzer
                     $stmt->getArgs(),
                     null,
                     null,
-                    true,
                     $context,
                 );
 
@@ -588,7 +586,10 @@ final class NewAnalyzer extends CallAnalyzer
         CliOutput::checkInstantiation($statements_analyzer, $context, $storage, $stmt);
     }
 
-    private static function applyConstructorAssertions(
+    /**
+     * What the constructor leaves in the context: the globals it writes, then what it asserts
+     */
+    private static function applyConstructorEffects(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\New_ $stmt,
         Context $context,
@@ -598,6 +599,8 @@ final class NewAnalyzer extends CallAnalyzer
         $codebase = $statements_analyzer->getCodebase();
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
         $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+        GlobalAnalyzer::readGlobalsWrittenBy($statements_analyzer, $context, $method_storage);
 
         if (!$method_storage->assertions || !$stmt->class instanceof PhpParser\Node\Name) {
             return;
@@ -751,7 +754,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $can_extend,
                 );
 
-                self::applyConstructorAssertions(
+                self::applyConstructorEffects(
                     $statements_analyzer,
                     $stmt,
                     $context,
@@ -1362,7 +1365,6 @@ final class NewAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             );
 
@@ -1458,7 +1460,6 @@ final class NewAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             );
 
