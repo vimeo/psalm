@@ -640,8 +640,8 @@ final class ArgumentsAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         $static_class_type = $template_result->static_class_type;
-        $expand_static = static fn(Union $type): Union => $static_class_type !== null
-            ? TypeExpander::expandStatic($codebase, $type, $static_class_type, $template_result->static_class_is_final)
+        $expand_static = static fn(Union $type, bool $final): Union => $static_class_type !== null
+            ? TypeExpander::expandStatic($codebase, $type, $static_class_type, $final)
             : $type;
 
         if (($argument_offset === 1 && in_array($method_id, self::ARRAY_FILTERLIKE, true) && count($args) === 2)
@@ -741,24 +741,42 @@ final class ArgumentsAnalyzer
             );
         };
 
-        // an untyped param takes the declared types with `static` of the call, as the argument is checked against
-        // them, before the bounds, which may hold the `static` of the caller, are put in them; a typed param is
-        // narrowed to the hint, so it keeps the `static` it is declared with, the caller's
-        $untyped_bounds = $new_bounds;
-        foreach ($template_result->template_types as $k => $template_map) {
-            foreach ($template_map as $kk => $template_type) {
-                if (($new_bounds[$k][$kk] ?? null) === $template_type) {
-                    $untyped_bounds[$k][$kk] = $expand_static($template_type);
+        // a closure param takes the declared types with `static` of the call, as the argument is checked against
+        // them, before the bounds, which may hold the `static` of the caller, are put in them
+        $replace_static_of_call = static function (bool $final) use (
+            $template_result,
+            $new_bounds,
+            $replaced_type,
+            $expand_static,
+            $replace,
+        ): ?Union {
+            $bounds = $new_bounds;
+            foreach ($template_result->template_types as $k => $template_map) {
+                foreach ($template_map as $kk => $template_type) {
+                    if (($new_bounds[$k][$kk] ?? null) === $template_type) {
+                        $bounds[$k][$kk] = $expand_static($template_type, $final);
+                    }
                 }
             }
-        }
 
-        $untyped_type = $expand_static($replaced_type);
-        $untyped_replaced_type = $untyped_type === $replaced_type && $untyped_bounds === $new_bounds
-            ? null
-            : $replace($untyped_type, $untyped_bounds);
+            $type = $expand_static($replaced_type, $final);
+
+            return $type === $replaced_type && $bounds === $new_bounds ? null : $replace($type, $bounds);
+        };
+
+        $untyped_replaced_type = $replace_static_of_call($template_result->static_class_is_final);
+        // a typed param is narrowed to the hint, where `static` is read as the closure's own: it takes the class of the
+        // call as final, unless the receiver is a `static` of the closure's class (`$this`, `static::make()`)
+        $receiver_is_closure_static = $static_class_type instanceof TNamedObject
+            && $static_class_type->is_static
+            && $context->self !== null
+            && strtolower($static_class_type->value) === strtolower($context->self);
+        $typed_replaced_type = $receiver_is_closure_static
+            ? $untyped_replaced_type
+            : $replace_static_of_call(true);
         $replaced_type = $replace($replaced_type, $new_bounds);
         $untyped_replaced_type ??= $replaced_type;
+        $typed_replaced_type ??= $replaced_type;
 
         $closure_id = strtolower($statements_analyzer->getFilePath())
             . ':' . $arg->value->getLine()
@@ -787,9 +805,9 @@ final class ArgumentsAnalyzer
             }
 
             if (!$has_different_docblock_type) {
-                // a param declared with a type keeps master's hint also once it was narrowed by an earlier pass (type
+                // a param declared with a type takes the typed hint also once it was narrowed by an earlier pass (type
                 // inferred), as the closure's storage is shared by every class using a trait it is in
-                $hint_type = $param_storage->signature_type !== null ? $replaced_type : $untyped_replaced_type;
+                $hint_type = $param_storage->signature_type !== null ? $typed_replaced_type : $untyped_replaced_type;
 
                 foreach ($hint_type->getAtomicTypes() as $replaced_type_part) {
                     if ($replaced_type_part instanceof TCallable
