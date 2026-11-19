@@ -448,7 +448,14 @@ final class DatabaseTaints
                     $tables[] = $table;
                 }
 
-                self::addAllColumns($graph, $tables, $read_node, $row_node, 'database column #' . $offset, $call_location);
+                self::addAllColumns(
+                    $graph,
+                    $tables,
+                    $read_node,
+                    $row_node,
+                    'database column #' . $offset,
+                    $call_location,
+                );
             }
         }
 
@@ -736,7 +743,13 @@ final class DatabaseTaints
             $name_node = DataFlowNode::getForAssignment($write->label . ' ' . $name, $call_location);
             $graph->addNode($name_node);
             $graph->addPath($write, $name_node, '=');
-            TaintStore::addWrite($graph, self::ROWS_STORE, $rows, $name_node, 'arrayvalue-assignment-\'' . $name . '\'');
+            TaintStore::addWrite(
+                $graph,
+                self::ROWS_STORE,
+                $rows,
+                $name_node,
+                'arrayvalue-assignment-\'' . $name . '\'',
+            );
         }
     }
 
