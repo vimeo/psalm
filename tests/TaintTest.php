@@ -1317,6 +1317,14 @@ final class TaintTest extends TestCase
 
                     backup($_GET["bin"]);',
             ],
+            'stringCastToAStringFoundInAListWithANumber' => [
+                'code' => '<?php
+                    $level = (string) $_GET["level"];
+                    if (!in_array((string) $level, ["1", "fast"], true)) {
+                        exit;
+                    }
+                    exec("gzip -" . (string) $level . " /tmp/backup.tar");',
+            ],
             'noTaintFromASpecializedPregReplaceCallbackCallbackInItsOtherCalls' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -6735,6 +6743,30 @@ final class TaintTest extends TestCase
                         echo (string) $row["comment"];
                     }',
                 'error_message' => 'TaintedHtml',
+            ],
+            'intOrStringCastToAStringFoundInAListWithANumberKeepsItsTaints' => [
+                'code' => '<?php
+                    function level(int|string $level): void {
+                        if (!in_array((string) $level, ["1", "fast"], true)) {
+                            exit;
+                        }
+                        exec("gzip -" . (string) $level . " /tmp/backup.tar");
+                    }
+
+                    level($_GET["level"]);',
+                'error_message' => 'TaintedShell',
+            ],
+            'nullOrStringCastToAStringFoundInAListWithAnEmptyStringKeepsItsTaints' => [
+                'code' => '<?php
+                    function level(?string $level): void {
+                        if (!in_array((string) $level, ["", "fast"], true)) {
+                            exit;
+                        }
+                        exec("gzip " . (string) $level . " /tmp/backup.tar");
+                    }
+
+                    level($_GET["level"]);',
+                'error_message' => 'TaintedShell',
             ],
             'arrayCastToAStringFoundInAListHoldingArray' => [
                 'code' => '<?php
