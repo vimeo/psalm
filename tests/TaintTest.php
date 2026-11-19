@@ -797,6 +797,40 @@ final class TaintTest extends TestCase
         );
     }
 
+    public function testASinkOfAVariadicParameterReportsAnArgumentAfterItsFirstOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            /** @psalm-taint-sink html $rest */
+            function show(string $a, string ...$rest): void {}
+
+            class Page {
+                /** @psalm-taint-sink html $rest */
+                public function show(string $a, string ...$rest): void {}
+            }
+
+            show("", "", (string) $_GET["a"]);
+            (new Page())->show("", "", (string) $_GET["b"]);
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [3, 'TaintedHtml'],
+                [7, 'TaintedHtml'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
     public function testTaintFlowsFromTheLeftHandSideOfAPipe(): void
     {
         $this->testConfig->throw_exception = false;
