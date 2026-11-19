@@ -1330,6 +1330,7 @@ class Reconciler
                     $new_base_type = null;
                     $has_object_part = false;
                     $has_unknown_object_part = false;
+                    $object_value_type = null;
 
                     // a variable holding one literal is that literal as a key
                     $lookup_key = $array_key;
@@ -1409,14 +1410,16 @@ class Reconciler
                             $has_object_array_access = $has_object_part = true;
 
                             if ($key_parts !== []) {
-                                $object_value_type = self::getIndexableValueTypeOfArrayAccess($existing_key_type_part);
+                                $indexable_value_type = self::getIndexableValueTypeOfArrayAccess(
+                                    $existing_key_type_part,
+                                );
 
-                                if ($object_value_type === null) {
+                                if ($indexable_value_type === null) {
                                     $has_unknown_object_part = true;
-                                } elseif ($object_value_type !== false) {
-                                    $new_base_type = Type::combineUnionTypes(
-                                        $new_base_type,
+                                } elseif ($indexable_value_type !== false) {
+                                    $object_value_type = Type::combineUnionTypes(
                                         $object_value_type,
+                                        $indexable_value_type,
                                         $codebase,
                                     );
                                 }
@@ -1472,7 +1475,9 @@ class Reconciler
                     }
 
                     if ($has_object_part) {
-                        $existing_keys[$new_base_key] = $new_base_type;
+                        $existing_keys[$new_base_key] = $object_value_type === null
+                            ? $new_base_type
+                            : Type::combineUnionTypes($new_base_type, $object_value_type, $codebase);
                     }
                 }
 
