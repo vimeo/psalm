@@ -2524,8 +2524,8 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * The data flow of a variable a destructuring assigns the item of $array_type at $offset_value to: what it takes
-     * from a value that can be anything too, though its type stays mixed
+     * The data flow of a variable a destructuring assigns the item of $array_type at $offset_value to. A value that
+     * can be anything gives the item no type to carry what it takes, so the item is fetched from the value here.
      */
     private static function addDestructuredVariableDataFlow(
         StatementsAnalyzer $statements_analyzer,
