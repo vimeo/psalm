@@ -837,9 +837,6 @@ final class ArrayAssignmentTest extends TestCase
                         if (!empty($a[$lang][$path])) {
                             return;
                         }
-                        if (!empty($a[$lang][$path])) {
-                            return;
-                        }
                         $a[$lang] = $m;
                         if (!empty($a[$lang][$path])) {
                             return;
@@ -3406,15 +3403,12 @@ final class ArrayAssignmentTest extends TestCase
                         if (!empty($a["x"]["p"])) {
                             return;
                         }
-                        if (!empty($a["x"]["p"])) {
-                            return;
-                        }
                         $a["y"] = [];
                         if (!empty($a["x"]["p"])) {
                             return;
                         }
                     }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:10',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7',
             ],
             'undefinedOuterOffsetOfNestedAssignmentUnderMixed' => [
                 'code' => '<?php
