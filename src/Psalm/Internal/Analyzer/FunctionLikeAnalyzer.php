@@ -89,6 +89,7 @@ use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -1871,7 +1872,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $param_assignment,
                         'param',
                         0,
-                        $function_param->signature_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0,
+                        $function_param->signature_type?->getTaintsToRemove(
+                            $codebase->getInputTaints() | TaintKind::INPUT_INT_OVERFLOW,
+                        ) ?? 0,
                     );
                 }
 

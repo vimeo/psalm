@@ -1221,7 +1221,7 @@ final class AssignmentAnalyzer
 
         // what the assigned value cannot hold, given its type
         if (!$flow_graph instanceof VariableUseGraph) {
-            $removed_taints |= $type->getTaintsToRemove($input_taints);
+            $removed_taints |= $type->getTaintsToRemove($input_taints | TaintKind::INPUT_INT_OVERFLOW);
         }
 
         // the variable holds the stream writing to the response it is assigned (see OutputStreamTaintAnalyzer)

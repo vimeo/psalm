@@ -72,6 +72,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -2274,7 +2275,9 @@ final class ArgumentAnalyzer
         }
         $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
 
-        $removed_taints = $taint_flow_graph ? $input_type->getTaintsToRemove($codebase->getInputTaints()) : 0;
+        $removed_taints = $taint_flow_graph
+            ? $input_type->getTaintsToRemove($codebase->getInputTaints() | TaintKind::INPUT_INT_OVERFLOW)
+            : 0;
 
         $event = new AddRemoveTaintsEvent($expr, $context, $statements_analyzer, $codebase);
 

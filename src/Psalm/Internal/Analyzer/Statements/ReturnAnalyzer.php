@@ -56,6 +56,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
 use function array_values;
@@ -996,10 +997,11 @@ final class ReturnAnalyzer
 
         if ($inferred_type->parent_nodes) {
             // what the returned value cannot hold, given its type or the native return type PHP enforces
+            $value_taints = $codebase->getInputTaints() | TaintKind::INPUT_INT_OVERFLOW;
             $removed_taints = $storage->removed_taints
                 | $expr_removed_taints
-                | $inferred_type->getTaintsToRemove($codebase->getInputTaints())
-                | ($storage->signature_return_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0);
+                | $inferred_type->getTaintsToRemove($value_taints)
+                | ($storage->signature_return_type?->getTaintsToRemove($value_taints) ?? 0);
 
             foreach ($inferred_type->parent_nodes as $parent_node) {
                 $statements_analyzer->taint_flow_graph->addPath(

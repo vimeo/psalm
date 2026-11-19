@@ -543,7 +543,9 @@ final class ArrayAnalyzer
                         }
 
                         // what an item holds can't carry the taints its type can't (see Union::getTaintsToRemove())
-                        $removed_taints |= $item_value_type->getTaintsToRemove($codebase->getInputTaints());
+                        $removed_taints |= $item_value_type->getTaintsToRemove(
+                            $codebase->getInputTaints() | TaintKind::INPUT_INT_OVERFLOW,
+                        );
                         $removed_taints |= NosqlEqualityOperand::getRemovedTaints($statements_analyzer, $item);
                     }
 

@@ -676,6 +676,8 @@ final class BinaryOpAnalyzer
 
         // after the start of a URL fixing its server (the left operand's, and the right operand's own literal start
         // when the left operand is a literal), the right operand can't choose it
+        // a string isn't a number the user chose, which a cast of it to an integer is again
+        $removed_taints |= TaintKind::INPUT_INT_OVERFLOW;
         $operand_removed_taints = [
             // a value in a string literal (`"[@id='" . $id . "']"`) can only change an XPath query by ending it
             $removed_taints

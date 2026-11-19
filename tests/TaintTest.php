@@ -1284,6 +1284,33 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'integerOfTheUserInAStringDoesNotOverflow' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return T
+                     * @psalm-impure
+                     */
+                    function keep(mixed $value): mixed {
+                        return $value;
+                    }
+
+                    keep("#" . (int) $_GET["n"]);
+                    echo pack("N", keep(strlen("label")));',
+            ],
+            'integerOfTheUserBoundedByTheCodeDoesNotOverflow' => [
+                'code' => '<?php
+                    function header16(int $port): string {
+                        return pack("n", $port);
+                    }
+
+                    $port = (int) $_GET["port"];
+                    if ($port < 0 || $port > 65535) {
+                        exit;
+                    }
+                    echo header16($port);',
+            ],
             'untaintedArgumentAfterTheFirstOneAVariadicCollects' => [
                 'code' => '<?php
                     /** @psalm-taint-source input */
@@ -6595,6 +6622,15 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'integerOfTheUserBoundedOnOneSideCanOverflow' => [
+                'code' => '<?php
+                    $port = (int) $_GET["port"];
+                    if ($port > 65535) {
+                        exit;
+                    }
+                    echo pack("n", $port);',
+                'error_message' => 'TaintedIntegerOverflow',
+            ],
             'taintOfAnArgumentAfterTheFirstOneReachesAVariadicOverrideCalledThroughTheParentType' => [
                 'code' => '<?php
                     /** @psalm-taint-source input */
