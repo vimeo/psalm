@@ -251,6 +251,28 @@ final class SymbolLookupTest extends TestCase
         $this->assertNull($information->description);
     }
 
+    public function testSymbolLookupGlobalConstOfAClassConstant(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                const APPLE = A::Y;
+
+                final class A {
+                    public const Y = 10;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+
+        $information = $this->codebase->getMarkupContentForSymbolByReference(
+            new Reference('somefile.php', 'APPLE', new Range(new Position(1, 1), new Position(1, 1))),
+        );
+        $this->assertNotNull($information);
+        // as when the class is declared first
+        $this->assertSame('const APPLE int', $information->code);
+    }
+
     public function testSimpleSymbolLocation(): void
     {
         $this->addFile(

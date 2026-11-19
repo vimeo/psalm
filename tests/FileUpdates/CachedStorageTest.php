@@ -256,6 +256,40 @@ final class CachedStorageTest extends TestCase
         self::assertSame(['11 InvalidReturnType', '12 InvalidReturnStatement'], $issues);
     }
 
+    public function testDefinedConstantFollowsTheReloadedClassConstant(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->throw_exception = false;
+        // the constants of other files are known without including them
+        $codebase->all_constants_global = true;
+        $producer = (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php';
+        $defines = (string) getcwd() . DIRECTORY_SEPARATOR . 'H.php';
+        $users = (string) getcwd() . DIRECTORY_SEPARATOR . 'K.php';
+
+        $this->file_provider->registerFile($producer, '<?php final class A { public const VALUE = 5; }');
+        $this->file_provider->registerFile($defines, '<?php define("FOO", A::VALUE);');
+        $this->file_provider->registerFile($users, '<?php
+            /** @return 5 */
+            function five(): int { return FOO; }');
+
+        $codebase->addFilesToAnalyze([$producer => $producer, $defines => $defines, $users => $users]);
+        $codebase->scanFiles();
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+        self::assertSame([], IssueBuffer::getIssuesDataForFile($users));
+
+        $this->file_provider->registerFile($producer, '<?php final class A { public const VALUE = 6; }');
+        $codebase->reloadFiles($this->project_analyzer, [$producer]);
+        $codebase->addFilesToAnalyze([$users => $users]);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false, true);
+
+        $issue_types = [];
+        foreach (IssueBuffer::getIssuesDataForFile($users) as $issue) {
+            $issue_types[] = $issue->type;
+        }
+
+        self::assertEqualsCanonicalizing(['InvalidReturnType', 'InvalidReturnStatement'], $issue_types);
+    }
+
     public function testStubbedClassIsReportedAfterItsInterfaceMethodIsRenamed(): void
     {
         $cache_directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-13779-', true);

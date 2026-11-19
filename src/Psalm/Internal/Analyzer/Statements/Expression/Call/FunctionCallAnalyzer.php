@@ -8,6 +8,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Exception\CircularReferenceException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
@@ -26,6 +27,7 @@ use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
+use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -59,6 +61,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
@@ -989,7 +992,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $function_call_info->function_storage = $dynamic_function_storage;
             $function_call_info->function_params = $dynamic_function_storage->params;
             $function_call_info->allow_named_args = $dynamic_function_storage->allow_named_arg_calls;
-            $function_call_info->defined_constants = $dynamic_function_storage->defined_constants;
+            $function_call_info->defined_constants = self::getDefinedConstants(
+                $statements_analyzer,
+                $dynamic_function_storage,
+            );
         } elseif (!$function_call_info->in_call_map || $function_call_info->is_stubbed) {
             try {
                 $function_call_info->function_storage = $function_storage = $codebase_functions->getStorage(
@@ -1004,7 +1010,10 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 }
 
                 if (!$is_predefined) {
-                    $function_call_info->defined_constants = $function_storage->defined_constants;
+                    $function_call_info->defined_constants = self::getDefinedConstants(
+                        $statements_analyzer,
+                        $function_storage,
+                    );
                 }
             } catch (UnexpectedValueException) {
                 $function_call_info->function_params = [
@@ -2513,6 +2522,32 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         return false;
+    }
+
+    /**
+     * A constant defined in several branches has the values of all its definitions, including unresolved ones.
+     *
+     * @return array<string, Union>
+     */
+    private static function getDefinedConstants(
+        StatementsAnalyzer $statements_analyzer,
+        FunctionLikeStorage $storage,
+    ): array {
+        $constants = $storage->defined_constants;
+        $codebase = $statements_analyzer->getCodebase();
+
+        foreach ($storage->unresolved_defined_constants as [$name, $value]) {
+            try {
+                $constants[$name] = Type::combineUnionTypes(
+                    $constants[$name] ?? null,
+                    ConstantTypeResolver::resolveToUnion($codebase, $value, $statements_analyzer),
+                );
+            } catch (CircularReferenceException) {
+                // reported where the constants are declared
+            }
+        }
+
+        return $constants;
     }
 
     /**

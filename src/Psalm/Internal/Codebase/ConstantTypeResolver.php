@@ -143,6 +143,35 @@ final class ConstantTypeResolver
     }
 
     /**
+     * The type of the definitions of a constant resolved after scanning (see Codebase::getDefinitionsResolvedLater()):
+     * defined in several branches, the constant has the value of one of the definitions
+     *
+     * @param list<array{string, Union|UnresolvedConstantComponent, bool}> $definitions
+     */
+    public static function resolveDefinitions(
+        Codebase $codebase,
+        array $definitions,
+        ?StatementsAnalyzer $statements_analyzer = null,
+    ): ?Union {
+        $type = null;
+
+        foreach ($definitions as [, $value]) {
+            try {
+                $value_type = $value instanceof Union
+                    ? $value
+                    : self::resolveToUnion($codebase, $value, $statements_analyzer);
+            } catch (CircularReferenceException) {
+                // reported where the constants are declared
+                continue;
+            }
+
+            $type = Type::combineUnionTypes($type, $value_type);
+        }
+
+        return $type;
+    }
+
+    /**
      * Without an analyzer to resolve the name, the constant is looked up in the scanned files
      */
     private static function resolveScannedConstant(
@@ -156,8 +185,12 @@ final class ConstantTypeResolver
             array_unshift($names, $c->namespace . '\\' . $c->name);
         }
 
+        $codebase = ProjectAnalyzer::getInstance()->getCodebase();
+
         // PHP resolves `A\SOME` of any file before the global `SOME`
         foreach ($names as $name) {
+            $type = null;
+
             foreach (FileStorageProvider::getAll() as $file_storage) {
                 if (isset($file_storage->unresolved_constants[$name])) {
                     return self::resolve(
@@ -169,8 +202,21 @@ final class ConstantTypeResolver
                 }
 
                 if (isset($file_storage->constants[$name])) {
-                    return $file_storage->constants[$name]->getSingleAtomic();
+                    $type = $file_storage->constants[$name];
+                    break;
                 }
+            }
+
+            $defined_later = self::resolveDefinitions($codebase, $codebase->getDefinitionsResolvedLater($name));
+
+            if ($defined_later !== null) {
+                $type = Type::combineUnionTypes($type, $defined_later);
+
+                return $type->isSingle() ? $type->getSingleAtomic() : new TMixed;
+            }
+
+            if ($type !== null) {
+                return $type->getSingleAtomic();
             }
         }
 

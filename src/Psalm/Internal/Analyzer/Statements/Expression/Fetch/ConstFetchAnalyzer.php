@@ -292,6 +292,14 @@ final class ConstFetchAnalyzer
             }
         }
 
+        foreach ($codebase->getAllDefinitionsResolvedLater() as $const_name => $definitions) {
+            if (preg_match($regex, $const_name) === 1
+                && ($const_type = ConstantTypeResolver::resolveDefinitions($codebase, $definitions))
+            ) {
+                $types[$const_name] = Type::combineUnionTypes($types[$const_name] ?? null, $const_type);
+            }
+        }
+
         foreach ($codebase->getAllStubbedConstants() as $const_name => $const_type) {
             if (!isset($types[$const_name]) && preg_match($regex, $const_name) === 1) {
                 $unresolved = $codebase->getUnresolvedGlobalConstant($const_name);
@@ -353,6 +361,20 @@ final class ConstFetchAnalyzer
             return $context->vars_in_scope[$const_name];
         }
 
+        // defined in several branches, the constant has the value of one of the definitions
+        $defined_later = self::getTypeOfDefinitionsResolvedLater($statements_analyzer, $fq_const_name, $const_name);
+        $declared = self::getDeclaredConstType($statements_analyzer, $fq_const_name, $const_name);
+
+        return $declared && $defined_later
+            ? Type::combineUnionTypes($declared, $defined_later)
+            : $declared ?? $defined_later;
+    }
+
+    private static function getDeclaredConstType(
+        StatementsAnalyzer $statements_analyzer,
+        string $fq_const_name,
+        string $const_name,
+    ): ?Union {
         $codebase = $statements_analyzer->getCodebase();
 
         $file_storage_provider = $codebase->file_storage_provider;
@@ -388,6 +410,47 @@ final class ConstFetchAnalyzer
 
         return self::getGlobalConstType($codebase, $fq_const_name, $const_name)
             ?? self::getGlobalConstType($codebase, $const_name, $const_name);
+    }
+
+    /**
+     * The type of the definitions of a constant the files defining it couldn't resolve while they were scanned
+     * (`define(A::NAME, 1)`, `define('C', A::Y)`), where the file defining it is the file of the code or one it
+     * includes, or where its constants are global
+     */
+    private static function getTypeOfDefinitionsResolvedLater(
+        StatementsAnalyzer $statements_analyzer,
+        string ...$names,
+    ): ?Union {
+        $codebase = $statements_analyzer->getCodebase();
+        $reading_file_storages = [
+            $codebase->file_storage_provider->get($statements_analyzer->getRootFilePath()),
+            $codebase->file_storage_provider->get($statements_analyzer->getFilePath()),
+        ];
+
+        foreach ($names as $name) {
+            $visible_definitions = [];
+
+            foreach ($codebase->getDefinitionsResolvedLater($name) as $definition) {
+                [$declaring_file_path, , $global] = $definition;
+                $declaring_file_path_lc = strtolower($declaring_file_path);
+
+                foreach ($reading_file_storages as $file_storage) {
+                    if ($global
+                        || strtolower($file_storage->file_path) === $declaring_file_path_lc
+                        || isset($file_storage->required_file_paths[$declaring_file_path_lc])
+                    ) {
+                        $visible_definitions[] = $definition;
+                        break;
+                    }
+                }
+            }
+
+            if ($visible_definitions !== []) {
+                return ConstantTypeResolver::resolveDefinitions($codebase, $visible_definitions, $statements_analyzer);
+            }
+        }
+
+        return null;
     }
 
     /**

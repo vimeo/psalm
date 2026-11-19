@@ -233,6 +233,57 @@ final class ConstantTest extends TestCase
         $this->analyzeFile($file2, new Context());
     }
 
+    public function testConstantDefinedInBranchesWithConstantsHasTheValuesOfAllOfThem(): void
+    {
+        // the constants and functions of other files are known without including them
+        $this->project_analyzer->getCodebase()->all_constants_global = true;
+        $this->project_analyzer->getCodebase()->all_functions_global = true;
+
+        $file1 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file1.php';
+        $file2 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file2.php';
+
+        $this->addFile(
+            $file1,
+            '<?php
+                if (rand(0, 1)) {
+                    define("CHOICE", Choices::ONE);
+                } else {
+                    define("CHOICE", 2);
+                }
+
+                final class Choices {
+                    public const ONE = 1;
+                }
+            ',
+        );
+
+        $this->addFile(
+            $file2,
+            '<?php
+                // the body of a function of a file that is not analysed is not scanned
+                function init(): void {
+                    if (rand(0, 1)) {
+                        define("LOCAL_CHOICE", LocalChoices::ONE);
+                    } else {
+                        define("LOCAL_CHOICE", 2);
+                    }
+                }
+
+                /** @psalm-check-type-exact $choice = 1|2 */
+                $choice = CHOICE;
+
+                init();
+                /** @psalm-check-type-exact $local = 1|2 */
+                $local = LOCAL_CHOICE;
+                final class LocalChoices {
+                    public const ONE = 1;
+                }
+            ',
+        );
+
+        $this->analyzeFile($file2, new Context());
+    }
+
     // TODO: Waiting for https://github.com/vimeo/psalm/issues/7125
     // public function testKeyofSelfConstDoesntImplyKeyofStaticConst(): void
     // {

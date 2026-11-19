@@ -267,6 +267,8 @@ final class CacheTest extends TestCase
 
             $start_time = microtime(true);
             $project_analyzer = new ProjectAnalyzer($config, $providers);
+            // as the command line does (ProjectBootstrap)
+            $project_analyzer->getCodebase()->all_constants_global = $config->all_constants_global;
             $project_analyzer->check($config->base_dir, $is_diff);
             $project_analyzer->finish($start_time, PSALM_VERSION);
 
@@ -1277,6 +1279,87 @@ final class CacheTest extends TestCase
                 ],
             ],
             false,
+        ];
+
+        yield 'globalConstantFollowsTheConstantOfAnotherClass' => [
+            [
+                [
+                    'files' => [
+                        'src/A.php' => $a(10),
+                        'src/H.php' => '<?php const C1 = A::Y;',
+                        'src/K.php' => $returns('K', '10', 'C1'),
+                    ],
+                    'issues' => [],
+                ],
+                [
+                    'files' => ['src/A.php' => $a(11)],
+                    'issues' => ['src/K.php' => $wrong_return('K', '10', '11')],
+                ],
+            ],
+            false,
+            'allConstantsGlobal="true"',
+        ];
+
+        yield 'definedConstantFollowsTheConstantOfAnotherClass' => [
+            [
+                [
+                    'files' => [
+                        'src/A.php' => $a(10),
+                        'src/H.php' => '<?php define("C2", A::Y);',
+                        'src/K.php' => $returns('K', '10', 'C2'),
+                    ],
+                    'issues' => [],
+                ],
+                [
+                    'files' => ['src/A.php' => $a(11)],
+                    'issues' => ['src/K.php' => $wrong_return('K', '10', '11')],
+                ],
+            ],
+            false,
+            'allConstantsGlobal="true"',
+        ];
+
+        yield 'constantDefinedInAFunctionFollowsTheConstantOfAnotherClass' => [
+            [
+                [
+                    'files' => [
+                        'src/A.php' => $a(10),
+                        'src/K.php' => <<<'PHP'
+                            <?php
+                            function hf(): void { define("C3", A::Y); }
+                            final class K {
+                                /** @return 10 */
+                                public function f(): int { hf(); return C3; }
+                            }
+                            PHP,
+                    ],
+                    'issues' => [],
+                ],
+                [
+                    'files' => ['src/A.php' => $a(11)],
+                    'issues' => ['src/K.php' => $wrong_return('K', '10', '11')],
+                ],
+            ],
+            false,
+        ];
+
+        yield 'globalConstantDefinedInAFunctionFollowsTheConstantOfAnotherClass' => [
+            [
+                [
+                    'files' => [
+                        'src/A.php' => $a(10),
+                        'src/B.php' => '<?php function init(): void { define("C4", A::Y); }',
+                        'src/K.php' => $returns('K', '10', 'C4'),
+                    ],
+                    'issues' => [],
+                ],
+                [
+                    'files' => ['src/A.php' => $a(11)],
+                    'issues' => ['src/K.php' => $wrong_return('K', '10', '11')],
+                ],
+            ],
+            false,
+            'allConstantsGlobal="true"',
         ];
     }
 }

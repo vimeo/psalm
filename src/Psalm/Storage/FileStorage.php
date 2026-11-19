@@ -61,6 +61,15 @@ final class FileStorage
      */
     public array $unresolved_constants = [];
 
+    /**
+     * Definitions of `define()` values left unresolved, and of constants functions define when constants are global:
+     * the name, the value, and whether it is global.
+     *
+     * @internal
+     * @var list<array{string, Union|UnresolvedConstantComponent, bool}>
+     */
+    public array $unresolved_defined_constants = [];
+
     /** @var array<lowercase-string, string> */
     public array $required_file_paths = [];
 

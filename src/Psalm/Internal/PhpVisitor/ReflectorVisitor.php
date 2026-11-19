@@ -347,15 +347,22 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             }
 
             foreach ($node->consts as $const) {
-                $const_type = $var_type ?? SimpleTypeInferer::infer(
+                // a value read from constants of classes is resolved when it is fetched
+                $unresolved = $var_type === null
+                    ? ExpressionResolver::getUnresolvedExpression($const->value, $this->aliases, null, null, [])
+                    : null;
+
+                $const_type = $var_type ?? ($unresolved === null ? SimpleTypeInferer::infer(
                     $this->codebase,
                     new NodeDataProvider(),
                     $const->value,
                     $this->aliases,
-                );
+                    null,
+                    [],
+                ) : null);
 
                 // a value depending on classes not known yet, e.g. an enum case, is resolved when it is fetched
-                $unresolved = $const_type === null
+                $unresolved ??= $const_type === null
                     ? ExpressionResolver::getUnresolvedClassConstExpr($const->value, $this->aliases, null)
                     : null;
 

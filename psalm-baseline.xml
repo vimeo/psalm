@@ -42,7 +42,6 @@
   </file>
   <file src="src/Psalm/Codebase.php">
     <ImplicitToStringCast>
-      <code><![CDATA[$file_storage->constants[$reference->symbol]]]></code>
       <code><![CDATA[$method_id]]></code>
       <code><![CDATA[$param->type ?: 'mixed']]></code>
       <code><![CDATA[$type]]></code>
