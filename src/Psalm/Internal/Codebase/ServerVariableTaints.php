@@ -23,6 +23,7 @@ use function substr;
  * Only a fetch of an entry tells them apart (see ArrayFetchAnalyzer::taintSuperGlobalFetch()).
  *
  * @internal
+ * @psalm-immutable
  */
 final class ServerVariableTaints
 {
