@@ -1318,6 +1318,22 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'otherItemsDestructuredFromAMixedValueAreNotTainted' => [
+                'code' => '<?php
+                    function get(): mixed {
+                        return ["safe", "k" => "safe", 2 => $_GET["x"]];
+                    }
+
+                    function show(): void {
+                        [$first] = get();
+                        echo (string) $first;
+                        ["k" => $keyed] = get();
+                        echo (string) $keyed;
+                        foreach ([get()] as [$item]) {
+                            echo (string) $item;
+                        }
+                    }',
+            ],
             'untaintedArgumentAfterTheFirstOneAVariadicCollects' => [
                 'code' => '<?php
                     /** @psalm-taint-source input */
@@ -6615,6 +6631,54 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'itemDestructuredFromAMixedValueIsTainted' => [
+                'code' => '<?php
+                    function get(): mixed {
+                        return ["safe", $_GET["x"]];
+                    }
+
+                    [$first, $second] = get();
+                    echo (string) $second;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredByKeyFromAMixedValueIsTainted' => [
+                'code' => '<?php
+                    function get(): mixed {
+                        return ["k" => $_GET["x"]];
+                    }
+
+                    ["k" => $keyed] = get();
+                    echo (string) $keyed;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredFromAMixedParameterIsTainted' => [
+                'code' => '<?php
+                    function show(mixed $value): void {
+                        [$first] = $value;
+                        echo (string) $first;
+                    }
+
+                    show($_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredFromAMixedValueInAForeachIsTainted' => [
+                'code' => '<?php
+                    function get(): mixed {
+                        return ["safe", $_GET["x"]];
+                    }
+
+                    foreach ([get()] as [$first, $second]) {
+                        echo (string) $second;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'itemDestructuredFromAnArrayAccessObjectIsTainted' => [
+                'code' => '<?php
+                    $values = new ArrayObject($_GET);
+                    [$first] = $values;
+                    echo (string) $first;',
+                'error_message' => 'TaintedHtml',
+            ],
             'methodImplementingASourceIsASource' => [
                 'code' => '<?php
                     interface Input {
