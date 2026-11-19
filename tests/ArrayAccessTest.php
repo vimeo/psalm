@@ -1515,6 +1515,34 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'isArrayOfAnOffsetByAVariableIsKeptAfterAnIfThatNarrowsTheVariableAndHasALoop' => [
+                'code' => '<?php
+                    final class Parts {
+                        /** @var array<string, mixed> */
+                        private array $parts = ["select" => [], "join" => []];
+
+                        public function add(string $name, array $part, bool $append = false): void {
+                            $isMultiple = is_array($this->parts[$name]) && ! ($name === "join" && ! $append);
+
+                            if ($name === "join") {
+                                $new = [];
+
+                                foreach ($part as $k => $v) {
+                                    $new[$k] = $v;
+                                }
+
+                                $part = $new;
+                            }
+
+                            if ($append && $isMultiple) {
+                                $this->parts[$name][] = 1;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'issetOnAnIndexIsKeptWhenTheIndexIsNarrowedInALoop' => [
                 'code' => '<?php
                     /** @param string[] $in */

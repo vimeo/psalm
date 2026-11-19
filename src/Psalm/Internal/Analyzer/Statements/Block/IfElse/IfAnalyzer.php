@@ -45,6 +45,7 @@ use function array_reduce;
 use function count;
 use function in_array;
 use function preg_match;
+use function preg_quote;
 use function spl_object_id;
 use function str_ends_with;
 
@@ -139,7 +140,7 @@ final class IfAnalyzer
 
                 foreach ($changed_var_ids as $changed_var_id => $_) {
                     foreach ($if_context->vars_in_scope as $var_id => $_) {
-                        if (Reconciler::dependsOnNarrowedVar($var_id, $changed_var_id)
+                        if (preg_match('/' . preg_quote($changed_var_id, '/') . '[\]\[\-]/', $var_id)
                             && !array_key_exists($var_id, $changed_var_ids)
                             && !array_key_exists($var_id, $cond_referenced_var_ids)
                         ) {
