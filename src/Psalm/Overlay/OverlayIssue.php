@@ -8,6 +8,7 @@ use JsonSerializable;
 use Override;
 
 use function array_filter;
+use function array_values;
 use function is_array;
 use function is_int;
 use function is_string;
@@ -24,6 +25,7 @@ final class OverlayIssue implements JsonSerializable
      * @param string $file_name relative to the project root
      * @param array<array-key, mixed>|null $taint_trace
      * @param array<array-key, mixed>|null $other_references
+     * @param list<positive-int> $cwe_ids the CWE weaknesses of the issue type
      */
     public function __construct(
         public readonly string $link,
@@ -47,6 +49,7 @@ final class OverlayIssue implements JsonSerializable
         public readonly ?array $taint_trace,
         public readonly ?array $other_references,
         public readonly bool $is_security,
+        public readonly array $cwe_ids,
     ) {
     }
 
@@ -87,6 +90,10 @@ final class OverlayIssue implements JsonSerializable
             $array('taint_trace'),
             $array('other_references'),
             ($issue['is_security'] ?? false) === true,
+            array_values(array_filter(
+                $arrays['cwe_ids'] ?? [],
+                static fn(mixed $cwe_id): bool => is_int($cwe_id) && $cwe_id > 0,
+            )),
         );
     }
 
@@ -116,6 +123,7 @@ final class OverlayIssue implements JsonSerializable
             'taint_trace' => $this->taint_trace,
             'other_references' => $this->other_references,
             'is_security' => $this->is_security,
+            'cwe_ids' => $this->cwe_ids,
         ];
     }
 }
