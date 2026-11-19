@@ -2762,6 +2762,45 @@ final class TypeVariableTest extends TestCase
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . "somefile.php:11:38 - Type 5 should be a subtype of array",
             ],
+            'constructionTakesTheTypeOfAListArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param list<T> $xs */
+                        public function addAll(array $xs): void {}
+
+                        /** @return list<T> */
+                        public function all(): array {
+                            return [];
+                        }
+                    }
+
+                    /** @param list<string> $s */
+                    function takesStrings(array $s): void {}
+
+                    function f(): void {
+                        $b = new Box();
+                        $b->addAll([1, 2]);
+                        takesStrings($b->all());
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:19:38 - Type 1 should be a subtype of string",
+            ],
+            'constructionPassedInAListArgumentRejectsOtherValues' => [
+                'code' => '<?php
+                    final class H {}
+
+                    /** @param list<SplObjectStorage<H, int>> $l */
+                    function takesList(array $l): void {}
+
+                    function f(H $h): void {
+                        $w = new SplObjectStorage();
+                        takesList([$w]);
+                        $w[$h] = "bad";
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:10:34 - Type 'bad' should be a subtype of int",
+            ],
             'constructionAppendedToListPropertyRejectsOtherValues' => [
                 'code' => '<?php
                     final class H {}

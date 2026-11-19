@@ -54,8 +54,8 @@ use function strtolower;
 final class MethodCallAnalyzer extends CallAnalyzer
 {
     /**
-     * @param bool $receiver_analyzed the receiver was analysed already (offsetGet() for `$a[0]`, getIterator() for
-     *      a foreach): it is not evaluated again
+     * @param bool $receiver_analyzed the receiver was analysed already (offsetGet() for `$a[0]`): it is not
+     *      evaluated again
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
