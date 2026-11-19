@@ -53,12 +53,17 @@ use function strtolower;
  */
 final class MethodCallAnalyzer extends CallAnalyzer
 {
+    /**
+     * @param bool $receiver_analyzed the receiver was analysed already (offsetGet() for `$a[0]`, getIterator() for
+     *      a foreach): it is not evaluated again
+     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\MethodCall $stmt,
         Context $context,
         bool $real_method_call = true,
         ?TemplateResult $template_result = null,
+        bool $receiver_analyzed = false,
     ): bool {
         $was_inside_call = $context->inside_call;
 
@@ -68,7 +73,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         $existing_stmt_var_type = null;
 
-        if (!$real_method_call) {
+        if (!$real_method_call || $receiver_analyzed) {
             $existing_stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
         }
 

@@ -242,6 +242,30 @@ final class StaticPropertyAssignmentAnalyzer
                 $union_comparison_results,
             );
 
+            if ($type_match_found
+                && ($union_comparison_results->type_variable_lower_bounds
+                    || $union_comparison_results->type_variable_upper_bounds)
+            ) {
+                foreach ($union_comparison_results->type_variable_upper_bounds as [$_, $upper_bound]) {
+                    $upper_bound->property_requirement_id = $property_id;
+                }
+
+                foreach ($union_comparison_results->type_variable_lower_bounds as [$_, $lower_bound]) {
+                    $lower_bound->property_value_id = $property_id;
+                }
+
+                $statements_analyzer->type_variable_tracker->addBounds(
+                    $union_comparison_results->type_variable_lower_bounds,
+                    $union_comparison_results->type_variable_upper_bounds,
+                    new CodeLocation(
+                        $statements_analyzer->getSource(),
+                        $assignment_value ?? $stmt,
+                        $context->include_location,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
             if ($union_comparison_results->type_coerced) {
                 if ($union_comparison_results->type_coerced_from_mixed) {
                     IssueBuffer::maybeAdd(

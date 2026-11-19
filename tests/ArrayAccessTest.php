@@ -3588,6 +3588,41 @@ final class ArrayAccessTest extends TestCase
                         return $l[0];
                     }',
             ],
+            'arrayAccessOnCoalesceAssignmentEvaluatesItOnce' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, string> */
+                    final class AA implements ArrayAccess {
+                        public function offsetExists(mixed $o): bool { return true; }
+                        public function offsetGet(mixed $o): string { return ""; }
+                        public function offsetSet(mixed $o, mixed $v): void {}
+                        public function offsetUnset(mixed $o): void {}
+                    }
+
+                    final class C {
+                        private ?AA $a = null;
+
+                        public function get(): string {
+                            return ($this->a ??= new AA())[0];
+                        }
+
+                        public function getOrNull(): ?string {
+                            return ($this->a ??= new AA())[0] ?? null;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'domNodeListItemOnCoalesceAssignmentEvaluatesItOnce' => [
+                'code' => '<?php
+                    final class C {
+                        private ?DOMNodeList $l = null;
+
+                        public function first(DOMDocument $d): ?DOMNode {
+                            return ($this->l ??= $d->getElementsByTagName("a"))[0];
+                        }
+                    }',
+            ],
         ];
     }
 

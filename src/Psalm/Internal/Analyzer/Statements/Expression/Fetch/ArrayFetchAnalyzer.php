@@ -2383,6 +2383,7 @@ final class ArrayFetchAnalyzer
                 $statements_analyzer,
                 $fake_method_call,
                 $context,
+                receiver_analyzed: true,
             );
 
             if (!isset($suppressed_issues['PossiblyInvalidMethodCall'])) {
@@ -2457,6 +2458,7 @@ final class ArrayFetchAnalyzer
                     $fake_set_method_call,
                     $context,
                     $receiver_type === null,
+                    receiver_analyzed: true,
                 );
 
                 $statements_analyzer->node_data = $old_node_data;
@@ -2486,6 +2488,7 @@ final class ArrayFetchAnalyzer
                         $fake_unset_method_call,
                         $context,
                         $receiver_type === null,
+                        receiver_analyzed: true,
                     );
 
                     $statements_analyzer->node_data = $old_node_data;
@@ -2509,6 +2512,7 @@ final class ArrayFetchAnalyzer
                         $fake_exists_method_call,
                         $context,
                         $receiver_type === null,
+                        receiver_analyzed: true,
                     );
 
                     $statements_analyzer->node_data = $old_node_data;
@@ -2564,6 +2568,7 @@ final class ArrayFetchAnalyzer
                         $fake_get_method_call,
                         $context,
                         $receiver_type === null,
+                        receiver_analyzed: true,
                     );
 
                     $call_array_access_type =
