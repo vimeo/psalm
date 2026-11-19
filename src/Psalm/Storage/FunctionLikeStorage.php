@@ -15,8 +15,10 @@ use Stringable;
 use function array_column;
 use function array_fill_keys;
 use function array_map;
+use function array_values;
 use function count;
 use function implode;
+use function sort;
 
 /**
  * @api
@@ -178,6 +180,37 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * @var array<string, list<list<string>>>
      */
     public array $throw_intersections = [];
+
+    /**
+     * What the function declares as `@throws`, one entry per thrown type: a class alone, or the classes of an
+     * intersection (`A&B`)
+     *
+     * @return list<list<string>>
+     * @psalm-mutation-free
+     */
+    public function getThrowGroups(): array
+    {
+        $groups = [];
+
+        foreach ($this->throws ?: [] as $exception_name => $_) {
+            if (!isset($this->throw_intersections[$exception_name])) {
+                $groups[] = [$exception_name];
+
+                continue;
+            }
+
+            foreach ($this->throw_intersections[$exception_name] as $other_members) {
+                $group = [$exception_name, ...$other_members];
+                $sorted_group = $group;
+                sort($sorted_group);
+
+                // the group is stored under each of its classes
+                $groups[implode('&', $sorted_group)] ??= $group;
+            }
+        }
+
+        return array_values($groups);
+    }
 
     public bool $has_yield = false;
 
