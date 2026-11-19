@@ -2992,6 +2992,19 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'foreachOverATemplateReportsEveryTypeOfItsBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of int|stdClass
+                     * @param T|list<int> $a
+                     */
+                    function f($a): void {
+                        foreach ($a as $_) {}
+                    }
+                    PHP,
+                'error_message' => 'PossibleRawObjectIteration',
+            ],
             'foreachOverANullableIntReportsTheInt' => [
                 'code' => <<<'PHP'
                     <?php
