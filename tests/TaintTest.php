@@ -39,6 +39,7 @@ use function array_flip;
 use function array_map;
 use function array_values;
 use function assert;
+use function extension_loaded;
 use function implode;
 use function in_array;
 use function ini_get;
@@ -1214,6 +1215,10 @@ final class TaintTest extends TestCase
         bool $extension_enabled,
     ): void {
         if (!$extension_enabled) {
+            if (!extension_loaded($extension)) {
+                self::markTestSkipped("Without its stub, the classes of $extension only exist when it is loaded");
+            }
+
             $config = $this->testConfig;
             assert($config instanceof TestConfig);
             $config->disableExtensions($extension);
