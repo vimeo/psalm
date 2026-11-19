@@ -1591,6 +1591,18 @@ final class TaintTest extends TestCase
                         echo (string) $pdo->query("SELECT * FROM accounts")->fetch()["email"];
                     }',
             ],
+            'columnOfAnyCaseStaysApartInAllColumns' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $pdo->prepare("UPDATE accounts SET USERNAME = ?")->execute([$_GET["name"]]);
+                    }
+
+                    function show(PDO $pdo): void {
+                        $row = $pdo->query("SELECT * FROM accounts")->fetch();
+                        echo (string) $row["email"];
+                        echo (string) $row["Nick"];
+                    }',
+            ],
             'pgSelectKeepsTheColumnsApart' => [
                 'code' => '<?php
                     function store(PgSql\Connection $connection): void {
@@ -7384,6 +7396,28 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'allColumnsHoldEachColumnWhateverTheCaseOfItsName' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $pdo->prepare("UPDATE accounts SET USERNAME = ?")->execute([$_GET["name"]]);
+                    }
+
+                    function show(PDO $pdo): void {
+                        echo (string) $pdo->query("SELECT * FROM accounts")->fetch()["userName"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'columnSelectedIsUnderItsNameWhateverItsCase' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $pdo->prepare("UPDATE accounts SET username = ?")->execute([$_GET["name"]]);
+                    }
+
+                    function show(PDO $pdo): void {
+                        echo (string) $pdo->query("SELECT USERNAME FROM accounts")->fetch()["userName"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'columnSelectedIsUnderItsNameAsWritten' => [
                 'code' => '<?php
                     function store(PDO $pdo): void {
@@ -7417,20 +7451,28 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
-            'pgSelectHoldsEachColumnAtAnyPosition' => [
+            'selectedTableHoldsEachColumnAtAnyPosition' => [
                 'code' => '<?php
-                    function store(PgSql\Connection $connection): void {
-                        pg_insert($connection, "events", ["kind" => "login", "payload" => $_GET["p"]]);
+                    final class Table {
+                        /**
+                         * @psalm-database-insert $table $data
+                         */
+                        public function insert(string $table, array $data): void {}
+
+                        /**
+                         * @return list<list<mixed>>
+                         * @psalm-database-select $table
+                         */
+                        public function selectNumeric(string $table): array {
+                            return [];
+                        }
                     }
 
-                    function show(PgSql\Connection $connection): void {
-                        $rows = pg_select($connection, "events", [], PGSQL_NUM);
-                        if (is_array($rows)) {
-                            echo (string) $rows[0][1];
-                        }
+                    function run(Table $db): void {
+                        $db->insert("events", ["kind" => "login", "payload" => $_GET["p"]]);
+                        echo (string) $db->selectNumeric("events")[0][1];
                     }',
                 'error_message' => 'TaintedHtml',
-                'php_version' => '8.1',
             ],
             'valuesOfAStatementTheAnalysisCantTellAreStoredAnywhere' => [
                 'code' => '<?php

@@ -18,7 +18,6 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Union;
 
-use function array_unique;
 use function count;
 use function dirname;
 use function is_int;
@@ -386,7 +385,7 @@ final class DatabaseTaints
                 continue;
             }
 
-            self::addWrite($graph, $write['table'], $write['column'], $write_node, $call_location);
+            self::addWrite($graph, $write['table'], $write['column'], $write_node);
         }
 
         $result = $spec['result'] ?? 'result';
@@ -439,7 +438,7 @@ final class DatabaseTaints
                 $key_node = DataFlowNode::getForAssignment('database column #' . $offset . ' ' . $key, $call_location);
                 $graph->addNode($key_node);
                 $graph->addPath($read_node, $key_node, '=');
-                $graph->addPath($key_node, $row_node, 'arrayvalue-assignment-\'' . $key . '\'');
+                $graph->addPath($key_node, $row_node, 'arrayvalue-assignment-' . self::getKey($key));
             }
 
             if ($read['all_columns']) {
@@ -567,7 +566,7 @@ final class DatabaseTaints
             $write_node = DataFlowNode::getForAssignment('database write', $call_location);
             $graph->addNode($write_node);
             $graph->addPath($values_node, $write_node, 'arrayvalue-fetch');
-            self::addWrite($graph, null, null, $write_node, $call_location);
+            self::addWrite($graph, null, null, $write_node);
 
             return $return_type;
         }
@@ -623,7 +622,7 @@ final class DatabaseTaints
                     $write_node,
                     $column === null ? 'arrayvalue-fetch' : 'arrayvalue-fetch-\'' . $column . '\'',
                 );
-                self::addWrite($graph, $table, $column, $write_node, $call_location);
+                self::addWrite($graph, $table, $column, $write_node);
             }
         }
 
@@ -721,13 +720,8 @@ final class DatabaseTaints
     /**
      * Stores what flows into $write in the column of the table, and in the rows of the table under the column's name
      */
-    private static function addWrite(
-        TaintFlowGraph $graph,
-        ?string $table,
-        ?string $column,
-        DataFlowNode $write,
-        CodeLocation $call_location,
-    ): void {
+    private static function addWrite(TaintFlowGraph $graph, ?string $table, ?string $column, DataFlowNode $write): void
+    {
         TaintStore::addWrite($graph, self::STORE, [self::getName($table, $column)], $write, '=');
 
         $rows = [$table === null ? [false, ''] : [true, $table]];
@@ -738,19 +732,18 @@ final class DatabaseTaints
             return;
         }
 
-        // the rows name a column as the table does, which is how the query writes it or (PostgreSQL) lowercase
-        foreach (array_unique([$column, strtolower($column)]) as $name) {
-            $name_node = DataFlowNode::getForAssignment($write->label . ' ' . $name, $call_location);
-            $graph->addNode($name_node);
-            $graph->addPath($write, $name_node, '=');
-            TaintStore::addWrite(
-                $graph,
-                self::ROWS_STORE,
-                $rows,
-                $name_node,
-                'arrayvalue-assignment-\'' . $name . '\'',
-            );
-        }
+        TaintStore::addWrite($graph, self::ROWS_STORE, $rows, $write, 'arrayvalue-assignment-' . self::getKey($column));
+    }
+
+    /**
+     * The key of a column in the rows, known but for its case: the rows name it as the table does, or as the query
+     * writes it (MySQL), lowercase if it isn't quoted (PostgreSQL), ...
+     *
+     * @psalm-pure
+     */
+    private static function getKey(int|string $column): string
+    {
+        return is_int($column) ? '\'' . $column . '\'' : '\'' . strtolower($column) . '\'~';
     }
 
     /**

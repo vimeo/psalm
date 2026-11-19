@@ -637,10 +637,6 @@ final class SqlStatement
         $name = $alias !== null ? self::unquote($alias) : self::getColumnName($item);
         if ($name !== false && $name !== null) {
             $keys[] = $name;
-            // PostgreSQL lowercases the names not quoted
-            if (strtolower($name) !== $name) {
-                $keys[] = strtolower($name);
-            }
         }
 
         if ($position !== null) {

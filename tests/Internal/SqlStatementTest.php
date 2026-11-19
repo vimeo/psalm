@@ -47,9 +47,9 @@ final class SqlStatementTest extends TestCase
             'SELECT * FROM t1 UNION SELECT * FROM t2',
             'R [any] <- h[] p[] c[t1.*,t2.*]',
         ];
-        yield 'names as written, and lowercase' => [
+        yield 'names as written' => [
             'SELECT userName, u.Bio AS "Text" FROM users u',
-            'R [userName,username,0] <- h[] p[] c[users.username]; R [Text,text,1] <- h[] p[] c[users.bio]',
+            'R [userName,0] <- h[] p[] c[users.username]; R [Text,1] <- h[] p[] c[users.bio]',
         ];
         yield 'the column of a write as written' => [
             'UPDATE users SET userName = ?',
