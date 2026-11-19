@@ -534,6 +534,27 @@ final class FunctionClassStringTemplateTest extends TestCase
 
                     bar(foo(A::class));',
             ],
+            'returnClassStringFromUnionTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T as array|object
+                     * @param T::class $s
+                     * @return T::class
+                     */
+                    function foo(string $s) : string {
+                        return $s;
+                    }
+
+                    /**
+                     * @param  A::class $s
+                     */
+                    function bar(string $s) : void {
+                    }
+
+                    class A {}
+
+                    bar(foo(A::class));',
+            ],
             'templateAsUnionClassStringPassingValidClass' => [
                 'code' => '<?php
                     /**

@@ -936,6 +936,26 @@ final class ClassLikeStringTest extends TestCase
                     '$r' => 'class-string<A>',
                 ],
             ],
+            'classStringOfUnionTypeNullOrObject' => [
+                'code' => '<?php
+
+                    class A {}
+
+                    /**
+                     * @template T as null|object
+                     *
+                     * @param class-string<T> $class
+                     * @return class-string<T>
+                     */
+                    function test(string $class): string {
+                        return $class;
+                    }
+
+                    $r = test(A::class);',
+                'assertions' => [
+                    '$r' => 'class-string<A>',
+                ],
+            ],
         ];
     }
 
@@ -1081,7 +1101,7 @@ final class ClassLikeStringTest extends TestCase
                     function foo(string $s) : string {
                         return $s;
                     }',
-                'error_message' => 'InvalidDocblock',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:31 - Invalid templated classname \'string\' in docblock for foo',
             ],
         ];
     }
