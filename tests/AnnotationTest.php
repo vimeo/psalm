@@ -161,6 +161,39 @@ final class AnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testParamDefaultOfConstantsDeclaredLaterIsAddedToTheDocblockType(): void
+    {
+        Config::getInstance()->add_param_default_to_docblock_type = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace App;
+
+                /** @param string $_s */
+                function f($_s = M::NONE): void {}
+
+                /** @param string $_s */
+                function g($_s = NONE): void {}
+
+                /** @param string $_s */
+                function h($_s = M::ONE + 1): void {}
+
+                f(null);
+                g(null);
+                h(2);
+
+                final class M {
+                    public const NONE = null;
+                    public const ONE = 1;
+                }
+
+                const NONE = null;',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testInvalidTypehintParamDefaultButAllowedInConfig(): void
     {
         $this->expectException(CodeException::class);

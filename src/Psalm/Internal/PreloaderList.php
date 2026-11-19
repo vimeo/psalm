@@ -1884,6 +1884,7 @@ final class PreloaderList {
         \Psalm\Type\Atomic\TNumericString::class,
         \Psalm\Type\Atomic\TObject::class,
         \Psalm\Type\Atomic\TObjectWithProperties::class,
+        \Psalm\Type\Atomic\TParamDefault::class,
         \Psalm\Type\Atomic\TPropertiesOf::class,
         \Psalm\Type\Atomic\TResource::class,
         \Psalm\Type\Atomic\TScalar::class,

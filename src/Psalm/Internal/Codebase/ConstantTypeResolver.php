@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
+use Psalm\Codebase;
 use Psalm\Exception\CircularReferenceException;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -66,6 +67,17 @@ use function spl_object_id;
  */
 final class ConstantTypeResolver
 {
+    /**
+     * The type of a value the scanner left unresolved, as a parameter default
+     */
+    public static function resolveToUnion(
+        Codebase $codebase,
+        UnresolvedConstantComponent $c,
+        ?StatementsAnalyzer $statements_analyzer = null,
+    ): Union {
+        return new Union([self::resolve($codebase->classlikes, $c, $statements_analyzer)]);
+    }
+
     /**
      * Without an analyzer to resolve the name, the constant is looked up in the scanned files
      */
