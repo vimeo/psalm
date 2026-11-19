@@ -4673,6 +4673,39 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'callAssertingThreePropertiesIsNotRedundantIfOnlyTheThirdChangesAType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Triple {
+                        public ?int $a = null;
+                        public ?int $b = null;
+                        public ?int $c = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->a
+                         * @psalm-assert !null $this->b
+                         * @psalm-assert !null $this->c
+                         */
+                        public function assertAll(): void {
+                            if ($this->a === null || $this->b === null || $this->c === null) {
+                                throw new Exception();
+                            }
+                        }
+
+                        public function test(): void {
+                            if ($this->a === null || $this->b === null) {
+                                return;
+                            }
+
+                            $this->assertAll();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'callAssertingSeveralPropertiesIsNotRedundantIfOneOfThemChangesAType' => [
                 'code' => <<<'PHP'
                     <?php
