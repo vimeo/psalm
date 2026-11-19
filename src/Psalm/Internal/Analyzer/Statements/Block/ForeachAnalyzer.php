@@ -1269,14 +1269,14 @@ final class ForeachAnalyzer
         $invalid_iterator_types = [];
         $raw_object_types = [];
 
-        $iterator_atomic_types = array_values($iterator_type->getAtomicTypes());
+        $remaining_atomic_types = array_values($iterator_type->getAtomicTypes());
 
-        while ($iterator_atomic_types) {
-            $iterator_atomic_type = array_shift($iterator_atomic_types);
+        while ($remaining_atomic_types) {
+            $iterator_atomic_type = array_shift($remaining_atomic_types);
 
             // a template parameter iterates over every type of its bound
             if ($iterator_atomic_type instanceof TTemplateParam) {
-                array_unshift($iterator_atomic_types, ...array_values($iterator_atomic_type->as->getAtomicTypes()));
+                array_unshift($remaining_atomic_types, ...array_values($iterator_atomic_type->as->getAtomicTypes()));
                 continue;
             }
 

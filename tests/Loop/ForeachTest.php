@@ -2937,6 +2937,20 @@ final class ForeachTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['PossiblyNullIterator'],
             ],
+            'foreachOverANullableIterableTakesItsKeyAndValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable<int, string>|null $a */
+                    function f(?iterable $a): void {
+                        foreach ($a as $k => $v) {
+                            /** @psalm-check-type-exact $k = int */
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
             'foreachOverATemplateTakesTheValuesOfEveryTypeOfItsBound' => [
                 'code' => <<<'PHP'
                     <?php
