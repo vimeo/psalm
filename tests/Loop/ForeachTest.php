@@ -210,6 +210,36 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachCounterIncrementedThroughAReferenceIsWidened' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $l): void {
+                        $i = 0;
+                        $r = &$i;
+                        foreach ($l as $_) {
+                            $r += rand(1, 3);
+                        }
+                        /** @psalm-check-type-exact $i = int<0, max> */;
+                    }
+                    PHP,
+            ],
+            'foreachTypeGoingIntoAByReferenceArgumentReachesTheVariablesItFeeds' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $l): void {
+                        $a = [0];
+                        $b = [0];
+                        $c = 0;
+                        foreach ($l as $_) {
+                            $z = 1;
+                            $a = $b;
+                            array_push($b, $c);
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = list{0: 0, 1?: 's'|0, ...<'s'|0>} */;
+                    }
+                    PHP,
+            ],
             'foreachArrayNestedInItselfOnEveryIterationSettles' => [
                 'code' => <<<'PHP'
                     <?php

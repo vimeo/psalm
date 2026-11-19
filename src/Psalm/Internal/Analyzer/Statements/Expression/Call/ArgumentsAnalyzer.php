@@ -129,7 +129,7 @@ final class ArgumentsAnalyzer
         $context->inside_negation = false;
 
         try {
-            return self::analyzeArguments(
+            $result = self::analyzeArguments(
                 $statements_analyzer,
                 $args,
                 $function_params,
@@ -141,6 +141,27 @@ final class ArgumentsAnalyzer
         } finally {
             $context->inside_negation = $was_inside_negation;
         }
+
+        // the callee may call a closure it is given, which may write what the closure captured by reference
+        foreach ($args as $arg) {
+            foreach ($statements_analyzer->node_data->getType($arg->value)?->getAtomicTypes() ?? [] as $atomic) {
+                if (!$atomic instanceof TClosure) {
+                    continue;
+                }
+
+                foreach ($atomic->byref_uses as $use_name => $_) {
+                    $use_var_id = '$' . $use_name;
+
+                    $context->removeVarFromConflictingClauses(
+                        $use_var_id,
+                        $context->vars_in_scope[$use_var_id] ?? null,
+                        $statements_analyzer,
+                    );
+                }
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -1108,6 +1129,11 @@ final class ArgumentsAnalyzer
             $cased_method_id = $function_storage->cased_name;
         }
 
+        // the arguments are analysed already, and these calls are insecure whatever their types
+        if ($method_id !== null && $method_id !== '') {
+            InsecureCallAnalyzer::analyze($statements_analyzer, $method_id, $args, $function_params, $code_location);
+        }
+
         $calling_class_storage = $class_storage;
 
         $static_fq_class_name = $fq_class_name;
@@ -1229,7 +1255,7 @@ final class ArgumentsAnalyzer
                             $function_params[$i],
                             $i,
                             $i,
-                            $function_storage->allow_named_arg_calls ?? true,
+                            $function_storage?->allowsNamedArguments() ?? true,
                             new VirtualArg(
                                 StubsGenerator::getExpressionFromType($default_type),
                             ),
@@ -1334,7 +1360,7 @@ final class ArgumentsAnalyzer
 
                         foreach ($key_types as $key_type) {
                             if (!$key_type instanceof TLiteralString
-                                || ($function_storage && !$function_storage->allow_named_arg_calls)) {
+                                || ($function_storage && !$function_storage->allowsNamedArguments())) {
                                 continue;
                             }
 
@@ -1384,7 +1410,7 @@ final class ArgumentsAnalyzer
                         }
                     }
                 }
-            } elseif ($arg->name && (!$function_storage || $function_storage->allow_named_arg_calls)) {
+            } elseif ($arg->name && (!$function_storage || $function_storage->allowsNamedArguments())) {
                 $named_args_was_used = true;
 
                 foreach ($function_params as $candidate_offset => $candidate_param) {
@@ -1488,7 +1514,7 @@ final class ArgumentsAnalyzer
                     $function_param,
                     $param_offset,
                     $param_offset - $param_offsets[$argument_offset],
-                    $function_storage->allow_named_arg_calls ?? true,
+                    $function_storage?->allowsNamedArguments() ?? true,
                     $arg,
                     $arg_value_type,
                     $context,
@@ -2003,7 +2029,7 @@ final class ArgumentsAnalyzer
      * @param array<int, FunctionLikeParameter> $function_params
      * @psalm-mutation-free
      */
-    private static function getArgForParam(array $args, array $function_params, string $param_name): ?PhpParser\Node\Arg
+    public static function getArgForParam(array $args, array $function_params, string $param_name): ?PhpParser\Node\Arg
     {
         foreach ($args as $arg) {
             if ($arg->name !== null && $arg->name->name === $param_name) {
@@ -2495,7 +2521,7 @@ final class ArgumentsAnalyzer
         foreach ($args as $argument_offset => $arg) {
             $function_param = null;
 
-            if ($arg->name && $function_storage->allow_named_arg_calls) {
+            if ($arg->name && $function_storage->allowsNamedArguments()) {
                 foreach ($function_params as $candidate_param) {
                     if ($candidate_param->name === $arg->name->name) {
                         $function_param = $candidate_param;

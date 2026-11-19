@@ -683,7 +683,6 @@ final class IfElseAnalyzer
                 && !$reconciled_type->hasMixed()
             ) {
                 if (!$post_if_context->collect_initializations
-                    && !$post_if_context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 ) {
                     $parent_source = $statements_analyzer->getSource();

@@ -103,6 +103,49 @@ final class AssertAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testAssertIfTrueAndIfFalseOnAnOffsetWhoseKeyContainsTheParameterName(): void
+    {
+        Config::getInstance()->ensure_array_string_offsets_exist = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Obj {}
+
+                /** @psalm-assert-if-true Obj $data["data"] */
+                function has(array $data): bool {
+                    return isset($data["data"]) && $data["data"] instanceof Obj;
+                }
+
+                /** @psalm-assert-if-false Obj $context["context"] */
+                function lacks(array $context): bool {
+                    return !isset($context["context"]) || !$context["context"] instanceof Obj;
+                }
+
+                /** @psalm-assert Obj $a["a"] */
+                function assertA(array $a): void {
+                    if (!isset($a["a"]) || !$a["a"] instanceof Obj) {
+                        throw new InvalidArgumentException("a");
+                    }
+                }
+
+                function f(array $d, array $c, array $e): void {
+                    if (has($d)) {
+                        echo get_class($d["data"]);
+                    }
+
+                    if (!lacks($c)) {
+                        echo get_class($c["context"]);
+                    }
+
+                    assertA($e);
+                    echo get_class($e["a"]);
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testArrayKeyExistsAssertionOfNamedArguments(): void
     {
         Config::getInstance()->ensure_array_string_offsets_exist = true;
@@ -251,6 +294,220 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertionOnAStringParameterOfABuiltinKeepsAMixedArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(mixed $a, mixed $b, mixed $c, mixed $d): void {
+                        if (str_contains($a, 'x')) {
+                            /** @psalm-check-type-exact $a = mixed */
+                        }
+
+                        if (str_starts_with($b, 'x')) {
+                            /** @psalm-check-type-exact $b = mixed */
+                        }
+
+                        if (str_ends_with($c, 'x')) {
+                            /** @psalm-check-type-exact $c = mixed */
+                        }
+
+                        if (strpos($d, 'x') !== false) {
+                            /** @psalm-check-type-exact $d = mixed */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'assertionOnAStringParameterOfABuiltinStillNarrowsAStringArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(string $a, string $b, string $c, string $d): void {
+                        if (str_contains($a, 'x')) {
+                            /** @psalm-check-type-exact $a = non-empty-string */
+                        }
+
+                        if (str_starts_with($b, 'x')) {
+                            /** @psalm-check-type-exact $b = non-empty-string */
+                        }
+
+                        if (str_ends_with($c, 'x')) {
+                            /** @psalm-check-type-exact $c = non-empty-string */
+                        }
+
+                        if (strpos($d, 'x') !== false) {
+                            /** @psalm-check-type-exact $d = non-empty-string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'assertionOfABuiltinThatReturnsZeroHoldsWhenItIsComparedToFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(string $a, string $b): void {
+                        if (stripos($a, 'x') !== false) {
+                            /** @psalm-check-type-exact $a = non-empty-string */
+                        }
+
+                        if (false !== strpos($b, 'x')) {
+                            /** @psalm-check-type-exact $b = non-empty-string */
+                        }
+                    }
+                    PHP,
+            ],
+            'assertionOfABuiltinThatReturnsZeroIsNotNegatedWhenItReturnsFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(string $a, string $b): void {
+                        if (strpos($a, 'x') === false) {
+                            /** @psalm-check-type-exact $a = string */
+                        }
+
+                        if (false === stripos($b, 'x')) {
+                            /** @psalm-check-type-exact $b = string */
+                        }
+                    }
+                    PHP,
+            ],
+            'assertionOfAUserFunctionThatReturnsZeroHoldsWhenItIsComparedToFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-assert-if-true non-empty-string $s
+                     */
+                    function position(string $s): int|false {
+                        return $s === '' ? false : 0;
+                    }
+
+                    final class Finder {
+                        /**
+                         * @psalm-assert-if-true non-empty-string $s
+                         */
+                        public function position(string $s): int|false {
+                            return $s === '' ? false : 0;
+                        }
+
+                        /**
+                         * @psalm-assert-if-true non-empty-string $s
+                         */
+                        public static function staticPosition(string $s): int|false {
+                            return $s === '' ? false : 0;
+                        }
+                    }
+
+                    function f(string $a, string $b, string $c, Finder $finder): void {
+                        if (position($a) !== false) {
+                            /** @psalm-check-type-exact $a = non-empty-string */
+                        }
+
+                        if ($finder->position($b) !== false) {
+                            /** @psalm-check-type-exact $b = non-empty-string */
+                        }
+
+                        if (Finder::staticPosition($c) !== false) {
+                            /** @psalm-check-type-exact $c = non-empty-string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertionOnAStringParameterOfABuiltinKeepsAnObjectArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(SplFileInfo $file): void {
+                        if (str_contains($file, 'x')) {
+                            /** @psalm-check-type-exact $file = SplFileInfo */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
+            'assertionOnAStringParameterOfABuiltinKeepsAnArgumentContainingMixed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $a, string $s): void {
+                        $x = $a['k'];
+                        if ($x === null) {
+                            $x = $s;
+                        }
+
+                        if (str_contains($x, 'x')) {
+                            /** @psalm-check-type-exact $x = mixed|string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'assertionOnAStringParameterOfABuiltinNarrowsAMixedArgumentInStrictMode' => [
+                'code' => <<<'PHP'
+                    <?php
+                    declare(strict_types=1);
+
+                    function f(mixed $a): void {
+                        if (str_contains($a, 'x')) {
+                            /** @psalm-check-type-exact $a = non-empty-string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'assertionOnAStringParameterOfAUserFunctionNarrowsAMixedArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-assert-if-true non-empty-string $s */
+                    function nn(string $s): bool {
+                        return $s !== '';
+                    }
+
+                    function f(mixed $a): void {
+                        if (nn($a)) {
+                            /** @psalm-check-type-exact $a = non-empty-string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'assertOnAMixedParameterStillNarrowsAMixedArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-assert-if-true non-empty-string $s */
+                    function nonEmpty(mixed $s): bool {
+                        return is_string($s) && $s !== '';
+                    }
+
+                    /** @psalm-assert non-empty-array $a */
+                    function assertNonEmptyArray(array $a): void {
+                        if ($a === []) {
+                            throw new InvalidArgumentException();
+                        }
+                    }
+
+                    function f(mixed $m, mixed $n): void {
+                        if (nonEmpty($m)) {
+                            /** @psalm-check-type-exact $m = non-empty-string */
+                        }
+
+                        assertNonEmptyArray($n);
+                        /** @psalm-check-type-exact $n = non-empty-array<array-key, mixed> */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.1',
+            ],
             'selfOfATraitAssertionIsTheClassUsingTheTraitEverywhere' => [
                 'code' => '<?php
                     trait Comparable {
@@ -4454,6 +4711,133 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'assertAnOffsetOfAnArgument' => [
+                'code' => '<?php
+                    final class Obj {}
+
+                    /**
+                     * @psalm-assert Obj $context["obj"]
+                     */
+                    function assertObj(array $context): void {
+                        if (!isset($context["obj"]) || !$context["obj"] instanceof Obj) {
+                            throw new InvalidArgumentException("Object is not set");
+                        }
+                    }
+
+                    /**
+                     * @psalm-assert-if-true Obj $context["obj"]
+                     */
+                    function hasObj(array $context): bool {
+                        return isset($context["obj"]) && $context["obj"] instanceof Obj;
+                    }
+
+                    /**
+                     * @psalm-assert-if-false Obj $context["obj"]
+                     */
+                    function lacksObj(array $context): bool {
+                        return !isset($context["obj"]) || !$context["obj"] instanceof Obj;
+                    }
+
+                    function first(array $context): void {
+                        assertObj($context);
+                        $first = $context["obj"];
+                        /** @psalm-check-type-exact $first = Obj */;
+                    }
+
+                    function second(array $context): void {
+                        if (hasObj($context)) {
+                            $second = $context["obj"];
+                            /** @psalm-check-type-exact $second = Obj */;
+                        }
+                    }
+
+                    function third(array $context): void {
+                        if (!lacksObj($context)) {
+                            $third = $context["obj"];
+                            /** @psalm-check-type-exact $third = Obj */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'UnusedVariable'],
+            ],
+            'assertAnOffsetOfAnArgumentGivenByNameOrAfterAPositionalOne' => [
+                'code' => '<?php
+                    final class Obj {}
+
+                    /**
+                     * @psalm-assert Obj $context["obj"]
+                     */
+                    function assertCtx(array $context, int $flag = 0): void {
+                        if (!isset($context["obj"]) || !$context["obj"] instanceof Obj) {
+                            throw new InvalidArgumentException("Object is not set");
+                        }
+                    }
+
+                    /**
+                     * @psalm-assert-if-true Obj $context["obj"]
+                     */
+                    function hasCtx(array $context, int $flag = 0): bool {
+                        return isset($context["obj"]) && $context["obj"] instanceof Obj;
+                    }
+
+                    function f3(array $a): void {
+                        assertCtx($a, flag: 1);
+                        $v3 = $a["obj"];
+                        /** @psalm-check-type-exact $v3 = Obj */;
+                    }
+
+                    function f4(array $a): void {
+                        assertCtx(context: $a);
+                        $v4 = $a["obj"];
+                        /** @psalm-check-type-exact $v4 = Obj */;
+                    }
+
+                    function f5(array $a): void {
+                        if (hasCtx(flag: 1, context: $a)) {
+                            $v5 = $a["obj"];
+                            /** @psalm-check-type-exact $v5 = Obj */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'UnusedVariable'],
+            ],
+            'assertAnOffsetOfAVariadicParameterDoesNotNarrowTheArgument' => [
+                'code' => '<?php
+                    final class Obj {}
+
+                    /**
+                     * @psalm-assert array{obj: Obj} $ctx[0]
+                     */
+                    function variadic(array ...$ctx): void {}
+
+                    function f(array $a): void {
+                        variadic($a);
+                    }
+
+                    function g(array $a): void {
+                        variadic($a);
+                        /** @psalm-check-type-exact $a = array<array-key, mixed> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'assertAnOffsetGivenByAVariableThatIsNoParameterDoesNotNarrowTheArgument' => [
+                'code' => '<?php
+                    final class Obj {}
+
+                    /**
+                     * @psalm-assert Obj $context[$key]
+                     */
+                    function assertObj(array $context): void {}
+
+                    function f(array $b): void {
+                        $key = "foo";
+                        assertObj($b);
+                        /** @psalm-check-type-exact $b = array<array-key, mixed> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidDocblock'],
+            ],
         ];
     }
 
@@ -4464,6 +4848,39 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertAnOffsetOfAnArgumentIsIgnoredForANamedArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Obj {
+                        public function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @psalm-assert Obj $context['obj']
+                     * @param array{obj?: mixed} $context
+                     */
+                    function assertObj(array $other, array $context): void {
+                        if (!isset($context['obj']) || !$context['obj'] instanceof Obj) {
+                            throw new InvalidArgumentException('Object is not set');
+                        }
+                    }
+
+                    /**
+                     * @param array{obj?: mixed} $a
+                     * @param array{obj?: mixed} $b
+                     */
+                    function f(array $a, array $b): int {
+                        assertObj(context: $a, other: $b);
+
+                        return $b['obj']->m();
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:25:12 - Possibly undefined array key',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'assertNonEmptyArrayOnANonEmptyArray' => [
                 'code' => '<?php
                     /**
@@ -5056,6 +5473,26 @@ final class AssertAnnotationTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 'error_levels' => [],
                 'php_version' => '8.2',
+            ],
+            'assertAnOffsetOfAnArgumentDoesNotAssertAnotherOffset' => [
+                'code' => '<?php
+                    final class Obj {}
+
+                    /**
+                     * @psalm-assert Obj $context["obj"]
+                     */
+                    function assertObj(array $context): void {
+                        if (!isset($context["obj"]) || !$context["obj"] instanceof Obj) {
+                            throw new InvalidArgumentException("Object is not set");
+                        }
+                    }
+
+                    function check(array $context): Obj {
+                        assertObj($context);
+
+                        return $context["other"];
+                    }',
+                'error_message' => 'MixedReturnStatement',
             ],
         ];
     }
