@@ -2857,6 +2857,25 @@ final class CallableTest extends TestCase
                         if (is_callable($setter)) {}
                     }',
             ],
+            'privateStaticCallbackByLiteralStringAndToAMethodOfTheClass' => [
+                'code' => '<?php
+                    final class Sorter {
+                        public function run(): void {
+                            $items = [3, 1];
+                            usort($items, "Sorter::compare");
+                            $this->apply([self::class, "compare"]);
+                        }
+
+                        /** @param callable(int, int): int $callback */
+                        private function apply(callable $callback): void {
+                            $callback(1, 2);
+                        }
+
+                        private static function compare(int $a, int $b): int {
+                            return $a <=> $b;
+                        }
+                    }',
+            ],
             'privateStaticCallbackOfTheCurrentClassByClassString' => [
                 'code' => '<?php
                     final class Sorter {
@@ -3956,6 +3975,24 @@ final class CallableTest extends TestCase
 
                     foo(A::class . "::barr");',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'privateStaticCallbackByClassStringToAFunctionOutsideTheClass' => [
+                'code' => '<?php
+                    /** @param callable(int, int): int $callback */
+                    function apply(callable $callback): void {
+                        $callback(1, 2);
+                    }
+
+                    final class Sorter {
+                        public function run(): void {
+                            apply([self::class, "compare"]);
+                        }
+
+                        private static function compare(int $a, int $b): int {
+                            return $a <=> $b;
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
             ],
             'privateStaticCallbackOfAnotherClassByClassString' => [
                 'code' => '<?php
