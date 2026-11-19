@@ -5629,6 +5629,40 @@ final class ClassTemplateExtendsTest extends TestCase
                     '$fromFunction===' => 'class-string<Coll<true>>',
                 ],
             ],
+            'classStringOfGenericAsExtendsArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template V */
+                    class Base
+                    {
+                        /** @return V */
+                        public function get(): mixed
+                        {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template T of object
+                     * @extends Base<class-string<Box<T>>>
+                     */
+                    final class Cls extends Base {}
+
+                    /** @return Cls<DateTime> */
+                    function makeCls(): Cls
+                    {
+                        throw new RuntimeException();
+                    }
+
+                    $l = makeCls()->get();',
+                'assertions' => [
+                    '$l===' => 'class-string<Box<DateTime>>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
