@@ -61,6 +61,7 @@ use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -1177,6 +1178,36 @@ class Reconciler
     }
 
     /**
+     * What an `ArrayAccess<K, V>` can give for an offset that is indexed further: its value type without the
+     * parts that can't be indexed (an `int`), false when nothing of it can, null when it isn't known
+     *
+     * @psalm-pure
+     */
+    private static function getIndexableValueTypeOfArrayAccess(TNamedObject $object): Union|false|null
+    {
+        if (!$object instanceof TGenericObject
+            || strtolower($object->value) !== 'arrayaccess'
+            || count($object->type_params) !== 2
+        ) {
+            return null;
+        }
+
+        $indexable_atomic_types = [];
+
+        foreach ($object->type_params[1]->getAtomicTypes() as $value_atomic_type) {
+            if ($value_atomic_type instanceof TArray
+                || $value_atomic_type instanceof TKeyedArray
+                || $value_atomic_type instanceof TNamedObject
+                || $value_atomic_type instanceof TMixed
+            ) {
+                $indexable_atomic_types[] = $value_atomic_type;
+            }
+        }
+
+        return $indexable_atomic_types === [] ? false : new Union($indexable_atomic_types);
+    }
+
+    /**
      * The type of the class constant a key such as `Foo::BAR` or `static::BAR` stands for.
      */
     private static function getClassConstantTypeOfKey(
@@ -1298,6 +1329,7 @@ class Reconciler
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
                     $has_object_part = false;
+                    $has_unknown_object_part = false;
 
                     // a variable holding one literal is that literal as a key
                     $lookup_key = $array_key;
@@ -1372,8 +1404,23 @@ class Reconciler
                         } elseif ($existing_key_type_part instanceof TNamedObject
                             && ($has_isset || $has_inverted_isset || $has_inverted_key_exists)
                         ) {
-                            // the object's offset is unknown, only its array alternatives are narrowed
+                            // the object's offset is unknown, only its array alternatives are narrowed; for the
+                            // offset of a path that goes on, what the object gives has to be indexable as well
                             $has_object_array_access = $has_object_part = true;
+
+                            if ($key_parts !== []) {
+                                $object_value_type = self::getIndexableValueTypeOfArrayAccess($existing_key_type_part);
+
+                                if ($object_value_type === null) {
+                                    $has_unknown_object_part = true;
+                                } elseif ($object_value_type !== false) {
+                                    $new_base_type = Type::combineUnionTypes(
+                                        $new_base_type,
+                                        $object_value_type,
+                                        $codebase,
+                                    );
+                                }
+                            }
 
                             continue;
                         } elseif (!$existing_key_type_part instanceof TKeyedArray) {
@@ -1416,10 +1463,16 @@ class Reconciler
                         $existing_keys[$new_base_key] = $new_base_type;
                     }
 
-                    if ($has_object_part && ($new_base_type === null || $new_base_type->isMixed())) {
+                    if ($has_object_part
+                        && ($new_base_type === null || $new_base_type->isMixed() || $has_unknown_object_part)
+                    ) {
                         unset($existing_keys[$new_base_key]);
 
                         return null;
+                    }
+
+                    if ($has_object_part) {
+                        $existing_keys[$new_base_key] = $new_base_type;
                     }
                 }
 

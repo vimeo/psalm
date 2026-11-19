@@ -1543,6 +1543,19 @@ final class ArrayAccessTest extends TestCase
                     '$a===' => 'int',
                 ],
             ],
+            'issetOnANestedOffsetOfAnArrayOrArrayAccessKeepsTheValueTypeOfTheObject' => [
+                'code' => '<?php
+                    /** @var array{a?: array{b?: int}}|ArrayAccess<string, array{b?: string}> $test */
+                    $test = $_GET["x"];
+                    if (isset($test["a"]["b"])) {
+                        $a = $test["a"]["b"];
+                    } else {
+                        $a = 0;
+                    }',
+                'assertions' => [
+                    '$a===' => 'int|string',
+                ],
+            ],
             'issetOnArrayOrArrayAccessKeepsTheValueTypeOfTheObject' => [
                 'code' => '<?php
                     /** @var array{a?: int}|ArrayAccess<string, string> $test */
