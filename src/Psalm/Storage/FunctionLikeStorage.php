@@ -394,7 +394,8 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      */
     public array $taint_named_property_reads = [];
 
-    public bool $allow_named_arg_calls = true;
+    /** How the arguments can be passed */
+    public ?NamedArguments $named_arguments = null;
 
     /**
      * @var list<AttributeStorage>
@@ -459,6 +460,27 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public function isPure(): bool
     {
         return Capabilities::allowsAnyOf(Capabilities::NONE, $this->capabilities);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function allowsNamedArguments(): bool
+    {
+        return $this->named_arguments !== NamedArguments::NOT_ALLOWED;
+    }
+
+    /**
+     * Whether the argument of the parameter must be passed by name, per `@arguments-by-name` or
+     * `@optional-arguments-by-name`
+     *
+     * @psalm-mutation-free
+     */
+    public function requiresNamedArgument(FunctionLikeParameter $param): bool
+    {
+        return !$param->is_variadic
+            && ($this->named_arguments === NamedArguments::REQUIRED
+                || ($this->named_arguments === NamedArguments::REQUIRED_FOR_OPTIONAL && $param->is_optional));
     }
 
     /**
