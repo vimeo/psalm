@@ -73,29 +73,183 @@ The callables given to the parameter `$<callable>` are called with what is given
 
 See [Keyed stores](taint_flow.md#keyed-stores)
 
-## `@psalm-database-query $sql [$params] [result]`
+## Database annotations
 
-The method runs the SQL query given to `$sql`, with the values of its placeholders given to `$params` (a list for
-`?`, an array keyed by name for `:name`). `result` says what it returns of the rows the query selects: `result` (a
-result to fetch them from, or a row; the default), `rows` (a list of rows), `value` (the first column of the first
-row), `column` (a list of the first columns) or `none`. See [Databases](taint_flow.md#databases).
+For security analysis: these annotations say which queries the methods of a database layer run (your own wrapper,
+a library's connection class), so that what one query stores in a column taints what the queries reading that column
+return. Psalm reads the SQL at each call and ignores the queries the annotated method's body runs. See
+[Databases](taint_flow.md#databases).
 
-## `@psalm-database-prepare $sql`
+### `@psalm-database-query $sql [$params] [result]`
 
-The method prepares the SQL query given to `$sql` and returns the statement, whose methods give the values of the
-placeholders: `@psalm-database-execute [$params] [result]` and `@psalm-database-bind $key $value` (a positional
-placeholder numbered from 1) or `@psalm-database-bind ...$values` (in their order). With `result`, `execute` returns
-what the statement holds of the rows, as `@psalm-database-fetch` does.
+The method runs the SQL given to `$sql`, with the values of its placeholders given to `$params`: a list for `?`, an
+array keyed by name for `:name`.
 
-## `@psalm-database-insert $table $data`, `@psalm-database-update $table $data` and `@psalm-database-select $table`
+```php
+<?php // --taint-analysis
+final class Db
+{
+    /**
+     * @psalm-database-query $sql $params none
+     */
+    public function execute(string $sql, array $params = []): void {}
 
-The method stores the values of the array given to `$data` in the columns of the table given to `$table` named by its
-keys, or returns the rows of the table.
+    /**
+     * @psalm-database-query $sql $params rows
+     */
+    public function all(string $sql, array $params = []): array {}
 
-## `@psalm-database-fetch [$result] [result]`
+    /**
+     * @psalm-database-query $sql $params value
+     */
+    public function value(string $sql, array $params = []): mixed {}
+}
 
-The method returns what the result given to `$result`, or the object it is called on, holds of the rows, as
-`@psalm-database-query` says.
+function run(Db $db): void {
+    $db->execute('INSERT INTO users (name, bio) VALUES (?, ?)', ['admin', $_GET['bio'] ?? '']);
+
+    foreach ($db->all('SELECT name, bio FROM users') as $user) {
+        echo (string) $user['bio'];  // TaintedHtml
+        echo (string) $user['name']; // no issue
+    }
+
+    echo (string) $db->value('SELECT bio FROM users WHERE id = ?', [1]);  // TaintedHtml
+    echo (string) $db->value('SELECT name FROM users WHERE id = ?', [1]); // no issue
+}
+```
+
+The last word says what the method returns of the rows the query selects:
+
+| `result`           | The method returns                                                  | Like                          |
+|--------------------|---------------------------------------------------------------------|-------------------------------|
+| `result` (default) | a result to fetch the rows from with `@psalm-database-fetch`, or a row | `PDO::query()`             |
+| `rows`             | a list of rows                                                      | `PDOStatement::fetchAll()`    |
+| `value`            | the first column of the first row                                   | `PDOStatement::fetchColumn()` |
+| `column`           | a list of the first column of each row                              | `fetchAll(PDO::FETCH_COLUMN)` |
+| `none`             | nothing read from the database                                      | `PDO::exec()`                 |
+
+### `@psalm-database-prepare $sql`, `@psalm-database-execute [$params] [result]` and `@psalm-database-bind $key $value`
+
+`prepare` returns a statement for the SQL given to `$sql`. The methods of the statement give the values of its
+placeholders:
+
+- `@psalm-database-execute $params`: the values given to `$params`, as for `@psalm-database-query`. Without `result`,
+  the statement then holds the rows, to fetch with `@psalm-database-fetch`; with a `result`, the method returns them as
+  that `result` says.
+- `@psalm-database-bind $key $value`: the value given to `$value`, for the placeholder given to `$key` (`1` for the
+  first `?`, `'bio'` or `':bio'` for `:bio`).
+- `@psalm-database-bind ...$values`: the values given to `$values` and the parameters after it, one per placeholder
+  in their order, as for `mysqli_stmt::bind_param()`.
+
+```php
+<?php // --taint-analysis
+final class Connection
+{
+    /**
+     * @psalm-database-prepare $sql
+     */
+    public function prepare(string $sql): Statement {}
+}
+
+final class Statement
+{
+    /**
+     * @psalm-database-bind $param $value
+     */
+    public function bindValue(int|string $param, mixed $value): void {}
+
+    /**
+     * @psalm-database-execute $params
+     */
+    public function execute(array $params = []): void {}
+
+    /**
+     * @psalm-database-execute $params result
+     */
+    public function executeQuery(array $params = []): Result {}
+
+    /**
+     * @return array<string, mixed>|false
+     * @psalm-database-fetch
+     */
+    public function fetch(): array|false {}
+}
+
+final class Result
+{
+    /**
+     * @return list<array<string, mixed>>
+     * @psalm-database-fetch rows
+     */
+    public function fetchAll(): array {}
+}
+
+function run(Connection $db): void {
+    $insert = $db->prepare('INSERT INTO users (name, bio) VALUES (?, :bio)');
+    $insert->bindValue(1, 'admin');
+    $insert->bindValue('bio', $_GET['bio'] ?? '');
+    $insert->execute();
+
+    $select = $db->prepare('SELECT name, bio FROM users WHERE id = ?');
+    $select->execute([1]);
+    $user = $select->fetch();
+    if ($user !== false) {
+        echo (string) $user['bio'];  // TaintedHtml
+        echo (string) $user['name']; // no issue
+    }
+
+    foreach ($db->prepare('SELECT bio FROM users')->executeQuery()->fetchAll() as $user) {
+        echo (string) $user['bio']; // TaintedHtml
+    }
+}
+```
+
+### `@psalm-database-fetch [$result] [result]`
+
+The method returns the rows held by the result given to `$result`, or, without `$result`, by the object it is called
+on (a statement, a result). The last word says how, as in the table of `@psalm-database-query`; with the default
+`result`, the method returns one row. See the example above.
+
+### `@psalm-database-insert $table $data`, `@psalm-database-update $table $data` and `@psalm-database-select $table`
+
+`insert` and `update` store each value of the array given to `$data` in the column its key names, in the table given
+to `$table`. `select` returns the rows of that table, each holding every column of it under any key.
+
+```php
+<?php // --taint-analysis
+final class Table
+{
+    /**
+     * @psalm-database-insert $table $data
+     */
+    public function insert(string $table, array $data): void {}
+
+    /**
+     * @psalm-database-update $table $data
+     */
+    public function update(string $table, array $data, array $where): void {}
+
+    /**
+     * @return list<array<string, mixed>>
+     * @psalm-database-select $table
+     */
+    public function select(string $table): array {}
+}
+
+function run(Table $db): void {
+    $db->insert('users', ['name' => 'admin', 'bio' => '']);
+    $db->update('users', ['bio' => $_GET['bio'] ?? ''], ['id' => 1]);
+
+    foreach ($db->select('users') as $user) {
+        echo (string) $user['bio'];  // TaintedHtml
+        echo (string) $user['name']; // TaintedHtml: the rows of select hold every column under any key
+    }
+
+    foreach ($db->select('posts') as $post) {
+        echo (string) $post['title']; // no issue
+    }
+}
+```
 
 ## `@psalm-flow ( <arg>, [ <arg>, ] ) -> $this-><name>` and `@psalm-flow $this-><name> -> return`
 

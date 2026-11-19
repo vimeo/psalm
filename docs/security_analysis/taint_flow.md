@@ -237,10 +237,13 @@ echo Cache::get('title_1');   // no issue
 
 ### Databases
 
-What a query stores in a column of a table flows into what the queries selecting that column read, wherever they are.
-Psalm parses the SQL of the queries `PDO`, `mysqli`, `pgsql` and `SQLite3` run: the values of an INSERT, a REPLACE or
-an UPDATE are the parts of the query the analysis doesn't know the text of and the values given to its placeholders,
-and each column a SELECT gives is a key of the rows fetched:
+A value stored in the database comes back out of it: what a query stores in a column of a table taints what the
+queries selecting that column read, wherever they are. Psalm reads the SQL of the queries run with `PDO`, `mysqli`,
+`pgsql` and `SQLite3`:
+
+- an `INSERT`, `REPLACE` or `UPDATE` stores in each column the value of its placeholder, or the part of the SQL the
+  analysis doesn't know the text of (a variable concatenated into it);
+- a `SELECT` reads each column it names into the key of that name of the rows fetched.
 
 ```php
 <?php // --taint-analysis
@@ -257,11 +260,31 @@ function show(PDO $pdo): void {
 }
 ```
 
-+ A query the analysis can't parse, or whose table or column it doesn't know (a table name that isn't a literal,
-  `SELECT *`, `INSERT INTO t VALUES (...)` without the columns), stores into or reads from any column it can be.
-+ The values given to a prepared statement the analysis can't follow back to the query that prepared it, such as a
-  statement passed to another function, are stored in any column.
-+ A method running the queries it is given describes them with annotations, which replace what its body does:
+Where the analysis can't tell the table or the column, the query stores in, or reads from, every column it can be:
+
+```php
+<?php // --taint-analysis
+function store(PDO $pdo): void {
+    $pdo->prepare('INSERT INTO comments (author, body) VALUES (?, ?)')->execute(['admin', $_GET['body'] ?? '']);
+}
+
+function show(PDO $pdo, string $table): void {
+    echo (string) $pdo->query('SELECT * FROM comments')->fetch()['author']; // TaintedHtml
+    echo (string) $pdo->query("SELECT name FROM $table")->fetchColumn();    // TaintedHtml
+    echo (string) $pdo->query('SELECT name FROM users')->fetchColumn();     // no issue
+}
+```
+
+- A query it can't parse, a table name that isn't a literal, `SELECT *` and `INSERT INTO t VALUES (...)` without
+  the column list all read or write any column.
+- The values given to a prepared statement it can't follow back to the query that prepared it (a statement passed
+  to another function) are stored in every column of every table.
+
+#### Your own database layer
+
+Inside a method that runs the queries it is given, Psalm doesn't know their SQL, and what a method stores through code
+Psalm doesn't analyze is lost. [Annotations](annotations.md#database-annotations) describe the queries such methods
+run: Psalm then reads the SQL at each call, and ignores the queries in their bodies:
 
 ```php
 <?php // --taint-analysis
@@ -281,7 +304,9 @@ final class Db
     /**
      * @psalm-database-insert $table $data
      */
-    public function insert(string $table, array $data): void {}
+    public function insert(string $table, array $data): void {
+        // runs the query with a library Psalm doesn't analyze
+    }
 }
 
 function run(Db $db): void {
@@ -292,8 +317,6 @@ function run(Db $db): void {
     }
 }
 ```
-
-See [the annotations](annotations.md#psalm-database-query-sql-params-result) for the others.
 
 ### Properties set and got by name
 
