@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class EmptyTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -866,7 +868,8 @@ final class EmptyTest extends TestCase
                             echo 1;
                         }
                     }',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - '
+                    . 'non-empty-mixed does not contain false',
             ],
             'nonEmptyMixedIsNeverAnEmptyString' => [
                 'code' => '<?php
@@ -876,7 +879,8 @@ final class EmptyTest extends TestCase
                             echo 1;
                         }
                     }',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - '
+                    . "'' cannot be identical to non-empty-mixed",
             ],
             'nonEmptyMixedIsNeverNull' => [
                 'code' => '<?php
@@ -886,7 +890,8 @@ final class EmptyTest extends TestCase
                             echo 1;
                         }
                     }',
-                'error_message' => 'TypeDoesNotContainNull',
+                'error_message' => 'TypeDoesNotContainNull - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - '
+                    . 'non-empty-mixed does not contain null',
             ],
             'nonEmptyMixedIsNeverInAListOfFalsyValues' => [
                 'code' => '<?php
@@ -896,7 +901,8 @@ final class EmptyTest extends TestCase
                             echo 1;
                         }
                     }',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - '
+                    . 'Operand of type false is always falsy',
             ],
             'emptyMixedIsNeverTrue' => [
                 'code' => '<?php
@@ -906,7 +912,8 @@ final class EmptyTest extends TestCase
                             echo 1;
                         }
                     }',
-                'error_message' => 'DocblockTypeContradiction',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - '
+                    . 'empty-mixed does not contain true',
             ],
             'emptyOfAnOffsetWithALiteralKeyVariable' => [
                 'code' => '<?php
