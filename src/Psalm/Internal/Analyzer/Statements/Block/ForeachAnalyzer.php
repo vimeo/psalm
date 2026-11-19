@@ -88,6 +88,8 @@ use function array_keys;
 use function array_map;
 use function array_pop;
 use function array_search;
+use function array_shift;
+use function array_unshift;
 use function array_values;
 use function assert;
 use function count;
@@ -1267,9 +1269,15 @@ final class ForeachAnalyzer
         $invalid_iterator_types = [];
         $raw_object_types = [];
 
-        foreach ($iterator_type->getAtomicTypes() as $iterator_atomic_type) {
+        $iterator_atomic_types = array_values($iterator_type->getAtomicTypes());
+
+        while ($iterator_atomic_types) {
+            $iterator_atomic_type = array_shift($iterator_atomic_types);
+
+            // a template parameter iterates over every type of its bound
             if ($iterator_atomic_type instanceof TTemplateParam) {
-                $iterator_atomic_type = $iterator_atomic_type->as->getSingleAtomic();
+                array_unshift($iterator_atomic_types, ...array_values($iterator_atomic_type->as->getAtomicTypes()));
+                continue;
             }
 
             // if it's an empty array, we cannot iterate over it

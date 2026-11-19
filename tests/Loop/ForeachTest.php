@@ -2937,6 +2937,37 @@ final class ForeachTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['PossiblyNullIterator'],
             ],
+            'foreachOverATemplateTakesTheValuesOfEveryTypeOfItsBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template T of list<int>|IteratorAggregate<int, string>
+                     * @param T $a
+                     */
+                    function f($a): void {
+                        foreach ($a as $v) {
+                            /** @psalm-check-type-exact $v = int|string */
+                        }
+                    }
+                    PHP,
+            ],
+            'foreachOverANullableTemplateBoundByATemplateTakesTheValueOfTheInnerBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template U of list<string>
+                     * @template T of U|null
+                     * @param T $a
+                     */
+                    function f($a): void {
+                        foreach ($a as $v) {
+                            /** @psalm-check-type-exact $v = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullIterator'],
+            ],
         ];
     }
 
@@ -2947,6 +2978,27 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'foreachOverANullableIntReportsTheInt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param int|null $a */
+                    function f($a): void {
+                        /** @psalm-suppress PossiblyNullIterator */
+                        foreach ($a as $_) {}
+                    }
+                    PHP,
+                'error_message' => 'InvalidIterator',
+            ],
+            'foreachOverANullableRegularObjectReportsTheObject' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(?stdClass $a): void {
+                        /** @psalm-suppress PossiblyNullIterator */
+                        foreach ($a as $_) {}
+                    }
+                    PHP,
+                'error_message' => 'RawObjectIteration',
+            ],
             'foreachOverANullableIteratorInAPureFunctionIsImpure' => [
                 'code' => <<<'PHP'
                     <?php
