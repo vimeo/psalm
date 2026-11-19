@@ -330,7 +330,6 @@ final class AtomicStaticCallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             ) === false) {
                 return;
@@ -768,7 +767,6 @@ final class AtomicStaticCallAnalyzer
                         $args,
                         null,
                         null,
-                        true,
                         $context,
                     ) === false) {
                         return false;
@@ -876,7 +874,6 @@ final class AtomicStaticCallAnalyzer
                     $stmt->getArgs(),
                     null,
                     null,
-                    true,
                     $context,
                 ) === false) {
                     return false;
@@ -910,7 +907,6 @@ final class AtomicStaticCallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             ) === false) {
                 return false;
@@ -1098,7 +1094,6 @@ final class AtomicStaticCallAnalyzer
             $args,
             $pseudo_method_storage->params,
             (string) $method_id,
-            true,
             $context,
             $template_result->template_types !== [] || $template_result->lower_bounds !== []
                 ? $template_result
@@ -1157,7 +1152,6 @@ final class AtomicStaticCallAnalyzer
                     $args,
                     $method_storage->params,
                     (string) $method_id,
-                    true,
                     $context,
                 );
 

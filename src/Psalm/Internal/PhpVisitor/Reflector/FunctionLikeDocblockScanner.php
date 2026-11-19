@@ -50,6 +50,7 @@ use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\NamedArguments;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -164,12 +165,17 @@ final class FunctionLikeDocblockScanner
             $storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($aliases->namespace)];
         }
 
+        // a tag on the method replaces the one on its class
+        if ($docblock_info->named_arguments !== null) {
+            $storage->named_arguments = $docblock_info->named_arguments;
+        }
+
+        // the tags that make parameter names part of the API apply to internal code too
         if (($storage->internal || ($classlike_storage && $classlike_storage->internal))
             && !$config->allow_internal_named_arg_calls
+            && $storage->named_arguments === null
         ) {
-            $storage->allow_named_arg_calls = false;
-        } elseif ($docblock_info->no_named_args) {
-            $storage->allow_named_arg_calls = false;
+            $storage->named_arguments = NamedArguments::NOT_ALLOWED;
         }
 
         if ($docblock_info->variadic) {
