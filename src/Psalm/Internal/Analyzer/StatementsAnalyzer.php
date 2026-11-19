@@ -306,7 +306,6 @@ final class StatementsAnalyzer extends SourceAnalyzer
             if ($this->root_scope
                 && $this->depth === 1
                 && !$context->collect_initializations
-                && !$context->collect_mutations
                 && $codebase->find_unused_variables
                 && $context->check_variables
             ) {
@@ -776,7 +775,6 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
         if ($context->has_returned
             && !$context->collect_initializations
-            && !$context->collect_mutations
             && !($stmt instanceof PhpParser\Node\Stmt\Nop)
             && !($stmt instanceof PhpParser\Node\Stmt\Function_)
             && !($stmt instanceof PhpParser\Node\Stmt\Class_)
