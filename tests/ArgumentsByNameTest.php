@@ -7,13 +7,72 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 final class ArgumentsByNameTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testDisallowedNamedArgumentsAreStillMatchedByName(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->testConfig->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @no-named-arguments */
+                final class Assert {
+                    /** @param non-empty-string $message */
+                    public static function same(?int $expected, ?int $actual, string $message = "x"): void {}
+                }
+
+                /** @no-named-arguments */
+                #[Attribute]
+                final class Covers {
+                    /** @param class-string $className */
+                    public function __construct(string $className, string $methodName) {}
+                }
+
+                /** @no-named-arguments */
+                function f(int $a, string $b): void {}
+
+                #[Covers(methodName: "m", className: Assert::class)]
+                final class Subject {}
+
+                Assert::same(message: "no", actual: 1, expected: null);
+                f(...["b" => "x", "a" => 1]);',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $this->assertSame(
+            [
+                ['NamedArgumentNotAllowed', 21, 'Method Assert::same called with named argument message'],
+                ['NamedArgumentNotAllowed', 21, 'Method Assert::same called with named argument actual'],
+                ['NamedArgumentNotAllowed', 21, 'Method Assert::same called with named argument expected'],
+                [
+                    'NamedArgumentNotAllowed',
+                    22,
+                    "Method f called with named unpacked array array{a: 1, b: 'x'} (array with string keys)",
+                ],
+                ['NamedArgumentNotAllowed', 18, 'Method Covers::__construct called with named argument methodName'],
+                ['NamedArgumentNotAllowed', 18, 'Method Covers::__construct called with named argument className'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->type, $issue->line_from, $issue->message],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
 
     public function testStableParameterNamesReportRenamesWhenNamedArgumentCallsAreDisallowed(): void
     {
