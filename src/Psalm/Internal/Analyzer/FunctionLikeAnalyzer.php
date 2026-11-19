@@ -1114,6 +1114,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $closure_atomic->extra_types,
                             $closure_atomic->from_docblock,
                             $closure_atomic->callable_id,
+                            $closure_atomic->byref_use_scopes,
                         ),
                     ], ['reference_free' => true]),
                 );
@@ -3308,12 +3309,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     : $param;
             }
 
+            $byref_uses = $storage instanceof FunctionStorage ? $storage->byref_uses : [];
+
             $closure_type = new TClosure(
                 $closure_params,
                 $closure_return_type,
                 $storage->capabilities,
-                $storage instanceof FunctionStorage ? $storage->byref_uses : [],
+                $byref_uses,
                 callable_id: $this->getClosureId(),
+                byref_use_scopes: ClosureAnalyzer::getByRefUseScopes($this->source, $byref_uses),
             );
 
             $type_provider->setType(

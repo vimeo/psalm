@@ -14,16 +14,20 @@ use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\PhpVisitor\ShortClosureVisitor;
 use Psalm\Internal\TypeVisitor\CapturedValueVisitor;
+use Psalm\Internal\TypeVisitor\ClosureByRefUsesCollector;
 use Psalm\Issue\DuplicateParam;
 use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\UndefinedVariable;
 use Psalm\IssueBuffer;
+use Psalm\StatementsSource;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -173,6 +177,108 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             . ':' . $this->function->getLine()
             . ':' . (int)$this->function->getAttribute('startFilePos')
             . ':-:closure';
+    }
+
+    /**
+     * The id of the function-like the source's code is in, or '' outside of any: the scope of its variables
+     */
+    public static function getScopeId(StatementsSource $source): string
+    {
+        while ($source instanceof StatementsAnalyzer) {
+            $source = $source->getSource();
+        }
+
+        return $source instanceof FunctionLikeAnalyzer ? $source->getId() : '';
+    }
+
+    /**
+     * The ids of the scopes (see getScopeId()) whose variable each name is, for a closure made in the source that
+     * captures them by reference: a closure the source is in shares a variable it captured by reference with the
+     * scope it was made in
+     *
+     * @param array<string, bool> $byref_uses
+     * @return array<string, non-empty-list<string>>
+     */
+    public static function getByRefUseScopes(StatementsSource $source, array $byref_uses): array
+    {
+        $scopes = [];
+
+        foreach ($byref_uses as $use_name => $_) {
+            $scope = $source;
+
+            while (true) {
+                while ($scope instanceof StatementsAnalyzer) {
+                    $scope = $scope->getSource();
+                }
+
+                if (!$scope instanceof FunctionLikeAnalyzer) {
+                    $scopes[$use_name][] = '';
+                    break;
+                }
+
+                $scopes[$use_name][] = $scope->getId();
+                if (!$scope instanceof self
+                    || !$scope->storage instanceof FunctionStorage
+                    || !isset($scope->storage->byref_uses[$use_name])
+                ) {
+                    break;
+                }
+
+                $scope = $scope->getSource();
+            }
+        }
+
+        return $scopes;
+    }
+
+    /**
+     * The variables of the current scope that calling the analysed callable may write, also recorded for
+     * {@see \Psalm\Internal\Algebra\FormulaGenerator}. Passed to a call ($passed), a closure it contains or returns
+     * may be called too. What a closure captured by reference are variables of the scopes it was made in (see
+     * getByRefUseScopes()): elsewhere, a variable of the same name is taken to be one when this scope binds it by
+     * reference to a variable outside (`use (&$x)`, `global $x`, a by-reference parameter or foreach value, ...)
+     *
+     * @return array<string, true>
+     */
+    public static function analyzeVarIdsWrittenByCall(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr $callable,
+        bool $passed,
+    ): array {
+        $var_ids = [];
+        $scope_id = null;
+        $type = $statements_analyzer->node_data->getType($callable);
+        $closures = [];
+
+        if ($passed) {
+            $closures = ClosureByRefUsesCollector::collect($type);
+        } else {
+            foreach ($type?->getAtomicTypes() ?? [] as $atomic) {
+                if ($atomic instanceof TClosure && $atomic->byref_uses) {
+                    $closures[] = $atomic;
+                }
+            }
+        }
+
+        foreach ($closures as $closure) {
+            $scope_id ??= self::getScopeId($statements_analyzer);
+
+            foreach ($closure->byref_uses as $use_name => $_) {
+                $var_id = '$' . $use_name;
+
+                if (!isset($closure->byref_use_scopes[$use_name])
+                    || in_array($scope_id, $closure->byref_use_scopes[$use_name], true)
+                    || isset($context->references_to_external_scope[$var_id])
+                ) {
+                    $var_ids[$var_id] = true;
+                }
+            }
+        }
+
+        $statements_analyzer->node_data->setVarIdsWrittenByCall($callable, $var_ids);
+
+        return $var_ids;
     }
 
     /**
