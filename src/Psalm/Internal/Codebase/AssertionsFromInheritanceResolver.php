@@ -66,11 +66,10 @@ final class AssertionsFromInheritanceResolver
     public function hasAny(
         MethodStorage $method_storage,
         ClassLikeStorage $called_class,
-        bool $include_if_false = true,
     ): bool {
         return $this->resolve($method_storage, $called_class)
             || $this->resolveIfTrue($method_storage, $called_class)
-            || ($include_if_false && $this->resolveIfFalse($method_storage, $called_class));
+            || $this->resolveIfFalse($method_storage, $called_class);
     }
 
     /**

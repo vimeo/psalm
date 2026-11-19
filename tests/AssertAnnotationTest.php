@@ -324,6 +324,32 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'staticCallKeepsAssertIfTrueOfAnUndocumentedOverride' => [
+                'code' => '<?php
+                    abstract class Coll {
+                        /** @psalm-assert-if-true \DateTime $item */
+                        public static function isDate(mixed $item): bool {
+                            return $item instanceof \DateTime;
+                        }
+                    }
+
+                    final class DColl extends Coll {
+                        public static function isDate(mixed $item): bool {
+                            return $item instanceof \DateTime;
+                        }
+                    }
+
+                    function year(mixed $x): string {
+                        if (DColl::isDate($x)) {
+                            return $x->format("Y");
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'parentCallKeepsTemplatedAssertIfFalseOfAnUndocumentedOverride' => [
                 'code' => '<?php
                     interface Item { public function name(): string; }

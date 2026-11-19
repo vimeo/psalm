@@ -515,11 +515,8 @@ final class MethodCallPurityAnalyzer
                 )
             ) {
                 if ($context->inside_conditional
-                    && !(new AssertionsFromInheritanceResolver($codebase))->hasAny(
-                        $method_storage,
-                        $class_storage,
-                        false,
-                    )
+                    && !$method_storage->assertions
+                    && !$method_storage->if_true_assertions
                 ) {
                     $stmt->setAttribute('memoizable', true);
 
