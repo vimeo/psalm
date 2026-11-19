@@ -3982,7 +3982,7 @@ final class CapabilitiesTest extends TestCase
                     function sortFirst(ReadOnlyBox $o): bool {
                         return sort($o[0]);
                     }',
-                'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:37',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:37 - Cannot access array value on non-array variable $o of type ReadOnlyBox',
             ],
             'itemOfAnObjectWithMagicMethodsPassedByReference' => [
                 'code' => '<?php
@@ -4000,7 +4000,7 @@ final class CapabilitiesTest extends TestCase
                     function sortFirst(MagicBox $o): bool {
                         return sort($o[0]);
                     }',
-                'error_message' => 'UndefinedMagicMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:37 - Magic method MagicBox::offsetset does not exist',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:37 - Cannot access array value on non-array variable $o of type MagicBox',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],

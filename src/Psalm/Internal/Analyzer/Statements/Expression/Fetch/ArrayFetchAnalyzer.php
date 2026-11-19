@@ -853,6 +853,7 @@ final class ArrayFetchAnalyzer
         $non_array_types = [];
         // unlike other non-array types, these throw inside isset() too
         $non_indexable_object_types = [];
+        $offset_call_receiver_type = false;
 
         $has_valid_expected_offset = false;
         $expected_offset_types = [];
@@ -1116,6 +1117,10 @@ final class ArrayFetchAnalyzer
             }
 
             if ($type instanceof TNamedObject && self::isIndexableObject($codebase, $type)) {
+                if ($offset_call_receiver_type === false) {
+                    $offset_call_receiver_type = self::getOffsetCallReceiverType($codebase, $array_type);
+                }
+
                 self::handleArrayAccessOnNamedObject(
                     $statements_analyzer,
                     $stmt,
@@ -1127,7 +1132,7 @@ final class ArrayFetchAnalyzer
                     $has_array_access,
                     // nothing replaces an item an assignment writes into, which is modified in place as well
                     $by_reference || $replacement_type === null,
-                    self::getOffsetCallReceiverType($codebase, $array_type),
+                    $offset_call_receiver_type,
                 );
             } elseif (!$array_type->hasMixed()) {
                 $non_array_types[] = (string)$type;

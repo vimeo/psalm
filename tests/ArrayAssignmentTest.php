@@ -3618,7 +3618,7 @@ final class ArrayAssignmentTest extends TestCase
                 'code' => '<?php
                     class A {}
                     (new A)["b"] = 1;',
-                'error_message' => 'UndefinedMethod',
+                'error_message' => 'InvalidArrayAssignment',
             ],
             'invalidArrayAccess' => [
                 'code' => '<?php
