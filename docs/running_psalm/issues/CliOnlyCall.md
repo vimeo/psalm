@@ -98,7 +98,7 @@ import(); // no issue
 ```
 
 Code that holds an instance of a class with
-[`@psalm-cli-only-instances`](../../security_analysis/index.md#command-line-code)
+[`@psalm-cli-only-instances`](../../security_analysis/index.md#classes-only-instantiated-from-the-command-line)
 already runs from the command line: calling a method that isn't static of such a class, or a function-like whose
 parameter requires an instance of it, reports no `CliOnlyCall`:
 

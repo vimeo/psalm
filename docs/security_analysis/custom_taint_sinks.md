@@ -2,7 +2,7 @@
 
 The `@psalm-taint-sink <taint-type> <param-name>` annotation allows you to define a taint sink.
 
-Any tainted value matching the given [taint type](index.md#where-it-must-not-go) will be reported as an error by Psalm.
+Any tainted value matching the given [taint type](index.md#where-user-input-must-not-go) will be reported as an error by Psalm.
 
 ### Example
 

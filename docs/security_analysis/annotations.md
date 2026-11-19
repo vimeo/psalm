@@ -44,7 +44,7 @@ See [Command-line code](index.md#command-line-code).
 ## `@psalm-cli-only-instances`
 
 On a final class: its instances only exist in command-line processes, so the code that requires one only runs from the
-command line. See [Command-line code](index.md#command-line-code).
+command line. See [Classes only instantiated from the command line](index.md#classes-only-instantiated-from-the-command-line).
 
 ## `@psalm-taint-property-bag $<property>`
 
