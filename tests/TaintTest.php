@@ -38,6 +38,7 @@ use function array_filter;
 use function array_flip;
 use function array_map;
 use function array_values;
+use function assert;
 use function implode;
 use function in_array;
 use function ini_get;
@@ -1198,6 +1199,87 @@ final class TaintTest extends TestCase
         sort($lines);
 
         return $lines;
+    }
+
+    /**
+     * The sinks of builtins whose stub only loads with their extension are also sinks without it, as their classes and
+     * functions still come from the call map. With the extension, the stub's sink and the call map's are one.
+     */
+    #[DataProvider('providerSinksWithoutTheirExtension')]
+    public function testSinksWithoutTheirExtension(
+        string $code,
+        string $extension,
+        string $expected_issue,
+        string $php_version,
+        bool $extension_enabled,
+    ): void {
+        if (!$extension_enabled) {
+            $config = $this->testConfig;
+            assert($config instanceof TestConfig);
+            $config->disableExtensions($extension);
+        }
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
+
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $taint_issues = array_values(array_filter(
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ' on line ' . $issue->line_from,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+            static fn(string $issue): bool => str_starts_with($issue, 'Tainted'),
+        ));
+
+        self::assertSame($expected_issue, implode(', ', $taint_issues));
+    }
+
+    /**
+     * @return array<string, array{string, string, string, string, bool}>
+     * @psalm-pure
+     */
+    public static function providerSinksWithoutTheirExtension(): array
+    {
+        // the parameter of the function, the call given the input $x, the extension, the issue and the PHP version
+        $cases = [
+            'PDO::query' => ['PDO $pdo', '$pdo->query($x)', 'pdo', 'TaintedSql', '8.0'],
+            'PDO::exec' => ['PDO $pdo', '$pdo->exec($x)', 'pdo', 'TaintedSql', '8.0'],
+            'PDO::prepare' => ['PDO $pdo', '$pdo->prepare($x)', 'pdo', 'TaintedSql', '8.0'],
+            'PDOStatement::fetchObject' => ['PDOStatement $s', '$s->fetchObject($x)', 'pdo', 'TaintedCallable', '8.0'],
+            'mysqli::execute_query' => ['mysqli $db', '$db->execute_query($x)', 'mysqli', 'TaintedSql', '8.2'],
+            'mysqli_execute_query' => ['mysqli $db', 'mysqli_execute_query($db, $x)', 'mysqli', 'TaintedSql', '8.2'],
+            'mysqli_result::fetch_object' => ['mysqli_result $r', '$r->fetch_object($x)', 'mysqli', 'TaintedCallable', '8.0'],
+            'mysqli_fetch_object' => ['mysqli_result $r', 'mysqli_fetch_object($r, $x)', 'mysqli', 'TaintedCallable', '8.0'],
+            'DOMXPath::query' => ['DOMXPath $xpath', '$xpath->query($x)', 'dom', 'TaintedXpath', '8.0'],
+            'DOMXPath::evaluate' => ['DOMXPath $xpath', '$xpath->evaluate($x)', 'dom', 'TaintedXpath', '8.0'],
+            'Dom\\XPath::query' => ['Dom\\XPath $xpath', '$xpath->query($x)', 'dom', 'TaintedXpath', '8.4'],
+            'Dom\\XPath::evaluate' => ['Dom\\XPath $xpath', '$xpath->evaluate($x)', 'dom', 'TaintedXpath', '8.4'],
+            'SimpleXMLElement::xpath' => ['SimpleXMLElement $xml', '$xml->xpath($x)', 'simplexml', 'TaintedXpath', '8.0'],
+            'SoapClient::__setLocation' => ['SoapClient $c', '$c->__setLocation($x)', 'soap', 'TaintedSSRF', '8.0'],
+            'MongoDB\\Driver\\Query::__construct'
+                => ['', 'new MongoDB\\Driver\\Query(json_decode($x, true))', 'mongodb', 'TaintedNosql', '8.0'],
+            'MongoDB\\Driver\\Command::__construct'
+                => ['', 'new MongoDB\\Driver\\Command(json_decode($x, true))', 'mongodb', 'TaintedNosql', '8.0'],
+            'MongoDB\\Driver\\BulkWrite::insert'
+                => ['MongoDB\\Driver\\BulkWrite $w', '$w->insert(json_decode($x, true))', 'mongodb', 'TaintedNosql', '8.0'],
+            'MongoDB\\Driver\\BulkWrite::update'
+                => ['MongoDB\\Driver\\BulkWrite $w', '$w->update([], json_decode($x, true))', 'mongodb', 'TaintedNosql', '8.0'],
+            'MongoDB\\Driver\\BulkWrite::delete'
+                => ['MongoDB\\Driver\\BulkWrite $w', '$w->delete(json_decode($x, true))', 'mongodb', 'TaintedNosql', '8.0'],
+        ];
+
+        $data = [];
+        foreach ($cases as $name => [$param, $call, $extension, $issue, $php_version]) {
+            $code = "<?php function f($param): void {\n\$x = (string) (\$_GET['x'] ?? '');\n$call;\n}";
+            $data[$name] = [$code, $extension, $issue . ' on line 3', $php_version, false];
+            $data[$name . ' with the extension'] = [$code, $extension, $issue . ' on line 3', $php_version, true];
+        }
+
+        return $data;
     }
 
     /**

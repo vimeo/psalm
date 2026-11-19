@@ -77,6 +77,18 @@ final class TestConfig extends Config
     }
 
     /**
+     * Treats the extensions as not required by the project, so their stubs are not loaded.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function disableExtensions(string ...$extensions): void
+    {
+        foreach ($extensions as $extension) {
+            $this->php_extensions[$extension] = false;
+        }
+    }
+
+    /**
      * Scanning every extension stub took about two thirds of a simple test case, and few cases use an
      * extension, so an extension the config leaves unset is enabled only if the scanned files use it.
      */
