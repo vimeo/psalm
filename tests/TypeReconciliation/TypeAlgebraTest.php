@@ -132,6 +132,21 @@ final class TypeAlgebraTest extends TestCase
                         return ($a !== null || $b !== null) && $c ? ($a === null ? $b->get() : 1) : 0;
                     }',
             ],
+            'aTernaryBranchDoesNotCheckAgainTheConditionOfTheTernaryInACoalesce' => [
+                'code' => '<?php
+                    function f(?string $id, array $vars): mixed {
+                        return $id !== null ? $vars[$id] ?? null : null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'aTernaryBranchDoesNotCheckAgainTheConditionOfTheTernaryInANestedTernary' => [
+                'code' => '<?php
+                    function f(int $n): string {
+                        return $n > 0 ? ($n === 1 ? "a" : "b") : "c";
+                    }',
+            ],
             'aTernaryConditionOnAnOffsetOfAVariableSetInALoopNarrowsIt' => [
                 'code' => '<?php
                     function f(array $files): string {

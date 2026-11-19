@@ -118,6 +118,15 @@ final class TernaryAnalyzer
                 $if_context->inside_loop,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->cond),
             );
+
+            if ($changed_var_ids) {
+                $if_context->clauses = AlgebraAnalyzer::removeReconciledClauses(
+                    $if_context->clauses,
+                    $changed_var_ids,
+                    $if_context->vars_in_scope,
+                    $statements_analyzer,
+                )[0];
+            }
         }
 
         $if_start_vars = $if_context->vars_in_scope;

@@ -350,7 +350,7 @@ final class IfConditionalAnalyzer
      * starts with and the clauses and types of its negation
      *
      * @param list<Clause> $pre_cond_clauses the clauses of the context before the condition
-     * @param list<string> $pre_cond_reconciled_clauses
+     * @param list<string|int> $pre_cond_reconciled_clauses
      * @param array<string, int> $pre_cond_remove_vars
      * @param array<string, int> $assigned_in_conditional_var_ids
      */
