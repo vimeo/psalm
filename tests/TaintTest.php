@@ -863,6 +863,12 @@ final class TaintTest extends TestCase
             }
 
             (new QueryRunner())->run((string) $_GET["d"]);
+
+            final class LoggingQueryRunner extends QueryRunner {
+                public function run(string $command): void {}
+            }
+
+            (new LoggingQueryRunner())->run((string) $_GET["e"]);
         ');
         $this->project_analyzer->trackTaintedInputs();
 
@@ -880,6 +886,7 @@ final class TaintTest extends TestCase
                 [20, 'TaintedShell'],
                 [25, 'TaintedSql'],
                 [25, 'TaintedSql'],
+                [34, 'TaintedSql'],
             ],
             array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
         );
