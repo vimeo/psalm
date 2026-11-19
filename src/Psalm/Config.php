@@ -76,6 +76,8 @@ use stdClass;
 
 use function array_any;
 use function array_column;
+use function array_filter;
+use function array_is_list;
 use function array_key_exists;
 use function array_keys;
 use function array_merge;
@@ -618,6 +620,16 @@ final class Config
     public ?int $scan_threads = null;
 
     /**
+     * The extensions the project declares, by their Composer name without `ext-` (`mbstring`, `zend-opcache`): those
+     * composer.json requires (also for development) or suggests, those its installed packages provide or replace
+     * (polyfills), and those `<enableExtensions>` lists. Null without a composer.json, which turns off
+     * MissingExtensionRequirement.
+     *
+     * @var array<string, true>|null
+     */
+    public ?array $declared_extensions = null;
+
+    /**
      * A list of php extensions supported by Psalm.
      * Where key - extension name (without ext- prefix), value - whether to load extension’s stub.
      * Values:
@@ -1091,6 +1103,76 @@ final class Config
     }
 
     /**
+     * @param array<array-key, mixed> $composer_json
+     * @return array<string, true>
+     */
+    private static function getDeclaredExtensions(array $composer_json, string $base_dir): array
+    {
+        $declarations = [];
+        foreach (['require', 'require-dev', 'suggest', 'provide', 'replace'] as $key) {
+            if (isset($composer_json[$key]) && is_array($composer_json[$key])) {
+                $declarations[] = $composer_json[$key];
+            }
+        }
+
+        $vendor_dir = 'vendor';
+        if (isset($composer_json['config'])
+            && is_array($composer_json['config'])
+            && isset($composer_json['config']['vendor-dir'])
+            && is_string($composer_json['config']['vendor-dir'])
+        ) {
+            $vendor_dir = $composer_json['config']['vendor-dir'];
+        }
+
+        // the polyfills installed provide the extensions they replace
+        $installed_path = $base_dir . DIRECTORY_SEPARATOR . $vendor_dir . DIRECTORY_SEPARATOR . 'composer'
+            . DIRECTORY_SEPARATOR . 'installed.json';
+        foreach ([$installed_path, Composer::getLockFilePath($base_dir)] as $path) {
+            if (!is_file($path)) {
+                continue;
+            }
+
+            $installed = json_decode((string) file_get_contents($path), true);
+            if (!is_array($installed)) {
+                continue;
+            }
+
+            $packages = [];
+            if (isset($installed['packages']) && is_array($installed['packages'])) {
+                $packages = $installed['packages'];
+                if (isset($installed['packages-dev']) && is_array($installed['packages-dev'])) {
+                    $packages = [...$packages, ...$installed['packages-dev']];
+                }
+            } elseif (array_is_list($installed)) {
+                // the installed.json of Composer 1
+                $packages = $installed;
+            }
+
+            foreach (array_filter($packages, is_array(...)) as $package) {
+                foreach (['provide', 'replace'] as $key) {
+                    if (isset($package[$key]) && is_array($package[$key])) {
+                        $declarations[] = $package[$key];
+                    }
+                }
+            }
+
+            break;
+        }
+
+        $extensions = [];
+        foreach ($declarations as $declaration) {
+            foreach (array_keys($declaration) as $name) {
+                $name = strtolower((string) $name);
+                if (str_starts_with($name, 'ext-')) {
+                    $extensions[substr($name, 4)] = true;
+                }
+            }
+        }
+
+        return $extensions;
+    }
+
+    /**
      * @param non-empty-string $file_contents
      * @psalm-suppress MixedAssignment
      * @psalm-suppress MixedPropertyFetch
@@ -1214,12 +1296,19 @@ final class Config
             }
         }
 
+        if ($composer_json !== null) {
+            $config->declared_extensions = self::getDeclaredExtensions($composer_json, $config->base_dir);
+        }
+
         if (isset($config_xml->enableExtensions) && isset($config_xml->enableExtensions->extension)) {
             foreach ($config_xml->enableExtensions->extension as $extension) {
                 assert(isset($extension["name"]));
                 $extensionName = (string) $extension["name"];
                 assert(array_key_exists($extensionName, $config->php_extensions));
                 $config->php_extensions[$extensionName] = true;
+                if ($config->declared_extensions !== null) {
+                    $config->declared_extensions[strtolower($extensionName)] = true;
+                }
             }
         }
 

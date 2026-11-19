@@ -86,7 +86,7 @@ final class CliUtils
 
         $psalm_dir = dirname(__DIR__, 3);
 
-        $in_phar = Phar::running() || strpos(__NAMESPACE__, 'HumbugBox');
+        $in_phar = (extension_loaded('phar') && Phar::running()) || strpos(__NAMESPACE__, 'HumbugBox');
 
         if ($in_phar) {
             require_once __DIR__ . '/../../../vendor/autoload.php';
