@@ -618,7 +618,7 @@ final class VariableFetchAnalyzer
 
     /**
      * The arguments of a CLI script are its user's input, and PHP builds $argv from the query string with
-     * register_argc_argv (see also ArrayFetchAnalyzer::USER_CONTROLLED_SERVER_KEYS).
+     * register_argc_argv (see also ServerVariableTaints).
      */
     public static function getArgvTaintSource(
         StatementsAnalyzer $statements_analyzer,

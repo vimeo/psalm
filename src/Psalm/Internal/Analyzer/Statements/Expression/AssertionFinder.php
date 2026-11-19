@@ -84,14 +84,17 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -102,9 +105,11 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -3220,8 +3225,7 @@ final class AssertionFinder
 
     /**
      * The variable cast to a string an in_array() check is given as its needle (`in_array((string) $x, ["ls"])`),
-     * if only a string has the string form of each value it can find: none is empty, numeric, `INF` or `NAN`.
-     * Its value is then the one found.
+     * if only a string has the string form of each value it can find. Its value is then the one found.
      */
     private static function getStringCastNeedleVarId(
         PhpParser\Node\Expr\FuncCall $expr,
@@ -3234,10 +3238,11 @@ final class AssertionFinder
             return null;
         }
 
-        $needle = $args[0]->value;
+        $needle = $args[0]->value->expr;
+        $needle_type = $source->node_data->getType($needle);
         $haystack_type = $source->node_data->getType($args[1]->value);
 
-        if ($haystack_type === null) {
+        if ($needle_type === null || $haystack_type === null) {
             return null;
         }
 
@@ -3247,17 +3252,45 @@ final class AssertionFinder
             }
 
             foreach ($haystack->getGenericValueType()->getAtomicTypes() as $value) {
-                if (!$value instanceof TLiteralString
-                    || $value->value === ''
-                    || is_numeric($value->value)
-                    || in_array($value->value, ['INF', '-INF', 'NAN'], true)
-                ) {
+                if (!$value instanceof TLiteralString) {
                     return null;
+                }
+
+                foreach ($needle_type->getAtomicTypes() as $atomic) {
+                    if (self::mayBeNonStringWithStringForm($atomic, $value->value) !== false) {
+                        return null;
+                    }
                 }
             }
         }
 
-        return self::getStringFormVarId($needle, $this_class_name, $source);
+        return ExpressionIdentifier::getExtendedVarId($needle, $this_class_name, $source);
+    }
+
+    /**
+     * Whether a value of $atomic that isn't a string may have $string as its string form, null if its string form
+     * isn't known
+     *
+     * @psalm-pure
+     */
+    private static function mayBeNonStringWithStringForm(Atomic $atomic, string $string): ?bool
+    {
+        $numeric = is_numeric($string) || in_array($string, ['INF', '-INF', 'NAN'], true);
+
+        return match (true) {
+            $atomic instanceof TString => false,
+            $atomic instanceof TInt,
+            $atomic instanceof TFloat,
+            $atomic instanceof TNumeric,
+            $atomic instanceof TArrayKey => $numeric,
+            $atomic instanceof TBool => $string === '1' || $string === '',
+            $atomic instanceof TNull => $string === '',
+            $atomic instanceof TScalar => $numeric || $string === '1' || $string === '',
+            $atomic instanceof TArray,
+            $atomic instanceof TKeyedArray,
+            $atomic instanceof TClassStringMap => $string === 'Array',
+            default => null,
+        };
     }
 
     /**
@@ -3273,8 +3306,8 @@ final class AssertionFinder
 
         if ($first_var_name
             && ($second_arg_type = $source->node_data->getType($expr->getArgs()[1]->value))
-            && isset($expr->getArgs()[0]->value)
-            && !$expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
+            && ($first_arg = $expr->getArgs()[0]->value ?? null)
+            && !$first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
         ) {
             foreach ($second_arg_type->getAtomicTypes() as $atomic_type) {
                 if ($atomic_type instanceof TArray
@@ -3336,7 +3369,7 @@ final class AssertionFinder
                     )]);
 
                     // the values of two templates can't be intersected
-                    if (($first_var_type = $source->node_data->getType($expr->getArgs()[0]->value))
+                    if (($first_var_type = $source->node_data->getType($first_arg))
                         && Type::intersectUnionTypes($value_of_type, $first_var_type, $source->getCodebase()) !== null
                     ) {
                         $if_types[$first_var_name] = [[new InArray($value_of_type, $haystack)]];

@@ -381,6 +381,60 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'memoizedResultForgottenWhenAPropertyOfTheObjectIsWritten' => [
+                'code' => '<?php
+                    final class Tokens {
+                        /** @var list<string> */
+                        private array $tokens = ["update", "set"];
+                        private int $position = 0;
+                        private ?string $name = null;
+
+                        /** @psalm-capabilities read-props */
+                        private function peek(): ?string {
+                            return $this->tokens[$this->position] ?? null;
+                        }
+
+                        /** @psalm-capabilities read-props */
+                        private function hasName(): bool {
+                            return $this->name !== null;
+                        }
+
+                        public function increment(): void {
+                            if ($this->peek() === "update") {
+                                $this->position++;
+                                if ($this->peek() === "set") {}
+                            }
+                        }
+
+                        public function assign(): void {
+                            if ($this->peek() === "update") {
+                                $this->position = $this->position + 1;
+                                if ($this->peek() === "set") {}
+                            }
+                        }
+
+                        public function assignElement(): void {
+                            if ($this->peek() === "update") {
+                                $this->tokens[0] = "set";
+                                if ($this->peek() === "set") {}
+                            }
+                        }
+
+                        public function sortProperty(): void {
+                            if ($this->peek() === "update") {
+                                sort($this->tokens);
+                                if ($this->peek() === "set") {}
+                            }
+                        }
+
+                        public function unsetProperty(): void {
+                            if ($this->hasName()) {
+                                unset($this->name);
+                                if ($this->hasName()) {}
+                            }
+                        }
+                    }',
+            ],
             'nullsafeChainWithPlainLinkNotIdenticalToNullNarrowsReceiver' => [
                 'code' => '<?php
                     final class P {
@@ -739,6 +793,76 @@ final class MethodCallTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['MixedMethodCall', 'MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
+            'memoizedGetterForgottenInAnElseifOrAnElseIsNotNarrowedAfterIt' => [
+                'code' => '<?php
+                    final class A {
+                        private ?string $s = null;
+
+                        /** @psalm-mutation-free */
+                        public function get(): ?string {
+                            return $this->s;
+                        }
+
+                        public function set(?string $s): void {
+                            $this->s = $s;
+                        }
+                    }
+
+                    function inElseif(A $a, int $i): void {
+                        if ($a->get() !== null) {
+                            if ($i === 1) {
+                                echo 1;
+                            } elseif ($i === 2) {
+                                $a->set(null);
+                            }
+
+                            $r = $a->get();
+                            /** @psalm-check-type-exact $r = null|string */
+                        }
+                    }
+
+                    function inElse(A $a, bool $b): void {
+                        if ($a->get() !== null) {
+                            if ($b) {
+                                echo 1;
+                            } else {
+                                $a->set(null);
+                            }
+
+                            $r = $a->get();
+                            /** @psalm-check-type-exact $r = null|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'memoizedGetterIsStillNarrowedAfterABranchThatDoesNotMutateItsReceiver' => [
+                'code' => '<?php
+                    final class A {
+                        private ?string $s = null;
+
+                        /** @psalm-mutation-free */
+                        public function get(): ?string {
+                            return $this->s;
+                        }
+                    }
+
+                    function f(A $a, bool $b): string {
+                        if ($a->get() !== null) {
+                            if ($b) {
+                                echo 1;
+                            }
+
+                            return $a->get();
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'propertyIsNotNarrowedAfterABranchThatCallsAMethodChangingIt' => [
@@ -3336,6 +3460,36 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'memoizedGetterForgottenInANestedBranchIsNotNarrowedAfterIt' => [
+                'code' => '<?php
+                    final class A {
+                        private ?string $s = null;
+
+                        /** @psalm-mutation-free */
+                        public function get(): ?string {
+                            return $this->s;
+                        }
+
+                        public function set(?string $s): void {
+                            $this->s = $s;
+                        }
+                    }
+
+                    function f(A $a, bool $b): string {
+                        if ($a->get() !== null) {
+                            if ($b) {
+                                $a->set(null);
+                            }
+
+                            return $a->get();
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'splObjectStorageAttachChecksValueType' => [
                 'code' => '<?php
                     /** @param SplObjectStorage<object, list<string>> $s */
