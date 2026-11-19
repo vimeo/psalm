@@ -1413,6 +1413,32 @@ final class TypeVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'constructorlessCovariantConstructionSatisfiesTwoInstantiations' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    final class Coll {
+                        /**
+                         * @template U
+                         * @param callable(T): U $f
+                         * @return Coll<U>
+                         */
+                        public function map(callable $f): Coll {
+                            return new Coll();
+                        }
+                    }
+
+                    /** @param Coll<int> $c */
+                    function takesInts(Coll $c): void {}
+
+                    /** @param Coll<string> $c */
+                    function takesStrings(Coll $c): void {}
+
+                    function both(): void {
+                        $c = new Coll();
+                        takesInts($c);
+                        takesStrings($c);
+                    }',
+            ],
             'constructorlessConstructionAsParamDefault' => [
                 'code' => '<?php
                     /** @param WeakMap<stdClass, int> $m */
@@ -1957,6 +1983,28 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . "somefile.php:11:33 - Type 'a' should be a subtype of int",
+            ],
+            'constructorlessInvariantConstructionRejectsTwoInstantiations' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @param T $x */
+                        public function add($x): void {}
+                    }
+
+                    /** @param Coll<int> $c */
+                    function takesInts(Coll $c): void {}
+
+                    /** @param Coll<string> $c */
+                    function takesStrings(Coll $c): void {}
+
+                    function both(): void {
+                        $c = new Coll();
+                        takesInts($c);
+                        takesStrings($c);
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:17:38 - Type int should be a subtype of string',
             ],
             'constructorlessConstructionKeepsTemplateConstraint' => [
                 'code' => '<?php
