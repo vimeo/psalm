@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
@@ -17,9 +18,9 @@ final class TypeCombinationTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @dataProvider providerTestValidTypeCombination
      * @param non-empty-list<string> $types
      */
+    #[DataProvider('providerTestValidTypeCombination')]
     public function testValidTypeCombination(string $expected, array $types): void
     {
         $converted_types = [];
@@ -46,7 +47,7 @@ final class TypeCombinationTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'multipleValuedArray' => [
@@ -190,14 +191,242 @@ final class TypeCombinationTest extends TestCase
      * @return array<string,array{string,non-empty-list<string>}>
      * @psalm-pure
      */
-    public function providerTestValidTypeCombination(): iterable
+    public static function providerTestValidTypeCombination(): iterable
     {
         return [
+            'unsealedArrayKeyDeclaredInOneAndMissingInTheOtherTakesTheFallback' => [
+                'non-empty-array<array-key, mixed>',
+                [
+                    'array{age: int, ...<array-key, mixed>}',
+                    'array{name: string, ...<array-key, mixed>}',
+                ],
+            ],
+            'unsealedArrayKeyDeclaredInOneAndOptionalInTheOtherKeepsItsType' => [
+                'array{age?: int, ...<array-key, mixed>}',
+                [
+                    'array{age: int, ...<array-key, mixed>}',
+                    'array{age?: int, ...<array-key, mixed>}',
+                ],
+            ],
+            'unsealedArrayKeyDeclaredOptionalInBothKeepsItsType' => [
+                'array{age?: int, name: string, ...<array-key, mixed>}',
+                [
+                    'array{age?: int, name: string, ...<array-key, mixed>}',
+                    'array{age?: int, name: \'x\', ...<array-key, mixed>}',
+                ],
+            ],
+            'objectShapesWithAnExtraPropertyKeepOnlyTheCommonOnes' => [
+                'object{a:string}',
+                [
+                    'object{a: string}',
+                    'object{a: string, b: int}',
+                ],
+            ],
+            'objectShapesKeepAnOptionalPropertyBothDeclare' => [
+                'object{a:string, b?:int}',
+                [
+                    'object{a: string, b?: int}',
+                    'object{a: string, b: int}',
+                ],
+            ],
+            'objectShapesWithDisjointPropertiesShareNone' => [
+                'object{}',
+                [
+                    'object{a: string}',
+                    'object{b: int}',
+                ],
+            ],
+            'objectShapesWithTheSameProperty' => [
+                'object{a:int|string}',
+                [
+                    'object{a: string}',
+                    'object{a: int}',
+                ],
+            ],
+            'objectShapesKeepTheirCommonIntersection' => [
+                'object{a:string}&Iterator',
+                [
+                    'object{a: string}&Iterator',
+                    'object{a: string, b: int}&Iterator&Countable',
+                ],
+            ],
+            'objectAbsorbsObjectShapes' => [
+                'object',
+                [
+                    'object',
+                    'object{a: string}',
+                ],
+            ],
+            'objectWithPropertiesKeepsNamedObjects' => [
+                'Error|object{foo:string}',
+                [
+                    'Error',
+                    'object{foo: string}',
+                ],
+            ],
+            'objectWithPropertiesAfterNamedObject' => [
+                'Error|object{foo:string}',
+                [
+                    'object{foo: string}',
+                    'Error',
+                ],
+            ],
+            'objectShapesWithOptionalProperty' => [
+                'object{bar?:string}',
+                [
+                    'object{bar: string}',
+                    'object{bar?: string}',
+                ],
+            ],
+            'objectShapeInObject' => [
+                'object',
+                [
+                    'object{a: int}',
+                    'object',
+                ],
+            ],
             'complexArrayFallback1' => [
                 'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: list<array<array-key, mixed>>|null, ...<string, mixed>}',
                 [
                     'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: null}&array<string, mixed>',
                     'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: list<array<array-key, mixed>>}&array<string, mixed>',
+                ],
+            ],
+            'optionalKeyOfAnUnsealedShapeKeepsItsTypeWhenCombinedWithTheSameKeyRequired' => [
+                'array{id: string, name?: string, ...<array-key, mixed>}',
+                [
+                    'array{id: string, name: string, ...<array-key, mixed>}',
+                    'array{id: string, name?: string, ...<array-key, mixed>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsTheFallbackWhenAnotherShapeLacksItAndItsFallbackHoldsItsType' => [
+                'array{id: string, ...<string, int|string>}',
+                [
+                    'array{id: string, name: string, ...<string, string>}',
+                    'array{id: string, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackHoldsAnotherType' => [
+                'array{id: string, name?: int|string, ...<string, int>}',
+                [
+                    'array{id: string, name: string, ...<string, int>}',
+                    'array{id: string, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackCannotHoldIt' => [
+                'array{5?: int, id: string, ...<string, int>}',
+                [
+                    'array{id: string, 5: int, ...<string, int>}',
+                    'array{id: string, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsTheFallbackWhenAnotherShapeLacksItAndAThirdDeclaresIt' => [
+                'array{id: string, ...<string, int>}',
+                [
+                    'array{id: string, name: int, ...<string, int>}',
+                    'array{id: string, ...<string, int>}',
+                    'array{id: string, name: 5, ...<string, int>}',
+                ],
+            ],
+            'arrayKeyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackHoldsAnotherArray' => [
+                'array{id: string, name?: array{0?: string, x?: 1, ...<int<0, max>, string>}, ...<string, list<string>>}',
+                [
+                    'array{id: string, name: array{x: 1}, ...<string, list<string>>}',
+                    'array{id: string, ...<string, list<string>>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenTheShapeLackingItHasANarrowerFallback' => [
+                'array{id: string, name?: int, ...<string, int|string>}',
+                [
+                    'array{id: string, ...<string, int>}',
+                    'array{id: string, name: int, ...<string, string>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenTheShapeLackingItComesLastWithANarrowerFallback' => [
+                'array{id: string, name?: int, ...<string, int|string>}',
+                [
+                    'array{id: string, name: int, ...<string, string>}',
+                    'array{id: string, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenTheShapeLackingItHasANarrowerFallbackThanMixed' => [
+                'array{id: string, name?: int, ...<string, int|mixed>}',
+                [
+                    'array{id: string, ...<string, int>}',
+                    'array{id: string, name: int, ...<string, mixed>}',
+                ],
+            ],
+            'arrayKeyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackHoldsOtherElements' => [
+                'array{id: string, k?: array<string, int|string>, ...<string, array<string, int>>}',
+                [
+                    'array{id: string, k: array<string, string>, ...<string, array<string, int>>}',
+                    'array{id: string, ...<string, array<string, int>>}',
+                ],
+            ],
+            'emptyKeyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackKeyIsNonEmpty' => [
+                'array{\'\'?: int, id: string, ...<non-empty-string, int>}',
+                [
+                    'array{\'\': int, id: string, ...<non-empty-string, int>}',
+                    'array{id: string, ...<non-empty-string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsTheFallbackWhenAnotherShapeLacksItAndItsFallbackKeyIsNonEmpty' => [
+                'array{id: string, ...<non-empty-string, int>}',
+                [
+                    'array{id: string, name: int, ...<non-empty-string, int>}',
+                    'array{id: string, ...<non-empty-string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackKeyIsARefinedString' => [
+                'array{id: string, name?: int, ...<numeric-string, int>}',
+                [
+                    'array{id: string, name: int, ...<numeric-string, int>}',
+                    'array{id: string, ...<numeric-string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenASealedShapeLacksIt' => [
+                'array{id: string, name?: int, ...<string, int>}',
+                [
+                    'array{id: string, name: int, ...<string, int>}',
+                    'array{id: string}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenASealedShapeLacksItBeforeUnsealedOnes' => [
+                'array{id: string, name?: int, ...<string, int>}',
+                [
+                    'array{id: string}',
+                    'array{id: string, ...<string, int>}',
+                    'array{id: string, name: int, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenASealedShapeLacksItBetweenUnsealedOnes' => [
+                'array{id: string, name?: int, ...<string, int>}',
+                [
+                    'array{id: string, ...<string, int>}',
+                    'array{id: string}',
+                    'array{id: string, name: int, ...<string, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItAndItsFallbackHasOtherKeys' => [
+                'array{id: string, name?: int, ...<int|string, int>}',
+                [
+                    'array{id: string, name: int, ...<string, int>}',
+                    'array{id: string, ...<int, int>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnEmptyArrayLacksIt' => [
+                'array{id?: string, name?: int, ...<string, int>}',
+                [
+                    'array{id: string, name: int, ...<string, int>}',
+                    'array{id: string, ...<string, int>}',
+                    'array<never, never>',
+                ],
+            ],
+            'keyOfASealedShapeIsOptionalWhenAnotherShapeDeclaresItOptional' => [
+                'array{a?: int|string, ...<string, mixed>}',
+                [
+                    'array{a: int, ...<string, mixed>}',
+                    'array{a?: string}',
                 ],
             ],
             'complexArrayFallback2' => [
@@ -642,6 +871,228 @@ final class TypeCombinationTest extends TestCase
                 [
                     'class-string',
                     'Exception::class',
+                ],
+            ],
+            'combineNonFalsyLowercaseStringWithFalsyLiteral' => [
+                'non-empty-lowercase-string',
+                [
+                    'lowercase-string&non-falsy-string',
+                    "'0'",
+                ],
+            ],
+            'combineNonFalsyLowercaseStringWithUppercaseLiteral' => [
+                'non-falsy-string',
+                [
+                    'lowercase-string&non-falsy-string',
+                    "'Abc'",
+                ],
+            ],
+            'combineNonFalsyLowercaseStringWithEmptyLiteral' => [
+                'lowercase-string',
+                [
+                    'lowercase-string&non-falsy-string',
+                    "''",
+                ],
+            ],
+            'combineNonFalsyLowercaseStringWithNonEmptyLowercaseString' => [
+                'non-empty-lowercase-string',
+                [
+                    'lowercase-string&non-falsy-string',
+                    'non-empty-lowercase-string',
+                ],
+            ],
+            'combineNonFalsyLowercaseStringWithNonFalsyString' => [
+                'non-falsy-string',
+                [
+                    'non-falsy-string',
+                    'lowercase-string&non-falsy-string',
+                ],
+            ],
+            'combineNonFalsyNumericStringWithZero' => [
+                'numeric-string',
+                [
+                    'non-falsy-string&numeric-string',
+                    "'0'",
+                ],
+            ],
+            'combineNonFalsyNumericStringWithNonNumericLiteral' => [
+                'non-falsy-string',
+                [
+                    'non-falsy-string&numeric-string',
+                    "'abc'",
+                ],
+            ],
+            'combineEmptyLiteralWithRepeatedNumericString' => [
+                "''|numeric-string",
+                [
+                    "''",
+                    'numeric-string',
+                    'numeric-string',
+                ],
+            ],
+            'combineNumericStringWithEmptyLiteral' => [
+                "''|numeric-string",
+                [
+                    'numeric-string',
+                    "''",
+                ],
+            ],
+            'combineLowercaseNumericStringWithUppercaseNumericLiteral' => [
+                'numeric-string',
+                [
+                    'lowercase-string&numeric-string',
+                    "'1E3'",
+                ],
+            ],
+            'combineLowercaseNumericStringWithLowercaseLiteral' => [
+                'non-empty-lowercase-string',
+                [
+                    "'abc'",
+                    'lowercase-string&numeric-string',
+                ],
+            ],
+            'combineLowercaseNumericStringWithNonFalsyLowercaseString' => [
+                'non-empty-lowercase-string',
+                [
+                    'lowercase-string&numeric-string',
+                    'lowercase-string&non-falsy-string',
+                ],
+            ],
+            'combineNonFalsyLowercaseNumericStringWithNonFalsyNumericString' => [
+                'non-falsy-string&numeric-string',
+                [
+                    'lowercase-string&non-falsy-string&numeric-string',
+                    'non-falsy-string&numeric-string',
+                ],
+            ],
+            'combineNonFalsyNumericStringWithLowercaseNumericString' => [
+                'numeric-string',
+                [
+                    'non-falsy-string&numeric-string',
+                    'lowercase-string&numeric-string',
+                ],
+            ],
+            'combineNonFalsyNumericStringWithNumericString' => [
+                'numeric-string',
+                [
+                    'numeric-string',
+                    'non-falsy-string&numeric-string',
+                ],
+            ],
+            'combineNonFalsyNumericStringWithString' => [
+                'string',
+                [
+                    'non-falsy-string&numeric-string',
+                    'string',
+                ],
+            ],
+            'combineNumericStringWithNonNumericLiteral' => [
+                'non-empty-string',
+                [
+                    'numeric-string',
+                    "'a'",
+                ],
+            ],
+            'combineDecimalIntStringWithNonFalsyLowercaseString' => [
+                'non-empty-lowercase-string',
+                [
+                    'decimal-int-string',
+                    'lowercase-string&non-falsy-string',
+                ],
+            ],
+            'combineLowercaseNumericStringWithDecimalIntString' => [
+                'lowercase-string&numeric-string',
+                [
+                    'lowercase-string&numeric-string',
+                    'decimal-int-string',
+                ],
+            ],
+            'combineDecimalIntStringWithNonFalsyNumericString' => [
+                'numeric-string',
+                [
+                    'decimal-int-string',
+                    'non-falsy-string&numeric-string',
+                ],
+            ],
+            'combineNonDecimalIntStringWithNonFalsyLowercaseString' => [
+                'string',
+                [
+                    'non-decimal-int-string',
+                    'lowercase-string&non-falsy-string',
+                ],
+            ],
+            'combineDecimalIntStringWithDecimalIntLiteral' => [
+                'decimal-int-string',
+                [
+                    'decimal-int-string',
+                    "'123'",
+                ],
+            ],
+            'combineDecimalIntStringWithNumericLiteral' => [
+                "'1.5'|decimal-int-string",
+                [
+                    'decimal-int-string',
+                    "'1.5'",
+                ],
+            ],
+            'combineDecimalIntStringWithLiterals' => [
+                "'a'|decimal-int-string",
+                [
+                    "'5'",
+                    'decimal-int-string',
+                    "'a'",
+                ],
+            ],
+            'combineDecimalIntStringAndLiteralWithNonEmptyString' => [
+                'non-empty-string',
+                [
+                    'decimal-int-string',
+                    "'a'",
+                    'non-empty-string',
+                ],
+            ],
+            'combineDecimalIntStringAndEmptyLiteralWithNonEmptyString' => [
+                'string',
+                [
+                    'decimal-int-string',
+                    "''",
+                    'non-empty-string',
+                ],
+            ],
+            'combineDecimalIntStringAndLiteralWithNumericString' => [
+                'non-empty-string',
+                [
+                    'decimal-int-string',
+                    "'a'",
+                    'numeric-string',
+                ],
+            ],
+            'combineDecimalIntStringWithNumericString' => [
+                'numeric-string',
+                [
+                    'decimal-int-string',
+                    'numeric-string',
+                ],
+            ],
+            'combineDecimalIntStringWithNonDecimalIntString' => [
+                'string',
+                [
+                    'decimal-int-string',
+                    'non-decimal-int-string',
+                ],
+            ],
+            'combineNonDecimalIntStringWithNonDecimalIntLiteral' => [
+                'non-decimal-int-string',
+                [
+                    'non-decimal-int-string',
+                    "'abc'",
+                ],
+            ],
+            'combineNonDecimalIntStringWithDecimalIntLiteral' => [
+                "'123'|non-decimal-int-string",
+                [
+                    'non-decimal-int-string',
+                    "'123'",
                 ],
             ],
             'combineClassStringWithNumericString' => [

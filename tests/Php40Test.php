@@ -15,7 +15,7 @@ final class Php40Test extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'extendOldStyleConstructor' => [

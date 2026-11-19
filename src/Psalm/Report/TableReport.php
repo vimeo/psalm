@@ -9,9 +9,10 @@ use Psalm\Report;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Output\BufferedOutput;
 
+use function array_map;
 use function implode;
 use function str_split;
-use function strlen;
+use function strtr;
 
 /**
  * @api
@@ -42,7 +43,7 @@ final class TableReport extends Report
                     $output[] = $buffer->fetch();
                 }
 
-                $output[] = 'FILE: ' . $issue_data->file_name . "\n";
+                $output[] = 'FILE: ' . $this->escapeControlCharacters($issue_data->file_name) . "\n";
 
                 $buffer = new BufferedOutput();
                 $table = new Table($buffer);
@@ -53,10 +54,16 @@ final class TableReport extends Report
 
             // Since `Table::setColumnMaxWidth` is only available in symfony/console 4.2+ we need do something similar
             // so we have clean tables.
-            $message = $issue_data->message;
-            if (strlen($message) > 70) {
-                $message = implode("\n", str_split($message, 70));
-            }
+            // Not OutputFormatter::escape(): older symfony/console releases leave adjacent brackets (`<<`) unescaped.
+            // A literal `\>` is escaped too, since the formatter unescapes it. Escaping is per chunk, so a cut can't
+            // separate a `\` from the `<` it escapes.
+            $message = implode(
+                "\n",
+                array_map(
+                    static fn(string $chunk): string => strtr($chunk, ['<' => '\\<', '\\>' => '\\\\>']),
+                    str_split($this->escapeControlCharacters(self::getMessageWithCwe($issue_data)), 70),
+                ),
+            );
 
             $table->addRow([
                 $severity,

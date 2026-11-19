@@ -30,22 +30,21 @@ use Psalm\Storage\CapabilitiesParseException;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Union;
 
+use function array_column;
+use function array_fill_keys;
 use function array_key_first;
 use function array_shift;
 use function count;
 use function explode;
 use function implode;
-use function in_array;
-use function preg_last_error_msg;
 use function preg_match;
 use function preg_replace;
-use function preg_split;
 use function reset;
+use function rtrim;
 use function str_contains;
 use function str_replace;
 use function strlen;
 use function strpos;
-use function strtolower;
 use function substr;
 use function substr_count;
 use function trim;
@@ -94,100 +93,12 @@ final class ClassLikeDocblockParser
             }
         }
 
-        if (isset($parsed_docblock->combined_tags['template'])) {
-            foreach ($parsed_docblock->combined_tags['template'] as $offset => $template_line) {
-                $template_type = preg_split('/[\s]+/', CommentAnalyzer::sanitizeDocblockType($template_line));
-                if ($template_type === false) {
-                    throw new IncorrectDocblockException('Invalid @template tag: '.preg_last_error_msg());
-                }
-
-                $template_name = array_shift($template_type);
-
-                if (!$template_name) {
-                    throw new IncorrectDocblockException('Empty @template tag');
-                }
-
-                $source_prefix = 'none';
-                if (isset($parsed_docblock->tags['psalm-template'][$offset])) {
-                    $source_prefix = 'psalm';
-                } elseif (isset($parsed_docblock->tags['phpstan-template'][$offset])) {
-                    $source_prefix = 'phpstan';
-                }
-
-                if (count($template_type) > 1
-                    && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)
-                ) {
-                    $template_modifier = strtolower(array_shift($template_type));
-                    $templates[$template_name][$source_prefix] = [
-                        $template_name,
-                        $template_modifier,
-                        implode(' ', $template_type),
-                        false,
-                        $offset - $comment->getStartFilePos(),
-                    ];
-                } else {
-                    $templates[$template_name][$source_prefix] = [
-                        $template_name,
-                        null,
-                        null,
-                        false,
-                        $offset - $comment->getStartFilePos(),
-                    ];
-                }
-            }
-        }
-
-        if (isset($parsed_docblock->combined_tags['template-covariant'])) {
-            foreach ($parsed_docblock->combined_tags['template-covariant'] as $offset => $template_line) {
-                $template_type = preg_split('/[\s]+/', CommentAnalyzer::sanitizeDocblockType($template_line));
-                if ($template_type === false) {
-                    throw new IncorrectDocblockException('Invalid @template-covariant tag: '.preg_last_error_msg());
-                }
-
-                $template_name = array_shift($template_type);
-
-                if (!$template_name) {
-                    throw new IncorrectDocblockException('Empty @template-covariant tag');
-                }
-
-                $source_prefix = 'none';
-                if (isset($parsed_docblock->tags['psalm-template-covariant'][$offset])) {
-                    $source_prefix = 'psalm';
-                } elseif (isset($parsed_docblock->tags['phpstan-template-covariant'][$offset])) {
-                    $source_prefix = 'phpstan';
-                }
-
-                if (count($template_type) > 1
-                    && in_array(strtolower($template_type[0]), ['as', 'super', 'of'], true)
-                ) {
-                    $template_modifier = strtolower(array_shift($template_type));
-                    $templates[$template_name][$source_prefix] = [
-                        $template_name,
-                        $template_modifier,
-                        implode(' ', $template_type),
-                        true,
-                        $offset - $comment->getStartFilePos(),
-                    ];
-                } else {
-                    $templates[$template_name][$source_prefix] = [
-                        $template_name,
-                        null,
-                        null,
-                        true,
-                        $offset - $comment->getStartFilePos(),
-                    ];
-                }
-            }
-        }
-
-        foreach ($templates as $template_entries) {
-            foreach (['psalm', 'phpstan', 'none'] as $source_prefix) {
-                if (isset($template_entries[$source_prefix])) {
-                    $info->templates[] = $template_entries[$source_prefix];
-                    break;
-                }
-            }
-        }
+        [$info->templates, $info->template_defaults] = TemplateTagParser::parseTags(
+            $parsed_docblock,
+            $comment,
+            ['template' => false, 'template-covariant' => true],
+            $templates,
+        );
 
         if (isset($parsed_docblock->combined_tags['extends'])) {
             foreach ($parsed_docblock->combined_tags['extends'] as $template_line) {
@@ -197,19 +108,24 @@ final class ClassLikeDocblockParser
             }
         }
 
-        if (isset($parsed_docblock->tags['psalm-require-extends'])
-            && count($extension_requirements = $parsed_docblock->tags['psalm-require-extends']) > 0) {
+        $extension_requirements = $parsed_docblock->tags['psalm-require-extends']
+            ?? $parsed_docblock->tags['phpstan-require-extends']
+            ?? [];
+
+        if (count($extension_requirements) > 0) {
             $info->extension_requirement = CommentAnalyzer::sanitizeDocblockType(
                 $extension_requirements[array_key_first($extension_requirements)],
             );
         }
 
-        if (isset($parsed_docblock->tags['psalm-require-implements'])) {
-            foreach ($parsed_docblock->tags['psalm-require-implements'] as $implementation_requirement) {
-                $info->implementation_requirements[] = CommentAnalyzer::sanitizeDocblockType(
-                    $implementation_requirement,
-                );
-            }
+        $implementation_requirements = $parsed_docblock->tags['psalm-require-implements']
+            ?? $parsed_docblock->tags['phpstan-require-implements']
+            ?? [];
+
+        foreach ($implementation_requirements as $implementation_requirement) {
+            $info->implementation_requirements[] = CommentAnalyzer::sanitizeDocblockType(
+                $implementation_requirement,
+            );
         }
 
         if (isset($parsed_docblock->combined_tags['implements'])) {
@@ -269,7 +185,7 @@ final class ClassLikeDocblockParser
             foreach ($parsed_docblock->tags['mixin'] as $rawMixin) {
                 $mixin = trim($rawMixin);
                 $doc_line_parts = CommentAnalyzer::splitDocLine($mixin);
-                $mixin = $doc_line_parts[0];
+                $mixin = CommentAnalyzer::sanitizeDocblockType($doc_line_parts[0]);
 
                 if ($mixin) {
                     $info->mixins[] = $mixin;
@@ -338,6 +254,25 @@ final class ClassLikeDocblockParser
             $info->taint_specialize = true;
         }
 
+        if (isset($parsed_docblock->tags['psalm-cli-only'])) {
+            $info->cli_only = true;
+        }
+
+        if (isset($parsed_docblock->tags['psalm-cli-only-instances'])) {
+            $info->cli_only_instances = true;
+        }
+
+        if (isset($parsed_docblock->tags['psalm-taint-property-bag'])) {
+            $property_bag = trim((string) reset($parsed_docblock->tags['psalm-taint-property-bag']));
+            if (preg_match('/^\$([A-Za-z_]\w*)$/', $property_bag, $matches) !== 1 || !isset($matches[1])) {
+                throw new IncorrectDocblockException(
+                    '@psalm-taint-property-bag "' . $property_bag . '" does not name a property, like $properties',
+                );
+            }
+
+            $info->taint_property_bag = $matches[1];
+        }
+
         if (isset($parsed_docblock->tags['psalm-override-property-visibility'])) {
             $info->override_property_visibility = true;
         }
@@ -382,6 +317,9 @@ final class ClassLikeDocblockParser
             foreach ($info->purity_templates as $purity_template) {
                 $purity_template_map[$purity_template] = ['' => new Union([new TCapabilities(Capabilities::ALL)])];
             }
+
+            // the class's other templates, for its parameter types
+            $param_template_map = $purity_template_map + array_fill_keys(array_column($info->templates, 0), true);
 
             foreach ($parsed_docblock->combined_tags['method'] as $offset => $method_entry) {
                 $method_entry = (string) preg_replace('/[ \t]+/', ' ', trim($method_entry));
@@ -461,7 +399,10 @@ final class ClassLikeDocblockParser
                         if (preg_match('/^ ?: ?(\S.*)$/s', $after_paren, $return_matches)
                             && isset($return_matches[1])
                         ) {
-                            $method_entry .= ':' . CommentAnalyzer::splitDocLine($return_matches[1])[0];
+                            $return_type = rtrim(CommentAnalyzer::splitDocLine($return_matches[1])[0], ';');
+                            if ($return_type !== '') {
+                                $method_entry .= ':' . CommentAnalyzer::sanitizeDocblockType($return_type);
+                            }
                         }
                     }
                 }
@@ -480,14 +421,32 @@ final class ClassLikeDocblockParser
                     throw new DocblockParseException('No @method entry specified');
                 }
 
+                // the name of the method isn't a type, even when it reads like one (`callable()`)
+                $method_name = null;
+                $tokenized_entry = $method_entry;
+
+                if (preg_match('/^([a-zA-Z_]\w*)(?= ?\()/', $method_entry, $name_matches)
+                    && isset($name_matches[1])
+                ) {
+                    $method_name = $name_matches[1];
+                    $tokenized_entry = 'psalm_method_name' . substr($method_entry, strlen($method_name));
+                }
+
                 try {
-                    $parse_tree_creator = new ParseTreeCreator(
-                        TypeTokenizer::getFullyQualifiedTokens(
-                            $method_entry,
-                            $aliases,
-                            $purity_template_map,
-                        ),
+                    $method_tokens = TypeTokenizer::getFullyQualifiedTokens(
+                        $tokenized_entry,
+                        $aliases,
+                        $purity_template_map,
                     );
+
+                    if ($param_template_map !== $purity_template_map) {
+                        $method_tokens = self::keepTemplatesInParamTypes(
+                            $method_tokens,
+                            TypeTokenizer::getFullyQualifiedTokens($tokenized_entry, $aliases, $param_template_map),
+                        );
+                    }
+
+                    $parse_tree_creator = new ParseTreeCreator($method_tokens);
 
                     $method_tree = $parse_tree_creator->create();
                 } catch (TypeParseTreeException $e) {
@@ -512,12 +471,23 @@ final class ClassLikeDocblockParser
                     }
 
                     if (!$has_return) {
-                        $docblock_lines[] = '@return ' . TypeParser::getTypeFromTree(
-                            $method_tree->children[1],
-                            $codebase,
-                            null,
-                            $purity_template_map,
-                        )->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
+                        try {
+                            $return_type = TypeParser::getTypeFromTree(
+                                $method_tree->children[1],
+                                $codebase,
+                                null,
+                                $purity_template_map,
+                            );
+                        } catch (TypeParseTreeException $e) {
+                            throw new DocblockParseException(
+                                $method_entry . ' is not a valid method: ' . $e->getMessage(),
+                                0,
+                                $e,
+                            );
+                        }
+
+                        $docblock_lines[] = '@return '
+                            . $return_type->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
                     }
 
                     $method_tree = $method_tree->children[0];
@@ -561,7 +531,8 @@ final class ClassLikeDocblockParser
                     }
                 }
 
-                $function_string = 'function ' . $method_tree->value . '(' . implode(', ', $args) . ')';
+                $function_string = 'function ' . ($method_name ?? $method_tree->value)
+                    . '(' . implode(', ', $args) . ')';
 
                 if ($is_static) {
                     $function_string = 'static ' . $function_string;
@@ -572,12 +543,9 @@ final class ClassLikeDocblockParser
                 $php_string = '<?php class A { ' . $function_docblock . ' public ' . $function_string . '{} }';
 
                 try {
-                    $has_errors = false;
-
                     $statements = StatementsProvider::parseStatements(
                         $php_string,
                         $codebase->analysis_php_version_id,
-                        $has_errors,
                     );
                 } catch (Exception) {
                     throw new DocblockParseException('Badly-formatted @method string ' . $method_entry);
@@ -615,6 +583,11 @@ final class ClassLikeDocblockParser
                     );
                 }
 
+                $statements[0]->stmts[0]->setAttribute(
+                    'psalm_tag',
+                    isset($parsed_docblock->tags['psalm-method'][$offset]),
+                );
+
                 $info->methods[] = $statements[0]->stmts[0];
             }
         }
@@ -647,6 +620,43 @@ final class ClassLikeDocblockParser
     }
 
     /**
+     * The tokens of a `@method` entry, with the templates of the class left unqualified in its parameter types:
+     * those are printed fully qualified into the docblock of a pseudo-method parsed in the class's template scope,
+     * where only an unqualified name is read back as the template. The defaults (PHP expressions) and the return
+     * type (printed against the namespace and the imports) keep their qualified names, as an unqualified template
+     * there would be read as a same-named import alias.
+     *
+     * @param list<array{0: string, 1: int, 2?: string}> $tokens
+     * @param list<array{0: string, 1: int, 2?: string}> $template_tokens the same entry, tokenized with the
+     *                                                                   class's templates in scope
+     * @return list<array{0: string, 1: int, 2?: string}>
+     * @psalm-pure
+     */
+    private static function keepTemplatesInParamTypes(array $tokens, array $template_tokens): array
+    {
+        $depth = 0;
+        $in_default = false;
+
+        foreach ($tokens as $i => [$token]) {
+            // in a default, `<` and `>` are operators
+            if ($token === '(' || $token === '{' || $token === '[' || ($token === '<' && !$in_default)) {
+                ++$depth;
+            } elseif ($token === ')' || $token === '}' || $token === ']' || ($token === '>' && !$in_default)) {
+                if (--$depth === 0) {
+                    // the end of the parameter list
+                    break;
+                }
+            } elseif ($depth === 1 && ($token === '=' || $token === ',')) {
+                $in_default = $token === '=';
+            } elseif ($depth > 0 && !$in_default) {
+                $tokens[$i] = $template_tokens[$i];
+            }
+        }
+
+        return $tokens;
+    }
+
+    /**
      * @param array<string, array<int, string>> $specials
      * @param 'property'|'psalm-property'|'property-read'|
      *     'psalm-property-read'|'property-write'|'psalm-property-write' $property_tag
@@ -668,12 +678,12 @@ final class ClassLikeDocblockParser
             }
 
             if (count($line_parts) > 1) {
-                if (preg_match('/^&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
+                if (preg_match('/^&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/', $line_parts[1])
                     && $line_parts[0][0] !== '{'
                 ) {
                     $line_parts[1] = str_replace('&', '', $line_parts[1]);
 
-                    $line_parts[1] = (string) preg_replace('/,$/', '', $line_parts[1], 1);
+                    $line_parts[1] = (string) preg_replace('/[,;]$/', '', $line_parts[1], 1);
 
                     $end = $offset + strlen($line_parts[0]);
 
@@ -681,7 +691,7 @@ final class ClassLikeDocblockParser
 
                     if ($line_parts[0] === ''
                         || ($line_parts[0][0] === '$'
-                            && !preg_match('/^\$this(\||$)/', $line_parts[0]))
+                            && !preg_match('/^\$this *(\||$)/', $line_parts[0]))
                     ) {
                         throw new IncorrectDocblockException('Misplaced variable');
                     }
@@ -713,7 +723,7 @@ final class ClassLikeDocblockParser
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function getMethodOffset(Doc $comment, string $method_entry): int
     {

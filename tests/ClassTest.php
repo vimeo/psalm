@@ -5,8 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_values;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -14,6 +20,40 @@ final class ClassTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testAnUndefinedClassOfTheSameNativeAndDocblockTypeIsReportedOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @param UndefinedClass $a
+                 */
+                function foo(UndefinedClass $a): void {
+                    echo 1;
+                }
+
+                final class A {
+                    /** @var UndefinedClass */
+                    public UndefinedClass $a;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => $issue->type === 'UndefinedClass',
+        ));
+
+        // once for the parameter, and once for the property: at its docblock or at its native type
+        self::assertCount(2, $issues);
+        self::assertSame(3, $issues[0]->line_from);
+        self::assertContains($issues[1]->line_from, [10, 11]);
+    }
 
     /**
      * @psalm-capabilities read-props|write-this-props|write-props
@@ -51,9 +91,277 @@ final class ClassTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
+            'classStringNewWithMatchingArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        final public function __construct(public int $val = 0, public string $name = "") {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        $a = new $class();
+                        $b = new $class(1);
+                        return new $class(val: 1, name: "a");
+                    }',
+            ],
+            'classStringNewOfAnIntersectionKeepsTheIntersection' => [
+                'code' => '<?php
+                    interface I {
+                        public function i(): void;
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        public function __construct(public int $v = 0) {}
+                    }
+
+                    /**
+                     * @return class-string<A&I>
+                     */
+                    function getClass(): string {
+                        throw new RuntimeException();
+                    }
+
+                    $c = getClass();
+                    $x = new $c(1);
+                    $x->i();',
+                'assertions' => [
+                    '$x===' => 'A&I',
+                ],
+            ],
+            'classStringNewOfAnAbstractClassIsNotAnAbstractInstantiation' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    abstract class A {
+                        public function __construct(public int $val = 0) {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        return new $class(1);
+                    }',
+            ],
+            'classStringNewOfGenericClassKeepsTheTemplateArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     * @template T
+                     */
+                    class Box {
+                        /** @param T $value */
+                        public function __construct(public $value) {}
+                    }
+
+                    /**
+                     * @param class-string<Box<int>> $class
+                     * @return Box<int>
+                     */
+                    function f(string $class): Box {
+                        return new $class(1);
+                    }',
+            ],
+            'instanceofIterableDoesNotNarrowTheVariable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(ArrayObject $o, mixed $m): void {
+                        if ($o instanceof iterable) {
+                            /** @psalm-check-type-exact $o = ArrayObject<array-key, mixed> */
+                        } else {
+                            /** @psalm-check-type-exact $o = ArrayObject<array-key, mixed> */
+                        }
+
+                        if ($m instanceof iterable) {
+                            /** @psalm-check-type-exact $m = mixed */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ReservedWord'],
+                'php_version' => '8.1',
+            ],
+            'newStaticOfAClassImplementingAnInterfaceWithAConstructor' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct();
+                    }
+
+                    interface Product extends Buildable {}
+
+                    abstract class Base implements Buildable {
+                        public function __construct() {}
+
+                        public static function build(): static {
+                            return new static();
+                        }
+                    }
+
+                    class Item implements Product {
+                        public function __construct() {}
+
+                        public static function create(): static {
+                            return new static();
+                        }
+                    }
+
+                    /** @param class-string<Item> $class */
+                    function instantiate(string $class): Item {
+                        return new $class();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'newStaticWithArgumentsTheConstructorOfTheInterfaceAccepts' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct(int $x, string ...$names);
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int|string $x, string ...$names) {}
+
+                        public static function build(): static {
+                            return new static(5, "a", "b");
+                        }
+                    }
+
+                    abstract class WithoutItsOwnConstructor implements Buildable {
+                        public static function build(): static {
+                            return new static(5);
+                        }
+                    }
+
+                    /** @param class-string<Base> $class */
+                    function instantiate(string $class): Base {
+                        return new $class(5);
+                    }
+
+                    /** @param class-string<Base> $class */
+                    function instantiateWith(string $class, int $x): Base {
+                        return new $class($x, "a");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'consistentConstructorClassUsingATraitConstructorKeepsTheOneOfTheTrait' => [
+                'code' => '<?php
+                    trait HasName {
+                        public function __construct(public string $name, public int $age) {}
+                    }
+
+                    class Base {
+                        public function __construct(bool $flag) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        use HasName;
+                    }
+
+                    $child = new Child("name", 5);',
+            ],
+            'consistentConstructorClassKeepsTheConstructorOfItsParent' => [
+                'code' => '<?php
+                    class Base {
+                        public function __construct(string $name) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        public static function create(): static {
+                            return new static("hello");
+                        }
+                    }
+
+                    $direct = new Child("direct");
+                    $created = Child::create();
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Failure extends ErrorException {}
+
+                    $native = new ErrorException("message", 0, E_WARNING, "file.php", 1);
+                    $failure = new Failure("message", 0, E_WARNING, "file.php", 1);',
+            ],
+            'childOfAConsistentConstructorClassMatchesTheConstructorItInherits' => [
+                'code' => '<?php
+                    class Base {
+                        public function __construct(string $name) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {}
+
+                    class GrandChild extends Child {
+                        public function __construct(string $name, int $optional = 0) {}
+                    }',
+            ],
+            'classesOfBothBranchesOfAnUnknownAnd' => [
+                'code' => '<?php
+                    if (rand(0, 1) && rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();
+                    new Second();',
+            ],
+            'classesOfBothBranchesOfAnUnknownLogicalAnd' => [
+                'code' => '<?php
+                    if (rand(0, 1) and rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();
+                    new Second();',
+            ],
+            'classesOfBothBranchesOfAnUnknownOr' => [
+                'code' => '<?php
+                    if (rand(0, 1) || rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();
+                    new Second();',
+            ],
+            'classesOfBothBranchesOfAnUnknownLogicalOr' => [
+                'code' => '<?php
+                    if (rand(0, 1) or rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();
+                    new Second();',
+            ],
             'overrideProtectedAccessLevelToPublic' => [
                 'code' => '<?php
                     class A {
@@ -463,12 +771,12 @@ final class ClassTest extends TestCase
             ],
             'classAliasOnNonexistentClass' => [
                 'code' => '<?php
-                    if (!class_exists(\PHPUnit\Framework\TestCase::class)) {
+                    if (!class_exists(\Exception::class)) {
                         /** @psalm-suppress UndefinedClass */
-                        class_alias(\PHPUnit_Framework_TestCase::class, \PHPUnit\Framework\TestCase::class);
+                        class_alias(\Legacy_Exception::class, \Exception::class);
                     }
 
-                    class T extends \PHPUnit\Framework\TestCase {
+                    class T extends \Exception {
 
                     }',
                 'assertions' => [],
@@ -523,6 +831,141 @@ final class ClassTest extends TestCase
                     class_alias(A::class, B::class);
                     B::$prop = 123;',
             ],
+            'classAliasInterfaceMethodCall' => [
+                'code' => '<?php
+                    interface NewI {}
+                    class_alias(NewI::class, OldI::class);
+
+                    class A implements OldI {
+                        public function foo(): void {}
+                    }
+
+                    function action(A $a): void {
+                        $a->foo();
+                    }',
+            ],
+            'classAliasEnumCase' => [
+                'code' => '<?php
+                    enum Suit { case Hearts; }
+                    class_alias(Suit::class, "SuitAlias");
+
+                    $case = SuitAlias::Hearts;',
+                'assertions' => [
+                    '$case===' => 'enum(Suit::Hearts)',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classAliasEnumCaseThroughClassString' => [
+                'code' => '<?php
+                    enum Suit { case Hearts; }
+                    class_alias(Suit::class, "SuitAlias");
+
+                    /** @param SuitAlias::class $enum */
+                    function hearts(string $enum): Suit {
+                        return $enum::Hearts;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classAliasClassLiteralKeepsAliasSpelling' => [
+                'code' => '<?php
+                    enum Suit {}
+                    class_alias(Suit::class, "SuitAlias");
+                    interface HasLabel {}
+                    class_alias(HasLabel::class, "LabelAlias");
+
+                    $enum = SuitAlias::class;
+                    $interface = LabelAlias::class;',
+                'assertions' => [
+                    '$enum===' => 'SuitAlias::class',
+                    '$interface===' => 'LabelAlias::class',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classAliasInterfaceConstant' => [
+                'code' => '<?php
+                    interface HasLabel {
+                        /** @var string */
+                        public const LABEL = "x";
+                    }
+                    class_alias(HasLabel::class, "LabelAlias");
+
+                    function f(): string {
+                        return LabelAlias::LABEL;
+                    }',
+            ],
+            'classAliasAttribute' => [
+                'code' => '<?php
+                    #[Attribute]
+                    final class Tag {}
+                    class_alias(Tag::class, "TagAlias");
+
+                    #[Tag, TagAlias]
+                    final class Tagged {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classAliasTraitInitializedInConstructor' => [
+                'code' => '<?php
+                    trait Greets {
+                        private string $greeting;
+                        private function init(): void {
+                            $this->greeting = "hi";
+                        }
+                    }
+                    class_alias(Greets::class, "GreetsAlias");
+
+                    final class Greeter {
+                        use GreetsAlias;
+                        public function __construct() {
+                            $this->init();
+                        }
+                    }',
+            ],
+            'classAliasPropertiesOf' => [
+                'code' => '<?php
+                    final class Row {
+                        public int $id = 1;
+                    }
+                    class_alias(Row::class, "RowAlias");
+
+                    /** @param properties-of<RowAlias> $p */
+                    function id(array $p): int {
+                        return $p["id"];
+                    }',
+            ],
+            'classAliasImportType' => [
+                'code' => '<?php
+                    /** @psalm-type Row = array{id: int} */
+                    final class Rows {}
+                    class_alias(Rows::class, "RowsAlias");
+
+                    /** @psalm-import-type Row from RowsAlias */
+                    final class UsesRow {
+                        /** @param Row $r */
+                        public function id(array $r): int {
+                            return $r["id"];
+                        }
+                    }',
+            ],
+            'classAliasImportTypeInIntersection' => [
+                'code' => '<?php
+                    /** @psalm-type Row = array{id: int} */
+                    final class Rows {}
+                    class_alias(Rows::class, "RowsAlias");
+
+                    /** @psalm-import-type Row from RowsAlias */
+                    final class UsesRow {
+                        /** @param Row&array{name: string} $r */
+                        public function id(array $r): int {
+                            return $r["id"];
+                        }
+                    }',
+            ],
             'resourceAndNumericSoftlyReserved' => [
                 'code' => '<?php
                     namespace {
@@ -574,6 +1017,145 @@ final class ClassTest extends TestCase
                         }
                     }',
             ],
+            'classOfANegatedClassExistsIsDefinedInTheElseOfATernary' => [
+                'code' => '<?php
+                    function build(): ?object {
+                        return !class_exists("DynamicClass")
+                            ? null
+                            : new DynamicClass();
+                    }
+
+                    function buildMatch(): ?object {
+                        return match (true) {
+                            !class_exists("OtherDynamicClass") => null,
+                            default => new OtherDynamicClass(),
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement'],
+                'php_version' => '8.0',
+            ],
+            'classOfANegatedClassExistsIsDefinedOnTheRightOfAnOr' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return !class_exists("DynamicClass") || (new DynamicClass())->ok();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedMethodCall', 'MixedReturnStatement'],
+            ],
+            'classDeclaredByTheFirstStatementOfANegatedClassExistsBlock' => [
+                'code' => '<?php
+                    class Real {
+                        public static function run(): void {}
+                    }
+
+                    if (!class_exists("Polyfill")) {
+                        class_alias(Real::class, "Polyfill");
+                        Polyfill::run();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'interfaceDeclaredByAClassAliasInANegatedInterfaceExistsBlock' => [
+                'code' => '<?php
+                    interface Real {
+                        public static function run(): void;
+                    }
+
+                    if (!interface_exists("Polyfill")) {
+                        class_alias("Real", "Polyfill");
+                        /** @param Polyfill $p */
+                        function f($p): void {
+                            $p::run();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'classNameOfAClassThatANegatedClassExistsFoundMissing' => [
+                'code' => '<?php
+                    function install(): void {
+                        if (!class_exists(Missing::class)) {
+                            throw new LogicException(sprintf("Run: composer require %s", Missing::class));
+                        }
+
+                        Missing::run();
+                    }
+
+                    function install2(): void {
+                        if (!class_exists("Missing2")) {
+                            return;
+                        }
+
+                        Missing2::run();
+                    }
+
+                    function install3(): void {
+                        if (!class_exists(Missing3::class)) {
+                            echo Missing3::class;
+                        } else {
+                            Missing3::run();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'classOfANegatedClassExistsInAnElseifExistsInItsElse' => [
+                'code' => '<?php
+                    function f(bool $c): void {
+                        if ($c) {
+                            echo 1;
+                        } elseif (!class_exists(Optional::class)) {
+                            echo 2;
+                        } else {
+                            new Optional();
+                        }
+                    }',
+            ],
+            'classesOfANegatedClassExistsOfAConjunctionStayPhantomAfterTheIf' => [
+                'code' => '<?php
+                    if (!(class_exists("A") && class_exists("B"))) {
+                        throw new LogicException();
+                    }
+
+                    A::f();
+                    B::f();',
+            ],
+            'classOfANegatedClassExistsInAVariableStaysPhantomAfterTheIf' => [
+                'code' => '<?php
+                    $missing = !class_exists("X");
+
+                    if ($missing) {
+                        throw new LogicException();
+                    }
+
+                    X::f();',
+            ],
+            'classExistsInAnArgumentOfANegatedCall' => [
+                'code' => '<?php
+                    final class Validator {
+                        /**
+                         * @param mixed $validation
+                         */
+                        public function isValid(string $email, $validation): bool {
+                            return $email !== "" && $validation !== null;
+                        }
+                    }
+
+                    function checkMethod(Validator $validator, string $email, object $fallback): void {
+                        if (!$validator->isValid($email, class_exists(MessageIDValidation::class) ? new MessageIDValidation() : $fallback)) {
+                            throw new LogicException();
+                        }
+                    }
+
+                    function checkFunction(): void {
+                        if (!is_object(class_exists(OtherValidation::class) ? new OtherValidation() : null)) {
+                            throw new LogicException();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'noErrorsAfterClassExists' => [
                 'code' => '<?php
                     if (class_exists(A::class)) {
@@ -601,6 +1183,92 @@ final class ClassTest extends TestCase
                         null instanceof NS\UnknonwClass;
                     }
                 ',
+            ],
+            'negatedClassExistsWithReturnCoversTheCodeAfter' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (!class_exists(Missing\Thing::class)) {
+                            return;
+                        }
+
+                        echo Missing\Thing::class;
+                        Missing\Thing::run();
+                    }',
+            ],
+            'negatedClassExistsInAnOrWithReturnCoversTheCodeAfter' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (!class_exists(Missing\Thing::class) || $flag) {
+                            return;
+                        }
+
+                        Missing\Thing::run();
+                    }',
+            ],
+            'twoNegatedClassExistsInAnOrWithReturnCoverTheCodeAfter' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (!class_exists(Missing\Thing::class) || !class_exists(Missing\Other::class)) {
+                            return;
+                        }
+
+                        Missing\Thing::run();
+                        Missing\Other::run();
+                    }',
+            ],
+            'negatedInterfaceExistsWithThrowCoversTheCodeAfter' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (!interface_exists(Missing\Thing::class)) {
+                            throw new Exception();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+            ],
+            'classExistsCoversTheCodeAfterAnIfWhoseElseLeaves' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (class_exists(Missing\A::class)) {
+                            echo 1;
+                        } else {
+                            return;
+                        }
+
+                        Missing\A::run();
+                    }
+
+                    function bar(): void {
+                        if (class_exists(Missing\B::class)) {
+                            echo 1;
+                        } else {
+                            throw new Exception();
+                        }
+
+                        Missing\B::run();
+                    }
+
+                    function baz(bool $flag): void {
+                        if (class_exists(Missing\C::class)) {
+                            echo 1;
+                        } elseif ($flag) {
+                            return;
+                        } else {
+                            throw new Exception();
+                        }
+
+                        Missing\C::run();
+                    }',
+            ],
+            'classExistsCoversTheIfAndElseIfBody' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            Missing\Thing::run();
+                        } elseif (class_exists(Missing\Other::class)) {
+                            Missing\Other::run();
+                        }
+                    }',
             ],
             'extendException' => [
                 'code' => '<?php
@@ -762,6 +1430,138 @@ final class ClassTest extends TestCase
                 'assertions' => [
                     '$a===' => 'iter<int, a&static>',
                 ],
+            ],
+            'preventDoubleStaticResolutionAfterUnionWithNull' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+                    }
+
+                    /** @template T */
+                    interface Bag {
+                        /** @return static<int> */
+                        public function map(): static;
+                    }
+
+                    /** @return Bag<string> */
+                    function bag(): Bag {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T|null>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }
+
+                    $bag = bag();
+                    $a = box($bag->map());
+                    $b = $a->same();
+                    $c = $b->same();',
+                'assertions' => [
+                    '$a===' => 'Box<Bag<int>&static|null>',
+                    '$b===' => 'Box<Bag<int>&static|null>',
+                    '$c===' => 'Box<Bag<int>&static|null>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'preventDoubleStaticResolutionAfterUnionOfStatics' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+                    }
+
+                    /** @template T */
+                    interface Bag {
+                        /** @return static<int> */
+                        public function toInt(): static;
+
+                        /** @return static<float> */
+                        public function toFloat(): static;
+                    }
+
+                    /** @return Bag<string> */
+                    function bag(): Bag {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }
+
+                    $bag = bag();
+                    $a = box(rand(0, 1) ? $bag->toInt() : $bag->toFloat());
+                    $b = $a->same();',
+                'assertions' => [
+                    '$b===' => 'Box<Bag<float>&static|Bag<int>&static>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'preventDoubleStaticResolutionAfterClosureInference' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+
+                        /**
+                         * @template U
+                         * @param Closure(T): U $f
+                         * @return Box<U>
+                         */
+                        public function apply(Closure $f): self {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @template T */
+                    interface Bag {
+                        /** @return static<int> */
+                        public function map(): static;
+                    }
+
+                    /** @return Bag<string> */
+                    function bag(): Bag {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }
+
+                    $a = box(bag()->map())->apply(fn($x) => $x);
+                    $b = $a->same();',
+                'assertions' => [
+                    '$a===' => 'Box<Bag<int>&static>',
+                    '$b===' => 'Box<Bag<int>&static>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'allowTraversableImplementationAlongWithIteratorAggregate' => [
                 'code' => '<?php
@@ -955,6 +1755,31 @@ final class ClassTest extends TestCase
                     interface InterfaceB extends InterfaceA {}
                     PHP,
             ],
+            'classAliasParentDeclaredLater' => [
+                'code' => '<?php
+                    class Original {
+                        public const VERSION = 1;
+
+                        /** @var string */
+                        public $message = "";
+                    }
+
+                    final class Child extends Legacy {}
+
+                    class_alias(Original::class, "Legacy");',
+            ],
+            'classAliasParentDeclaredLaterIsParent' => [
+                'code' => '<?php
+                    class Original {}
+
+                    final class Child extends Legacy {}
+
+                    class_alias(Original::class, "Legacy");
+
+                    function action(Original $_o): void {}
+
+                    action(new Child());',
+            ],
         ];
     }
 
@@ -962,9 +1787,529 @@ final class ClassTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classExistsDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            Missing\Thing::run();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+            ],
+            'classExistsAndAFlagDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (class_exists(Missing\Thing::class) && $flag) {
+                            Missing\Thing::run();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+            ],
+            'negatedClassExistsAndAFlagWithReturnDoesNotCoverTheCodeAfter' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (!class_exists(Missing\Thing::class) && $flag) {
+                            return;
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+            ],
+            'classExistsComparedToTrueDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (class_exists(Missing\Thing::class) === true) {
+                            Missing\Thing::run();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+            ],
+            'interfaceExistsDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (interface_exists(Missing\Thing::class)) {
+                            Missing\Thing::run();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+            ],
+            'enumExistsDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (enum_exists(Missing\Thing::class)) {
+                            Missing\Thing::run();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'classExistsDoesNotCoverTheCodeAfterAnIfWhoseElseDoesNotLeave' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            echo 1;
+                        } elseif ($flag) {
+                            return;
+                        } else {
+                            echo 2;
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:25',
+            ],
+            'classExistsDoesNotCoverTheCodeAfterTheIfInAMethod' => [
+                'code' => '<?php
+                    final class C {
+                        public function __construct() {
+                            if (class_exists(Missing\Thing::class)) {
+                                Missing\Thing::run();
+                            }
+
+                            echo Missing\Thing::class;
+                            Missing\Thing::run();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:8',
+            ],
+            'classStringNewChecksTheConstructorArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        final public function __construct(public int $val) {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        return new $class();
+                    }',
+                'error_message' => 'TooFewArguments',
+            ],
+            'classStringNewOfAClassWithoutConsistentConstructorOnlyReportsTheUnsafeInstantiation' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct(public int $val) {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        return new $class("x");
+                    }',
+                'error_message' => 'UnsafeInstantiation',
+            ],
+            'classStringNewWithTooManyArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        final public function __construct(public int $val) {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        return new $class(1, 2);
+                    }',
+                'error_message' => 'TooManyArguments',
+            ],
+            'classStringNewWithWrongArgumentType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class A {
+                        final public function __construct(public int $val) {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        return new $class("x");
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'instanceofIterableIsReportedOnlyAsAReservedWord' => [
+                'code' => '<?php
+                    function f(ArrayObject $o): void {
+                        if ($o instanceof iterable) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'ReservedWord',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'instanceofIterableInANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /** @param mixed $a */
+                    function f($a): bool {
+                        return $a instanceof Iterable;
+                    }',
+                'error_message' => 'ReservedWord - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:46 - iterable is a reserved word',
+            ],
+            'instanceofIterable' => [
+                'code' => '<?php
+                    /** @param mixed $a */
+                    function f($a): bool {
+                        return $a instanceof iterable;
+                    }',
+                'error_message' => 'ReservedWord - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:46 - iterable is a reserved word',
+            ],
+            'classOfANegatedClassExistsInAnElseifIsUndefinedInItsBody' => [
+                'code' => '<?php
+                    function f(bool $c): void {
+                        if ($c) {
+                            echo 1;
+                        } elseif (!class_exists(Optional::class)) {
+                            new Optional();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33 - Class, interface or enum named Optional does not exist',
+            ],
+            'classOfANegatedClassExistsIsUndefinedAfterAnUnrelatedNestedIf' => [
+                'code' => '<?php
+                    function f(bool $flag): void {
+                        if (!class_exists("DynamicClass")) {
+                            if ($flag) {
+                                echo "unrelated";
+                            }
+
+                            new DynamicClass();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'classOfANegatedClassExistsIsUndefinedInTheIfOfATernary' => [
+                'code' => '<?php
+                    function f(): ?object {
+                        return !class_exists("DynamicClass") ? new DynamicClass() : null;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'aliasOfAMissingClassIsUndefined' => [
+                'code' => '<?php
+                    class_alias("MissingSource", "Alias", false);
+                    Alias::run();',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Class, interface or enum named Alias does not exist',
+            ],
+            'aliasOfAMissingClassInANegatedClassExistsBlockIsUndefined' => [
+                'code' => '<?php
+                    if (!class_exists("Polyfill")) {
+                        class_alias("MissingSource", "Polyfill");
+                        Polyfill::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25',
+            ],
+            'staticCallOnTheClassOfANegatedClassExistsAfterOtherStatements' => [
+                'code' => '<?php
+                    if (!class_exists("Polyfill")) {
+                        $loaded = false;
+                        Polyfill::run();
+                    }',
+                'error_message' => 'UndefinedClass',
+                'error_levels' => ['UnusedVariable'],
+            ],
+            'staticCallOnTheClassOfANegatedClassExists' => [
+                'code' => '<?php
+                    if (!class_exists(Really::class)) {
+                        Really::something();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
+            ],
+            'staticCallOnTheInterfaceOfANegatedInterfaceExists' => [
+                'code' => '<?php
+                    if (!interface_exists("Really")) {
+                        Really::something();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
+            ],
+            'newStaticOfAClassImplementingAnInterfaceWithoutAConstructor' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    class Item implements Marker {
+                        public function __construct() {}
+
+                        public static function create(): static {
+                            return new static();
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:36',
+            ],
+            'newStaticWithAnArgumentTheConstructorOfTheInterfaceDoesNotDeclare' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct();
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int $x = 0) {}
+
+                        public static function build(): static {
+                            return new static(5);
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'newStaticWithAnArgumentOfATypeTheConstructorOfTheInterfaceDoesNotAccept' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct(int $x);
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int|string $x) {}
+
+                        public static function build(): static {
+                            return new static("a");
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'newStaticWithFewerArgumentsThanTheConstructorOfTheInterfaceRequires' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct(int $x, int $y);
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int $x, int $y = 0) {}
+
+                        public static function build(): static {
+                            return new static(5);
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'newStaticWithANamedArgumentOfTheConstructorOfTheInterface' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct(int $x);
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int $x) {}
+
+                        public static function build(): static {
+                            return new static(x: 5);
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'newOfAClassStringWithAnArgumentTheConstructorOfTheInterfaceDoesNotDeclare' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct();
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int $x = 0) {}
+                    }
+
+                    /** @param class-string<Base> $class */
+                    function instantiate(string $class): Base {
+                        return new $class(5);
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'consistentConstructorClassUsingATraitConstructorDoesNotTakeTheOneOfTheParent' => [
+                'code' => '<?php
+                    trait HasName {
+                        public function __construct(public string $name, public int $age) {}
+                    }
+
+                    class Base {
+                        public function __construct(bool $flag) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        use HasName;
+                    }
+
+                    $child = new Child(true);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'consistentConstructorClassWithoutAParentConstructorTakesNoArguments' => [
+                'code' => '<?php
+                    class Base {}
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        public static function create(): static {
+                            return new static("hello");
+                        }
+                    }',
+                'error_message' => 'TooManyArguments',
+            ],
+            'undefinedClassParamWithTemplateDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $a
+                     */
+                    function foo(UndefinedClass $a): void {
+                        echo 1;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassParamWithMixedDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $a
+                     */
+                    function foo(UndefinedClass $a): void {
+                        echo 1;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassPropertyWithMixedDocblock' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var mixed */
+                        public UndefinedClass $a;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassPropertyWithTemplateDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class A {
+                        /** @var T */
+                        public UndefinedClass $a;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'elseOfAKnownTrueAndIsNotDeclared' => [
+                'code' => '<?php
+                    if (function_exists("strlen") && function_exists("strpos")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new Second();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'elseOfAKnownTrueLogicalAndIsNotDeclared' => [
+                'code' => '<?php
+                    if (function_exists("strlen") and function_exists("strpos")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new Second();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'elseOfAKnownTrueOrIsNotDeclared' => [
+                'code' => '<?php
+                    if (function_exists("strlen") || rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new Second();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'elseOfAKnownTrueLogicalOrIsNotDeclared' => [
+                'code' => '<?php
+                    if (rand(0, 1) or function_exists("strlen")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new Second();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'ifOfAKnownFalseAndIsNotDeclared' => [
+                'code' => '<?php
+                    if (!function_exists("strlen") && rand(0, 1)) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'ifOfAKnownFalseLogicalAndIsNotDeclared' => [
+                'code' => '<?php
+                    if (rand(0, 1) and !function_exists("strlen")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'ifOfAKnownFalseOrIsNotDeclared' => [
+                'code' => '<?php
+                    if (!function_exists("strlen") || !function_exists("strpos")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();',
+                'error_message' => 'UndefinedClass',
+            ],
+            'ifOfAKnownFalseLogicalOrIsNotDeclared' => [
+                'code' => '<?php
+                    if (!function_exists("strlen") or !function_exists("strpos")) {
+                        class First {}
+                    } else {
+                        class Second {}
+                    }
+
+                    new First();',
+                'error_message' => 'UndefinedClass',
+            ],
             'undefinedClass' => [
                 'code' => '<?php
                     (new Foo());',
@@ -1351,7 +2696,7 @@ final class ClassTest extends TestCase
                     class C implements Throwable {}
                 ',
                 'error_message' => 'InvalidInterfaceImplementation',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.0',
             ],
             'directConstructorCall' => [
@@ -1394,7 +2739,7 @@ final class ClassTest extends TestCase
                     $foo->a = 33;
                     PHP,
                 'error_message' => 'InaccessibleProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'readonlyClassRequiresTypedProperties' => [
@@ -1406,7 +2751,7 @@ final class ClassTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'MissingPropertyType',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'readonlyClassCannotHaveDynamicProperties' => [
@@ -1416,7 +2761,7 @@ final class ClassTest extends TestCase
                     readonly class Foo {}
                     PHP,
                 'error_message' => 'InvalidAttribute',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'readonlyClassesCannotBeExtendedByNonReadonlyOnes' => [
@@ -1426,7 +2771,7 @@ final class ClassTest extends TestCase
                     class Bar extends Foo {}
                     PHP,
                 'error_message' => 'InvalidExtendClass',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'classCannotExtendIfNotInInheritors' => [
@@ -1439,7 +2784,7 @@ final class ClassTest extends TestCase
                     class BazClass extends BaseClass {} // this is an error
                     PHP,
                 'error_message' => 'InheritorViolation',
-                'ignored_issues' => [],
+                'error_levels' => [],
             ],
             'classCannotImplementIfNotInInheritors' => [
                 'code' => <<<'PHP'
@@ -1451,7 +2796,7 @@ final class ClassTest extends TestCase
                     class BazClass implements BaseInterface {}
                     PHP,
                 'error_message' => 'InheritorViolation',
-                'ignored_issues' => [],
+                'error_levels' => [],
             ],
             'interfaceCannotImplementIfNotInInheritors' => [
                 'code' => <<<'PHP'
@@ -1463,7 +2808,7 @@ final class ClassTest extends TestCase
                     interface BazInterface extends BaseInterface {}
                     PHP,
                 'error_message' => 'InheritorViolation',
-                'ignored_issues' => [],
+                'error_levels' => [],
             ],
             'UnfulfilledInterfaceInheritors' => [
                 'code' => <<<'PHP'
@@ -1479,7 +2824,7 @@ final class ClassTest extends TestCase
                     class BazClass implements InterFaceA, InterFaceB {}
                     PHP,
                 'error_message' => 'InheritorViolation',
-                'ignored_issues' => [],
+                'error_levels' => [],
             ],
             'duplicateInstanceProperties' => [
                 'code' => <<<'PHP'
@@ -1490,7 +2835,7 @@ final class ClassTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'DuplicateProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
             ],
             'duplicateStaticProperties' => [
                 'code' => <<<'PHP'
@@ -1501,7 +2846,7 @@ final class ClassTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'DuplicateProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
             ],
             'duplicateMixedProperties' => [
                 'code' => <<<'PHP'
@@ -1512,7 +2857,7 @@ final class ClassTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'DuplicateProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
             ],
             'duplicatePropertiesDifferentVisibility' => [
                 'code' => <<<'PHP'
@@ -1523,7 +2868,58 @@ final class ClassTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'DuplicateProperty',
-                'ignored_issues' => [],
+                'error_levels' => [],
+            ],
+            'classAliasRepeatedNonRepeatableAttribute' => [
+                'code' => '<?php
+                    #[Attribute]
+                    final class Tag {}
+                    class_alias(Tag::class, "TagAlias");
+
+                    #[TagAlias, TagAlias]
+                    final class Tagged {}',
+                'error_message' => 'Attribute TagAlias is not repeatable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'classAliasDocblockConstant' => [
+                'code' => '<?php
+                    final class Level {
+                        public const A = "a";
+                        public const B = "b";
+                    }
+                    class_alias(Level::class, "LevelAlias");
+
+                    /** @param LevelAlias::A|LevelAlias::B $v */
+                    function f(string $v): void {}
+                    f("c");',
+                'error_message' => 'expects \'a\'|\'b\', but \'c\' provided',
+            ],
+            'classAliasReflectionGetAttributes' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_METHOD)]
+                    final class Tag {}
+                    class_alias(Tag::class, "TagAlias");
+
+                    final class Tagged {}
+                    (new ReflectionClass(Tagged::class))->getAttributes("TagAlias");',
+                'error_message' => 'Attribute TagAlias cannot be used on a class',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'classAliasCallableArray' => [
+                'code' => '<?php
+                    final class Num {
+                        public static function twice(int $i): int {
+                            return $i * 2;
+                        }
+                    }
+                    class_alias(Num::class, "NumAlias");
+
+                    /** @param callable(string):int $f */
+                    function takeWrong(callable $f): void {}
+                    takeWrong(["NumAlias", "twice"]);',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

@@ -5,8 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\AtomicParts;
+use Psalm\Internal\Type\StringRefinement;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\Capabilities;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -14,15 +20,20 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TCapabilities;
+use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -36,19 +47,27 @@ use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 
+use function array_all;
+use function array_any;
+use function array_diff_key;
 use function array_merge;
 use function array_values;
 use function assert;
 use function count;
+use function is_int;
+use function min;
+use function reset;
 use function strtolower;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class AtomicTypeComparator
 {
@@ -78,6 +97,44 @@ final class AtomicTypeComparator
                 $container_type_part,
                 $allow_interface_equality,
                 $atomic_comparison_result,
+            );
+        }
+
+        if ($container_type_part instanceof TIntersection) {
+            // the input has all the types of the intersection
+            $input_type = new Union([$input_type_part]);
+
+            return array_all(
+                $container_type_part->types,
+                static fn(Union $type): bool => UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $input_type,
+                    $type,
+                    false,
+                    false,
+                    null,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                ),
+            );
+        }
+
+        if ($input_type_part instanceof TIntersection) {
+            // any type of the intersection contains all of its values
+            $container_type = new Union([$container_type_part]);
+
+            return array_any(
+                $input_type_part->types,
+                static fn(Union $type): bool => UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $type,
+                    $container_type,
+                    false,
+                    false,
+                    null,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                ),
             );
         }
 
@@ -200,6 +257,13 @@ final class AtomicTypeComparator
 
             if ($container_type_part instanceof TTemplateParam
                 && ($container_type_part->as->isNullable() || $container_type_part->as->isMixed())
+            ) {
+                return true;
+            }
+
+            if ($container_type_part instanceof TTemplateValueOf
+                && ($value_type = TValueOf::getValueType($container_type_part->as, $codebase))
+                && ($value_type->isNullable() || $value_type->isMixed())
             ) {
                 return true;
             }
@@ -377,6 +441,27 @@ final class AtomicTypeComparator
             return true;
         }
 
+        // an object with properties that is also an instance of a class is contained by that class
+        if ($input_type_part instanceof TObjectWithProperties
+            && $input_type_part->extra_types
+            && $container_type_part instanceof TNamedObject
+        ) {
+            foreach ($input_type_part->extra_types as $extra_type) {
+                if ($extra_type instanceof TNamedObject
+                    && self::isContainedBy(
+                        $codebase,
+                        $extra_type,
+                        $container_type_part,
+                        $allow_interface_equality,
+                        $allow_float_int_equality,
+                        $atomic_comparison_result,
+                    )
+                ) {
+                    return true;
+                }
+            }
+        }
+
         if ($container_type_part instanceof TEnumCase
             && $input_type_part instanceof TEnumCase
         ) {
@@ -540,7 +625,15 @@ final class AtomicTypeComparator
                 array_values($container_type_part->else_type->getAtomicTypes()),
             );
 
+            // a match through a __toString() cast only counts if no alternative matches without one
+            $matched_with_to_string_cast = false;
+            $tried_to_string_cast = false;
+
             foreach ($atomic_types as $container_as_type_part) {
+                if ($atomic_comparison_result) {
+                    $atomic_comparison_result->to_string_cast = null;
+                }
+
                 if (self::isContainedBy(
                     $codebase,
                     $input_type_part,
@@ -549,11 +642,21 @@ final class AtomicTypeComparator
                     $allow_float_int_equality,
                     $atomic_comparison_result,
                 )) {
-                    return true;
+                    if (!$atomic_comparison_result?->to_string_cast) {
+                        return true;
+                    }
+
+                    $matched_with_to_string_cast = true;
                 }
+
+                $tried_to_string_cast = $tried_to_string_cast || $atomic_comparison_result?->to_string_cast;
             }
 
-            return false;
+            if ($tried_to_string_cast && $atomic_comparison_result) {
+                $atomic_comparison_result->to_string_cast = true;
+            }
+
+            return $matched_with_to_string_cast;
         }
 
         if ($input_type_part instanceof TTemplateParam) {
@@ -680,6 +783,57 @@ final class AtomicTypeComparator
             if ($input_type_part instanceof TNamedObject) {
                 // check whether the object has a __toString method
                 if ($codebase->classOrInterfaceExists($input_type_part->value)) {
+                    $to_string_method_id = new MethodIdentifier(
+                        $input_type_part->value,
+                        '__tostring',
+                    );
+
+                    if ($container_type_part instanceof TString
+                        && $container_type_part::class !== TString::class
+                        && $codebase->methodExists($to_string_method_id)
+                    ) {
+                        $self_class = $input_type_part->value;
+                        $return_type = $codebase->getMethodReturnType($to_string_method_id, $self_class);
+
+                        if ($return_type !== null && $input_type_part instanceof TGenericObject) {
+                            $class_template_params = ClassTemplateParamCollector::collect(
+                                $codebase,
+                                $codebase->methods->getClassLikeStorageForMethod($to_string_method_id),
+                                $codebase->classlike_storage_provider->get($input_type_part->value),
+                                $to_string_method_id->method_name,
+                                $input_type_part,
+                            );
+
+                            if ($class_template_params !== null) {
+                                $return_type = TemplateInferredTypeReplacer::replace(
+                                    $return_type,
+                                    new TemplateResult([], $class_template_params),
+                                    $codebase,
+                                );
+                            }
+                        }
+
+                        $return_type_comparison = new TypeComparisonResult();
+                        if ($return_type === null
+                            || !UnionTypeComparator::isContainedBy(
+                                $codebase,
+                                $return_type,
+                                new Union([$container_type_part]),
+                                false,
+                                false,
+                                $return_type_comparison,
+                            )
+                        ) {
+                            if ($atomic_comparison_result) {
+                                $atomic_comparison_result->type_coerced = $return_type === null
+                                    || $return_type_comparison->type_coerced;
+                                $atomic_comparison_result->to_string_cast = true;
+                            }
+
+                            return false;
+                        }
+                    }
+
                     if ($codebase->analysis_php_version_id >= 8_00_00
                         && ($input_type_part->value === 'Stringable'
                             || ($codebase->classlikes->classExists($input_type_part->value)
@@ -693,12 +847,7 @@ final class AtomicTypeComparator
                         return true;
                     }
 
-                    if ($codebase->methodExists(
-                        new MethodIdentifier(
-                            $input_type_part->value,
-                            '__tostring',
-                        ),
-                    )) {
+                    if ($codebase->methodExists($to_string_method_id)) {
                         if ($atomic_comparison_result) {
                             $atomic_comparison_result->to_string_cast = true;
                         }
@@ -817,8 +966,8 @@ final class AtomicTypeComparator
     }
 
     /**
-     * @psalm-assert-if-true TKeyedArray $array
-     * @psalm-mutation-free
+     * @psalm-assert-if-true =TKeyedArray $array
+     * @psalm-pure
      */
     public static function isLegacyTListLike(Atomic $array): bool
     {
@@ -827,12 +976,12 @@ final class AtomicTypeComparator
             && $array->fallback_params
             && count($array->properties) === 1
             && $array->properties[0]->possibly_undefined
-            && $array->properties[0]->equals($array->fallback_params[1], true, true, false)
+            && $array->properties[0]->equals($array->fallback_params[1], false, false, false)
         ;
     }
     /**
-     * @psalm-assert-if-true TKeyedArray $array
-     * @psalm-mutation-free
+     * @psalm-assert-if-true =TKeyedArray $array
+     * @psalm-pure
      */
     public static function isLegacyTNonEmptyListLike(Atomic $array): bool
     {
@@ -844,6 +993,90 @@ final class AtomicTypeComparator
             && $array->properties[0]->equals($array->fallback_params[1])
         ;
     }
+
+    /**
+     * The object half of an iterable is a Traversable, unless the other type is a class that cannot be one
+     * or has template params of its own, which the generic comparison handles. Whether an iterable may be
+     * that object is not a question of its purity.
+     *
+     * @psalm-capabilities read-props|write-props
+     * @internal
+     */
+    public static function getTraversableHalf(
+        Codebase $codebase,
+        TIterable $iterable,
+        TNamedObject $other,
+        bool $keep_purity = true,
+    ): ?TGenericObject {
+        if ($other instanceof TGenericObject
+            || $iterable->extra_types
+            || (($codebase->classExists($other->value) || $codebase->classlikes->enumExists($other->value))
+                && !$codebase->classImplements($other->value, 'Traversable')
+                && ($codebase->classlike_storage_provider->get($other->value)->final
+                    || $codebase->classlike_storage_provider->get($other->value)->is_enum))
+        ) {
+            return null;
+        }
+
+        // a generic class takes the key and the value of the iterable for the templates that stand for its own
+        if ($codebase->classExists($other->value)) {
+            $other_storage = $codebase->classlike_storage_provider->get($other->value);
+            $extended_params = $other_storage->template_extended_params['Traversable'] ?? null;
+
+            if ($other_storage->template_types !== null
+                && $extended_params !== null
+                && isset($extended_params['TKey'], $extended_params['TValue'])
+                && isset($iterable->type_params[1])
+            ) {
+                $iterable_params = [
+                    'TKey' => $iterable->type_params[0],
+                    'TValue' => $iterable->type_params[1],
+                ];
+                $class_params = [];
+                $found = [];
+
+                foreach ($other_storage->template_types as $template_name => $bounds) {
+                    $class_param = reset($bounds);
+
+                    foreach ($iterable_params as $traversable_template => $iterable_param) {
+                        $standing_for = $extended_params[$traversable_template];
+
+                        if ($standing_for->isSingle()
+                            && $standing_for->getSingleAtomic() instanceof TTemplateParam
+                            && $standing_for->getSingleAtomic()->param_name === $template_name
+                        ) {
+                            $class_param = $iterable_param;
+                            $found[$traversable_template] = true;
+                        }
+                    }
+
+                    // only the purity template that stands for the one of Traversable is the iterable's
+                    $purity_standing_for = $extended_params['TPurity'] ?? null;
+
+                    if ($purity_standing_for !== null
+                        && $purity_standing_for->isSingle()
+                        && $purity_standing_for->getSingleAtomic() instanceof TTemplateParam
+                        && $purity_standing_for->getSingleAtomic()->param_name === $template_name
+                    ) {
+                        $class_param = $iterable->purity;
+                    }
+
+                    $class_params[] = $class_param;
+                }
+
+                if ($class_params !== [] && count($found) === 2) {
+                    return new TGenericObject($other->value, $class_params);
+                }
+            }
+        }
+
+        // the purity of the iterable is the last template of Traversable
+        return new TGenericObject(
+            'Traversable',
+            $keep_purity ? [...$iterable->type_params, $iterable->purity] : $iterable->type_params,
+        );
+    }
+
     /**
      * Does the input param atomic type match the given param atomic type
      */
@@ -859,6 +1092,22 @@ final class AtomicTypeComparator
             return true;
         }
 
+        // the name of a function is never numeric
+        if (($type1_part instanceof TCallableString
+                && $type2_part instanceof TString
+                && (StringRefinement::getImplied($type2_part) & StringRefinement::NUMERIC) !== 0)
+            || ($type2_part instanceof TCallableString
+                && $type1_part instanceof TString
+                && (StringRefinement::getImplied($type1_part) & StringRefinement::NUMERIC) !== 0)
+        ) {
+            return false;
+        }
+
+        if ($type1_part instanceof TIterable && $type2_part instanceof TNamedObject) {
+            $type1_part = self::getTraversableHalf($codebase, $type1_part, $type2_part, false) ?? $type1_part;
+        } elseif ($type2_part instanceof TIterable && $type1_part instanceof TNamedObject) {
+            $type2_part = self::getTraversableHalf($codebase, $type2_part, $type1_part, false) ?? $type2_part;
+        }
 
         if ((self::isLegacyTListLike($type1_part)
                 && self::isLegacyTNonEmptyListLike($type2_part))
@@ -891,10 +1140,73 @@ final class AtomicTypeComparator
             );
         }
 
+        // arrays of the same keys can be identical when every pair of their items can, as list{int|string} and
+        // list{string|bool}: neither contains the other
+        if ($type1_part instanceof TKeyedArray
+            && $type2_part instanceof TKeyedArray
+            && $type1_part->fallback_params === null
+            && $type2_part->fallback_params === null
+            && count($type1_part->properties) === count($type2_part->properties)
+            && array_diff_key($type1_part->properties, $type2_part->properties) === []
+        ) {
+            $only_defined_items = true;
+
+            foreach ($type1_part->properties as $key => $property_1) {
+                $property_2 = $type2_part->properties[$key];
+
+                if ($property_1->possibly_undefined || $property_2->possibly_undefined) {
+                    $only_defined_items = false;
+                    break;
+                }
+
+                if (!UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $property_1, $property_2)) {
+                    return false;
+                }
+            }
+
+            if ($only_defined_items) {
+                return true;
+            }
+        }
+
+        // Equality is a fact about PHP values, not a policy controlled by the config.
+        // The strict policy emits InvalidStringClass at the comparison site instead.
+        if ($type1_part instanceof TLiteralClassString && $type2_part::class === TLiteralString::class) {
+            return $type1_part->value === $type2_part->value;
+        }
+
+        if ($type2_part instanceof TLiteralClassString && $type1_part::class === TLiteralString::class) {
+            return $type1_part->value === $type2_part->value;
+        }
+
+        if (($type1_part instanceof TClassString && !$type1_part instanceof TTemplateParamClass
+                || $type1_part instanceof TDependentGetClass)
+            && $type2_part::class === TLiteralString::class
+        ) {
+            return ClassLikeStringComparator::canLiteralNameBeClassString(
+                $codebase,
+                $type2_part,
+                $type1_part,
+                $allow_interface_equality,
+            );
+        }
+
+        if (($type2_part instanceof TClassString && !$type2_part instanceof TTemplateParamClass
+                || $type2_part instanceof TDependentGetClass)
+            && $type1_part::class === TLiteralString::class
+        ) {
+            return ClassLikeStringComparator::canLiteralNameBeClassString(
+                $codebase,
+                $type1_part,
+                $type2_part,
+                $allow_interface_equality,
+            );
+        }
+
         $first_comparison_result = new TypeComparisonResult();
         $second_comparison_result = new TypeComparisonResult();
 
-        return (self::isContainedBy(
+        if ((self::isContainedBy(
             $codebase,
             $type1_part,
             $type2_part,
@@ -914,13 +1226,139 @@ final class AtomicTypeComparator
             && !$second_comparison_result->to_string_cast
         ) || ($first_comparison_result->type_coerced
             && $second_comparison_result->type_coerced
-        );
+        ) || ($type1_part instanceof TKeyedArray
+            && $type2_part instanceof TKeyedArray
+            && self::canKeyedArraysBeIdentical($codebase, $type1_part, $type2_part)
+        )) {
+            return true;
+        }
+
+        // e.g. callable and string can both be a callable-string
+        $type1_parts = AtomicParts::split($type1_part, $type2_part, $codebase);
+        $type2_parts = $type1_parts === null ? AtomicParts::split($type2_part, $type1_part, $codebase) : null;
+
+        if ($type1_parts === null && $type2_parts === null) {
+            return false;
+        }
+
+        foreach ($type1_parts ?? [$type1_part] as $type1_part_part) {
+            foreach ($type2_parts ?? [$type2_part] as $type2_part_part) {
+                if (self::canBeIdentical($codebase, $type1_part_part, $type2_part_part, $allow_interface_equality)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether some array could have the shape of both: each key that one of them requires is allowed by the other
+     * (as a key it declares, or by its fallback), and the values of such a key can be identical.
+     */
+    private static function canKeyedArraysBeIdentical(Codebase $codebase, TKeyedArray $first, TKeyedArray $second): bool
+    {
+        return self::keyedArrayRequirementsFit($codebase, $first, $second)
+            && self::keyedArrayRequirementsFit($codebase, $second, $first)
+            && self::listCanHaveTheRequiredKeysOf($codebase, $first, $second)
+            && self::listCanHaveTheRequiredKeysOf($codebase, $second, $first);
+    }
+
+    /**
+     * A list has every key below the highest it has, so it can only be identical to a shape that allows all the
+     * keys below the highest int key the shape requires (`array{0: int, 2: int}` is not a list).
+     */
+    private static function listCanHaveTheRequiredKeysOf(
+        Codebase $codebase,
+        TKeyedArray $list,
+        TKeyedArray $other,
+    ): bool {
+        if (!$list->is_list) {
+            return true;
+        }
+
+        $highest_required_key = null;
+
+        foreach ($other->properties as $key => $property) {
+            if (!$property->possibly_undefined && is_int($key) && ($highest_required_key ?? $key) <= $key) {
+                $highest_required_key = $key;
+            }
+        }
+
+        // far-fetched keys are not worth checking one by one
+        for ($key = 0; $key < min($highest_required_key ?? 0, 256); $key++) {
+            // the list has the item, and so must the other one: of a type both can have
+            $list_item = $list->properties[$key] ?? $list->fallback_params[1] ?? null;
+
+            if (isset($other->properties[$key])) {
+                $other_item = $other->properties[$key];
+            } elseif ($other->fallback_params !== null
+                && UnionTypeComparator::canExpressionTypesBeIdentical(
+                    $codebase,
+                    new Union([new TLiteralInt($key)]),
+                    $other->fallback_params[0],
+                )
+            ) {
+                $other_item = $other->fallback_params[1];
+            } else {
+                return false;
+            }
+
+            if ($list_item !== null
+                && !UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $list_item, $other_item)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static function keyedArrayRequirementsFit(
+        Codebase $codebase,
+        TKeyedArray $required,
+        TKeyedArray $other,
+    ): bool {
+        foreach ($required->properties as $key => $property) {
+            if ($property->possibly_undefined) {
+                continue;
+            }
+
+            if (isset($other->properties[$key])) {
+                if (!UnionTypeComparator::canExpressionTypesBeIdentical(
+                    $codebase,
+                    $property,
+                    $other->properties[$key],
+                )) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            if ($other->fallback_params === null) {
+                return false;
+            }
+
+            $key_type = new Union([is_int($key) ? new TLiteralInt($key) : Type::getAtomicStringFromLiteral($key)]);
+
+            [$fallback_key_type, $fallback_value_type] = $other->fallback_params;
+
+            if (!UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $key_type, $fallback_key_type)
+                || !UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $property, $fallback_value_type)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
      * The capabilities every value of a purity template has: its lower bound
      * (`@psalm-purity-template write-props <= C`), which only a class purity template can declare.
      *
+     * @return CapabilitySet
      * @psalm-capabilities read-props
      */
     private static function getPurityTemplateLowerBound(Codebase $codebase, TTemplateParam $template): int

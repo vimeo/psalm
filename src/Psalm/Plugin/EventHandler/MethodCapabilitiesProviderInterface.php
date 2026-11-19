@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Psalm\Plugin\EventHandler;
 
 use Psalm\Plugin\EventHandler\Event\MethodCapabilitiesProviderEvent;
+use Psalm\Storage\Capabilities;
 
 /**
  * @api
  * @psalm-mutable
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 interface MethodCapabilitiesProviderInterface
 {
@@ -25,6 +27,8 @@ interface MethodCapabilitiesProviderInterface
      * subclass's `get_{$key}()`. They replace the method's own capabilities for this call, before the
      * receiver is accounted for (a write of the callee's `$this` costs the caller write-this-props or
      * write-props). Return null to keep the method's own capabilities.
+     *
+     * @return CapabilitySet|null
      */
     public static function getMethodCapabilities(MethodCapabilitiesProviderEvent $event): ?int;
 }

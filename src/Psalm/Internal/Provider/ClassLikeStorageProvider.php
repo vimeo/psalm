@@ -10,6 +10,7 @@ use Psalm\Issue\DuplicateClass;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 
+use function strcmp;
 use function strtolower;
 
 /**
@@ -63,12 +64,18 @@ final class ClassLikeStorageProvider
         return isset(self::$storage[$fq_classlike_name_lc]);
     }
 
-    public function exhume(string $fq_classlike_name, string $file_path, string $file_contents): ClassLikeStorage
+    /**
+     * @return ClassLikeStorage|null null if the cache has no storage for the class-like in the file, or the name is
+     *                               already taken by a declaration in another file (or by the native class)
+     */
+    public function exhume(string $fq_classlike_name, string $file_path, string $file_contents): ?ClassLikeStorage
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
         if (isset(self::$storage[$fq_classlike_name_lc])) {
-            return self::$storage[$fq_classlike_name_lc];
+            $in_memory = self::$storage[$fq_classlike_name_lc];
+
+            return $in_memory->stmt_location?->file_path === $file_path ? $in_memory : null;
         }
 
         if (!$this->cache) {
@@ -76,6 +83,10 @@ final class ClassLikeStorageProvider
         }
 
         $cached_value = $this->cache->getLatestFromCache($fq_classlike_name_lc, $file_path, $file_contents);
+
+        if ($cached_value === null) {
+            return null;
+        }
 
         self::$storage[$fq_classlike_name_lc] = $cached_value;
         self::$new_storage[$fq_classlike_name_lc] = $cached_value;
@@ -122,19 +133,24 @@ final class ClassLikeStorageProvider
                     && $location !== null
                     && $duplicate_location->getHash() !== $location->getHash()
                 ) {
+                    // the declaration in the smaller path wins: it is the one a single process finds first
+                    $new_is_kept = strcmp($location->file_path, $duplicate_location->file_path) < 0;
+                    [$kept, $kept_location, $dropped_location] = $new_is_kept
+                        ? [$storage, $location, $duplicate_location]
+                        : [$duplicate_storage, $duplicate_location, $location];
+
                     IssueBuffer::maybeAdd(
                         new DuplicateClass(
-                            'Class ' . $k . ' has already been defined'
-                            . ' in ' . $location->file_path,
-                            $location,
+                            'Class ' . $kept->name . ' has already been defined in ' . $kept_location->file_path,
+                            $dropped_location,
                         ),
                     );
 
-                    //$storage->file_storage->has_visitor_issues = true;
+                    $kept->has_visitor_issues = true;
 
-                    $duplicate_storage->has_visitor_issues = true;
-
-                    continue;
+                    if (!$new_is_kept) {
+                        continue;
+                    }
                 }
             }
             self::$new_storage[$k] = $storage;
@@ -165,11 +181,15 @@ final class ClassLikeStorageProvider
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @param string $file_path the file that declared the class-like, which keys its cache entry. Not the file of
+     *                          the storage's stmt_location, which a stub moves.
+     * @psalm-capabilities read-props|write-props|write-refs|read-globals|write-globals
      */
-    public function remove(string $fq_classlike_name): void
+    public function remove(string $fq_classlike_name, string $file_path): void
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
+
+        $this->cache?->evict($fq_classlike_name_lc, $file_path);
 
         unset(self::$storage[$fq_classlike_name_lc]);
     }

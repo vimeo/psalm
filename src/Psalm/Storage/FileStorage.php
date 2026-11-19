@@ -81,6 +81,14 @@ final class FileStorage
     public array $docblock_issues = [];
 
     /**
+     * Issues found while scanning the file, reported when it is analysed
+     *
+     * @internal
+     * @var list<CodeIssue>
+     */
+    public array $scan_issues = [];
+
+    /**
      * @var array<string, TypeAlias>
      */
     public array $type_aliases = [];

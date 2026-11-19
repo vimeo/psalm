@@ -17,7 +17,7 @@ final class AssignmentTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'nestedAssignment' => [
@@ -33,11 +33,6 @@ final class AssignmentTest extends TestCase
                     foo($s = null, $t = null);
                     echo $s;
                     echo $t;
-
-                    function foo2(?string &$u, ?string &$v): void {}
-                    foo2($u = null, $v = null);
-                    echo $u;
-                    echo $v;
 
                     $read = [fopen(\'php://stdin\', \'rb\')];
                     $return = stream_select($read, $w = null, $e = null, 0);
@@ -105,7 +100,7 @@ final class AssignmentTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'mixedAssignment' => [

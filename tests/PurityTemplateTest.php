@@ -24,9 +24,22 @@ final class PurityTemplateTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
+            'newOfAClassWhoseTemplateConstraintNamesAPurityTemplateAcceptsAPureArgument' => [
+                'code' => '<?php
+                    $append = new AppendIterator();
+                    $append->append(new ArrayIterator([1, 2]));
+                    $append->append(new ArrayIterator(["a", "b"]));
+
+                    function chain(Iterator $iterator): void {
+                        $append = new AppendIterator();
+                        $append->append($iterator);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'newOfAClassExtendingAPurityTemplatedClassResolvesItsUnboundTemplatesToTheirBounds' => [
                 'code' => '<?php
                     /** @psalm-purity-template P */
@@ -45,6 +58,36 @@ final class PurityTemplateTest extends TestCase
                     function make(): Table {
                         return new Table([1]);
                     }',
+            ],
+            'newOfAClassGivingItsPurityTemplateToItsParentResolvesItLikeAClassExtendingNothing' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @psalm-purity-template P
+                     */
+                    abstract class View {}
+
+                    /**
+                     * @template TValue
+                     * @psalm-purity-template P(pure) <= io
+                     * @extends View[P]<TValue>
+                     */
+                    final class Table extends View {
+                        /**
+                         * @param list<TValue> $values
+                         * @psalm-mutation-free
+                         */
+                        public function __construct(public readonly array $values = []) {}
+                    }
+
+                    $table = new Table([1]);
+                    $empty = new Table();',
+                'assertions' => [
+                    '$table===' => 'Table[io]<1>',
+                    '$empty===' => 'Table[io]<mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'callbackStoredByAMethodWideningThePurityTemplate' => [
                 'code' => '<?php
@@ -1448,6 +1491,20 @@ final class PurityTemplateTest extends TestCase
                     '$r===' => "'a'",
                 ],
             ],
+            'fiberGetCurrentIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function currentFiber(): ?Fiber {
+                        return Fiber::getCurrent();
+                    }
+
+                    $fiber = currentFiber();',
+                'assertions' => [
+                    '$fiber===' => 'Fiber[impure]|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'fiberInheritsTheCallbacksPurity' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -1472,6 +1529,67 @@ final class PurityTemplateTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
+            'fiberStateIsNotRememberedAcrossResume' => [
+                'code' => '<?php
+                    function once(Fiber $fiber): void {
+                        if (!$fiber->isTerminated()) {
+                            $fiber->resume();
+                            if (!$fiber->isTerminated()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function run(Fiber $fiber): void {
+                        while (!$fiber->isTerminated()) {
+                            $fiber->resume();
+                            if (!$fiber->isTerminated() && rand(0, 1)) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    /** @param Fiber[pure] $fiber */
+                    function oncePure(Fiber $fiber): void {
+                        if (!$fiber->isTerminated()) {
+                            $fiber->resume();
+                            if (!$fiber->isTerminated()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function fresh(): void {
+                        $f = new Fiber(static function (): void {
+                            Fiber::suspend(1);
+                        });
+                        $f->start();
+                        if (!$f->isTerminated()) {
+                            $f->resume();
+                            if (!$f->isTerminated()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    /** @param Generator[pure]<int, int, mixed, void> $g */
+                    function sent(Generator $g): void {
+                        if ($g->valid()) {
+                            $g->send(1);
+                            if ($g->valid()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function isDone(Fiber $f): bool {
+                        return $f->isTerminated();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'classPurityTemplateInTypeTemplateBound' => [
@@ -1525,6 +1643,23 @@ final class PurityTemplateTest extends TestCase
                 'assertions' => [
                     '$w' => 'Wrapper[pure]<int, string, Generator[pure]<int, string, mixed, int>>',
                 ],
+            ],
+            'omittedPurityArgumentTakesItsDefaultInTypeTemplateBounds' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @template TIterator as Traversable[TPurity]<TKey, TValue>
+                     * @psalm-purity-template TPurity(impure)
+                     */
+                    final class Wrapper {}
+
+                    /**
+                     * @param Wrapper<int, int, Iterator<int, int>> $w
+                     * @param IteratorIterator<int, string, ArrayIterator<int, string>> $i
+                     * @psalm-capabilities read-props
+                     */
+                    function f(Wrapper $w, IteratorIterator $i): void {}',
             ],
             'forwardedClassPurityTemplateOverrideUsesTheTemplate' => [
                 'code' => '<?php
@@ -2503,7 +2638,7 @@ final class PurityTemplateTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'callbackStoredByAMethodNotWideningThePurityTemplate' => [
@@ -3821,7 +3956,7 @@ final class PurityTemplateTest extends TestCase
                         return $f->getReturn();
                     }',
                 'error_message' => 'method Fiber::start requires io',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'classPurityTemplateInTypeTemplateBoundIsInferred' => [
@@ -3871,6 +4006,20 @@ final class PurityTemplateTest extends TestCase
                     /** @param Wrapper[pure]<int, int, Iterator[io]<int, int>> $w */
                     function f(Wrapper $w): void {}',
                 'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:32 - Extended template param TIterator of Wrapper[pure]<int, int, Iterator[io]<int, int>> expects type Traversable[pure]<int, int>, type Iterator[io]<int, int> given',
+            ],
+            'omittedPurityArgumentChecksTypeTemplateBoundsWithItsDefault' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey
+                     * @template TValue
+                     * @template TIterator as Traversable[TPurity]<TKey, TValue>
+                     * @psalm-purity-template TPurity(pure)
+                     */
+                    final class Wrapper {}
+
+                    /** @param Wrapper<int, int, Iterator[io]<int, int>> $w */
+                    function f(Wrapper $w): void {}',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:32 - Extended template param TIterator of Wrapper<int, int, Iterator[io]<int, int>> expects type Traversable[pure]<int, int>, type Iterator[io]<int, int> given',
             ],
             'classPurityTemplateInTypeTemplateBoundChecksExtends' => [
                 'code' => '<?php
@@ -4171,6 +4320,21 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-import-type Item from Items
                      * @template T as Item
+                     * @psalm-consistent-constructor
+                     */
+                    abstract class Repo {
+                        public function __construct() {}
+
+                        public static function make(): static {
+                            return new static();
+                        }
+                    }',
+                'error_message' => 'UnsafeGenericInstantiation',
+            ],
+            'newStaticOfClassWithTypeTemplateWithADefault' => [
+                'code' => '<?php
+                    /**
+                     * @template T = int
                      * @psalm-consistent-constructor
                      */
                     abstract class Repo {

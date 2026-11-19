@@ -15,10 +15,10 @@ final class ArrayColumnTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'arrayColumnObjectWithProperties' => [
             'code' => '<?php
@@ -149,10 +149,10 @@ final class ArrayColumnTest extends TestCase
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         yield 'arrayColumnWithArrayAndColumnNameNull' => [
             'code' => '<?php

@@ -8,9 +8,16 @@ use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_map;
+use function array_values;
+use function sort;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -27,9 +34,145 @@ final class CapabilitiesTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
+            'parentCallOfATraitMethodReturnsThisInEveryClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class FirstBase {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    class SecondBase {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    class ThirdBase {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    trait ForwardsToParent {
+                        /** @return $this */
+                        public function f(): static {
+                            return parent::f();
+                        }
+                    }
+
+                    final class First extends FirstBase {
+                        use ForwardsToParent;
+                    }
+
+                    final class Second extends SecondBase {
+                        use ForwardsToParent;
+                    }
+
+                    final class Third extends ThirdBase {
+                        use ForwardsToParent;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'parentSelfAndStaticCallsOfMethodReturningThisReturnThis' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Base {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        #[Override]
+                        public function f(): static {
+                            return parent::f();
+                        }
+
+                        /** @return $this */
+                        public function viaSelf(): static {
+                            return self::f();
+                        }
+
+                        /** @return $this */
+                        public function viaStatic(): static {
+                            return static::f();
+                        }
+
+                        /** @return $this */
+                        public function chained(): static {
+                            return parent::f()->f();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'staticReturnOfASubclassOfAPurityTemplatedClassIsTheCalledClass' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-purity-template P
+                     * @psalm-purity-template D
+                     */
+                    abstract class Base {
+                        final public static function create(): static {
+                            return new static();
+                        }
+
+                        final protected function __construct() {}
+                    }
+
+                    /**
+                     * @psalm-purity-template D
+                     * @extends Base[impure, D]
+                     */
+                    class Block extends Base {
+                        public function add(string $child): static {
+                            return $this;
+                        }
+                    }
+
+                    class Page extends Block {}
+
+                    final class AdminPage extends Page {}
+
+                    $page = AdminPage::create()->add("child");',
+                'assertions' => [
+                    '$page===' => 'AdminPage',
+                ],
+            ],
+            'pureGeneratorWithoutReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return iterable<int, int>
+                     * @psalm-pure
+                     */
+                    function gen() {
+                        yield 1;
+                    }
+
+                    final class Provider {
+                        /**
+                         * @return Generator<int, int, mixed, void>
+                         * @psalm-pure
+                         */
+                        public static function gen(): Generator {
+                            yield 1;
+                        }
+                    }',
+            ],
             'conditionalCapabilitiesTakeTheBranchTheArgumentsSelect' => [
                 'code' => '<?php
                     /** @psalm-capabilities ($seed is null ? io : pure) */
@@ -69,7 +212,7 @@ final class CapabilitiesTest extends TestCase
                 'code' => '<?php
                     use MongoDB\BSON\ObjectId;
                     use MongoDB\Driver\Cursor;
-                    use MongoDB\Driver\Monitoring\CommandSubscriber;
+                    use MongoDB\Driver\Monitoring\Subscriber;
                     use MongoDB\Driver\Server;
 
                     /** @psalm-pure */
@@ -93,7 +236,7 @@ final class CapabilitiesTest extends TestCase
                     }
 
                     /** @psalm-capabilities read-globals|write-globals */
-                    function subscribe(CommandSubscriber $subscriber): void {
+                    function subscribe(Subscriber $subscriber): void {
                         MongoDB\Driver\Monitoring\addSubscriber($subscriber);
                     }',
             ],
@@ -148,6 +291,32 @@ final class CapabilitiesTest extends TestCase
                     function readContainers(SplQueue $queue, ArrayObject $object): int {
                         return $queue->count() + (int) $queue->isEmpty() + $queue->top() + count($object) + $object[0];
                     }',
+            ],
+            'weakMapReadsAreMutationFreeAndWritesWriteTheMap' => [
+                'code' => '<?php
+                    /**
+                     * @param WeakMap<stdClass, int> $map
+                     * @psalm-mutation-free
+                     */
+                    function sumMap(WeakMap $map, stdClass $key): int {
+                        $sum = count($map) + (isset($map[$key]) ? 1 : 0) + (int) $map[$key];
+                        foreach ($map as $value) {
+                            $sum += $value;
+                        }
+                        return $sum;
+                    }
+
+                    /**
+                     * @param WeakMap<stdClass, int> $map
+                     * @psalm-capabilities read-props|write-props
+                     */
+                    function fillMap(WeakMap $map, stdClass $key): void {
+                        $map[$key] = 1;
+                        unset($map[new stdClass()]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'splObjectStorageWithVarStillRequiresWritingProps' => [
                 'code' => '<?php
@@ -236,6 +405,23 @@ final class CapabilitiesTest extends TestCase
                         return $sum;
                     }',
             ],
+            'itemOfAnIntersectionWithArrayAccessPassedByReference' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    /** @param Marker&ArrayAccess<int, int|null> $o */
+                    function castFirst(Marker $o): bool {
+                        return settype($o[0], "int");
+                    }',
+            ],
+            'itemOfAFreshArrayObjectPassedByReferenceIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function sortFirst(): bool {
+                        $object = new ArrayObject([[2, 1]]);
+                        return sort($object[0]);
+                    }',
+            ],
             'splHeapsAndFixedArraysOnlyRequireWritingTheirOwnContents' => [
                 'code' => '<?php
                     /**
@@ -276,7 +462,7 @@ final class CapabilitiesTest extends TestCase
                         return $sum;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingPureAnnotation'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'splWrappingIteratorsRequireWhatTheirInnerIteratorsDo' => [
@@ -359,6 +545,19 @@ final class CapabilitiesTest extends TestCase
                         $temp = new SplTempFileObject();
                         $temp->fwrite("line");
                         return $count;
+                    }',
+            ],
+            'temporaryFilesRequireIo' => [
+                'code' => '<?php
+                    /** @psalm-capabilities io */
+                    function copyToTemporaryFile(string $path): bool {
+                        $source = fopen($path, "r");
+                        $temp = tmpfile();
+                        if ($source === false || $temp === false) {
+                            return false;
+                        }
+
+                        return stream_copy_to_stream($source, $temp) !== false && tempnam("/tmp", "x") !== false;
                     }',
             ],
             'splObserverBindingItsPurityIsMutationFree' => [
@@ -517,6 +716,151 @@ final class CapabilitiesTest extends TestCase
                             echo "cleared";
                         }
                     }',
+            ],
+            'writesToAnotherObjectKeepDirectGettersNarrowedLikeProperties' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Other {
+                        private int $n = 0;
+                        public function touch(): int { return ++$this->n; }
+                    }
+                    final class Owner {
+                        public ?Other $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Other { return $this->child; }
+                    }
+                    function viaProperty(Owner $o, Other $x): void {
+                        if ($o->child !== null) {
+                            $x->touch();
+                            $o->child->touch();
+                        }
+                    }
+                    function viaGetter(Owner $o, Other $x): void {
+                        if ($o->getChild() !== null) {
+                            $x->touch();
+                            $o->getChild()->touch();
+                        }
+                    }
+                    final class Holder {
+                        public function __construct(public Owner $owner) {}
+                    }
+                    function nestedOwner(Holder $h, Other $x): void {
+                        if ($h->owner->getChild() !== null) {
+                            $x->touch();
+                            $h->owner->getChild()->touch();
+                        }
+                    }
+
+                    class Entity {
+                        protected ?Other $other = null;
+                        private int $total = 0;
+                        private ?string $label = null;
+                        /** @psalm-mutation-free */
+                        public function getOther(): ?Other { return $this->other; }
+                        public function add(int $amount, ?string $label = null): void {
+                            if ($amount < 0) {
+                                throw new InvalidArgumentException('negative');
+                            }
+                            $this->total += $amount;
+                            $this->label = $label ?? $this->label;
+                        }
+                    }
+                    function guardedSetterOfNonFinalClasses(Entity $a, Entity $b): void {
+                        if ($a->getOther() !== null) {
+                            $b->add(1);
+                            $a->getOther()->touch();
+                        }
+                    }
+
+                    final class Tx {
+                        /** @psalm-mutation-free */
+                        public function getNumber(): int { return 1; }
+                        /** @psalm-mutation-free */
+                        public function getUuid(): string { return 'x'; }
+                    }
+                    final class Result {
+                        private ?Tx $tx = null;
+                        /** @psalm-mutation-free */
+                        public function getTx(): ?Tx { return $this->tx; }
+                    }
+                    final class Response {
+                        private int $number = 0;
+                        private string $uuid = '';
+                        public function setNumber(int $n): void { $this->number = $n; }
+                        public function setUuid(string $u): void { $this->uuid = $u; }
+                    }
+                    function second(Result $result, Response $response): void {
+                        if ($result->getTx() !== null) {
+                            $response->setNumber($result->getTx()->getNumber());
+                            $response->setUuid($result->getTx()->getUuid());
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'callsWritingNothingKeepGetterResults' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Value {
+                        /** @var mixed */
+                        private $value;
+                        /** @param mixed $value */
+                        public function __construct($value) { $this->value = $value; }
+                        /** @return mixed */
+                        public function getValue() { return $this->value; }
+                        public function noop(): void {}
+                    }
+                    final class Checker {
+                        public function check(string $s): bool { return $s !== ''; }
+                    }
+                    final class Dumper {
+                        private function canBe(string $s): bool { return $s !== ''; }
+                        private function nothing(): void {}
+                        private function ind(string $s): string { return $s; }
+
+                        public function inCondition(Value $value): string {
+                            if (is_string($value->getValue()) && $this->canBe($value->getValue())) {
+                                return $this->ind($value->getValue());
+                            }
+                            return '';
+                        }
+                        public function inStatement(Value $value): string {
+                            if (is_string($value->getValue())) {
+                                $this->nothing();
+                                return $this->ind($value->getValue());
+                            }
+                            return '';
+                        }
+                        public function onTheGetterReceiver(Value $value): string {
+                            if (is_string($value->getValue())) {
+                                $value->noop();
+                                return $this->ind($value->getValue());
+                            }
+                            return '';
+                        }
+                        public function onAnotherReceiver(Value $value, Checker $checker): string {
+                            if (is_string($value->getValue()) && $checker->check($value->getValue())) {
+                                return $this->ind($value->getValue());
+                            }
+                            return '';
+                        }
+                    }
+                    PHP,
+            ],
+            'stubWithAnEmptyBodyMayWriteItsReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param ArrayObject<int, int> $ao */
+                    function resetFlags(ArrayObject $ao): void {
+                        if ($ao->getFlags() === ArrayObject::ARRAY_AS_PROPS) {
+                            $ao->setFlags(0);
+                            if ($ao->getFlags() === 0) {
+                                echo 'reset';
+                            }
+                        }
+                    }
+                    PHP,
             ],
             'mutatingAnotherObjectKeepsWhatPureClassMethodsReturned' => [
                 'code' => '<?php
@@ -1027,6 +1371,30 @@ final class CapabilitiesTest extends TestCase
                         return $i;
                     }',
             ],
+            'cloneWhoseCloneMethodOnlyWritesTheCopyIsFresh' => [
+                'code' => '<?php
+                    final class Counted {
+                        public int $uses = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function __clone() {
+                            $this->uses = 0;
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function use(): void {
+                            $this->uses++;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function copyCounted(Counted $counted): Counted {
+                        $copy = clone $counted;
+                        $copy->use();
+                        $copy->uses = 1;
+                        return $copy;
+                    }',
+            ],
             'pureClone' => [
                 'code' => '<?php
                     final class Point {
@@ -1056,6 +1424,122 @@ final class CapabilitiesTest extends TestCase
                     function greet(Name $n): string {
                         return "hello $n" . (string) $n;
                     }',
+            ],
+            'noToStringInStrictOrNonStringSearch' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<string> $names
+                     * @param array<int> $ids
+                     * @param list<Name> $known
+                     * @return list<array-key>
+                     */
+                    function find(Name $name, array $names, array $ids, array $known, string $s): array {
+                        return in_array($name, $known, true) || in_array($name, $ids) || in_array($s, ["name"])
+                            ? array_keys($names, $name, true)
+                            : [];
+                    }',
+            ],
+            'noToStringOfValuesNotComparedAsStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     * @param list<string> $strings
+                     * @param list<Name|string> $names_or_strings
+                     * @param list<Name|int> $names_or_ints
+                     * @param non-empty-list<Name> $some_names
+                     */
+                    function f(
+                        array $names,
+                        array $strings,
+                        array $names_or_strings,
+                        array $names_or_ints,
+                        array $some_names,
+                        string $s
+                    ): bool {
+                        $sorted = $names;
+                        sort($sorted);
+                        rsort($sorted, SORT_NUMERIC);
+
+                        return array_unique($names, SORT_REGULAR) !== []
+                            && array_unique($names, SORT_NUMERIC) !== []
+                            && in_array($s, $names_or_strings, true)
+                            && in_array(1, $names_or_ints)
+                            && implode(",", $strings) !== ""
+                            && array_diff_key($names, ["a"]) !== []
+                            && max($some_names) !== min($some_names[0], $some_names[0]);
+                    }',
+            ],
+            'noToStringOfCallbackInArrayDiffUassoc' => [
+                'code' => '<?php
+                    final class Comparer {
+                        public function __toString(): string { return "comparer"; }
+
+                        /** @psalm-pure */
+                        public function compare(int|string $a, int|string $b): int {
+                            return 0;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<string> $strings
+                     */
+                    function f(array $strings, Comparer $comparer): array {
+                        return array_diff_uassoc($strings, ["a"], [$comparer, "compare"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'pureToStringInStringConversionsOfValues' => [
+                'code' => '<?php
+                    final class Name {
+                        /** @psalm-pure */
+                        public function __toString(): string {
+                            return "name";
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(Name $name, array $names, string $s): bool {
+                        return strval($name) !== ""
+                            && implode(",", $names) !== ""
+                            && array_diff($names, ["a"]) !== []
+                            && array_unique($names) !== []
+                            && in_array($s, $names);
+                    }',
+            ],
+            'pureToStringInEchoPrintAndStringArguments' => [
+                'code' => '<?php
+                    final class Name {
+                        /** @psalm-pure */
+                        public function __toString(): string {
+                            return "name";
+                        }
+                    }
+
+                    /** @psalm-capabilities io */
+                    function show(Name $name, Name|int $maybe): void {
+                        echo $name, $maybe;
+                        print $name;
+                        echo strlen($name), sprintf("%s", $name), in_array($name, ["name"]) ? "y" : "n";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.0',
             ],
             'pureInvoke' => [
                 'code' => '<?php
@@ -1448,6 +1932,53 @@ final class CapabilitiesTest extends TestCase
                         return takesPure(function () use ($x): int {
                             return $x;
                         });
+                    }',
+            ],
+            'closureLiteralArgumentReadsAndWritesItsByRefCapturesInTheCallingScope' => [
+                'code' => '<?php
+                    /**
+                     * @param (Closure[_](int): void) $f
+                     * @psalm-pure
+                     */
+                    function each2(Closure $f): void {
+                        $f(1);
+                        $f(2);
+                    }
+
+                    /** @psalm-pure */
+                    function sum(): int {
+                        $total = 0;
+                        each2(static function (int $v) use (&$total): void {
+                            $total += $v;
+                        });
+                        array_map(static function (int $v) use (&$total): void {
+                            $total += $v;
+                        }, [1, 2]);
+                        return $total;
+                    }
+
+                    final class Tree {
+                        /** @param list<Tree> $children */
+                        public function __construct(private array $children, private int $value) {}
+
+                        /**
+                         * @param (Closure[_](Tree): void) $f
+                         * @psalm-capabilities read-props
+                         */
+                        public function eachChild(Closure $f): void {
+                            foreach ($this->children as $child) {
+                                $f($child);
+                            }
+                        }
+
+                        /** @psalm-capabilities read-props */
+                        public function total(): int {
+                            $total = $this->value;
+                            $this->eachChild(static function (Tree $child) use (&$total): void {
+                                $total += $child->total();
+                            });
+                            return $total;
+                        }
                     }',
             ],
             'closureWritingByRefParamNeedsWriteRefsFromTheEnclosingScope' => [
@@ -1872,6 +2403,97 @@ final class CapabilitiesTest extends TestCase
                         return sumCounter($c) + sumBag($b) + sumCounter($b->getIterator());
                     }',
             ],
+            'iteratorPurityTemplateGivenOnByAnAbstractClassIsBoundBySubclasses' => [
+                'code' => '<?php
+                    /**
+                     * @template V
+                     * @psalm-purity-template P
+                     * @implements Iterator[P]<int, V>
+                     */
+                    abstract class Base implements Iterator {}
+
+                    /**
+                     * @template V
+                     * @psalm-purity-template P
+                     * @extends Base[P]<V>
+                     */
+                    final class Wrapper extends Base {
+                        /**
+                         * @param Iterator[P]<int, V> $inner
+                         * @psalm-mutation-free
+                         */
+                        public function __construct(private readonly Iterator $inner) {}
+
+                        /**
+                         * @return V|null
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function current(): mixed { return $this->inner->current(); }
+
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function key(): ?int { return $this->inner->key(); }
+
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function next(): void { $this->inner->next(); }
+
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function rewind(): void { $this->inner->rewind(); }
+
+                        /**
+                         * @psalm-capabilities read-props
+                         * @psalm-purity-from-template P
+                         */
+                        public function valid(): bool { return $this->inner->valid(); }
+                    }
+
+                    /**
+                     * @param Wrapper[pure]<string> $wrapper
+                     * @return Wrapper[pure]<string>
+                     * @psalm-pure
+                     */
+                    function rewrap(Wrapper $wrapper): Wrapper {
+                        return new Wrapper($wrapper);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'lowerBoundOfAPurityTemplateBindingAnAbstractIteratorsTemplateCovers' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-purity-template P
+                     * @implements Iterator[P]<int, int>
+                     */
+                    abstract class Base implements Iterator {}
+
+                    /**
+                     * @psalm-purity-template write-this-props <= P
+                     * @extends Base[P]
+                     */
+                    final class Counter extends Base {
+                        private int $i = 0;
+                        /** @psalm-mutation-free */
+                        public function current(): int { return $this->i; }
+                        /** @psalm-mutation-free */
+                        public function key(): int { return $this->i; }
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function next(): void { $this->i++; }
+                        /** @psalm-mutation-free */
+                        public function rewind(): void {}
+                        /** @psalm-mutation-free */
+                        public function valid(): bool { return $this->i < 3; }
+                    }',
+            ],
             'iteratingAPureIterableIsPure' => [
                 'code' => '<?php
                     /**
@@ -2218,6 +2840,380 @@ final class CapabilitiesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'pureFunctionMayReadPropertiesOfAnObjectItCreated' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props */
+                    final class Counter {
+                        public int $n = 0;
+
+                        public function inc(): void {
+                            $this->n++;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function countTwice(): int {
+                        $counter = new Counter();
+                        $counter->inc();
+                        $counter->inc();
+                        if ($counter->n !== 2) {
+                            return $counter->n;
+                        }
+                        return $counter->n + (new Counter())->n;
+                    }',
+            ],
+            'closureMutatingAParamCostsWriteProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $count = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function increment(): int {
+                            return ++$this->count;
+                        }
+                    }
+
+                    /**
+                     * @param list<Counter> $counters
+                     * @return list<int>
+                     * @psalm-capabilities write-props
+                     */
+                    function incrementAll(array $counters): array {
+                        return array_map(static fn(Counter $counter): int => $counter->increment(), $counters);
+                    }',
+            ],
+            'closureReadingAParamIsPure' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $count = 0;
+
+                        /** @psalm-mutation-free */
+                        public function get(): int {
+                            return $this->count;
+                        }
+                    }
+
+                    /**
+                     * @param list<Counter> $counters
+                     * @return list<int>
+                     * @psalm-pure
+                     */
+                    function getAll(array $counters): array {
+                        return array_map(static fn(Counter $counter): int => $counter->get(), $counters);
+                    }',
+            ],
+            'objectsWhoseConstructorKeepsNoReferenceToThemAreFresh' => [
+                'code' => '<?php
+                    final class Handler {
+                        private ?string $formatter = null;
+                        public string $label = "";
+
+                        /** @psalm-mutation-free */
+                        public function __construct(public readonly string $path) {}
+
+                        /** @psalm-capabilities write-this-props */
+                        public function setFormatter(string $formatter): void {
+                            $this->formatter = $formatter;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function getFormatter(): ?string {
+                            return $this->formatter;
+                        }
+                    }
+
+                    final class EnvHandler {
+                        private ?string $formatter = null;
+                        public string $label = "";
+                        public readonly string $path;
+
+                        /** @psalm-capabilities read-globals */
+                        public function __construct() {
+                            $this->path = (string) getenv("LOG_PATH");
+                        }
+
+                        /** @psalm-capabilities write-this-props */
+                        public function setFormatter(string $formatter): void {
+                            $this->formatter = $formatter;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function getFormatter(): ?string {
+                            return $this->formatter;
+                        }
+                    }
+
+                    final class NoConstructor {
+                        public string $label = "";
+
+                        /** @psalm-capabilities write-this-props */
+                        public function setLabel(string $label): void {
+                            $this->label = $label;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function makeHandler(): Handler {
+                        $handler = new Handler("a");
+                        $handler->setFormatter("b");
+                        $handler->label = "c";
+                        (new Handler("d"))->setFormatter("e");
+                        return $handler;
+                    }
+
+                    /** @psalm-pure */
+                    function makeNoConstructor(): NoConstructor {
+                        $object = new NoConstructor();
+                        $object->setLabel("a");
+                        return $object;
+                    }
+
+                    /** @psalm-capabilities read-globals */
+                    function makeEnvHandler(): EnvHandler {
+                        $handler = new EnvHandler();
+                        $handler->setFormatter("a");
+                        $handler->label = "b";
+                        return $handler;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'propertiesOfObjectsWhoseConstructorKeepsNoReferenceToThemMayBeRead' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+                        public ?Counter $next = null;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function inc(): void {
+                            $this->n++;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function countTwice(): int {
+                        $counter = new Counter();
+                        $counter->n = 1;
+                        $counter->inc();
+                        return $counter->n + (new Counter())->n;
+                    }
+
+                    /** @psalm-pure */
+                    function freshOrNull(): ?int {
+                        $counter = new Counter();
+                        unset($counter->next);
+                        return isset($counter->next) ? null : $counter->n;
+                    }',
+            ],
+            'objectsWhoseUnannotatedConstructorOnlyAssignsItsParametersAreFresh' => [
+                'code' => '<?php
+                    final class Empty_ {
+                        public int $n = 0;
+
+                        public function __construct() {}
+                    }
+
+                    final class Promoted {
+                        public int $n = 0;
+
+                        public function __construct(public string $label, public array $tags = ["a" => 1]) {}
+                    }
+
+                    final class Assigned {
+                        public int $n = 0;
+                        private string $label;
+
+                        public function __construct(string $label, int $n = -1) {
+                            $this->label = $label;
+                            $this->n = $n;
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function getLabel(): string {
+                            return $this->label;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function useFresh(): string {
+                        $empty = new Empty_();
+                        $empty->n = 1;
+                        $promoted = new Promoted("a");
+                        $promoted->n = $empty->n;
+                        $assigned = new Assigned($promoted->label);
+                        $assigned->n = $promoted->n;
+                        return $assigned->getLabel() . $assigned->n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'objectsOfAClassRedeclaringWithoutHooksWhatAnInheritedTrivialConstructorAssignsAreFresh' => [
+                'code' => '<?php
+                    class Base {
+                        public function __construct(public string $label) {}
+                    }
+
+                    final class Plain extends Base {
+                        public string $label = "";
+                    }
+
+                    /** @psalm-pure */
+                    function makePlain(): Plain {
+                        $plain = new Plain("a");
+                        $plain->label = "b";
+                        return $plain;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'theCloneOfAnObjectReachedFromGlobalStateIsFresh' => [
+                'code' => '<?php
+                    final class Inner {
+                        public int $n = 0;
+                    }
+
+                    final class Config {
+                        public string $env = "prod";
+                        public Inner $inner;
+                        public static ?Config $instance = null;
+
+                        /** @psalm-mutation-free */
+                        public function __construct() {
+                            $this->inner = new Inner();
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|read-globals */
+                    function copyConfig(): ?Config {
+                        $config = Config::$instance;
+                        if ($config === null) {
+                            return null;
+                        }
+                        $copy = clone $config;
+                        $copy->env = "dev";
+                        return $copy;
+                    }',
+            ],
+            'anElementOfAnArrayAccessPropertyIsWrittenByItsOffsetMethodsOnly' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, int> */
+                    final class Bag implements ArrayAccess {
+                        /** @var array<string, int> */
+                        private array $items = [];
+
+                        /** @psalm-mutation-free */
+                        public function offsetExists(mixed $offset): bool {
+                            return isset($this->items[$offset]);
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function offsetGet(mixed $offset): int {
+                            return $this->items[$offset] ?? 0;
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function offsetSet(mixed $offset, mixed $value): void {
+                            if ($offset !== null) {
+                                $this->items[$offset] = $value;
+                            }
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function offsetUnset(mixed $offset): void {
+                            unset($this->items[$offset]);
+                        }
+                    }
+
+                    final class Holder {
+                        /** @psalm-mutation-free */
+                        public function __construct(private readonly Bag $bag) {}
+
+                        /** @psalm-capabilities read-props|write-props */
+                        public function add(string $key, int $value): void {
+                            $this->bag[$key] = $value;
+                            unset($this->bag["old"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'reflectionClassSubclassReadsItsOwnProperties' => [
+                'code' => '<?php
+                    /** @extends ReflectionClass<object> */
+                    final class MyClassReflection extends ReflectionClass {
+                        /** @var class-string */
+                        private string $cachedName = stdClass::class;
+
+                        /**
+                         * @return class-string
+                         * @psalm-capabilities read-props
+                         */
+                        #[Override]
+                        public function getName(): string {
+                            return $this->cachedName;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'reflectionSubclassesOfFunctionLikesAndPropertiesReadTheirOwnProperties' => [
+                'code' => '<?php
+                    final class MyMethodReflection extends ReflectionMethod {
+                        private bool $cachedIsStatic = false;
+
+                        /** @psalm-capabilities read-props */
+                        #[Override]
+                        public function isStatic(): bool {
+                            return $this->cachedIsStatic;
+                        }
+                    }
+
+                    final class MyFunctionReflection extends ReflectionFunction {
+                        private bool $cachedIsGenerator = false;
+
+                        /** @psalm-capabilities read-props */
+                        #[Override]
+                        public function isGenerator(): bool {
+                            return $this->cachedIsGenerator;
+                        }
+                    }
+
+                    final class MyPropertyReflection extends ReflectionProperty {
+                        private bool $cachedIsPublic = false;
+
+                        /** @psalm-capabilities read-props */
+                        #[Override]
+                        public function isPublic(): bool {
+                            return $this->cachedIsPublic;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'pureFunctionsMayCallReflectionGetters' => [
+                'code' => '<?php
+                    /**
+                     * @param ReflectionClass<object> $class
+                     * @psalm-pure
+                     */
+                    function className(ReflectionClass $class): string {
+                        return $class->getName();
+                    }
+
+                    /** @psalm-pure */
+                    function isStaticMethod(ReflectionMethod $method): bool {
+                        return $method->isStatic();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
         ];
     }
 
@@ -2225,9 +3221,813 @@ final class CapabilitiesTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'impureToStringCalledImplicitlyByAnArgument' => [
+                'code' => '<?php
+                    final class Imp {
+                        private int $n = 0;
+
+                        public function __toString(): string {
+                            $this->n++;
+
+                            return (string) $this->n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function takesString(string $s): string {
+                        return $s;
+                    }
+
+                    /** @psalm-pure */
+                    function f(Imp $o): string {
+                        return takesString($o);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => ['ImplicitToStringCast'],
+            ],
+            'staticCallOfMethodNotReturningThisIsNotThis' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Base {
+                        public function copy(): static {
+                            return clone $this;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @return $this */
+                        public function f(): static {
+                            return parent::copy();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'itemOfAnArrayObjectPassedByReferenceWritesIt' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayObject<int, list<int>> $object
+                     * @psalm-pure
+                     */
+                    function sortFirst(ArrayObject $object): bool {
+                        return sort($object[0]);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:37 - The context is pure but method ArrayObject::offsetSet requires write-props',
+            ],
+            'itemOfAnArrayObjectPassedByReferenceWritesItWhenReadingProps' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayObject<string, array<array-key, string>> $object
+                     * @psalm-capabilities read-props
+                     */
+                    function matchInto(ArrayObject $object): void {
+                        preg_match("/x/", "x", $object["m"]);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:48 - The context is read-props but method ArrayObject::offsetSet requires write-props',
+            ],
+            'freshReceiverMustForgetMemoizedGetterAfterIncrement' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Counter {
+                        private int $n = 0;
+                        /** @psalm-mutation-free */
+                        public function get(): int { return $this->n; }
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function inc(): void { ++$this->n; }
+                    }
+                    /** @return 0 */
+                    function afterIncrement(): int {
+                        $c = new Counter();
+                        if ($c->get() !== 0) {
+                            return 0;
+                        }
+                        $c->inc();
+                        return $c->get();
+                    }
+                    PHP,
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'unsetScalarPropertyCanDispatchToMagicSetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Mutator {
+                        private int $n = 0;
+                        public function __construct(private Owner $owner) {}
+                        public function forgetN(): void { unset($this->n); }
+                        public function __set(string $name, mixed $value): void {
+                            $this->owner->child = null;
+                        }
+                        public function setN(int $n): void { $this->n = $n; }
+                    }
+                    function afterMagicSet(Owner $owner, Mutator $m): Child {
+                        $m->forgetN();
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $m->setN(1);
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'magicOwnerGetterMayReadMutatedState' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Counter {
+                        public int $n = 0;
+                        public function inc(): int { return ++$this->n; }
+                    }
+                    final class Owner {
+                        public ?Child $child = null;
+                        public function __construct(private Counter $counter) {
+                            unset($this->child);
+                        }
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                        /** @psalm-mutation-free */
+                        public function __get(string $name): ?Child {
+                            return $this->counter->n === 0 ? new Child() : null;
+                        }
+                    }
+                    function afterIncrement(Owner $owner, Counter $counter): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $counter->inc();
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'inheritedSetterCanDispatchToSubclassPropertyHook' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    class BaseMutator {
+                        public int $n = 0;
+                        public function setN(int $n): void { $this->n = $n; }
+                    }
+                    final class Mutator extends BaseMutator {
+                        public function __construct(public Owner $owner) {}
+                        public int $n {
+                            set(int $value) { $this->owner->child = null; }
+                        }
+                    }
+                    function afterInheritedSet(Owner $owner, Mutator $m): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $m->setN(1);
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'differentFinalClassesCanShareScalarPropertyByReference' => [
+                'code' => '<?php
+                    final class A {
+                        public ?string $value = "x";
+                        /** @psalm-mutation-free */
+                        public function getValue(): ?string { return $this->value; }
+                    }
+                    final class B {
+                        public ?string $value = "x";
+                        public function clear(): void { $this->value = null; }
+                    }
+                    function getAfterClear(A $a, B $b): string {
+                        if ($a->getValue() === null) {
+                            return "";
+                        }
+                        // Even different final classes may share a scalar reference:
+                        // $b->value =& $a->value;
+                        $b->clear();
+                        return $a->getValue();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'scalarGettersOfUnrelatedClassesCanAliasByReference' => [
+                'code' => '<?php
+                    final class A {
+                        public string $value = "x";
+                        /** @psalm-mutation-free */
+                        public function getValue(): string { return $this->value; }
+                    }
+                    final class B {
+                        public string $value = "x";
+                        public function setValue(string $v): void { $this->value = $v; }
+                    }
+                    /** @return "x" */
+                    function afterSet(A $a, B $b): string {
+                        if ($a->getValue() !== "x") {
+                            return "x";
+                        }
+                        // Both properties can be linked with $b->value =& $a->value.
+                        $b->setValue("y");
+                        return $a->getValue();
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'sameReceiverStillInvalidatesObjectGetter' => [
+                'code' => '<?php
+                    final class Box {
+                        private ?stdClass $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?stdClass { return $this->child; }
+                        public function clear(): void { $this->child = null; }
+                    }
+                    function afterClear(Box $a, Box $b): stdClass {
+                        if ($a->getChild() === null) {
+                            return new stdClass();
+                        }
+                        $b->clear();
+                        return $a->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'mutatorCallingAnotherMethodMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                        public function clear(): void { $this->child = null; }
+                    }
+                    final class Other {
+                        private int $n = 0;
+                        public function __construct(private Owner $owner) {}
+                        public function touch(): void {
+                            ++$this->n;
+                            $this->owner->clear();
+                        }
+                    }
+                    function afterTouch(Owner $owner, Other $other): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $other->touch();
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'getterReadingMoreThanItsPropertyMustBeForgotten' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Counter {
+                        public int $n = 0;
+                        public function inc(): void { ++$this->n; }
+                    }
+                    final class Owner {
+                        public ?Child $child = null;
+                        public function __construct(private Counter $counter) {}
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->counter->n === 0 ? $this->child : null; }
+                    }
+                    function afterIncrement(Owner $owner, Counter $counter): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $counter->inc();
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'getterOnWhatTheReceiverHoldsMustBeForgotten' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Holder {
+                        public Owner $owner;
+                        public function __construct() { $this->owner = new Owner(); }
+                        public function replace(Owner $owner): void { $this->owner = $owner; }
+                    }
+                    function afterReplace(Holder $h, Owner $empty): Child {
+                        if ($h->owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $h->replace($empty);
+                        return $h->owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'mutatorWritingByReferenceMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Other {
+                        private int $n = 0;
+                        public function take(?Child &$slot): void {
+                            ++$this->n;
+                            $slot = null;
+                        }
+                    }
+                    function afterTake(Owner $owner, Other $other): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $other->take($owner->child);
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'mutatorCallingAnImpureClosureOfItsPurityTemplateMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Runner {
+                        private int $runs = 0;
+                        /**
+                         * @psalm-capabilities read-props|write-this-props
+                         * @psalm-purity-template P
+                         * @param Closure[P](): void $f
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(Closure $f): void {
+                            ++$this->runs;
+                            $f();
+                        }
+                    }
+                    function afterRun(Owner $owner, Runner $runner): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $runner->run(function () use ($owner): void {
+                            $owner->child = null;
+                        });
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'overriddenMutatorMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    class Counter {
+                        private int $n = 0;
+                        public function touch(): void { ++$this->n; }
+                    }
+                    final class ClearingCounter extends Counter {
+                        public function __construct(private Owner $owner) {}
+                        public function touch(): void { $this->owner->child = null; }
+                    }
+                    function afterTouch(Owner $owner, Counter $counter): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $counter->touch();
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'overriddenMethodWritingNothingMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    class Base {
+                        protected function hook(Owner $owner): void {}
+                        public function afterHook(Owner $owner): Child {
+                            if ($owner->getChild() === null) {
+                                return new Child();
+                            }
+                            $this->hook($owner);
+                            return $owner->getChild();
+                        }
+                    }
+                    final class Clearing extends Base {
+                        protected function hook(Owner $owner): void { $owner->child = null; }
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'overrideFromATraitMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    trait Clears {
+                        protected function hook(Owner $owner): void { $owner->child = null; }
+                    }
+                    class Base {
+                        protected function hook(Owner $owner): void {}
+                        public function afterHook(Owner $owner): Child {
+                            if ($owner->getChild() === null) {
+                                return new Child();
+                            }
+                            $this->hook($owner);
+                            return $owner->getChild();
+                        }
+                    }
+                    final class Clearing extends Base {
+                        use Clears;
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'methodReturningByReferenceMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Holder {
+                        private Owner $owner;
+                        public function __construct(Owner $owner) { $this->owner = $owner; }
+                        public function &slot(): ?Child { return $this->owner->child; }
+                    }
+                    function afterWrite(Owner $owner, Holder $holder): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $slot = &$holder->slot();
+                        $slot = null;
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'methodSpreadingATraversableMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Drainer {
+                        /** @param Traversable<int, int> $items */
+                        public function drain(Traversable $items): array { return [...$items]; }
+                    }
+                    /** @return Generator<int, int> */
+                    function clearing(Owner $owner): Generator {
+                        $owner->child = null;
+                        yield 1;
+                    }
+                    function afterDrain(Owner $owner, Drainer $drainer): Child {
+                        $items = clearing($owner);
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $drainer->drain($items);
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'methodWritingAByReferenceParameterMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child ?? null; }
+                    }
+                    final class Clearer {
+                        public function clear(?Child &$slot): void { $slot = null; }
+                    }
+                    function afterClear(Owner $owner, Clearer $clearer): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $clearer->clear($owner->child);
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'mutatorWritingThroughAnotherMethodMustNotKeepGetterOfAnAlias' => [
+                'code' => '<?php
+                    final class Box {
+                        private int $n = 0;
+                        private ?stdClass $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?stdClass { return $this->child; }
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function touch(): void {
+                            ++$this->n;
+                            $this->clearChild();
+                        }
+                        /** @psalm-capabilities read-props|write-this-props */
+                        private function clearChild(): void { $this->child = null; }
+                    }
+                    function afterTouch(Box $a, Box $b): stdClass {
+                        if ($a->getChild() === null) {
+                            return new stdClass();
+                        }
+                        $b->touch();
+                        return $a->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'differentlyNamedPropertiesOfCompatibleTypesCanShareAReference' => [
+                'code' => '<?php
+                    final class A {
+                        public ?string $value = "x";
+                        /** @psalm-mutation-free */
+                        public function getValue(): ?string { return $this->value; }
+                    }
+                    final class B {
+                        public ?string $slot = "x";
+                        public function clear(): void { $this->slot = null; }
+                    }
+                    function getAfterClear(A $a, B $b): string {
+                        if ($a->getValue() === null) {
+                            return "";
+                        }
+                        // $b->slot =& $a->value;
+                        $b->clear();
+                        return $a->getValue();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'overriddenGetterMustBeForgotten' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Counter {
+                        public int $n = 0;
+                        public function inc(): void { ++$this->n; }
+                    }
+                    class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class CountingOwner extends Owner {
+                        public function __construct(private Counter $counter) {}
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->counter->n === 0 ? $this->child : null; }
+                    }
+                    function afterIncrement(Owner $owner, Counter $counter): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $counter->inc();
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'inheritedGetterOfAPropertyRedeclaredWithAHookMustBeForgotten' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Counter {
+                        public int $n = 0;
+                        public function inc(): void { ++$this->n; }
+                    }
+                    class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class HookedOwner extends Owner {
+                        public function __construct(private Counter $counter) {}
+                        public ?Child $child = null {
+                            get => $this->counter->n === 0 ? $this->child : null;
+                        }
+                    }
+                    function afterIncrement(HookedOwner $owner, Counter $counter): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $counter->inc();
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'exceptionConstructedAndCaughtByTheMutatorMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class ResetException extends Exception {
+                        public function __construct(Owner $owner) {
+                            $owner->child = null;
+                            parent::__construct();
+                        }
+                    }
+                    final class Other {
+                        private int $n = 0;
+                        public function touch(Owner $owner): void {
+                            ++$this->n;
+                            try {
+                                throw new ResetException($owner);
+                            } catch (ResetException $e) {}
+                        }
+                    }
+                    function afterTouch(Owner $owner, Other $other): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $other->touch($owner);
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'mutatorWithExternalEffectsMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Other {
+                        private int $n = 0;
+                        public function touch(Owner $owner): void {
+                            ++$this->n;
+                            $owner->child = null;
+                        }
+                    }
+                    function afterTouch(Owner $owner, Other $other): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $other->touch($owner);
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'itemOfAnArrayObjectPassedByReferenceForgetsMemoizedResultsOfItsMethods' => [
+                'code' => '<?php
+                    /**
+                     * @extends ArrayObject<int, list<int>>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class Lists extends ArrayObject {
+                        /** @psalm-capabilities read-props */
+                        public function first(): int {
+                            return $this[0][0];
+                        }
+                    }
+
+                    /** @return 2 */
+                    function firstAfterSorting(Lists $o): int {
+                        if ($o->first() !== 2) {
+                            return 2;
+                        }
+
+                        sort($o[0]);
+                        return $o->first();
+                    }',
+                'error_message' => 'LessSpecificReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:32',
+            ],
+            'itemOfAnArrayObjectPassedByReferenceForgetsMemoizedResultsOfOtherObjects' => [
+                'code' => '<?php
+                    final class Holder {
+                        public function __construct(private ?string $x) {}
+
+                        /** @psalm-mutation-free */
+                        public function getX(): ?string {
+                            return $this->x;
+                        }
+                    }
+
+                    function sortedX(Holder $h): string {
+                        if ($h->getX() === null) {
+                            return "";
+                        }
+
+                        /** @var ArrayObject<int, list<int>> */
+                        $o = new ArrayObject($h);
+                        sort($o[0]);
+                        return $h->getX();
+                    }',
+                'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:32',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfAnObjectWithoutOffsetSetPassedByReference' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props */
+                    final class ReadOnlyBox {
+                        /**
+                         * @return list<int>
+                         * @psalm-pure
+                         */
+                        public function offsetGet(int $key): array {
+                            return [2, 1];
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function sortFirst(ReadOnlyBox $o): bool {
+                        return sort($o[0]);
+                    }',
+                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:37 - Method ReadOnlyBox::offsetSet does not exist',
+            ],
+            'itemOfAnIntersectionWithArrayObjectPassedByReferenceWritesIt' => [
+                'code' => '<?php
+                    /**
+                     * @param Countable&ArrayObject<int, list<int>> $object
+                     * @psalm-pure
+                     */
+                    function sortFirst($object): bool {
+                        return sort($object[0]);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:37 - The context is pure but method ArrayObject::offsetSet requires write-props',
+            ],
+            'itemOfAnObjectWithAPrivateOffsetSetPassedByReference' => [
+                'code' => '<?php
+                    final class ReadOnlyBox {
+                        /** @return list<int> */
+                        public function offsetGet(int $key): array {
+                            return [2, 1];
+                        }
+
+                        private function offsetSet(int $key, ?array $value): void {}
+                    }
+
+                    function sortFirst(ReadOnlyBox $o): bool {
+                        return sort($o[0]);
+                    }',
+                'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:37',
+            ],
+            'itemOfAnObjectWithMagicMethodsPassedByReference' => [
+                'code' => '<?php
+                    final class MagicBox {
+                        /** @return list<int> */
+                        public function offsetGet(int $key): array {
+                            return [1];
+                        }
+
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    function sortFirst(MagicBox $o): bool {
+                        return sort($o[0]);
+                    }',
+                'error_message' => 'UndefinedMagicMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:37 - Magic method MagicBox::offsetset does not exist',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfThisArrayObjectPassedByReferenceWritesWhatAnAssignmentWould' => [
+                'code' => '<?php
+                    /**
+                     * @extends ArrayObject<int, list<int>>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class Lists extends ArrayObject {
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function sortFirst(): bool {
+                            return sort($this[0]);
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:41 - The context is read-props|write-this-props but method Lists::offsetSet requires write-this-props|write-props',
+            ],
+            'itemOfAnArrayObjectBackedByAnObjectPassedByReferenceWritesIt' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function wrap(stdClass $storage): int {
+                        $object = new ArrayObject($storage);
+                        settype($object["key"], "int");
+                        return count($object);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33 - The context is pure but method ArrayObject::offsetSet requires write-props',
+            ],
             'conditionalCapabilitiesOfAFunctionCalledWithoutTheArgument' => [
                 'code' => '<?php
                     /** @psalm-capabilities ($seed is null ? io : pure) */
@@ -2421,6 +4221,20 @@ final class CapabilitiesTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'writingACallersWeakMapRequiresWriteProps' => [
+                'code' => '<?php
+                    /**
+                     * @param WeakMap<stdClass, int> $map
+                     * @psalm-mutation-free
+                     */
+                    function add(WeakMap $map, stdClass $key): int {
+                        $map[$key] = 1;
+                        return 1;
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - The context is read-props but method WeakMap::offsetSet requires write-props',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'writingACallersSplQueueRequiresWriteProps' => [
                 'code' => '<?php
                     /**
@@ -2443,6 +4257,26 @@ final class CapabilitiesTest extends TestCase
                         return $storage->serialize();
                     }',
                 'error_message' => 'ImpureMethodCall',
+            ],
+            'reflectionSubclassesMayNotWriteWhenOverridingGetters' => [
+                'code' => '<?php
+                    /** @extends ReflectionClass<object> */
+                    final class CountingReflection extends ReflectionClass {
+                        private int $calls = 0;
+
+                        /**
+                         * @return class-string
+                         * @psalm-capabilities read-props|write-this-props
+                         */
+                        #[Override]
+                        public function getName(): string {
+                            ++$this->calls;
+                            return parent::getName();
+                        }
+                    }',
+                'error_message' => 'ReflectionClass::getName is read-props, but CountingReflection::getName additionally requires write-this-props',
+                'error_levels' => [],
+                'php_version' => '8.3',
             ],
             'splObjectStorageSubclassesKeepItsContract' => [
                 'code' => '<?php
@@ -2821,6 +4655,14 @@ final class CapabilitiesTest extends TestCase
                         return filesize($file) === 0;
                     }',
                 'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on filesize requires io',
+            ],
+            'tmpfileRequiresIo' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function makeTemporaryFile(): bool {
+                        return tmpfile() !== false;
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - The context is pure but function call on tmpfile requires io',
             ],
             'isUploadedFileReadsGlobals' => [
                 'code' => '<?php
@@ -3390,6 +5232,55 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImmutableDependency',
             ],
+            'cloneWhoseCloneMethodStoresTheCopyIsNotFresh' => [
+                'code' => '<?php
+                    final class Registered {
+                        /** @var list<Registered> */
+                        public static array $all = [];
+
+                        public int $uses = 0;
+
+                        /** @psalm-capabilities read-props|read-globals|write-globals */
+                        public function __clone() {
+                            self::$all[] = $this;
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function use(): void {
+                            $this->uses++;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|read-globals|write-globals */
+                    function copyRegistered(Registered $registered): Registered {
+                        $copy = clone $registered;
+                        $copy->use();
+                        return $copy;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'writingACloneWhoseCloneMethodStoresTheCopy' => [
+                'code' => '<?php
+                    final class Registered {
+                        /** @var list<Registered> */
+                        public static array $all = [];
+
+                        public int $uses = 0;
+
+                        /** @psalm-capabilities read-props|read-globals|write-globals */
+                        public function __clone() {
+                            self::$all[] = $this;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|read-globals|write-globals */
+                    function copyRegistered(Registered $registered): Registered {
+                        $copy = clone $registered;
+                        $copy->uses = 1;
+                        return $copy;
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
             'impureCloneMethod' => [
                 'code' => '<?php
                     final class Point {
@@ -3434,6 +5325,602 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall',
             ],
+            'impureToStringInEcho' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-capabilities io */
+                    function show(Name $name): void {
+                        echo $name;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInEchoOfUnion' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-capabilities io */
+                    function show(Name|int $name): void {
+                        echo $name;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInPrint' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-capabilities io */
+                    function show(Name $name): void {
+                        print $name;
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInSprintfArgument' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function format(Name $name): string {
+                        return sprintf("%s", $name);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInLooseInArray' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function isKnown(Name $name): bool {
+                        return in_array($name, ["name"]);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInInArrayNotKnownToBeStrict' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function isKnown(Name $name, bool $strict): bool {
+                        return in_array(needle: $name, haystack: ["name"], strict: $strict);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInLooseArraySearch' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<string> $names
+                     */
+                    function find(Name $name, array $names): int|string|false {
+                        return array_search($name, $names);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInLooseArrayKeys' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<string> $names
+                     * @return list<array-key>
+                     */
+                    function find(Name $name, array $names): array {
+                        return array_keys($names, $name);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInStrval' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function f(Name $name): string {
+                        return strval($name);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInImplodeValues' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names): string {
+                        return implode(",", $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInImplodeCalledInAnotherCase' => [
+                'code' => '<?php
+                    namespace App;
+
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names): string {
+                        return \Implode(",", $names);
+                    }',
+                'error_message' => 'possibly-mutating method App\Name::__toString',
+            ],
+            'impureToStringInLooseInArrayCalledInAnotherCase' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function isKnown(Name $name): bool {
+                        return In_Array($name, ["name"]);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInJoinWithoutSeparator' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array{Name, string} $names
+                     */
+                    function f(array $names): string {
+                        return join($names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInImplodeOfTemplatedArray' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @template T of list<Name>
+                     * @param T $names
+                     */
+                    function f(array $names): string {
+                        return implode(separator: ",", array: $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInVsprintfValues' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names): string {
+                        return vsprintf("%s", $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => ['ImplicitToStringCast'],
+            ],
+            'impureToStringInVfprintfValues' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-capabilities io
+                     * @param resource $stream
+                     * @param list<Name> $names
+                     */
+                    function f($stream, array $names): void {
+                        vfprintf($stream, "%s", $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => ['ImplicitToStringCast'],
+            ],
+            'impureToStringInArrayDiffOfLaterArray' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<string> $strings
+                     * @param array<Name> $names
+                     */
+                    function f(array $strings, array $names): array {
+                        return array_diff($strings, ["a"], $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInArrayIntersectAssoc' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     */
+                    function f(array $names): array {
+                        return array_intersect_assoc($names, ["a"]);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInArrayDiffUassocValues' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     */
+                    function f(array $names): array {
+                        return array_diff_uassoc($names, ["a"], static fn(int|string $a, int|string $b): int => 0);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInArrayFillKeys' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names): array {
+                        return array_fill_keys($names, 1);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => ['InvalidArgument', 'ArgumentTypeCoercion'],
+            ],
+            'impureToStringInArrayUnique' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     */
+                    function f(array $names): array {
+                        return array_unique($names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInArrayUniqueWithUnknownFlags' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     */
+                    function f(array $names, int $flags): array {
+                        return array_unique($names, $flags);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInSortAsStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     * @return list<Name>
+                     */
+                    function f(array $names): array {
+                        sort($names, SORT_STRING | SORT_FLAG_CASE);
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInNaturalSort' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     * @return list<Name>
+                     */
+                    function f(array $names): array {
+                        rsort($names, SORT_NATURAL);
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInCaseInsensitiveNaturalSort' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     * @return array<Name>
+                     */
+                    function f(array $names): array {
+                        asort($names, SORT_NATURAL | SORT_FLAG_CASE);
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInNatsort' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     * @return array<Name>
+                     */
+                    function f(array $names): array {
+                        natsort($names);
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInNatcasesort' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     * @return array<Name>
+                     */
+                    function f(array $names): array {
+                        natcasesort($names);
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInStrReplaceArrayArgument' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names): string {
+                        return str_replace(["a"], $names, "abc");
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => ['ImplicitToStringCast'],
+            ],
+            'impureToStringInPregReplaceSubjects' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name> $names
+                     */
+                    function f(array $names): bool {
+                        return preg_replace("/a/", "b", $names) !== null;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => ['ImplicitToStringCast'],
+            ],
+            'impureToStringInImplodeOfNullableArray' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<Name>|null $names
+                     */
+                    function f(?array $names): string {
+                        return implode(",", $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => ['PossiblyNullArgument'],
+            ],
+            'impureToStringInMaxOfObjectAndString' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function f(Name $name): Name|string {
+                        return max("a", $name);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInMaxWithUnpackedStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param list<string> $strings
+                     */
+                    function f(Name $name, array $strings): Name|string {
+                        return max($name, ...$strings);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInMinOfArray' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param non-empty-list<Name|string> $values
+                     */
+                    function f(array $values): Name|string {
+                        return min($values);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'impureToStringInRegularSortOfObjectsAndStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name|string> $names
+                     * @return array<Name|string>
+                     */
+                    function f(array $names): array {
+                        asort($names);
+                        return $names;
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInInArrayWithStringNeedle' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     */
+                    function f(string $s, array $names): bool {
+                        return in_array($s, $names);
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInArrayKeysWithStringFilter' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<Name> $names
+                     * @return list<array-key>
+                     */
+                    function f(array $names): array {
+                        return array_keys($names, "name");
+                    }',
+                'error_message' => 'possibly-mutating method Name::__toString',
+            ],
+            'impureToStringInLooseInArrayOfScalars' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @param array<scalar> $values
+                     */
+                    function has(Name $name, array $values): bool {
+                        return in_array($name, $values);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInLooseInArrayOfTemplatedStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     * @template T of string
+                     * @param array<T> $values
+                     */
+                    function has(Name $name, array $values): bool {
+                        return in_array($name, $values);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureToStringInBuiltinStringArgument' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string { return "name"; }
+                    }
+
+                    /** @psalm-pure */
+                    function size(Name $name): int {
+                        return strlen($name);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => ['ImplicitToStringCast'],
+            ],
             'impureInvoke' => [
                 'code' => '<?php
                     final class Inc {
@@ -3460,7 +5947,6 @@ final class CapabilitiesTest extends TestCase
 
                     /**
                      * @psalm-pure
-                     * @psalm-suppress UndefinedMagicPropertyFetch, UndefinedThisPropertyFetch
                      */
                     function get(Magic $m): int {
                         return $m->foo;
@@ -3869,6 +6355,28 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
+            'closureLiteralArgumentStillRequiresWhatItDoesBeyondItsByRefCaptures' => [
+                'code' => '<?php
+                    /**
+                     * @param (Closure[_](int): void) $f
+                     * @psalm-pure
+                     */
+                    function each2(Closure $f): void {
+                        $f(1);
+                    }
+
+                    final class Box {
+                        public int $x = 0;
+                    }
+
+                    /** @psalm-capabilities read-props */
+                    function set(Box $box): void {
+                        each2(static function (int $v) use ($box): void {
+                            $box->x = $v;
+                        });
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:25 - The context is read-props but function call on each2 requires write-props',
+            ],
             'closureWritingByRefParamChargesTheEnclosingScope' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -3921,6 +6429,19 @@ final class CapabilitiesTest extends TestCase
                         return $x;
                     }',
                 'error_message' => 'ImpureFunctionCall',
+            ],
+            'passingSuperGlobalByReferenceReadsIt' => [
+                'code' => '<?php
+                    /** @psalm-capabilities write-refs */
+                    function byRef(array &$a): void {
+                        $a = [];
+                    }
+
+                    /** @psalm-capabilities write-globals */
+                    function f(): void {
+                        byRef($_SESSION);
+                    }',
+                'error_message' => 'ImpureGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:31 - The context is write-globals but superglobal $_SESSION requires read-globals',
             ],
             'writingBoundGlobalNeedsWriteGlobals' => [
                 'code' => '<?php
@@ -4056,6 +6577,23 @@ final class CapabilitiesTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25 - The context is pure but destroying the old value of $a (Guard::__destruct) requires',
+            ],
+            'rebindingAReferenceRunsTheOldValuesDestructor' => [
+                'code' => '<?php
+                    final class Guard {
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    /** @psalm-pure */
+                    function &borrowText(string &$value): string {
+                        return $value;
+                    }
+
+                    /** @psalm-pure */
+                    function rebind(Guard $guard, string $value): void {
+                        $guard = &borrowText($value);
+                    }',
+                'error_message' => 'destroying the old value of $guard (Guard::__destruct) requires',
             ],
             'aVariableReassignedInALoopRunsTheDestructorOfThePreviousValue' => [
                 'code' => '<?php
@@ -4258,6 +6796,30 @@ final class CapabilitiesTest extends TestCase
                         public function valid(): bool { return false; }
                     }',
                 'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:33 - Iterator::next is read-props, but Reader::next additionally requires write-this-props|write-props|read-globals|write-globals|write-refs|io|time',
+            ],
+            'iteratorMethodsMustFitThePurityTemplateBoundThroughAnAbstractClass' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-purity-template P
+                     * @implements Iterator[P]<int, int>
+                     */
+                    abstract class Base implements Iterator {}
+
+                    /** @extends Base[pure] */
+                    final class Counter extends Base {
+                        private int $i = 0;
+                        /** @psalm-mutation-free */
+                        public function current(): int { return $this->i; }
+                        /** @psalm-mutation-free */
+                        public function key(): int { return $this->i; }
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function next(): void { $this->i++; }
+                        /** @psalm-mutation-free */
+                        public function rewind(): void {}
+                        /** @psalm-mutation-free */
+                        public function valid(): bool { return $this->i < 3; }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33 - Iterator::next is read-props, but Counter::next additionally requires write-this-props',
             ],
             'iteratorPurityBoundFromTheMethodsIsUsedForSubtyping' => [
                 'code' => '<?php
@@ -4614,7 +7176,7 @@ final class CapabilitiesTest extends TestCase
                         return new Mt19937();
                     }',
                 'error_message' => 'ImpureMethodCall',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'randomizerAdvancesItsEngine' => [
@@ -4626,7 +7188,7 @@ final class CapabilitiesTest extends TestCase
                         return $randomizer->getInt(0, 10);
                     }',
                 'error_message' => 'ImpureMethodCall',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
             ],
             'methodCalledByAnUnknownNameOfAClassWithoutAContractIsImpure' => [
@@ -4889,7 +7451,479 @@ final class CapabilitiesTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'pureFunctionCannotReadPropertiesOfAContractedParameter' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props */
+                    final class Counter {
+                        public int $n = 0;
+
+                        public function inc(): void {
+                            $this->n++;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function currentCount(Counter $counter): int {
+                        return $counter->n;
+                    }',
+                'error_message' => 'ImpurePropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:32 - The context is pure but accessing a property on a mutable object requires read-props',
+            ],
+            'writeThisPropsCannotReadPropertiesOfAContractedProperty' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props */
+                    final class Counter {
+                        public int $n = 0;
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props */
+                    final class Holder {
+                        public function __construct(private Counter $counter) {}
+
+                        /** @psalm-capabilities write-this-props */
+                        public function current(): int {
+                            return $this->counter->n;
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:36 - The context is write-this-props but accessing a property on a mutable object requires read-props',
+            ],
+            'pureFunctionCannotReadNestedPropertiesOfAContractedParameter' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props|write-this-props */
+                    final class Counter {
+                        public int $n = 0;
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props */
+                    final class Holder {
+                        public function __construct(public Counter $counter) {}
+                    }
+
+                    /** @psalm-pure */
+                    function currentCount(Holder $holder): int {
+                        return $holder->counter->n;
+                    }',
+                'error_message' => 'ImpurePropertyFetch',
+            ],
+            'objectWhoseConstructorStoresItInGlobalStateIsNotFresh' => [
+                'code' => '<?php
+                    final class Registered {
+                        /** @var list<Registered> */
+                        public static array $all = [];
+                        public string $label = "";
+
+                        /** @psalm-capabilities read-globals|write-globals */
+                        public function __construct() {
+                            self::$all[] = $this;
+                        }
+
+                        /** @psalm-capabilities write-this-props */
+                        public function setLabel(string $label): void {
+                            $this->label = $label;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-globals|write-globals */
+                    function make(): Registered {
+                        $object = new Registered();
+                        $object->setLabel("a");
+                        return $object;
+                    }',
+                'error_message' => 'method Registered::setLabel requires write-props',
+            ],
+            'objectWhoseConstructorGivesItToAnotherObjectIsNotFresh' => [
+                'code' => '<?php
+                    final class Registry {
+                        /** @var list<object> */
+                        public array $items = [];
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function add(object $item): void {
+                            $this->items[] = $item;
+                        }
+                    }
+
+                    final class Joined {
+                        public string $label = "";
+
+                        /** @psalm-capabilities write-props */
+                        public function __construct(Registry $registry) {
+                            $registry->add($this);
+                        }
+
+                        /** @psalm-capabilities write-this-props */
+                        public function setLabel(string $label): void {
+                            $this->label = $label;
+                        }
+                    }
+
+                    /** @psalm-capabilities write-props */
+                    function make(Registry $registry): Joined {
+                        $object = new Joined($registry);
+                        $object->label = "a";
+                        return $object;
+                    }
+
+                    /** @psalm-capabilities write-this-props */
+                    function makeLabelled(Registry $registry): Joined {
+                        $object = new Joined($registry);
+                        $object->setLabel("a");
+                        return $object;
+                    }',
+                'error_message' => 'constructor Joined::__construct requires write-props',
+            ],
+            'propertiesOfObjectsWhoseConstructorStoresThemInGlobalStateCostReadProps' => [
+                'code' => '<?php
+                    final class Registered {
+                        /** @var list<Registered> */
+                        public static array $all = [];
+                        public int $n = 0;
+
+                        /** @psalm-capabilities read-globals|write-globals */
+                        public function __construct() {
+                            self::$all[] = $this;
+                        }
+                    }
+
+                    /** @psalm-capabilities read-globals|write-globals */
+                    function make(): int {
+                        $object = new Registered();
+                        return $object->n;
+                    }',
+                'error_message' => 'ImpurePropertyFetch',
+            ],
+            'propertiesOfAPropertyOfAFreshObjectCostReadProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 0;
+                        public ?Counter $next = null;
+                    }
+
+                    /** @psalm-pure */
+                    function nextCount(Counter $shared): int {
+                        $counter = new Counter();
+                        $counter->next = $shared;
+                        return $counter->next->n;
+                    }',
+                'error_message' => 'ImpurePropertyFetch',
+            ],
+            'unannotatedConstructorStoringThisInAStaticPropertyIsNotTrivial' => [
+                'code' => '<?php
+                    final class Registered {
+                        /** @var list<Registered> */
+                        public static array $all = [];
+                        public int $n = 0;
+
+                        public function __construct() {
+                            self::$all[] = $this;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Registered {
+                        return new Registered();
+                    }',
+                'error_message' => 'constructor Registered::__construct requires',
+            ],
+            'unannotatedConstructorStoringThisInAGlobalIsNotTrivial' => [
+                'code' => '<?php
+                    final class Global_ {
+                        public int $n = 0;
+
+                        public function __construct() {
+                            $GLOBALS["last"] = $this;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Global_ {
+                        return new Global_();
+                    }',
+                'error_message' => 'constructor Global_::__construct requires',
+            ],
+            'unannotatedConstructorCallingAFunctionIsNotTrivial' => [
+                'code' => '<?php
+                    final class Stamped {
+                        public int $at = 0;
+
+                        public function __construct() {
+                            $this->at = time();
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Stamped {
+                        return new Stamped();
+                    }',
+                'error_message' => 'constructor Stamped::__construct requires',
+            ],
+            'unannotatedConstructorWithAByReferenceParameterIsNotTrivial' => [
+                'code' => '<?php
+                    final class Linked {
+                        public int $n = 0;
+
+                        /** @param list<int> $sink */
+                        public function __construct(array &$sink) {
+                            $this->n = 1;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function make(): Linked {
+                        $sink = [];
+                        return new Linked($sink);
+                    }',
+                'error_message' => 'constructor Linked::__construct requires',
+            ],
+            'inheritedTrivialConstructorRunsTheSetHookOfARedeclaredProperty' => [
+                'code' => '<?php
+                    class Base {
+                        public function __construct(public string $label) {}
+                    }
+
+                    final class Hooked extends Base {
+                        public string $label {
+                            set {
+                                echo $value;
+                                $this->label = $value;
+                            }
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function makeHooked(): Hooked {
+                        return new Hooked("a");
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'newStaticOfAnExtendableClassIsNotFresh' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Base {
+                        public string $label = "";
+
+                        /** @psalm-mutation-free */
+                        public function __construct() {}
+
+                        /** @psalm-capabilities write-this-props */
+                        public function setLabel(string $label): void {
+                            $this->label = $label;
+                        }
+
+                        /** @psalm-pure */
+                        public static function make(): static {
+                            $object = new static();
+                            $object->setLabel("a");
+                            return $object;
+                        }
+                    }',
+                'error_message' => 'method Base::setLabel requires write-props',
+            ],
+            'freshObjectHoldingGlobalStateWritesGlobalStateThroughIt' => [
+                'code' => '<?php
+                    final class Registry {
+                        /** @var list<object> */
+                        public array $items = [];
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function add(object $item): void {
+                            $this->items[] = $item;
+                        }
+                    }
+
+                    final class Holder {
+                        public static ?Registry $global = null;
+                        public ?Registry $registry;
+
+                        /** @psalm-capabilities read-globals */
+                        public function __construct() {
+                            $this->registry = self::$global;
+                        }
+
+                        /** @psalm-capabilities read-props|write-props */
+                        public function addToRegistry(object $item): void {
+                            $this->registry?->add($item);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-globals|write-props */
+                    function add(): void {
+                        $holder = new Holder();
+                        $holder->addToRegistry(new stdClass());
+                    }',
+                'error_message' => 'method Holder::addToRegistry requires write-props|write-globals',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'theCloneOfAnObjectReachedFromGlobalStateHoldsGlobalState' => [
+                'code' => '<?php
+                    final class Inner {
+                        public int $n = 0;
+                    }
+
+                    final class Config {
+                        public string $env = "prod";
+                        public Inner $inner;
+                        public static ?Config $instance = null;
+
+                        /** @psalm-mutation-free */
+                        public function __construct() {
+                            $this->inner = new Inner();
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-props|read-globals */
+                    function tamper(): void {
+                        $config = Config::$instance;
+                        if ($config !== null) {
+                            $copy = clone $config;
+                            $copy->inner->n = 1;
+                        }
+                    }',
+                'error_message' => 'property assignment to Inner::$n on an object reached from global state requires write-props|write-globals',
+            ],
+            'writingAnElementOfAnArrayAccessPropertyChargesItsOffsetSet' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, int> */
+                    final class Bag implements ArrayAccess {
+                        /** @var array<string, int> */
+                        private array $items = [];
+
+                        /** @psalm-mutation-free */
+                        public function offsetExists(mixed $offset): bool {
+                            return isset($this->items[$offset]);
+                        }
+
+                        /** @psalm-mutation-free */
+                        public function offsetGet(mixed $offset): int {
+                            return $this->items[$offset] ?? 0;
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function offsetSet(mixed $offset, mixed $value): void {
+                            if ($offset !== null) {
+                                $this->items[$offset] = $value;
+                            }
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function offsetUnset(mixed $offset): void {
+                            unset($this->items[$offset]);
+                        }
+                    }
+
+                    final class Holder {
+                        /** @psalm-mutation-free */
+                        public function __construct(private readonly Bag $bag) {}
+
+                        /** @psalm-mutation-free */
+                        public function add(string $key): void {
+                            $this->bag[$key] = 1;
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:36:29 - The context is read-props but method Bag::offsetSet requires write-props',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'unsettingAnElementOfAnArrayPropertyWritesTheProperty' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, int> */
+                        private array $items = [];
+
+                        /** @psalm-capabilities read-props|write-props */
+                        public function remove(): void {
+                            unset($this->items["x"]);
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
         ];
+    }
+
+    public function testEachPropertyWriteIsReportedOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            final class C {
+                public int $n = 0;
+                public ?C $o = null;
+                public static ?C $g = null;
+
+                /** @psalm-capabilities read-props */
+                public function own(): void { $this->n = 1; }
+
+                /** @psalm-capabilities read-props */
+                public function unsetOwn(): void { unset($this->o); }
+            }
+
+            /** @psalm-capabilities read-props */
+            function assign(C $c): void { $c->n = 1; }
+            /** @psalm-capabilities read-props */
+            function increment(C $c): void { $c->n++; }
+            /** @psalm-capabilities read-props */
+            function compound(C $c): void { $c->n += 1; }
+            /** @psalm-capabilities read-props */
+            function coalesce(C $c): void { $c->n ??= 1; }
+            /** @psalm-capabilities read-props */
+            function destructure(C $c): void { [$c->n] = [1]; }
+            /** @psalm-capabilities read-props */
+            function nested(C $c): void { if ($c->o) { $c->o->n = 1; } }
+            /** @psalm-capabilities read-props */
+            function union(C|stdClass $c): void { $c->n = 1; }
+            /** @psalm-capabilities read-props */
+            function remove(C $c): void { unset($c->o); }
+            /** @psalm-capabilities read-props|read-globals */
+            function globalState(): void { if (C::$g) { C::$g->n = 1; } }
+            /** @psalm-capabilities read-props|read-globals */
+            function removeGlobal(): void { if (C::$g) { unset(C::$g->o); } }
+            /** @psalm-capabilities read-props */
+            function dynamic(C $c, string $p): void { $c->$p = 1; }
+            /** @psalm-capabilities read-props */
+            function untyped(mixed $c): void { $c->n = 1; }
+            /** @psalm-capabilities read-props */
+            function make(): C { return new C(); }
+            /** @psalm-capabilities read-props */
+            function onCallResult(): void { make()->n = 1; }
+            /** @psalm-capabilities read-props */
+            function fresh(): void { $c = new C(); $c->n = 1; unset($c->o); }
+        ');
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_map(
+            static fn(IssueData $issue): array => [$issue->line_from, $issue->message],
+            array_values(array_filter(
+                IssueBuffer::getIssuesDataForFile($file_path),
+                static fn(IssueData $issue): bool => $issue->type === 'ImpurePropertyAssignment',
+            )),
+        );
+        sort($issues);
+
+        self::assertSame(
+            [
+                [8, 'The context is read-props but property assignment to C::$n requires write-this-props'],
+                [11, 'The context is read-props but unsetting a property on a mutable object requires write-this-props'],
+                [15, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [17, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [19, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [21, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [23, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [25, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [27, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [29, 'The context is read-props but property assignment to C::$o requires write-props'],
+                [31, 'The context is read-props|read-globals but property assignment to C::$n'
+                    . ' on an object reached from global state requires write-props|write-globals'],
+                [33, 'The context is read-props|read-globals but property assignment to C::$o'
+                    . ' on an object reached from global state requires write-props|write-globals'],
+                [35, 'The context is read-props but property assignment requires write-props'],
+                [37, 'The context is read-props but property assignment requires write-props'],
+                [41, 'The context is read-props but property assignment requires write-props'],
+            ],
+            $issues,
+        );
     }
 
     public function testPureNewAndStaticCallsKeepPropertyRefinements(): void
@@ -4933,6 +7967,123 @@ final class CapabilitiesTest extends TestCase
                     }
                     touchGlobals();
                     return $a->x;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPureMagicStaticCallKeepsPropertyRefinements(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class A { public ?int $x = null; }
+
+                /** @psalm-no-seal-methods */
+                final class Magic {
+                    /** @psalm-pure */
+                    public static function __callStatic(string $name, array $args): int { return 1; }
+                }
+
+                function keep(A $a): int {
+                    if ($a->x === null) {
+                        return 0;
+                    }
+                    Magic::noop();
+                    return $a->x;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testWithoutRememberedPropertiesAWriteToAnotherObjectForgetsDirectGetters(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullableReturnStatement');
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Child {}
+                final class Owner {
+                    public ?Child $child = null;
+                    /** @psalm-mutation-free */
+                    public function getChild(): ?Child { return $this->child; }
+                }
+                final class Other {
+                    private int $n = 0;
+                    public function touch(): void { ++$this->n; }
+                }
+                function afterTouch(Owner $owner, Other $other): Child {
+                    if ($owner->getChild() === null) {
+                        return new Child();
+                    }
+                    $other->touch();
+                    return $owner->getChild();
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testCallToAShallowScannedMethodForgetsGetters(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullableReturnStatement');
+
+        $this->addFile(
+            'dependency.php',
+            '<?php
+                final class Child {}
+                final class Owner {
+                    public ?Child $child = null;
+                    /** @psalm-mutation-free */
+                    public function getChild(): ?Child { return $this->child; }
+                }
+                final class Clearer {
+                    public function clear(Owner $owner): void { $owner->child = null; }
+                }',
+        );
+        $this->project_analyzer->getCodebase()->scanner->addFilesToShallowScan(['dependency.php' => 'dependency.php']);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                function afterClear(Owner $owner, Clearer $clearer): Child {
+                    if ($owner->getChild() === null) {
+                        return new Child();
+                    }
+                    $clearer->clear($owner);
+                    return $owner->getChild();
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testItemOfAnArrayObjectPassedByReferenceForgetsPropertyRefinements(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullableReturnStatement');
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Holder { public ?string $x = null; }
+
+                /** @param ArrayObject<string, mixed> $o */
+                function matchedX(ArrayObject $o, Holder $h): string {
+                    if ($h->x === null) {
+                        return "";
+                    }
+                    preg_match("/x/", "s", $o["x"]);
+                    return $h->x;
                 }',
         );
 

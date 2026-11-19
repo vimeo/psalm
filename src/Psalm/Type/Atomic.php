@@ -28,6 +28,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEmptyNumeric;
@@ -47,12 +48,14 @@ use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonDecimalIntString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyScalar;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyNumericString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
@@ -401,6 +404,12 @@ abstract class Atomic implements TypeNode, Stringable
 
             case 'numeric-string':
                 return new TNumericString();
+
+            case 'decimal-int-string':
+                return new TDecimalIntString();
+
+            case 'non-decimal-int-string':
+                return new TNonDecimalIntString();
 
             case 'literal-string':
                 return new TNonspecificLiteralString();
@@ -850,7 +859,7 @@ abstract class Atomic implements TypeNode, Stringable
     }
 
     /**
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
@@ -880,7 +889,7 @@ abstract class Atomic implements TypeNode, Stringable
             return true;
         }
 
-        if ($this instanceof TNonFalsyString) {
+        if ($this instanceof TNonFalsyString || $this instanceof TNonFalsyNumericString) {
             return true;
         }
 
@@ -926,7 +935,7 @@ abstract class Atomic implements TypeNode, Stringable
             return true;
         }
 
-        if ($this instanceof TResource) {
+        if ($this instanceof TResource || $this instanceof TClosedResource) {
             return true;
         }
 

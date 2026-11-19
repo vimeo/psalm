@@ -4,41 +4,28 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\FileManipulation;
 
-use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
+use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
-use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
 use function strpos;
 
-final class NamespaceMoveTest extends TestCase
+final class NamespaceMoveTest extends DeferredAnalyzerTestCase
 {
     protected ProjectAnalyzer $project_analyzer;
 
     /**
-     * @psalm-external-mutation-free
+     * @param array<string, string> $migrations
      */
-    #[Override]
-    public function setUp(): void
-    {
-        RuntimeCaches::clearAll();
-
-        $this->file_provider = new FakeFileProvider();
-    }
-
-    /**
-     * @dataProvider providerValidCodeParse
-     * @param array<string, string> $namespaces_to_move
-     */
+    #[DataProvider('providerValidCodeParse')]
     public function testValidCode(
-        string $input_code,
-        string $output_code,
-        array $namespaces_to_move,
+        string $input,
+        string $output,
+        array $migrations,
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -61,12 +48,12 @@ final class NamespaceMoveTest extends TestCase
 
         $this->addFile(
             $file_path,
-            $input_code,
+            $input,
         );
 
         $codebase = $this->project_analyzer->getCodebase();
 
-        $this->project_analyzer->refactorCodeAfterCompletion($namespaces_to_move);
+        $this->project_analyzer->refactorCodeAfterCompletion($migrations);
 
         $this->analyzeFile($file_path, $context);
 
@@ -76,14 +63,15 @@ final class NamespaceMoveTest extends TestCase
 
         $this->project_analyzer->migrateCode();
 
-        $this->assertSame($output_code, $codebase->getFileContents($file_path));
+        $this->assertSame($output, $codebase->getFileContents($file_path));
     }
+
 
     /**
      * @return array<string,array{input:string,output:string,migrations:array<string, string>}>
      * @psalm-pure
      */
-    public function providerValidCodeParse(): array
+    public static function providerValidCodeParse(): array
     {
         return [
             'moveClassesIntoNamespace' => [

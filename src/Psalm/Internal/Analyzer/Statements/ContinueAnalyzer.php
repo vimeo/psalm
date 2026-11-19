@@ -13,6 +13,7 @@ use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
+use function count;
 use function end;
 
 /**
@@ -26,6 +27,17 @@ final class ContinueAnalyzer
         Context $context,
     ): void {
         $count = $stmt->num instanceof PhpParser\Node\Scalar\Int_? $stmt->num->value : 1;
+
+        if ($context->break_types && $count > count($context->break_types)) {
+            IssueBuffer::maybeAdd(
+                new ContinueOutsideLoop(
+                    'Cannot \'continue\' ' . $count . ' levels, only ' . count($context->break_types)
+                        . ' enclosing loop or switch structure(s)',
+                    new CodeLocation($statements_analyzer, $stmt),
+                ),
+                $statements_analyzer->getSource()->getSuppressedIssues(),
+            );
+        }
 
         $loop_scope = $context->loop_scope;
 
@@ -55,8 +67,12 @@ final class ContinueAnalyzer
                 && $count < 2
             ) {
                 $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_LEAVE_SWITCH;
+                // `continue` leaves a switch like `break`
+                $context->case_scope?->addBreak($context);
             } else {
                 $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_CONTINUE;
+                $loop_scope->addJump($context);
+                $loop_scope->addContinue($context);
             }
 
             $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
@@ -90,7 +106,7 @@ final class ContinueAnalyzer
             }
 
             if ($context->finally_scope) {
-                foreach ($context->vars_in_scope as $var_id => &$type) {
+                foreach ($context->vars_in_scope as $var_id => $type) {
                     if (isset($context->finally_scope->vars_in_scope[$var_id])) {
                         $context->finally_scope->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->finally_scope->vars_in_scope[$var_id],
@@ -98,8 +114,7 @@ final class ContinueAnalyzer
                             $statements_analyzer->getCodebase(),
                         );
                     } else {
-                        $type = $type->setPossiblyUndefined(true, true);
-                        $context->finally_scope->vars_in_scope[$var_id] = $type;
+                        $context->finally_scope->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true, true);
                     }
                 }
             }

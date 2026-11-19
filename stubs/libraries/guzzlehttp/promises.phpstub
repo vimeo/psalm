@@ -1,0 +1,20 @@
+<?php
+
+// The taints guzzlehttp/promises 2 passes along: waiting for a promise gives what it holds. Loaded when the analysed
+// code uses the package, refining its classes (see Config::visitStubFiles()).
+
+namespace GuzzleHttp\Promise
+{
+    interface PromiseInterface
+    {
+        /**
+         * @return mixed
+         *
+         * @throws \LogicException if the promise has no wait function or if the promise does not settle after waiting.
+         *
+         * @psalm-taint-specialize
+         * @psalm-flow ($this) -> return
+         */
+        public function wait(bool $unwrap = true);
+    }
+}

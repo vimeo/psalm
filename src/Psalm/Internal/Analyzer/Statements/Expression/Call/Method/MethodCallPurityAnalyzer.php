@@ -17,8 +17,11 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\UnusedMethodCall;
@@ -26,20 +29,43 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
+use function array_key_exists;
 use function array_pop;
 use function array_values;
+use function count;
+use function explode;
+use function preg_match;
+use function str_starts_with;
+use function strrpos;
+use function strtolower;
+use function substr;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class MethodCallPurityAnalyzer
 {
+    private const ENGINE_STATE_MOVERS = [
+        'fiber::start' => true,
+        'fiber::resume' => true,
+        'fiber::throw' => true,
+        'generator::send' => true,
+        'generator::throw' => true,
+    ];
+
     /** Set on a method call that gives back the caller's own `$this` */
     private const RETURNS_THIS = 'returns_this';
 
@@ -65,11 +91,14 @@ final class MethodCallPurityAnalyzer
     /**
      * The capabilities a call of a method requires from its caller, given the receiver: reading
      * the receiver's own state is like passing it as an argument. Mutating it is free when the
-     * receiver is pure-compatible or external-mutation-free, needs write-this-props when it is
+     * receiver is pure-compatible or external-mutation-free (fresh), needs write-this-props when it is
      * `$this` or state of the closure being analysed and write-props otherwise, as writing its
      * properties directly would. Callers that know the receiver to be fresh by other means say so
      * with $receiver_is_fresh, and those that know the callee's capabilities for this call with
      * $callee_capabilities.
+     *
+     * @param CapabilitySet|null $callee_capabilities
+     * @return CapabilitySet
      */
     public static function getMethodCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -94,6 +123,7 @@ final class MethodCallPurityAnalyzer
      * or with the contract of a marker interface, which caps no implementer, the call may do anything.
      *
      * @param array<string, Atomic> $intersection_types
+     * @return CapabilitySet
      */
     public static function getUnknownMethodCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -120,6 +150,8 @@ final class MethodCallPurityAnalyzer
      * it caps them: the parts of an intersection, and the bound of a template. A method may be one
      * of any part, so it may do what any of them allows; a part that isn't a class, one without a
      * contract, or a marker interface, whose contract caps no implementer, allows anything.
+     *
+     * @return CapabilitySet
      */
     public static function getClassContractCapabilities(Codebase $codebase, Atomic $type): int
     {
@@ -158,6 +190,9 @@ final class MethodCallPurityAnalyzer
     /**
      * The capabilities a call of a method that may use $method_capabilities requires from its
      * caller, given the receiver (see getMethodCapabilities())
+     *
+     * @param CapabilitySet $method_capabilities
+     * @return CapabilitySet
      */
     public static function getReceiverCallCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -167,10 +202,14 @@ final class MethodCallPurityAnalyzer
     ): int {
         $capabilities = $method_capabilities & ~Capabilities::READ_PROPS;
 
-        if (!self::isFromGlobalState($statements_analyzer, $var)
-            && ($receiver_is_fresh || self::receiverAllowsInternalMutations($statements_analyzer, $var))
-        ) {
-            return $capabilities & ~Capabilities::RECEIVER_LOCAL;
+        if ($receiver_is_fresh || self::receiverAllowsInternalMutations($statements_analyzer, $var)) {
+            // Nobody else sees the receiver's own state change, even when it holds global state (a clone of a
+            // global object, an object whose constructor read global state): what else it writes may be that.
+            return self::getCapabilitiesForReceiver(
+                $capabilities & ~Capabilities::RECEIVER_LOCAL,
+                false,
+                self::isFromGlobalState($statements_analyzer, $var),
+            );
         }
 
         return self::getCapabilitiesForReceiver(
@@ -184,6 +223,8 @@ final class MethodCallPurityAnalyzer
     /**
      * The capabilities a plugin (MethodCapabilitiesProviderInterface) registered for the class
      * declaring the method gives this call of it
+     *
+     * @return CapabilitySet|null
      */
     private static function getProvidedCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -218,6 +259,8 @@ final class MethodCallPurityAnalyzer
      * write-this-props when the receiver is the caller's `$this`, write-props otherwise, plus
      * write-globals when the receiver was reached from global state.
      *
+     * @param CapabilitySet $capabilities
+     * @return CapabilitySet
      * @psalm-pure
      */
     public static function getCapabilitiesForReceiver(
@@ -266,7 +309,45 @@ final class MethodCallPurityAnalyzer
     public static function isReceiverThis(Expr $var): bool
     {
         return self::isThis($var)
-            || ($var instanceof Expr\MethodCall && $var->getAttribute(self::RETURNS_THIS, false) === true);
+            || (($var instanceof Expr\MethodCall || $var instanceof Expr\StaticCall)
+                && $var->getAttribute(self::RETURNS_THIS, false) === true);
+    }
+
+    /**
+     * The nodes of a trait are analyzed once per class that uses it: forget what an earlier analysis recorded
+     */
+    public static function resetReturnsThis(Expr\StaticCall $stmt): void
+    {
+        $attributes = $stmt->getAttributes();
+        unset($attributes[self::RETURNS_THIS]);
+        $stmt->setAttributes($attributes);
+    }
+
+    /**
+     * A static call forwarded to a call of the method on `$this` returns what that call does
+     */
+    public static function forwardReturnsThis(Expr\MethodCall $forwarded_call, Expr\StaticCall $stmt): void
+    {
+        $stmt->setAttribute(self::RETURNS_THIS, $forwarded_call->getAttribute(self::RETURNS_THIS, false) === true);
+    }
+
+    /**
+     * A `parent::` call of a method returning its receiver gives back the caller's own `$this`
+     */
+    public static function markStaticCallReturningThis(
+        StatementsAnalyzer $statements_analyzer,
+        Expr\StaticCall $stmt,
+        MethodIdentifier $method_id,
+        MethodStorage $method_storage,
+    ): void {
+        $stmt->setAttribute(
+            self::RETURNS_THIS,
+            ReturnAnalyzer::mustReturnThis($statements_analyzer->getCodebase(), $method_storage, $method_id)
+                && !$method_storage->is_static
+                && !$stmt->isFirstClassCallable()
+                && $stmt->class instanceof PhpParser\Node\Name
+                && strtolower($stmt->class->getFirst()) === 'parent',
+        );
     }
 
     /**
@@ -287,6 +368,8 @@ final class MethodCallPurityAnalyzer
         ?TemplateResult $template_result = null,
         array $class_template_params = [],
     ): void {
+        $result->analysed_receiver_classes[] = [$class_storage, $class_template_params];
+
         // a plugin may know what this call of the method requires, e.g. from its arguments
         $provided_capabilities = self::getProvidedCapabilities(
             $statements_analyzer,
@@ -310,7 +393,7 @@ final class MethodCallPurityAnalyzer
         $stmt->setAttribute(
             self::RETURNS_THIS,
             $stmt->getAttribute(self::RETURNS_THIS, true) === true
-                && $method_storage->returns_this
+                && ReturnAnalyzer::mustReturnThis($codebase, $method_storage, $method_id)
                 && !$stmt->isFirstClassCallable()
                 && self::isReceiverThis($stmt->var),
         );
@@ -328,6 +411,7 @@ final class MethodCallPurityAnalyzer
             $class_template_params,
             self::isReceiverThis($stmt->var),
             self::isFromGlobalState($statements_analyzer, $stmt->var),
+            $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
         );
         $method_capabilities |= $template_capabilities;
 
@@ -360,7 +444,7 @@ final class MethodCallPurityAnalyzer
         );
 
         // the same for the inferred purity, which some template capabilities may be left out of
-        $inferred_capabilities = $inferred_template_capabilities === $template_capabilities
+        $inferred_capabilities = Capabilities::equals($inferred_template_capabilities, $template_capabilities)
             ? $method_capabilities
             : ByRefArgumentAnalyzer::adjustCapabilities(
                 $statements_analyzer,
@@ -378,8 +462,10 @@ final class MethodCallPurityAnalyzer
             // implicit calls (__get, __invoke, offsetGet, ...) are virtual nodes without a
             // location of their own, but their name points at the expression that triggers them
             $stmt->getAttribute('startFilePos') !== null ? $stmt : $stmt->name,
-            // mutating a receiver other than `$this` writes another object's properties
-            $callee_capabilities | ($inferred_capabilities & Capabilities::WRITE_PROPS),
+            // what the call costs the caller, as checked above: the callee's writes to a receiver
+            // other than `$this` are write-props, and reading the receiver needs nothing (without
+            // what a purity wildcard of a parameter leaves out, see getInferredTemplateCapabilities())
+            $inferred_capabilities,
             false,
             // the level of an unannotated method is inferred from its body, which only
             // describes the method actually called if it can't be overridden elsewhere
@@ -411,7 +497,7 @@ final class MethodCallPurityAnalyzer
             ImpureMethodCall::class,
             'method ' . $cased_method_id,
         );
-        
+
         if (!$context->inside_unset
             && $method_storage->isMutationFree()
             && $call_is_mutation_free
@@ -470,7 +556,12 @@ final class MethodCallPurityAnalyzer
                 ) {
                     IssueBuffer::maybeAdd(
                         new UnusedMethodCall(
-                            'The call to ' . $cased_method_id . ' is not used',
+                            'The call to ' . $cased_method_id . (
+                                // the #[NoDiscard] check reports the same text, so that both reports are one
+                                $method_storage->no_discard
+                                    ? ' is not used'
+                                    : ' seems to have no effect, its result is not used'
+                            ),
                             new CodeLocation($statements_analyzer, $stmt->name),
                             (string) $method_id,
                         ),
@@ -498,6 +589,15 @@ final class MethodCallPurityAnalyzer
             );
         }
 
+        if ($method_storage->static_property_mutations !== null) {
+            $context->resetMutatedStaticProperties(
+                $method_storage->static_property_mutations,
+                $method_id->fq_class_name,
+                $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name ?? $method_id->fq_class_name,
+                $codebase,
+            );
+        }
+
         if (!$config->remember_property_assignments_after_call
             && ($method_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
         ) {
@@ -508,30 +608,34 @@ final class MethodCallPurityAnalyzer
                 $context->removeMutableObjectVars(false, $method_capabilities);
             }
 
-            if ($method_capabilities !== Capabilities::NONE) {
-                $context->removeMutableObjectVars(true);
-            }
-
-            foreach ($method_storage->this_property_mutations as $name => $_) {
-                $mutation_var_id = $lhs_var_id . '->' . $name;
-
-                $this_property_didnt_exist = $lhs_var_id === '$this'
-                    && isset($context->vars_in_scope[$mutation_var_id])
-                    && !isset($class_storage->declaring_property_ids[$name]);
-
-                if ($this_property_didnt_exist) {
-                    unset($context->vars_in_scope[$mutation_var_id]);
-                } else {
-                    $new_type = AssignmentAnalyzer::getExpandedPropertyType(
+            // Even a fresh receiver can change: the capabilities charged to the caller
+            // may be NONE while the callee still writes its own properties.
+            $context->removeMutableObjectVars(
+                true,
+                // an override may do anything
+                preserved_methods: $method_storage->writes_only_this_properties
+                    && !$method_storage->overridden_downstream
+                    ? self::getUnaffectedPropertyGetters(
+                        $context,
                         $codebase,
-                        $class_storage->name,
-                        $name,
+                        $lhs_var_id,
                         $class_storage,
-                    ) ?? Type::getMixed();
+                        $method_storage->this_property_mutations,
+                    )
+                    : [],
+            );
 
-                    $context->vars_in_scope[$mutation_var_id] = $new_type;
-                    $context->possibly_assigned_var_ids[$mutation_var_id] = true;
-                }
+            // nothing is known of the properties of a receiver without a var id
+            if ($lhs_var_id !== null) {
+                self::resetWrittenProperties(
+                    $codebase,
+                    $context,
+                    $result,
+                    $lhs_var_id,
+                    $method_storage,
+                    $class_storage,
+                    $class_template_params,
+                );
             }
         } else {
             if (!$config->remember_property_assignments_after_call) {
@@ -539,7 +643,9 @@ final class MethodCallPurityAnalyzer
                 $context->removeMutableObjectVars(false, $method_capabilities);
             }
 
-            if (($callee_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
+            if ((($callee_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
+                    // a body writing nothing but its local variables, unless an override may run instead
+                    && !($method_storage->writes_only_this_properties && !$method_storage->overridden_downstream))
                 || self::isCalledForItsTemplatesEffects($method_storage)
             ) {
                 // the method may write properties, but not which ones (a stub, a body writing `$this`
@@ -549,6 +655,479 @@ final class MethodCallPurityAnalyzer
                 $context->removeMutableObjectVars(true);
             }
         }
+
+        if ($context->inside_conditional && $lhs_var_id !== null) {
+            foreach ($method_storage->this_property_mutations ?? [] as $name => $_) {
+                $context->assigned_var_ids[$lhs_var_id . '->' . $name] ??= 0;
+            }
+        }
+    }
+
+    /**
+     * Resets what is known of the properties of the receiver the method writes, and of what they hold
+     *
+     * @param array<string, array<string, Union>> $class_template_params
+     */
+    private static function resetWrittenProperties(
+        Codebase $codebase,
+        Context $context,
+        AtomicMethodCallAnalysisResult $result,
+        string $lhs_var_id,
+        MethodStorage $method_storage,
+        ClassLikeStorage $class_storage,
+        array $class_template_params,
+    ): void {
+        foreach ($method_storage->this_property_mutations ?? [] as $name => $writes_property) {
+            $mutation_var_id = $lhs_var_id . '->' . $name;
+            $item_mutations = $method_storage->this_property_item_mutations[$name] ?? [];
+
+            if (!$writes_property && $item_mutations && !isset($item_mutations[''])) {
+                // for another type of the receiver, the call left the property holding another object
+                if (isset($result->property_types_after_call[$mutation_var_id])) {
+                    $context->forgetPropertyDescendents($mutation_var_id);
+
+                    continue;
+                }
+
+                // only properties of the object the property holds are written: it still holds that object
+                $declared_type = self::getDeclaredPropertyType(
+                    $codebase,
+                    $class_storage,
+                    $name,
+                    $class_template_params,
+                );
+
+                foreach ($item_mutations as $sub_path => $writes_last) {
+                    self::resetPropertyOfHeldObject(
+                        $codebase,
+                        $context,
+                        $mutation_var_id,
+                        $declared_type,
+                        explode('->', $sub_path),
+                        $writes_last,
+                    );
+                }
+
+                continue;
+            }
+
+            // the call is analysed once for each type of a receiver of several
+            if (!array_key_exists($mutation_var_id, $result->property_types_before_call)) {
+                $result->property_types_before_call[$mutation_var_id]
+                    = $context->vars_in_scope[$mutation_var_id] ?? null;
+            }
+
+            $existing_type = $result->property_types_before_call[$mutation_var_id];
+
+            $context->forgetPropertyDescendents($mutation_var_id);
+
+            $this_property_didnt_exist = $lhs_var_id === '$this'
+                && isset($context->vars_in_scope[$mutation_var_id])
+                && !isset($class_storage->declaring_property_ids[$name]);
+
+            if ($this_property_didnt_exist) {
+                unset($context->vars_in_scope[$mutation_var_id]);
+            } elseif (!$writes_property && $existing_type !== null && $existing_type->isObjectType()) {
+                // writing items or properties of an object leaves the property holding the same object
+                self::setPropertyTypeAfterCall($context, $result, $mutation_var_id, $existing_type);
+            } else {
+                $new_type = self::getDeclaredPropertyType($codebase, $class_storage, $name, $class_template_params)
+                    ?? Type::getMixed();
+
+                if (!$writes_property && $existing_type !== null) {
+                    $new_type = self::getTypeAfterItemWrites($codebase, $existing_type, $new_type);
+                }
+
+                self::setPropertyTypeAfterCall($context, $result, $mutation_var_id, $new_type);
+                $context->possibly_assigned_var_ids[$mutation_var_id] = true;
+            }
+        }
+    }
+
+    /**
+     * Of a receiver of several types, the property may hold what the call leaves it for any of them
+     */
+    private static function setPropertyTypeAfterCall(
+        Context $context,
+        AtomicMethodCallAnalysisResult $result,
+        string $property_id,
+        Union $type,
+    ): void {
+        if (isset($result->property_types_after_call[$property_id])) {
+            $type = Type::combineUnionTypes($result->property_types_after_call[$property_id], $type);
+        }
+
+        $result->property_types_after_call[$property_id] = $type;
+        $result->property_writer_counts[$property_id] = ($result->property_writer_counts[$property_id] ?? 0) + 1;
+        $context->vars_in_scope[$property_id] = $type;
+    }
+
+    /**
+     * Of a receiver of several types, a property the method of some of them does not write keeps what it held
+     */
+    public static function keepPropertiesNotWrittenForEveryReceiverType(
+        Codebase $codebase,
+        Context $context,
+        AtomicMethodCallAnalysisResult $result,
+    ): void {
+        foreach ($result->property_types_after_call as $property_id => $type) {
+            if ($result->property_writer_counts[$property_id] >= count($result->analysed_receiver_classes)) {
+                continue;
+            }
+
+            $type_before_call = $result->property_types_before_call[$property_id] ?? null;
+
+            if ($type_before_call !== null) {
+                $context->vars_in_scope[$property_id] = Type::combineUnionTypes($type, $type_before_call);
+
+                continue;
+            }
+
+            // what it held is what any of the receiver types declares it to hold
+            $name = substr($property_id, (int) strrpos($property_id, '->') + 2);
+
+            foreach ($result->analysed_receiver_classes as [$class_storage, $template_params]) {
+                $declared_type = self::getDeclaredPropertyType($codebase, $class_storage, $name, $template_params);
+
+                if ($declared_type === null) {
+                    unset($context->vars_in_scope[$property_id]);
+
+                    continue 2;
+                }
+
+                $type = Type::combineUnionTypes($type, $declared_type);
+            }
+
+            $context->vars_in_scope[$property_id] = $type;
+        }
+    }
+
+    /**
+     * The type a property of the receiver is declared to hold, with the template types of the receiver (`T` of a
+     * `Box<int>` is `int`)
+     *
+     * @param array<string, array<string, Union>> $class_template_params
+     */
+    private static function getDeclaredPropertyType(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        string $name,
+        array $class_template_params,
+    ): ?Union {
+        $declared_type = AssignmentAnalyzer::getExpandedPropertyType(
+            $codebase,
+            $class_storage->name,
+            $name,
+            $class_storage,
+        );
+
+        if ($declared_type === null || !$class_template_params) {
+            return $declared_type;
+        }
+
+        return TemplateInferredTypeReplacer::replace(
+            $declared_type,
+            new TemplateResult([], $class_template_params),
+            $codebase,
+        );
+    }
+
+    /**
+     * What a property may hold after a call writing only items or properties of what it holds: what it is declared
+     * to hold, of the kinds it was known to hold, as writing items of null or false makes it an array
+     */
+    private static function getTypeAfterItemWrites(
+        Codebase $codebase,
+        Union $type_before,
+        Union $declared_type,
+    ): Union {
+        if ($type_before->hasMixed() || $type_before->hasTemplate()) {
+            return $declared_type;
+        }
+
+        $may_become_array = $type_before->isNullable() || $type_before->isFalsable() || $type_before->hasBool();
+        $kept_types = [];
+
+        foreach ($declared_type->getAtomicTypes() as $declared_atomic) {
+            if (($may_become_array
+                    && ($declared_atomic instanceof TArray
+                        || $declared_atomic instanceof TKeyedArray
+                        || $declared_atomic instanceof TIterable))
+                || UnionTypeComparator::canExpressionTypesBeIdentical(
+                    $codebase,
+                    $type_before,
+                    new Union([$declared_atomic]),
+                )
+            ) {
+                $kept_types[] = $declared_atomic;
+            }
+        }
+
+        return $kept_types ? new Union($kept_types) : $declared_type;
+    }
+
+    /**
+     * The memoized results of direct getters (`return $this->prop;`, see PropertyStorage::$getter_method) that a
+     * call writing only the properties of its receiver cannot change. Such a result is the property it returns, and
+     * is kept like what is known of a property of another object, unless
+     * - the getter is called on the receiver of the call or on what it holds (the call may write anything there,
+     *   through the other methods of the receiver it calls),
+     * - the getter returns a property of the name of one the call writes (the two objects may be the same),
+     * - the result may be the value of a property the call writes (the two properties may be bound by reference:
+     *   a value they share is of the native types of both),
+     * - writing or reading the properties may run code (a hook, `__set` or `__get` when the property was unset),
+     * - the getter may be overridden.
+     *
+     * @param array<string, bool> $written_properties
+     * @return array<string, true>
+     */
+    private static function getUnaffectedPropertyGetters(
+        Context $context,
+        Codebase $codebase,
+        ?string $receiver_id,
+        ClassLikeStorage $receiver_class,
+        array $written_properties,
+    ): array {
+        if ($receiver_id === null || isset($receiver_class->declaring_method_ids['__set'])) {
+            return [];
+        }
+
+        $written_types = [];
+
+        foreach ($written_properties as $name => $_) {
+            $property = self::getPlainProperty($codebase, $receiver_class, $name);
+
+            if ($property === null) {
+                return [];
+            }
+
+            $written_types[] = $property->signature_type ?? Type::getMixed();
+        }
+
+        $preserved = [];
+
+        foreach ($context->vars_in_scope as $var_id => $type) {
+            // the result of a call without arguments on a receiver that is not itself the result of a call
+            if (!$type->has_mutations || preg_match('/^([^(]+)->(\w+)\(\)$/D', $var_id, $parts) !== 1) {
+                continue;
+            }
+
+            [, $getter_receiver_id, $getter_name] = $parts;
+
+            if ($getter_receiver_id === $receiver_id
+                || str_starts_with($getter_receiver_id, $receiver_id . '->')
+                || str_starts_with($getter_receiver_id, $receiver_id . '[')
+                || !isset($context->vars_in_scope[$getter_receiver_id])
+            ) {
+                continue;
+            }
+
+            $getter_name = strtolower($getter_name);
+            $is_property_getter = true;
+
+            foreach ($context->vars_in_scope[$getter_receiver_id]->getAtomicTypes() as $atomic) {
+                $property_name = $atomic instanceof TNamedObject && $atomic->getIntersectionTypes() === []
+                    ? self::getGetterPropertyName($codebase, $atomic->value, $getter_name)
+                    : null;
+
+                if ($property_name === null || isset($written_properties[$property_name])) {
+                    $is_property_getter = false;
+                    break;
+                }
+            }
+
+            if (!$is_property_getter) {
+                continue;
+            }
+
+            foreach ($written_types as $written_type) {
+                if (UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $type, $written_type)) {
+                    continue 2;
+                }
+            }
+
+            $preserved[$var_id] = true;
+        }
+
+        return $preserved;
+    }
+
+    /**
+     * Resets what is known of a property of an object a property holds (`$a->p->q`, $path being `['q']`) after a
+     * call assigned it ($assigned) or wrote items or properties of what it holds. Where writing a property on the way
+     * may run code, which may write any property of its object, all that is known of that object is forgotten
+     *
+     * @param ?Union $declared_type what the property is declared to hold
+     * @param non-empty-list<string> $path
+     */
+    private static function resetPropertyOfHeldObject(
+        Codebase $codebase,
+        Context $context,
+        string $property_id,
+        ?Union $declared_type,
+        array $path,
+        bool $assigned,
+    ): void {
+        foreach ($path as $name) {
+            $declared_type = self::getDeclaredPlainPropertyType(
+                $codebase,
+                $context->vars_in_scope[$property_id] ?? $declared_type,
+                $name,
+            );
+
+            if ($declared_type === null) {
+                $context->forgetPropertyOfHeldObject($property_id);
+
+                return;
+            }
+
+            $property_id .= '->' . $name;
+        }
+
+        $context->forgetPropertyDescendents($property_id);
+
+        $type_before = $context->vars_in_scope[$property_id] ?? null;
+
+        if (!$assigned && $type_before !== null) {
+            if ($type_before->isObjectType()) {
+                // writing items or properties of an object leaves the property holding the same object
+                return;
+            }
+
+            $declared_type = self::getTypeAfterItemWrites($codebase, $type_before, $declared_type);
+        }
+
+        // assigned rather than forgotten, so that it holds this type after the branches of a condition too
+        $context->vars_in_scope[$property_id] = $declared_type;
+        $context->possibly_assigned_var_ids[$property_id] = true;
+    }
+
+    /**
+     * What a property of the objects a property is known to hold is declared to hold, if writing it cannot run code
+     */
+    private static function getDeclaredPlainPropertyType(
+        Codebase $codebase,
+        ?Union $object_type,
+        string $name,
+    ): ?Union {
+        if ($object_type === null) {
+            return null;
+        }
+
+        $declared_type = null;
+
+        foreach ($object_type->getAtomicTypes() as $atomic) {
+            // a property of null cannot be written
+            if ($atomic instanceof TNull) {
+                continue;
+            }
+
+            if (!$atomic instanceof TNamedObject
+                || $atomic instanceof TGenericObject
+                || $atomic->getIntersectionTypes() !== []
+                || !$codebase->classlike_storage_provider->has($atomic->value)
+            ) {
+                return null;
+            }
+
+            $class_storage = $codebase->classlike_storage_provider->get($atomic->value);
+
+            // as for a write of the caller, a hook a subclass may add is not considered
+            if (isset($class_storage->declaring_method_ids['__set'])
+                || self::getPlainProperty($codebase, $class_storage, $name, false) === null
+            ) {
+                return null;
+            }
+
+            $property_type = AssignmentAnalyzer::getExpandedPropertyType(
+                $codebase,
+                $class_storage->name,
+                $name,
+                $class_storage,
+            );
+
+            if ($property_type === null) {
+                return null;
+            }
+
+            $declared_type = $declared_type === null
+                ? $property_type
+                : Type::combineUnionTypes($declared_type, $property_type);
+        }
+
+        return $declared_type;
+    }
+
+    /**
+     * A declared property of the objects of this class whose reads and writes cannot run code
+     *
+     * @param bool $in_subclasses also in those of its subclasses, which may redeclare it with a hook
+     * @psalm-capabilities read-props
+     */
+    private static function getPlainProperty(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        string $name,
+        bool $in_subclasses = true,
+    ): ?PropertyStorage {
+        $declaring_class = $class_storage->declaring_property_ids[$name] ?? null;
+        $property = $declaring_class !== null && $codebase->classlike_storage_provider->has($declaring_class)
+            ? $codebase->classlike_storage_provider->get($declaring_class)->properties[$name] ?? null
+            : null;
+
+        if ($property === null
+            || $property->hook_get !== null
+            || $property->hook_set !== null
+            // a subclass may redeclare the property with a hook
+            || ($in_subclasses
+                && !$class_storage->final
+                && $property->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                && $codebase->analysis_php_version_id >= 8_04_00)
+        ) {
+            return null;
+        }
+
+        return $property;
+    }
+
+    /**
+     * The property a method returns, if it is a direct getter (see PropertyStorage::$getter_method)
+     *
+     * @param lowercase-string $method_name
+     * @psalm-capabilities read-props
+     */
+    private static function getGetterPropertyName(
+        Codebase $codebase,
+        string $fq_class_name,
+        string $method_name,
+    ): ?string {
+        if (!$codebase->classlike_storage_provider->has($fq_class_name)) {
+            return null;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId(
+            new MethodIdentifier($fq_class_name, $method_name),
+        );
+
+        if (isset($class_storage->declaring_method_ids['__get'])
+            || $declaring_method_id === null
+            || !$codebase->classlike_storage_provider->has($declaring_method_id->fq_class_name)
+            || $codebase->methods->getStorage($declaring_method_id)->overridden_downstream
+        ) {
+            return null;
+        }
+
+        $declaring_class = $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name);
+
+        foreach ($declaring_class->properties as $name => $property) {
+            // the property read is that of the class of the object, which may redeclare it
+            if ($property->getter_method === $method_name) {
+                return self::getPlainProperty($codebase, $class_storage, $name) !== null ? $name : null;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -557,6 +1136,8 @@ final class MethodCallPurityAnalyzer
      * the callers, so it is left out of the inferred purity.
      *
      * @param array<string, array<string, Union>> $class_template_params
+     * @param CapabilitySet $template_capabilities
+     * @return CapabilitySet
      */
     private static function getInferredTemplateCapabilities(
         StatementsAnalyzer $statements_analyzer,
@@ -595,7 +1176,8 @@ final class MethodCallPurityAnalyzer
     /**
      * A void method whose purity comes from purity templates (`Iterator::next()`) is called for the
      * effects of what they are bound to, or of its own engine state (the cursor of an iterator):
-     * its call is not unused even when they turn out to be none.
+     * its call is not unused even when they turn out to be none. So are the builtin methods that run
+     * a fiber or a generator on and return what it hands back (`Fiber::resume()`, `Generator::send()`).
      *
      * @psalm-mutation-free
      */
@@ -603,6 +1185,9 @@ final class MethodCallPurityAnalyzer
     {
         return $method_storage->purity_from_templates !== []
             && ($method_storage->return_type?->isVoid() === true
-                || $method_storage->signature_return_type?->isVoid() === true);
+                || $method_storage->signature_return_type?->isVoid() === true
+                || isset(self::ENGINE_STATE_MOVERS[
+                    strtolower($method_storage->defining_fqcln . '::' . (string) $method_storage->cased_name)
+                ]));
     }
 }

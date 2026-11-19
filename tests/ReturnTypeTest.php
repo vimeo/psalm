@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
-use Composer\InstalledVersions;
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralString;
 
-use function version_compare;
+use function array_column;
+use function mb_internal_encoding;
+use function sort;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -20,21 +25,696 @@ final class ReturnTypeTest extends TestCase
 
     public function testVoidParameterType(): void
     {
-        // PHP-Parser 5.8 rejects void parameters before Psalm analyzes the body.
-        $parser_version = InstalledVersions::getVersion('nikic/php-parser') ?? '5.0.0';
-        $this->testInvalidCode(
-            '<?php function f(void $p): void {}',
-            version_compare($parser_version, '5.8.0', '>=') ? 'ParseError' : 'ParadoxicalCondition',
+        // PHP-Parser rejects void parameters before Psalm analyzes the body.
+        $this->testInvalidCode('<?php function f(void $p): void {}', 'ParseError');
+    }
+
+    public function testAVariableLeftWithoutValueByADeadAssignmentKeepsTheEndOfTheBodyReachable(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return never */
+                function boom() {
+                    throw new Exception();
+                }
+
+                function f(int $x): int {
+                    if (is_string($x)) {
+                        $y = $x;
+                    }
+                    if (rand(0, 1)) {
+                        return 1;
+                    }
+                }
+
+                function g(): int {
+                    try {
+                        $z = boom();
+                    } catch (Exception $e) {}
+                    if (rand(0, 1)) {
+                        return 1;
+                    }
+                }',
         );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $types = array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type');
+        sort($types);
+
+        self::assertSame(
+            ['InvalidReturnType', 'InvalidReturnType', 'NoValue', 'NoValue', 'TypeDoesNotContainType'],
+            $types,
+        );
+    }
+
+    public function testUnicodeEscapeOfADocblockStringLiteralIsNotTheInternalEncoding(): void
+    {
+        $encoding = mb_internal_encoding();
+        mb_internal_encoding('ISO-8859-1');
+
+        try {
+            $type = Type::parseString('"\u{e9}\u{1F600}"');
+        } finally {
+            mb_internal_encoding($encoding);
+        }
+
+        $atomic = $type->getSingleAtomic();
+
+        self::assertInstanceOf(TLiteralString::class, $atomic);
+        self::assertSame("\u{e9}\u{1F600}", $atomic->value);
     }
 
     /**
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
+            'doWhileBodyAlwaysReturning' => [
+                'code' => '<?php
+                    function f(int $i): string {
+                        do {
+                            if ($i > 0) {
+                                return "a";
+                            }
+                            return "b";
+                        } while (false);
+                    }',
+            ],
+            'doWhileBodyAlwaysThrowing' => [
+                'code' => '<?php
+                    function f(): string {
+                        do {
+                            throw new Exception();
+                        } while (false);
+                    }',
+            ],
+            'nestedDoWhileBodiesAlwaysReturning' => [
+                'code' => '<?php
+                    function f(): string {
+                        do {
+                            do {
+                                return "a";
+                            } while (false);
+                        } while (false);
+                    }',
+            ],
+            'foreachOverANonEmptyLiteralArrayAlwaysReturning' => [
+                'code' => '<?php
+                    function f(): string {
+                        foreach ([1, 2] as $_x) {
+                            return "a";
+                        }
+                    }',
+            ],
+            'foreachOverANonEmptyArrayAlwaysReturning' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string, int> $a */
+                    function f(array $a): int {
+                        foreach ($a as $x) {
+                            return $x;
+                        }
+                    }',
+            ],
+            'switchBreakWithFallthroughDefaultStillReturns' => [
+                'code' => '<?php
+                    function afterSwitch(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                break;
+                            default:
+                                ++$value;
+                        }
+
+                        return $value;
+                    }',
+            ],
+            'docblockStringLiteralWithEscapedBackslashes' => [
+                'code' => '<?php
+                    /** @return "\\\\t" */
+                    function backslashAndLetter(): string {
+                        return "\\\\t";
+                    }
+
+                    /** @return "\\\\\\\\" */
+                    function twoBackslashes(): string {
+                        return "\\\\\\\\";
+                    }
+
+                    /** @return \'\\\\\\\\\' */
+                    function twoBackslashesSingleQuoted(): string {
+                        return \'\\\\\\\\\';
+                    }',
+            ],
+            'docblockStringLiteralWithAUnicodeEscapeWithLeadingZeros' => [
+                'code' => '<?php
+                    /** @return "\u{0000000000e9}" */
+                    function leadingZeros(): string {
+                        return "é";
+                    }',
+            ],
+            'docblockStringLiteralWithNonAsciiUnicodeEscapes' => [
+                'code' => '<?php
+                    /** @return "\u{e9}\u{20AC}\u{1F600}" */
+                    function nonAscii(): string {
+                        return "é€😀";
+                    }',
+            ],
+            'docblockStringLiteralWithEscapeSequences' => [
+                'code' => '<?php
+                    /** @return "\t" */
+                    function tab(): string {
+                        return "\t";
+                    }
+
+                    /** @return "a\nb" */
+                    function newline(): string {
+                        return "a\nb";
+                    }
+
+                    /** @return "\x41\101\u{42}" */
+                    function numeric(): string {
+                        return "AAB";
+                    }
+
+                    /** @return "\$x" */
+                    function dollar(): string {
+                        return \'$x\';
+                    }
+
+                    /** @return "say \"hi\"" */
+                    function quotes(): string {
+                        return \'say "hi"\';
+                    }',
+            ],
+            'docblockStringLiteralKeepsWhatIsNotAnEscapeSequence' => [
+                'code' => '<?php
+                    /** @return "\d+" */
+                    function regex(): string {
+                        return "\\d+";
+                    }
+
+                    /** @return "\\d" */
+                    function backslash(): string {
+                        return "\\d";
+                    }
+
+                    /** @return \'a\\\\b\' */
+                    function single(): string {
+                        return \'a\\\\b\';
+                    }
+
+                    /** @return \'it\\\'s\' */
+                    function apostrophe(): string {
+                        return "it\'s";
+                    }',
+            ],
+            'generatorReturnTypeAllowsAnImplicitReturnOfNull' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, string|null> */
+                    function nullable(bool $r): Generator {
+                        if ($r) {
+                            return "string";
+                        }
+
+                        yield 1;
+                    }
+
+                    /** @return Generator<int, int, mixed, mixed> */
+                    function untyped(bool $r): Generator {
+                        if ($r) {
+                            return "string";
+                        }
+
+                        yield 1;
+                    }
+
+                    /** @return Generator<int, int, mixed, string> */
+                    function everyPathReturns(bool $r): Generator {
+                        yield 1;
+
+                        if ($r) {
+                            return "a";
+                        }
+
+                        return "b";
+                    }',
+            ],
+            'generatorMethodThatThrowsInInfiniteLoop' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @return Generator<int>
+                         */
+                        public function events(): Generator {
+                            while (true) {
+                                if (rand(0, 1)) {
+                                    throw new Exception("failed");
+                                }
+
+                                foreach ([1, 2] as $event) {
+                                    yield $event;
+                                }
+                            }
+                        }
+                    }',
+            ],
+            'generatorThatThrowsInInfiniteLoop' => [
+                'code' => '<?php
+                    /**
+                     * @return Generator<int>
+                     */
+                    function events(): Generator {
+                        while (true) {
+                            if (rand(0, 1)) {
+                                throw new Exception("failed");
+                            }
+
+                            yield 1;
+                        }
+                    }',
+            ],
+            'narrowerNativeReturnTypeWinsOverInheritedDocblockWithStringable' => [
+                'code' => '<?php
+                    abstract class A {
+                        /**
+                         * @return string|Stringable
+                         */
+                        abstract public function render(): string|Stringable;
+                    }
+
+                    final class B extends A {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $s = (new B())->render();',
+                'assertions' => ['$s===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritedDocblockStillRefinesNativeReturnType' => [
+                'code' => '<?php
+                    abstract class A {
+                        /**
+                         * @return non-empty-string
+                         */
+                        abstract public function render(): string;
+                    }
+
+                    final class B extends A {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $s = (new B())->render();',
+                'assertions' => ['$s===' => 'non-empty-string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowerNativeReturnTypeWinsOverInheritedDocblockWithStringableOrInt' => [
+                'code' => '<?php
+                    abstract class C {
+                        /** @return Stringable|int */
+                        abstract public function render(): Stringable|int|string;
+                    }
+
+                    final class D extends C {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $t = (new D())->render();',
+                'assertions' => ['$t===' => 'string'],
+                'ignored_issues' => ['ImplementedReturnTypeMismatch'],
+                'php_version' => '8.1',
+            ],
+            'narrowerNativeReturnTypeWinsOverInheritedStringableDocblock' => [
+                'code' => '<?php
+                    abstract class E {
+                        /** @return Stringable */
+                        abstract public function render(): Stringable|string;
+                    }
+
+                    final class F extends E {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $u = (new F())->render();',
+                'assertions' => ['$u===' => 'string'],
+                'ignored_issues' => ['ImplementedReturnTypeMismatch'],
+                'php_version' => '8.1',
+            ],
+            'nativeStringableReturnTypeKeepsStringableOverInheritedStringOrStringable' => [
+                'code' => '<?php
+                    abstract class A {
+                        /**
+                         * @return string|Stringable
+                         */
+                        abstract public function render(): string|Stringable;
+                    }
+
+                    final class B extends A {
+                        public function render(): Stringable {
+                            return new class implements Stringable {
+                                public function __toString(): string { return "x"; }
+                            };
+                        }
+                    }
+
+                    $s = (new B())->render();',
+                'assertions' => ['$s===' => 'Stringable'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'overriddenInterfaceReturnTypesIgnoreAStringCastAsContainment' => [
+                'code' => '<?php
+                    interface I1 {
+                        /** @return string */
+                        public function render();
+                    }
+                    interface I2 {
+                        /** @return Stringable */
+                        public function render();
+                    }
+                    final class C implements I1, I2 {
+                        public function render() {
+                            return "x";
+                        }
+                    }
+
+                    $x = (new C())->render();',
+                'assertions' => ['$x===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'overriddenInterfaceReturnTypesIgnoreAStringCastAsContainmentInTheOtherOrder' => [
+                'code' => '<?php
+                    interface L1 {
+                        /** @return Stringable */
+                        public function render();
+                    }
+                    interface L2 {
+                        /** @return string */
+                        public function render();
+                    }
+                    final class M implements L1, L2 {
+                        public function render() {
+                            return "x";
+                        }
+                    }
+
+                    $w = (new M())->render();',
+                'assertions' => ['$w===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'overriddenInterfaceReturnTypesKeepContainmentWithoutAStringCast' => [
+                'code' => '<?php
+                    interface J1 {
+                        /** @return non-empty-string */
+                        public function render();
+                    }
+                    interface J2 {
+                        /** @return string */
+                        public function render();
+                    }
+                    final class K implements J1, J2 {
+                        public function render() {
+                            return "x";
+                        }
+                    }
+
+                    $y = (new K())->render();',
+                'assertions' => ['$y===' => 'non-empty-string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowerNativeReturnTypeWinsOverInheritedDocblockWithAClassHavingToString' => [
+                'code' => '<?php
+                    class S {
+                        public function __toString() {
+                            return "s";
+                        }
+                    }
+
+                    abstract class A {
+                        /** @return string|S */
+                        abstract public function render();
+                    }
+
+                    final class B extends A {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $z = (new B())->render();',
+                'assertions' => ['$z===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'voidNeverDeclaredWithAThrowingPathAndAnImplicitReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            throw new Exception();
+                        }
+                    }',
+            ],
+            'voidFunctionThatNeverEndsIsCorrect' => [
+                'code' => '<?php
+                    function work(): void {}
+
+                    class Listener {
+                        /** @return void */
+                        public function listen() {
+                            while (true) {
+                                work();
+                            }
+                        }
+
+                        /** @return void */
+                        public function stop() {
+                            work();
+                            exit(1);
+                        }
+                    }',
+            ],
+            'voidNeverDeclaredWithANeverReturningCallPathAndAnImplicitReturn' => [
+                'code' => '<?php
+                    function stop(): never {
+                        exit;
+                    }
+
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            stop();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nullableDocblockReturnWithoutReturnStatements' => [
+                'code' => '<?php
+                    /**
+                     * @return int|null
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            echo "hello";
+                        }
+                    }',
+            ],
+            'nativeArrayReturnTypeTakesTheInheritedIterableDocblock' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @return iterable<int, stdClass> */
+                        abstract public function items(): iterable;
+                    }
+
+                    final class Child extends Base {
+                        public function items(): array {
+                            return [new stdClass()];
+                        }
+                    }
+
+                    $items = (new Child())->items();',
+                'assertions' => ['$items===' => 'array<int, stdClass>'],
+            ],
+            'iterableDocblockReturnTypeOfNativeArrayOrObject' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     */
+                    interface FooInterface {
+                        /**
+                         * @return T|iterable<T>|null
+                         */
+                        public function foo(): object|array|null;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'neverFunctionWithAnEmptyInfiniteLoop' => [
+                'code' => '<?php
+                    function whileLoop(): never {
+                        while (true) {}
+                    }
+
+                    function forLoop(): never {
+                        for (;;) {}
+                    }
+
+                    function doLoop(): never {
+                        do {} while (true);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'neverFunctionWithAnInfiniteLoopThatMayThrow' => [
+                'code' => '<?php
+                    /** @throws Exception */
+                    function boom(): void {
+                        throw new Exception();
+                    }
+
+                    function run(): never {
+                        while (true) {
+                            if (random_int(0, 100000) === 0) {
+                                boom();
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'intFunctionWithAnEmptyInfiniteLoop' => [
+                'code' => '<?php
+                    function run(): int {
+                        while (true) {}
+                    }',
+            ],
+            'nativeNullReturnTypeOfAnInterfaceMethodWithADocblock' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @param string[] $params
+                         */
+                        public function method(array $params): null;
+                    }
+
+                    final class C implements I {
+                        public function method(array $params): null {
+                            return null;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'docblockNullReturnTypeOfAnInterfaceMethodIsVoid' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @return null
+                         */
+                        public function method();
+                    }
+
+                    final class C implements I {
+                        public function method() {
+                            return;
+                        }
+                    }',
+            ],
+            'wordPressHashNotationAfterReturnAndVarType' => [
+                'code' => '<?php
+                    /**
+                     * @return array<string, mixed> {
+                     *     Output of the process.
+                     *
+                     *     @type string $stdout    Output that was sent to STDOUT.
+                     *     @type int    $exit_code Exit code of the process.
+                     * }
+                     */
+                    function run(): array {
+                        return ["stdout" => "", "exit_code" => 0];
+                    }
+
+                    final class Db {
+                        /**
+                         * @var array[] {
+                         *     Array of queries that were executed.
+                         *
+                         *     @type array ...$0 {
+                         *         @type string $0 The query.
+                         *     }
+                         * }
+                         */
+                        public array $queries = [];
+                    }
+
+                    $a = run();
+                    $b = (new Db)->queries;',
+                'assertions' => [
+                    '$a' => 'array<string, mixed>',
+                    '$b' => 'array<array-key, array<array-key, mixed>>',
+                ],
+            ],
+            'spacedShapesThatAreNotWordPressHashNotation' => [
+                'code' => '<?php
+                    /**
+                     * @return array { \'user@host\': int }
+                     */
+                    function host(): array {
+                        return ["user@host" => 1];
+                    }
+
+                    /**
+                     * @return array { cb: callable(int $x): void, n: ($flag is true ? int : string) }
+                     */
+                    function callbacks(bool $flag): array {
+                        return ["cb" => static function (int $x): void {}, "n" => $flag ? 1 : "a"];
+                    }
+
+                    /**
+                     * @param array { \'a$b\': int } $p
+                     */
+                    function takes(array $p): int {
+                        return $p["a\$b"];
+                    }
+
+                    $a = host();
+                    $b = callbacks(true);',
+                'assertions' => [
+                    '$a===' => 'array{\'user@host\': int}',
+                    '$b===' => 'array{cb: callable[impure](int):void, n: int}',
+                ],
+            ],
             'arrayCombine' => [
                 'code' => '<?php
                     class a {}
@@ -278,6 +958,50 @@ final class ReturnTypeTest extends TestCase
                                 default:
                                     throw new \Exception("badness");
                             }
+                        }
+                    }',
+            ],
+            'switchWhoseCasesFallThroughIntoADefaultThatEnds' => [
+                'code' => '<?php
+                    function toEnd(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                echo "zero";
+                            default:
+                                return 2;
+                        }
+                    }
+
+                    function toThrow(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            case 1:
+                                echo "one";
+                            default:
+                                throw new Exception();
+                        }
+                    }',
+            ],
+            'switchWithADefaultInTheMiddleThatFallsThroughIntoAnEndingCase' => [
+                'code' => '<?php
+                    function defaultFirst(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                return 1;
+                        }
+                    }
+
+                    function defaultBetween(int $x): int {
+                        switch ($x) {
+                            case 0:
+                                return 0;
+                            default:
+                                echo "x";
+                            case 1:
+                                throw new Exception();
                         }
                     }',
             ],
@@ -824,7 +1548,7 @@ final class ReturnTypeTest extends TestCase
                     $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
                 'assertions' => [
-                    '$res===' => 'iterable<int, numeric-string>',
+                    '$res===' => 'iterable<int, decimal-int-string>',
                 ],
             ],
             'infersArrowClosureReturnTypes' => [
@@ -864,7 +1588,7 @@ final class ReturnTypeTest extends TestCase
                     $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
                 'assertions' => [
-                    '$res===' => 'iterable<int, numeric-string>',
+                    '$res===' => 'iterable<int, decimal-int-string>',
                 ],
             ],
             'infersCallableReturnTypes' => [
@@ -886,7 +1610,7 @@ final class ReturnTypeTest extends TestCase
                     $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
                 'assertions' => [
-                    '$res===' => 'iterable<int, numeric-string>',
+                    '$res===' => 'iterable<int, decimal-int-string>',
                 ],
             ],
             'infersCallableReturnTypesWithPartialTypehinting' => [
@@ -908,7 +1632,7 @@ final class ReturnTypeTest extends TestCase
                     $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
                 'assertions' => [
-                    '$res===' => 'iterable<int, numeric-string>',
+                    '$res===' => 'iterable<int, decimal-int-string>',
                 ],
             ],
             'infersObjectShapeOfCastScalar' => [
@@ -920,7 +1644,7 @@ final class ReturnTypeTest extends TestCase
                     $obj = (object)returnsInt();
                 ',
                 'assertions' => [
-                    '$obj' => 'object{scalar:int}',
+                    '$obj' => 'object{scalar:int}&stdClass',
                 ],
             ],
             'infersObjectShapeOfCastArray' => [
@@ -935,7 +1659,7 @@ final class ReturnTypeTest extends TestCase
                     $obj = (object)returnsArray();
                 ',
                 'assertions' => [
-                    '$obj' => 'object{a:int}',
+                    '$obj' => 'object{a:int}&stdClass',
                 ],
             ],
             'mixedAssignmentWithUnderscore' => [
@@ -1339,6 +2063,22 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
             ],
+            'returnedReferenceAssignmentExpressionHasType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class ReferenceText {
+                        public static string $value = 'hello';
+                    }
+
+                    function &textReference(): string {
+                        return ReferenceText::$value;
+                    }
+
+                    function readAssignedReference(): string {
+                        return ($value = &textReference());
+                    }
+                    PHP,
+            ],
             'neverReturnType' => [
                 'code' => '<?php
                     function exitProgram(bool $die): never
@@ -1358,6 +2098,23 @@ final class ReturnTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'decimalIntStringTypes' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param decimal-int-string $id
+                     * @return array<non-decimal-int-string, int>
+                     */
+                    function ids(string $id): array {
+                        throw new \\RuntimeException($id);
+                    }
+
+                    $a = ids("1");',
+                'assertions' => [
+                    '$a===' => 'array<non-decimal-int-string, int>',
+                ],
             ],
             'nonEmptyStringLowercaseStringIntersection' => [
                 'code' => '<?php
@@ -1389,6 +2146,259 @@ final class ReturnTypeTest extends TestCase
                     '$a===' => 'non-empty-literal-string',
                 ],
             ],
+            'scalarAndConditionalIntersections' => [
+                'code' => '<?php
+                    /** @return lowercase-string&non-falsy-string */
+                    function nonce(): string {
+                        return "abc";
+                    }
+
+                    /** @return ($prefix is "" ? lowercase-string : string)&non-falsy-string */
+                    function uniqueId(string $prefix = ""): string {
+                        throw new RuntimeException();
+                    }
+
+                    /** @return int<0, max>&int<min, 10> */
+                    function digit(): int {
+                        return 5;
+                    }
+
+                    /** @return int-mask<1, 2>&int-mask<2, 4> */
+                    function flags(): int {
+                        return 2;
+                    }
+
+                    /**
+                     * @param string&callable $callback
+                     * @return callable-string
+                     */
+                    function callbackName($callback): string {
+                        return $callback;
+                    }
+
+                    $a = nonce();
+                    $b = uniqueId();
+                    $c = uniqueId("ID-");
+                    $d = digit();
+                    $e = flags();',
+                'assertions' => [
+                    '$a===' => 'lowercase-string&non-falsy-string',
+                    '$b===' => 'lowercase-string&non-falsy-string',
+                    '$c===' => 'non-falsy-string',
+                    '$d===' => 'int<0, 10>',
+                    '$e===' => '0|2',
+                ],
+            ],
+            'numericStringIntersections' => [
+                'code' => '<?php
+                    /**
+                     * @return ($prefix is ""|numeric-string ? numeric-string : string)&non-falsy-string&($prefix is lowercase-string ? lowercase-string : string)
+                     */
+                    function uniqueId(string $prefix = ""): string {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @return ($threshold is 0 ? lowercase-string&non-empty-string&numeric-string : lowercase-string&non-empty-string)
+                     */
+                    function sizeFormat(int $threshold = 0): string {
+                        throw new RuntimeException();
+                    }
+
+                    $a = uniqueId();
+                    $b = uniqueId("ID-");
+                    $c = uniqueId("id-");
+                    $d = sizeFormat();
+                    $e = sizeFormat(1);',
+                'assertions' => [
+                    '$a===' => 'lowercase-string&non-falsy-string&numeric-string',
+                    '$b===' => 'non-falsy-string',
+                    '$c===' => 'lowercase-string&non-falsy-string',
+                    '$d===' => 'lowercase-string&numeric-string',
+                    '$e===' => 'non-empty-lowercase-string',
+                ],
+            ],
+            'classConstantIntersections' => [
+                'code' => '<?php
+                    /** @return value-of<Flags::LIST>&int */
+                    function a(): int {
+                        return 1;
+                    }
+
+                    /** @return key-of<Flags::MAP>&string */
+                    function b(): string {
+                        return "a";
+                    }
+
+                    /** @return (Flags::A|Flags::B|Flags::C)&int<2, 5> */
+                    function c(): int {
+                        return 2;
+                    }
+
+                    /** @return int-mask-of<Flags::*>&int-mask<1, 2> */
+                    function d(): int {
+                        return 0;
+                    }
+
+                    final class Flags {
+                        const A = 1;
+                        const B = 2;
+                        const C = 4;
+                        const LIST = [1, 2, "x"];
+                        const MAP = ["a" => 1, 5 => 2];
+                    }
+
+                    $a = a();
+                    $b = b();
+                    $c = c();
+                    $d = d();',
+                'assertions' => [
+                    '$a===' => '1|2',
+                    '$b===' => "'a'",
+                    '$c===' => '2|4',
+                    '$d===' => '0|1|2|3',
+                ],
+            ],
+            'globalConstantWildcardIntersection' => [
+                'code' => '<?php
+                    /** @return PHP_URL_*&int<0, 2> */
+                    function component(): int {
+                        return PHP_URL_HOST;
+                    }
+
+                    $a = component();',
+                'assertions' => [
+                    '$a===' => '0|1|2',
+                ],
+            ],
+            'templateInClassConstantIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $t
+                     * @param-out value-of<Flags::LIST>&(T is int ? int : string) $out
+                     */
+                    function flag($t, mixed &$out): void {
+                        $out = 1;
+                    }
+
+                    flag(5, $a);
+                    flag("x", $b);
+
+                    final class Flags {
+                        const LIST = [1, 2, "x"];
+                    }',
+                'assertions' => [
+                    '$a===' => '1|2',
+                    '$b===' => "'x'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateInferredFromClassConstantIntersection' => [
+                'code' => '<?php
+                    interface Card {}
+
+                    enum Suit implements Card {
+                        case Hearts;
+                        case Spades;
+                    }
+
+                    /**
+                     * @template T of Card
+                     * @param Suit::Hearts&T $card
+                     * @return T
+                     */
+                    function card(Card $card): Card {
+                        return $card;
+                    }
+
+                    $a = card(Suit::Hearts);',
+                'assertions' => [
+                    '$a===' => 'enum(Suit::Hearts)',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invalidClassConstantIntersectionIsIgnored' => [
+                'code' => '<?php
+                    /** @return Names::FOO&class-string */
+                    function name(): string {
+                        return "Foo";
+                    }
+
+                    final class Names {
+                        const FOO = "Foo";
+                    }
+
+                    $a = name();
+                    $b = is_string($a);',
+                'assertions' => [
+                    '$a===' => 'mixed',
+                ],
+                'ignored_issues' => ['InvalidDocblock', 'MixedAssignment'],
+            ],
+            'truthyAndFalsyNumericString' => [
+                'code' => '<?php
+                    /** @var numeric-string $s */
+                    $s = "1";
+                    /** @var lowercase-string&numeric-string $l */
+                    $l = "1";
+                    $t = null;
+                    $f = null;
+                    $u = null;
+                    if ($s) {
+                        $t = $s;
+                    } else {
+                        $f = $s;
+                    }
+                    if ($l) {
+                        $u = $l;
+                    }',
+                'assertions' => [
+                    '$t===' => 'non-falsy-string&numeric-string|null',
+                    '$f===' => "'0'|null",
+                    '$u===' => 'lowercase-string&non-falsy-string&numeric-string|null',
+                ],
+            ],
+            'isNumericKeepsStringRefinements' => [
+                'code' => '<?php
+                    /** @var lowercase-string $s */
+                    $s = "a";
+                    /** @var lowercase-string&non-falsy-string $l */
+                    $l = "a";
+                    /** @var non-falsy-string $f */
+                    $f = "a";
+                    $a = null;
+                    $b = null;
+                    $c = null;
+                    if (is_numeric($s)) {
+                        $a = $s;
+                    }
+                    if (is_numeric($l)) {
+                        $b = $l;
+                    }
+                    if (is_numeric($f)) {
+                        $c = $f;
+                    }',
+                'assertions' => [
+                    '$a===' => 'lowercase-string&numeric-string|null',
+                    '$b===' => 'lowercase-string&non-falsy-string&numeric-string|null',
+                    '$c===' => 'non-falsy-string&numeric-string|null',
+                ],
+            ],
+            'truthyLowercaseStringIsNonFalsy' => [
+                'code' => '<?php
+                    /** @var lowercase-string $s */
+                    $s = "a";
+                    $t = null;
+                    if ($s) {
+                        $t = $s;
+                    }',
+                'assertions' => [
+                    '$t===' => 'lowercase-string&non-falsy-string|null',
+                ],
+            ],
             'laravelStyleStrLowerConditionalReturnType' => [
                 'code' => '<?php
                     /**
@@ -1409,6 +2419,281 @@ final class ReturnTypeTest extends TestCase
                     '$b===' => "''",
                 ],
             ],
+            'objectShapePropertyNarrowedByIdenticalCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param object{n: string} $s
+                     * @return non-empty-string
+                     */
+                    function f(object $s): string {
+                        if ($s->n === "") {
+                            throw new RuntimeException("empty-string");
+                        }
+                        return $s->n;
+                    }',
+                'assertions' => [],
+            ],
+            'objectCastOfAShapedArrayKeepsItsProperties' => [
+                'code' => '<?php
+                    /**
+                     * @return object{a: int}
+                     */
+                    function test(): object {
+                        return (object) ["a" => 1];
+                    }',
+            ],
+            'objectCastOfAShapedArrayOrAScalarIsAStdClass' => [
+                'code' => '<?php
+                    /** @var array{a: int}|int $values */
+                    $values = 1;
+                    $object = (object) $values;',
+                'assertions' => [
+                    '$object' => 'stdClass',
+                ],
+            ],
+            'objectCastOfAShapedArrayOrNullIsAStdClass' => [
+                'code' => '<?php
+                    /** @var array{a: int}|null $values */
+                    $values = null;
+                    $object = (object) $values;',
+                'assertions' => [
+                    '$object===' => 'stdClass',
+                ],
+            ],
+            'objectCastOfAShapedArrayIsAnArgumentOfItsClassAndOfObject' => [
+                'code' => '<?php
+                    function takesStdClass(stdClass $o): void {}
+                    function takesObject(object $o): void {}
+                    /** @param object{a: int} $o */
+                    function takesShape($o): void {}
+                    /**
+                     * @template T of object
+                     * @param T $o
+                     * @return T
+                     */
+                    function identity($o) {
+                        return $o;
+                    }
+
+                    $o = (object) ["a" => 1];
+                    takesStdClass($o);
+                    takesObject($o);
+                    takesShape($o);
+                    $same = identity($o);',
+                'assertions' => [
+                    '$same===' => 'object{a:1}&stdClass',
+                ],
+            ],
+            'objectCastOfAnUnshapedArrayIsAStdClass' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $values */
+                    function f(array $values): stdClass {
+                        return (object) $values;
+                    }
+
+                    function g(array $values): stdClass {
+                        return (object) $values;
+                    }
+
+                    /** @param list<int> $values */
+                    function h(array $values): stdClass {
+                        return (object) $values;
+                    }
+
+                    function i(?array $values): stdClass {
+                        return (object) $values;
+                    }
+
+                    function j(): stdClass {
+                        return (object) [];
+                    }
+
+                    function k(): stdClass {
+                        return (object) null;
+                    }',
+            ],
+            'objectCastOfAnArrayOrAnObjectIsAnObject' => [
+                'code' => '<?php
+                    /** @param array<string, int>|object $value */
+                    function f($value): void {
+                        $object = (object) $value;
+                    }
+
+                    /** @var mixed $mixed */
+                    $mixed = 1;
+                    $object = (object) $mixed;',
+                'assertions' => [
+                    '$object===' => 'object',
+                ],
+            ],
+            'objectCastOfAnInlineArrayInAnArrayFilterCallback' => [
+                'code' => '<?php
+                    $e = array_filter([(object) ["a" => 1], null], fn($i) => $i);',
+                'assertions' => [
+                    '$e===' => 'array<int<0, 1>, object{a:1}&stdClass>',
+                ],
+            ],
+            'objectCastOfAScalarIsAStdClass' => [
+                'code' => '<?php
+                    function fromInt(): stdClass {
+                        return (object) 1;
+                    }',
+            ],
+            'objectCastOfAShapedArrayIsAStdClass' => [
+                'code' => '<?php
+                    function test(): stdClass {
+                        return (object) ["string" => "string"];
+                    }',
+            ],
+            'overridableMethodThatThrowsAfterAnotherStatementKeepsItsDeclaredReturnType' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    abstract class Base {
+                        /** @return string */
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+            ],
+            'overridableStaticMethodThatThrowsAfterAnotherStatementKeepsItsDeclaredReturnType' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    abstract class Base {
+                        /** @return string */
+                        public static function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+            ],
+            'traitMethodOfAnOverridableClassThatThrowsAfterAnotherStatementKeepsTheReturnTypeOfTheInterface' => [
+                'code' => '<?php
+                    final class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    interface I {
+                        /** @return string */
+                        public function doSomething();
+                    }
+
+                    trait T {
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }
+
+                    class C implements I {
+                        use T;
+                    }',
+            ],
+            'finalClassOverridesAGenericStaticReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<static> */
+                        public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+
+                    final class Leaf extends Base
+                    {
+                        /** @return Box<static> */
+                        #[\Override]
+                        public function box(): Box
+                        {
+                            return parent::box();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'finalClassOverridesAGenericThisReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<static> */
+                        public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+
+                    final class Leaf extends Base
+                    {
+                        /** @return Box<$this> */
+                        #[\Override]
+                        public function box(): Box
+                        {
+                            return parent::box();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'functionEndingAfterExhaustiveTypeChecksNeedsNoReturn' => [
+                'code' => '<?php
+                    function h(int|string $x): int {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'methodEndingAfterExhaustiveTypeChecksNeedsNoReturn' => [
+                'code' => '<?php
+                    final class C {
+                        public function get(int|string $x): int {
+                            if (is_int($x)) {
+                                return 1;
+                            }
+                            if (is_string($x)) {
+                                return 2;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1416,9 +2701,420 @@ final class ReturnTypeTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'doWhileBodyContinuingToAFalseCondition' => [
+                'code' => '<?php
+                    function f(int $i): string {
+                        do {
+                            if ($i > 0) {
+                                continue;
+                            }
+                            return "a";
+                        } while (false);
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'doWhileBodyBreaking' => [
+                'code' => '<?php
+                    function f(int $i): string {
+                        do {
+                            if ($i > 0) {
+                                break;
+                            }
+                            return "a";
+                        } while (false);
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'foreachOverAPossiblyEmptyListAlwaysReturning' => [
+                'code' => '<?php
+                    /** @param list<int> $l */
+                    function f(array $l): int {
+                        foreach ($l as $x) {
+                            return $x;
+                        }
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'foreachOverAShapeWithOnlyOptionalKeysAlwaysReturning' => [
+                'code' => '<?php
+                    /** @param array{a?: int} $a */
+                    function f(array $a): int {
+                        foreach ($a as $x) {
+                            return $x;
+                        }
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'foreachOverAPossiblyEmptyIteratorAlwaysReturning' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int>|ArrayIterator<int, int> $l */
+                    function f($l): int {
+                        foreach ($l as $x) {
+                            return $x;
+                        }
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'foreachOverANonEmptyArrayLeftByGoto' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        foreach ([1] as $_x) {
+                            if ($b) {
+                                goto end;
+                            }
+                            return 1;
+                        }
+                        end:
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'doWhileLeftByGoto' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        do {
+                            if ($b) {
+                                goto end;
+                            }
+                            return 1;
+                        } while ($b);
+                        end:
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'foreachOverANonEmptyListBreakingOutOfTwoLoops' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $l */
+                    function f(array $l): int {
+                        foreach ($l as $x) {
+                            foreach ($l as $_y) {
+                                break 2;
+                            }
+                            return $x;
+                        }
+                    }',
+                'error_message' => 'Not all code paths of f end in a return statement',
+            ],
+            'objectCastOfAnArrayIsNotAnotherClass' => [
+                'code' => '<?php
+                    function takesArrayObject(ArrayObject $o): void {}
+
+                    takesArrayObject((object) ["a" => 1]);',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'methodOfAnAnonymousClassThatThrowsAfterAnotherStatementIsInvalid' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    $o = new class {
+                        /** @return string */
+                        public function f() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("x");
+                        }
+                    };',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchWithADefaultInTheMiddleThatFallsThroughIntoACaseThatDoesNotEnd' => [
+                'code' => '<?php
+                    function classify(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                echo "one";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchWithADefaultInTheMiddleFollowedByABreak' => [
+                'code' => '<?php
+                    function classify(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                return 1;
+                            case 2:
+                                break;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchDefaultThatFallsThroughWithoutReturning' => [
+                'code' => '<?php
+                    function classify(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            default:
+                                echo "Other value";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchCaseThatFallsThroughIntoADefaultWithoutReturning' => [
+                'code' => '<?php
+                    function classify(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            case 1:
+                                echo "one";
+                            default:
+                                echo "other";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchDefaultThatBreaksWithoutReturning' => [
+                'code' => '<?php
+                    function classify(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            default:
+                                break;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'finalMethodOfASubclassableClassKeepsItsStaticReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<Mid> */
+                        public function box(): Box
+                        {
+                            return new Box(new Mid());
+                        }
+                    }
+
+                    class Mid extends Base
+                    {
+                        /** @return Box<static> */
+                        #[\Override]
+                        final public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+                    PHP,
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'docblockStringLiteralWithAUnicodeEscapeThatOverflowsAnInt' => [
+                'code' => '<?php
+                    /** @return "\u{FFFFFFFFFFFFFFFF}" */
+                    function overflow(): string {
+                        return "";
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'docblockStringLiteralWithATooLargeUnicodeEscape' => [
+                'code' => '<?php
+                    /** @return "\u{110000}" */
+                    function tooLarge(): string {
+                        return "";
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'docblockStringLiteralWithEscapeSequenceIsNotTheBackslashAndLetter' => [
+                'code' => '<?php
+                    /** @return "\t" */
+                    function tab(): string {
+                        return "\\\\t";
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'generatorReturnsImplicitlyOnAPath' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, string> */
+                    function foo(bool $r): Generator {
+                        if ($r) {
+                            return "string";
+                        }
+
+                        yield 1;
+                    }',
+                'error_message' => 'InvalidReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33 - Not all code paths of foo end in a return statement, the generator return type string expected',
+            ],
+            'voidNeverDeclaredWithOnlyAnImplicitReturn' => [
+                'code' => '<?php
+                    /**
+                     * @return void|never
+                     */
+                    function foo() {
+                        if (rand(0, 10) > 5) {
+                            echo "hello";
+                        }
+                    }',
+                'error_message' => 'MoreSpecificReturnType',
+            ],
+            'voidNeverDeclaredWithOnlyAnImplicitReturnInAMethod' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @return void|never
+                         */
+                        public function foo() {
+                            echo "hello";
+                        }
+                    }',
+                'error_message' => 'MoreSpecificReturnType',
+            ],
+            'nativeArrayReturnTypeMustRespectTheInheritedIterableDocblock' => [
+                'code' => '<?php
+                    abstract class Base {
+                        /** @return iterable<int, stdClass> */
+                        abstract public function items(): iterable;
+                    }
+
+                    final class Child extends Base {
+                        public function items(): array {
+                            return [3, 4];
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'iterableDocblockReturnTypeOfNativeObjectRejectsANonIterableObject' => [
+                'code' => '<?php
+                    interface FooInterface {
+                        /**
+                         * @return iterable
+                         */
+                        public function foo(): object|array {
+                            return new A();
+                        }
+                    }
+
+                    final class A {}',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'objectIsNotAcceptedWhereAnIterableIsExpected' => [
+                'code' => '<?php
+                    function takesIterable(iterable $items): void {
+                        foreach ($items as $_) {
+                            echo 1;
+                        }
+                    }
+
+                    function test(object $object): void {
+                        takesIterable($object);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'neverFunctionWithALoopThatBreaks' => [
+                'code' => '<?php
+                    function run(): never {
+                        while (true) {
+                            if (random_int(0, 9) === 0) {
+                                break;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'neverFunctionWithAFiniteLoop' => [
+                'code' => '<?php
+                    function run(): never {
+                        while (random_int(0, 9) > 0) {}
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'unrepresentableScalarIntersection' => [
+                'code' => '<?php
+                    /** @return literal-string&non-falsy-string */
+                    function f(): string {
+                        return "1";
+                    }',
+                'error_message' => 'Psalm has no type for the intersection of literal-string and non-falsy-string',
+            ],
+            'nonFalsyNumericStringRejectsZero' => [
+                'code' => '<?php
+                    /** @param non-falsy-string&numeric-string $s */
+                    function f(string $s): void {}
+                    f("0");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'emptyClassConstantIntersection' => [
+                'code' => '<?php
+                    /** @return Flags::A&int<2, 5> */
+                    function f(): int {
+                        throw new RuntimeException();
+                    }
+
+                    final class Flags {
+                        const A = 1;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33',
+            ],
+            'unrepresentableClassConstantIntersection' => [
+                'code' => '<?php
+                    /** @return Names::FOO&class-string */
+                    function name(): string {
+                        return "Foo";
+                    }
+
+                    final class Names {
+                        const FOO = "Foo";
+                    }',
+                'error_message' => "Psalm has no type for the intersection of 'Foo' and class-string",
+            ],
+            'templateAndClassConstantIntersection' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $t
+                     * @return value-of<Flags::LIST>&T
+                     */
+                    function flag(int $t) {
+                        return $t;
+                    }
+
+                    final class Flags {
+                        const LIST = [1, 2];
+                    }',
+                'error_message' => 'Psalm has no type for the intersection of',
+            ],
+            'emptyClassConstantIntersectionParam' => [
+                'code' => '<?php
+                    /** @param Flags::A&string $flag */
+                    function f($flag): void {}
+
+                    final class Flags {
+                        const A = 1;
+                    }',
+                'error_message' => 'No value has all the types of the intersection',
+            ],
+            'emptyScalarIntersection' => [
+                'code' => '<?php
+                    /** @return int<0, 5>&int<6, 10> */
+                    function f(): int {
+                        return 1;
+                    }',
+                'error_message' => 'No value has all the types of the intersection',
+            ],
             'wrongReturnType1' => [
                 'code' => '<?php
                     function fooFoo(): string {
@@ -1476,7 +3172,7 @@ final class ReturnTypeTest extends TestCase
 
                     fooFoo()->bar();',
                 'error_message' => 'UndefinedClass',
-                'ignored_issues' => ['MixedReturnStatement'],
+                'error_levels' => ['MixedReturnStatement'],
             ],
             'returnArrayOfNullableInvalid' => [
                 'code' => '<?php
@@ -1732,7 +3428,7 @@ final class ReturnTypeTest extends TestCase
 
                 $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:43 - Unable to determine the type that $key is being assigned to',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:51 - Unable to determine the type that $value is being assigned to',
             ],
             'cannotInferReturnClosureWithMoreSpecificTypes' => [
                 'code' => '<?php
@@ -1918,7 +3614,7 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidReturnStatement',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'returnByReferenceNonVariableInStaticMethod' => [
@@ -1963,7 +3659,7 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidReturnType',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'implicitReturnFromFunctionWithNeverReturnType2' => [
@@ -1979,7 +3675,7 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidReturnType',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'constructorsShouldReturnVoid' => [
@@ -1992,6 +3688,266 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'finalMethodThatAlwaysThrowsAfterAnotherStatementIsNever' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    class Base {
+                        /** @return string */
+                        final public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'finalStaticMethodThatAlwaysThrowsAfterAnotherStatementIsNever' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    class Base {
+                        /** @return string */
+                        final public static function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'traitMethodOfAFinalClassThatAlwaysThrowsIsNeverForTheReturnTypeOfTheInterface' => [
+                'code' => '<?php
+                    final class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    interface I {
+                        /** @return string */
+                        public function doSomething();
+                    }
+
+                    trait T {
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }
+
+                    final class C implements I {
+                        use T;
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'traitMethodOfAFinalClassThatAlwaysThrowsIsNeverForTheReturnTypeOfTheParent' => [
+                'code' => '<?php
+                    final class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    class P {
+                        /** @return string */
+                        public function doSomething() {
+                            return "a";
+                        }
+                    }
+
+                    trait T {
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }
+
+                    final class C extends P {
+                        use T;
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'finalClassOverridesAGenericStaticReturnTypeWithAnotherType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<static> */
+                        public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+
+                    final class Other {}
+
+                    final class Leaf extends Base
+                    {
+                        /** @return Box<Other> */
+                        #[\Override]
+                        public function box(): Box
+                        {
+                            return new Box(new Other());
+                        }
+                    }
+                    PHP,
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'notAllCodePathsReturnShowsExactDocblockType' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function r1(): string {}',
+                'error_message' => 'Not all code paths of r1 end in a return statement, return type'
+                    . ' non-empty-string expected',
+            ],
+            'noReturnStatementsShowsExactDocblockType' => [
+                'code' => '<?php
+                    abstract class T2 {
+                        /** @return numeric-string */
+                        public function m(): string {
+                            /** nothing */
+                        }
+                    }',
+                'error_message' => "No return statements were found for method T2::m but return type"
+                    . " 'numeric-string' was expected",
+            ],
+            'invalidNullableReturnTypeShowsExactDocblockType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress NullableReturnStatement
+                     * @return non-empty-string
+                     */
+                    function r4(): string {
+                        return rand(0, 1) ? "1" : null;
+                    }',
+                'error_message' => "The declared return type 'non-empty-string' for r4 is not nullable,"
+                    . " but ''1'|null' contains null",
+            ],
+            'invalidFalsableReturnTypeShowsExactDocblockType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress FalsableReturnStatement
+                     * @return numeric-string
+                     */
+                    function r3(): string {
+                        return rand(0, 1) ? "1" : false;
+                    }',
+                'error_message' => "The declared return type 'numeric-string' for r3 does not allow false,"
+                    . " but ''1'|false' contains false",
+            ],
+            'falsableReturnStatementShowsExactDocblockType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidFalsableReturnType
+                     * @return numeric-string
+                     */
+                    function r3(): string {
+                        return rand(0, 1) ? "1" : false;
+                    }',
+                'error_message' => "The declared return type 'numeric-string' for r3 does not allow false,"
+                    . " but the function returns ''1'|false",
+            ],
+            'invalidToStringShowsExactInferredType' => [
+                'code' => '<?php
+                    class S1 {
+                        public function __toString() {
+                            return 5;
+                        }
+                    }',
+                'error_message' => '__toString methods must return a string, 5 returned',
+            ],
+            'functionEndingAfterALoopOfExhaustiveTypeChecksNeedsAReturn' => [
+                'code' => '<?php
+                    function f(int|string $x, array $a): int {
+                        foreach ($a as $_) {
+                            if (is_int($x)) {
+                                return 1;
+                            }
+                            if (is_string($x)) {
+                                return 2;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => ['RedundantCondition', 'MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'functionEndingAfterAnIssetOfAnOptionalPropertyNeedsAReturn' => [
+                'code' => '<?php
+                    /** @param object{bar?: string} $foo */
+                    function f(object $foo): string {
+                        if (isset($foo->bar)) {
+                            return $foo->bar;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'methodEndingAfterAnIssetOfAnUninitializedPropertyNeedsAReturn' => [
+                'code' => '<?php
+                    final class A {
+                        public string $p;
+
+                        public function get(): string {
+                            if (isset($this->p)) {
+                                return $this->p;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => ['MissingConstructor', 'RedundantPropertyInitializationCheck'],
+            ],
+            'functionEndingAfterADestructuredEmptyArrayNeedsAReturn' => [
+                'code' => '<?php
+                    function f(): int {
+                        [$a] = [];
+                        if (rand(0, 1)) {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => ['UnusedVariable'],
+            ],
+            'codeAfterExhaustiveTypeChecksIsAnalyzed' => [
+                'code' => '<?php
+                    function f(int|string $x): int {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                        return undefined_function();
+                    }',
+                'error_message' => 'UndefinedFunction',
+                'error_levels' => ['RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'functionEndingAfterExhaustiveDocblockTypeChecksNeedsAReturn' => [
+                'code' => '<?php
+                    /** @param int|string $x */
+                    function f($x): int {
+                        if (is_int($x)) {
+                            return 1;
+                        }
+                        if (is_string($x)) {
+                            return 2;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => ['RedundantConditionGivenDocblockType'],
             ],
         ];
     }

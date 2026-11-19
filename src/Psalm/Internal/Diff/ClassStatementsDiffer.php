@@ -222,6 +222,15 @@ final class ClassStatementsDiffer extends AstDiffer
             } elseif ($diff_elem->type === DiffElem::TYPE_KEEP_SIGNATURE) {
                 if ($diff_elem->old instanceof PhpParser\Node\Stmt\ClassMethod) {
                     $keep_signature[] = $name_lc . '::' . strtolower((string) $diff_elem->old->name);
+
+                    // the body is analysed again, and what the old one reported is not in the range of the new one
+                    // if the body got shorter
+                    $doc = $diff_elem->old->getDocComment();
+
+                    $deletion_ranges[] = [
+                        $doc ? $doc->getStartFilePos() : (int)$diff_elem->old->getAttribute('startFilePos'),
+                        (int)$diff_elem->old->getAttribute('endFilePos'),
+                    ];
                 } elseif ($diff_elem->old instanceof PhpParser\Node\Stmt\Property) {
                     foreach ($diff_elem->old->props as $prop) {
                         $keep_signature[] = $name_lc . '::$' . $prop->name;

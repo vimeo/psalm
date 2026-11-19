@@ -7,15 +7,21 @@ namespace Psalm;
 use Exception;
 use LogicException;
 use PhpParser;
+use Psalm\CodeLocation\DocblockTypeLocation;
+use Psalm\CodeLocation\ParseErrorLocation;
+use Psalm\CodeLocation\Raw;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Storage\ImmutableNonCloneableTrait;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
+use ReflectionClass;
 use UnexpectedValueException;
 
 use function explode;
 use function max;
 use function mb_strcut;
 use function min;
+use function ord;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
@@ -23,6 +29,7 @@ use function str_replace;
 use function strlen;
 use function strpos;
 use function strrpos;
+use function substr;
 use function substr_count;
 use function trim;
 
@@ -35,6 +42,7 @@ use const PREG_OFFSET_CAPTURE;
 class CodeLocation
 {
     use ImmutableNonCloneableTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     public string $file_path;
 
@@ -91,30 +99,14 @@ class CodeLocation
     public const CATCH_VAR = 6;
     public const FUNCTION_PHPDOC_METHOD = 7;
 
-    private const PROPERTY_KEYS_FOR_UNSERIALIZE = [
-        'file_path' => 'file_path',
-        'file_name' => 'file_name',
-        'raw_line_number' => 'raw_line_number',
-        "\0" . self::class . "\0" . 'end_line_number' => 'end_line_number',
-        'raw_file_start' => 'raw_file_start',
-        'raw_file_end' => 'raw_file_end',
-        "\0*\0" . 'file_start' => 'file_start',
-        "\0*\0" . 'file_end' => 'file_end',
-        "\0*\0" . 'single_line' => 'single_line',
-        "\0*\0" . 'preview_start' => 'preview_start',
-        "\0" . self::class . "\0" . 'preview_end' => 'preview_end',
-        "\0" . self::class . "\0" . 'selection_start' => 'selection_start',
-        "\0" . self::class . "\0" . 'selection_end' => 'selection_end',
-        "\0" . self::class . "\0" . 'column_from' => 'column_from',
-        "\0" . self::class . "\0" . 'column_to' => 'column_to',
-        "\0" . self::class . "\0" . 'snippet' => 'snippet',
-        "\0" . self::class . "\0" . 'text' => 'text',
-        'docblock_start' => 'docblock_start',
-        "\0" . self::class . "\0" . 'docblock_start_line_number' => 'docblock_start_line_number',
-        "\0*\0" . 'docblock_line_number' => 'docblock_line_number',
-        "\0" . self::class . "\0" . 'regex_type' => 'regex_type',
-        "\0" . self::class . "\0" . 'have_recalculated' => 'have_recalculated',
-        'previous_location' => 'previous_location',
+    /**
+     * The classes of the locations getCompactState() describes: those with no state of their own
+     */
+    private const COMPACT_CLASSES = [
+        self::class => true,
+        DocblockTypeLocation::class => true,
+        ParseErrorLocation::class => true,
+        Raw::class => true,
     ];
 
     public function __construct(
@@ -154,17 +146,86 @@ class CodeLocation
     }
 
     /**
-     * Suppresses memory usage when unserializing objects.
+     * What this location holds besides its file, raw offsets and raw line number: its class, if not this one, and
+     * the values of its properties that differ from those of a location made of them alone (see
+     * fromCompactState()), whatever it computed already included. Null if it has a previous location, or is of a
+     * class that may hold more.
      *
-     * @see \Psalm\Storage\UnserializeMemoryUsageSuppressionTrait
-     * @psalm-external-mutation-free
+     * @internal
+     * @return array<string, scalar|null>|null
+     * @psalm-mutation-free
      */
-    public function __unserialize(array $properties): void
+    public function getCompactState(): ?array
     {
-        foreach (self::PROPERTY_KEYS_FOR_UNSERIALIZE as $key => $property_name) {
-            /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
-            $this->$property_name = $properties[$key];
+        if ($this->previous_location !== null || !isset(self::COMPACT_CLASSES[static::class])) {
+            return null;
         }
+
+        $state = static::class === self::class ? [] : ['class' => static::class];
+
+        // get_object_vars() would leave this location a property table, which it keeps (php/php-src#10126)
+        /** @var array<string, scalar|null> $properties the previous location, the only object, is null */
+        $properties = (array) $this;
+
+        foreach ($properties as $key => $value) {
+            $name = $key[0] === "\0" ? substr($key, (int) strpos($key, "\0", 1) + 1) : $key;
+
+            $default = match ($name) {
+                'file_path', 'file_name', 'raw_line_number', 'raw_file_start', 'raw_file_end' => $value,
+                'file_start', 'preview_start' => $this->raw_file_start,
+                'file_end' => $this->raw_file_end,
+                'single_line', 'have_recalculated' => false,
+                'snippet' => '',
+                'end_line_number', 'preview_end', 'selection_start', 'selection_end', 'column_from', 'column_to' => -1,
+                default => null,
+            };
+
+            if ($value !== $default) {
+                $state[$name] = $value;
+            }
+        }
+
+        return $state;
+    }
+
+    /**
+     * The location getCompactState() returned $state for
+     *
+     * @internal
+     * @param array<string, scalar|null> $state
+     * @psalm-pure
+     * @psalm-suppress ImpureMethodCall newInstanceWithoutConstructor() only makes a new object
+     * @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment the properties of that new object, not yet
+     * seen anywhere else
+     */
+    public static function fromCompactState(
+        string $file_path,
+        string $file_name,
+        int $raw_line_number,
+        int $raw_file_start,
+        int $raw_file_end,
+        array $state,
+    ): self {
+        /** @var class-string<CodeLocation> $class */
+        $class = $state['class'] ?? self::class;
+        unset($state['class']);
+
+        $location = (new ReflectionClass($class))->newInstanceWithoutConstructor();
+        $location->file_path = $file_path;
+        $location->file_name = $file_name;
+        $location->raw_line_number = $raw_line_number;
+        $location->raw_file_start = $raw_file_start;
+        $location->raw_file_end = $raw_file_end;
+        $location->file_start = $raw_file_start;
+        $location->file_end = $raw_file_end;
+        $location->single_line = false;
+        $location->preview_start = $raw_file_start;
+
+        foreach ($state as $name => $value) {
+            $location->$name = $value;
+        }
+
+        return $location;
     }
 
     /**
@@ -228,7 +289,7 @@ class CodeLocation
         ) {
             $preview_lines = explode(
                 "\n",
-                mb_strcut(
+                self::cutAtCharBoundary(
                     $file_contents,
                     $this->preview_start,
                     $this->selection_start - $this->preview_start - 1,
@@ -270,7 +331,7 @@ class CodeLocation
                 default => throw new UnexpectedValueException('Unrecognised regex type ' . $this->regex_type),
             };
 
-            $preview_snippet = mb_strcut(
+            $preview_snippet = self::cutAtCharBoundary(
                 $file_contents,
                 $this->selection_start,
                 $this->selection_end - $this->selection_start,
@@ -293,11 +354,12 @@ class CodeLocation
         }
 
         // reset preview start to beginning of line
-        $this->preview_start = (int)strrpos(
+        $preview_newline_pos = strrpos(
             $file_contents,
             "\n",
             min($this->preview_start, $this->selection_start) - strlen($file_contents),
-        ) + 1;
+        );
+        $this->preview_start = $preview_newline_pos === false ? 0 : $preview_newline_pos + 1;
 
         $this->selection_start = max($this->preview_start, $this->selection_start);
         $this->selection_end = min($this->preview_end, $this->selection_end);
@@ -315,17 +377,22 @@ class CodeLocation
             }
         }
 
-        $this->snippet = mb_strcut($file_contents, $this->preview_start, $this->preview_end - $this->preview_start);
+        $this->snippet = self::cutAtCharBoundary(
+            $file_contents,
+            $this->preview_start,
+            $this->preview_end - $this->preview_start,
+        );
         // text is within snippet. It's 50% faster to cut it from the snippet than from the full text
         $selection_length = $this->selection_end - $this->selection_start;
         $this->text = mb_strcut($this->snippet, $this->selection_start - $this->preview_start, $selection_length);
 
-        // reset preview start to beginning of line
+        // column is 1-based, relative to the start of the selection's line
         if ($file_contents !== '') {
-            $this->column_from = $this->selection_start -
-                (int)strrpos($file_contents, "\n", $this->selection_start - strlen($file_contents));
+            $selection_newline_pos = strrpos($file_contents, "\n", $this->selection_start - strlen($file_contents));
+            $selection_line_start = $selection_newline_pos === false ? 0 : $selection_newline_pos + 1;
+            $this->column_from = $this->selection_start - $selection_line_start + 1;
         } else {
-            $this->column_from = $this->selection_start;
+            $this->column_from = $this->selection_start + 1;
         }
 
         $newlines = substr_count($this->text, "\n");
@@ -338,6 +405,33 @@ class CodeLocation
         }
 
         $this->end_line_number = $this->getLineNumber() + $newlines;
+    }
+
+    /**
+     * Cuts at most $length bytes from $start without ending inside a UTF-8 character: the
+     * result mb_strcut($string, $start, $length) gives for a $start on a character boundary.
+     *
+     * Every offset is a byte position, and a $start passed here is always a character boundary
+     * (a parser position, a line start or an ASCII match), so only the end needs moving: back
+     * over the continuation bytes (0b10xxxxxx) of a character the cut would split. The preview
+     * end can land inside a character, when a long line is cut at selection end + 50 bytes.
+     *
+     * mb_strcut() itself walks the string from its start, so its cost grows with $start, and
+     * cutting each location out of the whole file made analysis quadratic in the file's length.
+     * This costs O($length).
+     *
+     * @psalm-pure
+     */
+    private static function cutAtCharBoundary(string $string, int $start, int $length): string
+    {
+        $size = strlen($string);
+        $end = min($size, $start + $length);
+
+        while ($end < $size && (ord($string[$end]) & 0xC0) === 0x80) {
+            --$end;
+        }
+
+        return substr($string, $start, $end - $start);
     }
 
     /**

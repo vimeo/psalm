@@ -87,6 +87,17 @@ final class FunctionLikeParameter implements HasAttributesInterface, TypeNode
         return $cloned;
     }
 
+    /** @psalm-mutation-free */
+    public function setOutType(Union $out_type): self
+    {
+        if ($this->out_type === $out_type) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->out_type = $out_type;
+        return $cloned;
+    }
+
     /**
      * @internal Should only be used by the MutableTypeVisitor.
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs

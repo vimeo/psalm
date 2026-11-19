@@ -19,7 +19,7 @@ final class ThisOutTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'changeInterface' => [
@@ -252,7 +252,7 @@ final class ThisOutTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'propertyAssignmentNotFittingTheSelfOutType' => [

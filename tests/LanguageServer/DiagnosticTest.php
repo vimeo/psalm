@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\LanguageServer;
 
+use AdvancedJsonRpc\Notification;
 use Amp\DeferredFuture;
+use Amp\TimeoutCancellation;
+use LanguageServerProtocol\ClientCapabilities;
+use LanguageServerProtocol\DiagnosticSeverity;
 use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\LanguageServer\ClientConfiguration;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\LanguageServer\Message;
@@ -26,9 +31,19 @@ use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\TestConfig;
 
 use function Amp\delay;
+use function array_map;
 use function defined;
+use function file_put_contents;
 use function getcwd;
+use function json_decode;
+use function json_encode;
 use function rand;
+use function sys_get_temp_dir;
+use function tempnam;
+use function unlink;
+
+use const DIRECTORY_SEPARATOR;
+use const JSON_THROW_ON_ERROR;
 
 final class DiagnosticTest extends AsyncTestCase
 {
@@ -47,10 +62,10 @@ final class DiagnosticTest extends AsyncTestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserCacheProvider($config, '', false),
+            new ParserCacheProvider($config, '', CacheMode::Memory),
             null,
             null,
-            new FileReferenceCacheProvider($config, '', false),
+            new FileReferenceCacheProvider($config, '', CacheMode::Memory),
             new ProjectCacheProvider(),
         );
 
@@ -76,7 +91,6 @@ final class DiagnosticTest extends AsyncTestCase
         // Create a new promisor
         $deferred = new DeferredFuture;
 
-        $this->setTimeout(5);
         $clientConfiguration = new ClientConfiguration();
 
         $read = new MockProtocolStream();
@@ -116,7 +130,165 @@ final class DiagnosticTest extends AsyncTestCase
             }
         });
 
-        $deferred->getFuture()->await();
+        $deferred->getFuture()->await(new TimeoutCancellation(5));
+    }
+
+    public function testTheCapabilitiesHaveNoNullField(): void
+    {
+        $server = new LanguageServer(
+            new MockProtocolStream(),
+            new MockProtocolStream(),
+            $this->project_analyzer,
+            $this->codebase,
+            new ClientConfiguration(),
+            new Progress,
+            new PathMapper((string) getcwd(), (string) getcwd()),
+        );
+
+        $result = json_encode($server->initialize(new ClientCapabilities()), JSON_THROW_ON_ERROR);
+
+        $this->assertStringContainsString('"hoverProvider":true', $result);
+        $this->assertStringNotContainsString('null', $result);
+    }
+
+    public function testADiagnosticHasNoNullField(): void
+    {
+        if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
+            $this->markTestSkipped('Flaky on Windows');
+        }
+
+        $deferred = new DeferredFuture;
+
+        $this->codebase->config->throw_exception = false;
+
+        $clientConfiguration = new ClientConfiguration();
+        $clientConfiguration->onChangeDebounceMs = 100;
+        $clientConfiguration->provideDiagnostics = true;
+
+        $read = new MockProtocolStream();
+        $write = new MockProtocolStream();
+
+        $array = $this->generateInitializeRequest();
+        /** @psalm-suppress MixedArrayAssignment */
+        $array['params']['capabilities']['textDocument']['publishDiagnostics']['codeDescriptionSupport'] = true;
+        $read->write(new Message(MessageBody::parseArray($array)));
+        $array = $this->generateDidChangeRequest();
+        /** @psalm-suppress MixedArrayAssignment */
+        $array['params']['contentChanges'][0]['text'] = '<?php
+            class SomeClass
+            {
+                public function f(): void
+                {
+                    echo $undefined;
+                }
+            }';
+        $read->write(new Message(MessageBody::parseArray($array)));
+
+        $server = new LanguageServer(
+            $read,
+            $write,
+            $this->project_analyzer,
+            $this->codebase,
+            $clientConfiguration,
+            new Progress,
+            new PathMapper((string) getcwd(), (string) getcwd()),
+        );
+
+        $write->on('message', function (Message $message) use ($deferred): void {
+            /** @psalm-suppress PossiblyNullPropertyFetch,UndefinedPropertyFetch */
+            if ($message->body->method === 'textDocument/publishDiagnostics') {
+                $body = (string) $message->body;
+
+                $this->assertStringContainsString('UndefinedVariable', $body);
+                $this->assertStringContainsString('"codeDescription"', $body);
+                $this->assertStringNotContainsString('null', $body);
+                $deferred->complete(null);
+            }
+        });
+
+        delay(0.5); // Wait for debounce
+
+        $deferred->getFuture()->await(new TimeoutCancellation(5));
+
+        $this->assertTrue($server->client->clientConfiguration->provideDiagnostics);
+    }
+
+    public function testAnUnsuppressibleIssueInTheBaselineIsPublishedAsAnError(): void
+    {
+        $this->codebase->config->addUnsuppressibleIssue('UndefinedFunction');
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Baselined'
+            . DIRECTORY_SEPARATOR . 'file.php';
+
+        $this->assertSame([['UndefinedFunction', DiagnosticSeverity::ERROR]], $this->publishBaselined($file_path));
+    }
+
+    public function testABaselinedIssueIsPublishedAsAWarningWhateverTheSeparators(): void
+    {
+        // the separator of Windows, on every system
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'Baselined\\file.php';
+
+        $this->assertSame([['UndefinedFunction', DiagnosticSeverity::WARNING]], $this->publishBaselined($file_path));
+    }
+
+    /**
+     * @return list<array{string, int}> the type and the severity of each diagnostic published for the file
+     */
+    private function publishBaselined(string $file_path): array
+    {
+        $baseline = (string) tempnam(sys_get_temp_dir(), 'psalm-baseline');
+        file_put_contents($baseline, '<?xml version="1.0" encoding="UTF-8"?>
+            <files psalm-version="dev">
+              <file src="src/Baselined/file.php">
+                <UndefinedFunction>
+                  <code><![CDATA[undefined_function()]]></code>
+                </UndefinedFunction>
+              </file>
+            </files>');
+        $this->codebase->config->throw_exception = false;
+        $this->file_provider->registerFile($file_path, '<?php
+            function f(): void
+            {
+                undefined_function();
+            }');
+
+        $client_configuration = new ClientConfiguration();
+        $client_configuration->provideDiagnostics = true;
+        $client_configuration->hideWarnings = false;
+        $client_configuration->baseline = $baseline;
+        $write = new MockProtocolStream();
+        $server = new LanguageServer(
+            new MockProtocolStream(),
+            $write,
+            $this->project_analyzer,
+            $this->codebase,
+            $client_configuration,
+            new Progress,
+            new PathMapper((string) getcwd(), (string) getcwd()),
+        );
+
+        /** @var DeferredFuture<string> $published */
+        $published = new DeferredFuture;
+        $write->on('message', static function (Message $message) use ($published): void {
+            if ($message->body instanceof Notification && $message->body->method === 'textDocument/publishDiagnostics') {
+                $published->complete((string) $message->body);
+            }
+        });
+
+        try {
+            $server->initialize(new ClientCapabilities());
+            $server->doVersionedAnalysis([$file_path => 'file://' . $file_path], 1);
+            $json = $published->getFuture()->await(new TimeoutCancellation(5));
+        } finally {
+            unlink($baseline);
+        }
+
+        /** @var array{params: array{diagnostics: list<array{severity: int, data: array{type: string}}>}} $body */
+        $body = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+
+        return array_map(
+            static fn(array $diagnostic): array => [$diagnostic['data']['type'], $diagnostic['severity']],
+            $body['params']['diagnostics'],
+        );
     }
 
     public function testOnChangeDebounceMs(): void
@@ -127,7 +299,6 @@ final class DiagnosticTest extends AsyncTestCase
         // Create a new promisor
         $deferred = new DeferredFuture;
 
-        $this->setTimeout(5);
         $clientConfiguration = new ClientConfiguration();
         $clientConfiguration->onChangeDebounceMs = 100;
         $clientConfiguration->provideDiagnostics = true;
@@ -180,7 +351,7 @@ final class DiagnosticTest extends AsyncTestCase
         });
         delay(0.5); // Wait for debounce
 
-        $deferred->getFuture()->await();
+        $deferred->getFuture()->await(new TimeoutCancellation(5));
     }
 
     /**

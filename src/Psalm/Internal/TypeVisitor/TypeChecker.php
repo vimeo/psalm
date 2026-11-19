@@ -9,17 +9,22 @@ use Override;
 use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Context;
+use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateBound;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeParser;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
+use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidTemplateParam;
 use Psalm\Issue\MissingTemplateParam;
 use Psalm\Issue\ReservedWord;
@@ -28,21 +33,32 @@ use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\StatementsSource;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TGlobalConstant;
+use Psalm\Type\Atomic\TIntMask;
+use Psalm\Type\Atomic\TIntersection;
+use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTypeAlias;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\TypeNode;
 use Psalm\Type\TypeVisitor;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
+use function array_any;
 use function array_keys;
+use function array_map;
 use function array_search;
+use function array_slice;
+use function array_values;
 use function count;
 use function explode;
 use function str_contains;
@@ -57,8 +73,32 @@ final class TypeChecker extends TypeVisitor
     private bool $has_errors = false;
 
     /**
+     * Whether the result of the check holds wherever the type is: not when a phantom class (a class_exists() check
+     * around the code) let a class pass
+     */
+    private bool $context_free = true;
+
+    /**
+     * The types this checker marked as checked, for check() to unmark when the result can't be kept
+     *
+     * @var list<Atomic|Union|MutableUnion>
+     */
+    private array $checked_types = [];
+
+    /**
+     * Whether the node being visited is in an invariant type param of a generic object, where entering a
+     * callable's parameter types doesn't change the position
+     */
+    private bool $in_invariant_position = false;
+
+    /**
      * @param array<string>    $suppressed_issues
      * @param array<string, bool> $phantom_classes
+     * @param bool $prevent_template_covariance whether the type is in an input position, a method's parameter
+     * @param bool $in_output_position whether the type is in an output position, a method's return type, or one
+     *                                 an input position turns into: a covariant template may be there (a method's
+     *                                 `Closure(T): void` parameter hands T out), but the parameter types of a
+     *                                 callable in there are an input position
      * @psalm-mutation-free
      */
     public function __construct(
@@ -70,6 +110,7 @@ final class TypeChecker extends TypeVisitor
         private readonly bool $inherited = false,
         private bool $prevent_template_covariance = false,
         private readonly ?Context $context = null,
+        private bool $in_output_position = false,
     ) {
     }
 
@@ -88,27 +129,123 @@ final class TypeChecker extends TypeVisitor
         }
 
         if ($type instanceof TNamedObject) {
-            $this->checkNamedObject($type);
+            $prevents_covariance = $this->checkNamedObject($type);
+
+            if ($type instanceof TGenericObject && $prevents_covariance !== null) {
+                // each type param is checked with its own variance, and the siblings with the outer one. Variance
+                // composes: a covariant type param is in the position of the type, an invariant one in neither
+                $outer_prevents_covariance = $this->prevent_template_covariance;
+                $outer_in_invariant_position = $this->in_invariant_position;
+
+                foreach ($type->extra_types as $extra_type) {
+                    $this->traverse($extra_type);
+                }
+
+                foreach ($type->type_params as $i => $type_param) {
+                    $this->prevent_template_covariance = $prevents_covariance[$i] ?? $outer_prevents_covariance;
+                    $this->in_invariant_position = $outer_in_invariant_position || ($prevents_covariance[$i] ?? false);
+                    $this->traverse($type_param);
+                }
+
+                $this->prevent_template_covariance = $outer_prevents_covariance;
+                $this->in_invariant_position = $outer_in_invariant_position;
+
+                $this->markChecked($type);
+
+                return self::DONT_TRAVERSE_CHILDREN;
+            }
         } elseif ($type instanceof TClassConstant) {
             $this->checkScalarClassConstant($type);
+        } elseif ($type instanceof TGlobalConstant) {
+            $this->checkGlobalConstant($type);
+        } elseif ($type instanceof TIntMask) {
+            $this->checkIntMaskConstants($type);
         } elseif ($type instanceof TTemplateParam) {
             $this->checkTemplateParam($type);
         } elseif ($type instanceof TResource) {
             $this->checkResource($type);
+        } elseif ($type instanceof TIntersection) {
+            $this->checkIntersection($type);
+        } elseif ($type instanceof TKeyOf || $type instanceof TValueOf) {
+            $this->checkKeyOrValueOfAlias($type);
         }
 
-        /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
-        $type->checked = true;
+        $this->markChecked($type);
 
         return null;
     }
 
-    public function hasErrors(): bool
+    /**
+     * @psalm-external-mutation-free
+     */
+    #[Override]
+    public function traverse(TypeNode $node): bool
     {
-        return $this->has_errors;
+        if (!$node instanceof FunctionLikeParameter) {
+            return parent::traverse($node);
+        }
+
+        // a callable's parameter types are in the opposite position. Positions that are neither (constructor
+        // parameters, and what isn't a method's signature) stay unchecked
+        $outer_prevents_covariance = $this->prevent_template_covariance;
+        $outer_in_output_position = $this->in_output_position;
+
+        if (!$this->in_invariant_position) {
+            if ($outer_prevents_covariance) {
+                $this->prevent_template_covariance = false;
+                $this->in_output_position = true;
+            } elseif ($outer_in_output_position) {
+                $this->prevent_template_covariance = true;
+                $this->in_output_position = false;
+            }
+        }
+
+        $result = parent::traverse($node);
+
+        $this->prevent_template_covariance = $outer_prevents_covariance;
+        $this->in_output_position = $outer_in_output_position;
+
+        return $result;
     }
 
-    private function checkNamedObject(TNamedObject $atomic): void
+    /**
+     * Checks the type, and marks it and the types in it as checked only if that raised no issue (a suppressed one
+     * included) and holds wherever the type is, so that checking it again elsewhere reports the same issues
+     *
+     * @return bool whether the type has no errors
+     * @psalm-external-mutation-free
+     */
+    public function check(Union|MutableUnion $type): bool
+    {
+        $issue_count = IssueBuffer::getAcceptedIssueCount();
+
+        $this->traverse($type);
+
+        if ($this->context_free && IssueBuffer::getAcceptedIssueCount() === $issue_count) {
+            return true;
+        }
+
+        foreach ($this->checked_types as $checked_type) {
+            /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment `checked` only memoises the check */
+            $checked_type->checked = false;
+        }
+
+        return !$this->has_errors;
+    }
+
+    private function markChecked(Atomic|Union|MutableUnion $type): void
+    {
+        /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
+        $type->checked = true;
+        $this->checked_types[] = $type;
+    }
+
+    /**
+     * @return array<int, ?bool>|null whether each type param of a generic object is in a position where a covariant
+     *                                template is not allowed, null for one in the position of the generic object, or
+     *                                for all if its type params weren't checked
+     */
+    private function checkNamedObject(TNamedObject $atomic): ?array
     {
         $codebase = $this->source->getCodebase();
 
@@ -151,8 +288,10 @@ final class TypeChecker extends TypeVisitor
                 new ClassLikeNameOptions($this->inferred, false, true, true, $atomic->from_docblock),
             ) === false) {
                 $this->has_errors = true;
-                return;
+                return null;
             }
+        } else {
+            $this->context_free = false;
         }
 
         $fq_class_name_lc = strtolower($atomic->value);
@@ -160,6 +299,8 @@ final class TypeChecker extends TypeVisitor
         if (!$this->inherited
             && $codebase->classlike_storage_provider->has($fq_class_name_lc)
             && $this->source->getFQCLN() !== $atomic->value
+            // a method of a trait is checked as a method of the class that uses it
+            && $this->context?->self !== $atomic->value
         ) {
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name_lc);
 
@@ -187,18 +328,25 @@ final class TypeChecker extends TypeVisitor
         }
 
         if ($atomic instanceof TGenericObject) {
-            $this->checkGenericParams($atomic);
+            return $this->checkGenericParams($atomic);
         }
+
+        return null;
     }
 
-    private function checkGenericParams(TGenericObject $atomic): void
+    /**
+     * @return array<int, ?bool>|null whether each type param is in a position where a covariant template is not
+     *                                allowed, null for one in the position of the generic object (a covariant one),
+     *                                or for all for an unknown class
+     */
+    private function checkGenericParams(TGenericObject $atomic): ?array
     {
         $codebase = $this->source->getCodebase();
 
         try {
             $class_storage = $codebase->classlike_storage_provider->get(strtolower($atomic->value));
         } catch (InvalidArgumentException) {
-            return;
+            return null;
         }
 
         $expected_type_params = $class_storage->template_types ?: [];
@@ -207,12 +355,12 @@ final class TypeChecker extends TypeVisitor
         $template_type_count = count($expected_type_params);
         $template_param_count = count($atomic->type_params);
 
-        // trailing purity templates with a default need not be given
+        // trailing templates with a default need not be given
         if ($class_storage->getRequiredTemplateParamCount() > $template_param_count) {
             IssueBuffer::maybeAdd(
                 new MissingTemplateParam(
                     $atomic->value . ' has missing template params, expecting '
-                        . $template_type_count,
+                        . TemplateDefaults::getExpectedParamCount($class_storage),
                     $this->code_location,
                 ),
                 $this->suppressed_issues,
@@ -249,10 +397,26 @@ final class TypeChecker extends TypeVisitor
             }
         }
 
+        // an omitted trailing purity template takes its default, also in the bounds of the type templates
+        foreach (array_slice($expected_type_param_keys, $template_param_count) as $expected_template_name) {
+            $default = $class_storage->template_defaults[$expected_template_name] ?? null;
+
+            if ($default === null || !Capabilities::isPurityType($default)) {
+                continue;
+            }
+
+            foreach ($expected_type_params[$expected_template_name] as $defining_class => $_) {
+                $template_result->lower_bounds[$expected_template_name][$defining_class][]
+                    = new TemplateBound($default);
+            }
+        }
+      
+        $prevents_covariance = [];
         foreach ($atomic->type_params as $i => $type_param) {
-            $this->prevent_template_covariance = $this->source instanceof MethodAnalyzer
-                && $this->source->getMethodName() !== '__construct'
-                && empty($expected_param_covariants[$i]);
+            // a covariant type param is in the position of the type (null): an invariant one is in neither
+            $prevents_covariance[$i] = empty($expected_param_covariants[$i])
+                ? $this->source instanceof MethodAnalyzer && $this->source->getMethodName() !== '__construct'
+                : null;
 
             if (isset($expected_type_param_keys[$i])) {
                 $expected_template_name = $expected_type_param_keys[$i];
@@ -315,6 +479,8 @@ final class TypeChecker extends TypeVisitor
                 }
             }
         }
+
+        return $prevents_covariance;
     }
 
     public function checkScalarClassConstant(TClassConstant $atomic): void
@@ -375,6 +541,102 @@ final class TypeChecker extends TypeVisitor
         }
     }
 
+    /**
+     * An imported type alias is only known once the class is populated, so what the parser accepted of it is
+     * checked here, as it is for a type the parser could resolve itself
+     */
+    private function checkKeyOrValueOfAlias(TKeyOf|TValueOf $atomic): void
+    {
+        if (!array_any(
+            $atomic->type->getAtomicTypes(),
+            static fn(Atomic $part): bool => $part instanceof TTypeAlias,
+        )) {
+            return;
+        }
+
+        $expanded_type = TypeExpander::expandUnion($this->source->getCodebase(), $atomic->type, null, null, null);
+
+        if ($atomic instanceof TKeyOf
+            ? TKeyOf::isViableTemplateType($expanded_type)
+            : TValueOf::isViableTemplateType($expanded_type)
+        ) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new InvalidDocblock(
+                'Untemplated ' . ($atomic instanceof TKeyOf ? 'key-of' : 'value-of') . ' param '
+                    . $expanded_type->getId(false) . ' should be an array',
+                $this->code_location,
+            ),
+            $this->suppressed_issues,
+        );
+
+        $this->has_errors = true;
+    }
+
+    /**
+     * A constant of an `int-mask<...>` that is resolved with the codebase (see TypeParser) must be an int, as one
+     * that is resolved when the type is parsed
+     */
+    private function checkIntMaskConstants(TIntMask $atomic): void
+    {
+        $codebase = $this->source->getCodebase();
+
+        foreach ($atomic->values as $value) {
+            if (!$value instanceof TGlobalConstant) {
+                continue;
+            }
+
+            $const_types = ConstFetchAnalyzer::getGlobalConstTypesByWildcard($codebase, $value->const_name);
+
+            if ($const_types === [] && $value->fallback_const_name !== null) {
+                $const_types = ConstFetchAnalyzer::getGlobalConstTypesByWildcard(
+                    $codebase,
+                    $value->fallback_const_name,
+                );
+            }
+
+            foreach ($const_types as $const_type) {
+                if (!$const_type->isInt()) {
+                    $this->has_errors = true;
+
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            'int-mask types must all be integer values',
+                            $this->code_location,
+                        ),
+                        $this->suppressed_issues,
+                    );
+
+                    return;
+                }
+            }
+        }
+    }
+
+    private function checkGlobalConstant(TGlobalConstant $atomic): void
+    {
+        $codebase = $this->source->getCodebase();
+
+        if (ConstFetchAnalyzer::getGlobalConstTypesByWildcard($codebase, $atomic->const_name) !== []
+            || ($atomic->fallback_const_name !== null
+                && ConstFetchAnalyzer::getGlobalConstTypesByWildcard($codebase, $atomic->fallback_const_name) !== [])
+        ) {
+            return;
+        }
+
+        $this->has_errors = true;
+
+        IssueBuffer::maybeAdd(
+            new UndefinedConstant(
+                'No constant matches ' . ($atomic->fallback_const_name ?? $atomic->const_name),
+                $this->code_location,
+            ),
+            $this->source->getSuppressedIssues(),
+        );
+    }
+
     public function checkTemplateParam(TTemplateParam $atomic): void
     {
         if ($this->prevent_template_covariance
@@ -413,6 +675,80 @@ final class TypeChecker extends TypeVisitor
                     );
                 }
             }
+        }
+    }
+
+    /**
+     * Checks the intersections of a declared type that were deferred until the class constants and type aliases they
+     * refer to are known: expanding the type replaces them, so that checking the expanded type doesn't check them
+     *
+     * @param array<string> $suppressed_issues
+     * @psalm-capabilities read-props
+     */
+    public static function checkDeferredIntersections(
+        Union $type,
+        StatementsSource $source,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+        ?Context $context = null,
+    ): void {
+        $collector = new DeferredIntersectionCollector();
+        $collector->traverseArray($type->getAtomicTypes());
+
+        foreach ($collector->getIntersections() as $intersection) {
+            (new self($source, $code_location, $suppressed_issues, [], false, false, false, $context))
+                ->traverse($intersection);
+        }
+    }
+
+    /**
+     * Reports an intersection deferred until the class constants and type aliases it refers to are known, when
+     * Psalm has no type for it or no value has all of its types, as for one Psalm intersects when parsing it
+     */
+    public function checkIntersection(TIntersection $atomic): void
+    {
+        $codebase = $this->source->getCodebase();
+        $self_class = $this->source->getFQCLN();
+
+        $types = [];
+
+        foreach ($atomic->types as $type) {
+            $type = TypeExpander::expandUnion(
+                $codebase,
+                $type,
+                $self_class,
+                $self_class,
+                $this->source->getParentFQCLN(),
+            );
+
+            if (array_any($type->getAtomicTypes(), TypeParser::hasUnresolvedReference(...))) {
+                // an undefined class constant or type alias, reported on its own
+                return;
+            }
+
+            $types[] = $type;
+        }
+
+        try {
+            $atomic_types = TypeParser::intersectTypes(
+                array_map(static fn(Union $type): array => array_values($type->getAtomicTypes()), $types),
+                $codebase,
+                $atomic->from_docblock,
+            );
+        } catch (TypeParseTreeException $e) {
+            IssueBuffer::maybeAdd(
+                new InvalidDocblock($e->getMessage(), $this->code_location),
+                $this->suppressed_issues,
+            );
+
+            return;
+        }
+
+        if ($atomic_types === []) {
+            IssueBuffer::maybeAdd(
+                new InvalidDocblock('No value has all the types of the intersection', $this->code_location),
+                $this->suppressed_issues,
+            );
         }
     }
 

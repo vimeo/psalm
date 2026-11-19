@@ -1,0 +1,269 @@
+<?php
+
+// The taints guzzlehttp/guzzle 7 passes along: the URIs it sends requests to are SSRF sinks, and what the server
+// answers is input. Loaded when the analysed code uses the package, refining its classes (see
+// Config::visitStubFiles()).
+
+namespace GuzzleHttp
+{
+    use GuzzleHttp\Exception\GuzzleException;
+    use GuzzleHttp\Promise\PromiseInterface;
+    use Psr\Http\Message\RequestInterface;
+    use Psr\Http\Message\ResponseInterface;
+    use Psr\Http\Message\UriInterface;
+
+    interface ClientInterface
+    {
+        /**
+         * @param string              $method  HTTP method.
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @throws GuzzleException
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        public function request(string $method, $uri, array $options = []): ResponseInterface;
+
+        /**
+         * @param string              $method  HTTP method.
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        public function requestAsync(string $method, $uri, array $options = []): PromiseInterface;
+
+        /**
+         * @param array $options Request options to apply.
+         *
+         * @throws GuzzleException
+         *
+         * @psalm-taint-source input
+         */
+        public function send(RequestInterface $request, array $options = []): ResponseInterface;
+
+        /**
+         * @param array $options Request options to apply.
+         *
+         * @psalm-taint-source input
+         */
+        public function sendAsync(RequestInterface $request, array $options = []): PromiseInterface;
+    }
+
+    trait ClientTrait
+    {
+        /**
+         * @param string              $method  HTTP method.
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @throws GuzzleException
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        abstract public function request(string $method, $uri, array $options = []): ResponseInterface;
+
+        /**
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @throws GuzzleException
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        public function get($uri, array $options = []): ResponseInterface {}
+
+        /**
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @throws GuzzleException
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        public function head($uri, array $options = []): ResponseInterface {}
+
+        /**
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @throws GuzzleException
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        public function put($uri, array $options = []): ResponseInterface {}
+
+        /**
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @throws GuzzleException
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        public function post($uri, array $options = []): ResponseInterface {}
+
+        /**
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @throws GuzzleException
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        public function patch($uri, array $options = []): ResponseInterface {}
+
+        /**
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @throws GuzzleException
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        public function delete($uri, array $options = []): ResponseInterface {}
+
+        /**
+         * @param string              $method  HTTP method.
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        abstract public function requestAsync(string $method, $uri, array $options = []): PromiseInterface;
+
+        /**
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        public function getAsync($uri, array $options = []): PromiseInterface {}
+
+        /**
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        public function headAsync($uri, array $options = []): PromiseInterface {}
+
+        /**
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        public function putAsync($uri, array $options = []): PromiseInterface {}
+
+        /**
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        public function postAsync($uri, array $options = []): PromiseInterface {}
+
+        /**
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        public function patchAsync($uri, array $options = []): PromiseInterface {}
+
+        /**
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        public function deleteAsync($uri, array $options = []): PromiseInterface {}
+    }
+
+    /**
+     * @final
+     */
+    class Client implements ClientInterface, \Psr\Http\Client\ClientInterface
+    {
+        use ClientTrait;
+
+        /**
+         * @param string              $method  HTTP method.
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        public function requestAsync(string $method, $uri = '', array $options = []): PromiseInterface {}
+
+        /**
+         * @param string              $method  HTTP method.
+         * @param string|UriInterface $uri     URI object or string.
+         * @param array               $options Request options to apply.
+         *
+         * @throws GuzzleException
+         *
+         * @psalm-taint-sink ssrf $uri
+         * @psalm-taint-source input
+         */
+        public function request(string $method, $uri = '', array $options = []): ResponseInterface {}
+
+        /**
+         * @param array $options Request options to apply.
+         *
+         * @psalm-taint-source input
+         */
+        public function sendAsync(RequestInterface $request, array $options = []): PromiseInterface {}
+
+        /**
+         * @param array $options Request options to apply.
+         *
+         * @throws GuzzleException
+         *
+         * @psalm-taint-source input
+         */
+        public function send(RequestInterface $request, array $options = []): ResponseInterface {}
+
+        /**
+         * @throws GuzzleException
+         *
+         * @psalm-taint-source input
+         */
+        public function sendRequest(RequestInterface $request): ResponseInterface {}
+    }
+}
+
+namespace GuzzleHttp\Cookie
+{
+    class FileCookieJar extends CookieJar
+    {
+        /**
+         * @param string $cookieFile          File to store the cookie data
+         * @param bool   $storeSessionCookies Set to true to store session cookies in the cookie jar.
+         *
+         * @throws \RuntimeException if the file cannot be found or created
+         *
+         * @psalm-taint-sink file $cookieFile
+         */
+        public function __construct(string $cookieFile, bool $storeSessionCookies = false) {}
+    }
+}

@@ -8,6 +8,7 @@ use DOMAttr;
 use DOMDocument;
 use DOMXPath;
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Constraint\Constraint;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
@@ -15,14 +16,13 @@ use Psalm\Context;
 use Psalm\DocComment;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Provider\FakeFileProvider;
-use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
+use Psalm\Issue\CodeIssue;
 use Psalm\Issue\UnusedBaselineEntry;
 use Psalm\Issue\UnusedIssueHandlerSuppression;
-use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
+use SebastianBergmann\Exporter\Exporter;
 use UnexpectedValueException;
 
+use function array_count_values;
 use function array_diff;
 use function array_filter;
 use function array_keys;
@@ -39,6 +39,7 @@ use function glob;
 use function implode;
 use function in_array;
 use function preg_match;
+use function preg_match_all;
 use function preg_quote;
 use function scandir;
 use function sort;
@@ -90,7 +91,6 @@ final class DocumentationTest extends TestCase
         '@psalm-override-property-visibility',
         '@psalm-scope-this',
         '@psalm-seal-methods',
-        '@psalm-stub-override',
     ];
 
     protected ProjectAnalyzer $project_analyzer;
@@ -98,6 +98,9 @@ final class DocumentationTest extends TestCase
     private static string $docContents = '';
 
     /**
+     * Takes the first ```php block of each issue page. It is analysed as-is, so it must start
+     * with `<?php` (otherwise it is inline HTML and raises no issue) and must raise the issue.
+     *
      * @return array<string, array<int, string>>
      */
     private static function getCodeBlocksFromDocs(): array
@@ -145,17 +148,7 @@ final class DocumentationTest extends TestCase
     #[Override]
     public function setUp(): void
     {
-        RuntimeCaches::clearAll();
-
-        $this->file_provider = new FakeFileProvider();
-
-        $this->project_analyzer = new ProjectAnalyzer(
-            new TestConfig(),
-            new Providers(
-                $this->file_provider,
-                new FakeParserCacheProvider(),
-            ),
-        );
+        parent::setUp();
 
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
     }
@@ -186,7 +179,6 @@ final class DocumentationTest extends TestCase
     public function testAllIssuesCovered(): void
     {
         $all_issues = IssueHandler::getAllIssueTypes();
-        $all_issues[] = 'ParseError';
         $all_issues[] = 'PluginIssue';
 
         sort($all_issues);
@@ -209,11 +201,75 @@ final class DocumentationTest extends TestCase
         $this->assertSame(implode("\n", $all_issues), implode("\n", $documented_issues));
     }
 
+    public function testAllIssuesAreListedOnceInErrorLevels(): void
+    {
+        $docs = file_get_contents(dirname(__DIR__) . '/docs/running_psalm/error_levels.md');
+        assert($docs !== false);
+
+        preg_match_all('/\(issues\/([A-Za-z0-9]+)\.md\)/', $docs, $matches);
+        $listed = $matches[1];
+
+        $all_issues = IssueHandler::getAllIssueTypes();
+        sort($all_issues);
+
+        $this->assertSame([], array_diff($all_issues, $listed), 'Issues missing from error_levels.md');
+        $this->assertSame([], array_diff($listed, $all_issues), 'error_levels.md lists unknown issues');
+        $this->assertSame(
+            [],
+            array_keys(array_filter(array_count_values($listed), static fn(int $count): bool => $count > 1)),
+            'Issues listed more than once in error_levels.md',
+        );
+    }
+
+    public function testIssuesAreListedUnderTheirErrorLevelInErrorLevels(): void
+    {
+        $docs = file_get_contents(dirname(__DIR__) . '/docs/running_psalm/error_levels.md');
+        assert($docs !== false);
+
+        $section = '';
+        $sections = [];
+
+        foreach (explode("\n", $docs) as $line) {
+            if (preg_match('/^## (.+)$/', $line, $heading)) {
+                $section = $heading[1];
+            } elseif (preg_match_all('/\(issues\/([A-Za-z0-9]+)\.md\)/', $line, $listed) > 0) {
+                foreach ($listed[1] as $issue) {
+                    $sections[$issue] = $section;
+                }
+            }
+        }
+
+        $misplaced = [];
+
+        foreach (IssueHandler::getAllIssueTypes() as $issue_name) {
+            $section = $sections[$issue_name] ?? '';
+
+            /** @var class-string<CodeIssue> $issue_class */
+            $issue_class = 'Psalm\\Issue\\' . $issue_name;
+            /** @var int $level */
+            $level = $issue_class::ERROR_LEVEL;
+
+            // an issue of level 8 is an error at every level
+            $expected = $level === -2
+                ? 'Feature-specific errors'
+                : ($level === -1 || $level >= 8
+                    ? 'Always treated as errors'
+                    : ($level === 1
+                        ? 'Errors that only appear at level 1'
+                        : 'Errors at level ' . $level . ' and below'));
+
+            if ($section !== $expected) {
+                $misplaced[$issue_name] = $section . ' (should be: ' . $expected . ')';
+            }
+        }
+
+        $this->assertSame([], $misplaced, 'Issues listed under the wrong level in error_levels.md');
+    }
+
     /**
-     * @dataProvider providerInvalidCodeParse
-     * @small
      * @param array<string> $ignored_issues
      */
+    #[DataProvider('providerInvalidCodeParse')]
     public function testInvalidCode(string $code, string $error_message, array $ignored_issues = [], bool $check_references = false, string $php_version = '8.0'): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
@@ -241,29 +297,22 @@ final class DocumentationTest extends TestCase
         foreach ($ignored_issues as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
-        if ($error_message === 'MissingImmutableAnnotation') {
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingImmutableAnnotation',
-                Config::REPORT_ERROR,
-            );
-        }
-        if ($error_message === 'MissingPureAnnotation') {
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingPureAnnotation',
-                Config::REPORT_ERROR,
-            );
-        }
-        if ($error_message === 'MissingAbstractPureAnnotation') {
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingAbstractPureAnnotation',
-                Config::REPORT_ERROR,
-            );
-        }
-        if ($error_message === 'MissingInterfaceImmutableAnnotation') {
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingInterfaceImmutableAnnotation',
-                Config::REPORT_ERROR,
-            );
+        $purity_suggestions = [
+            'MissingAbstractPureAnnotation',
+            'MissingImmutableAnnotation',
+            'MissingInterfaceImmutableAnnotation',
+            'MissingPureAnnotation',
+        ];
+
+        if (in_array($error_message, $purity_suggestions, true)) {
+            $this->project_analyzer->getConfig()->suggest_purity_annotations = true;
+
+            // the example of a page is about its own issue, not the other suggestions it triggers
+            foreach ($purity_suggestions as $purity_suggestion) {
+                if ($purity_suggestion !== $error_message) {
+                    $this->project_analyzer->getConfig()->setCustomErrorLevel($purity_suggestion, Config::REPORT_SUPPRESS);
+                }
+            }
         }
 
         $this->expectException(CodeException::class);
@@ -278,6 +327,8 @@ final class DocumentationTest extends TestCase
 
         if ($is_taint_test) {
             $this->project_analyzer->trackTaintedInputs();
+            // the taint handlers psalm registers (AddRemoveTaints) remove and add taints of the examples too
+            $codebase->config->initializePlugins($this->project_analyzer);
         }
 
         $this->analyzeFile($file_path, new Context());
@@ -290,7 +341,7 @@ final class DocumentationTest extends TestCase
     /**
      * @return array<string,array{string,string,string[],bool,string}>
      */
-    public function providerInvalidCodeParse(): array
+    public static function providerInvalidCodeParse(): array
     {
         $invalid_code_data = [];
 
@@ -416,7 +467,7 @@ final class DocumentationTest extends TestCase
         );
     }
 
-    /** @dataProvider knownAnnotations */
+    #[DataProvider('knownAnnotations')]
     public function testAllAnnotationsAreDocumented(string $annotation): void
     {
         if ('' === self::$docContents) {
@@ -436,9 +487,9 @@ final class DocumentationTest extends TestCase
 
     /**
      * @return iterable<string, array{string}>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
-    public function knownAnnotations(): iterable
+    public static function knownAnnotations(): iterable
     {
         foreach (DocComment::PSALM_ANNOTATIONS as $annotation) {
             if (in_array('@psalm-' . $annotation, self::INTENTIONALLY_UNDOCUMENTED_ANNOTATIONS, true)) {
@@ -487,7 +538,7 @@ final class DocumentationTest extends TestCase
             #[Override]
             protected function failureDescription(mixed $other): string
             {
-                return $this->exporter()->shortenedExport($other) . ' ' . $this->toString();
+                return (new Exporter())->shortenedExport($other) . ' ' . $this->toString();
             }
         };
     }
@@ -541,7 +592,7 @@ final class DocumentationTest extends TestCase
         $sorted = $issues_index_list;
         usort($sorted, "strcasecmp");
         for ($i = 0; $i < count($sorted); ++$i) {
-            $this->assertEquals($sorted[$i], $issues_index_list[$i], "issues.md out of order, expected {$sorted[$i]} before {$issues_index_list[$i]}");
+            $this->assertSame($sorted[$i], $issues_index_list[$i], "issues.md out of order, expected {$sorted[$i]} before {$issues_index_list[$i]}");
         }
     }
 }

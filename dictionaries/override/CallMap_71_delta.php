@@ -713,6 +713,82 @@ return array (
         'mode=' => 'int',
       ),
     ),
+    'mysqli::query' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|mysqli_result',
+        'query' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|mysqli_result',
+        'query' => 'string',
+        'resultmode=' => 'int',
+      ),
+    ),
+    'mysqli_escape_string' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'link' => 'mysqli',
+        'query' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+        'link' => 'mysqli',
+        'query' => 'string',
+        'resultmode=' => 'mixed',
+      ),
+    ),
+    'mysqli_multi_query' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+        'query' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+        'query=' => 'string',
+      ),
+    ),
+    'mysqli_query' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|mysqli_result',
+        'link' => 'mysqli',
+        'query' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|mysqli_result',
+        'link' => 'mysqli',
+        'query' => 'string',
+        'resultmode=' => 'int',
+      ),
+    ),
+    'mysqli_real_query' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+        'query' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'link' => 'mysqli',
+        'query=' => 'string',
+      ),
+    ),
     'openssl_csr_get_public_key' => 
     array (
       'old' => 
@@ -841,6 +917,24 @@ return array (
         0 => 'array<array-key, mixed>|false',
         'x509' => 'resource|string',
         'shortname=' => 'bool',
+      ),
+    ),
+    'pdo::sqlitecreatefunction' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'function_name' => 'string',
+        'callback' => 'callable[impure]',
+        'num_args=' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'function_name' => 'string',
+        'callback' => 'callable[impure]',
+        'num_args=' => 'int',
+        'flags=' => 'int',
       ),
     ),
     'pfsockopen' => 

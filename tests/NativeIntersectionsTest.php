@@ -17,7 +17,7 @@ final class NativeIntersectionsTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'nativeTypeIntersectionInConstructor' => [
@@ -146,7 +146,7 @@ final class NativeIntersectionsTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidNativeIntersectionArgument' => [
@@ -166,7 +166,7 @@ final class NativeIntersectionsTest extends TestCase
                     test(new C());
                 ',
                 'error_message' => 'InvalidArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'mismatchDocblockNativeIntersectionArgument' => [
@@ -186,7 +186,7 @@ final class NativeIntersectionsTest extends TestCase
                     }
                 ',
                 'error_message' => 'MismatchingDocblockParamType',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'intersectionsNotAllowedWithUnions' => [
@@ -201,7 +201,7 @@ final class NativeIntersectionsTest extends TestCase
                         return $test;
                     }',
                 'error_message' => 'ParseError',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'intersectionsNotAllowedWithNonClasses' => [
@@ -212,7 +212,7 @@ final class NativeIntersectionsTest extends TestCase
                         return $test;
                     }',
                 'error_message' => 'ParseError',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'intersectionsNotAllowedInPHP80' => [
@@ -225,7 +225,7 @@ final class NativeIntersectionsTest extends TestCase
                         return $test;
                     }',
                 'error_message' => 'ParseError',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'nativeTypeIntersectionAsClassPropertyUsingUnknownInterfaces' => [
@@ -241,7 +241,7 @@ final class NativeIntersectionsTest extends TestCase
                 // @todo decide whether a fall-back should be implemented, that allows to by-pass this failure (opt-in config)
                 // `UndefinedClass - src/somefile.php:3:33 - Class, interface or enum named Example\Unknown\B does not exist`
                 'error_message' => 'UndefinedClass',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
         ];

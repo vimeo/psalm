@@ -11,12 +11,15 @@ use PhpParser\Node\FunctionLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\UnresolvableConstantException;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\InterfaceAnalyzer;
+use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
@@ -31,6 +34,7 @@ use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidFalsableReturnType;
 use Psalm\Issue\InvalidNullableReturnType;
@@ -49,6 +53,7 @@ use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
@@ -58,6 +63,7 @@ use function array_filter;
 use function array_values;
 use function count;
 use function implode;
+use function in_array;
 use function str_starts_with;
 use function strtolower;
 
@@ -66,6 +72,59 @@ use function strtolower;
  */
 final class ReturnTypeAnalyzer
 {
+    /**
+     * @param ?string $fq_class_name the class analyzed, not the parent or interface the return type comes from
+     * @psalm-capabilities read-props
+     */
+    private static function isOverridable(
+        Codebase $codebase,
+        ?FunctionLikeStorage $storage,
+        ?string $fq_class_name,
+    ): bool {
+        return $storage instanceof MethodStorage
+            && $fq_class_name !== null
+            && !$storage->final
+            && $storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+            && !$codebase->classlike_storage_provider->get($fq_class_name)->final
+            && !$codebase->classlike_storage_provider->get($fq_class_name)->anonymous;
+    }
+
+    /**
+     * Adds the null returned when the end of the body is reachable and a value is returned elsewhere.
+     *
+     * @param list<Union> $return_type_parts
+     * @param array<PhpParser\Node\Stmt> $function_stmts
+     * @return list<Union>
+     */
+    public static function addImplicitNullReturn(
+        array $return_type_parts,
+        bool $has_yield,
+        array $function_stmts,
+        NodeDataProvider $type_provider,
+        bool $did_explicitly_return,
+    ): array {
+        if (!$return_type_parts
+            || $has_yield
+            || $did_explicitly_return
+            || !in_array(
+                ScopeAnalyzer::ACTION_NONE,
+                ScopeAnalyzer::getControlActions($function_stmts, $type_provider, [], true, true),
+                true,
+            )
+        ) {
+            return $return_type_parts;
+        }
+
+        foreach ($return_type_parts as $return_type_part) {
+            if (!$return_type_part->isVoid() && !$return_type_part->isNever()) {
+                $return_type_parts[] = new Union([new TNull(true)]);
+                break;
+            }
+        }
+
+        return $return_type_parts;
+    }
+
     /**
      * @param Closure|Function_|ClassMethod|ArrowFunction $function
      * @param PhpParser\Node\Stmt[] $function_stmts
@@ -154,24 +213,14 @@ final class ReturnTypeAnalyzer
             $did_explicitly_return = true;
         }
 
-        if ((!$return_type || $return_type->from_docblock)
-            && ScopeAnalyzer::getControlActions(
+        if (!$return_type || $return_type->from_docblock) {
+            $inferred_return_type_parts = self::addImplicitNullReturn(
+                $inferred_return_type_parts,
+                $inferred_yield_types !== [],
                 $function_stmts,
                 $type_provider,
-                [],
-            ) !== [ScopeAnalyzer::ACTION_END]
-            && !$inferred_yield_types
-            && count($inferred_return_type_parts)
-            && !$did_explicitly_return
-        ) {
-            // only add null if we have a return statement elsewhere and it wasn't void or never
-            foreach ($inferred_return_type_parts as $inferred_return_type_part) {
-                if (!$inferred_return_type_part->isVoid() && !$inferred_return_type_part->isNever()) {
-                    $atomic_null = new TNull(true);
-                    $inferred_return_type_parts[] = new Union([$atomic_null]);
-                    break;
-                }
-            }
+                $did_explicitly_return,
+            );
         }
 
         $control_actions = ScopeAnalyzer::getControlActions(
@@ -179,6 +228,7 @@ final class ReturnTypeAnalyzer
             $type_provider,
             [],
             false,
+            true,
         );
 
         $function_always_exits = $control_actions === [ScopeAnalyzer::ACTION_END];
@@ -205,7 +255,31 @@ final class ReturnTypeAnalyzer
             if (IssueBuffer::accepts(
                 new InvalidReturnType(
                     'Not all code paths of ' . $cased_method_id . ' end in a return statement, return type '
-                        . $return_type . ' expected',
+                        . $return_type->getId() . ' expected',
+                    $return_type_location,
+                ),
+                $suppressed_issues,
+            )) {
+                return false;
+            }
+
+            return null;
+        }
+
+        if ($return_type
+            && $function_like_storage?->has_yield
+            && $inferred_return_type_parts !== []
+            && $function_returns_implicitly
+            && ($generator_return_type = self::getGeneratorReturnType($return_type))
+            && !$generator_return_type->isVoid()
+            && !$generator_return_type->isNever()
+            && !$generator_return_type->isNullable()
+            && !$generator_return_type->hasMixed()
+        ) {
+            if (IssueBuffer::accepts(
+                new InvalidReturnType(
+                    'Not all code paths of ' . $cased_method_id . ' end in a return statement, the generator '
+                        . 'return type ' . $generator_return_type->getId() . ' expected',
                     $return_type_location,
                 ),
                 $suppressed_issues,
@@ -262,12 +336,6 @@ final class ReturnTypeAnalyzer
         if (count($inferred_return_type_parts_with_never) > 1
             && !$function_always_exits
             && $inferred_return_type_parts_with_never !== $inferred_return_type_parts) {
-
-            /**
-             * see https://github.com/vimeo/psalm/issues/9045
-             *
-             * @psalm-suppress InvalidArgument
-             */
             $inferred_return_type_with_never = Type::combineUnionTypeArray(
                 $inferred_return_type_parts_with_never,
                 $codebase,
@@ -321,7 +389,7 @@ final class ReturnTypeAnalyzer
             ) {
                 if (IssueBuffer::accepts(
                     new InvalidToString(
-                        '__toString methods must return a string, ' . $inferred_return_type . ' returned',
+                        '__toString methods must return a string, ' . $inferred_return_type->getId() . ' returned',
                         $return_type_location,
                     ),
                     $suppressed_issues,
@@ -334,7 +402,7 @@ final class ReturnTypeAnalyzer
                 IssueBuffer::maybeAdd(
                     new ImplicitToStringCast(
                         'The declared return type for ' . $cased_method_id . ' expects string, ' .
-                        '\'' . $inferred_return_type . '\' provided with a __toString method',
+                        '\'' . $inferred_return_type->getId() . '\' provided with a __toString method',
                         $return_type_location,
                     ),
                     $suppressed_issues,
@@ -484,7 +552,7 @@ final class ReturnTypeAnalyzer
                 if (IssueBuffer::accepts(
                     new InvalidReturnType(
                         'No return statements were found for method ' . $cased_method_id .
-                            ' but return type \'' . $declared_return_type . '\' was expected',
+                            ' but return type \'' . $declared_return_type->getId() . '\' was expected',
                         $return_type_location,
                     ),
                     $suppressed_issues,
@@ -492,6 +560,19 @@ final class ReturnTypeAnalyzer
                 )) {
                     return false;
                 }
+            } elseif ($declared_return_type->explicit_never
+                && !in_array(ScopeAnalyzer::ACTION_END, $control_actions, true)
+                && IssueBuffer::accepts(
+                    new MoreSpecificReturnType(
+                        'The declared return type \'' . $declared_return_type->getId() . '|never\' for '
+                        . $cased_method_id . ' is more specific than the inferred return type '
+                        . '\'' . $inferred_return_type->getId() . '\'',
+                        $return_type_location,
+                    ),
+                    $suppressed_issues,
+                )
+            ) {
+                return false;
             }
 
             return null;
@@ -525,13 +606,19 @@ final class ReturnTypeAnalyzer
                 }
             }
 
+            // never is a subtype of void: a void function that never ends (an infinite loop, an exit) is correct
             if (!$declared_return_type->isNever()
+                && !$declared_return_type->isVoid()
                 && $function_always_exits
+                // a generator function returns its Generator even if its body never ends
+                && !$function_like_storage?->has_yield
                 // never return type only available from PHP 8.1 in non-docblock
                 && ($declared_return_type->from_docblock || $codebase->analysis_php_version_id >= 8_10_00)
                 // no error for single throw, as extending a class might not work without errors
                 // https://3v4l.org/vCSF4#v8.1.12
                 && !ScopeAnalyzer::onlyThrows($function_stmts)
+                // a method a child class may override must not be given the type of its stub implementation
+                && !self::isOverridable($codebase, $function_like_storage, $static_fq_class_name ?? $fq_class_name)
             ) {
                 if ($codebase->alter_code
                     && isset($project_analyzer->getIssuesToFix()['InvalidReturnType'])
@@ -683,7 +770,12 @@ final class ReturnTypeAnalyzer
                         );
                     }
                 } else {
-                    if ($function instanceof Function_
+                    if ($function instanceof Closure
+                        && $function->getAttribute(ClassAnalyzer::PROPERTY_HOOK_ATTRIBUTE) !== null
+                    ) {
+                        // a property hook returns the type of its property, which other hooks and writes share
+                        $check_for_less_specific_type = false;
+                    } elseif ($function instanceof Function_
                         || $function instanceof Closure
                         || $function instanceof ArrowFunction
                         || $function->isPrivate()
@@ -726,7 +818,7 @@ final class ReturnTypeAnalyzer
                 IssueBuffer::maybeAdd(
                     new ImplicitToStringCast(
                         'The declared return type for ' . $cased_method_id . ' expects \'' .
-                        $declared_return_type . '\', ' . '\'' . $inferred_return_type .
+                        $declared_return_type->getId() . '\', ' . '\'' . $inferred_return_type->getId() .
                         '\' provided with a __toString method',
                         $return_type_location,
                     ),
@@ -761,8 +853,8 @@ final class ReturnTypeAnalyzer
 
                 if (IssueBuffer::accepts(
                     new InvalidNullableReturnType(
-                        'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
-                            ' is not nullable, but \'' . $inferred_return_type . '\' contains null',
+                        'The declared return type \'' . $declared_return_type->getId() . '\' for ' . $cased_method_id .
+                            ' is not nullable, but \'' . $inferred_return_type->getId() . '\' contains null',
                         $return_type_location,
                     ),
                     $suppressed_issues,
@@ -797,8 +889,8 @@ final class ReturnTypeAnalyzer
 
                 if (IssueBuffer::accepts(
                     new InvalidFalsableReturnType(
-                        'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
-                            ' does not allow false, but \'' . $inferred_return_type . '\' contains false',
+                        'The declared return type \'' . $declared_return_type->getId() . '\' for ' . $cased_method_id .
+                            ' does not allow false, but \'' . $inferred_return_type->getId() . '\' contains false',
                         $return_type_location,
                     ),
                     $suppressed_issues,
@@ -828,6 +920,14 @@ final class ReturnTypeAnalyzer
         if (!$storage->return_type || !$storage->return_type_location) {
             return null;
         }
+
+        TypeChecker::checkDeferredIntersections(
+            $storage->return_type,
+            $function_like_analyzer,
+            $storage->return_type_location,
+            $storage->suppressed_issues,
+            $context,
+        );
 
         $parent_class = null;
 
@@ -865,14 +965,12 @@ final class ReturnTypeAnalyzer
                 $parent_class,
             );
 
-            /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
-            $fleshed_out_return_type->check(
+            /** @psalm-suppress UnusedMethodCall Actually generates issues */
+            self::checkTypeAsReturned(
+                $fleshed_out_return_type,
                 $function_like_analyzer,
                 $storage->return_type_location,
                 $storage->suppressed_issues,
-                [],
-                false,
-                false,
                 false,
                 $context,
             );
@@ -928,14 +1026,14 @@ final class ReturnTypeAnalyzer
             $fleshed_out_return_type = $storage->return_type;
         }
 
-        if ($fleshed_out_return_type->check(
+        if (!self::checkTypeAsReturned(
+            $fleshed_out_return_type,
             $function_like_analyzer,
             $storage->return_type_location,
             $storage->suppressed_issues,
-            [],
-            false,
             $storage instanceof MethodStorage && $storage->inherited_return_type,
-        ) === false) {
+            null,
+        )) {
             return false;
         }
 
@@ -1065,5 +1163,63 @@ final class ReturnTypeAnalyzer
             $inferred_return_type->canBeFullyExpressedInPhp($codebase->analysis_php_version_id),
             $function_like_storage->return_type_description ?? null,
         );
+    }
+
+    /**
+     * Checks the return type $type of $function_like_analyzer like Union::check(), as an output position for a
+     * method: a covariant template may be there, but not in the parameter types of a callable in it (see
+     * TypeChecker)
+     *
+     * @param array<string> $suppressed_issues
+     * @psalm-pure
+     */
+    private static function checkTypeAsReturned(
+        Union $type,
+        FunctionLikeAnalyzer $function_like_analyzer,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+        bool $inherited,
+        ?Context $context,
+    ): bool {
+        if ($type->checked) {
+            return true;
+        }
+
+        $checker = new TypeChecker(
+            $function_like_analyzer,
+            $code_location,
+            $suppressed_issues,
+            [],
+            false,
+            $inherited,
+            false,
+            $context,
+            $function_like_analyzer instanceof MethodAnalyzer,
+        );
+
+        return $checker->check($type);
+    }
+
+    /**
+     * The type `Generator<TKey, TValue, TSend, TReturn>` says the generator returns
+     *
+     * @psalm-pure
+     */
+    private static function getGeneratorReturnType(Union $return_type): ?Union
+    {
+        if (!$return_type->isSingle()) {
+            return null;
+        }
+
+        $atomic = $return_type->getSingleAtomic();
+
+        if ($atomic instanceof TGenericObject
+            && strtolower($atomic->value) === 'generator'
+            && count($atomic->type_params) === 4
+        ) {
+            return $atomic->type_params[3];
+        }
+
+        return null;
     }
 }

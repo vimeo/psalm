@@ -40,17 +40,22 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\NamedArguments;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_any;
+use function array_diff_key;
+use function array_filter;
+use function array_key_last;
 use function in_array;
 use function str_starts_with;
 use function strtolower;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class MethodComparator
 {
@@ -125,14 +130,33 @@ final class MethodComparator
             $suppressed_issues,
         );
 
-        if ($guide_method_storage->signature_return_type && $prevent_method_signature_mismatch) {
+        $guide_signature_return_type = $guide_method_storage->signature_return_type;
+        $guide_has_tentative_return_type = $guide_method_storage->has_tentative_return_type;
+        if (!$guide_classlike_storage->user_defined && InternalCallMapHandler::inCallMap($cased_guide_method_id)) {
+            $kind = InternalCallMapHandler::getReturnTypeKind($cased_guide_method_id);
+            // A known absence takes precedence over a stub; an unreflected API can still use its stub contract.
+            if ($kind !== null) {
+                $guide_signature_return_type = InternalCallMapHandler::getSignatureReturnType($cased_guide_method_id);
+                $guide_has_tentative_return_type = $kind === 'tentative';
+            }
+        }
+
+        $ignore_tentative_return_type = $guide_has_tentative_return_type && array_any(
+            $implementer_method_storage->attributes,
+            static fn(AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange',
+        );
+
+        if ($guide_signature_return_type && $prevent_method_signature_mismatch
+            && !$ignore_tentative_return_type
+            && ($guide_classlike_storage->user_defined || $implementer_method_storage->signature_return_type)
+        ) {
             self::compareMethodSignatureReturnTypes(
                 $codebase,
                 $guide_classlike_storage,
                 $implementer_classlike_storage,
                 $guide_method_storage,
                 $implementer_method_storage,
-                $guide_method_storage->signature_return_type,
+                $guide_signature_return_type,
                 $cased_guide_method_id,
                 $implementer_called_class_name,
                 $cased_implementer_method_id,
@@ -141,17 +165,14 @@ final class MethodComparator
             );
         }
 
-        // CallMapHandler needed due to https://github.com/vimeo/psalm/issues/10378
         if (!$guide_classlike_storage->user_defined
             && $implementer_classlike_storage->user_defined
-            && $codebase->analysis_php_version_id >= 8_01_00
-            && (($guide_method_storage->return_type && InternalCallMapHandler::inCallMap($cased_guide_method_id))
-                || $guide_method_storage->signature_return_type
-            ) && !$implementer_method_storage->signature_return_type
-            && !array_any(
-                $implementer_method_storage->attributes,
-                static fn(AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange',
-            )
+            // PHP 8 supplies string for declared __toString methods, but not trait methods aliased to it.
+            && ($codebase->analysis_php_version_id < 8_00_00
+                || strtolower($implementer_method_storage->cased_name ?? '') !== '__tostring')
+            && $guide_signature_return_type
+            && !$implementer_method_storage->signature_return_type
+            && !$ignore_tentative_return_type
         ) {
             IssueBuffer::maybeAdd(
                 new MethodSignatureMustProvideReturnType(
@@ -162,9 +183,18 @@ final class MethodComparator
             );
         }
 
+        // a trait method takes the docblock of the parent method per using class (see Populator), not per storage
+        $inherits_return_type = $implementer_method_storage->inherited_return_type
+            || (!$implementer_method_storage->has_docblock_param_types
+                && !$implementer_method_storage->has_docblock_return_type
+                && isset($codebase->classlike_storage_provider->get($implementer_called_class_name)
+                    ->documenting_method_ids[strtolower($guide_method_storage->cased_name ?? '')]));
+
+        // an inherited docblock refines a native return type, but cannot replace one it does not overlap
+        // (see Methods::getMethodReturnType())
         if ($guide_method_storage->return_type
             && $implementer_method_storage->return_type
-            && !$implementer_method_storage->inherited_return_type
+            && (!$inherits_return_type || $implementer_method_storage->signature_return_type)
             && ($guide_method_storage->signature_return_type !== $guide_method_storage->return_type
                 || $implementer_method_storage->signature_return_type !== $implementer_method_storage->return_type)
             && $implementer_classlike_storage->user_defined
@@ -182,12 +212,42 @@ final class MethodComparator
                 $implementer_declaring_method_id,
                 $code_location,
                 $suppressed_issues,
+                $inherits_return_type,
             );
         }
 
         foreach ($guide_method_storage->params as $i => $guide_param) {
             if (!isset($implementer_method_storage->params[$i])) {
-                if (!$prevent_abstract_override && $i >= $guide_method_storage->required_param_count) {
+                // a variadic parameter takes every argument after the ones before it, so it has to accept
+                // each of the parameters of the guide that it covers
+                $variadic_index = array_key_last($implementer_method_storage->params);
+
+                if ($variadic_index !== null && $implementer_method_storage->params[$variadic_index]->is_variadic) {
+                    self::compareMethodParams(
+                        $codebase,
+                        $stmt,
+                        $implementer_classlike_storage,
+                        $guide_classlike_storage,
+                        $implementer_called_class_name,
+                        $guide_method_storage,
+                        $implementer_method_storage,
+                        $guide_param,
+                        $implementer_method_storage->params[$variadic_index],
+                        $variadic_index,
+                        $cased_guide_method_id,
+                        $cased_implementer_method_id,
+                        $prevent_method_signature_mismatch,
+                        $code_location,
+                        $suppressed_issues,
+                    );
+
+                    continue;
+                }
+
+                if (!$prevent_abstract_override
+                    && $i >= $guide_method_storage->required_param_count
+                    && !$guide_classlike_storage->user_defined
+                ) {
                     continue;
                 }
 
@@ -213,7 +273,13 @@ final class MethodComparator
                 $implementer_called_class_name,
                 $guide_method_storage,
                 $implementer_method_storage,
-                $guide_param,
+                self::getDocumentedGuideParam(
+                    $codebase,
+                    $guide_classlike_storage,
+                    $guide_method_storage,
+                    $guide_param,
+                    $i,
+                ),
                 $implementer_method_storage->params[$i],
                 $i,
                 $cased_guide_method_id,
@@ -226,6 +292,7 @@ final class MethodComparator
 
         if (($guide_classlike_storage->is_interface
              || $guide_classlike_storage->preserve_constructor_signature
+             || $guide_method_storage->abstract
              || $implementer_method_storage->cased_name !== '__construct')
             && $implementer_method_storage->required_param_count > $guide_method_storage->required_param_count
         ) {
@@ -261,53 +328,161 @@ final class MethodComparator
     }
 
     /**
-     * @param array<lowercase-string, MethodStorage> $pseudo_methods
+     * A `@method` the direct parent (each direct parent interface) also has was compared there, or isn't analyzed
+     * there, so here it's only compared with the methods that parent neither declares nor overrides
      */
-    public static function comparePseudoMethods(
-        array $pseudo_methods,
-        string $fq_class_name,
-        Codebase $codebase,
-        ClassLikeStorage $class_storage,
-    ): void {
-        foreach ($pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
-            $pseudo_method_id = new MethodIdentifier(
-                $fq_class_name,
-                $pseudo_method_name,
-            );
+    public static function comparePseudoMethods(Codebase $codebase, ClassLikeStorage $class_storage): void
+    {
+        if (!$class_storage->pseudo_methods && !$class_storage->pseudo_static_methods) {
+            return;
+        }
 
-            $overridden_method_ids = $codebase->methods->getOverriddenMethodIds($pseudo_method_id);
-            if (isset($class_storage->methods[$pseudo_method_id->method_name])) {
-                $overridden_method_ids[$class_storage->name] = $pseudo_method_id;
-            }
+        $parent_storages = [];
 
-            if ($overridden_method_ids
-                && $pseudo_method_name !== '__construct'
-                && $pseudo_method_storage->location
-            ) {
-                foreach ($overridden_method_ids as $overridden_method_id) {
-                    $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
+        foreach ($class_storage->is_interface
+            ? $class_storage->direct_interface_parents
+            : array_filter([$class_storage->parent_class]) as $parent_name) {
+            // a parent that doesn't exist has no storage, and is reported as undefined elsewhere
+            $parent_storage = $codebase->classlikes->getStorageFor($parent_name);
 
-                    $overridden_fq_class_name = $overridden_method_id->fq_class_name;
-
-                    $parent_storage = $codebase->classlike_storage_provider->get($overridden_fq_class_name);
-
-                    self::compare(
-                        $codebase,
-                        null,
-                        $class_storage,
-                        $parent_storage,
-                        $pseudo_method_storage,
-                        $parent_method_storage,
-                        $fq_class_name,
-                        $pseudo_method_storage->visibility ?: 0,
-                        $class_storage->location ?: $pseudo_method_storage->location,
-                        $class_storage->suppressed_issues,
-                        true,
-                        false,
-                    );
-                }
+            if ($parent_storage) {
+                $parent_storages[] = $parent_storage;
             }
         }
+
+        foreach ($class_storage->pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
+            self::comparePseudoMethod(
+                $codebase,
+                $class_storage,
+                $parent_storages,
+                $pseudo_method_name,
+                $pseudo_method_storage,
+                false,
+            );
+        }
+
+        foreach ($class_storage->pseudo_static_methods as $pseudo_method_name => $pseudo_method_storage) {
+            self::comparePseudoMethod(
+                $codebase,
+                $class_storage,
+                $parent_storages,
+                $pseudo_method_name,
+                $pseudo_method_storage,
+                true,
+            );
+        }
+    }
+
+    /**
+     * @param list<ClassLikeStorage> $parent_storages
+     * @param lowercase-string $pseudo_method_name
+     */
+    private static function comparePseudoMethod(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        array $parent_storages,
+        string $pseudo_method_name,
+        MethodStorage $pseudo_method_storage,
+        bool $is_static,
+    ): void {
+        $fq_class_name = $class_storage->name;
+
+        $overridden_method_ids = $codebase->methods->getOverriddenMethodIds(
+            new MethodIdentifier($fq_class_name, $pseudo_method_name),
+        );
+
+        $declaring_class = self::getDeclaringPseudoMethodClass($class_storage, $pseudo_method_name, $is_static);
+
+        foreach ($parent_storages as $parent_storage) {
+            if ($declaring_class !== null
+                && $declaring_class === self::getDeclaringPseudoMethodClass(
+                    $parent_storage,
+                    $pseudo_method_name,
+                    $is_static,
+                )
+            ) {
+                $parent_own_method_id = self::getOwnMethodId($parent_storage, $pseudo_method_name);
+
+                $overridden_method_ids = array_diff_key(
+                    $overridden_method_ids,
+                    $parent_storage->overridden_method_ids[$pseudo_method_name] ?? [],
+                    $parent_own_method_id ? [$parent_own_method_id->fq_class_name => true] : [],
+                );
+            }
+        }
+
+        $own_method_id = self::getOwnMethodId($class_storage, $pseudo_method_name);
+
+        if ($own_method_id) {
+            $overridden_method_ids[$own_method_id->fq_class_name] = $own_method_id;
+        }
+
+        if ($overridden_method_ids
+            && $pseudo_method_name !== '__construct'
+            && $pseudo_method_storage->location
+        ) {
+            foreach ($overridden_method_ids as $overridden_method_id) {
+                $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
+
+                $overridden_fq_class_name = $overridden_method_id->fq_class_name;
+
+                $parent_storage = $codebase->classlike_storage_provider->get($overridden_fq_class_name);
+
+                // a call from outside reaches `__call` or `__callStatic` instead of a method that isn't public
+                $visibility_storage = $overridden_method_id === $own_method_id ? $class_storage : $parent_storage;
+
+                if (($visibility_storage->trait_visibility_map[$overridden_method_id->method_name]
+                        ?? $parent_method_storage->visibility) !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                ) {
+                    continue;
+                }
+
+                self::compare(
+                    $codebase,
+                    null,
+                    $class_storage,
+                    $parent_storage,
+                    $pseudo_method_storage,
+                    $parent_method_storage,
+                    $fq_class_name,
+                    $pseudo_method_storage->visibility ?: 0,
+                    $class_storage->location ?: $pseudo_method_storage->location,
+                    $class_storage->suppressed_issues,
+                    true,
+                    false,
+                );
+            }
+        }
+    }
+
+    /**
+     * The method the class itself has, be it declared in it or in a trait it uses
+     *
+     * @param lowercase-string $method_name
+     * @psalm-capabilities read-props
+     */
+    private static function getOwnMethodId(ClassLikeStorage $storage, string $method_name): ?MethodIdentifier
+    {
+        $appearing_method_id = $storage->appearing_method_ids[$method_name] ?? null;
+
+        return $appearing_method_id !== null
+            && strtolower($appearing_method_id->fq_class_name) === strtolower($storage->name)
+            ? $storage->declaring_method_ids[$method_name] ?? null
+            : null;
+    }
+
+    /**
+     * @param lowercase-string $method_name
+     * @psalm-capabilities read-props
+     */
+    private static function getDeclaringPseudoMethodClass(
+        ClassLikeStorage $storage,
+        string $method_name,
+        bool $is_static,
+    ): ?string {
+        return ($is_static
+            ? $storage->declaring_pseudo_static_method_ids
+            : $storage->declaring_pseudo_method_ids)[$method_name]->fq_class_name ?? null;
     }
 
     /**
@@ -452,6 +627,7 @@ final class MethodComparator
                         . ' additionally requires '
                         . Capabilities::toString($implementer_capabilities, $guide_capabilities),
                     $code_location,
+                    $guide_classlike_storage->name,
                 ),
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
             );
@@ -465,6 +641,7 @@ final class MethodComparator
      * will be bound by each `new`, maybe to nothing, so only its lower bound can be relied upon, and an override may
      * use the rest only through `@psalm-purity-from-template P`, like Hack's abstract context constants.
      *
+     * @return CapabilitySet
      * @psalm-capabilities read-props
      */
     private static function getBoundCapabilities(
@@ -488,6 +665,21 @@ final class MethodComparator
             }
 
             foreach ($bound_type->getAtomicTypes() as $bound_atomic) {
+                // the extended params chain the templates: Iterator's may be that of an abstract parent, which the
+                // class binds in turn
+                while ($bound_atomic instanceof TTemplateParam
+                    && $bound_atomic->defining_class !== $binding_classlike_storage->name
+                ) {
+                    $next_type = $binding_classlike_storage
+                        ->template_extended_params[$bound_atomic->defining_class][$bound_atomic->param_name] ?? null;
+
+                    if ($next_type === null || !$next_type->isSingle()) {
+                        break;
+                    }
+
+                    $bound_atomic = $next_type->getSingleAtomic();
+                }
+
                 if ($bound_atomic instanceof TTemplateParam
                     && $codebase->classlike_storage_provider->has($bound_atomic->defining_class)
                 ) {
@@ -571,8 +763,8 @@ final class MethodComparator
                                 new ConstructorSignatureMismatch(
                                     'Argument ' . ($i + 1) . ' of '
                                         . $cased_implementer_method_id . ' has wrong type \''
-                                        . $implementer_param_type . '\', expecting \''
-                                        . $guide_param_signature_type . '\' as defined by '
+                                        . $implementer_param_type->getId() . '\', expecting \''
+                                        . $guide_param_signature_type?->getId() . '\' as defined by '
                                         . $cased_guide_method_id,
                                     $implementer_param->location
                                         && $config->isInProjectDirs(
@@ -588,8 +780,8 @@ final class MethodComparator
                                 new MethodSignatureMismatch(
                                     'Argument ' . ($i + 1) . ' of '
                                         . $cased_implementer_method_id . ' has wrong type \''
-                                        . $implementer_param_type . '\', expecting \''
-                                        . $guide_param_signature_type . '\' as defined by '
+                                        . $implementer_param_type->getId() . '\', expecting \''
+                                        . $guide_param_signature_type?->getId() . '\' as defined by '
                                         . $cased_guide_method_id,
                                     $implementer_param->location
                                         && $config->isInProjectDirs(
@@ -608,7 +800,9 @@ final class MethodComparator
                 }
             }
 
+            // a variadic parameter takes the arguments that follow it by position, whatever their names
             if ($guide_param->name !== $implementer_param->name
+                && !$implementer_param->is_variadic
                 && $guide_method_storage->allowsNamedArguments()
                 && $implementer_classlike_storage->user_defined
                 && $implementer_param->location
@@ -724,6 +918,49 @@ final class MethodComparator
     }
 
     /**
+     * A method with no docblock of its own is documented by the one it inherits it from (see Populator), and a
+     * method overriding it is compared with the param type of that docblock
+     */
+    private static function getDocumentedGuideParam(
+        Codebase $codebase,
+        ClassLikeStorage $guide_classlike_storage,
+        MethodStorage $guide_method_storage,
+        FunctionLikeParameter $guide_param,
+        int $i,
+    ): FunctionLikeParameter {
+        if ($guide_method_storage->has_docblock_param_types) {
+            return $guide_param;
+        }
+
+        $documenting_method_id = $guide_classlike_storage->documenting_method_ids[
+            strtolower($guide_method_storage->cased_name ?? '')
+        ] ?? null;
+
+        if ($documenting_method_id === null
+            || strtolower($documenting_method_id->fq_class_name) === strtolower($guide_classlike_storage->name)
+        ) {
+            return $guide_param;
+        }
+
+        $documenting_param = $codebase->methods->getStorage($documenting_method_id)->params[$i] ?? null;
+
+        // its templates are the ones of the class it is declared in; a type that is only the native one of the
+        // inherited method documents nothing, and a docblock type broader than the native type of the method
+        // itself does not widen what overriding methods may declare
+        if ($documenting_param === null
+            || $documenting_param->type === null
+            || !$documenting_param->has_docblock_type
+            || $documenting_param->type->hasTemplate()
+            || ($guide_param->type !== null
+                && !self::isContainedWithoutStringCast($codebase, $documenting_param->type, $guide_param->type))
+        ) {
+            return $guide_param;
+        }
+
+        return $guide_param->setType($documenting_param->type);
+    }
+
+    /**
      * @param  string[]         $suppressed_issues
      */
     private static function compareMethodSignatureParams(
@@ -810,7 +1047,7 @@ final class MethodComparator
 
         $is_contained_by = $codebase->analysis_php_version_id >= 7_04_00
             && $guide_param_signature_type
-            ? UnionTypeComparator::isContainedBy(
+            ? self::isContainedWithoutStringCast(
                 $codebase,
                 $guide_param_signature_type,
                 $implementer_param_signature_type,
@@ -941,6 +1178,9 @@ final class MethodComparator
                     $implementer_classlike_storage->name,
                     $implementer_method_storage_param_type,
                     $codebase,
+                    $implementer_called_class_name,
+                    $implementer_called_class_name,
+                    $implementer_called_class_storage->parent_class,
                 );
 
                 self::transformTemplates(
@@ -948,6 +1188,9 @@ final class MethodComparator
                     $guide_class_name,
                     $guide_method_storage_param_type,
                     $codebase,
+                    $implementer_called_class_name,
+                    $implementer_called_class_name,
+                    $implementer_called_class_storage->parent_class,
                 );
             }
         }
@@ -965,6 +1208,9 @@ final class MethodComparator
                 $guide_class_name,
                 $guide_method_storage_param_type,
                 $codebase,
+                $implementer_classlike_storage->name,
+                $implementer_called_class_name,
+                $implementer_classlike_storage->parent_class,
             );
         }
 
@@ -977,9 +1223,9 @@ final class MethodComparator
             !$guide_classlike_storage->user_defined,
             !$guide_classlike_storage->user_defined,
             $union_comparison_results,
-        )) {
+        ) || $union_comparison_results->to_string_cast) {
             // is the declared return type more specific than the inferred one?
-            if ($union_comparison_results->type_coerced) {
+            if ($union_comparison_results->type_coerced && !$union_comparison_results->to_string_cast) {
                 if ($guide_classlike_storage->user_defined) {
                     IssueBuffer::maybeAdd(
                         new MoreSpecificImplementedParamType(
@@ -1045,6 +1291,36 @@ final class MethodComparator
     }
 
     /**
+     * The class, $implementer or a parent of it, that takes the methods of $guide from it, if $guide is a trait:
+     * the `self` of such a method is that class, not the trait.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getClassUsingTrait(
+        Codebase $codebase,
+        ClassLikeStorage $implementer,
+        ClassLikeStorage $guide,
+    ): ?string {
+        if (!$guide->is_trait) {
+            return null;
+        }
+
+        if (isset($implementer->used_traits[strtolower($guide->name)])) {
+            return $implementer->name;
+        }
+
+        foreach ($implementer->parent_classes as $parent_class) {
+            $parent_storage = $codebase->classlike_storage_provider->get($parent_class);
+
+            if (isset($parent_storage->used_traits[strtolower($guide->name)])) {
+                return $parent_storage->name;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @param  string[]         $suppressed_issues
      */
     private static function compareMethodSignatureReturnTypes(
@@ -1066,20 +1342,40 @@ final class MethodComparator
             && $implementer_classlike_storage->final
             && !$implementer_classlike_storage->final_from_docblock;
 
+        // what a trait method refers to as self or static is the class it ends up in
+        $implementing_class_name = $implementer_classlike_storage->is_trait
+            ? $implementer_called_class_name
+            : $implementer_classlike_storage->name;
+
+        $class_using_trait = self::getClassUsingTrait(
+            $codebase,
+            $implementer_classlike_storage,
+            $guide_classlike_storage,
+        );
+
+        // `parent` of a non-abstract trait method is the parent of the class using the trait
+        $guide_parent_class = $guide_classlike_storage->parent_class;
+
+        if ($guide_classlike_storage->is_trait) {
+            $guide_parent_class = $implementer_classlike_storage->parent_class;
+
+            if (!$guide_method_storage->abstract && $class_using_trait !== null) {
+                $guide_parent_class = $codebase->classlike_storage_provider->get($class_using_trait)->parent_class;
+            }
+        }
+
         $guide_signature_return_type = TypeExpander::expandUnion(
             $codebase,
             $guide_signature_return_type,
             $guide_classlike_storage->is_trait && $guide_method_storage->abstract
-                ? $implementer_classlike_storage->name
-                : $guide_classlike_storage->name,
-            ($guide_classlike_storage->is_trait && $guide_method_storage->abstract)
+                ? $implementing_class_name
+                : $class_using_trait ?? $guide_classlike_storage->name,
+            $guide_classlike_storage->is_trait
                 || $guide_classlike_storage->final
                 || $resolve_static_to_final_class
-                ? $implementer_classlike_storage->name
+                ? $implementing_class_name
                 : $guide_classlike_storage->name,
-            $guide_classlike_storage->is_trait && $guide_method_storage->abstract
-                ? $implementer_classlike_storage->parent_class
-                : $guide_classlike_storage->parent_class,
+            $guide_parent_class,
             true,
             true,
             $resolve_static_to_final_class,
@@ -1089,18 +1385,15 @@ final class MethodComparator
             ? TypeExpander::expandUnion(
                 $codebase,
                 $implementer_method_storage->signature_return_type,
-                $implementer_classlike_storage->is_trait
-                    ? $implementer_called_class_name
-                    : $implementer_classlike_storage->name,
-                $implementer_classlike_storage->is_trait
-                    ? $implementer_called_class_name
-                    : $implementer_classlike_storage->name,
+                $implementing_class_name,
+                // an inherited method returns `static` of the class it is called on
+                new TNamedObject($implementer_called_class_name),
                 $implementer_classlike_storage->parent_class,
             ) : null;
 
         $is_contained_by = $codebase->analysis_php_version_id >= 7_04_00
             && $implementer_signature_return_type
-            ? UnionTypeComparator::isContainedBy(
+            ? self::isContainedWithoutStringCast(
                 $codebase,
                 $implementer_signature_return_type,
                 $guide_signature_return_type,
@@ -1108,13 +1401,7 @@ final class MethodComparator
             : UnionTypeComparator::isContainedByInPhp($implementer_signature_return_type, $guide_signature_return_type);
 
         if (!$is_contained_by) {
-            if ($implementer_signature_return_type === null
-                && array_any(
-                    $implementer_method_storage->attributes,
-                    static fn(AttributeStorage $s): bool => $s->fq_class_name === 'ReturnTypeWillChange',
-                )) {
-                // no error if return type will change and no signature set at all
-            } elseif ($codebase->analysis_php_version_id >= 8_00_00
+            if ($codebase->analysis_php_version_id >= 8_00_00
                       || $guide_classlike_storage->is_trait === $implementer_classlike_storage->is_trait
                       || !in_array($guide_classlike_storage->name, $implementer_classlike_storage->used_traits)
                       || $implementer_method_storage->defining_fqcln !== $implementer_classlike_storage->name
@@ -1124,8 +1411,11 @@ final class MethodComparator
                 IssueBuffer::maybeAdd(
                     new MethodSignatureMismatch(
                         'Method ' . $cased_implementer_method_id . ' with return type \''
-                            . $implementer_signature_return_type . '\' is different to return type \''
-                            . $guide_signature_return_type . '\' of inherited method ' . $cased_guide_method_id,
+                            . ($implementer_signature_return_type === null
+                                ? 'mixed'
+                                : (string) $implementer_signature_return_type)
+                            . '\' is different to return type \'' . $guide_signature_return_type
+                            . '\' of inherited method ' . $cased_guide_method_id,
                         $code_location,
                     ),
                     $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
@@ -1134,8 +1424,11 @@ final class MethodComparator
                 IssueBuffer::maybeAdd(
                     new TraitMethodSignatureMismatch(
                         'Method ' . $cased_implementer_method_id . ' with return type \''
-                            . $implementer_signature_return_type . '\' is different to return type \''
-                            . $guide_signature_return_type . '\' of inherited method ' . $cased_guide_method_id,
+                            . ($implementer_signature_return_type === null
+                                ? 'mixed'
+                                : (string) $implementer_signature_return_type)
+                            . '\' is different to return type \'' . $guide_signature_return_type
+                            . '\' of inherited method ' . $cased_guide_method_id,
                         $code_location,
                     ),
                     $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
@@ -1159,6 +1452,7 @@ final class MethodComparator
         ?MethodIdentifier $implementer_declaring_method_id,
         CodeLocation $code_location,
         array $suppressed_issues,
+        bool $inherits_return_type,
     ): void {
         $implementer_method_storage_return_type = TypeExpander::expandUnion(
             $codebase,
@@ -1168,6 +1462,9 @@ final class MethodComparator
                 : $implementer_classlike_storage->name,
             $implementer_called_class_name,
             $implementer_classlike_storage->parent_class,
+            true,
+            false,
+            $implementer_classlike_storage->final,
         );
 
         $guide_method_storage_return_type = TypeExpander::expandUnion(
@@ -1183,17 +1480,25 @@ final class MethodComparator
             $guide_classlike_storage->parent_class,
             true,
             true,
-            $implementer_method_storage->final,
+            $implementer_classlike_storage->final,
         );
 
         $guide_class_name = $guide_classlike_storage->name;
 
         if ($implementer_classlike_storage->template_extended_params) {
+            $self_class = $implementer_classlike_storage->is_trait
+                ? $implementer_called_class_name
+                : $implementer_classlike_storage->name;
+
             self::transformTemplates(
                 $implementer_classlike_storage->template_extended_params,
                 $guide_class_name,
                 $guide_method_storage_return_type,
                 $codebase,
+                $self_class,
+                $implementer_called_class_name,
+                $implementer_classlike_storage->parent_class,
+                $implementer_classlike_storage->final,
             );
 
             if ($implementer_method_storage->defining_fqcln) {
@@ -1202,6 +1507,10 @@ final class MethodComparator
                     $implementer_method_storage->defining_fqcln,
                     $implementer_method_storage_return_type,
                     $codebase,
+                    $self_class,
+                    $implementer_called_class_name,
+                    $implementer_classlike_storage->parent_class,
+                    $implementer_classlike_storage->final,
                 );
             }
         }
@@ -1217,6 +1526,10 @@ final class MethodComparator
                     $implementer_classlike_storage->name,
                     $implementer_method_storage_return_type,
                     $codebase,
+                    $implementer_called_class_name,
+                    $implementer_called_class_name,
+                    $implementer_called_class_storage->parent_class,
+                    $implementer_called_class_storage->final,
                 );
 
                 self::transformTemplates(
@@ -1224,6 +1537,10 @@ final class MethodComparator
                     $guide_class_name,
                     $guide_method_storage_return_type,
                     $codebase,
+                    $implementer_called_class_name,
+                    $implementer_called_class_name,
+                    $implementer_called_class_storage->parent_class,
+                    $implementer_called_class_storage->final,
                 );
             }
         }
@@ -1237,6 +1554,25 @@ final class MethodComparator
             $guide_method_storage_return_type = Type::getNull();
         }
 
+        $guide_in_implementer_result = new TypeComparisonResult();
+
+        if ($inherits_return_type
+            && ((UnionTypeComparator::isContainedBy(
+                $codebase,
+                $guide_method_storage_return_type,
+                $implementer_method_storage_return_type,
+                false,
+                false,
+                $guide_in_implementer_result,
+            ) && !$guide_in_implementer_result->to_string_cast) || Type::intersectUnionTypes(
+                $implementer_method_storage_return_type,
+                $guide_method_storage_return_type,
+                $codebase,
+            ))
+        ) {
+            return;
+        }
+
         $union_comparison_results = new TypeComparisonResult();
 
         if (!UnionTypeComparator::isContainedBy(
@@ -1246,9 +1582,18 @@ final class MethodComparator
             false,
             false,
             $union_comparison_results,
-        )) {
+        ) || $union_comparison_results->to_string_cast) {
+            // the types overlap where the intersection can't be built (callable-array, a constant wildcard);
+            // an object castable to string does not overlap a string
+            if ($inherits_return_type
+                && $union_comparison_results->type_coerced
+                && !$union_comparison_results->to_string_cast
+            ) {
+                return;
+            }
+
             // is the declared return type more specific than the inferred one?
-            if ($union_comparison_results->type_coerced) {
+            if ($union_comparison_results->type_coerced && !$union_comparison_results->to_string_cast) {
                 IssueBuffer::maybeAdd(
                     new LessSpecificImplementedReturnType(
                         'The inherited return type \'' . $guide_method_storage_return_type->getId()
@@ -1288,6 +1633,18 @@ final class MethodComparator
     }
 
     /**
+     * An object with `__toString()` is not a string: it only passes as one where PHP casts it, which a return
+     * value or an argument of an overriding method does not get under strict_types
+     */
+    private static function isContainedWithoutStringCast(Codebase $codebase, Union $input, Union $container): bool
+    {
+        $comparison_result = new TypeComparisonResult();
+
+        return UnionTypeComparator::isContainedBy($codebase, $input, $container, false, false, $comparison_result)
+            && !$comparison_result->to_string_cast;
+    }
+
+    /**
      * The type with the templates of the method, including its purity templates at any depth
      * (`Closure[_](): int`, `list<Closure[P](): int>`, `Traversable[_]<int, int>`), replaced by
      * their bounds: the method accepts whatever they may be bound to.
@@ -1317,13 +1674,16 @@ final class MethodComparator
 
     /**
      * @param  array<string, array<string, Union>>  $template_extended_params
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function transformTemplates(
         array $template_extended_params,
         string $base_class_name,
         Union &$templated_type,
         Codebase $codebase,
+        string $self_class,
+        string $static_class,
+        ?string $parent_class,
+        bool $final = false,
     ): void {
         if (isset($template_extended_params[$base_class_name])) {
             $map = $template_extended_params[$base_class_name];
@@ -1348,11 +1708,25 @@ final class MethodComparator
                             $new_base_class_name,
                             $mapped_type,
                             $codebase,
+                            $self_class,
+                            $static_class,
+                            $parent_class,
+                            $final,
                         );
                     }
                 }
 
-                $template_types[$key][$base_class_name] = $mapped_type;
+                // a type argument such as `@implements ArrayAccess<int, static>` belongs to the implementer
+                $template_types[$key][$base_class_name] = TypeExpander::expandUnion(
+                    $codebase,
+                    $mapped_type,
+                    $self_class,
+                    $static_class,
+                    $parent_class,
+                    true,
+                    false,
+                    $final,
+                );
             }
 
             $template_result = new TemplateResult([], $template_types);

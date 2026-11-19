@@ -18,8 +18,12 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
@@ -35,6 +39,8 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClosedResource;
+use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -64,6 +70,7 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_pop;
 use function array_values;
+use function count;
 use function range;
 use function strtolower;
 
@@ -101,7 +108,7 @@ final class CastAnalyzer
 
                 $type = self::castIntAttempt(
                     $statements_analyzer,
-                    $maybe_type,
+                    TypeExpander::expandTemplateKeyOfAndValueOf($statements_analyzer->getCodebase(), $maybe_type),
                     $stmt->expr,
                     true,
                 );
@@ -128,7 +135,7 @@ final class CastAnalyzer
 
                 $type = self::castFloatAttempt(
                     $statements_analyzer,
-                    $maybe_type,
+                    TypeExpander::expandTemplateKeyOfAndValueOf($statements_analyzer->getCodebase(), $maybe_type),
                     $stmt->expr,
                     true,
                 );
@@ -205,33 +212,16 @@ final class CastAnalyzer
                 return false;
             }
 
-            $permissible_atomic_types = [];
-            $all_permissible = false;
+            $type = Type::getObject();
 
             if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
+                $stmt_expr_type = self::resolveOperandType($stmt_expr_type, $statements_analyzer->getCodebase());
+
                 if ($stmt_expr_type->isObjectType()) {
                     self::handleRedundantCast($stmt_expr_type, $statements_analyzer, $stmt);
                 }
 
-                $all_permissible = true;
-
-                foreach ($stmt_expr_type->getAtomicTypes() as $type) {
-                    if ($type instanceof Scalar) {
-                        $objWithProps = new TObjectWithProperties(['scalar' => new Union([$type])]);
-                        $permissible_atomic_types[] = $objWithProps;
-                    } elseif ($type instanceof TKeyedArray) {
-                        $permissible_atomic_types[] = new TObjectWithProperties($type->properties);
-                    } else {
-                        $all_permissible = false;
-                        break;
-                    }
-                }
-            }
-
-            if ($permissible_atomic_types && $all_permissible) {
-                $type = TypeCombiner::combine($permissible_atomic_types);
-            } else {
-                $type = Type::getObject();
+                $type = self::getObjectCastType($stmt_expr_type);
             }
 
             if ($statements_analyzer->data_flow_graph) {
@@ -252,6 +242,8 @@ final class CastAnalyzer
             $all_permissible = false;
 
             if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
+                $stmt_expr_type = self::resolveOperandType($stmt_expr_type, $statements_analyzer->getCodebase());
+
                 if ($stmt_expr_type->isArray()) {
                     self::handleRedundantCast($stmt_expr_type, $statements_analyzer, $stmt);
                 }
@@ -268,6 +260,11 @@ final class CastAnalyzer
                         || $type instanceof TKeyedArray
                     ) {
                         $permissible_atomic_types[] = $type;
+                    } elseif ($type instanceof TClosure
+                        || ($type instanceof TNamedObject && strtolower($type->value) === 'closure')
+                    ) {
+                        // a closure has no properties: it becomes the only element
+                        $permissible_atomic_types[] = TKeyedArray::make([new Union([$type])], null, null, true);
                     } elseif ($type instanceof TObjectWithProperties) {
                         $array_type = $type->properties === []
                             ? Type::getArrayAtomic()
@@ -338,13 +335,27 @@ final class CastAnalyzer
 
         IssueBuffer::maybeAdd(
             new UnrecognizedExpression(
-                'Psalm does not understand the cast ' . $stmt::class,
+                $stmt instanceof PhpParser\Node\Expr\Cast\Unset_
+                    ? 'The (unset) cast was removed in PHP 8.0'
+                    : 'Psalm does not understand the cast ' . $stmt::class,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             ),
             $statements_analyzer->getSuppressedIssues(),
         );
 
         return false;
+    }
+
+    /**
+     * A bare class-template type variable stands for the shape inferred at its construction site, and key-of<T> and
+     * value-of<T> for their bound: that is what is being cast
+     */
+    private static function resolveOperandType(Union $type, Codebase $codebase): Union
+    {
+        return TypeExpander::expandTemplateKeyOfAndValueOf(
+            $codebase,
+            TypeVariableResolver::resolveTopLevel($type, $codebase),
+        );
     }
 
     public static function castIntAttempt(
@@ -359,6 +370,10 @@ final class CastAnalyzer
         $invalid_casts = [];
         $valid_ints = [];
         $castable_types = [];
+
+        // a bare class-template type variable stands for the shape inferred at
+        // its construction site; that shape is what is being cast
+        $stmt_type = TypeVariableResolver::resolveTopLevel($stmt_type, $codebase);
 
         $atomic_types = $stmt_type->getAtomicTypes();
 
@@ -378,10 +393,12 @@ final class CastAnalyzer
             }
 
             if ($atomic_type instanceof TFloat) {
-                if ($atomic_type instanceof TLiteralFloat) {
-                    $valid_ints[] = new TLiteralInt((int) $atomic_type->value);
-                } else {
+                $int = $atomic_type instanceof TLiteralFloat ? LiteralCast::toInt($atomic_type->value) : null;
+
+                if ($int === null) {
                     $castable_types[] = new TInt();
+                } else {
+                    $valid_ints[] = new TLiteralInt($int);
                 }
 
                 continue;
@@ -548,6 +565,10 @@ final class CastAnalyzer
         $invalid_casts = [];
         $valid_floats = [];
         $castable_types = [];
+
+        // a bare class-template type variable stands for the shape inferred at
+        // its construction site; that shape is what is being cast
+        $stmt_type = TypeVariableResolver::resolveTopLevel($stmt_type, $codebase);
 
         $atomic_types = $stmt_type->getAtomicTypes();
 
@@ -723,18 +744,56 @@ final class CastAnalyzer
         );
     }
 
+    /**
+     * The type of the values of what $type may be as an array, or null if it can't be one
+     */
+    public static function getArrayValueType(?Union $type): ?Union
+    {
+        if (!$type) {
+            return null;
+        }
+
+        $value_types = [];
+        $atomic_types = $type->getAtomicTypes();
+
+        while ($atomic_types) {
+            $atomic_type = array_pop($atomic_types);
+
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_types = [...$atomic_types, ...array_values($atomic_type->as->getAtomicTypes())];
+
+                continue;
+            }
+
+            if ($atomic_type instanceof TKeyedArray) {
+                $atomic_type = $atomic_type->getGenericArrayType();
+            }
+
+            if ($atomic_type instanceof TArray) {
+                $value_types[] = $atomic_type->type_params[1];
+            }
+        }
+
+        return $value_types ? Type::combineUnionTypeArray($value_types, null) : null;
+    }
+
     public static function castStringAttempt(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         Union $stmt_type,
         PhpParser\Node\Expr $stmt,
         bool $explicit_cast = false,
+        bool $report_issues = true,
     ): Union {
         $codebase = $statements_analyzer->getCodebase();
 
         $invalid_casts = [];
         $valid_strings = [];
         $castable_types = [];
+        // what an invalid cast of an array gives, which only matters for the result type
+        $array_strings = [];
+
+        $stmt_type = self::resolveOperandType($stmt_type, $codebase);
 
         $atomic_types = $stmt_type->getAtomicTypes();
 
@@ -745,52 +804,11 @@ final class CastAnalyzer
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
 
-            if ($atomic_type instanceof TFloat
-                || $atomic_type instanceof TInt
-                || $atomic_type instanceof TNumeric
-            ) {
-                if ($atomic_type instanceof TLiteralInt || $atomic_type instanceof TLiteralFloat) {
-                    $valid_strings[] = Type::getAtomicStringFromLiteral((string) $atomic_type->value);
-                } elseif ($atomic_type instanceof TNonspecificLiteralInt) {
-                    $castable_types[] = new TNonspecificLiteralString();
-                } elseif ($atomic_type instanceof TIntRange
-                    && $atomic_type->min_bound !== null
-                    && $atomic_type->max_bound !== null
-                    && ($atomic_type->max_bound - $atomic_type->min_bound) < 500
-                ) {
-                    foreach (range($atomic_type->min_bound, $atomic_type->max_bound) as $literal_int_value) {
-                        $valid_strings[] = Type::getAtomicStringFromLiteral((string) $literal_int_value);
-                    }
-                } else {
-                    $castable_types[] = new TNumericString();
-                }
+            $scalar_strings = self::castScalarToString($atomic_type);
 
-                continue;
-            }
+            if ($scalar_strings !== null) {
+                $valid_strings = [...$valid_strings, ...$scalar_strings];
 
-            if ($atomic_type instanceof TString) {
-                $valid_strings[] = $atomic_type;
-
-                continue;
-            }
-
-            if ($atomic_type instanceof TNull
-                || $atomic_type instanceof TFalse
-            ) {
-                $valid_strings[] = Type::getAtomicStringFromLiteral('');
-                continue;
-            }
-
-            if ($atomic_type instanceof TTrue
-            ) {
-                $valid_strings[] = Type::getAtomicStringFromLiteral('1');
-                continue;
-            }
-
-            if ($atomic_type instanceof TBool
-            ) {
-                $valid_strings[] = Type::getAtomicStringFromLiteral('1');
-                $valid_strings[] = Type::getAtomicStringFromLiteral('');
                 continue;
             }
 
@@ -819,6 +837,10 @@ final class CastAnalyzer
                     $intersection_types = array_merge($intersection_types, $atomic_type->extra_types);
                 }
 
+                // the value is every one of the intersected types, so what it casts to is the narrowest
+                // of what their __toString methods return
+                $return_types = [];
+
                 foreach ($intersection_types as $intersection_type) {
                     if ($intersection_type instanceof TNamedObject) {
                         $intersection_method_id = new MethodIdentifier(
@@ -831,7 +853,7 @@ final class CastAnalyzer
                             $context->calling_method_id,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         )) {
-                            $return_type = $codebase->getMethodReturnType(
+                            $return_types[] = $codebase->getMethodReturnType(
                                 $intersection_method_id,
                                 $self_class,
                             ) ?? Type::getString();
@@ -857,20 +879,23 @@ final class CastAnalyzer
                                     $var_id === '$this' ? $to_string_storage : null,
                                 );
                             }
-
-                            $castable_types = [...$castable_types, ...array_values($return_type->getAtomicTypes())];
-
-                            continue 2;
                         }
                     }
 
                     if ($intersection_type instanceof TObjectWithProperties
                         && isset($intersection_type->methods['__tostring'])
                     ) {
-                        $castable_types[] = new TString();
-
-                        continue 2;
+                        $return_types[] = Type::getString();
                     }
+                }
+
+                if ($return_types) {
+                    $castable_types = [
+                        ...$castable_types,
+                        ...array_values(self::getNarrowestType($codebase, $return_types)->getAtomicTypes()),
+                    ];
+
+                    continue;
                 }
             }
 
@@ -895,9 +920,13 @@ final class CastAnalyzer
             }
 
             $invalid_casts[] = $atomic_type->getId();
+
+            if ($atomic_type instanceof TArray || $atomic_type instanceof TKeyedArray) {
+                $array_strings[] = Type::getAtomicStringFromLiteral('Array');
+            }
         }
 
-        if ($invalid_casts) {
+        if ($invalid_casts && $report_issues) {
             if ($valid_strings || $castable_types) {
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidCast(
@@ -919,7 +948,12 @@ final class CastAnalyzer
             // todo: emit error here
         }
 
-        $valid_types = [...$valid_strings, ...$castable_types];
+        $valid_types = [...$valid_strings, ...$castable_types, ...$array_strings];
+
+        // what can't be cast, other than arrays, may still be any string (e.g. an object with a __toString)
+        if (count($array_strings) < count($invalid_casts)) {
+            $valid_types[] = new TString();
+        }
 
         if (!$valid_types) {
             $str_type = Type::getString();
@@ -938,6 +972,126 @@ final class CastAnalyzer
             'string',
             $stmt_type,
         );
+    }
+
+    /**
+     * The strings a scalar or null is cast to, e.g. `'5'` for `5` and `decimal-int-string` for `int`, or null if
+     * $atomic_type is neither
+     *
+     * @return list<Atomic>|null
+     */
+    public static function castScalarToString(Atomic $atomic_type): ?array
+    {
+        if ($atomic_type instanceof TFloat
+            || $atomic_type instanceof TInt
+            || $atomic_type instanceof TNumeric
+        ) {
+            if ($atomic_type instanceof TLiteralInt || $atomic_type instanceof TLiteralFloat) {
+                return [Type::getAtomicStringFromLiteral(LiteralCast::toString($atomic_type->value))];
+            }
+
+            if ($atomic_type instanceof TNonspecificLiteralInt) {
+                return [new TNonspecificLiteralString()];
+            }
+
+            if ($atomic_type instanceof TIntRange
+                && $atomic_type->min_bound !== null
+                && $atomic_type->max_bound !== null
+                && ($atomic_type->max_bound - $atomic_type->min_bound) < 500
+            ) {
+                $strings = [];
+                foreach (range($atomic_type->min_bound, $atomic_type->max_bound) as $literal_int_value) {
+                    $strings[] = Type::getAtomicStringFromLiteral((string) $literal_int_value);
+                }
+
+                return $strings;
+            }
+
+            // an int is cast to its canonical decimal form
+            if ($atomic_type instanceof TInt) {
+                return [new TDecimalIntString()];
+            }
+
+            // a float is numeric unless it is infinite or not a number
+            return [
+                new TNumericString(),
+                Type::getAtomicStringFromLiteral('INF'),
+                Type::getAtomicStringFromLiteral('-INF'),
+                Type::getAtomicStringFromLiteral('NAN'),
+            ];
+        }
+
+        if ($atomic_type instanceof TString) {
+            return [$atomic_type];
+        }
+
+        if ($atomic_type instanceof TNull || $atomic_type instanceof TFalse) {
+            return [Type::getAtomicStringFromLiteral('')];
+        }
+
+        if ($atomic_type instanceof TTrue) {
+            return [Type::getAtomicStringFromLiteral('1')];
+        }
+
+        if ($atomic_type instanceof TBool) {
+            return [Type::getAtomicStringFromLiteral('1'), Type::getAtomicStringFromLiteral('')];
+        }
+
+        return null;
+    }
+
+    /**
+     * The type that is contained in all the others, or the first one if there is none
+     *
+     * @param non-empty-list<Union> $types
+     */
+    private static function getNarrowestType(Codebase $codebase, array $types): Union
+    {
+        foreach ($types as $candidate) {
+            foreach ($types as $other) {
+                if (!UnionTypeComparator::isContainedBy($codebase, $candidate, $other)) {
+                    continue 2;
+                }
+            }
+
+            return $candidate;
+        }
+
+        return $types[0];
+    }
+
+    /**
+     * What an object is cast to: what the __toString of its class returns, or null if it has none
+     */
+    public static function castObjectToString(
+        Codebase $codebase,
+        TNamedObject|TObjectWithProperties $atomic_type,
+    ): ?Union {
+        $return_types = [];
+
+        foreach ([$atomic_type, ...array_values($atomic_type->extra_types)] as $intersection_type) {
+            if ($intersection_type instanceof TNamedObject) {
+                $to_string_id = new MethodIdentifier($intersection_type->value, '__tostring');
+
+                if ($codebase->methodExists($to_string_id)) {
+                    $self_class = null;
+
+                    $return_types[] = $codebase->getMethodReturnType($to_string_id, $self_class) ?? Type::getString();
+                }
+            }
+
+            if ($intersection_type instanceof TObjectWithProperties
+                && isset($intersection_type->methods['__tostring'])
+            ) {
+                $return_types[] = Type::getString();
+            }
+        }
+
+        if ($return_types) {
+            return self::getNarrowestType($codebase, $return_types);
+        }
+
+        return null;
     }
 
     /**
@@ -1178,6 +1332,33 @@ final class CastAnalyzer
         }
 
         return $result_type->setParentNodes($parent_nodes);
+    }
+
+    /**
+     * What `(object) $x` is: an array, a scalar or null always becomes an stdClass, which has the properties of a
+     * single shaped array
+     *
+     * @psalm-pure
+     */
+    public static function getObjectCastType(Union $operand_type): Union
+    {
+        $std_class = ['stdclass' => new TNamedObject('stdClass')];
+        $object_types = [];
+
+        foreach ($operand_type->getAtomicTypes() as $type) {
+            if ($type instanceof Scalar) {
+                $object_types[] = new TObjectWithProperties(['scalar' => new Union([$type])], [], $std_class);
+            } elseif ($type instanceof TKeyedArray) {
+                $object_types[] = new TObjectWithProperties($type->properties, [], $std_class);
+            } elseif ($type instanceof TArray || $type instanceof TNull) {
+                $object_types[] = new TNamedObject('stdClass');
+            } else {
+                return Type::getObject();
+            }
+        }
+
+        // the properties of one shape would be wrong for the other parts of a union
+        return new Union(count($object_types) === 1 ? $object_types : [new TNamedObject('stdClass')]);
     }
 
     /**

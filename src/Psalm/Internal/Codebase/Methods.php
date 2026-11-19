@@ -9,6 +9,8 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -21,6 +23,7 @@ use Psalm\Internal\Provider\MethodExistenceProvider;
 use Psalm\Internal\Provider\MethodParamsProvider;
 use Psalm\Internal\Provider\MethodReturnTypeProvider;
 use Psalm\Internal\Provider\MethodVisibilityProvider;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -40,6 +43,8 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -279,6 +284,7 @@ final class Methods
         ?StatementsSource $source = null,
         ?array $args = null,
         ?Context $context = null,
+        ?CodeLocation $code_location = null,
     ): array {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -290,6 +296,7 @@ final class Methods
                 $args,
                 $source,
                 $context,
+                $code_location,
             );
 
             if ($method_params !== null) {
@@ -357,11 +364,10 @@ final class Methods
 
             $params = $storage->params;
 
-            if ($storage->has_docblock_param_types) {
-                return $params;
-            }
-
-            $appearing_method_id = $this->getAppearingMethodId($declaring_method_id);
+            // a trait method appears in the class using it, which holds the docblock it inherits
+            $appearing_method_id = $this->classlike_storage_provider->get($declaring_method_id->fq_class_name)->is_trait
+                ? $this->getAppearingMethodId($method_id)
+                : $this->getAppearingMethodId($declaring_method_id);
 
             if (!$appearing_method_id) {
                 return $params;
@@ -376,42 +382,116 @@ final class Methods
                 return $params;
             }
 
-            if (!isset($class_storage->documenting_method_ids[$appearing_method_name])) {
-                return $params;
-            }
+            // a docblock documenting only some of the parameters leaves the other ones to the overridden methods, the
+            // nearest one that documents each of them
+            $overridden_method_ids = $this->getOverriddenMethodsDocumentingParams(
+                $class_storage,
+                $appearing_method_name,
+            );
 
-            $overridden_method_id = $class_storage->documenting_method_ids[$appearing_method_name];
-
-            $overridden_storage = $this->getStorage($overridden_method_id);
-
-            $overriding_fq_class_name = $overridden_method_id->fq_class_name;
+            // the method that documents the whole signature of the others, as the Populator chose it
+            $documenting_method_id = !$storage->has_docblock_param_types
+                ? $class_storage->documenting_method_ids[$appearing_method_name] ?? null
+                : null;
 
             foreach ($params as $i => $param) {
-                if (isset($overridden_storage->params[$i]->type)
-                    && $overridden_storage->params[$i]->has_docblock_type
-                ) {
-                    $params[$i] = clone $param;
-                    /** @var Union $params[$i]->type */
-                    $params[$i]->type = $overridden_storage->params[$i]->type;
+                if ($param->has_docblock_type) {
+                    continue;
+                }
+
+                /** @var array<string, array{MethodIdentifier, FunctionLikeParameter}> $documenting_params */
+                $documenting_params = [];
+
+                // the documenting method if it documents the parameter, else every overridden method that does
+                $candidate_lists = $documenting_method_id
+                    ? [[$documenting_method_id], $overridden_method_ids]
+                    : [$overridden_method_ids];
+
+                $is_from_documenting_method = false;
+
+                foreach ($candidate_lists as $candidate_ids) {
+                    $is_from_documenting_method = $documenting_method_id && $candidate_ids === [$documenting_method_id];
+
+                    foreach ($candidate_ids as $method_id) {
+                        $overridden_param = $this->getStorage($method_id)->params[$i] ?? null;
+
+                        if ($overridden_param !== null
+                            && $overridden_param->type
+                            && $overridden_param->has_docblock_type
+                        ) {
+                            $documenting_params[$method_id->fq_class_name] = [$method_id, $overridden_param];
+                        }
+                    }
+
+                    if ($documenting_params) {
+                        break;
+                    }
+                }
+
+                // an ancestor of another method documenting the parameter is overridden by that one's docblock
+                foreach ($documenting_params as $fq_class_name => $_) {
+                    foreach ($documenting_params as $other_fq_class_name => $_) {
+                        if ($other_fq_class_name !== $fq_class_name
+                            && $this->isAncestorOf($fq_class_name, $other_fq_class_name)
+                        ) {
+                            unset($documenting_params[$fq_class_name]);
+                            break;
+                        }
+                    }
+                }
+
+                $inherited_type = null;
+                $type_location = null;
+
+                foreach ($documenting_params as [$method_id, $overridden_param]) {
+                    $type = $overridden_param->type;
+                    assert($type !== null);
 
                     if ($source) {
-                        $overridden_class_storage = $this->classlike_storage_provider->get($overriding_fq_class_name);
-                        $params[$i]->type = self::localizeType(
+                        $type = self::localizeType(
                             $source->getCodebase(),
-                            $params[$i]->type,
+                            $type,
                             $appearing_fq_class_name,
-                            $overridden_class_storage->name,
+                            $this->classlike_storage_provider->get($method_id->fq_class_name)->name,
                         );
                     }
 
-                    if ($params[$i]->signature_type
-                        && $params[$i]->signature_type->isNullable()
-                    ) {
-                        $params[$i]->type = $params[$i]->type->getBuilder()->addType(new TNull)->freeze();
+                    // unrelated ancestors that disagree give no type
+                    if ($inherited_type !== null && $inherited_type->getId() !== $type->getId()) {
+                        $inherited_type = null;
+                        break;
                     }
 
-                    $params[$i]->type_location = $overridden_storage->params[$i]->type_location;
+                    $inherited_type = $type;
+                    $type_location = $overridden_param->type_location;
                 }
+
+                if ($inherited_type === null) {
+                    continue;
+                }
+
+                if ($param->signature_type && $param->signature_type->isNullable()) {
+                    $inherited_type = $inherited_type->getBuilder()->addType(new TNull)->freeze();
+                }
+
+                // a type the native type of the override doesn't contain is not the type of the override's parameter
+                // (the documenting method's types are applied as they always were)
+                if (!$is_from_documenting_method
+                    && $param->signature_type
+                    && !$inherited_type->hasTemplate()
+                    && !UnionTypeComparator::isContainedBy(
+                        $source ? $source->getCodebase() : ProjectAnalyzer::getInstance()->getCodebase(),
+                        $inherited_type,
+                        $param->signature_type,
+                    )
+                ) {
+                    continue;
+                }
+
+                $params[$i] = clone $param;
+                $params[$i]->type = $inherited_type;
+                $params[$i]->type_location = $type_location;
+                $params[$i]->has_docblock_type = true;
             }
 
             return $params;
@@ -444,7 +524,7 @@ final class Methods
     /**
      * @param array<string, array<string, Union>> $extends
      * @return list<Atomic>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function getExtendedTemplatedTypes(
         TTemplateParam $atomic_type,
@@ -487,6 +567,63 @@ final class Methods
     }
 
     /**
+     * Whether the `@method` the class has wins over the method the call reaches. One that the class where a method
+     * that isn't public appears has too describes the calls that go through `__call()` or `__callStatic()`, while one
+     * declared below that class refines the method.
+     *
+     * @psalm-mutation-free
+     */
+    public function pseudoMethodWinsOverMethod(MethodIdentifier $method_id, bool $is_static): bool
+    {
+        $declaring_method_id = $this->getDeclaringMethodId($method_id);
+        $appearing_method_id = $this->getAppearingMethodId($method_id);
+
+        if (!$declaring_method_id || !$appearing_method_id) {
+            return true;
+        }
+
+        $appearing_class_storage = $this->classlike_storage_provider->get($appearing_method_id->fq_class_name);
+
+        // the visibility a `use` adaptation gives to a trait method
+        $visibility = $appearing_class_storage->trait_visibility_map[$appearing_method_id->method_name]
+            ?? $this->getStorage($declaring_method_id)->visibility;
+
+        if ($visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
+            return true;
+        }
+
+        $class_storage = $this->classlike_storage_provider->get(
+            $this->classlikes->getUnAliasedName($method_id->fq_class_name),
+        );
+
+        return self::getPseudoMethodDeclaringClass($appearing_class_storage, $method_id->method_name, $is_static)
+            !== self::getPseudoMethodDeclaringClass($class_storage, $method_id->method_name, $is_static);
+    }
+
+    /**
+     * @return lowercase-string|null
+     * @psalm-capabilities read-props
+     */
+    private static function getPseudoMethodDeclaringClass(
+        ClassLikeStorage $class_storage,
+        string $method_name,
+        bool $is_static,
+    ): ?string {
+        if ($is_static
+            ? !isset($class_storage->pseudo_static_methods[$method_name])
+            : !isset($class_storage->pseudo_methods[$method_name])
+        ) {
+            return null;
+        }
+
+        $declaring_method_id = $is_static
+            ? $class_storage->declaring_pseudo_static_method_ids[$method_name] ?? null
+            : $class_storage->declaring_pseudo_method_ids[$method_name] ?? null;
+
+        return strtolower($declaring_method_id->fq_class_name ?? $class_storage->name);
+    }
+
+    /**
      * @param  list<PhpParser\Node\Arg>|null $args
      */
     public function getMethodReturnType(
@@ -508,11 +645,13 @@ final class Methods
 
         $original_class_storage = $this->classlike_storage_provider->get($original_fq_class_name);
 
-        if (isset($original_class_storage->pseudo_methods[$original_method_name])) {
+        $declaring_method_id = $this->getDeclaringMethodId($method_id);
+
+        if (isset($original_class_storage->pseudo_methods[$original_method_name])
+            && $this->pseudoMethodWinsOverMethod($method_id, false)
+        ) {
             return $original_class_storage->pseudo_methods[$original_method_name]->return_type;
         }
-
-        $declaring_method_id = $this->getDeclaringMethodId($method_id);
 
         if (!$declaring_method_id) {
             return null;
@@ -564,6 +703,21 @@ final class Methods
                 && isset($args[0])
                 && ($first_arg_type = $source_analyzer->getNodeTypeProvider()->getType($args[0]->value))
             ) {
+                $arg_atomic_types = [];
+                foreach ($first_arg_type->getAtomicTypes() as $arg_atomic_type) {
+                    if ($arg_atomic_type instanceof TTemplateValueOf) {
+                        $arg_atomic_type = new TValueOf($arg_atomic_type->as);
+                    }
+
+                    $arg_atomic_types[] = $arg_atomic_type;
+                }
+                $first_arg_type = TypeExpander::expandUnion(
+                    $codebase,
+                    new Union($arg_atomic_types),
+                    null,
+                    null,
+                    null,
+                );
                 $types = [];
                 foreach ($original_class_storage->enum_cases as $case_name => $case_storage) {
                     $case_value = $case_storage->getValue($this->classlikes);
@@ -668,7 +822,10 @@ final class Methods
             $overridden_storage = $this->getStorage($overridden_method_id);
 
             if ($overridden_storage->return_type) {
-                if ($overridden_storage->return_type->isNull()) {
+                // a docblock `@return null` stands for void, a native `null` return type is a type of its own
+                if ($overridden_storage->return_type->isNull()
+                    && !$overridden_storage->signature_return_type?->isNull()
+                ) {
                     return Type::getVoid();
                 }
 
@@ -704,11 +861,15 @@ final class Methods
                     $overridden_storage_return_type,
                 );
 
+                $overridden_to_candidate_result = new TypeComparisonResult();
                 $new_contained_by_old = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $overridden_storage_return_type,
                     $candidate_type,
-                );
+                    false,
+                    false,
+                    $overridden_to_candidate_result,
+                ) && !$overridden_to_candidate_result->to_string_cast;
 
                 if ((!$old_contained_by_new && !$new_contained_by_old)
                     || ($old_contained_by_new && $new_contained_by_old)
@@ -737,6 +898,12 @@ final class Methods
                             $template_result,
                             $codebase,
                         );
+                    }
+
+                    if ($candidate_type->getId() === $overridden_storage_return_type->getId()) {
+                        $self_class = $appearing_fq_class_storage->name;
+
+                        return $candidate_type;
                     }
 
                     $attempted_intersection = null;
@@ -795,7 +962,9 @@ final class Methods
             $overridden_storage = $this->getStorage($overridden_method_id);
 
             if ($overridden_storage->return_type) {
-                if ($overridden_storage->return_type->isNull()) {
+                if ($overridden_storage->return_type->isNull()
+                    && !$overridden_storage->signature_return_type?->isNull()
+                ) {
                     if ($candidate_type && !$candidate_type->isVoid()) {
                         return null;
                     }
@@ -814,17 +983,37 @@ final class Methods
                 $self_class = $overridden_class_storage->name;
 
                 if ($candidate_type && $source_analyzer && !$candidate_type->isMixed()) {
+                    $candidate_to_overridden_result = new TypeComparisonResult();
                     $old_contained_by_new = UnionTypeComparator::isContainedBy(
                         $codebase,
                         $candidate_type,
                         $overridden_return_type,
-                    );
+                        false,
+                        false,
+                        $candidate_to_overridden_result,
+                    ) && !$candidate_to_overridden_result->to_string_cast;
 
+                    $overridden_to_candidate_result = new TypeComparisonResult();
                     $new_contained_by_old = UnionTypeComparator::isContainedBy(
                         $codebase,
                         $overridden_return_type,
                         $candidate_type,
-                    );
+                        false,
+                        false,
+                        $overridden_to_candidate_result,
+                    ) && !$overridden_to_candidate_result->to_string_cast;
+
+                    // a type that is only castable to the other one doesn't win over it
+                    if (!$old_contained_by_new && !$new_contained_by_old) {
+                        if ($overridden_to_candidate_result->to_string_cast) {
+                            continue;
+                        }
+
+                        if ($candidate_to_overridden_result->to_string_cast) {
+                            $candidate_type = $overridden_return_type;
+                            continue;
+                        }
+                    }
 
                     if ((!$old_contained_by_new && !$new_contained_by_old)
                         || ($old_contained_by_new && $new_contained_by_old)
@@ -1114,7 +1303,47 @@ final class Methods
         return $method_storage;
     }
 
-    /** @psalm-mutation-free */
+    /**
+     * The overridden methods whose docblock documents parameters, the nearest first
+     *
+     * @return list<MethodIdentifier>
+     * @psalm-mutation-free
+     */
+    private function getOverriddenMethodsDocumentingParams(
+        ClassLikeStorage $class_storage,
+        string $method_name,
+    ): array {
+        $method_ids = [];
+
+        foreach ($class_storage->overridden_method_ids[$method_name] ?? [] as $overridden_method_id) {
+            if ($this->hasStorage($overridden_method_id)
+                && $this->getStorage($overridden_method_id)->has_docblock_param_types
+            ) {
+                $method_ids[] = $overridden_method_id;
+            }
+        }
+
+        return $method_ids;
+    }
+
+    /**
+     * Whether the first class or interface is a parent or an interface of the second
+     *
+     * @psalm-mutation-free
+     */
+    private function isAncestorOf(string $ancestor_fq_class_name, string $fq_class_name): bool
+    {
+        $ancestor_fq_class_name_lc = strtolower($ancestor_fq_class_name);
+        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+
+        return isset($class_storage->parent_classes[$ancestor_fq_class_name_lc])
+            || isset($class_storage->parent_interfaces[$ancestor_fq_class_name_lc])
+            || isset($class_storage->class_implements[$ancestor_fq_class_name_lc]);
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
     public function hasStorage(MethodIdentifier $method_id): bool
     {
         try {

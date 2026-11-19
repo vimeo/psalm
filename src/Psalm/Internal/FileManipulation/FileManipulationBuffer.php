@@ -103,7 +103,8 @@ final class FileManipulationBuffer
 
             $file_contents = $codebase->getFileContents($code_location->file_path);
 
-            if (($file_contents[$bounds[0] - 1] ?? null) === "\n"
+            if ($bounds[0] >= 2
+                && ($file_contents[$bounds[0] - 1] ?? null) === "\n"
                 && ($file_contents[$bounds[0] - 2] ?? null) === "\n"
             ) {
                 $bounds[0] -= 2;

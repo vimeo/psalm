@@ -62,7 +62,7 @@ final class TKeyOf extends TArrayKey
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function isViableTemplateType(Union $template_type): bool
     {
@@ -71,6 +71,7 @@ final class TKeyOf extends TArrayKey
                 && !$type instanceof TClassConstant
                 && !$type instanceof TKeyedArray
                 && !$type instanceof TPropertiesOf
+                && !$type instanceof TTypeAlias
             ) {
                 return false;
             }

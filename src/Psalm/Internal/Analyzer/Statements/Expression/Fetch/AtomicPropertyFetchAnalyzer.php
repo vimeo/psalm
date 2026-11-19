@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\Fetch;
 
-use InvalidArgumentException;
 use PhpParser;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\StaticPropertyFetch;
@@ -17,11 +16,14 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\MixinLookup;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -65,7 +67,8 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-use function array_filter;
+use function array_flip;
+use function array_intersect_key;
 use function array_keys;
 use function array_map;
 use function array_search;
@@ -73,8 +76,6 @@ use function count;
 use function explode;
 use function in_array;
 use function strtolower;
-
-use const ARRAY_FILTER_USE_KEY;
 
 /**
  * @internal
@@ -98,13 +99,18 @@ final class AtomicPropertyFetchAnalyzer
         bool &$has_valid_fetch_type,
         array &$invalid_fetch_types,
         bool $is_static_access = false,
+        bool &$missing_in_isset = false,
     ): void {
         if ($lhs_type_part instanceof TNull) {
             return;
         }
 
+        // a property of a value whose type isn't known holds what the value does
         if ($lhs_type_part instanceof TMixed) {
-            $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                Type::getMixed()->setParentNodes($stmt_var_type->parent_nodes),
+            );
             return;
         }
 
@@ -160,13 +166,20 @@ final class AtomicPropertyFetchAnalyzer
         // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
         if ($lhs_type_part instanceof TObject
             || (
-                in_array(strtolower($lhs_type_part->value), Config::getInstance()->getUniversalObjectCrates(), true)
+                $statements_analyzer->getCodebase()->classlikes->isUniversalObjectCrate(
+                    $lhs_type_part->value,
+                    $prop_name,
+                )
                 && $intersection_types === []
             )
         ) {
             $has_valid_fetch_type = true;
 
-            $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+            // a dynamic property of the object (a database row, a decoded document) holds what the object does
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                Type::getMixed()->setParentNodes($stmt_var_type->parent_nodes),
+            );
 
             return;
         }
@@ -196,11 +209,13 @@ final class AtomicPropertyFetchAnalyzer
                 $codebase,
                 $stmt,
                 $lhs_type_part,
+                $prop_name,
                 $intersection_types,
                 $class_exists,
                 $interface_exists,
                 $fq_class_name,
                 $override_property_visibility,
+                $context->inside_isset,
             );
 
             if (!$class_exists && !$interface_exists) {
@@ -221,17 +236,21 @@ final class AtomicPropertyFetchAnalyzer
                 $has_valid_fetch_type = true;
                 $statements_analyzer->node_data->setType(
                     $stmt,
-                    new Union([
-                        new TString(),
-                        new TInt(),
-                    ]),
+                    self::combineWithTypeOfEarlierParts(
+                        $statements_analyzer,
+                        $stmt,
+                        new Union([
+                            new TString(),
+                            new TInt(),
+                        ]),
+                    ),
                 );
             } elseif ($prop_name === 'value' && $class_storage->enum_type !== null && $class_storage->enum_cases) {
                 $has_valid_fetch_type = true;
-                self::handleEnumValue($statements_analyzer, $stmt, $stmt_var_type, $class_storage);
+                self::handleEnumValue($statements_analyzer, $stmt, $stmt_var_type, $class_storage, $lhs_type_part);
             } elseif ($prop_name === 'name') {
                 $has_valid_fetch_type = true;
-                self::handleEnumName($statements_analyzer, $stmt, $stmt_var_type, $class_storage);
+                self::handleEnumName($statements_analyzer, $stmt, $stmt_var_type, $class_storage, $lhs_type_part);
             } else {
                 self::handleNonExistentProperty(
                     $statements_analyzer,
@@ -249,6 +268,7 @@ final class AtomicPropertyFetchAnalyzer
                     $has_magic_getter,
                     $var_id,
                     $has_valid_fetch_type,
+                    $missing_in_isset,
                 );
             }
 
@@ -267,40 +287,93 @@ final class AtomicPropertyFetchAnalyzer
         $get_method_id = new MethodIdentifier($fq_class_name, '__get');
 
         if (!$naive_property_exists) {
-            if ($class_storage->namedMixins) {
-                foreach ($class_storage->getNamedMixinsForLookup() as $mixin) {
-                    $new_property_id = $mixin->value . '::$' . $prop_name;
-
-                    try {
-                        $new_class_storage = $codebase->classlike_storage_provider->get($mixin->value);
-                    } catch (InvalidArgumentException) {
-                        $new_class_storage = null;
-                    }
-
-                    if ($new_class_storage
-                        && ($codebase->propertyExists(
-                            $new_property_id,
-                            !$in_assignment,
-                            $statements_analyzer,
-                            $context,
-                            $codebase->collect_locations
-                                    ? new CodeLocation($statements_analyzer->getSource(), $stmt)
-                                    : null,
-                        )
-                            || isset($new_class_storage->pseudo_property_get_types['$' . $prop_name]))
+            // Resolve explicit shape properties before consulting other class-like types.
+            // Keep final classes closed unless they provide a magic getter.
+            if ($intersection_types !== []
+                && (!$class_storage->final || $codebase->methods->methodExists($codebase, $get_method_id))
+            ) {
+                foreach ($intersection_types as $intersection_type) {
+                    if (!$intersection_type instanceof TObjectWithProperties
+                        || !isset($intersection_type->properties[$prop_name])
                     ) {
-                        $fq_class_name = $mixin->value;
-                        $lhs_type_part = $mixin;
-                        $class_storage = $new_class_storage;
-
-                        if (!isset($new_class_storage->pseudo_property_get_types['$' . $prop_name])) {
-                            $naive_property_exists = true;
-                        }
-
-                        $property_id = $new_property_id;
+                        continue;
                     }
+
+                    self::analyze(
+                        $statements_analyzer,
+                        $stmt,
+                        $context,
+                        $in_assignment,
+                        $var_id,
+                        $stmt_var_id,
+                        $stmt_var_type,
+                        $intersection_type,
+                        $prop_name,
+                        $has_valid_fetch_type,
+                        $invalid_fetch_types,
+                        $is_static_access,
+                    );
+
+                    // the shape only narrows the type: taint flows through the class's own property
+                    $shape_type = $statements_analyzer->node_data->getType($stmt);
+
+                    if ($shape_type) {
+                        self::processTaints(
+                            $statements_analyzer,
+                            $stmt,
+                            $shape_type,
+                            $property_id,
+                            $class_storage,
+                            $in_assignment,
+                            $context,
+                        );
+
+                        $statements_analyzer->node_data->setType($stmt, $shape_type);
+                    }
+
+                    return;
                 }
-            } elseif ($intersection_types !== [] && !$class_storage->final) {
+            }
+
+            $matched_mixin = false;
+
+            // a `@property` of the class wins over its mixins
+            if (!isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
+                // a mixin's `@property` is read through the __get() of the class, or of the mixin for an interface
+                $is_interface = $class_storage->is_interface;
+                $has_magic_get = isset($class_storage->declaring_method_ids['__get']);
+
+                $mixin = MixinLookup::findMember(
+                    $codebase,
+                    $class_storage,
+                    $lhs_type_part,
+                    static fn(ClassLikeStorage $mixin_storage): bool => $codebase->propertyExists(
+                        $mixin_storage->name . '::$' . $prop_name,
+                        !$in_assignment,
+                        $statements_analyzer,
+                        $context,
+                        $codebase->collect_locations
+                            ? new CodeLocation($statements_analyzer->getSource(), $stmt)
+                            : null,
+                    ) || (isset($mixin_storage->pseudo_property_get_types['$' . $prop_name])
+                        && ($is_interface ? isset($mixin_storage->declaring_method_ids['__get']) : $has_magic_get)),
+                );
+
+                if ($mixin !== null) {
+                    $matched_mixin = true;
+
+                    if ($class_storage->is_interface) {
+                        $get_method_id = new MethodIdentifier($mixin['storage']->name, '__get');
+                    }
+
+                    ['type' => $lhs_type_part, 'storage' => $class_storage] = $mixin;
+                    $fq_class_name = $class_storage->name;
+                    $property_id = $fq_class_name . '::$' . $prop_name;
+                    $naive_property_exists = !isset($class_storage->pseudo_property_get_types['$' . $prop_name]);
+                }
+            }
+
+            if (!$matched_mixin && $intersection_types !== [] && !$class_storage->final) {
                 foreach ($intersection_types as $intersection_type) {
                     self::analyze(
                         $statements_analyzer,
@@ -315,6 +388,7 @@ final class AtomicPropertyFetchAnalyzer
                         $has_valid_fetch_type,
                         $invalid_fetch_types,
                         $is_static_access,
+                        $missing_in_isset,
                     );
 
                     if ($has_valid_fetch_type) {
@@ -354,7 +428,6 @@ final class AtomicPropertyFetchAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
@@ -401,6 +474,7 @@ final class AtomicPropertyFetchAnalyzer
                 $has_magic_getter,
                 $var_id,
                 $has_valid_fetch_type,
+                $missing_in_isset,
             );
 
             return;
@@ -418,7 +492,13 @@ final class AtomicPropertyFetchAnalyzer
             }
 
             // unsetting a property is a write, so the set visibility applies
-            if ($context->inside_unset
+            if (UnsetAnalyzer::writesFetchedProperty(
+                $context,
+                $stmt,
+                $codebase->properties->hasStorage($property_id)
+                    ? $codebase->properties->getStorage($property_id)->type
+                    : null,
+            )
                 && ClassLikeAnalyzer::checkPropertyVisibility(
                     $property_id,
                     $context,
@@ -471,6 +551,8 @@ final class AtomicPropertyFetchAnalyzer
             $declaring_property_class,
         );
 
+        $unset_charged = false;
+
         if (isset($declaring_class_storage->properties[$prop_name])) {
             self::checkPropertyDeprecation($prop_name, $declaring_property_class, $stmt, $statements_analyzer);
 
@@ -499,11 +581,13 @@ final class AtomicPropertyFetchAnalyzer
                 );
             }
 
-            if ($context->self && !NamespaceAnalyzer::isWithinAny($context->self, $property_storage->internal)) {
+            $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+            if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $property_storage->internal)) {
                 IssueBuffer::maybeAdd(
                     new InternalProperty(
                         $property_id . ' is internal to ' . InternalClass::listToPhrase($property_storage->internal)
-                            . ' but called from ' . $context->self,
+                            . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id,
                     ),
@@ -511,8 +595,8 @@ final class AtomicPropertyFetchAnalyzer
                 );
             }
 
-            if ($context->inside_unset) {
-                InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
+            if (UnsetAnalyzer::writesFetchedProperty($context, $stmt, $property_storage->type)) {
+                $unset_charged = InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
                     $statements_analyzer,
                     $stmt,
                     $property_id,
@@ -520,6 +604,7 @@ final class AtomicPropertyFetchAnalyzer
                     $declaring_class_storage,
                     $context,
                     $stmt_var_id,
+                    $stmt->getAttribute(UnsetAnalyzer::TARGET_ATTRIBUTE) !== true,
                 );
             }
         }
@@ -545,19 +630,19 @@ final class AtomicPropertyFetchAnalyzer
             $class_property_type = TypeVariableTracker::resolveTypeVariables($class_property_type, $codebase);
         }
 
-        if (!($class_storage->isExternalMutationFree()
-            && $class_property_type->allow_mutations)
-        ) {
-            if ($context->inside_unset) {
-                $statements_analyzer->signalMutation(
-                    $stmt_var_id === '$this'
-                        ? Capabilities::WRITE_THIS_PROPS
-                        : Capabilities::WRITE_PROPS,
-                    $context,
-                    'unsetting a property on a mutable object',
-                    ImpurePropertyAssignment::class,
-                    $stmt,
-                );
+        if (!self::isFreeToAccess($statements_analyzer, $stmt, $class_storage)) {
+            if (UnsetAnalyzer::writesFetchedProperty($context, $stmt, $class_property_type)) {
+                if (!$unset_charged) {
+                    $statements_analyzer->signalMutation(
+                        $stmt_var_id === '$this'
+                            ? Capabilities::WRITE_THIS_PROPS
+                            : Capabilities::WRITE_PROPS,
+                        $context,
+                        'unsetting a property on a mutable object',
+                        ImpurePropertyAssignment::class,
+                        $stmt,
+                    );
+                }
             } else {
                 $statements_analyzer->signalMutation(
                     Capabilities::READ_PROPS,
@@ -663,7 +748,6 @@ final class AtomicPropertyFetchAnalyzer
                     ? new CodeLocation($statements_analyzer->getSource(), $stmt)
                     : null,
                 !$context->collect_initializations
-                    && !$context->collect_mutations
                     ? $statements_analyzer
                     : null,
                 $statements_analyzer->getFilePath(),
@@ -712,7 +796,10 @@ final class AtomicPropertyFetchAnalyzer
                     $context,
                 );
 
-                $statements_analyzer->node_data->setType($stmt, $stmt_type);
+                $statements_analyzer->node_data->setType(
+                    $stmt,
+                    Type::combineUnionTypes($stmt_type, $statements_analyzer->node_data->getType($stmt)),
+                );
 
                 return false;
             }
@@ -728,10 +815,13 @@ final class AtomicPropertyFetchAnalyzer
                 new VirtualIdentifier('__get', $stmt->name->getAttributes()),
                 [
                     new VirtualArg(
-                        new VirtualString(
-                            $prop_name,
-                            $stmt->name->getAttributes(),
-                        ),
+                        // the name as written keeps its type (`A::class` is a class-string)
+                        $stmt->name instanceof PhpParser\Node\Expr
+                            ? $stmt->name
+                            : new VirtualString(
+                                $prop_name,
+                                $stmt->name->getAttributes(),
+                            ),
                     ),
                 ],
             );
@@ -1082,28 +1172,30 @@ final class AtomicPropertyFetchAnalyzer
         PropertyFetch $stmt,
         Union $stmt_var_type,
         ClassLikeStorage $class_storage,
+        Atomic $lhs_type_part,
     ): void {
-        $relevant_enum_cases = array_filter(
-            $stmt_var_type->getAtomicTypes(),
-            static fn(Atomic $type): bool => $type instanceof TEnumCase,
-        );
-        $relevant_enum_case_names = array_map(
-            static fn(TEnumCase $enumCase): string => $enumCase->case_name,
-            $relevant_enum_cases,
-        );
+        $relevant_enum_case_names = self::getReachableEnumCaseNames($stmt_var_type, $class_storage, $lhs_type_part);
 
-        if (empty($relevant_enum_case_names)) {
+        if ($relevant_enum_case_names === []) {
+            return;
+        }
+
+        if ($relevant_enum_case_names === null) {
             $relevant_enum_case_names = array_keys($class_storage->enum_cases);
         }
 
         $statements_analyzer->node_data->setType(
             $stmt,
-            empty($relevant_enum_case_names)
-                ? Type::getNonEmptyString()
-                : new Union(array_map(
-                    static fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
-                    $relevant_enum_case_names,
-                )),
+            self::combineWithTypeOfEarlierParts(
+                $statements_analyzer,
+                $stmt,
+                $relevant_enum_case_names === []
+                    ? Type::getNonEmptyString()
+                    : new Union(array_map(
+                        static fn(string $name): TString => Type::getAtomicStringFromLiteral($name),
+                        $relevant_enum_case_names,
+                    )),
+            ),
         );
     }
 
@@ -1112,25 +1204,17 @@ final class AtomicPropertyFetchAnalyzer
         PropertyFetch $stmt,
         Union $stmt_var_type,
         ClassLikeStorage $class_storage,
+        Atomic $lhs_type_part,
     ): void {
-        $relevant_enum_cases = array_filter(
-            $stmt_var_type->getAtomicTypes(),
-            static fn(Atomic $type): bool => $type instanceof TEnumCase,
-        );
-        $relevant_enum_case_names = array_map(
-            static fn(TEnumCase $enumCase): string => $enumCase->case_name,
-            $relevant_enum_cases,
-        );
+        $relevant_enum_case_names = self::getReachableEnumCaseNames($stmt_var_type, $class_storage, $lhs_type_part);
 
-        $enum_cases = $class_storage->enum_cases;
-        if (!empty($relevant_enum_case_names)) {
-            // If we have a known subset of enum cases, include only those
-            $enum_cases = array_filter(
-                $enum_cases,
-                static fn(string $key) => in_array($key, $relevant_enum_case_names, true),
-                ARRAY_FILTER_USE_KEY,
-            );
+        if ($relevant_enum_case_names === []) {
+            return;
         }
+
+        $enum_cases = $relevant_enum_case_names === null
+            ? $class_storage->enum_cases
+            : array_intersect_key($class_storage->enum_cases, array_flip($relevant_enum_case_names));
 
         $case_values = [];
 
@@ -1142,8 +1226,80 @@ final class AtomicPropertyFetchAnalyzer
         /** @psalm-suppress ArgumentTypeCoercion */
         $statements_analyzer->node_data->setType(
             $stmt,
-            new Union($case_values),
+            self::combineWithTypeOfEarlierParts($statements_analyzer, $stmt, new Union($case_values)),
         );
+    }
+
+    /**
+     * The type of an enum's `value` or `name` fetch is that of every part of the receiver together. A part that is
+     * mixed already has its own fetch reported, and its type must not make the enum's value mixed too.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function combineWithTypeOfEarlierParts(
+        StatementsAnalyzer $statements_analyzer,
+        PropertyFetch $stmt,
+        Union $type,
+    ): Union {
+        $earlier_parts = $statements_analyzer->node_data->getType($stmt);
+
+        if ($earlier_parts === null || $earlier_parts->hasMixed()) {
+            return $type;
+        }
+
+        return Type::combineUnionTypes($type, $earlier_parts);
+    }
+
+    /**
+     * The names of the cases of the enum of $class_storage the receiver can be: null when it can be any of them,
+     * and an empty list when $lhs_type_part is not the first atomic type of that enum (the first one stands for
+     * all of them, so a union of many cases is not processed once per case).
+     *
+     * @return list<string>|null
+     * @psalm-capabilities read-props
+     */
+    private static function getReachableEnumCaseNames(
+        Union $stmt_var_type,
+        ClassLikeStorage $class_storage,
+        Atomic $lhs_type_part,
+    ): ?array {
+        $enum_name = strtolower($class_storage->name);
+        $case_names = [];
+
+        foreach ($stmt_var_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject || strtolower($atomic_type->value) !== $enum_name) {
+                continue;
+            }
+
+            if ($case_names === [] && $atomic_type !== $lhs_type_part) {
+                return [];
+            }
+
+            if (!$atomic_type instanceof TEnumCase) {
+                return null;
+            }
+
+            $case_names[] = $atomic_type->case_name;
+        }
+
+        // the receiver is a template param or an intersection, which stands for the enum without naming its cases
+        return $case_names === [] ? null : $case_names;
+    }
+
+    /**
+     * Whether accessing a property of the object needs no capability: the object is immutable, or the
+     * caller created it, from a class whose contract keeps its changes to itself or with a constructor that
+     * can't keep a reference to it (see NewAnalyzer), so nobody else can see or change its properties. This
+     * is the same waiver a method call on such an object gets, and writing its properties.
+     */
+    public static function isFreeToAccess(
+        StatementsAnalyzer $statements_analyzer,
+        PropertyFetch $stmt,
+        ClassLikeStorage $class_storage,
+    ): bool {
+        return $class_storage->isMutationFree()
+            || (MethodCallPurityAnalyzer::receiverAllowsInternalMutations($statements_analyzer, $stmt->var)
+                && !MethodCallPurityAnalyzer::isFromGlobalState($statements_analyzer, $stmt->var));
     }
 
     private static function handleUndefinedProperty(
@@ -1154,8 +1310,12 @@ final class AtomicPropertyFetchAnalyzer
         string $property_id,
         bool $has_magic_getter,
         ?string $var_id,
+        bool &$missing_in_isset,
     ): void {
         if ($context->inside_isset || $context->collect_initializations) {
+            // isset() sees null where the object doesn't have the property
+            $missing_in_isset = $missing_in_isset || ($context->inside_isset && !$has_magic_getter);
+
             $statements_analyzer->signalMutation(
                 Capabilities::READ_PROPS, // Strange but matches previous code
                 $context,
@@ -1214,12 +1374,14 @@ final class AtomicPropertyFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         PhpParser\Node\Expr\PropertyFetch $stmt,
-        TNamedObject $lhs_type_part,
+        TNamedObject &$lhs_type_part,
+        string $prop_name,
         array $intersection_types,
         bool &$class_exists,
         bool &$interface_exists,
         string &$fq_class_name,
         bool &$override_property_visibility,
+        bool $inside_isset,
     ): void {
         if ($codebase->interfaceExists($lhs_type_part->value)) {
             $interface_exists = true;
@@ -1228,16 +1390,45 @@ final class AtomicPropertyFetchAnalyzer
             $override_property_visibility = $interface_storage->override_property_visibility;
 
             $intersects_with_enum = false;
+            $intersects_with_shape_property = false;
+
+            // of the classes the interface is intersected with, the one that declares the property wins,
+            // then an interface with a matching hook, then any other class
+            $property_name = $stmt->name instanceof PhpParser\Node\Identifier ? $stmt->name->name : null;
+
+            if ($property_name !== null) {
+                foreach ($intersection_types as $intersection_type) {
+                    if ($intersection_type instanceof TNamedObject
+                        && $codebase->classExists($intersection_type->value)
+                        && isset($codebase->classlike_storage_provider->get($intersection_type->value)
+                            ->declaring_property_ids[$property_name])
+                    ) {
+                        $lhs_type_part = $intersection_type;
+                        $fq_class_name = $intersection_type->value;
+                        $class_exists = true;
+                        return;
+                    }
+                }
+            }
+
+            $first_class_type = null;
+            $intersects_with_final_class = false;
 
             foreach ($intersection_types as $intersection_type) {
+                if ($intersection_type instanceof TObjectWithProperties
+                    && $stmt->name instanceof PhpParser\Node\Identifier
+                    && isset($intersection_type->properties[$stmt->name->name])
+                ) {
+                    $intersects_with_shape_property = true;
+                }
+
                 if ($intersection_type instanceof TNamedObject
                     && $codebase->classExists($intersection_type->value)
                 ) {
-                    $fq_class_name = $intersection_type->value;
-                    $class_exists = true;
-                    return;
-                }
-                if ($intersection_type instanceof TNamedObject
+                    $first_class_type ??= $intersection_type;
+                    $intersects_with_final_class = $intersects_with_final_class
+                        || $codebase->classlike_storage_provider->get($intersection_type->value)->final;
+                } elseif ($intersection_type instanceof TNamedObject
                     && (in_array($intersection_type->value, ['UnitEnum', 'BackedEnum'], true)
                         || in_array('UnitEnum', $codebase->getParentInterfaces($intersection_type->value)))
                 ) {
@@ -1245,20 +1436,32 @@ final class AtomicPropertyFetchAnalyzer
                 }
             }
 
+            $hook_interface = $first_class_type !== null
+                && ($intersects_with_final_class || $intersects_with_shape_property)
+                ? null
+                : self::findInterfaceWithPropertyHook($codebase, $lhs_type_part, $prop_name, false);
+
+            if ($hook_interface === null && $first_class_type !== null) {
+                $lhs_type_part = $first_class_type;
+                $fq_class_name = $first_class_type->value;
+                $class_exists = true;
+                return;
+            }
+
             // In PHP Core enum interfaces have properties
             $is_enum_interface = in_array($fq_class_name, ['UnitEnum', 'BackedEnum'], true)
                 || in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name))
                 || $intersects_with_enum;
 
-            // Since PHP 8.4 interfaces can have hook properties
-            $interface_property = $stmt->name instanceof PhpParser\Node\Identifier
-                ? $interface_storage->properties[$stmt->name->name] ?? null
-                : null;
-            $has_get_hook = $codebase->analysis_php_version_id >= 8_04_00 &&
-                $interface_property?->hook_get !== null;
-
-            if (!$class_exists && !$is_enum_interface && !$has_get_hook) {
-                if (IssueBuffer::accepts(
+            if ($hook_interface !== null) {
+                $lhs_type_part = $hook_interface;
+                $fq_class_name = $hook_interface->value;
+            } elseif (!$is_enum_interface
+                && !$intersects_with_shape_property
+                && self::findMixinWithProperty($codebase, $lhs_type_part, $prop_name) === null
+            ) {
+                // isset() and ?? only test whether the property is there
+                if (!$inside_isset && IssueBuffer::accepts(
                     new NoInterfaceProperties(
                         'Interfaces cannot have properties',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
@@ -1298,6 +1501,61 @@ final class AtomicPropertyFetchAnalyzer
         }
     }
 
+    /**
+     * Since PHP 8.4 interfaces can declare hooked properties; checks every interface of an intersection.
+     */
+    public static function findInterfaceWithPropertyHook(
+        Codebase $codebase,
+        TNamedObject $lhs_type_part,
+        string $prop_name,
+        bool $is_write,
+    ): ?TNamedObject {
+        if ($codebase->analysis_php_version_id < 8_04_00) {
+            return null;
+        }
+
+        foreach ([$lhs_type_part, ...$lhs_type_part->getIntersectionTypes()] as $type_part) {
+            if (!$type_part instanceof TNamedObject || !$codebase->interfaceExists($type_part->value)) {
+                continue;
+            }
+
+            $declaring_interface = $codebase->classlike_storage_provider->get($type_part->value)
+                ->declaring_property_ids[$prop_name] ?? null;
+
+            if ($declaring_interface === null) {
+                continue;
+            }
+
+            $property = $codebase->classlike_storage_provider->get($declaring_interface)->properties[$prop_name];
+
+            if (($is_write ? $property->hook_set : $property->hook_get) !== null) {
+                return $type_part;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The mixin of the class that has the property, real or `@property`
+     */
+    public static function findMixinWithProperty(
+        Codebase $codebase,
+        TNamedObject $lhs_type_part,
+        string $prop_name,
+    ): ?TNamedObject {
+        return MixinLookup::findMember(
+            $codebase,
+            $codebase->classlike_storage_provider->get($lhs_type_part->value),
+            $lhs_type_part,
+            static fn(ClassLikeStorage $mixin_storage): bool => $codebase->propertyExists(
+                $mixin_storage->name . '::$' . $prop_name,
+                true,
+            ) || (isset($mixin_storage->pseudo_property_get_types['$' . $prop_name])
+                && isset($mixin_storage->declaring_method_ids['__get'])),
+        )['type'] ?? null;
+    }
+
     private static function handleNonExistentProperty(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -1314,12 +1572,19 @@ final class AtomicPropertyFetchAnalyzer
         bool $has_magic_getter,
         ?string $var_id,
         bool &$has_valid_fetch_type,
+        bool &$missing_in_isset,
     ): void {
         if (($config->use_phpdoc_property_without_magic_or_parent
             || $class_storage->hasAttributeIncludingParents('AllowDynamicProperties', $codebase))
             && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
         ) {
-            $stmt_type = $class_storage->pseudo_property_get_types['$' . $prop_name];
+            $stmt_type = TypeExpander::expandUnion(
+                $codebase,
+                $class_storage->pseudo_property_get_types['$' . $prop_name],
+                $class_storage->name,
+                $class_storage->name,
+                $class_storage->parent_class,
+            );
 
             if (count($template_types = $class_storage->getClassTemplateTypes()) !== 0) {
                 if (!$lhs_type_part instanceof TGenericObject) {
@@ -1351,7 +1616,10 @@ final class AtomicPropertyFetchAnalyzer
             );
 
             $has_valid_fetch_type = true;
-            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                Type::combineUnionTypes($stmt_type, $statements_analyzer->node_data->getType($stmt)),
+            );
 
             return;
         }
@@ -1368,6 +1636,7 @@ final class AtomicPropertyFetchAnalyzer
             $property_id,
             $has_magic_getter,
             $var_id,
+            $missing_in_isset,
         );
     }
 

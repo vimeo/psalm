@@ -30,6 +30,7 @@ final class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
             || $node instanceof PhpParser\Node\Expr\YieldFrom
             || $node instanceof PhpParser\Node\Expr\New_
             || $node instanceof PhpParser\Node\Expr\Cast\String_
+            || $node instanceof PhpParser\Node\Expr\BinaryOp\Pipe
         ) {
             if (($node instanceof PhpParser\Node\Expr\FuncCall
                     || $node instanceof PhpParser\Node\Expr\MethodCall
@@ -56,14 +57,6 @@ final class CheckTrivialExprVisitor extends PhpParser\NodeVisitorAbstract
             // Check for Non-Trivial Expression first
             if ($this->checkNonTrivialExpr($node)) {
                 $this->has_non_trivial_expr = true;
-                return self::STOP_TRAVERSAL;
-            }
-
-            if ($node instanceof PhpParser\Node\Expr\ClassConstFetch
-                || $node instanceof PhpParser\Node\Expr\ConstFetch
-                || $node instanceof PhpParser\Node\Expr\Error
-                || $node instanceof PhpParser\Node\Expr\PropertyFetch
-                || $node instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
                 return self::STOP_TRAVERSAL;
             }
         } elseif ($node instanceof PhpParser\Node\ClosureUse) {

@@ -4,46 +4,29 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
-use Override;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Provider\FakeFileProvider;
-use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeTokenizer;
-use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Union;
 
 use function array_diff_key;
 use function array_keys;
 use function array_map;
+use function array_reverse;
+use function hrtime;
+use function is_int;
 
 final class TypeComparatorTest extends TestCase
 {
-    #[Override]
-    public function setUp(): void
-    {
-        RuntimeCaches::clearAll();
-        $this->file_provider = new FakeFileProvider();
+    protected const ANALYSIS_PHP_VERSION = null;
 
-        $config = new TestConfig();
-
-        $providers = new Providers(
-            $this->file_provider,
-            new FakeParserCacheProvider(),
-        );
-
-        $this->project_analyzer = new ProjectAnalyzer(
-            $config,
-            $providers,
-        );
-    }
-
-    /**
-     * @dataProvider getAllBasicTypes
-     */
+    #[DataProvider('getAllBasicTypes')]
     public function testTypeAcceptsItself(string $type_string): void
     {
         $type_1 = Type::parseString($type_string);
@@ -62,7 +45,7 @@ final class TypeComparatorTest extends TestCase
      * @return array<array{string}>
      * @psalm-pure
      */
-    public function getAllBasicTypes(): array
+    public static function getAllBasicTypes(): array
     {
         // these types are not valid without generics attached
         $basic_generic_types = [
@@ -100,9 +83,7 @@ final class TypeComparatorTest extends TestCase
         );
     }
 
-    /**
-     * @dataProvider getSuccessfulComparisons
-     */
+    #[DataProvider('getSuccessfulComparisons')]
     public function testTypeAcceptsType(string $parent_type_string, string $child_type_string): void
     {
         $parent_type = Type::parseString($parent_type_string);
@@ -118,9 +99,7 @@ final class TypeComparatorTest extends TestCase
         );
     }
 
-    /**
-     * @dataProvider getUnsuccessfulComparisons
-     */
+    #[DataProvider('getUnsuccessfulComparisons')]
     public function testTypeDoesNotAcceptType(string $parent_type_string, string $child_type_string): void
     {
         $parent_type = Type::parseString($parent_type_string);
@@ -136,7 +115,7 @@ final class TypeComparatorTest extends TestCase
         );
     }
 
-    /** @dataProvider getCoercibleComparisons */
+    #[DataProvider('getCoercibleComparisons')]
     public function testTypeIsCoercible(string $parent_type_string, string $child_type_string): void
     {
         $parent_type = Type::parseString($parent_type_string);
@@ -160,11 +139,73 @@ final class TypeComparatorTest extends TestCase
         );
     }
 
+    #[DataProvider('getUnionMemberOrderComparisons')]
+    public function testComparisonResultDoesNotDependOnUnionMemberOrder(
+        string $container_type_string,
+        string $input_member_1,
+        string $input_member_2,
+    ): void {
+        $container_type = Type::parseString($container_type_string);
+        $results = [];
+
+        foreach ([[$input_member_1, $input_member_2], [$input_member_2, $input_member_1]] as $members) {
+            $result = new TypeComparisonResult();
+
+            UnionTypeComparator::isContainedBy(
+                $this->project_analyzer->getCodebase(),
+                Type::parseString($members[0] . '|' . $members[1]),
+                $container_type,
+                false,
+                false,
+                $result,
+            );
+
+            $results[] = [
+                $result->scalar_type_match_found,
+                $result->type_coerced,
+                $result->type_coerced_from_mixed,
+                $result->type_coerced_from_as_mixed,
+                $result->type_coerced_from_scalar,
+                $result->to_string_cast,
+                $result->missing_shape_fields,
+            ];
+        }
+
+        $this->assertSame($results[0], $results[1]);
+    }
+
+    /**
+     * @return iterable<string, list{string, string, string}>
+     * @psalm-pure
+     */
+    public static function getUnionMemberOrderComparisons(): iterable
+    {
+        yield 'scalar and callable into int' => ['int', 'scalar', 'callable'];
+        yield 'scalar and object into int' => ['int', 'scalar', 'object'];
+        yield 'string and callable into int' => ['int', 'string', 'callable'];
+        yield 'string and null into int' => ['int', 'string', 'null'];
+        yield 'literal and callable into int' => ['int', '1', 'callable'];
+        yield 'array of mixed and string into array of int' => ['array<int>', 'array<mixed>', 'string'];
+        yield 'array of mixed and callable into array of int' => ['array<int>', 'array<mixed>', 'callable'];
+        yield 'array of mixed and null into array of int' => ['array<int>', 'array<mixed>', 'null'];
+        yield 'array of mixed and int into array of string' => ['array<string>', 'array<mixed>', 'int'];
+        yield 'int and float into string' => ['string', 'int', 'float'];
+        yield 'float and int into int literals' => ['1|1024', 'float', 'int'];
+        yield 'array of mixed and int into string' => ['string', 'array<mixed>', 'int'];
+        yield 'int and array of mixed into string' => ['string', 'int', 'array<mixed>'];
+        yield 'matching and coercible member' => ['non-empty-string', 'non-empty-string', 'string'];
+        yield 'non-matching and coercible shapes' => [
+            'array{a: int, b: string}',
+            'array{a: int}',
+            'array{b: string}',
+        ];
+    }
+
     /**
      * @return iterable<string, list{string, string}>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
-    public function getCoercibleComparisons(): iterable
+    public static function getCoercibleComparisons(): iterable
     {
         yield 'callableStringIntoLowercaseString' => [
             'lowercase-string',
@@ -174,18 +215,34 @@ final class TypeComparatorTest extends TestCase
             'callable-string',
             'lowercase-string',
         ];
+        yield 'literalStringIntoClassStringAmongLiterals' => [
+            "'a'|'b'|class-string",
+            "'Foo'",
+        ];
+        yield 'literalStringIntoLiteralClassStringAmongLiterals' => [
+            "'a'|'b'|Foo::class",
+            "'Foo'",
+        ];
     }
 
     /**
      * @return array<array{string, string}>
      * @psalm-pure
      */
-    public function getSuccessfulComparisons(): array
+    public static function getSuccessfulComparisons(): array
     {
         return [
             'iterableAcceptsArray' => [
                 'iterable',
                 'array',
+            ],
+            'arrayOrObjectAcceptsIterable' => [
+                'array|object',
+                'iterable<int>',
+            ],
+            'arrayOrObjectOrNullAcceptsIterable' => [
+                'array|object|null',
+                'iterable<string, int>',
             ],
             'listAcceptsEmptyArray' => [
                 'list',
@@ -223,15 +280,211 @@ final class TypeComparatorTest extends TestCase
                 'callable',
                 "callable-list{class-string, 'from'}",
             ],
+            'lowercaseStringAcceptsNonFalsyLowercaseString' => [
+                'lowercase-string',
+                'lowercase-string&non-falsy-string',
+            ],
+            'nonEmptyLowercaseStringAcceptsNonFalsyLowercaseString' => [
+                'non-empty-lowercase-string',
+                'lowercase-string&non-falsy-string',
+            ],
+            'nonFalsyStringAcceptsNonFalsyLowercaseString' => [
+                'non-falsy-string',
+                'lowercase-string&non-falsy-string',
+            ],
+            'nonFalsyLowercaseStringAcceptsLowercaseNonFalsyLiteral' => [
+                'lowercase-string&non-falsy-string',
+                "'abc'",
+            ],
+            'numericStringAcceptsNonFalsyNumericString' => [
+                'numeric-string',
+                'non-falsy-string&numeric-string',
+            ],
+            'nonFalsyStringAcceptsNonFalsyNumericString' => [
+                'non-falsy-string',
+                'non-falsy-string&numeric-string',
+            ],
+            'nonFalsyNumericStringAcceptsNonZeroNumericLiteral' => [
+                'non-falsy-string&numeric-string',
+                "'5'",
+            ],
+            'lowercaseStringAcceptsLowercaseNumericString' => [
+                'lowercase-string',
+                'lowercase-string&numeric-string',
+            ],
+            'numericStringAcceptsLowercaseNumericString' => [
+                'numeric-string',
+                'lowercase-string&numeric-string',
+            ],
+            'lowercaseNumericStringAcceptsLowercaseNumericLiteral' => [
+                'lowercase-string&numeric-string',
+                "'1e3'",
+            ],
+            'nonFalsyLowercaseStringAcceptsNonFalsyLowercaseNumericString' => [
+                'lowercase-string&non-falsy-string',
+                'lowercase-string&non-falsy-string&numeric-string',
+            ],
+            'nonFalsyNumericStringAcceptsNonFalsyLowercaseNumericString' => [
+                'non-falsy-string&numeric-string',
+                'lowercase-string&non-falsy-string&numeric-string',
+            ],
+            'decimalIntStringAcceptsDecimalIntLiteral' => [
+                'decimal-int-string',
+                "'-5'|'0'|'123'",
+            ],
+            'numericStringAcceptsDecimalIntString' => [
+                'numeric-string',
+                'decimal-int-string',
+            ],
+            'nonEmptyLowercaseStringAcceptsDecimalIntString' => [
+                'non-empty-lowercase-string',
+                'decimal-int-string',
+            ],
+            'arrayKeyAcceptsDecimalIntString' => [
+                'array-key',
+                'decimal-int-string',
+            ],
+            'nonDecimalIntStringAcceptsNonDecimalIntLiteral' => [
+                'non-decimal-int-string',
+                "''|'-0'|'0123'|'1.0'|'abc'|'+1'|' 1'|'9223372036854775808'",
+            ],
+            'nonDecimalIntStringAcceptsClassString' => [
+                'non-decimal-int-string',
+                'class-string',
+            ],
+            'lowercaseNumericStringAcceptsDecimalIntString' => [
+                'lowercase-string&numeric-string',
+                'decimal-int-string',
+            ],
+            'stringAcceptsNonDecimalIntString' => [
+                'string',
+                'non-decimal-int-string',
+            ],
+            'literalIntsAcceptSomeOfThem' => [
+                '1|2|3',
+                '3|1',
+            ],
+            'literalStringsAndNumericAcceptAnotherLiteral' => [
+                "'a'|'b'|numeric",
+                "'5'",
+            ],
+            'literalIntsAndFloatAcceptAnotherLiteral' => [
+                '1|2|float',
+                '3',
+            ],
+            'literalsOfBothClassesAndFloatAcceptLiterals' => [
+                "'a'|1|float",
+                "'a'|1|2",
+            ],
+            'literalIntsAndStringsAcceptBoth' => [
+                "1|'1'|2",
+                "'1'|1",
+            ],
         ];
     }
 
     /**
      * @return iterable<string, list{string,string}>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
-    public function getUnsuccessfulComparisons(): iterable
+    public static function getUnsuccessfulComparisons(): iterable
     {
+        yield 'objectOrStringDoesNotAcceptIterable' => [
+            'object|string',
+            'iterable<int>',
+        ];
+        yield 'arrayOrIntDoesNotAcceptIterable' => [
+            'array|int',
+            'iterable<int>',
+        ];
+        yield 'nonFalsyLowercaseStringDoesNotAcceptFalsyLiteral' => [
+            'lowercase-string&non-falsy-string',
+            "'0'",
+        ];
+        yield 'nonFalsyLowercaseStringDoesNotAcceptUppercaseLiteral' => [
+            'lowercase-string&non-falsy-string',
+            "'Abc'",
+        ];
+        yield 'nonFalsyLowercaseStringDoesNotAcceptNonEmptyLowercaseString' => [
+            'lowercase-string&non-falsy-string',
+            'non-empty-lowercase-string',
+        ];
+        yield 'nonFalsyLowercaseStringDoesNotAcceptNonFalsyString' => [
+            'lowercase-string&non-falsy-string',
+            'non-falsy-string',
+        ];
+        yield 'nonFalsyLowercaseStringDoesNotAcceptCallableString' => [
+            'lowercase-string&non-falsy-string',
+            'callable-string',
+        ];
+        yield 'nonFalsyNumericStringDoesNotAcceptZero' => [
+            'non-falsy-string&numeric-string',
+            "'0'",
+        ];
+        yield 'nonFalsyNumericStringDoesNotAcceptNumericString' => [
+            'non-falsy-string&numeric-string',
+            'numeric-string',
+        ];
+        yield 'nonFalsyNumericStringDoesNotAcceptLowercaseNumericString' => [
+            'non-falsy-string&numeric-string',
+            'lowercase-string&numeric-string',
+        ];
+        yield 'lowercaseNumericStringDoesNotAcceptUppercaseNumericLiteral' => [
+            'lowercase-string&numeric-string',
+            "'1E3'",
+        ];
+        yield 'lowercaseNumericStringDoesNotAcceptNonFalsyLowercaseString' => [
+            'lowercase-string&numeric-string',
+            'lowercase-string&non-falsy-string',
+        ];
+        yield 'nonFalsyLowercaseNumericStringDoesNotAcceptNonFalsyNumericString' => [
+            'lowercase-string&non-falsy-string&numeric-string',
+            'non-falsy-string&numeric-string',
+        ];
+        yield 'nonFalsyLowercaseNumericStringDoesNotAcceptDecimalIntString' => [
+            'lowercase-string&non-falsy-string&numeric-string',
+            'decimal-int-string',
+        ];
+        yield 'lowercaseNumericStringDoesNotAcceptNonDecimalIntString' => [
+            'lowercase-string&numeric-string',
+            'non-decimal-int-string',
+        ];
+        yield 'decimalIntStringDoesNotAcceptNumericString' => [
+            'decimal-int-string',
+            'numeric-string',
+        ];
+        yield 'decimalIntStringDoesNotAcceptNonCanonicalLiteral' => [
+            'decimal-int-string',
+            "'0123'",
+        ];
+        yield 'decimalIntStringDoesNotAcceptNegativeZero' => [
+            'decimal-int-string',
+            "'-0'",
+        ];
+        yield 'decimalIntStringDoesNotAcceptNonDecimalIntString' => [
+            'decimal-int-string',
+            'non-decimal-int-string',
+        ];
+        yield 'nonFalsyStringDoesNotAcceptDecimalIntString' => [
+            'non-falsy-string',
+            'decimal-int-string',
+        ];
+        yield 'nonDecimalIntStringDoesNotAcceptDecimalIntLiteral' => [
+            'non-decimal-int-string',
+            "'123'",
+        ];
+        yield 'nonDecimalIntStringDoesNotAcceptDecimalIntString' => [
+            'non-decimal-int-string',
+            'decimal-int-string',
+        ];
+        yield 'nonDecimalIntStringDoesNotAcceptString' => [
+            'non-decimal-int-string',
+            'string',
+        ];
+        yield 'nonEmptyStringDoesNotAcceptNonDecimalIntString' => [
+            'non-empty-string',
+            'non-decimal-int-string',
+        ];
         yield 'genericListDoesNotAcceptListTupleWithMismatchedTypes' => [
             'list<int>',
             'list{int, string}',
@@ -244,5 +497,94 @@ final class TypeComparatorTest extends TestCase
             'non-empty-mixed',
             'mixed',
         ];
+        yield 'literalIntsDoNotAcceptAnotherLiteral' => [
+            '1|2|3',
+            '2|4',
+        ];
+        yield 'literalStringsDoNotAcceptLiteralIntOfTheSameValue' => [
+            "'1'|'2'",
+            '1',
+        ];
+        yield 'literalIntsDoNotAcceptLiteralStringOfTheSameValue' => [
+            '1|2',
+            "'1'",
+        ];
+    }
+
+    #[DataProvider('getDifferentLiterals')]
+    public function testLiteralDoesNotContainDifferentLiteral(int|string $input, int|string $container): void
+    {
+        $result = new TypeComparisonResult();
+
+        $this->assertFalse(
+            AtomicTypeComparator::isContainedBy(
+                $this->project_analyzer->getCodebase(),
+                is_int($input) ? new TLiteralInt($input) : new TLiteralString($input),
+                is_int($container) ? new TLiteralInt($container) : new TLiteralString($container),
+                false,
+                true,
+                $result,
+            ),
+        );
+        // UnionTypeComparator skips these comparisons, so they must not report anything either
+        $this->assertEquals(new TypeComparisonResult(), $result);
+    }
+
+    /**
+     * @return iterable<string, list{int|string, int|string}>
+     * @psalm-pure
+     */
+    public static function getDifferentLiterals(): iterable
+    {
+        yield 'ints' => [1, 2];
+        yield 'emptyStringAndZero' => ['', '0'];
+        yield 'zeroAndEmptyString' => ['0', ''];
+        yield 'lowercaseAndUppercase' => ['a', 'A'];
+        yield 'numericStrings' => ['1', '01'];
+        yield 'intAndNumericString' => [1, '1'];
+        yield 'numericStringAndInt' => ['1', 1];
+        yield 'zeroAndEmptyStringOfOtherClasses' => [0, ''];
+        yield 'stringAndInt' => ['a', 0];
+    }
+
+    /**
+     * @param 'int'|'string'|'both' $literal_class
+     */
+    #[DataProvider('getLargeLiteralUnionClasses')]
+    public function testLargeLiteralUnionIsComparedWithoutComparingEachPair(string $literal_class): void
+    {
+        // e.g. an int-mask of 12 bits
+        $literals = [];
+        for ($value = 0; $value < 4_096; $value++) {
+            $literals[] = $literal_class === 'int' || ($literal_class === 'both' && $value % 2 === 0)
+                ? new TLiteralInt($value)
+                : new TLiteralString((string) $value);
+        }
+
+        $container_type = new Union($literals);
+        $input_type = new Union(array_reverse($literals));
+
+        $start = hrtime(true);
+        $contained = UnionTypeComparator::isContainedBy(
+            $this->project_analyzer->getCodebase(),
+            $input_type,
+            $container_type,
+        );
+        $nanoseconds = hrtime(true) - $start;
+
+        $this->assertTrue($contained);
+        // comparing each of the millions of pairs takes seconds to tens of seconds
+        $this->assertLessThan(2_000_000_000, $nanoseconds);
+    }
+
+    /**
+     * @return iterable<string, list{'int'|'string'|'both'}>
+     * @psalm-pure
+     */
+    public static function getLargeLiteralUnionClasses(): iterable
+    {
+        yield 'ints' => ['int'];
+        yield 'strings' => ['string'];
+        yield 'intsAndStrings' => ['both'];
     }
 }

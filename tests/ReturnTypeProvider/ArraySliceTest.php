@@ -13,10 +13,10 @@ final class ArraySliceTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'arraySliceWithTemplatedArrayParameter' => [
             'code' => '<?php

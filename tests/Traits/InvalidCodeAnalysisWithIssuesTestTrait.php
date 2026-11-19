@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Traits;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Tests\FileManipulation\PureAnnotationAdditionTest;
@@ -43,12 +44,6 @@ use const PHP_VERSION;
  * This is trait allows testing for the second case, when the value of
  * "throw_exception" will be "false".
  *
- * @psalm-type DeprecatedDataProviderArrayNotation = array{
- *     code: string,
- *     error_message: string,
- *     ignored_issues?: list<string>,
- *     php_version?: string
- * }
  * @psalm-type NamedArgumentsDataProviderArrayNotation = array{
  *     code: string,
  *     error_message: string,
@@ -60,18 +55,15 @@ use const PHP_VERSION;
 trait InvalidCodeAnalysisWithIssuesTestTrait
 {
     /**
-     * @return iterable<
-     *     string,
-     *     DeprecatedDataProviderArrayNotation|NamedArgumentsDataProviderArrayNotation
-     * >
+     * @return iterable<string, NamedArgumentsDataProviderArrayNotation>
      */
-    abstract public function providerInvalidCodeParse(): iterable;
+    abstract public static function providerInvalidCodeParse(): iterable;
+
 
     /**
-     * @dataProvider providerInvalidCodeParse
-     * @small
      * @param list<string> $error_levels
      */
+    #[DataProvider('providerInvalidCodeParse')]
     public function testInvalidCodeWithIssues(
         string $code,
         string $error_message,
@@ -108,22 +100,7 @@ trait InvalidCodeAnalysisWithIssuesTestTrait
             || $this instanceof PureAnnotationAdditionTest
             || $this instanceof ImmutableAnnotationTest
         ) {
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingImmutableAnnotation',
-                Config::REPORT_ERROR,
-            );
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingInterfaceImmutableAnnotation',
-                Config::REPORT_ERROR,
-            );
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingPureAnnotation',
-                Config::REPORT_ERROR,
-            );
-            Config::getInstance()->setCustomErrorLevel(
-                'MissingAbstractPureAnnotation',
-                Config::REPORT_ERROR,
-            );
+            Config::getInstance()->suggest_purity_annotations = true;
         }
 
         $this->project_analyzer->setPhpVersion($php_version, 'tests');

@@ -8,6 +8,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\NodeTable;
 use Psalm\Internal\DataFlow\Path;
 use Psalm\Progress\Progress;
 use Psalm\Type\TaintKind;
@@ -27,6 +28,7 @@ use function in_array;
 use function ksort;
 use function max;
 use function min;
+use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function strlen;
@@ -87,6 +89,23 @@ final class TaintFlowResolution
      * it, a fetch of an array key doesn't.
      */
     private const KEY_CLASS = 'key';
+
+    /**
+     * The class (see getAssignmentClass()) of an open assignment of the calls entering a filter not split by class
+     * (see tracksClasses()), which know it only through the calls entering them: a fetch observing it in the walk
+     * of a call made there goes on per fetched key (see passesFetch()).
+     */
+    private const DEFERRED_CLASS = '?';
+
+    /**
+     * The class (see getAssignmentClass()) of an open assignment of the calls entering a filter split by class, for
+     * all of the calls whose class there is that of a key known exactly, not only by its start (see getClass() and
+     * DataFlowGraph::keysMayBeEqual()): a fetch observing it goes on in the filter for the calls of the class of the
+     * key it fetches, the only one passing it, or of its start (see getFilter()). A filter for each key would make
+     * one for every key the arrays reaching the entry hold there, and for every key of another open assignment in
+     * each of those, though the walks observing them fetch few of them.
+     */
+    private const EXACT_KEY_CLASS = '?:';
 
     /**
      * The class of an open assignment of an array value under a key not known: a fetch of an array value takes
@@ -160,9 +179,19 @@ final class TaintFlowResolution
      * putting what they return for an element back under its key, components passing arrays of options on through
      * many levels, ... Convergence (see enterConvergence()) doesn't help in a body walk the flows of a single call
      * reach, since it leaves through all the call sites. A node that holds that many states lets the flows reaching
-     * it in more forget what they would only use to tell apart deeper fetches.
+     * it in more forget what they would only use to tell apart deeper fetches. On Psalm's own code, 1024 made
+     * 14M states, most of the 20 GB its self-analysis took: past 16, a fetch takes the flows of a node whose keys
+     * it would tell apart.
      */
-    private const WIDENING_STATES = 1024;
+    private const WIDENING_STATES = 16;
+
+    /**
+     * How many states a node must have for the flows reaching it in more to forget all their open assignments (see
+     * forgetOpenAssignments()). Widening keeps the innermost open assignment of each expression type, and arrays
+     * with many literal keys, passed by reference through functions called from many places, still make a state
+     * for each key: the flows a node holds are mostly told apart by those alone.
+     */
+    private const FORGETTING_STATES = 256;
 
     /**
      * How many filters an entry has at most (see getFilter()): each fact a filter knows about the calls entering
@@ -172,6 +201,12 @@ final class TaintFlowResolution
      * take taints it doesn't have, but takes all those it has.
      */
     private const MAX_FILTERS = 64;
+
+    /**
+     * The taints reportFlow() reports the most general of for a flow, dropping the others: they depend on each other,
+     * so they are never told apart from a call's taints when sinks are replayed (see getSinkCallerTaints())
+     */
+    private const URL_TAINTS = TaintKind::INPUT_SSRF | TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH;
 
     /**
      * The kinds of entries: specialized call entries, and convergences (see enterConvergence())
@@ -188,10 +223,18 @@ final class TaintFlowResolution
     private const CONVERGENCE_LEVELS = 12;
 
     /**
-     * How many convergences of a node know the innermost open assignments of the flows entering them at most
-     * (see getConvergenceOpenAssignments())
+     * How many facts (see addEntry()) a filter can know and still be split by the class of another open
+     * assignment of the calls entering it (see tracksClasses())
      */
-    private const MAX_CONVERGENCE_KEYS = 32;
+    private const MAX_TRACKING_FILTER_FACTS = 1;
+
+    /**
+     * How many convergences of a node know the innermost open assignments of the flows entering them at most
+     * (see getConvergenceOpenAssignments()).
+     *
+     * 8 rather than 32: on Psalm's own code, 32 made 630k convergences, two thirds of the memory of the resolution.
+     */
+    private const MAX_CONVERGENCE_KEYS = 8;
 
     /**
      * The bits of a packed observable depth (see computeObservableDepths()) for each expression type
@@ -244,11 +287,18 @@ final class TaintFlowResolution
     private array $unwalked_files = [];
 
     /**
-     * Node id => node, for the nodes not registered in the graph (see getNode())
+     * Node id => row, for the nodes not registered in the graph (see getRow())
      *
-     * @var array<string, ?DataFlowNode>
+     * @var array<string, string|DataFlowNode|null>
      */
     private array $derived_nodes = [];
+
+    /**
+     * Sink id => the taints of the sink
+     *
+     * @var array<string, int>
+     */
+    private array $sink_taints = [];
 
     /** @var array<string, int> */
     private array $path_type_ids = [];
@@ -366,6 +416,13 @@ final class TaintFlowResolution
      */
     private array $open_assignment_widenings = [];
 
+    /**
+     * Open assignments key => the open assignments forgotten (see forgetOpenAssignments())
+     *
+     * @var array<int, int>
+     */
+    private array $open_assignment_forgettings = [];
+
     /*
      * The states, as parallel lists indexed by state id
      */
@@ -475,19 +532,37 @@ final class TaintFlowResolution
     private array $entry_facts = [];
 
     /**
-     * Entry => expression type . ' ' . depth . ' ' . fetched key => the filter of the entry for the calls
-     * whose open assignment there a fetch of that key doesn't ignore (see getFilter())
+     * Entry => expression type . ' ' . depth . ' ' . fetched key => [the filter of the entry for the calls
+     * whose open assignment there a fetch of that key doesn't ignore (see getFilter()), expression type, depth,
+     * fetched key]
      *
-     * @var array<int, array<string, int>>
+     * @var array<int, array<string, array{int, int, int, string}>>
      */
     private array $entry_filters = [];
 
     /**
-     * Filter => [expression type, depth, fetched key] of the fetch the calls entering it pass
+     * Base entry and facts => the filter knowing them (see addEntry())
      *
-     * @var array<int, array{int, int, string}>
+     * @var array<string, int>
      */
-    private array $filter_fetches = [];
+    private array $filter_ids = [];
+
+    /**
+     * Entry => 'conversion ' . the open assignments closed of each expression type => the filter of the entry for
+     * the calls a conversion of an array doesn't drop (see getConversionFilter())
+     *
+     * @var array<int, array<string, int>>
+     */
+    private array $entry_conversion_filters = [];
+
+    /**
+     * Entry => ('anywhere ' or 'not anywhere ') . the open assignments closed of each expression type => the filter
+     * of the entry for the calls a flow going through an overwrite is anywhere in an array of, or for the others
+     * (see getAnywhereFilter())
+     *
+     * @var array<int, array<string, int>>
+     */
+    private array $entry_anywhere_filters = [];
 
     /**
      * Filter => how many of their open assignments of each expression type the flows converting an array
@@ -561,6 +636,15 @@ final class TaintFlowResolution
     private array $entry_bases = [];
 
     /**
+     * Entry => the conversions of an array its calls pass, if it is a filter for them (see getConversionFilter()),
+     * and the overwrites they are anywhere in an array through or not (see getAnywhereFilter()), which tell it apart
+     * from the filters with the same facts (see addEntry())
+     *
+     * @var list<string>
+     */
+    private array $entry_conversions = [];
+
+    /**
      * Unspecialized node entered by a specialized call => exit node id => whether the exit is one of the
      * function-like of the node entered (see isExitOfEntered())
      *
@@ -576,8 +660,8 @@ final class TaintFlowResolution
     private array $entry_taints = [];
 
     /**
-     * Entry => taint => the flow entering it that gave it that taint first, which traces go back to (see
-     * buildTrace())
+     * Entry => the flow entering it that gave it some taints first, which traces go back to (see buildTrace())
+     * => those taints. A few flows give an entry all its taints: keyed by taint, it took millions of entries.
      *
      * @var array<int, array<int, int>>
      */
@@ -599,9 +683,10 @@ final class TaintFlowResolution
     private array $entry_filter_counts = [];
 
     /**
-     * Entry => the flows of its walk entering another entry: state => that entry => true
+     * Entry => the flows of its walk entering another entry: (state << 32 | that entry) => true. One flat map per
+     * entry: a nested array per state took a third of the memory of the resolution on large code bases.
      *
-     * @var array<int, array<int, array<int, true>>>
+     * @var array<int, array<int, true>>
      */
     private array $entry_taint_dependents = [];
 
@@ -612,6 +697,36 @@ final class TaintFlowResolution
      * @var array<int, array<int, ?string>>
      */
     private array $entry_callers = [];
+
+    /**
+     * Entry => the calls entering it, as their state, or as -1 minus that of a copy entering it as such (see
+     * addEntryCaller()) => how many times they had got more taints (see $later_reaches) when they last did, for a
+     * copy shifted 16 bits up, above the positions it was copied for (see getPositionBit())
+     *
+     * @var array<int, array<int, int>>
+     */
+    private array $entry_caller_versions = [];
+
+    /**
+     * State of a call => the states of its copies (see copyToFilter()) => true
+     *
+     * @var array<int, array<int, true>>
+     */
+    private array $state_copies = [];
+
+    /**
+     * State of a copy of a call into a filter of its context (see copyToFilter()) that no other flow reached
+     * => the positions of the open assignments of the calls entering that context it was copied for, as a bit
+     * set (see getPositionBit())
+     *
+     * @var array<int, int>
+     */
+    private array $copy_positions = [];
+
+    /**
+     * The bit of the position a call is being copied for (see copyToFilter()), or 0
+     */
+    private int $copied_position = 0;
 
     /**
      * Entry => exit node id and open assignments => [exit node id, open assignments, kept, added, how
@@ -628,6 +743,43 @@ final class TaintFlowResolution
      * @var array<int, array<string, array{string, int, int, list<array{int, int, int, int}>}>>
      */
     private array $entry_sinks = [];
+
+    /**
+     * Entry => source id => taint => the call outside any context with that source that stands for the calls with
+     * it when the sinks of the entry are replayed (see getSinkCallerTaints())
+     *
+     * @var array<int, array<string, array<int, int>>>
+     */
+    private array $entry_sink_origins = [];
+
+    /**
+     * Entry => call => the taints for which it stands for the calls with its source (see getSinkCallerTaints())
+     *
+     * @var array<int, array<int, int>>
+     */
+    private array $entry_sink_callers = [];
+
+    /**
+     * Entry => call outside any context => the taints looked at so far (see getSinkCallerTaints())
+     *
+     * @var array<int, array<int, int>>
+     */
+    private array $entry_sink_caller_taints = [];
+
+    /**
+     * Entry => call outside any context => its order among those, as they enter the entry
+     *
+     * @var array<int, array<int, int>>
+     */
+    private array $entry_sink_ranks = [];
+
+    /**
+     * Entry => sink key => the sinks replayed through every call: those whose walk adds taints, or that URL_TAINTS
+     * apply to (see addEntrySink())
+     *
+     * @var array<int, array<string, true>>
+     */
+    private array $entry_unshared_sinks = [];
 
     /**
      * Caller links: the state of the outermost call a trace returns to, and the link of the calls inside it
@@ -656,9 +808,9 @@ final class TaintFlowResolution
 
     /**
      * @param array<string, array<string, Path>> $forward_edges
-     * @param array<string, DataFlowNode> $nodes
-     * @param array<string, DataFlowNode> $sources
-     * @param array<string, DataFlowNode> $sinks
+     * @param array<string, string|DataFlowNode> $nodes rows of $table
+     * @param array<string, string|DataFlowNode> $sources rows of $table
+     * @param array<string, string|DataFlowNode> $sinks rows of $table
      * @param array<string, array<string, string>> $specializations
      * @param array<string, true> $specialized_calls
      * @param array<string, true> $despecialized_calls
@@ -675,6 +827,7 @@ final class TaintFlowResolution
         private readonly array $specialized_calls,
         private readonly array $despecialized_calls,
         private readonly array $shared_state,
+        private readonly NodeTable $table,
         private readonly Config $config,
         private readonly ProjectAnalyzer $project_analyzer,
         private readonly Codebase $codebase,
@@ -682,6 +835,10 @@ final class TaintFlowResolution
         // NO_OPEN_ASSIGNMENTS and CALL_OPEN_ASSIGNMENTS
         $this->internOpenAssignments([[], []], [self::NO_CALL, self::NO_CALL]);
         $this->internOpenAssignments([[], []], [0, 0], self::INHERITED_SLOT);
+
+        foreach ($sinks as $id => $row) {
+            $this->sink_taints[$id] = $table->getTaints($row);
+        }
     }
 
     public function resolve(Progress $progress): void
@@ -692,13 +849,15 @@ final class TaintFlowResolution
         ksort($sources);
 
         foreach ($sources as $id => $source) {
-            if (!isset($this->sink_reachable[$id]) || $source->taints === 0) {
+            $source_taints = $this->table->getTaints($source);
+
+            if (!isset($this->sink_reachable[$id]) || $source_taints === 0) {
                 continue;
             }
 
             $open_assignments = self::NO_OPEN_ASSIGNMENTS;
 
-            foreach ($source->path_types as $path_type) {
+            foreach ($source instanceof DataFlowNode ? $source->path_types : [] as $path_type) {
                 $next = $this->getNextOpenAssignments($open_assignments, $this->getPathTypeId($path_type));
 
                 if ($next >= 0) {
@@ -706,7 +865,7 @@ final class TaintFlowResolution
                 }
             }
 
-            $this->reach($id, -1, $open_assignments, 0, $source->taints, -1, 0, -1);
+            $this->reach($id, -1, $open_assignments, 0, $source_taints, -1, 0, -1);
         }
 
         // Each round walks the states reached, or given more taints, in the previous one. The states are
@@ -748,12 +907,12 @@ final class TaintFlowResolution
 
         // Specialization links taken from the unspecialized_id of the nodes, rather than from their ids, as
         // well (see linkSpecialization()). Sinks are registered in $this->nodes too, but sources are not.
-        foreach ($this->nodes as $node) {
-            $this->linkSpecializationByField($node);
+        foreach ($this->nodes as $id => $row) {
+            $this->linkSpecializationByField($id, $row);
         }
 
-        foreach ($this->sources as $node) {
-            $this->linkSpecializationByField($node);
+        foreach ($this->sources as $id => $row) {
+            $this->linkSpecializationByField($id, $row);
         }
 
         // The search runs backwards from the sinks over the forward edges, treating specialization links
@@ -842,14 +1001,16 @@ final class TaintFlowResolution
      *
      * @psalm-external-mutation-free
      */
-    private function linkSpecializationByField(DataFlowNode $node): void
+    private function linkSpecializationByField(string $id, string|DataFlowNode $row): void
     {
-        if ($node->unspecialized_id === null) {
+        $unspecialized_id = $this->table->getUnspecializedId($id, $row);
+
+        if ($unspecialized_id === null) {
             return;
         }
 
-        $this->specialization_links[$node->id][$node->unspecialized_id] = true;
-        $this->specialization_links[$node->unspecialized_id][$node->id] = true;
+        $this->specialization_links[$id][$unspecialized_id] = true;
+        $this->specialization_links[$unspecialized_id][$id] = true;
     }
 
     /**
@@ -1444,22 +1605,23 @@ final class TaintFlowResolution
      */
     private function scopeSlot(int $open_assignments, int $slot, string $node_id): int
     {
-        $node = $this->getNode($node_id);
-        $location = $node?->code_location;
+        $row = $this->getRow($node_id);
 
-        if ($node === null || $location === null) {
+        if ($row === null || !$this->table->hasLocation($row)) {
             $scoped_slot = $slot === self::INHERITED_SLOT ? self::BLOCKED_SLOT : self::NO_SLOT;
         } elseif ($slot >= 0) {
             $foreach_marker = $this->slots[$slot][0];
             [$file_path, $function_start, $function_end, $start, $end, $body_start]
                 = $this->foreach_markers[$foreach_marker] ??= self::parseForeachMarker($foreach_marker);
 
-            $scoped_slot = $location->file_path === $file_path
-                && $location->raw_file_start >= $function_start
-                && $location->raw_file_end <= $function_end
-                && ($location->raw_file_start < $start
-                    || $location->raw_file_end > $end
-                    || ($location->raw_file_start >= $body_start && str_starts_with($node->label, '$')))
+            [$raw_file_start, $raw_file_end] = $this->table->getRawBounds($row);
+
+            $scoped_slot = $this->table->getFilePath($row) === $file_path
+                && $raw_file_start >= $function_start
+                && $raw_file_end <= $function_end
+                && ($raw_file_start < $start
+                    || $raw_file_end > $end
+                    || ($raw_file_start >= $body_start && str_starts_with($this->table->getLabel($row), '$')))
                 ? self::NO_SLOT
                 : $slot;
         } else {
@@ -1513,7 +1675,13 @@ final class TaintFlowResolution
      * Whether a flow that made the open assignments $made, and closed $closed of those of the call entering its
      * context, is anywhere in an array, rather than under a key or in a property of it: it has no open
      * assignment but overwrites (see addOverwrite()). Null if that depends on the open assignments of the call,
-     * which it doesn't know (see passesAnywhere()). A flow that forgot some doesn't know it is.
+     * which it doesn't know (see passesAnywhere()). A flow that forgot those of an array doesn't know it is.
+     *
+     * One that only forgot those of a property still asks the call: they are forgotten where no fetch of a
+     * property can observe them (see truncateOpenAssignments()), and a flow taken anywhere in the array only
+     * stops at a fetch of the key overwritten, which takes the value that replaced it, also where the flow of the
+     * call was in a property of the array (an object implementing ArrayAccess). Else every flow entering a
+     * specialized call with a whole array would go on through the overwrites in its body.
      *
      * @param array{list<int>, list<int>} $made
      * @param array{int, int} $closed
@@ -1533,7 +1701,7 @@ final class TaintFlowResolution
             return true;
         }
 
-        if ($closed[self::ARRAY_FAMILY] === self::FORGOTTEN || $closed[self::PROPERTY_FAMILY] === self::FORGOTTEN) {
+        if ($closed[self::ARRAY_FAMILY] === self::FORGOTTEN) {
             return false;
         }
 
@@ -1686,6 +1854,23 @@ final class TaintFlowResolution
     }
 
     /**
+     * The open assignments $open_assignments, widened already (see widenOpenAssignments()), of a flow reaching a node
+     * with FORGETTING_STATES states: none, those of the call entering their context stay unknown. A fetch only
+     * ignores an open assignment the flow knows, so forgetting them all only lets the flow go on through more
+     * fetches.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function forgetOpenAssignments(int $open_assignments): int
+    {
+        return $this->open_assignment_forgettings[$open_assignments] ??= $this->internOpenAssignments(
+            [],
+            $this->open_assignments[$open_assignments][1],
+            $this->open_assignment_slots[$open_assignments],
+        );
+    }
+
+    /**
      * The open assignment at depth $depth of the open assignments of a call, made $call_made and with $call_closed
      * of those of its own call closed (see $open_assignments): as a path type id, minus its depth in those of its
      * own call, or the unkeyed array value assignment if the call doesn't know it.
@@ -1780,13 +1965,26 @@ final class TaintFlowResolution
             $open_assignments = $this->scopeSlot($open_assignments, $slot, $node_id);
         }
 
-        if (isset($this->state_ids[$node_id]) && count($this->state_ids[$node_id]) >= self::WIDENING_STATES) {
+        $copied_position = $this->copied_position;
+
+        if (isset($this->state_ids[$node_id])
+            && count($this->state_ids[$node_id]) >= self::WIDENING_STATES
+        ) {
             $open_assignments = $this->widenOpenAssignments($open_assignments);
+
+            if (count($this->state_ids[$node_id]) >= self::FORGETTING_STATES) {
+                $open_assignments = $this->forgetOpenAssignments($open_assignments);
+            }
         }
 
         $key = (($context + 1) << 32) | $open_assignments;
 
         if (!isset($this->state_ids[$node_id][$key])) {
+            if ($copied_position !== 0) {
+                $this->copy_positions[count($this->state_nodes)] = $copied_position;
+                $this->state_copies[$predecessor][count($this->state_nodes)] = true;
+            }
+
             if ($context !== -1
                 && $this->entry_kinds[$context] === self::ENTRY_CALL
                 && count($this->call_entries_reaching[$node_id] ?? []) < 2
@@ -1822,6 +2020,23 @@ final class TaintFlowResolution
         $state = $this->state_ids[$node_id][$key];
         $new_kept = $kept & ~$this->state_kept[$state];
         $new_added = $added & ~$this->state_added[$state];
+
+        if (isset($this->copy_positions[$state])
+            && ($copied_position === 0 || ($this->copy_positions[$state] & $copied_position) === 0)
+        ) {
+            // reached by another flow, or copied for another position too: walked again as such
+            if ($copied_position === 0) {
+                unset($this->copy_positions[$state]);
+            } else {
+                $this->copy_positions[$state] |= $copied_position;
+                $this->state_copies[$predecessor][$state] = true;
+            }
+
+            if (!isset($this->queued[$state])) {
+                $this->queue[] = $state;
+                $this->queued[$state] = true;
+            }
+        }
 
         if ($new_kept === 0 && $new_added === 0) {
             return;
@@ -1865,7 +2080,8 @@ final class TaintFlowResolution
             if (!isset($this->root_entries[$state])
                 && count($this->state_ids[$id]) >= self::CONVERGING_STATES
                 && ($this->isOutsideOfCalls($this->state_contexts[$state])
-                    || count($this->call_entries_reaching[$id] ?? []) > 1)
+                    || count($this->call_entries_reaching[$id] ?? []) > 1
+                    || !$this->hasLocation($id))
             ) {
                 $this->enterConvergence($state, $id);
             } else {
@@ -1875,20 +2091,20 @@ final class TaintFlowResolution
             return;
         }
 
-        $node = $this->getNode($id);
+        $row = $this->getRow($id);
 
         // as through its edges (see walkEdges()), a flow doesn't enter a body or leave one from a node it isn't
         // walked from
-        if ($node === null || !$this->isWalkedFrom($node)) {
+        if ($row === null || !$this->isWalkedFrom($row)) {
             return;
         }
 
-        $specialization_key = $node->specialization_key;
+        $specialization_key = $this->table->getSpecializationKey($id, $row);
 
         if ($specialization_key !== null && isset($this->specialized_calls[$specialization_key])) {
             // A specialized node: de-specialize, entering its shared body.
             /** @var string $unspecialized_id */
-            $unspecialized_id = $node->unspecialized_id;
+            $unspecialized_id = $this->table->getUnspecializedId($id, $row);
 
             if (!isset($this->forward_edges[$unspecialized_id])) {
                 return;
@@ -1977,7 +2193,7 @@ final class TaintFlowResolution
      */
     private function walkEdges(int $state, string $from_id): void
     {
-        $from = $this->getNode($from_id);
+        $from = $this->getRow($from_id);
 
         if ($from !== null && !$this->isWalkedFrom($from)) {
             return;
@@ -2049,8 +2265,10 @@ final class TaintFlowResolution
             && isset($this->overwrite_path_types[$path_type])
         ) {
             // For the calls the flow is anywhere in an array of, it goes on anywhere in it but under the key
-            // overwritten (see addOverwrite()), and for the others as through the plain edge it replaces. (An
-            // overwrite leads from an array to an array, never into a sink.)
+            // overwritten (see addOverwrite()). For the others, the overwrite stops it where the innermost open
+            // array assignment of the call is one under that key, as a fetch would (see classPassesFetch()), and
+            // it goes on as through the plain edge it replaces elsewhere. (An overwrite leads from an array to an
+            // array, never into a sink.)
             $closed = $this->open_assignments[$open_assignments][1];
 
             $this->reach(
@@ -2065,6 +2283,18 @@ final class TaintFlowResolution
             );
 
             $context = $this->getAnywhereFilter($context, $closed, false);
+            $overwritten_key = (string) $this->path_type_effects[$path_type][1];
+            $depth = $closed[self::ARRAY_FAMILY] + 1;
+            $fact = $this->entry_facts[$context][self::getPosition(self::ARRAY_FAMILY, $depth)] ?? null;
+
+            if ($fact !== null && $fact[0] !== null) {
+                if (!self::classPassesFetch($fact[0], $overwritten_key)) {
+                    return;
+                }
+            } elseif ($fact === null || !isset($fact[1][$overwritten_key])) {
+                $context = $this->getFilter($context, self::ARRAY_FAMILY, $depth, $overwritten_key);
+            }
+
             $next_open_assignments = $open_assignments;
         } elseif ($next_open_assignments === self::OBSERVES_CALL) {
             // it goes on for the calls whose open assignment it doesn't ignore
@@ -2073,10 +2303,13 @@ final class TaintFlowResolution
             $depth = $this->getObservedCallDepth($open_assignments, $observed_family);
             $fact = $this->entry_facts[$context][self::getPosition($observed_family, $depth)] ?? null;
 
-            if ($fact !== null && $fact[0] !== null) {
+            if ($fact !== null && $fact[0] !== null && !self::isDeferredClass($fact[0])) {
                 if (!self::classPassesFetch($fact[0], $observed_key)) {
                     return;
                 }
+            } elseif ($fact !== null && $fact[0] === self::EXACT_KEY_CLASS && $observed_key === '') {
+                // a fetch of the keys takes nothing assigned under a key (see classPassesFetch())
+                return;
             } elseif ($fact === null || !isset($fact[1][$observed_key])) {
                 $context = $this->getFilter($context, $observed_family, $depth, $observed_key);
             }
@@ -2087,9 +2320,9 @@ final class TaintFlowResolution
         // a flow is reported at its sink, or else at the node it reaches the sink from: a plugin can connect a node
         // without a location to a sink
         if (isset($this->sinks[$to_id])
-            && ($this->getNode($from_id)?->code_location !== null || $this->sinks[$to_id]->code_location !== null)
+            && ($this->hasLocation($from_id) || $this->table->hasLocation($this->sinks[$to_id]))
         ) {
-            $sink_taints = $this->sinks[$to_id]->taints;
+            $sink_taints = $this->sink_taints[$to_id];
 
             if ((($kept | $added) & $sink_taints) !== 0) {
                 if ($context === -1) {
@@ -2106,13 +2339,25 @@ final class TaintFlowResolution
     }
 
     /**
-     * The node of id $id. An unspecialized node whose edges a flow takes past a specialized node may not be
-     * registered: it has the label and location of the specialized nodes, which are those of their
-     * unspecialized base.
+     * Whether the node of id $id is known and has a location
      *
      * @psalm-external-mutation-free
      */
-    private function getNode(string $id): ?DataFlowNode
+    private function hasLocation(string $id): bool
+    {
+        $row = $this->getRow($id);
+
+        return $row !== null && $this->table->hasLocation($row);
+    }
+
+    /**
+     * The row (see NodeTable) of the node of id $id. An unspecialized node whose edges a flow takes past a
+     * specialized node may not be registered: it has the label and location of the specialized nodes, which are
+     * those of their unspecialized base.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function getRow(string $id): string|DataFlowNode|null
     {
         if (isset($this->nodes[$id])) {
             return $this->nodes[$id];
@@ -2133,7 +2378,7 @@ final class TaintFlowResolution
                 $linked = $this->nodes[$linked_id] ?? $this->sources[$linked_id] ?? null;
 
                 if ($linked !== null) {
-                    $this->derived_nodes[$id] = $linked->withSpecialization($id, null, null, null);
+                    $this->derived_nodes[$id] = $this->table->withoutSpecialization($id, $linked);
 
                     break;
                 }
@@ -2147,13 +2392,13 @@ final class TaintFlowResolution
      * Whether the resolution follows the flows from a node: not from those in project files where tainted
      * input isn't reported.
      */
-    private function isWalkedFrom(DataFlowNode $node): bool
+    private function isWalkedFrom(string|DataFlowNode $row): bool
     {
-        if ($node->code_location === null) {
+        $file_path = $this->table->getFilePath($row);
+
+        if ($file_path === null) {
             return true;
         }
-
-        $file_path = $node->code_location->file_path;
 
         if (!isset($this->unwalked_files[$file_path])) {
             $this->unwalked_files[$file_path] = $this->project_analyzer->canReportIssues($file_path)
@@ -2186,6 +2431,7 @@ final class TaintFlowResolution
             $this->getEntry($unspecialized_id, self::ENTRY_CALL, $caller),
             $caller,
             $specialization_key,
+            isset($this->copy_positions[$caller]),
         );
     }
 
@@ -2201,9 +2447,11 @@ final class TaintFlowResolution
      * enter another one, which then gets their taints, past those of the flows entering the first one.
      *
      * The exits a convergence reaches lead to all their call sites, as outside of any specialized call (see
-     * walk()). Flows in specialized calls only converge at a node the walks of several entries reach: there,
-     * a value is shared by the calls (e.g. a property), and any call reading it may return it, so the call
-     * site each flow was entered through doesn't matter anymore.
+     * walk()). Flows in specialized calls only converge at a node the walks of several entries reach, or one
+     * without a location (a property, ...): there, a value is shared by the calls, and any call reading it may
+     * return it, so the call site each flow was entered through doesn't matter anymore. (The filters of an
+     * entry share its node, so a property only their walks reach would otherwise be walked in each of them,
+     * with all that its value reaches.)
      */
     private function enterConvergence(int $caller, string $id): void
     {
@@ -2211,6 +2459,7 @@ final class TaintFlowResolution
             $this->getEntry($id, self::ENTRY_CONVERGENCE, $caller, $this->getConvergenceOpenAssignments($caller, $id)),
             $caller,
             null,
+            isset($this->copy_positions[$caller]),
         );
     }
 
@@ -2338,18 +2587,64 @@ final class TaintFlowResolution
     }
 
     /**
+     * Whether the walks of entry $entry are split by the class of the open assignments of the calls entering
+     * it (see dependOnClass()). Those of an entry are, and those of a filter knowing a single fact (e.g. the
+     * key of the property its walk read) too: each of its walks only observes that one so far, so splitting
+     * them by the class of another one (e.g. the key of the array that property holds, fetched further on)
+     * multiplies them by the classes of that one at most. A filter knowing more isn't split by class: that
+     * would make a walk for every combination of classes of all the open assignments the walks observe. A
+     * fetch in the walk of a call it makes is told apart in it by whether it ignores the open assignment
+     * only (see passesFetch()). Nor is a filter of an entry with MAX_FILTERS filters already (filters by class
+     * included): past those, its fetches ask per key too, and take everything (see getFilter()).
+     *
+     * @psalm-mutation-free
+     */
+    private function tracksClasses(int $entry): bool
+    {
+        return $this->entry_bases[$entry] === $entry
+            || (count($this->entry_facts[$entry]) <= self::MAX_TRACKING_FILTER_FACTS
+                && ($this->entry_filter_counts[$this->entry_bases[$entry]] ?? 0) < self::MAX_FILTERS);
+    }
+
+    /**
      * @param self::ENTRY_* $kind
      * @param array<int, array{?string, array<string, true>}> $facts
      * @psalm-external-mutation-free
      */
-    private function addEntry(string $id, int $kind, array $facts, ?int $base = null): int
+    private function addEntry(string $id, int $kind, array $facts, ?int $base = null, string $conversions = ''): int
     {
+        if ($base !== null) {
+            // A filter is the walks of its base for the calls agreeing with its facts, and passing its conversions,
+            // whatever the order it got them in: it is shared by the filters it is a filter of (its walk is the
+            // union of the walks they continue in it, each for calls it holds).
+            ksort($facts);
+            $filter_key = $conversions . "\2" . $base;
+
+            foreach ($facts as $position => [$class, $passed_keys]) {
+                ksort($passed_keys, SORT_STRING);
+                $facts[$position] = [$class, $passed_keys];
+                $filter_key .= "\0" . $position . ($class === null ? '' : '=' . $class);
+
+                foreach ($passed_keys as $passed_key => $_) {
+                    $filter_key .= "\1" . $passed_key;
+                }
+            }
+
+            if (isset($this->filter_ids[$filter_key])) {
+                return $this->filter_ids[$filter_key];
+            }
+
+            $this->filter_ids[$filter_key] = count($this->entry_nodes);
+        }
+
         $entry = count($this->entry_nodes);
         $this->entry_bases[] = $base ?? $entry;
+        $this->entry_conversions[] = $conversions;
 
         if ($base !== null) {
             $this->entry_filter_counts[$base] = ($this->entry_filter_counts[$base] ?? 0) + 1;
         }
+
         $this->entry_nodes[] = $id;
         $this->entry_kinds[] = $kind;
         $this->entry_facts[] = $facts;
@@ -2365,24 +2660,90 @@ final class TaintFlowResolution
 
     /**
      * Makes the call of state $caller one entering $entry, and the filters of $entry it belongs to (see
-     * getFilter() and dependOnClass()), and applies to it what their walks reached.
+     * getFilter() and dependOnClass()), and applies to it what their walks reached. A copy of a call (see
+     * copyToFilter()) enters $entry $as_copy: the walk of the entry is the same for it as for the call it copies,
+     * only the filters for the positions it was copied for differ.
      */
-    private function addEntryCaller(int $entry, int $caller, ?string $specialization_key): void
-    {
+    private function addEntryCaller(
+        int $entry,
+        int $caller,
+        ?string $specialization_key,
+        bool $as_copy = false,
+    ): void {
+        // A filter is one of each filter it is a filter of (see addEntry()): a call enters it through each of them.
+        // What it gets only depends on its taints, and for a copy on the positions it was copied for: what the walks
+        // of an entry reach later is applied to the calls entering it then.
+        $version = count($this->later_reaches[$caller] ?? []);
+        $version_key = $caller;
+
+        if ($as_copy) {
+            $version = ($version << 16) | ($this->copy_positions[$caller] ?? 0);
+            $version_key = -1 - $caller;
+        }
+
+        if (($this->entry_caller_versions[$entry][$version_key] ?? null) === $version) {
+            return;
+        }
+
+        $this->entry_caller_versions[$entry][$version_key] = $version;
+
+        if ($as_copy) {
+            foreach ($this->entry_filters[$entry] as [$filter, $family, $depth, $fetched_key]) {
+                $this->addFilterCopy($filter, $family, $depth, $fetched_key, $caller, $specialization_key);
+            }
+
+            foreach ($this->entry_conversion_filters[$entry] ?? [] as $filter) {
+                if ($this->passesConversion($caller, $this->filter_conversions[$filter])) {
+                    $this->addEntryCaller($filter, $caller, $specialization_key, true);
+                }
+            }
+
+            foreach ($this->entry_anywhere_filters[$entry] ?? [] as $filter) {
+                [$closed, $anywhere] = $this->filter_anywhere[$filter];
+
+                if ($this->passesAnywhere($caller, $closed) === $anywhere) {
+                    $this->addEntryCaller($filter, $caller, $specialization_key, true);
+                }
+            }
+
+            foreach ($this->entry_class_filters[$entry] as $position => $_) {
+                $this->addClassFilterCaller($entry, $position, $caller, $specialization_key, true);
+            }
+
+            return;
+        }
+
         $this->entry_callers[$entry][$caller] = $specialization_key;
 
         $caller_context = $this->state_contexts[$caller];
 
         if ($caller_context !== -1) {
-            $this->entry_taint_dependents[$caller_context][$caller][$entry] = true;
+            $this->entry_taint_dependents[$caller_context][($caller << 32) | $entry] = true;
         }
 
         $this->addEntryTaints($entry, $caller);
 
-        if ($this->entry_kinds[$entry] === self::ENTRY_CALL) {
-            foreach ($this->entry_sinks[$entry] as [$sink_id, , , $reaches]) {
-                foreach ($reaches as [$state, $link, $kept, $added]) {
-                    $this->addSinkThroughCaller($sink_id, $state, $link, $kept, $added, $caller);
+        if ($this->entry_kinds[$entry] === self::ENTRY_CALL && $this->entry_sinks[$entry] !== []) {
+            $sink_taints = $this->getSinkCallerTaints($entry, $caller);
+
+            if ($sink_taints !== 0) {
+                foreach ($this->entry_sinks[$entry] as [$sink_id, , $sink_added, $reaches]) {
+                    $sink_added |= $sink_taints | $this->sink_taints[$sink_id] & self::URL_TAINTS;
+
+                    foreach ($reaches as [$state, $link, $kept, $added]) {
+                        $kept &= $sink_added | $this->state_added[$state];
+                        $this->addSinkThroughCaller($sink_id, $state, $link, $kept, $added, $caller);
+                    }
+                }
+            } else {
+                foreach ($this->entry_unshared_sinks[$entry] ?? [] as $sink_key => $_) {
+                    [$sink_id, , $sink_added, $reaches] = $this->entry_sinks[$entry][$sink_key];
+                    $sink_added |= $this->sink_taints[$sink_id] & self::URL_TAINTS;
+
+                    foreach ($reaches as [$state, $link, $kept, $added]) {
+                        $kept &= $sink_added | $this->state_added[$state];
+                        $this->addSinkThroughCaller($sink_id, $state, $link, $kept, $added, $caller);
+                    }
                 }
             }
         }
@@ -2402,28 +2763,22 @@ final class TaintFlowResolution
             }
         }
 
-        foreach ($this->entry_filters[$entry] as $filter) {
-            if (isset($this->filter_conversions[$filter])) {
-                if ($this->passesConversion($caller, $this->filter_conversions[$filter])) {
-                    $this->addEntryCaller($filter, $caller, $specialization_key);
-                }
-
-                continue;
-            }
-
-            if (isset($this->filter_anywhere[$filter])) {
-                [$closed, $anywhere] = $this->filter_anywhere[$filter];
-
-                if ($this->passesAnywhere($caller, $closed) === $anywhere) {
-                    $this->addEntryCaller($filter, $caller, $specialization_key);
-                }
-
-                continue;
-            }
-
-            [$family, $depth, $fetched_key] = $this->filter_fetches[$filter];
-
+        foreach ($this->entry_filters[$entry] as [$filter, $family, $depth, $fetched_key]) {
             if ($this->passesFetch($caller, $family, $depth, $fetched_key, self::CONVERGENCE_LEVELS) === true) {
+                $this->addEntryCaller($filter, $caller, $specialization_key);
+            }
+        }
+
+        foreach ($this->entry_conversion_filters[$entry] ?? [] as $filter) {
+            if ($this->passesConversion($caller, $this->filter_conversions[$filter])) {
+                $this->addEntryCaller($filter, $caller, $specialization_key);
+            }
+        }
+
+        foreach ($this->entry_anywhere_filters[$entry] ?? [] as $filter) {
+            [$closed, $anywhere] = $this->filter_anywhere[$filter];
+
+            if ($this->passesAnywhere($caller, $closed) === $anywhere) {
                 $this->addEntryCaller($filter, $caller, $specialization_key);
             }
         }
@@ -2449,7 +2804,7 @@ final class TaintFlowResolution
         $filter_key = $family . ' ' . $depth . ' ' . $fetched_key;
 
         if (isset($this->entry_filters[$entry][$filter_key])) {
-            return $this->entry_filters[$entry][$filter_key];
+            return $this->entry_filters[$entry][$filter_key][0];
         }
 
         if (($this->entry_filter_counts[$this->entry_bases[$entry]] ?? 0) >= self::MAX_FILTERS) {
@@ -2461,16 +2816,28 @@ final class TaintFlowResolution
         $fact = $facts[$position] ?? [null, []];
         $passed_keys = $fact[1];
         $passed_keys[$fetched_key] = true;
-        $facts[$position] = [$fact[0], $passed_keys];
+
+        // Only the class of none passes fetches of two different keys (see classPassesFetch()), and it passes any:
+        // the filter knows it. Else the filters would be told apart by every set of keys fetched there: a call
+        // made in a filter is copied into a filter of its context for each key fetched in its walk (see
+        // passesFetch()), and its copy, which still observes the same open assignment, into a filter of that one
+        // for each other key (e.g. a function-like whose walk reaches a call of itself passing it its parameter).
+        if ($fact[0] === self::EXACT_KEY_CLASS) {
+            // the calls of the class of that key, the only one passing it, or of keys with that start (a fetch of
+            // the keys passes none)
+            $facts[$position] = [':' . $fetched_key, []];
+        } else {
+            $facts[$position] = count($passed_keys) > 1 ? ['', []] : [$fact[0], $passed_keys];
+        }
 
         $filter = $this->addEntry(
             $this->entry_nodes[$entry],
             $this->entry_kinds[$entry],
             $facts,
             $this->entry_bases[$entry],
+            $this->entry_conversions[$entry],
         );
-        $this->entry_filters[$entry][$filter_key] = $filter;
-        $this->filter_fetches[$filter] = [$family, $depth, $fetched_key];
+        $this->entry_filters[$entry][$filter_key] = [$filter, $family, $depth, $fetched_key];
 
         foreach ($this->entry_callers[$entry] as $caller => $specialization_key) {
             if ($this->passesFetch($caller, $family, $depth, $fetched_key, self::CONVERGENCE_LEVELS) === true) {
@@ -2478,7 +2845,115 @@ final class TaintFlowResolution
             }
         }
 
+        foreach ($this->getEntryCopies($entry) as $copy => $specialization_key) {
+            $this->addFilterCopy($filter, $family, $depth, $fetched_key, $copy, $specialization_key);
+        }
+
         return $filter;
+    }
+
+    /**
+     * The copies (see copyToFilter()) of the calls entering $entry, which enter it as copies (see addEntryCaller()):
+     * state => the specialization key of the call. A copy goes through the filters a call it copies enters, but
+     * those for the positions it was copied for, whose fetches it tells apart itself.
+     *
+     * @return array<int, ?string>
+     * @psalm-mutation-free
+     */
+    private function getEntryCopies(int $entry): array
+    {
+        $copies = [];
+        $pending = [];
+
+        foreach ($this->entry_callers[$entry] as $caller => $specialization_key) {
+            if (isset($this->state_copies[$caller])) {
+                $pending[] = [$caller, $specialization_key];
+            }
+        }
+
+        while ($pending) {
+            [$state, $specialization_key] = array_pop($pending);
+
+            foreach ($this->state_copies[$state] as $copy => $_) {
+                if (isset($this->copy_positions[$copy]) && !array_key_exists($copy, $copies)) {
+                    $copies[$copy] = $specialization_key;
+
+                    if (isset($this->state_copies[$copy])) {
+                        $pending[] = [$copy, $specialization_key];
+                    }
+                }
+            }
+        }
+
+        return $copies;
+    }
+
+    /**
+     * Makes the copy of a call $copy (see copyToFilter()) one entering the filter $filter for the calls whose open
+     * assignment of type $family at depth $depth a fetch of key $fetched_key doesn't ignore (see getFilter()), if
+     * it doesn't ignore it: as a call if that's one of the calls entering its context at a position it was copied
+     * for, which decides; else, as a copy if that's known without the calls entering its context, the call it
+     * copies telling them apart by it otherwise.
+     */
+    private function addFilterCopy(
+        int $filter,
+        int $family,
+        int $depth,
+        string $fetched_key,
+        int $copy,
+        ?string $specialization_key,
+    ): void {
+        $is_copied_for = $this->isCopiedFor($copy, $family, $depth, $fetched_key);
+
+        if ($this->passesFetch($copy, $family, $depth, $fetched_key, self::CONVERGENCE_LEVELS, $is_copied_for)
+            === true
+        ) {
+            $this->addEntryCaller($filter, $copy, $specialization_key, !$is_copied_for);
+        }
+    }
+
+    /**
+     * Whether the copy of a call $copy (see copyToFilter()) tells apart the calls entering its context by whether a
+     * fetch of key $fetched_key, or by the class (if null), of its open assignment of type $family at depth $depth:
+     * that's one of those of the calls at a position it was copied for, and its context knows the class there, or
+     * that the calls don't ignore that key, or nothing yet but that they know the class only per key (see
+     * DEFERRED_CLASS). Else the call it copies tells them apart: telling them apart further for another key, after
+     * the one the copy was made for, would make a filter for every set of keys fetched there.
+     *
+     * @psalm-mutation-free
+     */
+    private function isCopiedFor(int $copy, int $family, int $depth, ?string $fetched_key): bool
+    {
+        [$made, $closed] = $this->open_assignments[$this->state_open_assignments[$copy]];
+        $count = count($made[$family]);
+        $index = $count - $depth;
+
+        if ($index >= 0 && $made[$family][$index] >= 0) {
+            return false;
+        }
+
+        // one of the call, or one of the call put back (see passesFetch())
+        $call_depth = $index >= 0 ? -$made[$family][$index] : $closed[$family] + $depth - $count;
+
+        if (($index < 0 && ($closed[$family] === self::NO_CALL || $closed[$family] === self::FORGOTTEN))
+            || $call_depth > self::MAX_CALL_OPEN_ASSIGNMENT_DEPTH
+        ) {
+            return false;
+        }
+
+        $position = self::getPosition($family, $call_depth);
+
+        if ((($this->copy_positions[$copy] ?? 0) & self::getPositionBit($position)) === 0) {
+            return false;
+        }
+
+        [$class, $passed_keys] = $this->entry_facts[$this->state_contexts[$copy]][$position] ?? [null, []];
+
+        if ($fetched_key === null || ($class !== null && !self::isDeferredClass($class))) {
+            return $class !== null;
+        }
+
+        return isset($passed_keys[$fetched_key]) || (self::isDeferredClass($class) && $passed_keys === []);
     }
 
     /**
@@ -2492,8 +2967,8 @@ final class TaintFlowResolution
     {
         $filter_key = 'conversion ' . implode(' ', $closed);
 
-        if (isset($this->entry_filters[$entry][$filter_key])) {
-            return $this->entry_filters[$entry][$filter_key];
+        if (isset($this->entry_conversion_filters[$entry][$filter_key])) {
+            return $this->entry_conversion_filters[$entry][$filter_key];
         }
 
         if (($this->entry_filter_counts[$this->entry_bases[$entry]] ?? 0) >= self::MAX_FILTERS) {
@@ -2505,8 +2980,9 @@ final class TaintFlowResolution
             $this->entry_kinds[$entry],
             $this->entry_facts[$entry],
             $this->entry_bases[$entry],
+            $this->entry_conversions[$entry] . $filter_key . "\3",
         );
-        $this->entry_filters[$entry][$filter_key] = $filter;
+        $this->entry_conversion_filters[$entry][$filter_key] = $filter;
         $this->filter_conversions[$filter] = $closed;
 
         foreach ($this->entry_callers[$entry] as $caller => $specialization_key) {
@@ -2556,8 +3032,8 @@ final class TaintFlowResolution
     {
         $filter_key = ($anywhere ? 'anywhere ' : 'not anywhere ') . implode(' ', $closed);
 
-        if (isset($this->entry_filters[$entry][$filter_key])) {
-            return $this->entry_filters[$entry][$filter_key];
+        if (isset($this->entry_anywhere_filters[$entry][$filter_key])) {
+            return $this->entry_anywhere_filters[$entry][$filter_key];
         }
 
         if (($this->entry_filter_counts[$this->entry_bases[$entry]] ?? 0) >= self::MAX_FILTERS) {
@@ -2569,8 +3045,9 @@ final class TaintFlowResolution
             $this->entry_kinds[$entry],
             $this->entry_facts[$entry],
             $this->entry_bases[$entry],
+            $this->entry_conversions[$entry] . $filter_key . "\3",
         );
-        $this->entry_filters[$entry][$filter_key] = $filter;
+        $this->entry_anywhere_filters[$entry][$filter_key] = $filter;
         $this->filter_anywhere[$filter] = [$closed, $anywhere];
 
         foreach ($this->entry_callers[$entry] as $caller => $specialization_key) {
@@ -2609,11 +3086,17 @@ final class TaintFlowResolution
     /**
      * Whether a fetch of key $fetched_key doesn't ignore the open assignment of type $family at depth $depth
      * of the flows of state $state, or null if they don't know it: it is one of those of the flows entering
-     * their context, which decides (see dependOnClass()), through $levels more convergences at most (see
-     * getAssignmentClass()).
+     * their context, which decides (see dependOnClass(), or getFilter() in a filter not split by class),
+     * through $levels more convergences at most (see getAssignmentClass()).
      */
-    private function passesFetch(int $state, int $family, int $depth, string $fetched_key, int $levels): ?bool
-    {
+    private function passesFetch(
+        int $state,
+        int $family,
+        int $depth,
+        string $fetched_key,
+        int $levels,
+        bool $defer = true,
+    ): ?bool {
         [$made, $closed] = $this->open_assignments[$this->state_open_assignments[$state]];
         $count = count($made[$family]);
 
@@ -2644,7 +3127,7 @@ final class TaintFlowResolution
 
         $fact = $this->entry_facts[$context][self::getPosition($family, $call_depth)] ?? null;
 
-        if ($fact !== null && $fact[0] !== null) {
+        if ($fact !== null && $fact[0] !== null && !self::isDeferredClass($fact[0])) {
             return self::classPassesFetch($fact[0], $fetched_key);
         }
 
@@ -2652,7 +3135,36 @@ final class TaintFlowResolution
             return true;
         }
 
-        if ($this->entry_bases[$context] !== $context) {
+        $is_exact_key_class = $fact !== null && $fact[0] === self::EXACT_KEY_CLASS;
+
+        if ($is_exact_key_class && $fetched_key === '') {
+            return false;
+        }
+
+        if (!$defer) {
+            return null;
+        }
+
+        if (!$this->tracksClasses($context) || ($fact !== null && self::isDeferredClass($fact[0]))) {
+            // (the calls of a convergence with the class of a key know it: asking them per key goes no further)
+            if (!$is_convergence || $is_exact_key_class) {
+                // A fetch in the walk of a call made there only asks whether it ignores that open assignment: the
+                // flows go on in the filter of their context for the calls whose open assignment it doesn't ignore
+                // (see getFilter()), one per fetched key and not per class. Else a call made past two observed
+                // open assignments would take everything assigned under any key (e.g. the values of an array as
+                // its keys).
+                $filter = $this->getFilter($context, $family, $call_depth, $fetched_key);
+
+                if ($filter === $context) {
+                    // past MAX_FILTERS, the fetch doesn't ignore it
+                    return true;
+                }
+
+                $this->copyToFilter($state, $filter, self::getPosition($family, $call_depth));
+
+                return null;
+            }
+
             // see getAssignmentClass()
             return true;
         }
@@ -2672,7 +3184,7 @@ final class TaintFlowResolution
      * $state, or null if they don't know it: it is one of those of the flows entering their context, which
      * decides (see dependOnClass()), through $levels more convergences at most.
      */
-    private function getAssignmentClass(int $state, int $family, int $depth, int $levels): ?string
+    private function getAssignmentClass(int $state, int $family, int $depth, int $levels, bool $defer = true): ?string
     {
         [$made, $closed] = $this->open_assignments[$this->state_open_assignments[$state]];
         $count = count($made[$family]);
@@ -2713,14 +3225,19 @@ final class TaintFlowResolution
             return $class;
         }
 
-        if ($this->entry_bases[$context] !== $context) {
-            // Already in a filter, for the calls agreeing on another open assignment: a filter of it for each
+        if (!$this->tracksClasses($context)) {
+            // Already in a filter, for the calls agreeing on other open assignments: a filter of it for each
             // class there too would make one for every combination of classes of the open assignments a walk
-            // observes. So no fetch ignores it, as above.
-            return '';
+            // observes. So the calls entering it only know it per fetched key: the flows of a walk of the call
+            // depending on it go on in a filter of that walk for the calls with a deferred class there, whose
+            // fetches observing it ask them per key too (see passesFetch()). In a convergence, no fetch ignores
+            // it, as above.
+            return $is_convergence ? '' : self::DEFERRED_CLASS;
         }
 
-        $this->dependOnClass($context, $position, $state, $is_convergence ? $levels - 1 : $levels);
+        if ($defer) {
+            $this->dependOnClass($context, $position, $state, $is_convergence ? $levels - 1 : $levels);
+        }
 
         return null;
     }
@@ -2767,6 +3284,29 @@ final class TaintFlowResolution
     }
 
     /**
+     * The bit of position $position (of an open assignment of the calls entering a context, see getPosition()) in a
+     * bit set of positions: the depth of one of those is MAX_CALL_OPEN_ASSIGNMENT_DEPTH at most
+     *
+     * @psalm-pure
+     */
+    private static function getPositionBit(int $position): int
+    {
+        return 1 << (($position >> self::DEPTH_BITS) * (self::MAX_CALL_OPEN_ASSIGNMENT_DEPTH + 1)
+            + ($position & self::DEPTH_MASK));
+    }
+
+    /**
+     * Whether the calls with class $class (see getAssignmentClass()) are told apart per fetched key: by the calls
+     * entering their context (DEFERRED_CLASS), or by their key (EXACT_KEY_CLASS)
+     *
+     * @psalm-pure
+     */
+    private static function isDeferredClass(?string $class): bool
+    {
+        return $class === self::DEFERRED_CLASS || $class === self::EXACT_KEY_CLASS;
+    }
+
+    /**
      * @psalm-pure
      */
     private static function classPassesFetch(string $class, string $fetched_key): bool
@@ -2787,9 +3327,38 @@ final class TaintFlowResolution
             return $fetched_key !== '';
         }
 
-        return $class === ''
-            || $class === self::SERIALIZATION_CLASS
-            || DataFlowGraph::keysMayBeEqual(substr($class, 1), $fetched_key);
+        if ($class === '' || $class === self::SERIALIZATION_CLASS) {
+            return true;
+        }
+
+        foreach (self::getFetchedKeys($fetched_key) as $key) {
+            if (DataFlowGraph::keysMayBeEqual(substr($class, 1), $key)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The keys a fetch of key $fetched_key may fetch: the quoted keys a fetch of a key that is one of a few literals
+     * separates by '|' (see ArrayFetchAnalyzer::getFetchedKeys()), or that key
+     *
+     * @return non-empty-list<string>
+     * @psalm-pure
+     */
+    private static function getFetchedKeys(string $fetched_key): array
+    {
+        if (!str_starts_with($fetched_key, "'") || !str_contains($fetched_key, "'|'")) {
+            return [$fetched_key];
+        }
+
+        $keys = [];
+        foreach (explode("'|'", substr($fetched_key, 1, -1)) as $key) {
+            $keys[] = "'" . $key . "'";
+        }
+
+        return $keys;
     }
 
     /**
@@ -2805,7 +3374,7 @@ final class TaintFlowResolution
         if (isset($this->entry_class_filters[$entry][$position])) {
             // again if the state got more taints since
             foreach ($this->entry_class_filters[$entry][$position] as $filter) {
-                $this->copyToFilter($state, $filter);
+                $this->copyToFilter($state, $filter, $position);
             }
 
             return;
@@ -2817,6 +3386,10 @@ final class TaintFlowResolution
         foreach ($this->entry_callers[$entry] as $caller => $specialization_key) {
             $this->addClassFilterCaller($entry, $position, $caller, $specialization_key);
         }
+
+        foreach ($this->getEntryCopies($entry) as $copy => $specialization_key) {
+            $this->addClassFilterCaller($entry, $position, $copy, $specialization_key, true);
+        }
     }
 
     /**
@@ -2826,17 +3399,46 @@ final class TaintFlowResolution
      * A filter for the calls of a given class knows it, and its walk goes on from the states of the walk of
      * $entry that depend on it (see dependOnClass()), like the walk of $entry for those calls.
      */
-    private function addClassFilterCaller(int $entry, int $position, int $caller, ?string $specialization_key): void
-    {
+    private function addClassFilterCaller(
+        int $entry,
+        int $position,
+        int $caller,
+        ?string $specialization_key,
+        bool $as_copy = false,
+    ): void {
+        if ($as_copy) {
+            // the walk of the filter of its class only differs for it at a position it was copied for (see
+            // addEntryCaller())
+            $as_copy = !$this->isCopiedFor($caller, $position >> self::DEPTH_BITS, $position & self::DEPTH_MASK, null);
+        }
+
         $class = $this->getAssignmentClass(
             $caller,
             $position >> self::DEPTH_BITS,
             $position & self::DEPTH_MASK,
             $this->entry_class_levels[$entry][$position],
+            !$as_copy,
         );
 
         if ($class === null) {
             return;
+        }
+
+        if (str_starts_with($class, ':') && !str_ends_with($class, "'*")) {
+            // (the class of a key whose start only is known passes fetches of other keys too: it gets its own)
+            $class = self::EXACT_KEY_CLASS;
+        } elseif ($class === self::DEFERRED_CLASS && $this->entry_kinds[$entry] !== self::ENTRY_CALL) {
+            // no fetch in the walk of a convergence asks per key (see passesFetch())
+            $class = '';
+        }
+
+        if (!isset($this->entry_class_filters[$entry][$position][$class])
+            && ($this->entry_filter_counts[$this->entry_bases[$entry]] ?? 0) >= self::MAX_FILTERS
+        ) {
+            // past MAX_FILTERS, the calls of a class with no filter yet go on in the filter of the class of none,
+            // which every fetch takes (see tracksClasses()): one walk for each class of the arrays a function is
+            // called with made most of the states on large code bases
+            $class = '';
         }
 
         if (!isset($this->entry_class_filters[$entry][$position][$class])) {
@@ -2848,22 +3450,36 @@ final class TaintFlowResolution
                 $this->entry_kinds[$entry],
                 $facts,
                 $this->entry_bases[$entry],
+                $this->entry_conversions[$entry],
             );
             $this->entry_class_filters[$entry][$position][$class] = $filter;
 
             foreach ($this->entry_class_dependents[$entry][$position] ?? [] as $state => $_) {
-                $this->copyToFilter($state, $filter);
+                $this->copyToFilter($state, $filter, $position);
             }
         }
 
-        $this->addEntryCaller($this->entry_class_filters[$entry][$position][$class], $caller, $specialization_key);
+        $this->addEntryCaller(
+            $this->entry_class_filters[$entry][$position][$class],
+            $caller,
+            $specialization_key,
+            $as_copy,
+        );
     }
 
     /**
+     * Copies state $state into filter $filter of its context. For a call whose walk depends on the open assignment
+     * at position $position of the calls entering that context, the copy only enters the filters of the walk of
+     * the call that depend on it (see addEntryCaller()): the rest of the walk is the same for the calls of the
+     * filter as for the others, and the state itself goes on through it. It is widened like any flow past
+     * WIDENING_STATES at its node (see reach()): it then loses what the state knows of those calls, which bounds
+     * the states the copies of many filters make at a node.
+     *
      * @psalm-external-mutation-free
      */
-    private function copyToFilter(int $state, int $filter): void
+    private function copyToFilter(int $state, int $filter, int $position): void
     {
+        $this->copied_position = self::getPositionBit($position);
         $this->reach(
             $this->state_nodes[$state],
             $filter,
@@ -2874,6 +3490,7 @@ final class TaintFlowResolution
             0,
             -1,
         );
+        $this->copied_position = 0;
     }
 
     /**
@@ -3029,9 +3646,93 @@ final class TaintFlowResolution
         $reaches[] = [$state, $link, $new_kept, $new_added];
         $this->entry_sinks[$entry][$sink_key] = [$sink_id, $sink[1] | $new_kept, $sink[2] | $new_added, $reaches];
 
-        foreach ($this->entry_callers[$entry] as $caller => $_) {
-            $this->addSinkThroughCaller($sink_id, $state, $link, $new_kept, $new_added, $caller);
+        // A taint the walk also adds may have its source in the walk: that sink is replayed through every call. So are
+        // the URL kinds, which reportFlow() drops by each other in a call: they stay in one with its other kinds.
+        $unshared_kept = $new_kept
+            & ($sink[2] | $added | $this->state_added[$state] | $this->sink_taints[$sink_id] & self::URL_TAINTS);
+        $shared_kept = $new_kept & ~$unshared_kept;
+
+        if (!isset($this->entry_sink_origins[$entry])) {
+            $this->entry_sink_origins[$entry] = [];
+
+            foreach ($this->entry_callers[$entry] as $caller => $_) {
+                $this->getSinkCallerTaints($entry, $caller);
+            }
         }
+
+        if ($unshared_kept !== 0 || $new_added !== 0) {
+            $this->entry_unshared_sinks[$entry][$sink_key] = true;
+        }
+
+        // in the order of the calls, as the first to report a finding decides its trace
+        foreach ($this->entry_callers[$entry] as $caller => $_) {
+            $taints = $shared_kept === 0
+                ? 0
+                : ($this->state_contexts[$caller] === -1
+                    && ($this->state_added[$caller] & ~($this->entry_sink_caller_taints[$entry][$caller] ?? 0)) !== 0
+                    ? $this->getSinkCallerTaints($entry, $caller)
+                    : $this->entry_sink_callers[$entry][$caller] ?? 0);
+            $caller_kept = ($shared_kept & $taints) | $unshared_kept;
+
+            if ($caller_kept !== 0 || $new_added !== 0) {
+                $this->addSinkThroughCaller($sink_id, $state, $link, $caller_kept, $new_added, $caller);
+            }
+        }
+    }
+
+    /**
+     * The taints for which call $caller of $entry stands for the others when the sinks of the entry are replayed
+     * (see addEntrySink()). reportFlow() identifies a finding by sink, predecessor, source and taint: of the calls
+     * outside any context with the same source for a taint, only the first of them reports it, so only that one is
+     * replayed for it. A call inside a context, and a taint whose source isn't certain (see buildTrace()) or that
+     * reportFlow() drops by another (see URL_TAINTS), are replayed as they are.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function getSinkCallerTaints(int $entry, int $caller): int
+    {
+        if ($this->state_contexts[$caller] !== -1) {
+            $this->entry_sink_callers[$entry][$caller] = self::ALL_TAINTS;
+
+            return self::ALL_TAINTS;
+        }
+
+        if (!isset($this->entry_sink_ranks[$entry][$caller])) {
+            $this->entry_sink_ranks[$entry][$caller] = count($this->entry_sink_ranks[$entry] ?? []);
+        }
+
+        $taints = $this->state_added[$caller] & ~($this->entry_sink_caller_taints[$entry][$caller] ?? 0);
+        $this->entry_sink_caller_taints[$entry][$caller] = $this->state_added[$caller];
+
+        for ($taint = 1; $taints !== 0; $taint <<= 1) {
+            if (($taints & $taint) === 0) {
+                continue;
+            }
+
+            $taints &= ~$taint;
+            $trace = $this->buildTrace($caller, 0, $taint, true);
+            $origin = $trace[0][0] ?? null;
+
+            // without a certain source, the call stands for itself
+            if ($origin !== null && isset($this->sources[$origin])) {
+                $first = $this->entry_sink_origins[$entry][$origin][$taint] ?? null;
+
+                if ($first !== null) {
+                    if ($this->entry_sink_ranks[$entry][$caller] > $this->entry_sink_ranks[$entry][$first]) {
+                        continue;
+                    }
+
+                    // a call before it gets the taint later: it reports the sinks reached from now on
+                    $this->entry_sink_callers[$entry][$first] &= ~$taint;
+                }
+
+                $this->entry_sink_origins[$entry][$origin][$taint] = $caller;
+            }
+
+            $this->entry_sink_callers[$entry][$caller] = ($this->entry_sink_callers[$entry][$caller] ?? 0) | $taint;
+        }
+
+        return $this->entry_sink_callers[$entry][$caller] ?? 0;
     }
 
     /**
@@ -3062,7 +3763,7 @@ final class TaintFlowResolution
         $this->entry_sinks[$convergence][$sink_key] = [$sink_id, $sink[1] | $new_kept, $sink[2] | $new_added, $reaches];
 
         $taints = ((($this->entry_taints[$convergence] ?? 0) & $new_kept) | $new_added)
-            & $this->sinks[$sink_id]->taints;
+            & $this->sink_taints[$sink_id];
 
         if ($taints !== 0) {
             $this->reportFlow($sink_id, $state, -1, $link, $taints);
@@ -3099,11 +3800,9 @@ final class TaintFlowResolution
 
         $this->entry_taints[$convergence] = ($this->entry_taints[$convergence] ?? 0) | $new_taints;
 
-        for ($taint = 1, $remaining = $new_taints; $remaining !== 0; $taint <<= 1) {
-            if (($remaining & $taint) !== 0) {
-                $remaining &= ~$taint;
-                $this->entry_taint_callers[$convergence][$taint] = $caller;
-            }
+        if ($new_taints !== 0) {
+            $this->entry_taint_callers[$convergence][$caller] = ($this->entry_taint_callers[$convergence][$caller] ?? 0)
+                | $new_taints;
         }
 
         // the flows of its walk that left the calls entering it get the new taints too (see leaveCalls())
@@ -3116,7 +3815,7 @@ final class TaintFlowResolution
 
         foreach ($sinks as [$sink_id, , , $reaches]) {
             foreach ($reaches as [$state, $link, $kept]) {
-                $reported = $new_taints & $kept & $this->sinks[$sink_id]->taints;
+                $reported = $new_taints & $kept & $this->sink_taints[$sink_id];
 
                 if ($reported !== 0) {
                     $this->reportFlow($sink_id, $state, -1, $link, $reported);
@@ -3125,10 +3824,8 @@ final class TaintFlowResolution
         }
 
         // so do the flows of its walk entering other convergences
-        foreach ($this->entry_taint_dependents[$convergence] ?? [] as $caller => $convergences) {
-            foreach ($convergences as $dependent => $_) {
-                $this->addEntryTaints($dependent, $caller);
-            }
+        foreach ($this->entry_taint_dependents[$convergence] ?? [] as $pair => $_) {
+            $this->addEntryTaints($pair & 0xFFFFFFFF, $pair >> 32);
         }
     }
 
@@ -3148,7 +3845,7 @@ final class TaintFlowResolution
         $caller_kept = $this->state_kept[$caller] & $kept;
         $caller_added = ($this->state_added[$caller] & $kept) | $added;
         $context = $this->state_contexts[$caller];
-        $sink_taints = $this->sinks[$sink_id]->taints;
+        $sink_taints = $this->sink_taints[$sink_id];
 
         if ($context === -1) {
             if (($caller_added & $sink_taints) !== 0) {
@@ -3241,7 +3938,7 @@ final class TaintFlowResolution
             $taints &= ~TaintKind::INPUT_URL_PATH;
         }
 
-        $sink = $this->sinks[$sink_id];
+        $sink = $this->table->decode($sink_id, $this->sinks[$sink_id]);
         $predecessor_id = $this->state_nodes[$state];
 
         if ($caller !== -1) {
@@ -3277,11 +3974,13 @@ final class TaintFlowResolution
             $predecessor = null;
 
             foreach ($trace as [$id, $path_type]) {
-                $node = $predecessor === null ? $this->sources[$id] ?? $this->getNode($id) : $this->getNode($id);
+                $row = $predecessor === null ? $this->sources[$id] ?? $this->getRow($id) : $this->getRow($id);
 
-                if ($node === null) {
+                if ($row === null) {
                     continue;
                 }
+
+                $node = $this->table->decode($id, $row);
 
                 $predecessor = $predecessor === null
                     ? $node
@@ -3310,10 +4009,12 @@ final class TaintFlowResolution
      * entered by. That's the innermost call it left (a flow reported through the calls entering a body walk,
      * or that left it through them) if any, else the first call to enter it.
      *
+     * With $stable_origin, returns no trace if later taints could change its origin.
+     *
      * @return list<array{string, int}>
      * @psalm-mutation-free
      */
-    private function buildTrace(int $state, int $link, int $taint): array
+    private function buildTrace(int $state, int $link, int $taint, bool $stable_origin = false): array
     {
         $callers = $this->pushCallers([], $link);
 
@@ -3326,6 +4027,12 @@ final class TaintFlowResolution
         $steps = [];
 
         while (true) {
+            // An added edge can trace an arbitrary incoming taint. Its origin may change when a call gets more
+            // taints, so it can't identify interchangeable callers (see getSinkCallerTaints()).
+            if ($stable_origin && $which === self::TRACE_ANY) {
+                return [];
+            }
+
             if (isset($this->root_entries[$state])
                 && ($which !== self::TRACE_ADDED || $this->findReach($state, $taint, $which, $before) === null)
             ) {
@@ -3337,6 +4044,12 @@ final class TaintFlowResolution
                 if ($callers) {
                     $state = array_pop($callers);
                 } else {
+                    $taint_entry = $context !== -1 && $this->entry_bases[$context] === $entry ? $context : $entry;
+
+                    if ($stable_origin && (($this->entry_taints[$taint_entry] ?? 0) & $taint) === 0) {
+                        return [];
+                    }
+
                     // one of the flows entering the walk with the taint, through the filter of it the trace came
                     $state = ($context !== -1 && $this->entry_bases[$context] === $entry
                         ? $this->findTaintCaller($context, $taint)
@@ -3346,6 +4059,11 @@ final class TaintFlowResolution
                 }
 
                 $context = $this->state_contexts[$state];
+
+                // A kept taint of a nested caller may later get an added origin, which getTraced() would prefer.
+                if ($stable_origin && $context !== -1 && ($this->state_added[$state] & $taint) === 0) {
+                    return [];
+                }
 
                 // back to a call the trace already left (going after a taint a convergence got first from
                 // somewhere else, see findTaintCaller()): it ends there rather than loop
@@ -3421,7 +4139,13 @@ final class TaintFlowResolution
      */
     private function findTaintCaller(int $entry, int $taint): ?int
     {
-        return $this->entry_taint_callers[$entry][$taint] ?? array_key_first($this->entry_callers[$entry]);
+        foreach ($this->entry_taint_callers[$entry] ?? [] as $caller => $taints) {
+            if (($taints & $taint) !== 0) {
+                return $caller;
+            }
+        }
+
+        return array_key_first($this->entry_callers[$entry]);
     }
 
     /**

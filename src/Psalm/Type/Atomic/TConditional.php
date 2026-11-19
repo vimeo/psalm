@@ -29,6 +29,8 @@ final class TConditional extends Atomic
         public Union $if_type,
         public Union $else_type,
         bool $from_docblock = false,
+        /** The type the condition is on, when it isn't the template, as `value-of<T>` in `value-of<T> is string` */
+        public ?Union $subject_type = null,
     ) {
         parent::__construct($from_docblock);
     }
@@ -62,7 +64,9 @@ final class TConditional extends Atomic
     #[Override]
     public function getKey(bool $include_extra = true): string
     {
-        return 'TConditional<' . $this->param_name . '>';
+        return 'TConditional<'
+            . ($this->subject_type !== null ? $this->subject_type->getKey() : $this->param_name)
+            . '>';
     }
 
     /**
@@ -78,7 +82,7 @@ final class TConditional extends Atomic
     public function getId(bool $exact = true, bool $nested = false): string
     {
         return '('
-            . $this->param_name
+            . ($this->subject_type !== null ? $this->subject_type->getId($exact) : $this->param_name)
             . ' is ' . $this->conditional_type->getId($exact)
             . ' ? ' . $this->if_type->getId($exact)
             . ' : ' . $this->else_type->getId($exact)
@@ -120,7 +124,7 @@ final class TConditional extends Atomic
     #[Override]
     protected function getChildNodeKeys(): array
     {
-        return ['conditional_type', 'if_type', 'else_type'];
+        return ['subject_type', 'conditional_type', 'if_type', 'else_type'];
     }
 
     /**
@@ -155,6 +159,8 @@ final class TConditional extends Atomic
             $conditional,
             $this->if_type,
             $this->else_type,
+            $this->from_docblock,
+            $this->subject_type,
         );
     }
 }

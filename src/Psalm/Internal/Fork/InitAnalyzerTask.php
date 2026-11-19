@@ -32,6 +32,7 @@ final class InitAnalyzerTask implements Task
         // workers only report the references they found themselves
         $codebase->code_use_graph->clear();
 
+        $file_reference_provider->setMethodDependencies([]);
         $file_reference_provider->setReferencesToMixedMemberNames([]);
         $file_reference_provider->setMethodParamUses([]);
         return null;

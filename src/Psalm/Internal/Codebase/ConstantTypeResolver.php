@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Psalm\Exception\CircularReferenceException;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayOffsetFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArraySpread;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayValue;
@@ -25,20 +26,25 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseXor;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedConcatOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedDivisionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShift;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShiftLeft;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTrue;
@@ -46,11 +52,13 @@ use Psalm\Type\Union;
 use ReflectionProperty;
 use UnitEnum;
 
+use function array_unshift;
 use function ctype_digit;
 use function is_array;
 use function is_float;
 use function is_int;
 use function is_string;
+use function ltrim;
 use function spl_object_id;
 
 /**
@@ -58,6 +66,57 @@ use function spl_object_id;
  */
 final class ConstantTypeResolver
 {
+    /**
+     * Without an analyzer to resolve the name, the constant is looked up in the scanned files
+     */
+    private static function resolveScannedConstant(
+        ClassLikes $classlikes,
+        Constant $c,
+        array $visited_constant_ids,
+    ): Atomic {
+        $names = [ltrim($c->name, '\\')];
+
+        if (!$c->is_fully_qualified && $c->namespace !== '') {
+            array_unshift($names, $c->namespace . '\\' . $c->name);
+        }
+
+        // PHP resolves `A\SOME` of any file before the global `SOME`
+        foreach ($names as $name) {
+            foreach (FileStorageProvider::getAll() as $file_storage) {
+                if (isset($file_storage->unresolved_constants[$name])) {
+                    return self::resolve(
+                        $classlikes,
+                        $file_storage->unresolved_constants[$name],
+                        null,
+                        $visited_constant_ids,
+                    );
+                }
+
+                if (isset($file_storage->constants[$name])) {
+                    return $file_storage->constants[$name]->getSingleAtomic();
+                }
+            }
+        }
+
+        return new TMixed;
+    }
+
+    private static function resolveShift(UnresolvedShift $c, Atomic $left, Atomic $right): Atomic
+    {
+        if ($left instanceof TLiteralInt && $right instanceof TLiteralInt) {
+            // a negative shift throws, as it does in ArithmeticOpAnalyzer
+            if ($right->value < 0) {
+                return new TNever();
+            }
+
+            return self::getLiteralTypeFromScalarValue(
+                $c instanceof UnresolvedShiftLeft ? $left->value << $right->value : $left->value >> $right->value,
+            );
+        }
+
+        return new TInt();
+    }
+
     public static function resolve(
         ClassLikes $classlikes,
         UnresolvedConstantComponent $c,
@@ -70,6 +129,8 @@ final class ConstantTypeResolver
             throw new CircularReferenceException('Found a circular reference');
         }
 
+        $visited_constant_ids[$c_id] = true;
+
         if ($c instanceof ScalarValue) {
             return self::getLiteralTypeFromScalarValue($c->value);
         }
@@ -79,13 +140,13 @@ final class ConstantTypeResolver
                 $classlikes,
                 $c->left,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true],
+                $visited_constant_ids,
             );
             $right = self::resolve(
                 $classlikes,
                 $c->right,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true],
+                $visited_constant_ids,
             );
 
             if ($left instanceof TMixed || $right instanceof TMixed) {
@@ -100,19 +161,29 @@ final class ConstantTypeResolver
                         || $right instanceof TLiteralFloat
                         || $right instanceof TLiteralInt)
                 ) {
-                    return Type::getAtomicStringFromLiteral($left->value . $right->value);
+                    return Type::getAtomicStringFromLiteral(
+                        LiteralCast::toString($left->value) . LiteralCast::toString($right->value),
+                    );
                 }
 
                 return new TString();
+            }
+
+            if ($c instanceof UnresolvedBitwiseOr
+                || $c instanceof UnresolvedBitwiseXor
+                || $c instanceof UnresolvedBitwiseAnd
+            ) {
+                return self::resolveBitwiseOp($c, $left, $right);
+            }
+
+            if ($c instanceof UnresolvedShift) {
+                return self::resolveShift($c, $left, $right);
             }
 
             if ($c instanceof UnresolvedAdditionOp
                 || $c instanceof UnresolvedSubtractionOp
                 || $c instanceof UnresolvedDivisionOp
                 || $c instanceof UnresolvedMultiplicationOp
-                || $c instanceof UnresolvedBitwiseOr
-                || $c instanceof UnresolvedBitwiseXor
-                || $c instanceof UnresolvedBitwiseAnd
             ) {
                 if (($left instanceof TLiteralFloat || $left instanceof TLiteralInt)
                     && ($right instanceof TLiteralFloat || $right instanceof TLiteralInt)
@@ -126,19 +197,12 @@ final class ConstantTypeResolver
                     }
 
                     if ($c instanceof UnresolvedDivisionOp) {
+                        // a division by zero throws, so the constant has no value
+                        if ($right->value == 0) {
+                            return new TNever();
+                        }
+
                         return self::getLiteralTypeFromScalarValue($left->value / $right->value);
-                    }
-
-                    if ($c instanceof UnresolvedBitwiseOr) {
-                        return self::getLiteralTypeFromScalarValue($left->value | $right->value);
-                    }
-
-                    if ($c instanceof UnresolvedBitwiseXor) {
-                        return self::getLiteralTypeFromScalarValue($left->value ^ $right->value);
-                    }
-
-                    if ($c instanceof UnresolvedBitwiseAnd) {
-                        return self::getLiteralTypeFromScalarValue($left->value & $right->value);
                     }
 
                     return self::getLiteralTypeFromScalarValue($left->value * $right->value);
@@ -163,19 +227,19 @@ final class ConstantTypeResolver
                 $classlikes,
                 $c->cond,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true],
+                $visited_constant_ids,
             );
             $if = $c->if ? self::resolve(
                 $classlikes,
                 $c->if,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true],
+                $visited_constant_ids,
             ) : null;
             $else = self::resolve(
                 $classlikes,
                 $c->else,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true],
+                $visited_constant_ids,
             );
 
             if ($cond instanceof TLiteralFloat
@@ -208,7 +272,7 @@ final class ConstantTypeResolver
                         $classlikes,
                         $entry->array,
                         $statements_analyzer,
-                        $visited_constant_ids + [$c_id => true],
+                        $visited_constant_ids,
                     );
 
                     if ($spread_array instanceof TArray && $spread_array->isEmptyArray()) {
@@ -230,7 +294,7 @@ final class ConstantTypeResolver
                         $classlikes,
                         $entry->key,
                         $statements_analyzer,
-                        $visited_constant_ids + [$c_id => true],
+                        $visited_constant_ids,
                     );
 
                     if (!$key_type instanceof TLiteralInt
@@ -259,7 +323,7 @@ final class ConstantTypeResolver
                     $classlikes,
                     $entry->value,
                     $statements_analyzer,
-                    $visited_constant_ids + [$c_id => true],
+                    $visited_constant_ids,
                 )]);
 
                 $properties[$key_value] = $value_type;
@@ -284,7 +348,7 @@ final class ConstantTypeResolver
                 $c->name,
                 ReflectionProperty::IS_PRIVATE,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true],
+                $visited_constant_ids,
             );
 
             if ($found_type) {
@@ -297,14 +361,14 @@ final class ConstantTypeResolver
                 $classlikes,
                 $c->array,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true],
+                $visited_constant_ids,
             );
 
             $offset_type = self::resolve(
                 $classlikes,
                 $c->offset,
                 $statements_analyzer,
-                $visited_constant_ids + [$c_id => true],
+                $visited_constant_ids,
             );
 
             if ($var_type instanceof TKeyedArray
@@ -331,6 +395,8 @@ final class ConstantTypeResolver
                 if ($found_type) {
                     return $found_type->getSingleAtomic();
                 }
+            } else {
+                return self::resolveScannedConstant($classlikes, $c, $visited_constant_ids);
             }
         }
 
@@ -347,7 +413,7 @@ final class ConstantTypeResolver
                                     $classlikes,
                                     $value,
                                     $statements_analyzer,
-                                    $visited_constant_ids + [$c_id => true],
+                                    $visited_constant_ids,
                                 );
                             } else {
                                 return $value;
@@ -361,6 +427,37 @@ final class ConstantTypeResolver
         }
 
         return new TMixed;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function resolveBitwiseOp(UnresolvedBinaryOp $c, Atomic $left, Atomic $right): Atomic
+    {
+        if (!($left instanceof TInt || $left instanceof TLiteralFloat)
+            || !($right instanceof TInt || $right instanceof TLiteralFloat)
+        ) {
+            return new TMixed;
+        }
+
+        if (!($left instanceof TLiteralInt || $left instanceof TLiteralFloat)
+            || !($right instanceof TLiteralInt || $right instanceof TLiteralFloat)
+        ) {
+            return new TInt();
+        }
+
+        $left_int = LiteralCast::toInt($left->value);
+        $right_int = LiteralCast::toInt($right->value);
+
+        if ($left_int === null || $right_int === null) {
+            return new TInt();
+        }
+
+        return new TLiteralInt(match (true) {
+            $c instanceof UnresolvedBitwiseOr => $left_int | $right_int,
+            $c instanceof UnresolvedBitwiseXor => $left_int ^ $right_int,
+            default => $left_int & $right_int,
+        });
     }
 
     /**

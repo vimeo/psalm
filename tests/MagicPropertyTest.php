@@ -40,13 +40,230 @@ final class MagicPropertyTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testPhpDocPropertyWithoutMagicGetterIsExpanded(): void
+    {
+        Config::getInstance()->use_phpdoc_property_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                enum Foo: string {
+                    case Bar = "bar";
+                    case Lee = "lee";
+                }
+
+                /** @property value-of<Foo> $attr */
+                class Holder {}
+
+                $holder = new Holder();
+                $attr = $holder->attr;
+                /** @psalm-check-type-exact $attr = \'bar\'|\'lee\' */',
+        );
+
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPhpDocPropertyAssignmentWithoutSetInheritedFromParent(): void
+    {
+        Config::getInstance()->use_phpdoc_property_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @property string $b */
+                abstract class A {
+                    public string $a = "";
+                }
+
+                class B extends A {
+                    public function init(): void {
+                        $this->b = "init";
+                    }
+                }
+
+                $b = new B();
+                $b->a = "a";
+                $b->b = "b";',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPhpDocPropertyAssignmentWithoutSetChecksTheType(): void
+    {
+        Config::getInstance()->use_phpdoc_property_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @property string $b */
+                class A {}
+
+                $a = new A();
+                $a->b = 1;',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidPropertyAssignmentValue');
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPhpDocPropertyReadIsNotAssignableWithoutSet(): void
+    {
+        Config::getInstance()->use_phpdoc_property_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @property-read string $b */
+                class A {}
+
+                $a = new A();
+                $a->b = "b";',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UndefinedPropertyAssignment');
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPhpDocPropertyAssignmentWithoutSetNeedsTheConfigOption(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @property string $b */
+                class A {}
+
+                $a = new A();
+                $a->b = "b";',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UndefinedPropertyAssignment');
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPhpDocPropertyDoesNotMakeAnInaccessiblePropertyAssignable(): void
+    {
+        Config::getInstance()->use_phpdoc_property_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @property string $p */
+                class Priv {
+                    private string $p = "";
+                }
+
+                $x = new Priv();
+                $x->p = "a";',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InaccessibleProperty - somefile.php:8:17 - Cannot access private property Priv::$p');
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPhpDocPropertyAssignmentOfAClassAllowingDynamicPropertiesChecksTheType(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.2', 'tests');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @property string $d */
+                #[AllowDynamicProperties]
+                class D {}
+
+                $d = new D();
+                $d->d = "a";
+                $d->d = 1;',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage(
+            'InvalidPropertyAssignmentValue - somefile.php:8:25 - $d->d with declared type \'string\' cannot be assigned type \'1\'',
+        );
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     /**
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
+            'valueOfPseudoPropertyIsNarrowedByAnEqualityCheck' => [
+                'code' => '<?php
+                    enum Foo: string {
+                        case Bar = "bar";
+                        case Lee = "lee";
+                    }
+
+                    /** @property value-of<Foo> $attr */
+                    class Holder {
+                        public function __set(string $name, mixed $value): void {}
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+
+                        public function check(): string {
+                            if ($this->attr === Foo::Bar->value) {
+                                return "bar";
+                            }
+
+                            if ($this->attr === Foo::Lee->value) {
+                                return "lee";
+                            }
+
+                            return "";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType', 'UnevaluatedCode'],
+                'php_version' => '8.1',
+            ],
+            'magicGetNameKeepsItsClassStringType' => [
+                'code' => '<?php
+                    interface MakeMe {
+                        public function __construct();
+                    }
+
+                    final class A implements MakeMe {
+                        public function __construct() {}
+                    }
+
+                    final class IAmMagic {
+                        /** @psalm-param class-string<MakeMe> $name */
+                        public function __get(string $name): object {
+                            return new $name();
+                        }
+                    }
+
+                    $magic = new IAmMagic();
+                    $made = $magic->{A::class};',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedMagicPropertyFetch', 'MixedAssignment'],
+            ],
+            'magicGetNameOfAStringVariableKeepsItsType' => [
+                'code' => '<?php
+                    final class IAmMagic {
+                        /** @psalm-param non-empty-string $name */
+                        public function __get(string $name): int {
+                            return strlen($name);
+                        }
+                    }
+
+                    /** @var non-empty-string $key */
+                    $key = "a";
+                    $magic = new IAmMagic();
+                    $value = $magic->$key;',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedMagicPropertyFetch', 'MixedAssignment'],
+            ],
             'propertyDocblock' => [
                 'code' => '<?php
                     namespace Bar;
@@ -929,6 +1146,108 @@ final class MagicPropertyTest extends TestCase
                         }
                     }',
             ],
+            'pseudoPropertyFetchOnNullableReceiverInCoalesce' => [
+                'code' => '<?php
+                    /**
+                     * @property string $value
+                     */
+                    class Foo {
+                        public function __set(string $name, mixed $value): void {}
+                        public function __get(string $name): mixed { return null; }
+                    }
+
+                    function coalesce(?Foo $foo): string {
+                        return $foo->value ?? "default";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'pseudoPropertyReadFetchOnNullableReceiverInCoalesce' => [
+                'code' => '<?php
+                    /**
+                     * @property-read string $value
+                     */
+                    class Foo {
+                        public function __get(string $name): mixed { return null; }
+                    }
+
+                    function coalesce(?Foo $foo): string {
+                        return $foo->value ?? "default";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'pseudoPropertyWithoutMagicGetOnNullableReceiverInCoalesce' => [
+                'code' => '<?php
+                    /**
+                     * @property string $value
+                     */
+                    #[AllowDynamicProperties]
+                    class Foo {}
+
+                    function coalesce(?Foo $foo): string {
+                        return $foo->value ?? "default";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'pseudoPropertyFetchKeepsDeclaredPropertyTypeOnUnionReceiver' => [
+                'code' => '<?php
+                    class Real {
+                        public int $value = 0;
+                    }
+
+                    /**
+                     * @property string $value
+                     */
+                    class Pseudo {
+                        public function __set(string $name, mixed $value): void {}
+                        public function __get(string $name): mixed { return null; }
+                    }
+
+                    /** @var Real|Pseudo $x */
+                    $x = new Real();
+                    $y = $x->value;',
+                'assertions' => [
+                    '$y' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'propertyTypesWithSpacesAroundPipe' => [
+                'code' => '<?php
+                    final class B {}
+
+                    /**
+                     * @property B |null $a
+                     * @property-read B | null $b
+                     * @psalm-property B  |  null $c
+                     * @property B
+                     *     |null $d
+                     */
+                    class A {
+                        public function __get(string $name) {
+                            return null;
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {}
+                    }
+
+                    $a = (new A)->a;
+                    $b = (new A)->b;
+                    $c = (new A)->c;
+                    $d = (new A)->d;',
+                'assertions' => [
+                    '$a' => 'B|null',
+                    '$b' => 'B|null',
+                    '$c' => 'B|null',
+                    '$d' => 'B|null',
+                ],
+            ],
         ];
     }
 
@@ -936,7 +1255,7 @@ final class MagicPropertyTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'annotationWithoutGetter' => [
@@ -1291,7 +1610,6 @@ final class MagicPropertyTest extends TestCase
                         $a->__set("foo", $b);
                     }',
                 'error_message' => 'MixedPropertyTypeCoercion',
-                'ignored_issues' => ['MixedAssignment'],
             ],
             'magicInterfacePropertyWrongProperty' => [
                 'code' => '<?php
@@ -1413,7 +1731,7 @@ final class MagicPropertyTest extends TestCase
                 'code' => '<?php
                     /**
                      * @property-read string|null $p
-                     * 
+                     *
                      * @psalm-no-seal-properties // For the test
                      */
                     class A {
@@ -1425,6 +1743,25 @@ final class MagicPropertyTest extends TestCase
                         }
                     }',
                 'error_message' => 'MixedReturnStatement',
+            ],
+            'propertyWriteTypeWithSpaceBeforePipe' => [
+                'code' => '<?php
+                    /**
+                     * @property-write string |null $foo
+                     */
+                    class A {
+                        public function __get(string $name): ?string {
+                            return null;
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
+                    }
+
+                    $a = new A();
+                    $a->foo = 5;',
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
         ];
     }

@@ -12,7 +12,7 @@ use Override;
  * @psalm-immutable
  * @api
  */
-final class TNumericString extends TNonEmptyString
+class TNumericString extends TNonEmptyString
 {
     /**
      * @psalm-pure

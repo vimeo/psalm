@@ -12,6 +12,7 @@ use Psalm\Internal\Fork\InitScannerTask;
 use Psalm\Internal\Fork\Pool;
 use Psalm\Internal\Fork\ScannerTask;
 use Psalm\Internal\Fork\ShutdownScannerTask;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
@@ -35,11 +36,13 @@ use function array_pop;
 use function ceil;
 use function class_exists;
 use function count;
+use function defined;
 use function enum_exists;
 use function error_reporting;
 use function explode;
 use function file_exists;
 use function interface_exists;
+use function ksort;
 use function ltrim;
 use function min;
 use function realpath;
@@ -50,6 +53,7 @@ use function trait_exists;
 
 use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
+use const SORT_STRING;
 
 /**
  * @psalm-type  ThreadData = array{
@@ -65,17 +69,7 @@ use const PHP_EOL;
  * }
  *
  * @psalm-type  PoolData = array{
- *     classlikes_data:array{
- *         array<lowercase-string, bool>,
- *         array<lowercase-string, bool>,
- *         array<lowercase-string, bool>,
- *         array<string, bool>,
- *         array<lowercase-string, bool>,
- *         array<string, bool>,
- *         array<lowercase-string, bool>,
- *         array<string, bool>,
- *         array<string, bool>
- *     },
+ *     classlikes_data: ClassLikesThreadData,
  *     scanner_data: ThreadData,
  *     issues:array<string, list<IssueData>>,
  *     changed_members:array<string, array<string, bool>>,
@@ -96,9 +90,13 @@ use const PHP_EOL;
  * @internal
  *
  * Contains methods that aid in the scanning of Psalm's codebase
+ * @psalm-import-type ClassLikesThreadData from ClassLikes
  */
 final class Scanner
 {
+    /** A round of at most this many files is scanned in this process */
+    private const MAX_FILES_WITHOUT_FORKING = 512;
+
     /**
      * @var array<string, string>
      */
@@ -108,6 +106,11 @@ final class Scanner
      * @var array<string, bool>
      */
     private array $deep_scanned_classlike_files = [];
+
+    /**
+     * @var array<string, true>
+     */
+    private array $stub_files = [];
 
     /**
      * @var array<string, string>
@@ -133,6 +136,13 @@ final class Scanner
      * @var array<string, bool>
      */
     private array $scanned_files = [];
+
+    /**
+     * The deep-scanned files whose classes queueFilesOfInheritedMethods() went through => true
+     *
+     * @var array<string, true>
+     */
+    private array $inherited_method_files_checked = [];
 
     /**
      * @var array<string, bool>
@@ -167,23 +177,26 @@ final class Scanner
 
         if ($this->codebase->classlike_storage_provider->has($fq_classlike_name)
             || !$this->codebase->classlikes->doesClassLikeExist($fq_classlike_name_lc)
-            || (!class_exists($fq_classlike_name, false)
-                && !interface_exists($fq_classlike_name, false)
-                && !enum_exists($fq_classlike_name, false)
-                && !trait_exists($fq_classlike_name, false))
         ) {
             return;
         }
 
-        $reflected_class = new ReflectionClass($fq_classlike_name);
+        // trait_exists() without autoloading asserts an equality, which a negation can't express: the narrowing must
+        // come from the positive condition
+        if (class_exists($fq_classlike_name, false)
+            || interface_exists($fq_classlike_name, false)
+            || enum_exists($fq_classlike_name, false)
+            || trait_exists($fq_classlike_name, false)
+        ) {
+            $reflected_class = new ReflectionClass($fq_classlike_name);
 
-        // Only built-in classlikes; a user-defined one loaded in Psalm's own process may differ from the analyzed code
-        if (!$reflected_class->isInternal()) {
-            return;
+            // Only built-in classlikes; a user-defined one loaded in Psalm's own process may differ from the analyzed
+            // code
+            if ($reflected_class->isInternal()) {
+                $this->reflection->registerClass($reflected_class);
+                $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
+            }
         }
-
-        $this->reflection->registerClass($reflected_class);
-        $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
     }
 
     /**
@@ -220,6 +233,23 @@ final class Scanner
     {
         $this->files_to_scan[$file_path] = $file_path;
         $this->files_to_deep_scan[$file_path] = $file_path;
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function addStubFileToDeepScan(string $file_path): void
+    {
+        $this->stub_files[strtolower($file_path)] = true;
+        $this->addFileToDeepScan($file_path);
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isStubFile(string $file_path): bool
+    {
+        return isset($this->stub_files[strtolower($file_path)]);
     }
 
     /**
@@ -314,6 +344,36 @@ final class Scanner
         }
     }
 
+    /**
+     * Takes the files and classes queued for scanning out of the queue, to put them back with restoreQueue()
+     *
+     * @return array{array<string, string>, array<string, string>, array<string, bool>}
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function takeQueue(): array
+    {
+        $queue = [$this->files_to_scan, $this->classes_to_scan, $this->classes_to_deep_scan];
+
+        $this->files_to_scan = [];
+        $this->classes_to_scan = [];
+        $this->classes_to_deep_scan = [];
+
+        return $queue;
+    }
+
+    /**
+     * @param array{array<string, string>, array<string, string>, array<string, bool>} $queue
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function restoreQueue(array $queue): void
+    {
+        [$files_to_scan, $classes_to_scan, $classes_to_deep_scan] = $queue;
+
+        $this->files_to_scan += $files_to_scan;
+        $this->classes_to_scan += $classes_to_scan;
+        $this->classes_to_deep_scan += $classes_to_deep_scan;
+    }
+
     public function scanFiles(ClassLikes $classlikes, int $pool_size = 1): bool
     {
         $has_changes = false;
@@ -330,12 +390,134 @@ final class Scanner
         return $has_changes;
     }
 
+    /**
+     * Queues for a deep scan the files declaring the methods the classes named by deep-scanned files inherit,
+     * and returns whether it queued any. A taint analysis analyzes the body of an inherited method again for
+     * the class of the object (see InheritedMethodTaints), which needs the classes that body names: a full run
+     * deep-scans every project file anyway, but a partial run only those it analyzes (and their dependencies).
+     *
+     * Only a project file declaring a method some such class inherits (not static, not abstract, not
+     * overridden on the way) is queued, and only once.
+     */
+    public function queueFilesOfInheritedMethods(): bool
+    {
+        $classlike_storage_provider = $this->codebase->classlike_storage_provider;
+        $queued = false;
+
+        foreach ($this->scanned_files as $file_path => $deep) {
+            if (!$deep || isset($this->inherited_method_files_checked[$file_path])) {
+                continue;
+            }
+
+            $this->inherited_method_files_checked[$file_path] = true;
+
+            if (!$this->file_storage_provider->has($file_path)) {
+                continue;
+            }
+
+            $file_storage = $this->file_storage_provider->get($file_path);
+
+            foreach ($file_storage->referenced_classlikes + $file_storage->classlikes_in_file as $class_lc => $_) {
+                if (!$classlike_storage_provider->has($class_lc)) {
+                    continue;
+                }
+
+                $class_storage = $classlike_storage_provider->get($class_lc);
+
+                if ($class_storage->is_trait || $class_storage->is_interface) {
+                    continue;
+                }
+
+                // the methods declared on the way from the class up, which it doesn't inherit from further up
+                $declared = $class_storage->methods;
+                $visited = [$class_lc => true];
+
+                while ($class_storage->parent_class !== null) {
+                    $parent_lc = strtolower($class_storage->parent_class);
+
+                    if (isset($visited[$parent_lc]) || !$classlike_storage_provider->has($parent_lc)) {
+                        break;
+                    }
+
+                    $visited[$parent_lc] = true;
+                    $class_storage = $classlike_storage_provider->get($parent_lc);
+                    $parent_file = $class_storage->location?->file_path;
+
+                    if ($parent_file !== null
+                        && $class_storage->user_defined
+                        && !($this->scanned_files[$parent_file] ?? false)
+                        && !isset($this->files_to_deep_scan[$parent_file])
+                        && $this->config->isInProjectDirs($parent_file)
+                    ) {
+                        foreach ($class_storage->methods as $method_name_lc => $method_storage) {
+                            if (!isset($declared[$method_name_lc])
+                                && !$method_storage->is_static
+                                && !$method_storage->abstract
+                            ) {
+                                $this->addFileToDeepScan($parent_file);
+                                $queued = true;
+
+                                break;
+                            }
+                        }
+                    }
+
+                    $declared += $class_storage->methods;
+                }
+            }
+        }
+
+        return $queued;
+    }
+
     private function shouldScan(string $file_path): bool
     {
         return $this->file_provider->fileExists($file_path)
             && !$this->file_provider->isDirectory($file_path)
             && (!isset($this->scanned_files[$file_path])
                 || (isset($this->files_to_deep_scan[$file_path]) && !$this->scanned_files[$file_path]));
+    }
+
+    /**
+     * Scanning a file with a cached storage takes about a tenth of the time of one without, and less than sending
+     * its storage back to the process that forked, so only the files without one are worth forking for.
+     *
+     * @param positive-int $max_pool_size
+     * @param int<0, max> $file_count
+     * @param int<0, max> $uncached_count the files among them without a cached storage
+     * @psalm-pure
+     */
+    public static function getScanPoolSize(int $max_pool_size, int $file_count, int $uncached_count): int
+    {
+        if ($file_count <= self::MAX_FILES_WITHOUT_FORKING || $uncached_count * 8 <= $file_count - $uncached_count) {
+            return 1;
+        }
+
+        return (int) ceil(min($max_pool_size, $uncached_count / 256));
+    }
+
+    /**
+     * @param array<string, string> $file_paths
+     * @param positive-int $max_pool_size
+     * @return int<0, max> the files without a cached storage, counted until they are enough for a pool of
+     *                     $max_pool_size: the pool size never shrinks as the count grows
+     */
+    private function countUncachedFiles(array $file_paths, int $max_pool_size): int
+    {
+        $file_count = count($file_paths);
+        $uncached = 0;
+
+        foreach ($file_paths as $file_path) {
+            if (!$this->file_storage_provider->isCached($file_path, $this->file_provider)) {
+                ++$uncached;
+
+                if (self::getScanPoolSize($max_pool_size, $file_count, $uncached) === $max_pool_size) {
+                    break;
+                }
+            }
+        }
+
+        return $uncached;
     }
 
     private function scanFilePaths(int $pool_size): bool
@@ -351,13 +533,19 @@ final class Scanner
             return false;
         }
 
-        if (!$this->is_forked && $pool_size > 1 && count($files_to_scan) > 512) {
-            $pool_size = (int) ceil(min($pool_size, count($files_to_scan) / 256));
-        } else {
-            $pool_size = 1;
+        // Each scanning process takes its files in path order, so the declaration of a class it keeps is the
+        // one in the smallest path; the pool's merge then picks the smallest path among the processes.
+        // Stub files keep the order they are registered in: a later stub refines an earlier one.
+        if (!$this->codebase->register_stub_files) {
+            ksort($files_to_scan, SORT_STRING);
         }
 
-        $this->progress->expand(count($files_to_scan));
+        $file_count = count($files_to_scan);
+        $pool_size = !$this->is_forked && $pool_size > 1 && $file_count > self::MAX_FILES_WITHOUT_FORKING
+            ? self::getScanPoolSize($pool_size, $file_count, $this->countUncachedFiles($files_to_scan, $pool_size))
+            : 1;
+
+        $this->progress->expand($file_count);
         if ($pool_size > 1) {
             $this->progress->debug('Forking process for scanning' . PHP_EOL);
 
@@ -528,6 +716,37 @@ final class Scanner
             $this->progress,
         );
 
+        if ($from_cache) {
+            $exhumed_classlike_names = [];
+
+            foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
+                $already_in_memory = $this->codebase->classlike_storage_provider->has($fq_classlike_name);
+
+                if (!$this->codebase->tryExhumeClassLikeStorage($fq_classlike_name, $file_path)) {
+                    // the cache has the storage of the file, but not that of a class-like it declares: scan again
+                    foreach ($exhumed_classlike_names as $exhumed_classlike_name) {
+                        $this->codebase->classlike_storage_provider->remove($exhumed_classlike_name, $file_path);
+                    }
+
+                    $from_cache = false;
+                    $file_storage = $this->file_storage_provider->create($file_path);
+
+                    $file_scanner->scan(
+                        $this->codebase,
+                        $file_storage,
+                        false,
+                        $this->progress,
+                    );
+
+                    break;
+                }
+
+                if (!$already_in_memory) {
+                    $exhumed_classlike_names[] = $fq_classlike_name;
+                }
+            }
+        }
+
         if (!$from_cache) {
             if (!$file_storage->has_visitor_issues && $this->file_storage_provider->cache) {
                 $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
@@ -541,10 +760,6 @@ final class Scanner
                 } else {
                     $this->addFileToShallowScan($required_file_path);
                 }
-            }
-
-            foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
-                $this->codebase->exhumeClassLikeStorage($fq_classlike_name, $file_path);
             }
 
             foreach ($file_storage->required_classes as $fq_classlike_name) {
@@ -580,11 +795,17 @@ final class Scanner
                 || $this->codebase->all_constants_global
             ) {
                 foreach ($file_storage->constants as $name => $type) {
-                    $this->codebase->addGlobalConstantType($name, $type);
-                }
+                    // like on a fresh scan (see ReflectorVisitor, ExpressionScanner), a declaration that doesn't tell
+                    // its type doesn't replace the constant defined in this process: native, or by the autoloader
+                    if ($type->isMixed() && defined($name)) {
+                        continue;
+                    }
 
-                foreach ($file_storage->unresolved_constants as $name => $value) {
-                    $this->codebase->addUnresolvedGlobalConstant($name, $value);
+                    $this->codebase->addGlobalConstantType($name, $type);
+
+                    if (isset($file_storage->unresolved_constants[$name])) {
+                        $this->codebase->addUnresolvedGlobalConstant($name, $file_storage->unresolved_constants[$name]);
+                    }
                 }
             }
 
@@ -763,12 +984,30 @@ final class Scanner
         $this->classes_to_scan = array_merge($classes_to_scan, $this->classes_to_scan);
         $this->classes_to_deep_scan = array_merge($classes_to_deep_scan, $this->classes_to_deep_scan);
         $this->store_scan_failure = array_merge($store_scan_failure, $this->store_scan_failure);
+        // a class declared in several files belongs to the file whose declaration won
+        foreach ($classlike_files as $fq_classlike_name_lc => $file_path) {
+            if (isset($this->classlike_files[$fq_classlike_name_lc])
+                && $this->classlike_files[$fq_classlike_name_lc] !== $file_path
+            ) {
+                $winner = ClassLikeStorageProvider::getAll()[$fq_classlike_name_lc]->location->file_path ?? null;
+
+                if ($winner === $file_path) {
+                    $this->classlike_files[$fq_classlike_name_lc] = $file_path;
+                }
+
+                unset($classlike_files[$fq_classlike_name_lc]);
+            }
+        }
+
         $this->classlike_files = array_merge($classlike_files, $this->classlike_files);
         $this->deep_scanned_classlike_files = array_merge(
             $deep_scanned_classlike_files,
             $this->deep_scanned_classlike_files,
         );
-        $this->scanned_files = array_merge($scanned_files, $this->scanned_files);
+        // a file scanned shallowly here and deep in a worker (or the other way round) was deep-scanned
+        foreach ($scanned_files as $file_path => $deep) {
+            $this->scanned_files[$file_path] = $deep || ($this->scanned_files[$file_path] ?? false);
+        }
         $this->reflected_classlikes_lc = array_merge($reflected_classlikes_lc, $this->reflected_classlikes_lc);
     }
 

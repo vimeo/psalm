@@ -36,8 +36,7 @@ final class PropertyExistenceProvider
     }
 
     /**
-     * @param class-string<LegacyPropertyExistenceProviderInterface>
-     *     |class-string<PropertyExistenceProviderInterface> $class
+     * @param class-string<PropertyExistenceProviderInterface> $class
      */
     public function registerClass(string $class): void
     {

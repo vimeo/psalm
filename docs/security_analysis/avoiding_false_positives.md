@@ -10,6 +10,8 @@ There are a number of ways you can prevent them:
 
 Some operations remove taints from data – for example, wrapping `$_GET['name']` in an `htmlentities` call prevents cross-site-scripting attacks in that `$_GET` call.
 
+`json_encode()` removes the `html` taint when its flags are a known value including `JSON_HEX_TAG` and `JSON_HEX_AMP`: what it returns then has no `<`, `>` or `&`. It keeps the `has_quotes` taint whatever the flags, as the `"` delimiting a JSON string ends a double-quoted attribute; a function that only puts JSON in a `<script>`, or with `JSON_HEX_APOS` in an attribute in single quotes, can declare `@psalm-taint-escape has_quotes`.
+
 Psalm allows you to remove taints via a `@psalm-taint-escape <taint-type>` annotation:
 
 ```php
@@ -73,22 +75,50 @@ if (isKnownCity($city)) {
 }
 ```
 
+A string that matches a pattern anchored at both ends can only hold the characters the pattern allows, so it can't carry the taints that need others. Psalm understands literals, character classes, `.`, `\d`, `\w`, `\s`, groups of alternatives and quantifiers, checked with `preg_match()`, either truthy or compared to `1`:
+
+```php
+<?php
+
+$sort = getParam('sort');
+if (preg_match('/^(asc|desc|name)$/', $sort)) {
+    echo '<a href="?sort=' . $sort . '">'; // no quotes or angle brackets: no issue
+}
+
+$id = getParam('id');
+if (preg_match('/^[a-z0-9_.-]+$/iD', $id)) {
+    $xpath->query("//user[@id='" . $id . "']"); // no quotes: no issue
+    shell_exec('grep -r ' . $id . ' /var/log'); // TaintedShell: a dash starts an option
+}
+
+$name = getParam('name');
+if (preg_match('/^[a-z0-9 ]+$/i', $name)) {
+    $xpath->query('//user[@id=' . $name . ']'); // TaintedXpath: a space makes `1 or 1`
+}
+
+if (preg_match('/[a-z]+/', $id)) {
+    echo $id; // TaintedHtml: the pattern isn't anchored
+}
+```
+
+`$` also matches before a final newline, unless the pattern has the `D` modifier or ends with `\z`: that newline ends a shell command.
+
 ## Conditionally escaping tainted input
 
 A slightly modified version of the previous example is using a condition to determine whether the return value
 is considered secure. Only in case function argument `$escape` is true, the corresponding annotation
-`@psalm-taint-escape` is applied for taint type `html` .
+`@psalm-taint-escape` is applied for taint types `html` and `has_quotes`.
 
 ```php
 <?php
 /**
  * @param string $str
  * @param bool $escape
- * @psalm-taint-escape ($escape is true ? 'html' : null)
+ * @psalm-taint-escape ($escape is true ? 'html'|'has_quotes' : null)
  */
 function processVar(string $str, bool $escape = true) : string {
     if ($escape) {
-      $str = str_replace(['<', '>'], '', $str);
+      $str = htmlspecialchars($str, ENT_QUOTES);
     }
     return $str;
 }
@@ -96,6 +126,110 @@ function processVar(string $str, bool $escape = true) : string {
 echo processVar($_GET['text'], false); // detects tainted HTML
 echo processVar($_GET['text'], true); // considered secure
 ```
+
+## Output of command-line code
+
+What a script run from the command line prints goes to a terminal or a log, not to an HTML page. `@psalm-cli-only` on
+a function, a method or a class says that it only runs from the command line, and so does a `PHP_SAPI` or
+`php_sapi_name()` check for the code it guards: what that code (and the closures in it) prints with `echo`, `print`,
+`printf()`, `vprintf()`, `var_dump()`, `debug_zval_dump()`, and `print_r()` and `var_export()` not returning it, isn't
+reported as `TaintedHtml`.
+
+```php
+<?php
+
+/**
+ * @psalm-cli-only
+ */
+final class ImportCommand
+{
+    public function run(): void
+    {
+        $file = (string) ($_SERVER['argv'][1] ?? '');
+        echo 'Importing ' . $file . "\n"; // not reported
+    }
+}
+
+if (PHP_SAPI !== 'cli') {
+    exit(1);
+}
+
+(new ImportCommand())->run();
+echo $_SERVER['argv'][1] ?? ''; // not reported
+```
+
+A function or method can make the check for its callers by [asserting](../annotating_code/adding_assertions.md#asserting-the-sapi)
+`PHP_SAPI` (`@psalm-assert 'cli' PHP_SAPI`, or `@psalm-assert-if-true 'cli' PHP_SAPI` on one returning a `bool`): the
+code after the call, or the branch it guards, then counts as command-line code too.
+
+Code marked `@psalm-cli-only` can only be called from such code, or [CliOnlyCall](../running_psalm/issues/CliOnlyCall.md)
+is reported. Printing a secret is still reported, and the values stay tainted for every other sink. A function called
+from command-line code is checked as usual, so mark it too if it only runs from the command line.
+
+### Classes only instantiated from the command line
+
+`@psalm-cli-only-instances` on a class says that its instances only exist in command-line processes, because its
+constructor and the method `unserialize()` calls instead (`__unserialize()`, or `__wakeup()`) refuse to run anywhere
+else. Code that can only run with such an instance then counts as command-line code, like code marked
+`@psalm-cli-only`:
+
+- a function, method or closure with a parameter whose native type requires an instance of the class (alone or in an
+  intersection, not in a union), when the parameter isn't nullable, has no default and isn't variadic: PHP throws a
+  `TypeError` before its body runs without one. A docblock type proves nothing, as PHP doesn't check it;
+- the methods of the class that aren't static, as `$this` is an instance, except the constructor, `__unserialize()` and
+  `__wakeup()`, which run on an object not checked yet.
+
+Calling such code needs no `PHP_SAPI` check or `@psalm-cli-only` on the caller: it already holds an instance, so it
+runs from the command line too. This holds for code marked `@psalm-cli-only` that requires an instance as well.
+
+```php
+<?php
+
+/**
+ * @psalm-cli-only-instances
+ */
+final class ConsoleRequest
+{
+    public function __construct(public string $path)
+    {
+        if (PHP_SAPI !== 'cli') {
+            throw new LogicException('Run it from the command line');
+        }
+    }
+
+    public function __wakeup(): void
+    {
+        if (PHP_SAPI !== 'cli') {
+            throw new LogicException('Run it from the command line');
+        }
+    }
+}
+
+function import(ConsoleRequest $request): void
+{
+    echo 'Importing ' . (string) ($_GET['file'] ?? '') . "\n"; // not reported
+}
+```
+
+So that the annotation can't silently lie, [CliOnlyInstancesUnguarded](../running_psalm/issues/CliOnlyInstancesUnguarded.md)
+is reported unless the class:
+
+- is final, so that no subclass adds a constructor or an `__unserialize()` of its own, and doesn't implement
+  `Serializable`, whose `unserialize()` runs on an object created without the constructor;
+- declares its constructor, and `__unserialize()` if it or a class it extends has one, or `__wakeup()` otherwise (in the
+  class itself or a trait it uses);
+- starts each of them with the guard: their first statement throws, or leaves `PHP_SAPI` narrowed to `'cli'`, like
+  `if (PHP_SAPI !== 'cli') { throw ...; }` or a call of a function [asserting](../annotating_code/adding_assertions.md#asserting-the-sapi)
+  `'cli' PHP_SAPI`, and doesn't use `$this` (directly, through `self::`, `static::` or `parent::`, or in a closure
+  binding it). A promoted constructor property can't have hooks, which run before the body. A `__wakeup()` that always
+  throws forbids unserializing the class instead.
+
+This is checked where the class is analyzed: a class in a stub or in a dependency Psalm doesn't analyze is trusted.
+What Psalm can't see is trusted too: an object made without its constructor through Reflection
+(`newInstanceWithoutConstructor()`, lazy objects), an extension calling `__set()` before the constructor (PDO's
+`FETCH_CLASS` without `FETCH_PROPS_LATE`), or another object unserialized with an instance calling it from its own
+`__wakeup()` or `__unserialize()` before the guard of the instance ran (unserializing data a client can change is
+reported as [TaintedUnserialize](../running_psalm/issues/TaintedUnserialize.md) already).
 
 ## Sanitizing HTML user input
 
@@ -304,6 +438,33 @@ $user1 = new User("Keith");
 $user2 = new User($_GET["name"]);
 
 echoUserName($user1);
+```
+
+## Suppressing taint issues
+
+A taint issue is reported at the sink, not where the tainted value is passed to it, so a docblock can't suppress it by its own name. `@psalm-suppress TaintedInput` stops tracking taints in the function or statement it annotates, and the `<issueHandlers>` of the config suppress a specific issue:
+
+```php
+<?php
+
+/** @psalm-taint-sink header $value */
+function sendHeader(string $value): void {}
+
+function a(): void {
+    /** @psalm-suppress TaintedHeader */
+    sendHeader($_GET['h']); // TaintedHeader
+}
+
+function b(): void {
+    /** @psalm-suppress TaintedInput */
+    sendHeader($_GET['h']); // suppressed
+}
+```
+
+```xml
+<issueHandlers>
+    <TaintedHeader errorLevel="suppress"/> <!-- suppressed everywhere -->
+</issueHandlers>
 ```
 
 ## Avoiding files in taint paths

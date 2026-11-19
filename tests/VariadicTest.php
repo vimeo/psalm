@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -55,8 +56,8 @@ final class VariadicTest extends TestCase
 
     /**
      * @throws ConfigException
-     * @runInSeparateProcess
      */
+    #[RunInSeparateProcess]
     public function testVariadicFunctionFromAutoloadFile(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -90,7 +91,7 @@ final class VariadicTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'variadic' => [

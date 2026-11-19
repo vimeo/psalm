@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
@@ -57,7 +58,7 @@ final class NativeClassTaintAnalyzer
 
         OutputStreamTaintAnalyzer::taintMethodWrite($statements_analyzer, $stmt, (string) $method_id, $args);
 
-        $flow = self::getObjectFlow($statements_analyzer, $method_id);
+        $flow = self::getObjectFlow($statements_analyzer->getCodebase(), $method_id);
 
         if ($flow === null) {
             return $return_type;
@@ -65,8 +66,16 @@ final class NativeClassTaintAnalyzer
 
         $key_offset = $flow['key'] ?? null;
 
+        $arg_types = [];
+
+        foreach ($args as $offset => $arg) {
+            if ($arg_type = $statements_analyzer->node_data->getType($arg->value)) {
+                $arg_types[$offset] = $arg_type;
+            }
+        }
+
         if (isset($flow['in'])) {
-            self::taintObject($statements_analyzer, $graph, $stmt, $context, $args, $flow['in'], $key_offset);
+            self::taintObject($statements_analyzer, $graph, $stmt, $context, $arg_types, $flow['in'], $key_offset);
         }
 
         $object_type = $statements_analyzer->node_data->getType($stmt->var);
@@ -82,7 +91,7 @@ final class NativeClassTaintAnalyzer
 
         $graph->addNode($output_node);
 
-        $output = self::addLiteralKey($statements_analyzer, $flow['out'], $args, $key_offset);
+        $output = self::addLiteralKey($flow['out'], $arg_types, $key_offset);
 
         foreach ($object_type->parent_nodes as $parent_node) {
             $graph->addPath($parent_node, $output_node, $output);
@@ -92,19 +101,35 @@ final class NativeClassTaintAnalyzer
     }
 
     /**
+     * The path along which what the object the method is called on keeps flows into what the method returns, from
+     * the entry of dictionaries/InternalTaintObjectFlowMap.php for the method (see getObjectFlow()): null if the
+     * method gives back none of it. When the method takes the key of the element it returns, a literal key among
+     * the types of the arguments of the call restricts the path to that element.
+     *
+     * @param array<int, Union> $arg_types the types of the arguments of the call, by offset
+     * @return ?non-empty-string
+     */
+    public static function getReturnPath(Codebase $codebase, MethodIdentifier $method_id, array $arg_types): ?string
+    {
+        $flow = self::getObjectFlow($codebase, $method_id);
+
+        return isset($flow['out']) ? self::addLiteralKey($flow['out'], $arg_types, $flow['key'] ?? null) : null;
+    }
+
+    /**
      * The entry of dictionaries/InternalTaintObjectFlowMap.php for the method, or for the method of the closest parent
      * class having one
      *
      * @return ?ObjectFlow
      */
-    private static function getObjectFlow(StatementsAnalyzer $statements_analyzer, MethodIdentifier $method_id): ?array
+    private static function getObjectFlow(Codebase $codebase, MethodIdentifier $method_id): ?array
     {
         if (self::$object_flow_map === null) {
             /** @var array<lowercase-string, ObjectFlow> */
             self::$object_flow_map = require(dirname(__DIR__, 8) . '/dictionaries/InternalTaintObjectFlowMap.php');
         }
 
-        $class_storage_provider = $statements_analyzer->getCodebase()->classlike_storage_provider;
+        $class_storage_provider = $codebase->classlike_storage_provider;
 
         $class_names = [strtolower($method_id->fq_class_name)];
 
@@ -128,18 +153,14 @@ final class NativeClassTaintAnalyzer
      * A value put at or taken from a literal offset (the argument at $key_offset) is only that offset's, as with an
      * array
      *
-     * @param list<PhpParser\Node\Arg> $args
-     * @psalm-capabilities read-props
+     * @param non-empty-string $path_type
+     * @param array<int, Union> $arg_types
+     * @return non-empty-string
+     * @psalm-pure
      */
-    private static function addLiteralKey(
-        StatementsAnalyzer $statements_analyzer,
-        string $path_type,
-        array $args,
-        ?int $key_offset,
-    ): string {
-        $key_type = $key_offset !== null && isset($args[$key_offset])
-            ? $statements_analyzer->node_data->getType($args[$key_offset]->value)
-            : null;
+    private static function addLiteralKey(string $path_type, array $arg_types, ?int $key_offset): string
+    {
+        $key_type = $key_offset !== null ? $arg_types[$key_offset] ?? null : null;
 
         if ($key_type === null) {
             return $path_type;
@@ -159,7 +180,7 @@ final class NativeClassTaintAnalyzer
     /**
      * What the arguments put into the object flows into the variable or the property holding it
      *
-     * @param list<PhpParser\Node\Arg> $args
+     * @param array<int, Union> $arg_types
      * @param array<int, string> $inputs
      */
     private static function taintObject(
@@ -167,7 +188,7 @@ final class NativeClassTaintAnalyzer
         DataFlowGraph $graph,
         PhpParser\Node\Expr\MethodCall $stmt,
         Context $context,
-        array $args,
+        array $arg_types,
         array $inputs,
         ?int $key_offset,
     ): void {
@@ -182,14 +203,10 @@ final class NativeClassTaintAnalyzer
 
         foreach ($inputs as $offset => $path_type) {
             if ($path_type === 'arrayvalue-assignment') {
-                $path_type = self::addLiteralKey($statements_analyzer, $path_type, $args, $key_offset);
+                $path_type = self::addLiteralKey($path_type, $arg_types, $key_offset);
             }
 
-            $arg_type = isset($args[$offset])
-                ? $statements_analyzer->node_data->getType($args[$offset]->value)
-                : null;
-
-            foreach ($arg_type->parent_nodes ?? [] as $parent_node) {
+            foreach (($arg_types[$offset] ?? null)?->parent_nodes ?? [] as $parent_node) {
                 $graph->addPath($parent_node, $object_node, $path_type);
                 $has_input = true;
             }

@@ -12,6 +12,7 @@ use Spatie\ArrayToXml\ArrayToXml;
 
 use function array_map;
 use function get_object_vars;
+use function implode;
 
 /**
  * @api
@@ -26,7 +27,7 @@ final class XmlReport extends Report
                 'item' => array_map(
                     static function (IssueData $issue_data): array {
                         $issue_data = get_object_vars($issue_data);
-                        unset($issue_data['dupe_key']);
+                        unset($issue_data['dupe_key'], $issue_data['group_key']);
 
                         if (null !== $issue_data['taint_trace']) {
                             $issue_data['taint_trace'] = array_map(
@@ -39,6 +40,8 @@ final class XmlReport extends Report
                         $issue_data['taint_trace'] ??= '';
 
                         $issue_data['is_security'] = $issue_data['is_security'] ? 'true' : 'false';
+
+                        $issue_data['cwe_ids'] = implode(',', $issue_data['cwe_ids']);
 
                         if (null !== $issue_data['other_references']) {
                             $issue_data['other_references'] = array_map(

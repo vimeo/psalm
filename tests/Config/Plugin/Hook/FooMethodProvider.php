@@ -16,6 +16,9 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+use function in_array;
+use function strtolower;
+
 /**
  * @psalm-suppress UnusedClass registered as a plugin via test config, instantiated by reflection
  */
@@ -31,7 +34,7 @@ final class FooMethodProvider implements
     #[Override]
     public static function getClassLikeNames(): array
     {
-        return ['Ns\Foo'];
+        return ['Ns\Foo', 'Ns\Ghost'];
     }
 
     /**
@@ -41,7 +44,17 @@ final class FooMethodProvider implements
     public static function doesMethodExist(MethodExistenceProviderEvent $event): ?bool
     {
         $method_name_lowercase = $event->getMethodNameLowercase();
-        if ($method_name_lowercase === 'magicmethod' || $method_name_lowercase === 'magicmethod2') {
+
+        // a magic method dispatcher the class doesn't declare
+        if (strtolower($event->getFqClasslikeName()) === 'ns\ghost') {
+            return $method_name_lowercase === '__callstatic' ? true : null;
+        }
+
+        if (in_array(
+            $method_name_lowercase,
+            ['magicmethod', 'magicmethod2', 'magicmethod3', 'sourcedmagicmethod', 'paramlessmagicmethod'],
+            true,
+        )) {
             return true;
         }
 
@@ -57,6 +70,20 @@ final class FooMethodProvider implements
         $method_name_lowercase = $event->getMethodNameLowercase();
         if ($method_name_lowercase === 'magicmethod' || $method_name_lowercase === 'magicmethod2') {
             return [new FunctionLikeParameter('first', false, Type::getString(), Type::getString())];
+        }
+
+        if ($method_name_lowercase === 'magicmethod3') {
+            // a call has a location
+            $type = $event->getCodeLocation() !== null ? Type::getString() : Type::getInt();
+
+            return [new FunctionLikeParameter('first', false, $type, $type)];
+        }
+
+        // Mirrors providers that need the codebase, which they reach through the statements source.
+        if (($method_name_lowercase === 'sourcedmagicmethod' || $method_name_lowercase === 'sourcedgenericmethod')
+            && $event->getStatementsSource() !== null
+        ) {
+            return [new FunctionLikeParameter('first', false, Type::getInt(), Type::getInt())];
         }
 
         return null;

@@ -11,6 +11,7 @@ use Psalm\Config;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\NodeTable;
 use Psalm\Internal\DataFlow\Path;
 use Psalm\Issue\TaintedCallable;
 use Psalm\Issue\TaintedCookie;
@@ -46,17 +47,24 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
+use function array_flip;
 use function array_pop;
 use function array_unshift;
 use function count;
 use function end;
+use function get_object_vars;
 use function implode;
 use function ksort;
 use function min;
+use function pack;
+use function spl_object_id;
 use function strcmp;
 use function strlen;
 use function strpos;
 use function substr;
+use function unpack;
+
+use const SORT_STRING;
 
 /**
  * @internal
@@ -81,14 +89,26 @@ final class TaintFlowGraph extends DataFlowGraph
      */
     private const GENERATOR_SEND_CALL_DEPTH = 8;
 
-    /** @var array<string, DataFlowNode> */
+    /**
+     * Max distinct call stacks per node in linkGeneratorSends(). Past it, any call matches there:
+     * paths through shared functions otherwise multiply the stacks without bound.
+     */
+    private const GENERATOR_SEND_STACKS = 16;
+
+    /**
+     * The nodes, sources and sinks are kept as rows of $table (see NodeTable)
+     *
+     * @var array<string, string|DataFlowNode>
+     */
     private array $sources = [];
 
-    /** @var array<string, DataFlowNode> */
+    /** @var array<string, string|DataFlowNode> */
     private array $nodes = [];
 
-    /** @var array<string, DataFlowNode> */
+    /** @var array<string, string|DataFlowNode> */
     private array $sinks = [];
+
+    private NodeTable $table;
 
     /**
      * Unspecialized ID => (Specialization key => Specialized ID)
@@ -145,6 +165,24 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $string_starts = [];
 
     /**
+     * The ids of the nodes of variables assigned an empty array, whose items the next item assigned starts the start
+     * of (see TaintStore::recordItemAssignment()), and only used while analysing the function-like they are in
+     *
+     * @var array<string, true>
+     */
+    private array $empty_arrays = [];
+
+    /**
+     * The ids of the nodes the virtual calls of a method would dispatch to its overrides through, when no class
+     * extending its class overrides it (see MethodCallReturnTypeFetcher::getReturnDispatchNode()): not added, so that
+     * the calls don't go to a node going nowhere, but remembered, so that they don't look for the overrides again. Only
+     * used while analysing, so never merged by addGraph().
+     *
+     * @var array<string, true>
+     */
+    private array $empty_dispatches = [];
+
+    /**
      * Call sites specialized speculatively, before knowing whether the callee is pure:
      * specialization key => (function-like node of the callee => true)
      *
@@ -159,6 +197,14 @@ final class TaintFlowGraph extends DataFlowGraph
      * @var array<string, true>
      */
     private array $despecialized_calls = [];
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    public function __construct()
+    {
+        $this->table = new NodeTable();
+    }
 
     /**
      * Whether the taint nodes of a call to $storage at $call_location are specialized to the call site,
@@ -191,33 +237,11 @@ final class TaintFlowGraph extends DataFlowGraph
                 || !InternalCallMapHandler::keepsStateBetweenCalls($storage->cased_name);
         }
 
-        if ($graph === null
-            || $storage->has_mutations_annotation
-            || $storage->location === null
-            || !$codebase->config->isInProjectDirs($storage->location->file_path)
-        ) {
+        if ($graph === null) {
             return false;
         }
 
-        if ($storage instanceof MethodStorage) {
-            // `@method` pseudo-methods have no defining class, nor a body whose purity could be inferred
-            if ($storage->cased_name === '__construct'
-                || $storage->defining_fqcln === null
-                || $storage->defining_fqcln === ''
-            ) {
-                return false;
-            }
-
-            // an override could have side effects even if this implementation doesn't
-            if ($storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
-                && !$storage->final
-                && !$codebase->classlike_storage_provider->get($storage->defining_fqcln)->final
-            ) {
-                return false;
-            }
-        }
-
-        $function_node_id = CodeUseGraph::functionLikeNodeForStorage($storage);
+        $function_node_id = self::getSpeculativelySpecializedCallee($codebase, $storage);
 
         if ($function_node_id === null) {
             return false;
@@ -226,6 +250,43 @@ final class TaintFlowGraph extends DataFlowGraph
         $graph->speculative_calls[DataFlowNode::getSpecializationKey($call_location)][$function_node_id] = true;
 
         return true;
+    }
+
+    /**
+     * The function-like node of $storage if its calls are specialized speculatively (see isCallSpecialized()).
+     *
+     * @psalm-capabilities read-props
+     */
+    public static function getSpeculativelySpecializedCallee(Codebase $codebase, FunctionLikeStorage $storage): ?string
+    {
+        if ($storage->specialize_call
+            || $storage->builtin
+            || $storage->has_mutations_annotation
+            || $storage->location === null
+            || !$codebase->config->isInProjectDirs($storage->location->file_path)
+        ) {
+            return null;
+        }
+
+        if ($storage instanceof MethodStorage) {
+            // `@method` pseudo-methods have no defining class, nor a body whose purity could be inferred
+            if ($storage->cased_name === '__construct'
+                || $storage->defining_fqcln === null
+                || $storage->defining_fqcln === ''
+            ) {
+                return null;
+            }
+
+            // an override could have side effects even if this implementation doesn't
+            if ($storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                && !$storage->final
+                && !$codebase->classlike_storage_provider->get($storage->defining_fqcln)->final
+            ) {
+                return null;
+            }
+        }
+
+        return CodeUseGraph::functionLikeNodeForStorage($storage);
     }
 
     /**
@@ -339,7 +400,14 @@ final class TaintFlowGraph extends DataFlowGraph
 
         foreach ($this->speculative_calls as $specialization_key => $callees) {
             foreach ($callees as $function_node_id => $_) {
-                if (($mutation_levels[$function_node_id] ?? Capabilities::ALL) !== Capabilities::NONE) {
+                // A callee that only reads what other calls can see too (properties, globals) can't pass what one
+                // call gives it to another: its call stays specialized, and what it reads still flows out of all
+                // its calls (see the exits reached through shared state in TaintFlowResolution). What it writes
+                // through its by-reference parameters only reaches the variables of the call passing them, like
+                // its return (see ArgumentsAnalyzer::getByRefParamOutNode()).
+                if ((($mutation_levels[$function_node_id] ?? Capabilities::ALL)
+                        & ~(Capabilities::READ_PROPS | Capabilities::READ_GLOBALS | Capabilities::WRITE_REFS)) !== 0
+                ) {
                     $this->despecialized_calls[$specialization_key] = true;
                     break;
                 }
@@ -348,12 +416,12 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     #[Override]
     public function addNode(DataFlowNode $node): void
     {
-        $this->nodes[$node->id] = $node;
+        $this->nodes[$node->id] = $this->table->encode($node);
 
         if ($node->unspecialized_id !== null) {
             /** @var string $node->specialization_key */
@@ -405,9 +473,9 @@ final class TaintFlowGraph extends DataFlowGraph
      * either adds. Two paths of different types aren't: they handle open assignments differently (see
      * shouldIgnoreFetch()). The one of the first type stays, and the other goes through a node of its own.
      *
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
-    private function mergePath(string $from_id, ?DataFlowNode $from, string $to_id, Path $path): void
+    private function mergePath(string $from_id, string|DataFlowNode|null $from, string $to_id, Path $path): void
     {
         $existing = $this->forward_edges[$from_id][$to_id] ?? null;
 
@@ -418,7 +486,7 @@ final class TaintFlowGraph extends DataFlowGraph
         }
 
         if ($existing->type === $path->type) {
-            $this->forward_edges[$from_id][$to_id] = new Path(
+            $this->forward_edges[$from_id][$to_id] = $this->getPath(
                 $path->type,
                 min($existing->length, $path->length),
                 ($existing->added_taints & ~$existing->removed_taints) | ($path->added_taints & ~$path->removed_taints),
@@ -432,10 +500,11 @@ final class TaintFlowGraph extends DataFlowGraph
 
         $this->forward_edges[$from_id][$to_id] = $kept;
 
-        $variant = DataFlowNode::getForPathVariant($from_id, $from, $moved->type);
-        $this->nodes[$variant->id] = $variant;
-        $this->mergePath($from_id, $from, $variant->id, $moved);
-        $this->forward_edges[$variant->id][$to_id] = new Path('=', 0);
+        // see DataFlowNode::getForPathVariant()
+        $variant_id = $from_id . ' via ' . $moved->type;
+        $this->nodes[$variant_id] = $this->table->getPathVariant($from_id, $from, $moved->type);
+        $this->mergePath($from_id, $from, $variant_id, $moved);
+        $this->forward_edges[$variant_id][$to_id] = $this->getPath('=', 0);
     }
 
     /**
@@ -453,11 +522,11 @@ final class TaintFlowGraph extends DataFlowGraph
      * Records that what flows into $sent_node is sent to the generator with the parent nodes $generator_nodes.
      *
      * @param array<string, DataFlowNode> $generator_nodes
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function addGeneratorSend(DataFlowNode $sent_node, array $generator_nodes): void
     {
-        $this->nodes[$sent_node->id] = $sent_node;
+        $this->nodes[$sent_node->id] = $this->table->encode($sent_node);
 
         foreach ($generator_nodes as $generator_node) {
             $this->generator_sends[$sent_node->id][$generator_node->id] = true;
@@ -465,11 +534,11 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function addSource(DataFlowNode $node): void
     {
-        $this->sources[$node->id] = $node;
+        $this->sources[$node->id] = $this->table->encode($node);
     }
 
     /**
@@ -481,13 +550,14 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function addSink(DataFlowNode $node): void
     {
-        $this->sinks[$node->id] = $node;
+        $row = $this->table->encode($node);
+        $this->sinks[$node->id] = $row;
         // in the rare case the sink is the _next_ node, this is necessary
-        $this->nodes[$node->id] = $node;
+        $this->nodes[$node->id] = $row;
     }
 
     /**
@@ -527,6 +597,52 @@ final class TaintFlowGraph extends DataFlowGraph
     public function addStringStart(DataFlowNode $node, string $start): void
     {
         $this->string_starts[$node->id] = $start;
+    }
+
+    /**
+     * Records that the variable whose node $node is was assigned an empty array: its items start with anything
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addEmptyArray(DataFlowNode $node): void
+    {
+        $this->empty_arrays[$node->id] = true;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isEmptyArray(string $node_id): bool
+    {
+        return isset($this->empty_arrays[$node_id]);
+    }
+
+    /**
+     * Records that the virtual calls would dispatch nothing through $node: no override may run instead of the method
+     *
+     * @psalm-external-mutation-free
+     */
+    public function addEmptyDispatch(DataFlowNode $node): void
+    {
+        $this->empty_dispatches[$node->id] = true;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isEmptyDispatch(DataFlowNode $node): bool
+    {
+        return isset($this->empty_dispatches[$node->id]);
+    }
+
+    /**
+     * Forgets what the analysis recorded of the start of the string assigned to the variable whose node $node is
+     *
+     * @psalm-external-mutation-free
+     */
+    public function removeStringStart(DataFlowNode $node): void
+    {
+        unset($this->string_starts[$node->id]);
     }
 
     /**
@@ -570,13 +686,254 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
-     * @psalm-external-mutation-free
+     * The graph of a forked worker goes back to the main process serialized: hundreds of thousands of nodes and
+     * paths on a large code base. Each id is written once, in a list of them, and the nodes, sources, sinks and
+     * paths refer to it by its index there, so that after unserialize() the keys of all those arrays share one
+     * string per id. The rows of the nodes (see NodeTable) go as they are, with the table of their strings. The
+     * paths go as a string of integers: for each node with paths from it, its index, the number of its paths, and
+     * for each, the index of the node it goes to and that of its Path in a list of the distinct ones. A source or
+     * sink with the row of the node of its id is written as null.
+     *
+     * @return array<string, mixed>
+     * @psalm-capabilities read-props
+     */
+    public function __serialize(): array
+    {
+        $data = get_object_vars($this);
+        unset($data['table'], $data['nodes'], $data['sources'], $data['sinks'], $data['forward_edges']);
+
+        $ids = [];
+        $node_rows = [];
+
+        foreach ($this->nodes as $id => $row) {
+            $ids[] = $id;
+            $node_rows[] = $row;
+        }
+
+        /** @var array<string, int> $indexes */
+        $indexes = array_flip($ids);
+
+        $data['sources'] = $this->serializeRows($this->sources, $ids, $indexes);
+        $data['sinks'] = $this->serializeRows($this->sinks, $ids, $indexes);
+        $data['nodes'] = $node_rows;
+        unset($node_rows);
+
+        $paths = [];
+        $path_indexes = [];
+        $edges = [];
+        $ints = [];
+
+        foreach ($this->forward_edges as $from_id => $destinations) {
+            $ints[] = $indexes[$from_id] ??= self::addId($ids, $from_id);
+            $ints[] = count($destinations);
+
+            foreach ($destinations as $to_id => $path) {
+                $ints[] = $indexes[$to_id] ??= self::addId($ids, $to_id);
+
+                $path_index = $path_indexes[spl_object_id($path)] ?? null;
+
+                if ($path_index === null) {
+                    $path_index = count($path_indexes);
+                    $path_indexes[spl_object_id($path)] = $path_index;
+                    $paths[] = [$path->type, $path->length, $path->added_taints, $path->removed_taints];
+                }
+
+                $ints[] = $path_index;
+            }
+
+            if (count($ints) >= 65_536) {
+                $edges[] = pack('V*', ...$ints);
+                $ints = [];
+            }
+        }
+
+        $edges[] = pack('V*', ...$ints);
+
+        $data['ids'] = $ids;
+        $data['edges'] = implode('', $edges);
+        $data['paths'] = $paths;
+        $data['strings'] = $this->table->strings;
+        $data['file_paths'] = $this->table->file_paths;
+        $data['file_names'] = $this->table->file_names;
+
+        return $data;
+    }
+
+    /**
+     * @param list<string> $ids
+     * @param-out list<string> $ids
+     * @psalm-capabilities write-refs
+     */
+    private static function addId(array &$ids, string $id): int
+    {
+        $ids[] = $id;
+
+        return count($ids) - 1;
+    }
+
+    /**
+     * The rows $rows as the string of the indexes of their ids, and the list of the rows, null for those that are
+     * the rows of the nodes of their ids
+     *
+     * @param array<string, string|DataFlowNode> $rows
+     * @param list<string> $ids
+     * @param array<string, int> $indexes
+     * @param-out list<string> $ids
+     * @param-out array<string, int> $indexes
+     * @return array{string, list<string|DataFlowNode|null>}
+     * @psalm-capabilities read-props|write-refs
+     */
+    private function serializeRows(array $rows, array &$ids, array &$indexes): array
+    {
+        $id_indexes = [];
+        $list = [];
+
+        foreach ($rows as $id => $row) {
+            $id_indexes[] = $indexes[$id] ??= self::addId($ids, $id);
+            $list[] = ($this->nodes[$id] ?? null) === $row ? null : $row;
+        }
+
+        return [pack('V*', ...$id_indexes), $list];
+    }
+
+    /**
+     * @param array{
+     *     ids: list<string>,
+     *     nodes: list<string|DataFlowNode>,
+     *     sources: array{string, list<string|DataFlowNode|null>},
+     *     sinks: array{string, list<string|DataFlowNode|null>},
+     *     edges: string,
+     *     paths: list<array{string, int, int, int}>,
+     *     strings: list<string>,
+     *     file_paths: list<string>,
+     *     file_names: list<string>,
+     *     ...<string, mixed>
+     * } $data
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function __unserialize(array $data): void
+    {
+        $this->table = NodeTable::fromLists($data['strings'], $data['file_paths'], $data['file_names']);
+
+        $ids = $data['ids'];
+
+        $nodes = [];
+        foreach ($data['nodes'] as $index => $row) {
+            $nodes[$ids[$index]] = $row;
+        }
+
+        $this->nodes = $nodes;
+        $this->sources = self::unserializeRows($data['sources'], $ids, $nodes);
+        $this->sinks = self::unserializeRows($data['sinks'], $ids, $nodes);
+        unset($nodes);
+
+        $paths = [];
+        foreach ($data['paths'] as [$type, $length, $added_taints, $removed_taints]) {
+            $paths[] = $this->getPath($type, $length, $added_taints, $removed_taints);
+        }
+
+        $forward_edges = [];
+        /** @var array<int, int> $ints */
+        $ints = $data['edges'] === '' ? [] : unpack('V*', $data['edges']);
+        $count = count($ints);
+
+        for ($i = 1; $i <= $count;) {
+            $from_id = $ids[$ints[$i]];
+            $end = $i + 2 + 2 * $ints[$i + 1];
+            $destinations = [];
+
+            for ($i += 2; $i < $end; $i += 2) {
+                $destinations[$ids[$ints[$i]]] = $paths[$ints[$i + 1]];
+            }
+
+            $forward_edges[$from_id] = $destinations;
+        }
+
+        $this->forward_edges = $forward_edges;
+
+        unset(
+            $data['ids'],
+            $data['nodes'],
+            $data['sources'],
+            $data['sinks'],
+            $data['edges'],
+            $data['paths'],
+            $data['strings'],
+            $data['file_paths'],
+            $data['file_names'],
+        );
+
+        /** @psalm-suppress MixedAssignment */
+        foreach ($data as $property => $value) {
+            $this->$property = $value;
+        }
+    }
+
+    /**
+     * @param array{string, list<string|DataFlowNode|null>} $serialized
+     * @param list<string> $ids
+     * @param array<string, string|DataFlowNode> $nodes
+     * @return array<string, string|DataFlowNode>
+     * @psalm-pure
+     */
+    private static function unserializeRows(array $serialized, array $ids, array $nodes): array
+    {
+        [$packed, $list] = $serialized;
+        $rows = [];
+
+        if ($packed === '') {
+            return $rows;
+        }
+
+        /** @var array<int, int> $id_indexes */
+        $id_indexes = unpack('V*', $packed);
+
+        foreach ($list as $index => $row) {
+            $id = $ids[$id_indexes[$index + 1]];
+            $rows[$id] = $row ?? $nodes[$id];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Adds the rows of another graph missing from $into, as rows of this table (see NodeTable::importTables())
+     *
+     * @param array<string, string|DataFlowNode> $into
+     * @param array<string, string|DataFlowNode> $rows
+     * @param list<int> $strings
+     * @param list<int> $files
+     * @param-out array<string, string|DataFlowNode> $into
+     * @psalm-capabilities write-refs
+     */
+    private static function importRows(array &$into, array $rows, array $strings, array $files): void
+    {
+        foreach ($rows as $id => $row) {
+            if (!isset($into[$id])) {
+                $into[$id] = NodeTable::import($row, $strings, $files);
+            }
+        }
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     public function addGraph(self $other): void
     {
-        $this->sources += $other->sources;
-        $this->sinks += $other->sinks;
-        $this->nodes += $other->nodes;
+        if ($this->table->isEmpty() && $this->nodes === [] && $this->sources === [] && $this->sinks === []) {
+            // the rows of the first graph merged are rows of a copy of its table
+            $this->table = clone $other->table;
+            $this->sources = $other->sources;
+            $this->sinks = $other->sinks;
+            $this->nodes = $other->nodes;
+        } else {
+            [$strings, $files] = $this->table->importTables($other->table);
+
+            self::importRows($this->sources, $other->sources, $strings, $files);
+            self::importRows($this->sinks, $other->sinks, $strings, $files);
+            self::importRows($this->nodes, $other->nodes, $strings, $files);
+        }
+
         $this->specialized_calls += $other->specialized_calls;
         $this->generator_sent_nodes += $other->generator_sent_nodes;
         $this->shared_state += $other->shared_state;
@@ -682,7 +1039,7 @@ final class TaintFlowGraph extends DataFlowGraph
 
     /**
      * @return list<array{location: ?CodeLocation, label: string, entry_path_type: string}>
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     public function getIssueTrace(DataFlowNode $source): array
     {
@@ -746,6 +1103,7 @@ final class TaintFlowGraph extends DataFlowGraph
             $this->specialized_calls,
             $this->despecialized_calls,
             $this->shared_state,
+            $this->table,
             Config::getInstance(),
             $project_analyzer,
             $codebase,
@@ -767,9 +1125,10 @@ final class TaintFlowGraph extends DataFlowGraph
      * Which function-likes a generator can come from is only known once the whole graph is built: they
      * are the generator function-likes whose return nodes reach the parent nodes of the generator. The
      * search for them goes backwards from those parent nodes, matching the calls it leaves through
-     * their arguments with the ones it entered through their returns, as the resolution walk does. It
-     * stops at the first such return node of each path: a generator a generator yields is not linked,
-     * nor one from a function-like without a body (unknown origin).
+     * their arguments with the ones it entered through their returns, as the resolution walk does. A
+     * link made during the search gives a node already searched from a new predecessor: the search goes
+     * on from it matching any call. It stops at the first such return node of each path: a generator a
+     * generator yields is not linked, nor one from a function-like without a body (unknown origin).
      *
      * What is sent to the generator of a specialized call goes into its specialization, so that it only
      * reaches that call's body walk.
@@ -786,11 +1145,13 @@ final class TaintFlowGraph extends DataFlowGraph
         foreach ($this->generator_sends as $send_id => $generator_ids) {
             ksort($generator_ids);
 
-            $send_node = $this->nodes[$send_id];
+            $send_node = $this->table->decode($send_id, $this->nodes[$send_id]);
 
             // [node id, specialization keys of the calls entered through their returns, innermost last]
             $queue = [];
             $visited = [];
+            $stacks_per_node = [];
+            $searched = [];
 
             foreach ($generator_ids as $generator_id => $_) {
                 $queue[] = [$generator_id, []];
@@ -799,11 +1160,26 @@ final class TaintFlowGraph extends DataFlowGraph
 
             while ($queue) {
                 [$id, $calls] = array_pop($queue);
+                $searched[$id] = true;
 
                 [$unspecialized_id, $specialization_key] = self::splitSpecializedId($id);
 
                 if (isset($this->generator_sent_nodes[$unspecialized_id])) {
-                    $this->linkGeneratorSend($reverse, $send_node, $unspecialized_id, $specialization_key);
+                    $new_predecessors = $this->linkGeneratorSend(
+                        $reverse,
+                        $send_node,
+                        $unspecialized_id,
+                        $specialization_key,
+                    );
+
+                    foreach ($new_predecessors as $linked_id => $from_id) {
+                        // reached from $linked_id with any of its call stacks: any call matches
+                        if (isset($searched[$linked_id]) && !isset($visited[$from_id . "\0"])) {
+                            $visited[$from_id . "\0"] = true;
+                            $stacks_per_node[$from_id] = ($stacks_per_node[$from_id] ?? 0) + 1;
+                            $queue[] = [$from_id, []];
+                        }
+                    }
 
                     continue;
                 }
@@ -834,10 +1210,21 @@ final class TaintFlowGraph extends DataFlowGraph
 
                     $state_key = $from_id . "\0" . implode("\0", $from_calls);
 
-                    if (!isset($visited[$state_key])) {
-                        $visited[$state_key] = true;
-                        $queue[] = [$from_id, $from_calls];
+                    if (!isset($visited[$state_key])
+                        && ($stacks_per_node[$from_id] ?? 0) >= self::GENERATOR_SEND_STACKS
+                    ) {
+                        // a new call stack at a node with too many: any call matches
+                        $from_calls = [];
+                        $state_key = $from_id . "\0";
                     }
+
+                    if (isset($visited[$state_key])) {
+                        continue;
+                    }
+
+                    $visited[$state_key] = true;
+                    $stacks_per_node[$from_id] = ($stacks_per_node[$from_id] ?? 0) + 1;
+                    $queue[] = [$from_id, $from_calls];
                 }
             }
         }
@@ -849,6 +1236,7 @@ final class TaintFlowGraph extends DataFlowGraph
      *
      * @param array<string, array<string, true>> $reverse see getReverseEdges()
      * @param-out array<string, array<string, true>> $reverse
+     * @return array<string, string> the nodes that got a new predecessor in $reverse => that predecessor
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private function linkGeneratorSend(
@@ -856,23 +1244,36 @@ final class TaintFlowGraph extends DataFlowGraph
         DataFlowNode $send_node,
         string $return_node_id,
         ?string $specialization_key,
-    ): void {
+    ): array {
         $sent_node = $this->generator_sent_nodes[$return_node_id];
+        $new_predecessors = [];
 
         if ($specialization_key !== null) {
+            $unspecialized_id = $sent_node->id;
+
             $sent_node = $sent_node->withSpecialization(
-                $sent_node->id . self::SPECIALIZATION_SEPARATOR . $specialization_key,
-                $sent_node->id,
+                $unspecialized_id . self::SPECIALIZATION_SEPARATOR . $specialization_key,
+                $unspecialized_id,
                 $specialization_key,
                 null,
             );
+
+            if (!isset($reverse[$unspecialized_id][$sent_node->id])) {
+                $new_predecessors[$unspecialized_id] = $sent_node->id;
+            }
 
             $this->addNode($sent_node);
             self::linkSpecialization($reverse, $sent_node->id);
         }
 
         $this->addPath($send_node, $sent_node, 'generator-send');
-        $reverse[$sent_node->id][$send_node->id] = true;
+
+        if (!isset($reverse[$sent_node->id][$send_node->id])) {
+            $reverse[$sent_node->id][$send_node->id] = true;
+            $new_predecessors[$sent_node->id] = $send_node->id;
+        }
+
+        return $new_predecessors;
     }
 
     /**
@@ -900,7 +1301,7 @@ final class TaintFlowGraph extends DataFlowGraph
      * linkSpecialization()) in both directions, for linkGeneratorSends() (TaintFlowResolution computes its own).
      *
      * @return array<string, array<string, true>>
-     * @psalm-capabilities read-props
+     * @psalm-capabilities read-props|write-refs
      */
     private function getReverseEdges(): array
     {
@@ -915,12 +1316,22 @@ final class TaintFlowGraph extends DataFlowGraph
             }
         }
 
-        foreach ($this->nodes as $node) {
-            if ($node->unspecialized_id !== null) {
-                $reverse[$node->id][$node->unspecialized_id] = true;
-                $reverse[$node->unspecialized_id][$node->id] = true;
+        foreach ($this->nodes as $id => $row) {
+            $unspecialized_id = $this->table->getUnspecializedId($id, $row);
+
+            if ($unspecialized_id !== null) {
+                $reverse[$id][$unspecialized_id] = true;
+                $reverse[$unspecialized_id][$id] = true;
             }
         }
+
+        // which call stacks a node is reached with first matters to linkGeneratorSends(), and the graphs of the
+        // forked workers are merged in any order
+        foreach ($reverse as &$origins) {
+            ksort($origins, SORT_STRING);
+        }
+
+        unset($origins);
 
         return $reverse;
     }
@@ -962,6 +1373,17 @@ final class TaintFlowGraph extends DataFlowGraph
             $issue_location = $sink->code_location;
         } elseif ($predecessor->code_location !== null) {
             $issue_location = $predecessor->code_location;
+
+            // the values of an argument (see addArgumentValuesSink()) are reported like a sink on the argument
+            // itself: where the argument comes from, when its parameter is declared where issues aren't
+            // reported (a stub)
+            $argument_location = $predecessor->taintSource?->code_location;
+            if ($argument_location !== null
+                && $sink->id === ($predecessor->unspecialized_id ?? $predecessor->id) . '[*]'
+                && !$config->reportIssueInFile('TaintedInput', $issue_location->file_path)
+            ) {
+                $issue_location = $argument_location;
+            }
         } else {
             return;
         }

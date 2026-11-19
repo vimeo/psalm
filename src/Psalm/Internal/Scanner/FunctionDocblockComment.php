@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Scanner;
 
+use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\NamedArguments;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class FunctionDocblockComment
 {
@@ -59,7 +61,7 @@ final class FunctionDocblockComment
     public ?array $if_this_is = null;
 
     /**
-     * @var array<int, array{name:string, type:string, line_number: int}>
+     * @var array<int, array{name:string, type:string, line_number: int, start: int, end: int}>
      */
     public array $globals = [];
 
@@ -90,6 +92,9 @@ final class FunctionDocblockComment
      */
     public bool $specialize_call = false;
 
+    /** Whether the function-like has `@psalm-cli-only` */
+    public bool $cli_only = false;
+
     /**
      * Represents the flow from function params to return type
      *
@@ -117,7 +122,21 @@ final class FunctionDocblockComment
      */
     public array $taint_sink_params = [];
 
+    /**
+     * `@psalm-taint-sink (<conditional>) $param`: the parameter and the conditional type of the taints it is a sink of
+     *
+     * @var list<array{name: string, type: string}>
+     */
+    public array $conditional_taint_sink_params = [];
+
     public int $taint_source_types = 0;
+
+    /**
+     * The taints of the sources under keys of what the function-like returns: `@psalm-taint-source input return['key']`
+     *
+     * @var list<array{non-empty-list<string>, int}>
+     */
+    public array $taint_source_keys = [];
 
     /**
      * @var array<int, array{name:string}>
@@ -131,6 +150,13 @@ final class FunctionDocblockComment
      * @var list<InvalidDocblock>
      */
     public array $docblock_issues = [];
+
+    /**
+     * Issues found while scanning the docblock, for FunctionLikeDocblockScanner to add to those of the file
+     *
+     * @var list<CodeIssue>
+     */
+    public array $scan_issues = [];
 
     /**
      * Whether or not to ignore the nullability of this function's return type
@@ -158,6 +184,13 @@ final class FunctionDocblockComment
     public array $templates = [];
 
     /**
+     * The default of each template that has one (`@template T of Bound = Default`), and its line.
+     *
+     * @var array<string, array{type: string, line_number: int}>
+     */
+    public array $template_defaults = [];
+
+    /**
      * @var array<int, array{type: string, param_name: string}>
      */
     public array $assertions = [];
@@ -174,7 +207,11 @@ final class FunctionDocblockComment
 
     public bool $inheritdoc = false;
 
-    /** A bitmask of {@see Capabilities} constants */
+    /**
+     * A bitmask of {@see Capabilities} constants
+     *
+     * @var CapabilitySet
+     */
     public int $capabilities = Capabilities::ALL;
 
     public bool $has_mutations_annotation = false;

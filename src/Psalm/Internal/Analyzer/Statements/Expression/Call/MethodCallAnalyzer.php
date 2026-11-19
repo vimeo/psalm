@@ -10,13 +10,15 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalysisResult;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateResult;
-use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\DirectConstructorCall;
 use Psalm\Issue\InvalidMethodCall;
 use Psalm\Issue\InvalidScope;
@@ -36,6 +38,7 @@ use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
@@ -61,7 +64,7 @@ final class MethodCallAnalyzer extends CallAnalyzer
 
         $context->inside_call = true;
 
-        NullsafeChainState::None->markOn($stmt);
+        NullsafeChainState::reset($stmt);
 
         $existing_stmt_var_type = null;
 
@@ -133,6 +136,10 @@ final class MethodCallAnalyzer extends CallAnalyzer
             $statements_analyzer->node_data->setType($stmt, Type::getMixed());
         }
 
+        $receiver_type = $class_type
+            ? TypeExpander::expandTemplateKeyOfAndValueOf($statements_analyzer->getCodebase(), $class_type)
+            : null;
+
         if ($class_type
             && $stmt->name instanceof PhpParser\Node\Identifier
             && ($class_type->isNull() || $class_type->isVoid())
@@ -146,12 +153,12 @@ final class MethodCallAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($class_type
+        if ($receiver_type
             && $stmt->name instanceof PhpParser\Node\Identifier
-            && $class_type->isNullable()
-            && !$class_type->ignore_nullable_issues
+            && $receiver_type->isNullable()
+            && !$receiver_type->ignore_nullable_issues
             && !($stmt->name->name === 'offsetGet' && $context->inside_isset)
-            && $receiver_state !== NullsafeChainState::ShortCircuit
+            && !$receiver_state->isNullOnlyByShortCircuit()
         ) {
             IssueBuffer::maybeAdd(
                 new PossiblyNullReference(
@@ -162,10 +169,10 @@ final class MethodCallAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($class_type
+        if ($receiver_type
             && $stmt->name instanceof PhpParser\Node\Identifier
-            && $class_type->isFalsable()
-            && !$class_type->ignore_falsable_issues
+            && $receiver_type->isFalsable()
+            && !$receiver_type->ignore_falsable_issues
         ) {
             IssueBuffer::maybeAdd(
                 new PossiblyFalseReference(
@@ -183,10 +190,15 @@ final class MethodCallAnalyzer extends CallAnalyzer
         if (!$class_type) {
             $class_type = Type::getMixed();
         }
-        
-        $class_type = TypeVariableTracker::resolveTypeVariables($class_type, $codebase);
 
-        $lhs_types = $class_type->getAtomicTypes();
+        // A bare type variable minted for a class template resolves to its
+        // construction-site shape: the concrete object it stands for is what a
+        // method is actually being called on. Only top-level variables resolve —
+        // one nested in a generic object (e.g. `Box<`_0>`) stays live so later
+        // calls can still constrain it.
+        $class_type = TypeVariableResolver::resolveTopLevel($class_type, $codebase);
+
+        $lhs_types = TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $class_type)->getAtomicTypes();
 
         foreach ($lhs_types as $k => $lhs_type_part) {
             if ($lhs_type_part instanceof TConditional) {
@@ -200,6 +212,16 @@ final class MethodCallAnalyzer extends CallAnalyzer
         }
 
         $result = new AtomicMethodCallAnalysisResult();
+
+        $method_var_id = !$stmt->isFirstClassCallable()
+            && !$stmt->getArgs()
+            && $lhs_var_id
+            && $stmt->name instanceof PhpParser\Node\Identifier
+            ? $lhs_var_id . '->' . strtolower($stmt->name->name) . '()'
+            : null;
+
+        // a memoized call returns what the same call returned before, even if it may change what it returns next
+        $memoized_type = $method_var_id !== null ? $context->vars_in_scope[$method_var_id] ?? null : null;
 
         $possible_new_class_types = [];
         foreach ($lhs_types as $lhs_type_part) {
@@ -225,15 +247,22 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 $possible_new_class_types[] = $context->vars_in_scope[$lhs_var_id];
             }
         }
-        if (!$stmt->isFirstClassCallable()
-            && !$stmt->getArgs()
-            && $lhs_var_id && $stmt->name instanceof PhpParser\Node\Identifier
-        ) {
-            if ($codebase->config->memoize_method_calls || $result->can_memoize) {
-                $method_var_id = $lhs_var_id . '->' . strtolower($stmt->name->name) . '()';
 
+        MethodCallPurityAnalyzer::keepPropertiesNotWrittenForEveryReceiverType($codebase, $context, $result);
+
+        if ($method_var_id !== null) {
+            // the initialization pass skips the purity analysis that decides it,
+            // so it relies on what the normal pass of this call found
+            $was_memoizable = $context->collect_initializations
+                && $stmt->getAttribute('memoizable', false);
+
+            if ($codebase->config->memoize_method_calls || $result->can_memoize || $was_memoizable) {
                 if (isset($context->vars_in_scope[$method_var_id])) {
                     $result->return_type = $context->vars_in_scope[$method_var_id];
+                } elseif ($memoized_type !== null) {
+                    // forgotten by the call itself
+                    $result->return_type = $memoized_type;
+                    $context->vars_in_scope[$method_var_id] = $memoized_type;
                 } elseif ($result->return_type !== null) {
                     // forgotten by calls that may mutate the receiver, unless the class is immutable
                     $context->vars_in_scope[$method_var_id] = $result->return_type->setProperties([
@@ -254,13 +283,28 @@ final class MethodCallAnalyzer extends CallAnalyzer
             );
         }
 
+        $magic_args_analyzed = null;
+
+        // issues from the arguments precede the issues of the call itself
+        if ($result->non_existent_magic_method_ids && !$result->existent_method_ids && !$stmt->isFirstClassCallable()) {
+            $magic_args_analyzed = self::checkMethodArgs(
+                null,
+                $stmt->getArgs(),
+                new TemplateResult([], []),
+                $context,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer,
+            );
+        }
+
         if ($result->invalid_method_call_types) {
             $invalid_class_type = $result->invalid_method_call_types[0];
 
             if ($result->has_valid_method_call_type || $result->has_mixed_method_call) {
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidMethodCall(
-                        'Cannot call method on possible ' . $invalid_class_type . ' variable ' . $lhs_var_id,
+                        'Cannot call method on possible ' . $invalid_class_type . ' variable '
+                            . ExpressionIdentifier::getNameForMessage($lhs_var_id, $stmt->var),
                         new CodeLocation($source, $stmt->name),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -268,7 +312,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new InvalidMethodCall(
-                        'Cannot call method on ' . $invalid_class_type . ' variable ' . $lhs_var_id,
+                        'Cannot call method on ' . $invalid_class_type . ' variable '
+                            . ExpressionIdentifier::getNameForMessage($lhs_var_id, $stmt->var),
                         new CodeLocation($source, $stmt->name),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -370,12 +415,18 @@ final class MethodCallAnalyzer extends CallAnalyzer
         $stmt_type = $result->return_type;
 
         // `$a?->b->c()` short-circuits the whole chain, so null from the nullsafe hop survives the call
-        if ($receiver_state !== NullsafeChainState::None && $class_type->isNullable()) {
-            $receiver_state->afterLink($stmt_type && $stmt_type->isNullable())->markOn($stmt);
+        if ($receiver_state !== NullsafeChainState::None
+            && TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $class_type)->isNullable()
+        ) {
+            $receiver_state->afterLink($stmt_type)->markOn($stmt);
 
             if ($stmt_type && !$stmt_type->isNullable()) {
                 $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
             }
+        }
+
+        if ($result->returns_by_ref) {
+            $stmt_type = ($stmt_type ?? Type::getMixed())->setByRef(true);
         }
 
         if ($stmt_type) {
@@ -386,18 +437,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
             }
         }
 
-        if ($result->returns_by_ref) {
-            if (!$stmt_type) {
-                $stmt_type = Type::getMixed();
-                $statements_analyzer->node_data->setType($stmt, $stmt_type);
-            }
-
-            $stmt_type = $stmt_type->setByRef($result->returns_by_ref);
-        }
-
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
             && $stmt_type
         ) {
             $codebase->analyzer->addNodeType(
@@ -409,14 +450,14 @@ final class MethodCallAnalyzer extends CallAnalyzer
         }
 
         if (!$result->existent_method_ids) {
-            return $stmt->isFirstClassCallable() || self::checkMethodArgs(
+            return $stmt->isFirstClassCallable() || ($magic_args_analyzed ?? self::checkMethodArgs(
                 null,
                 $stmt->getArgs(),
                 new TemplateResult([], []),
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer,
-            );
+            ));
         }
 
         // if we called a method on this nullable variable, remove the nullable status here
@@ -429,28 +470,38 @@ final class MethodCallAnalyzer extends CallAnalyzer
             && ($class_type->from_docblock || $class_type->isNullable())
             && $real_method_call
         ) {
+            // the method call may have written a bare type variable back into
+            // scope; resolve it again so the narrowed type keeps a concrete
+            // object
+            $class_type = TypeVariableResolver::resolveTopLevel($class_type, $codebase);
+
             $types = $class_type->getAtomicTypes();
 
             foreach ($types as $key => &$type) {
-                // A type variable that survived here is a valid method-call
-                // receiver — the call landed on its inferred object bound — so
-                // it belongs with the concrete object types rather than being
-                // stripped as a non-object, which would leave nothing behind.
+                // A type variable that survived here (one with no bounds to
+                // resolve it through) is a valid method-call receiver — the
+                // call landed on it — so it belongs with the concrete object
+                // types rather than being stripped as a non-object, which
+                // would leave nothing behind.
                 if (!$type instanceof TNamedObject
                     && !$type instanceof TObject
                     && !$type instanceof TConditional
                     && !$type instanceof TTypeVariable
+                    && !$type instanceof TTemplateValueOf
                 ) {
                     unset($types[$key]);
                 } else {
                     $type = $type->setFromDocblock(false);
                 }
             }
+            unset($type);
+
             if (!$types) {
                 throw new AssertionError("We must have some types here!");
             }
 
-            $context->removeVarFromConflictingClauses($lhs_var_id, null, $statements_analyzer);
+            // narrowed, not written: the enclosing scopes keep their clauses about it
+            $context->clauses = Context::filterClauses($lhs_var_id, $context->clauses, null, $statements_analyzer);
 
             $class_type = $class_type->getBuilder()->setTypes($types);
             $class_type->from_docblock = false;

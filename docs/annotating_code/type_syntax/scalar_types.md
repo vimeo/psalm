@@ -79,6 +79,28 @@ Psalm also supports a `enum-string` annotation denote an enum that exists.
 
 `numeric-string` denotes a string value that has passed an `is_numeric` check.
 
+## decimal-int-string, non-decimal-int-string
+
+`decimal-int-string` denotes a string holding an integer in its canonical decimal form (`"0"`, `"123"`, `"-5"`, but not `"05"`, `"+5"`, `"-0"` or `"1.0"`). It is a `numeric-string`, and PHP casts it to an `int` when it is used as an array key: the keys of an `array<decimal-int-string, Foo>` are `int`s.
+
+`non-decimal-int-string` denotes any other string, including `""`: it stays a string when it is used as an array key.
+
+A `numeric-string` can be either, so it is cast to `int|numeric-string`:
+
+```php
+<?php
+/**
+ * @param decimal-int-string $d
+ * @param non-decimal-int-string $s
+ * @param numeric-string $n
+ */
+function f(string $d, string $s, string $n): void {
+    $a = [$d => 1]; // non-empty-array<int, 1>
+    $b = [$s => 1]; // non-empty-array<non-decimal-int-string, 1>
+    $c = [$n => 1]; // non-empty-array<int|numeric-string, 1>
+}
+```
+
 ## literal-string
 
 `literal-string` denotes a string value that is entirely composed of strings in your application.
@@ -115,5 +137,15 @@ Integers that don't pass this type check:
 ## lowercase-string, non-empty-string, non-empty-lowercase-string
 
 A non empty string, lowercased or both at once.
+
+`lowercase-string` is what `strtolower()` leaves unchanged, and since PHP 8 that function only changes the ASCII letters. Uppercase letters outside of ASCII are not recognised:
+
+```php
+<?php
+/** @return lowercase-string */
+function ascii() { return 'Hello'; } // InvalidReturnStatement
+/** @return lowercase-string */
+function umlaut() { return 'Über'; } // no issue
+```
 
 `empty` here is defined as all strings except the empty string `''`. Another type `non-falsy-string` is effectively a subtype of `non-empty-string`, and also precludes the string value `'0'`.

@@ -1,0 +1,152 @@
+<?php
+
+// The taints pear/archive_tar passes along: the archive and the files and directories it reads, adds or extracts
+// to are file sinks. Loaded when the analysed code uses the package, refining its classes (see
+// Config::visitStubFiles()).
+
+namespace {
+/**
+ * @package Archive_Tar
+ * @author  Vincent Blavet <vincent@phpconcept.net>
+ * @license http://www.opensource.org/licenses/bsd-license.php New BSD License
+ * @version $Revision$
+ */
+class Archive_Tar extends PEAR
+{
+    /**
+     * @param string $p_tarname The name of the tar archive to create
+     * @param string $p_compress can be null, 'gz', 'bz2' or 'lzma2'. This
+     *               parameter indicates if gzip, bz2 or lzma2 compression
+     *               is required.  For compatibility reason the
+     *               boolean value 'true' means 'gz'.
+     * @param int $buffer_length Length of the read buffer in bytes
+     *
+     * @return bool
+     *
+     * @psalm-taint-sink file $p_tarname
+     */
+    public function __construct($p_tarname, $p_compress = null, $buffer_length = 512)
+    {
+    }
+
+    /**
+     * @param array $p_filelist An array of filenames and directory names, or a
+     *              single string with names separated by a single
+     *              blank space.
+     *
+     * @return bool true on success, false on error.
+     * @see    createModify()
+     *
+     * @psalm-taint-sink file $p_filelist
+     */
+    public function create($p_filelist)
+    {
+    }
+
+    /**
+     * @param array $p_filelist An array of filenames and directory names, or a
+     *              single string with names separated by a single
+     *              blank space.
+     *
+     * @return bool true on success, false on error.
+     * @see    createModify()
+     * @access public
+     *
+     * @psalm-taint-sink file $p_filelist
+     */
+    public function add($p_filelist)
+    {
+    }
+
+    /**
+     * @param string $p_path
+     * @param bool $p_preserve
+     * @param bool $p_symlinks
+     * @return bool
+     *
+     * @psalm-taint-sink file $p_path
+     */
+    public function extract($p_path = '', $p_preserve = false, $p_symlinks = true)
+    {
+    }
+
+    /**
+     * @param array $p_filelist An array of filenames and directory names,
+     *                             or a single string with names separated by
+     *                             a single blank space.
+     * @param string $p_add_dir A string which contains a path to be added
+     *                             to the memorized path of each element in
+     *                             the list.
+     * @param string $p_remove_dir A string which contains a path to be
+     *                             removed from the memorized path of each
+     *                             element in the list, when relevant.
+     *
+     * @return boolean true on success, false on error.
+     * @see addModify()
+     *
+     * @psalm-taint-sink file $p_filelist
+     */
+    public function createModify($p_filelist, $p_add_dir, $p_remove_dir = '')
+    {
+    }
+
+    /**
+     * @param array $p_filelist An array of filenames and directory
+     *                             names, or a single string with names
+     *                             separated by a single blank space.
+     * @param string $p_add_dir A string which contains a path to be
+     *                             added to the memorized path of each
+     *                             element in the list.
+     * @param string $p_remove_dir A string which contains a path to be
+     *                             removed from the memorized path of
+     *                             each element in the list, when
+     *                             relevant.
+     *
+     * @return bool true on success, false on error.
+     *
+     * @psalm-taint-sink file $p_filelist
+     */
+    public function addModify($p_filelist, $p_add_dir, $p_remove_dir = '')
+    {
+    }
+
+    /**
+     * @param string $p_path The path of the directory where the
+     *                               files/dir need to by extracted.
+     * @param string $p_remove_path Part of the memorized path that can be
+     *                               removed if present at the beginning of
+     *                               the file/dir path.
+     * @param boolean $p_preserve Preserve user/group ownership of files
+     * @param boolean $p_symlinks Allow symlinks.
+     *
+     * @return boolean true on success, false on error.
+     * @see    extractList()
+     *
+     * @psalm-taint-sink file $p_path
+     */
+    public function extractModify($p_path, $p_remove_path, $p_preserve = false, $p_symlinks = true)
+    {
+    }
+
+    /**
+     * @param array $p_filelist An array of filenames and directory names,
+     *                               or a single string with names separated
+     *                               by a single blank space.
+     * @param string $p_path The path of the directory where the
+     *                               files/dir need to by extracted.
+     * @param string $p_remove_path Part of the memorized path that can be
+     *                               removed if present at the beginning of
+     *                               the file/dir path.
+     * @param boolean $p_preserve Preserve user/group ownership of files
+     * @param boolean $p_symlinks Allow symlinks.
+     *
+     * @return bool true on success, false on error.
+     * @see    extractModify()
+     *
+     * @psalm-taint-sink file $p_path
+     */
+    public function extractList($p_filelist, $p_path = '', $p_remove_path = '', $p_preserve = false, $p_symlinks = true)
+    {
+    }
+}
+}

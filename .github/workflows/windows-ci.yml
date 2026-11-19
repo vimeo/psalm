@@ -1,9 +1,18 @@
 name: Run unit tests on Windows
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  # dispatched by bin/ci/apply-queued-changes.php after merging, which doesn't trigger pushes
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+# A new push to a pull request cancels its previous run; pushes to branches always run to the end.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   chunk-matrix:
@@ -13,7 +22,8 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-      CHUNK_COUNT: 8
+      # more runners than on Linux (8): the tests take about a quarter longer on Windows
+      CHUNK_COUNT: 12
 
     outputs:
       count: ${{ steps.chunk-matrix.outputs.count }}
@@ -43,7 +53,6 @@ jobs:
     env:
       CHUNK_COUNT: "${{ matrix.count }}"
       CHUNK_NUMBER: "${{ matrix.chunk }}"
-      PARALLEL_PROCESSES: 4
 
     steps:
       - name: Set git to use LF
@@ -103,5 +112,6 @@ jobs:
       - name: Generate test suits
         run: php bin/ci/generate_testsuites.php $env:CHUNK_COUNT
 
+      # --order-by=default: see bin/ci/tests-github-actions.sh
       - name: Run unit tests
-        run: vendor/bin/paratest --processes=$env:PARALLEL_PROCESSES --testsuite=chunk_$env:CHUNK_NUMBER --log-junit build/phpunit/phpunit.xml
+        run: vendor/bin/paratest --max-batch-size=1 --processes=$env:NUMBER_OF_PROCESSORS --order-by=default --testsuite=chunk_$env:CHUNK_NUMBER --log-junit build/phpunit/phpunit.xml

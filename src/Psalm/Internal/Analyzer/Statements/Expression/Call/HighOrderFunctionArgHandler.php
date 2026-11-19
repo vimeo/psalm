@@ -30,6 +30,9 @@ use function strtolower;
  */
 final class HighOrderFunctionArgHandler
 {
+    /** The type an argument had before enhanceCallableArgType() replaced it with its callable form */
+    public const ORIGINAL_ARG_TYPE_ATTRIBUTE = 'high_order_original_arg_type';
+
     /**
      * Compiles TemplateResult for high-order function
      * by previous template args ($inferred_template_result).
@@ -131,8 +134,15 @@ final class HighOrderFunctionArgHandler
             return;
         }
 
+        // the closure of a method has the class templates of its object bound and `static` expanded, unlike its storage
+        $callable_type = $high_order_callable_info->getType() === HighOrderFunctionArgInfo::TYPE_FIRST_CLASS_CALLABLE
+            && ($arg_expr instanceof PhpParser\Node\Expr\MethodCall
+                || $arg_expr instanceof PhpParser\Node\Expr\StaticCall)
+            ? $statements_analyzer->node_data->getType($arg_expr)
+            : null;
+
         $fully_inferred_callable_type = TemplateInferredTypeReplacer::replace(
-            $high_order_callable_info->getFunctionType(),
+            $callable_type ?? $high_order_callable_info->getFunctionType(),
             $high_order_template_result,
             $statements_analyzer->getCodebase(),
         );
@@ -151,6 +161,13 @@ final class HighOrderFunctionArgHandler
             false,
             true,
         );
+
+        // the callable form drives the template inference, but only the argument as written can be a string param's
+        $original_type = $statements_analyzer->node_data->getType($arg_expr);
+
+        if ($original_type) {
+            $arg_expr->setAttribute(self::ORIGINAL_ARG_TYPE_ATTRIBUTE, $original_type);
+        }
 
         $statements_analyzer->node_data->setType($arg_expr, $expanded);
     }
@@ -190,6 +207,7 @@ final class HighOrderFunctionArgHandler
                         ? HighOrderFunctionArgInfo::TYPE_FIRST_CLASS_CALLABLE
                         : HighOrderFunctionArgInfo::TYPE_CALLABLE,
                     $dynamic_storage ?? $codebase->functions->getStorage($statements_analyzer, $function_id),
+                    callable_id: $function_id,
                 );
             }
 
@@ -271,7 +289,7 @@ final class HighOrderFunctionArgHandler
                     ? $class_storage->methods['__invoke']
                     : null;
 
-                if (!$invoke_storage) {
+                if (!$class_storage || !$invoke_storage) {
                     return null;
                 }
 
@@ -279,6 +297,7 @@ final class HighOrderFunctionArgHandler
                     HighOrderFunctionArgInfo::TYPE_CLASS_CALLABLE,
                     $invoke_storage,
                     $class_storage,
+                    strtolower($class_storage->name . '::__invoke'),
                 );
             }
         } catch (UnexpectedValueException) {
@@ -328,11 +347,22 @@ final class HighOrderFunctionArgHandler
 
         $codebase = $statements_analyzer->getCodebase();
 
+        if (!str_contains($literal->value, '::')) {
+            $function_id = strtolower($literal->value);
+
+            return new HighOrderFunctionArgInfo(
+                HighOrderFunctionArgInfo::TYPE_STRING_CALLABLE,
+                $codebase->functions->getStorage($statements_analyzer, $function_id),
+                callable_id: $function_id,
+            );
+        }
+
+        $method_id = MethodIdentifier::wrap($literal->value);
+
         return new HighOrderFunctionArgInfo(
             HighOrderFunctionArgInfo::TYPE_STRING_CALLABLE,
-            str_contains($literal->value, '::')
-                ? $codebase->methods->getStorage(MethodIdentifier::wrap($literal->value))
-                : $codebase->functions->getStorage($statements_analyzer, strtolower($literal->value)),
+            $codebase->methods->getStorage($method_id),
+            callable_id: strtolower((string) ($codebase->methods->getDeclaringMethodId($method_id) ?? $method_id)),
         );
     }
 }

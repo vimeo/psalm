@@ -11,14 +11,18 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
+use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\PropertyBagTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -26,11 +30,13 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\EmptyArrayAccess;
 use Psalm\Issue\InvalidArrayAccess;
 use Psalm\Issue\InvalidArrayAssignment;
@@ -70,6 +76,7 @@ use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -88,6 +95,7 @@ use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\MutableUnion;
@@ -105,6 +113,7 @@ use function is_int;
 use function spl_object_id;
 use function str_starts_with;
 use function strlen;
+use function strpbrk;
 use function strtolower;
 use function substr;
 
@@ -113,12 +122,40 @@ use function substr;
  */
 final class ArrayFetchAnalyzer
 {
+    /**
+     * What a message names as the array: the variable or, as an expression with no variable id,
+     * its constant, else a placeholder
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function describeArrayVar(
+        ?string $extended_var_id,
+        PhpParser\Node\Expr\ArrayDimFetch $stmt,
+    ): string {
+        if ($extended_var_id !== null) {
+            return $extended_var_id;
+        }
+
+        if ($stmt->var instanceof PhpParser\Node\Expr\ConstFetch) {
+            return $stmt->var->name->toString();
+        }
+
+        if ($stmt->var instanceof PhpParser\Node\Expr\ClassConstFetch
+            && $stmt->var->class instanceof PhpParser\Node\Name
+            && $stmt->var->name instanceof PhpParser\Node\Identifier
+        ) {
+            return $stmt->var->class->toString() . '::' . $stmt->var->name->name;
+        }
+
+        return '(expression)';
+    }
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
     ): bool {
-        NullsafeChainState::None->markOn($stmt);
+        NullsafeChainState::reset($stmt);
 
         $extended_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
@@ -136,15 +173,21 @@ final class ArrayFetchAnalyzer
             $was_inside_isset = $context->inside_isset;
             $context->inside_isset = false;
 
+            $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+            $context->inside_by_ref_offset = false;
+
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->dim, $context) === false) {
                 $context->inside_isset = $was_inside_isset;
                 $context->inside_unset = $was_inside_unset;
                 $context->inside_general_use = $was_inside_general_use;
+                $context->inside_by_ref_offset = $was_inside_by_ref_offset;
 
                 return false;
             }
 
             $context->inside_isset = $was_inside_isset;
+
+            $context->inside_by_ref_offset = $was_inside_by_ref_offset;
 
             $context->inside_unset = $was_inside_unset;
 
@@ -172,11 +215,20 @@ final class ArrayFetchAnalyzer
             $used_key_type = Type::getInt();
         }
 
-        if (ExpressionAnalyzer::analyze(
+        // PHP creates the offsets passed by reference along the arrays only, not inside what the root is fetched from
+        $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+        $context->inside_by_ref_offset = $was_inside_by_ref_offset
+            && $stmt->var instanceof PhpParser\Node\Expr\ArrayDimFetch;
+
+        $analyzed_var = ExpressionAnalyzer::analyze(
             $statements_analyzer,
             $stmt->var,
             $context,
-        ) === false) {
+        );
+
+        $context->inside_by_ref_offset = $was_inside_by_ref_offset;
+
+        if ($analyzed_var === false) {
             return false;
         }
 
@@ -189,6 +241,11 @@ final class ArrayFetchAnalyzer
             && !$context->vars_in_scope[$keyed_array_var_id]->possibly_undefined
             && $stmt_var_type
             && !$stmt_var_type->hasClassStringMap()
+            // a remembered offset may hold the null of a null array
+            && ($context->inside_isset
+                || !$stmt_var_type->isNullable()
+                || !$context->vars_in_scope[$keyed_array_var_id]->isNullable()
+                || self::wasReadOnThisPath($keyed_array_var_id, $context))
         ) {
             $stmt_type = $context->vars_in_scope[$keyed_array_var_id];
 
@@ -221,14 +278,19 @@ final class ArrayFetchAnalyzer
 
         $can_store_result = false;
         $chain_state = NullsafeChainState::None;
-        $own_nullable = false;
+        $own_type = null;
 
         if ($stmt_var_type) {
             if ($stmt_var_type->isNull()) {
-                if (!$context->inside_isset) {
+                // an offset passed by reference turns null into an array
+                if (!$context->inside_isset
+                    && !UnsetAnalyzer::isOnTargetChain($context, $stmt)
+                    && !$context->inside_by_ref_offset
+                ) {
                     IssueBuffer::maybeAdd(
                         new NullArrayAccess(
-                            'Cannot access array value on null variable ' . $extended_var_id,
+                            'Cannot access array value on null variable ' .
+                                self::describeArrayVar($extended_var_id, $stmt),
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -246,7 +308,7 @@ final class ArrayFetchAnalyzer
 
             $chain_state = $stmt_var_type->isNullable() ? NullsafeChainState::of($stmt->var) : NullsafeChainState::None;
 
-            if ($chain_state === NullsafeChainState::ShortCircuit) {
+            if ($chain_state->isNullOnlyByShortCircuit()) {
                 // the null of a `?->` short-circuit is not an array to fetch from, it is added to the result below
                 $non_null_var_type = $stmt_var_type->getBuilder();
                 $non_null_var_type->removeType('null');
@@ -264,7 +326,7 @@ final class ArrayFetchAnalyzer
                 null,
             );
 
-            $own_nullable = $stmt_type->isNullable() || $stmt_type->possibly_undefined;
+            $own_type = $stmt_type;
 
             if ($stmt->dim && $stmt_var_type->hasArray()) {
                 $array_type = $stmt_var_type->getArray();
@@ -353,6 +415,7 @@ final class ArrayFetchAnalyzer
             if ($stmt_type->possibly_undefined
                 && !$context->inside_isset
                 && !$context->inside_unset
+                && !$context->inside_by_ref_offset
                 && ($stmt_var_type && !$stmt_var_type->hasMixed())
             ) {
                 if (IssueBuffer::accepts(
@@ -373,7 +436,7 @@ final class ArrayFetchAnalyzer
         }
 
         if ($chain_state !== NullsafeChainState::None) {
-            $chain_state->afterLink($own_nullable)->markOn($stmt);
+            $chain_state->afterLink($own_type, $own_type && $own_type->possibly_undefined)->markOn($stmt);
             $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
         }
 
@@ -401,11 +464,27 @@ final class ArrayFetchAnalyzer
             $context->vars_in_scope[$keyed_array_var_id] = $stmt_type;
             $context->vars_possibly_in_scope[$keyed_array_var_id] = true;
 
+            if ($stmt_var_type && $stmt_var_type->isNullable()) {
+                $context->null_array_offsets_read[$keyed_array_var_id] = true;
+            }
+
             // reference the variable too
             $context->hasVariable($keyed_array_var_id);
         }
 
         return true;
+    }
+
+    /**
+     * Whether the remembered offset is still the one read earlier from the same array: what Psalm knows of it was not
+     * dropped since (an assignment, a by-reference pass, a mutation, or a branch or loop that dropped it). An
+     * assertion that only narrows the array or the offset does not end it.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function wasReadOnThisPath(string $keyed_array_var_id, Context $context): bool
+    {
+        return isset($context->null_array_offsets_read[$keyed_array_var_id]);
     }
 
     /**
@@ -493,6 +572,39 @@ final class ArrayFetchAnalyzer
     }
 
     /**
+     * The key of the path of a fetch whose key is one of a few literals (two to eight, as for assignments, see
+     * ArrayAssignmentAnalyzer::MAX_KEY_VALUES): each quoted, separated by '|' (see
+     * TaintFlowResolution::getFetchedKeys()). What it fetches is what is under one of them. Null if the key isn't
+     * one of a few literals, or if one of them has a quote or a '|', which would split it.
+     *
+     * @psalm-pure
+     */
+    private static function getFetchedKeys(Union $offset_type): ?string
+    {
+        $string_literals = $offset_type->getLiteralStrings();
+        $int_literals = $offset_type->getLiteralInts();
+        $count = count($string_literals) + count($int_literals);
+
+        if ($count < 2 || $count > 8 || $count !== count($offset_type->getAtomicTypes())) {
+            return null;
+        }
+
+        $keys = [];
+        foreach ($string_literals as $string_literal) {
+            if (strpbrk($string_literal->value, '\'|') !== false) {
+                return null;
+            }
+
+            $keys[] = '\'' . $string_literal->value . '\'';
+        }
+        foreach ($int_literals as $int_literal) {
+            $keys[] = '\'' . $int_literal->value . '\'';
+        }
+
+        return implode('|', $keys);
+    }
+
+    /**
      * Used to create a path between a variable $foo and $foo["a"]
      *
      * The array is $var, or what $var_type holds when it isn't what $var evaluates to (the item of an array a
@@ -576,6 +688,10 @@ final class ArrayFetchAnalyzer
                 && $key_path_suffix === ''
                 && $taint_graph instanceof TaintFlowGraph;
 
+            // a key that is one of a few literals fetches what is under one of them (see getFetchedKeys()): the
+            // variable use graph, and an assignment through a reference, only know the key is one of them
+            $fetched_keys = $dim_value === null && !$marks_elements ? self::getFetchedKeys($offset_type) : null;
+
             $parent_nodes = $stmt_var_type->parent_nodes;
 
             // a global read by its name gets what is written to that name, not all of them
@@ -610,11 +726,28 @@ final class ArrayFetchAnalyzer
                             $removed_taints,
                         );
                     }
+                } elseif ($fetched_keys !== null && $graph instanceof CombinedFlowGraph) {
+                    $graph->taint_flow_graph->addPath(
+                        $parent_node,
+                        $new_parent_node,
+                        'arrayvalue-fetch-' . $fetched_keys,
+                        $added_taints,
+                        $removed_taints,
+                    );
+                    $graph->variable_use_graph->addPath(
+                        $parent_node,
+                        $new_parent_node,
+                        'arrayvalue-fetch' . $key_path_suffix,
+                        $added_taints,
+                        $removed_taints,
+                    );
                 } else {
                     $graph->addPath(
                         $parent_node,
                         $new_parent_node,
-                        'arrayvalue-fetch' . $key_path_suffix,
+                        $fetched_keys !== null && !$graph instanceof VariableUseGraph
+                            ? 'arrayvalue-fetch-' . $fetched_keys
+                            : 'arrayvalue-fetch' . $key_path_suffix,
                         $added_taints,
                         $removed_taints,
                     );
@@ -649,6 +782,8 @@ final class ArrayFetchAnalyzer
         }
 
         self::taintSuperGlobalFetch($statements_analyzer, $var, $offset_type, $stmt_type);
+
+        PropertyBagTaints::taintFetch($statements_analyzer, $var, $offset_type, $stmt_type, $context);
     }
 
     /**
@@ -723,6 +858,7 @@ final class ArrayFetchAnalyzer
     /**
      * @psalm-suppress ComplexMethod to be refactored.
      * Good type/bad type behaviour could be mutualised with ArrayAnalyzer
+     * @param bool $by_reference whether the item is written by a call it is passed to by reference
      */
     public static function getArrayAccessTypeGivenOffset(
         StatementsAnalyzer $statements_analyzer,
@@ -734,10 +870,17 @@ final class ArrayFetchAnalyzer
         Context $context,
         ?PhpParser\Node\Expr $assign_value = null,
         ?Union $replacement_type = null,
+        bool $by_reference = false,
     ): Union {
         $offset_type = $offset_type_original->getBuilder();
 
         $codebase = $statements_analyzer->getCodebase();
+
+        // A bare type variable minted for a class template stands for the shape
+        // inferred at its construction site; resolve it so the array it holds is
+        // seen as an array here rather than as an unrecognised atomic.
+        $array_type = TypeVariableResolver::resolveTopLevel($array_type, $codebase);
+        $array_type = TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $array_type);
 
         $has_array_access = false;
         $non_array_types = [];
@@ -749,7 +892,6 @@ final class ArrayFetchAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeType(
                 $statements_analyzer->getFilePath(),
@@ -787,7 +929,8 @@ final class ArrayFetchAnalyzer
         if ($offset_type->isNull()) {
             IssueBuffer::maybeAdd(
                 new NullArrayOffset(
-                    'Cannot access value on variable ' . $extended_var_id . ' using null offset',
+                    'Cannot access value on variable ' .
+                        self::describeArrayVar($extended_var_id, $stmt) . ' using null offset',
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -812,7 +955,7 @@ final class ArrayFetchAnalyzer
             if (!$offset_type->ignore_nullable_issues) {
                 IssueBuffer::maybeAdd(
                     new PossiblyNullArrayOffset(
-                        'Cannot access value on variable ' . $extended_var_id
+                        'Cannot access value on variable ' . self::describeArrayVar($extended_var_id, $stmt)
                             . ' using possibly null offset ' . $offset_type,
                         new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                     ),
@@ -885,6 +1028,7 @@ final class ArrayFetchAnalyzer
                         $stmt,
                         $array_access_type,
                         $type,
+                        $by_reference,
                     );
 
                     $has_valid_expected_offset = true;
@@ -907,7 +1051,8 @@ final class ArrayFetchAnalyzer
                     } else {
                         IssueBuffer::maybeAdd(
                             new PossiblyNullArrayAssignment(
-                                'Cannot access array value on possibly null variable ' . $extended_var_id .
+                                'Cannot access array value on possibly null variable ' .
+                                    self::describeArrayVar($extended_var_id, $stmt) .
                                     ' of type ' . $array_type,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                             ),
@@ -917,10 +1062,14 @@ final class ArrayFetchAnalyzer
                         $array_access_type = new Union([new TNever]);
                     }
                 } else {
-                    if (!$context->inside_isset) {
+                    if (!$context->inside_isset
+                        && !UnsetAnalyzer::isOnTargetChain($context, $stmt)
+                        && !$context->inside_by_ref_offset
+                    ) {
                         IssueBuffer::maybeAdd(
                             new PossiblyNullArrayAccess(
-                                'Cannot access array value on possibly null variable ' . $extended_var_id .
+                                'Cannot access array value on possibly null variable ' .
+                                    self::describeArrayVar($extended_var_id, $stmt) .
                                     ' of type ' . $array_type,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                             ),
@@ -985,7 +1134,6 @@ final class ArrayFetchAnalyzer
             }
 
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -1008,6 +1156,8 @@ final class ArrayFetchAnalyzer
                     $assign_value,
                     $array_access_type,
                     $has_array_access,
+                    // nothing replaces an item an assignment writes into, which is modified in place as well
+                    $by_reference || $replacement_type === null,
                 );
             } elseif (!$array_type->hasMixed()) {
                 $non_array_types[] = (string)$type;
@@ -1023,7 +1173,7 @@ final class ArrayFetchAnalyzer
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidArrayAssignment(
                             'Cannot access array value on non-array variable ' .
-                            $extended_var_id . ' of type ' . $non_array_types[0],
+                            self::describeArrayVar($extended_var_id, $stmt) . ' of type ' . $non_array_types[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -1032,7 +1182,7 @@ final class ArrayFetchAnalyzer
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidArrayAccess(
                             'Cannot access array value on non-array variable ' .
-                            $extended_var_id . ' of type ' . $non_array_types[0],
+                            self::describeArrayVar($extended_var_id, $stmt) . ' of type ' . $non_array_types[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -1043,7 +1193,7 @@ final class ArrayFetchAnalyzer
                     IssueBuffer::maybeAdd(
                         new InvalidArrayAssignment(
                             'Cannot access array value on non-array variable ' .
-                            $extended_var_id . ' of type ' . $non_array_types[0],
+                            self::describeArrayVar($extended_var_id, $stmt) . ' of type ' . $non_array_types[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -1052,7 +1202,7 @@ final class ArrayFetchAnalyzer
                     IssueBuffer::maybeAdd(
                         new InvalidArrayAccess(
                             'Cannot access array value on non-array variable ' .
-                            $extended_var_id . ' of type ' . $non_array_types[0],
+                            self::describeArrayVar($extended_var_id, $stmt) . ' of type ' . $non_array_types[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -1065,7 +1215,6 @@ final class ArrayFetchAnalyzer
 
         if ($offset_type->hasMixed()) {
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -1076,14 +1225,14 @@ final class ArrayFetchAnalyzer
 
             IssueBuffer::maybeAdd(
                 new MixedArrayOffset(
-                    'Cannot access value on variable ' . $extended_var_id . ' using mixed offset',
+                    'Cannot access value on variable ' .
+                        self::describeArrayVar($extended_var_id, $stmt) . ' using mixed offset',
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
         } else {
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -1093,6 +1242,7 @@ final class ArrayFetchAnalyzer
             }
 
             if ($expected_offset_types) {
+                $statements_analyzer->node_data->markOffsetChecked($stmt);
                 $invalid_offset_type = $expected_offset_types[0];
 
                 $used_offset = 'using a ' . $offset_type->getId() . ' offset';
@@ -1109,7 +1259,8 @@ final class ArrayFetchAnalyzer
                     if (!$context->inside_unset) {
                         IssueBuffer::maybeAdd(
                             new PossiblyInvalidArrayOffset(
-                                'Cannot access value on variable ' . $extended_var_id . ' ' . $used_offset
+                                'Cannot access value on variable ' .
+                                    self::describeArrayVar($extended_var_id, $stmt) . ' ' . $used_offset
                                     . ', expecting ' . $invalid_offset_type,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                             ),
@@ -1117,37 +1268,7 @@ final class ArrayFetchAnalyzer
                         );
                     }
                 } else {
-                    $good_types = [];
-                    $bad_types = [];
-                    foreach ($offset_type->getAtomicTypes() as $atomic_key_type) {
-                        if (!$atomic_key_type instanceof TString
-                            && !$atomic_key_type instanceof TInt
-                            && !$atomic_key_type instanceof TArrayKey
-                            && !$atomic_key_type instanceof TMixed
-                            && !$atomic_key_type instanceof TTemplateParam
-                            && !(
-                                $atomic_key_type instanceof TObjectWithProperties
-                                && isset($atomic_key_type->methods['__tostring'])
-                            )
-                        ) {
-                            $bad_types[] = $atomic_key_type;
-
-                            if ($atomic_key_type instanceof TFalse) {
-                                $good_types[] = new TLiteralInt(0);
-                            } elseif ($atomic_key_type instanceof TTrue) {
-                                $good_types[] = new TLiteralInt(1);
-                            } elseif ($atomic_key_type instanceof TBool) {
-                                $good_types[] = new TLiteralInt(0);
-                                $good_types[] = new TLiteralInt(1);
-                            } elseif ($atomic_key_type instanceof TLiteralFloat) {
-                                $good_types[] = new TLiteralInt((int)$atomic_key_type->value);
-                            } elseif ($atomic_key_type instanceof TFloat) {
-                                $good_types[] = new TInt;
-                            } else {
-                                $good_types[] = new TArrayKey;
-                            }
-                        }
-                    }
+                    [$bad_types, $good_types] = self::splitInvalidOffsetTypes($offset_type->freeze());
 
                     if ($bad_types && $good_types) {
                         $offset_type->substitute(
@@ -1158,13 +1279,33 @@ final class ArrayFetchAnalyzer
 
                     IssueBuffer::maybeAdd(
                         new InvalidArrayOffset(
-                            'Cannot access value on variable ' . $extended_var_id . ' ' . $used_offset
+                            'Cannot access value on variable ' .
+                                self::describeArrayVar($extended_var_id, $stmt) . ' ' . $used_offset
                                 . ', expecting ' . $invalid_offset_type,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
                 }
+            } elseif (!$context->inside_isset
+                && $array_type->isArray()
+                && !$offset_type->ignore_falsable_issues
+                && isset($offset_type->getAtomicTypes()['false'])
+                && !$statements_analyzer->node_data->isOffsetChecked($stmt)
+            ) {
+                // PHP turns a false offset of an array into 0, and `false` alone is already an invalid offset. An
+                // expression that is read and written (`$a[$k]++`, a by-reference argument) is analyzed twice: it
+                // is reported once, and not when the other analysis already reported its offset
+                $statements_analyzer->node_data->markOffsetChecked($stmt);
+
+                IssueBuffer::maybeAdd(
+                    new PossiblyInvalidArrayOffset(
+                        'Cannot access value on variable ' . self::describeArrayVar($extended_var_id, $stmt)
+                            . ' using possibly false offset ' . $offset_type->getId() . ', which is 0',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
         }
 
@@ -1189,9 +1330,9 @@ final class ArrayFetchAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
         StatementsAnalyzer $statements_analyzer,
-    ): void {
+    ): bool {
         if ($context->inside_isset || $context->inside_unset || !$offset_type->hasLiteralInt()) {
-            return;
+            return false;
         }
 
         foreach ($offset_type->getAtomicTypes() as $offset_type_part) {
@@ -1206,8 +1347,12 @@ final class ArrayFetchAnalyzer
                         $extended_var_id . '[' . $offset_type_part->value . ']'
                     ]->possibly_undefined
             ) {
-                return;
+                return false;
             }
+        }
+
+        if ($context->inside_by_ref_offset) {
+            return true;
         }
 
         IssueBuffer::maybeAdd(
@@ -1221,8 +1366,13 @@ final class ArrayFetchAnalyzer
             ),
             $statements_analyzer->getSuppressedIssues(),
         );
+
+        return true;
     }
 
+    /**
+     * Whether the offset may be missing: reported, but where PHP creates it when it is
+     */
     private static function checkLiteralStringArrayOffset(
         MutableUnion $offset_type,
         Union $expected_offset_type,
@@ -1230,9 +1380,9 @@ final class ArrayFetchAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
         StatementsAnalyzer $statements_analyzer,
-    ): void {
+    ): bool {
         if ($context->inside_isset || $context->inside_unset) {
-            return;
+            return false;
         }
 
         if ($offset_type->hasLiteralString() && !$expected_offset_type->hasLiteralClassString()) {
@@ -1249,7 +1399,7 @@ final class ArrayFetchAnalyzer
                 );
 
                 $literal_access = $string_to_int === false
-                    ? '\'' . $offset_type_part->value . '\''
+                    ? ExpressionIdentifier::quoteOffset($offset_type_part->value)
                     : $string_to_int;
                 if (isset(
                     $context->vars_in_scope[
@@ -1265,6 +1415,10 @@ final class ArrayFetchAnalyzer
             }
 
             if (!$found_match) {
+                if ($context->inside_by_ref_offset) {
+                    return true;
+                }
+
                 IssueBuffer::maybeAdd(
                     new PossiblyUndefinedStringArrayOffset(
                         'Possibly undefined array offset \''
@@ -1276,8 +1430,12 @@ final class ArrayFetchAnalyzer
                     ),
                     $statements_analyzer->getSuppressedIssues(),
                 );
+
+                return true;
             }
         }
+
+        return false;
     }
 
     /**
@@ -1285,17 +1443,11 @@ final class ArrayFetchAnalyzer
      */
     public static function replaceOffsetTypeWithInts(Union $offset_type): Union
     {
-        $offset_type = $offset_type->getBuilder();
+        $offset_type = ArrayAnalyzer::castArrayKeyType($offset_type)->getBuilder();
         $offset_types = $offset_type->getAtomicTypes();
 
         foreach ($offset_types as $key => $offset_type_part) {
-            if ($offset_type_part instanceof TLiteralString) {
-                $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($offset_type_part->value);
-                if ($string_to_int !== false) {
-                    $offset_type->addType(new TLiteralInt($string_to_int));
-                    $offset_type->removeType($key);
-                }
-            } elseif ($offset_type_part instanceof TBool) {
+            if ($offset_type_part instanceof TBool) {
                 if ($offset_type_part instanceof TFalse) {
                     if (!$offset_type->ignore_falsable_issues) {
                         $offset_type->addType(new TLiteralInt(0));
@@ -1327,9 +1479,9 @@ final class ArrayFetchAnalyzer
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         ?Union $array_access_type,
         Atomic $type,
+        bool $by_reference = false,
     ): Union {
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
                     instanceof FunctionLikeAnalyzer)
@@ -1338,11 +1490,13 @@ final class ArrayFetchAnalyzer
             $codebase->analyzer->incrementMixedCount($statements_analyzer->getFilePath());
         }
 
-        if (!$context->inside_isset) {
+        // an item passed by reference was reported as accessed when the argument was read
+        if (!$context->inside_isset && !$by_reference) {
             if ($in_assignment) {
                 IssueBuffer::maybeAdd(
                     new MixedArrayAssignment(
-                        'Cannot access array value on mixed variable ' . $extended_var_id,
+                        'Cannot access array value on mixed variable ' .
+                            self::describeArrayVar($extended_var_id, $stmt),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -1350,7 +1504,8 @@ final class ArrayFetchAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new MixedArrayAccess(
-                        'Cannot access array value on mixed variable ' . $extended_var_id,
+                        'Cannot access array value on mixed variable ' .
+                            self::describeArrayVar($extended_var_id, $stmt),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -1546,15 +1701,29 @@ final class ArrayFetchAnalyzer
         Atomic $original_type,
         bool &$has_valid_offset,
     ): void {
+        $offset_possibly_missing = false;
+
         // if we're assigning to an empty array with a key offset, refashion that array
         if ($in_assignment) {
             if ($type->isEmptyArray()) {
                 $type = $type->setTypeParams([
-                    $offset_type->isMixed()
+                    $offset_type->hasMixed()
                         ? Type::getArrayKey()
-                        : $offset_type->freeze(),
+                        : self::castInvalidOffsetTypes($offset_type->freeze()),
                     $type->type_params[1],
                 ]);
+            }
+
+            $invalid_offset_types = self::getUncastableOffsetTypes($offset_type->freeze());
+
+            if ($invalid_offset_types) {
+                $expected_offset_types[] = 'array-key';
+
+                if (count($invalid_offset_types) < count($offset_type->getAtomicTypes())) {
+                    $has_valid_offset = true;
+                }
+            } else {
+                $has_valid_offset = true;
             }
         } elseif (!$type->isEmptyArray()) {
             $expected_offset_type = $type->type_params[0]->hasMixed()
@@ -1607,7 +1776,7 @@ final class ArrayFetchAnalyzer
                     //we already know we found a match, so if the array is non-empty and the key is a literal,
                     //then no need to check for PossiblyUndefinedStringArrayOffset
                     if (!$type instanceof TNonEmptyArray || !$type->type_params[0]->isSingleStringLiteral()) {
-                        self::checkLiteralStringArrayOffset(
+                        $offset_possibly_missing = self::checkLiteralStringArrayOffset(
                             $offset_type,
                             $expected_offset_type,
                             $extended_var_id,
@@ -1621,14 +1790,14 @@ final class ArrayFetchAnalyzer
                 if ($codebase->config->ensure_array_int_offsets_exist
                     && $offset_type_contained_by_expected
                 ) {
-                    self::checkLiteralIntArrayOffset(
+                    $offset_possibly_missing = self::checkLiteralIntArrayOffset(
                         $offset_type,
                         $expected_offset_type,
                         $extended_var_id,
                         $stmt,
                         $context,
                         $statements_analyzer,
-                    );
+                    ) || $offset_possibly_missing;
                 }
 
                 if ((!$offset_type_contained_by_expected
@@ -1684,6 +1853,13 @@ final class ArrayFetchAnalyzer
             $type->type_params[1],
         );
 
+        if ($context->inside_by_ref_offset && ($offset_possibly_missing || $array_access_type->isNever())) {
+            // PHP creates the missing offset, as null
+            $array_access_type = $array_access_type->isNever()
+                ? Type::getNull()
+                : Type::combineUnionTypes($array_access_type, Type::getNull());
+        }
+
         if ($array_access_type->isNever()
             && !$hasMixed
             && !$in_assignment
@@ -1691,7 +1867,7 @@ final class ArrayFetchAnalyzer
         ) {
             IssueBuffer::maybeAdd(
                 new EmptyArrayAccess(
-                    'Cannot access value on empty array variable ' . $extended_var_id,
+                    'Cannot access value on empty array variable ' . self::describeArrayVar($extended_var_id, $stmt),
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -1828,6 +2004,7 @@ final class ArrayFetchAnalyzer
 
         if ($key_values) {
             $properties = $type->properties;
+            $missing_key_in_isset = false;
             foreach ($key_values as $key_value) {
                 $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($key_value->value);
                 $key_value = $string_to_int === false ? $key_value : new TLiteralInt($string_to_int);
@@ -1884,8 +2061,10 @@ final class ArrayFetchAnalyzer
                         $properties[$key_value->value],
                     );
                 } elseif ($type->fallback_params !== null) {
+                    $offset_possibly_missing = false;
+
                     if ($codebase->config->ensure_array_string_offsets_exist) {
-                        self::checkLiteralStringArrayOffset(
+                        $offset_possibly_missing = self::checkLiteralStringArrayOffset(
                             $offset_type,
                             $type->getGenericKeyType(),
                             $extended_var_id,
@@ -1896,23 +2075,31 @@ final class ArrayFetchAnalyzer
                     }
 
                     if ($codebase->config->ensure_array_int_offsets_exist) {
-                        self::checkLiteralIntArrayOffset(
+                        $offset_possibly_missing = self::checkLiteralIntArrayOffset(
                             $offset_type,
                             $type->getGenericKeyType(),
                             $extended_var_id,
                             $stmt,
                             $context,
                             $statements_analyzer,
-                        );
+                        ) || $offset_possibly_missing;
                     }
 
                     $properties[$key_value->value] = $type->fallback_params[1];
 
-                    $array_access_type = $type->fallback_params[1];
+                    $array_access_type = $offset_possibly_missing && $context->inside_by_ref_offset
+                        // PHP creates the missing offset, as null
+                        ? Type::combineUnionTypes($type->fallback_params[1], Type::getNull())
+                        : $type->fallback_params[1];
                 } elseif ($hasMixed) {
                     $has_valid_offset = true;
 
                     $array_access_type = Type::getMixed();
+                } elseif ($context->inside_by_ref_offset) {
+                    // PHP creates the missing offset, as null
+                    $has_valid_offset = true;
+
+                    $array_access_type = Type::combineUnionTypes($array_access_type, Type::getNull());
                 } else {
                     $object_like_keys = array_keys($properties);
 
@@ -1937,8 +2124,16 @@ final class ArrayFetchAnalyzer
 
                     $expected_offset_types[] = $key_string;
 
-                    $array_access_type = Type::getMixed();
+                    if ($context->inside_isset) {
+                        $missing_key_in_isset = true;
+                    } else {
+                        $array_access_type = Type::getMixed();
+                    }
                 }
+            }
+
+            if ($missing_key_in_isset && $array_access_type === null) {
+                $array_access_type = Type::getMixed();
             }
 
             $type = $type->setProperties($properties);
@@ -1982,7 +2177,9 @@ final class ArrayFetchAnalyzer
 
                     $new_key_type = Type::combineUnionTypes(
                         $generic_key_type,
-                        $offset_type->isMixed() ? Type::getArrayKey() : $offset_type->freeze(),
+                        $offset_type->hasMixed()
+                            ? Type::getArrayKey()
+                            : self::castInvalidOffsetTypes($offset_type->freeze()),
                     );
 
                     if (!$stmt->dim) {
@@ -2048,9 +2245,42 @@ final class ArrayFetchAnalyzer
                     $expected_offset_types[] = $generic_key_type->getId();
                 }
 
+                // an offset range that only partly lies within the keys is possibly valid
+                if (self::offsetRangeOverlapsKeys($offset_type->freeze(), $key_type)) {
+                    $has_valid_offset = true;
+                }
+
                 $array_access_type = Type::getMixed();
             }
         }
+    }
+
+    /**
+     * Whether an int range among the offset types has an int in common with the int keys
+     *
+     * @psalm-pure
+     */
+    private static function offsetRangeOverlapsKeys(Union $offset_type, Union $key_type): bool
+    {
+        foreach ($offset_type->getAtomicTypes() as $offset_atomic) {
+            if (!$offset_atomic instanceof TIntRange) {
+                continue;
+            }
+
+            foreach ($key_type->getAtomicTypes() as $key_atomic) {
+                if ($key_atomic instanceof TIntRange
+                    && TIntRange::intersectIntRanges($offset_atomic, $key_atomic) !== null
+                ) {
+                    return true;
+                }
+
+                if ($key_atomic instanceof TLiteralInt && $offset_atomic->contains($key_atomic->value)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public static function validateArrayOffset(
@@ -2092,6 +2322,7 @@ final class ArrayFetchAnalyzer
         ?PhpParser\Node\Expr $assign_value,
         ?Union &$array_access_type,
         bool &$has_array_access,
+        bool $in_place,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         if (strtolower($type->value) === 'simplexmlelement'
@@ -2158,6 +2389,10 @@ final class ArrayFetchAnalyzer
             }
 
             if ($in_assignment) {
+                // PHP does not call offsetSet() for an item modified in place, passed by reference or written into:
+                // the call is analysed for what calling the method implies, but has no arguments to check
+                $arg_attributes = $in_place ? [ArgumentAnalyzer::NOT_PASSED => true] : [];
+
                 $old_node_data = $statements_analyzer->node_data;
 
                 $statements_analyzer->node_data = clone $statements_analyzer->node_data;
@@ -2172,12 +2407,14 @@ final class ArrayFetchAnalyzer
                                     new VirtualName('null'),
                                     $stmt->var->getAttributes(),
                                 ),
+                            attributes: $arg_attributes,
                         ),
                         new VirtualArg(
                             $assign_value ?? new VirtualConstFetch(
                                 new VirtualName('null'),
                                 $stmt->var->getAttributes(),
                             ),
+                            attributes: $arg_attributes,
                         ),
                     ],
                 );
@@ -2254,6 +2491,23 @@ final class ArrayFetchAnalyzer
                             $get_method_id,
                             $self_class,
                         ) ?? Type::getMixed();
+
+                        // with the type arguments of the object, as a call would have
+                        $class_template_params = ClassTemplateParamCollector::collect(
+                            $codebase,
+                            $codebase->methods->getClassLikeStorageForMethod($get_method_id),
+                            $codebase->classlike_storage_provider->get($type->value),
+                            'offsetget',
+                            $type,
+                        );
+
+                        if ($class_template_params !== null) {
+                            $call_array_access_type = TemplateInferredTypeReplacer::replace(
+                                $call_array_access_type,
+                                new TemplateResult([], $class_template_params),
+                                $codebase,
+                            );
+                        }
                     }
                 } else {
                     $statements_analyzer->node_data = clone $statements_analyzer->node_data;
@@ -2325,7 +2579,6 @@ final class ArrayFetchAnalyzer
         if ($in_assignment && $replacement_type) {
             if ($replacement_type->hasMixed()) {
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)
@@ -2343,7 +2596,6 @@ final class ArrayFetchAnalyzer
                 );
             } else {
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)
@@ -2454,8 +2706,138 @@ final class ArrayFetchAnalyzer
                 if ($has_valid_absolute_offset) {
                     break;
                 }
+            } elseif ($atomic_offset_type instanceof TTemplateKeyOf
+                || $atomic_offset_type instanceof TTemplateValueOf
+            ) {
+                $has_valid_absolute_offset = self::checkArrayOffsetType(
+                    $offset_type,
+                    TypeExpander::expandTemplateKeyOfAndValueOf(
+                        $codebase,
+                        new Union([$atomic_offset_type]),
+                    )->getAtomicTypes(),
+                    $codebase,
+                );
+
+                if ($has_valid_absolute_offset) {
+                    break;
+                }
             }
         }
         return $has_valid_absolute_offset;
+    }
+
+    /**
+     * An offset type with floats replaced by the ints PHP casts them to, and what can't be an array key, and PHP
+     * doesn't cast to one, replaced by array-key
+     *
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public static function castInvalidOffsetTypes(Union $offset_type): Union
+    {
+        if ($offset_type->hasFloat()) {
+            $atomic_types = [];
+
+            foreach ($offset_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TFloat) {
+                    $int = $atomic_type instanceof TLiteralFloat ? LiteralCast::toInt($atomic_type->value) : null;
+                    $atomic_type = $int === null
+                        ? new TInt($atomic_type->from_docblock)
+                        : new TLiteralInt($int, $atomic_type->from_docblock);
+                }
+
+                $atomic_types[$atomic_type->getKey()] = $atomic_type;
+            }
+
+            if (isset($atomic_types['int'])) {
+                foreach ($atomic_types as $key => $atomic_type) {
+                    if ($atomic_type instanceof TLiteralInt) {
+                        unset($atomic_types[$key]);
+                    }
+                }
+            }
+
+            if ($atomic_types !== []) {
+                $offset_type = $offset_type->setTypes($atomic_types);
+            }
+        }
+
+        $uncastable = self::getUncastableOffsetTypes($offset_type);
+
+        if (!$uncastable) {
+            return $offset_type;
+        }
+
+        return $offset_type->getBuilder()->substitute(
+            TypeCombiner::combine($uncastable, null),
+            Type::getArrayKey(),
+        )->freeze();
+    }
+
+    /**
+     * The atomic types of an offset type that can't be used as an array key and that PHP doesn't cast to one
+     *
+     * @return list<Atomic>
+     * @psalm-pure
+     */
+    private static function getUncastableOffsetTypes(Union $offset_type): array
+    {
+        $uncastable = [];
+
+        foreach (self::splitInvalidOffsetTypes($offset_type)[0] as $atomic_type) {
+            if (!$atomic_type instanceof TNull
+                && !$atomic_type instanceof TBool
+                && !$atomic_type instanceof TFloat
+            ) {
+                $uncastable[] = $atomic_type;
+            }
+        }
+
+        return $uncastable;
+    }
+
+    /**
+     * The atomic types of an offset type PHP can't use as an array key, and what it casts them to
+     *
+     * @return array{list<Atomic>, list<Atomic>}
+     * @psalm-pure
+     */
+    private static function splitInvalidOffsetTypes(Union $offset_type): array
+    {
+        $good_types = [];
+        $bad_types = [];
+        foreach ($offset_type->getAtomicTypes() as $atomic_key_type) {
+            if (!$atomic_key_type instanceof TString
+                && !$atomic_key_type instanceof TInt
+                && !$atomic_key_type instanceof TArrayKey
+                && !$atomic_key_type instanceof TMixed
+                && !$atomic_key_type instanceof TTemplateParam
+                && !$atomic_key_type instanceof TTemplateKeyOf
+                && !$atomic_key_type instanceof TTemplateValueOf
+                && !(
+                    $atomic_key_type instanceof TObjectWithProperties
+                    && isset($atomic_key_type->methods['__tostring'])
+                )
+            ) {
+                $bad_types[] = $atomic_key_type;
+
+                if ($atomic_key_type instanceof TFalse) {
+                    $good_types[] = new TLiteralInt(0);
+                } elseif ($atomic_key_type instanceof TTrue) {
+                    $good_types[] = new TLiteralInt(1);
+                } elseif ($atomic_key_type instanceof TBool) {
+                    $good_types[] = new TLiteralInt(0);
+                    $good_types[] = new TLiteralInt(1);
+                } elseif ($atomic_key_type instanceof TLiteralFloat) {
+                    $int = LiteralCast::toInt($atomic_key_type->value);
+                    $good_types[] = $int === null ? new TInt : new TLiteralInt($int);
+                } elseif ($atomic_key_type instanceof TFloat) {
+                    $good_types[] = new TInt;
+                } else {
+                    $good_types[] = new TArrayKey;
+                }
+            }
+        }
+
+        return [$bad_types, $good_types];
     }
 }

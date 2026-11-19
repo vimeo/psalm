@@ -10,5 +10,5 @@ namespace Psalm\Issue;
 final class PositionalArgumentNotAllowed extends ArgumentIssue
 {
     public const ERROR_LEVEL = 7;
-    public const SHORTCODE = 374;
+    public const SHORTCODE = 386;
 }

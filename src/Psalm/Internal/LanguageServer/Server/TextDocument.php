@@ -375,6 +375,27 @@ final class TextDocument
     }
 
     /**
+     * The edit that suppresses an issue: the docblock goes on the line before the one the issue starts on, and
+     * nothing of the code is replaced (so the last line of a file works like any other)
+     *
+     * @psalm-pure
+     */
+    public static function getSuppressTextEdit(string $issue_type, int $line_from, string $snippet): TextEdit
+    {
+        $indentation = '';
+        if (preg_match('/^(\s*)/', $snippet, $matches)) {
+            $indentation = $matches[1] ?? '';
+        }
+
+        $insert_position = new Position($line_from - 1, 0);
+
+        return new TextEdit(
+            new Range($insert_position, $insert_position),
+            "{$indentation}/** @psalm-suppress {$issue_type} */\n",
+        );
+    }
+
+    /**
      * The code action request is sent from the client to the server to compute commands
      * for a given text document and range. These commands are typically code fixes to
      * either fix problems or to beautify/refactor code.
@@ -408,16 +429,6 @@ final class TextDocument
             //$file_path = $this->server->uriToPath($textDocument->uri);
             //$contents = $this->codebase->file_provider->getContents($file_path);
 
-            $snippetRange = new Range(
-                new Position($data['line_from'] - 1, 0),
-                new Position($data['line_to'], 0),
-            );
-
-            $indentation = '';
-            if (preg_match('/^(\s*)/', $data['snippet'], $matches)) {
-                $indentation = $matches[1] ?? '';
-            }
-
             //Suppress Ability
             $fixers["suppress.{$data['type']}"] = new CodeAction(
                 "Suppress {$data['type']} for this line",
@@ -427,11 +438,7 @@ final class TextDocument
                 null,
                 new WorkspaceEdit([
                     $textDocument->uri => [
-                        new TextEdit(
-                            $snippetRange,
-                            "{$indentation}/** @psalm-suppress {$data['type']} */\n".
-                            "{$data['snippet']}\n",
-                        ),
+                        self::getSuppressTextEdit($data['type'], $data['line_from'], $data['snippet']),
                     ],
                 ]),
             );

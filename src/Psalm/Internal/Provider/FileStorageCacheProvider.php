@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider;
 
 use Psalm\Config;
 use Psalm\Internal\Cache;
+use Psalm\Internal\CacheMode;
 use Psalm\Storage\FileStorage;
 use UnexpectedValueException;
 
@@ -27,7 +28,7 @@ final class FileStorageCacheProvider
 
     private const FILE_STORAGE_CACHE_DIRECTORY = 'file_cache';
 
-    public function __construct(Config $config, string $composerLock, bool $persistent = true)
+    public function __construct(Config $config, string $composerLock, CacheMode $mode = CacheMode::Persistent)
     {
         $storage_dir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'Storage' . DIRECTORY_SEPARATOR;
 
@@ -36,6 +37,9 @@ final class FileStorageCacheProvider
             $storage_dir . 'FunctionLikeStorage.php',
             $storage_dir . 'ClassLikeStorage.php',
             $storage_dir . 'MethodStorage.php',
+            $storage_dir . 'PropertyStorage.php',
+            $storage_dir . 'PropertyHookStorage.php',
+            $storage_dir . 'EnumCaseStorage.php',
             $storage_dir . 'FunctionLikeParameter.php',
         ];
 
@@ -52,7 +56,7 @@ final class FileStorageCacheProvider
             $dependencies []= (int) filemtime($dependent_file_path);
         }
 
-        $this->cache = new Cache($config, self::FILE_STORAGE_CACHE_DIRECTORY, $dependencies, $persistent);
+        $this->cache = new Cache($config, self::FILE_STORAGE_CACHE_DIRECTORY, $dependencies, $mode);
     }
 
     public function consolidate(): void
@@ -65,8 +69,40 @@ final class FileStorageCacheProvider
         $this->cache->saveItem(strtolower($storage->file_path), $storage, hash('xxh128', $file_contents));
     }
 
+    /**
+     * Makes the next writeToCache() of the file store its storage, even if the contents are the same.
+     *
+     * @psalm-capabilities read-props|write-props|write-refs
+     */
+    public function forget(string $file_path): void
+    {
+        $this->cache->forgetItem(strtolower($file_path));
+    }
+
+    /**
+     * Drops the storage that the cache holds in memory, which may have been populated in place since it was
+     * saved. The copy on disk is from before that.
+     *
+     * @psalm-capabilities read-props|write-props|write-refs
+     */
+    public function evict(string $file_path): void
+    {
+        $this->cache->evictItem(strtolower($file_path));
+    }
+
     public function getLatestFromCache(string $file_path, string $file_contents): ?FileStorage
     {
         return $this->cache->getItem(strtolower($file_path), hash('xxh128', $file_contents));
+    }
+
+    /**
+     * Whether the storage cached for the file is for its contents, which are only read if there is an entry. Only the
+     * header of the entry is read, so getItem() may still find its payload unusable.
+     */
+    public function hasEntry(string $file_path, FileProvider $file_provider): bool
+    {
+        $hash = $this->cache->getHash(strtolower($file_path));
+
+        return $hash !== null && $hash === $file_provider->getContentsHash($file_path);
     }
 }

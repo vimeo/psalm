@@ -21,6 +21,7 @@ use function array_key_exists;
 use function array_reduce;
 use function array_slice;
 use function count;
+use function ctype_space;
 use function implode;
 use function is_string;
 use function ltrim;
@@ -36,6 +37,7 @@ use function substr;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class FunctionDocblockManipulator
 {
@@ -85,7 +87,11 @@ final class FunctionDocblockManipulator
     /** @var array<string, array{int, int}> */
     private array $param_typehint_offsets = [];
 
-    /** A bitmask of {@see Capabilities} constants */
+    /**
+     * A bitmask of {@see Capabilities} constants
+     *
+     * @var CapabilitySet|null
+     */
     private ?int $capabilities = null;
 
     /** @var list<string> */
@@ -256,7 +262,15 @@ final class FunctionDocblockManipulator
 
                 if (!isset($chars[$i + 1]) || ($chars[$i + 1] !== '\\' && !preg_match('/[\w]/', $chars[$i + 1]))) {
                     $this->return_typehint_end = $i + $end_bracket_position + 2;
-                    break;
+
+                    $next = $i + 1;
+                    while (isset($chars[$next]) && ctype_space($chars[$next])) {
+                        ++$next;
+                    }
+
+                    if (!isset($chars[$next]) || ($chars[$next] !== '|' && $chars[$next] !== '&')) {
+                        break;
+                    }
                 }
             }
         }
@@ -485,14 +499,16 @@ final class FunctionDocblockManipulator
 
 
         if ($this->new_phpdoc_return_type && $this->new_phpdoc_return_type !== $old_phpdoc_return_type) {
-            $modified_docblock = true;
             if ($this->new_phpdoc_return_type !== $this->new_php_return_type || $this->return_type_description) {
                 //only add the type if it's different than signature or if there's a description
+                $modified_docblock = true;
                 $parsed_docblock->tags['return'] = [
                     $this->new_phpdoc_return_type
                     . ($this->return_type_description ? (' ' . $this->return_type_description) : ''),
                 ];
-            } else {
+            } elseif (isset($parsed_docblock->tags['return'])) {
+                // a docblock without a @return to remove is left as written
+                $modified_docblock = true;
                 unset($parsed_docblock->tags['return']);
             }
         }
@@ -612,7 +628,7 @@ final class FunctionDocblockManipulator
     }
 
     /**
-     * @param int $capabilities a bitmask of {@see Capabilities} constants
+     * @param CapabilitySet $capabilities a bitmask of {@see Capabilities} constants
      * @psalm-external-mutation-free
      */
     public function setCapabilities(int $capabilities): void

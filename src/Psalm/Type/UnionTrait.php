@@ -37,6 +37,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TLowercaseNumericString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -44,6 +45,8 @@ use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
+use Psalm\Type\Atomic\TNonFalsyLowercaseNumericString;
+use Psalm\Type\Atomic\TNonFalsyLowercaseString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNull;
@@ -117,6 +120,123 @@ trait UnionTrait
 
         $this->from_docblock = $from_docblock;
         $this->types = $keyed_types;
+    }
+
+    /**
+     * The properties that the constructor takes and that differ from their defaults, to make a union of the same
+     * atomic types with the same flags.
+     *
+     * Handing get_object_vars() to the constructor instead makes it assign every property dynamically, only to
+     * overwrite most of them again: the type maps, the cached ids and $checked are reset there.
+     *
+     * @return TProperties
+     * @psalm-mutation-free
+     */
+    private function getNonDefaultProperties(): array
+    {
+        $properties = [];
+
+        if ($this->from_docblock) {
+            $properties['from_docblock'] = true;
+        }
+
+        if ($this->from_calculation) {
+            $properties['from_calculation'] = true;
+        }
+
+        if ($this->int_mask_bits !== null) {
+            $properties['int_mask_bits'] = $this->int_mask_bits;
+        }
+
+        if ($this->from_property) {
+            $properties['from_property'] = true;
+        }
+
+        if ($this->from_static_property) {
+            $properties['from_static_property'] = true;
+        }
+
+        if ($this->from_global_state) {
+            $properties['from_global_state'] = true;
+        }
+
+        if (!$this->initialized) {
+            $properties['initialized'] = false;
+        }
+
+        if ($this->initialized_class !== null) {
+            $properties['initialized_class'] = $this->initialized_class;
+        }
+
+        if ($this->failed_reconciliation) {
+            $properties['failed_reconciliation'] = true;
+        }
+
+        if ($this->ignore_nullable_issues) {
+            $properties['ignore_nullable_issues'] = true;
+        }
+
+        if ($this->ignore_falsable_issues) {
+            $properties['ignore_falsable_issues'] = true;
+        }
+
+        if ($this->ignore_isset) {
+            $properties['ignore_isset'] = true;
+        }
+
+        if ($this->possibly_undefined) {
+            $properties['possibly_undefined'] = true;
+        }
+
+        if ($this->possibly_undefined_from_try) {
+            $properties['possibly_undefined_from_try'] = true;
+        }
+
+        if ($this->explicit_never) {
+            $properties['explicit_never'] = true;
+        }
+
+        if ($this->had_template) {
+            $properties['had_template'] = true;
+        }
+
+        if ($this->from_template_default) {
+            $properties['from_template_default'] = true;
+        }
+
+        if ($this->by_ref) {
+            $properties['by_ref'] = true;
+        }
+
+        if ($this->reference_free) {
+            $properties['reference_free'] = true;
+        }
+
+        if ($this->closure_state) {
+            $properties['closure_state'] = true;
+        }
+
+        if (!$this->allow_mutations) {
+            $properties['allow_mutations'] = false;
+        }
+
+        if (!$this->has_mutations) {
+            $properties['has_mutations'] = false;
+        }
+
+        if ($this->parent_nodes !== []) {
+            $properties['parent_nodes'] = $this->parent_nodes;
+        }
+
+        if ($this->propagate_parent_nodes) {
+            $properties['propagate_parent_nodes'] = true;
+        }
+
+        if ($this->different) {
+            $properties['different'] = true;
+        }
+
+        return $properties;
     }
 
     /**
@@ -717,9 +837,13 @@ trait UnionTrait
      */
     public function hasLowercaseString(): bool
     {
-        return isset($this->types['string'])
-            && ($this->types['string'] instanceof TLowercaseString
-                || $this->types['string'] instanceof TNonEmptyLowercaseString);
+        return (isset($this->types['string'])
+                && ($this->types['string'] instanceof TLowercaseString
+                    || $this->types['string'] instanceof TNonEmptyLowercaseString
+                    || $this->types['string'] instanceof TNonFalsyLowercaseString))
+            || (isset($this->types['numeric-string'])
+                && ($this->types['numeric-string'] instanceof TLowercaseNumericString
+                    || $this->types['numeric-string'] instanceof TNonFalsyLowercaseNumericString));
     }
 
     /**
@@ -1390,12 +1514,7 @@ trait UnionTrait
             $context,
         );
 
-        $checker->traverseArray($this->types);
-
-        /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment Does not affect anything else */
-        $this->checked = true;
-
-        return !$checker->hasErrors();
+        return $checker->check($this);
     }
 
     /**
@@ -1412,7 +1531,6 @@ trait UnionTrait
             $phantom_classes,
         );
 
-        /** @psalm-suppress ImpureMethodCall */
         $scanner_visitor->traverseArray($this->types);
     }
 
@@ -1424,7 +1542,6 @@ trait UnionTrait
     {
         $classlike_visitor = new ContainsClassLikeVisitor($fq_class_like_name);
 
-        /** @psalm-suppress ImpureMethodCall Actually mutation-free */
         $classlike_visitor->traverseArray($this->types);
 
         return $classlike_visitor->matches();
@@ -1448,7 +1565,6 @@ trait UnionTrait
     {
         $literal_visitor = new ContainsLiteralVisitor();
 
-        /** @psalm-suppress ImpureMethodCall Actually mutation-free */
         $literal_visitor->traverseArray($this->types);
 
         return $literal_visitor->matches();
@@ -1462,7 +1578,6 @@ trait UnionTrait
     {
         $template_type_collector = new TemplateTypeCollector();
 
-        /** @psalm-suppress ImpureMethodCall Actually mutation-free */
         $template_type_collector->traverseArray($this->types);
 
         return $template_type_collector->getTemplateTypes();

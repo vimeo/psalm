@@ -28,6 +28,9 @@ A stricter level (lower number) reports more issues as errors. A more lenient le
 These issues have very low false-positive rates and indicate definite problems. They cannot be suppressed by changing the error level.
 
  - [AbstractMethodCall](issues/AbstractMethodCall.md)
+ - [CheckType](issues/CheckType.md)
+ - [CliOnlyCall](issues/CliOnlyCall.md)
+ - [CliOnlyInstancesUnguarded](issues/CliOnlyInstancesUnguarded.md)
  - [ComplexFunction](issues/ComplexFunction.md)
  - [ComplexMethod](issues/ComplexMethod.md)
  - [ConfigIssue](issues/ConfigIssue.md)
@@ -73,12 +76,8 @@ These issues have very low false-positive rates and indicate definite problems. 
  - [LoopInvalidation](issues/LoopInvalidation.md)
  - [MethodSignatureMustOmitReturnType](issues/MethodSignatureMustOmitReturnType.md)
  - [MethodSignatureMustProvideReturnType](issues/MethodSignatureMustProvideReturnType.md)
- - [MissingAbstractPureAnnotation](issues/MissingAbstractPureAnnotation.md)
  - [MissingDependency](issues/MissingDependency.md)
  - [MissingFile](issues/MissingFile.md)
- - [MissingImmutableAnnotation](issues/MissingImmutableAnnotation.md)
- - [MissingInterfaceImmutableAnnotation](issues/MissingInterfaceImmutableAnnotation.md)
- - [MissingPureAnnotation](issues/MissingPureAnnotation.md)
  - [MissingTemplateParam](issues/MissingTemplateParam.md)
  - [MissingThrowsDocblock](issues/MissingThrowsDocblock.md)
  - [NoEnumProperties](issues/NoEnumProperties.md)
@@ -94,6 +93,7 @@ These issues have very low false-positive rates and indicate definite problems. 
  - [OverriddenPropertyAccess](issues/OverriddenPropertyAccess.md)
  - [ParadoxicalCondition](issues/ParadoxicalCondition.md)
  - [ParentNotFound](issues/ParentNotFound.md)
+ - [ParseError](issues/ParseError.md)
  - [TooFewArguments](issues/TooFewArguments.md)
  - [UndefinedAttributeClass](issues/UndefinedAttributeClass.md)
  - [UndefinedClass](issues/UndefinedClass.md)
@@ -186,12 +186,17 @@ These issues become info (non-blocking) at level 3 and higher.
  - [UnsafeGenericInstantiation](issues/UnsafeGenericInstantiation.md)
  - [UnsafeInstantiation](issues/UnsafeInstantiation.md)
  - [UnsupportedReferenceUsage](issues/UnsupportedReferenceUsage.md)
+ - [WeakHash](issues/WeakHash.md)
+ - [WeakRandom](issues/WeakRandom.md)
 
 ## Errors at level 3 and below
 
 These issues become info (non-blocking) at level 4 and higher.
 
  - [ArgumentTypeCoercion](issues/ArgumentTypeCoercion.md)
+ - [CallableByReferenceMismatch](issues/CallableByReferenceMismatch.md)
+ - [ImplicitFloatToIntCast](issues/ImplicitFloatToIntCast.md)
+ - [InsecureCookie](issues/InsecureCookie.md)
  - [LessSpecificReturnStatement](issues/LessSpecificReturnStatement.md)
  - [MoreSpecificReturnType](issues/MoreSpecificReturnType.md)
  - [NonInvariantDocblockPropertyType](issues/NonInvariantDocblockPropertyType.md)
@@ -236,6 +241,7 @@ These issues become info (non-blocking) at level 5 and higher.
 
  - [FalseOperand](issues/FalseOperand.md)
  - [ForbiddenCode](issues/ForbiddenCode.md)
+ - [HiddenGeneratorReturn](issues/HiddenGeneratorReturn.md)
  - [IfThisIsMismatch](issues/IfThisIsMismatch.md)
  - [ImplementedParamTypeMismatch](issues/ImplementedParamTypeMismatch.md)
  - [ImplementedReturnTypeMismatch](issues/ImplementedReturnTypeMismatch.md)
@@ -280,6 +286,8 @@ These issues become info (non-blocking) at level 6 and higher.
  - [NullableReturnStatement](issues/NullableReturnStatement.md)
  - [UndefinedInterfaceMethod](issues/UndefinedInterfaceMethod.md)
  - [UndefinedThisPropertyAssignment](issues/UndefinedThisPropertyAssignment.md)
+ - [WeakCipher](issues/WeakCipher.md)
+ - [XmlExternalEntity](issues/XmlExternalEntity.md)
 
 ## Errors at level 6 and below
 
@@ -344,7 +352,11 @@ These issues become info (non-blocking) at level 8.
 These issues are only reported when their corresponding feature is enabled (e.g., `--taint-analysis` for Tainted* issues, `--find-unused-code` for Unused* issues). When enabled, they are always treated as errors.
 
  - [LiteralKeyUnshapedArray](issues/LiteralKeyUnshapedArray.md)
+ - [MissingAbstractPureAnnotation](issues/MissingAbstractPureAnnotation.md)
+ - [MissingImmutableAnnotation](issues/MissingImmutableAnnotation.md)
+ - [MissingInterfaceImmutableAnnotation](issues/MissingInterfaceImmutableAnnotation.md)
  - [MissingOverrideAttribute](issues/MissingOverrideAttribute.md)
+ - [MissingPureAnnotation](issues/MissingPureAnnotation.md)
  - [PossiblyUndefinedIntArrayOffset](issues/PossiblyUndefinedIntArrayOffset.md)
  - [PossiblyUndefinedStringArrayOffset](issues/PossiblyUndefinedStringArrayOffset.md)
  - [PossiblyUnusedMethod](issues/PossiblyUnusedMethod.md)

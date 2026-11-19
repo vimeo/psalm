@@ -15,11 +15,13 @@ use Stringable;
 
 use function count;
 use function ltrim;
+use function max;
 use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
+use function substr_compare;
 
 /**
  * A node in the data-flow / taint graph.
@@ -182,15 +184,26 @@ final class DataFlowNode implements Stringable
 
     /**
      * What the virtual calls of a method on a class give a parameter of it, which goes to the parameter of the
-     * overrides of the classes extending it: shared by all those calls, so it has no location.
+     * overrides of the classes extending it: shared by all those calls, so it has no location. The calls
+     * specialized to their location have one of their own, which only goes to the overrides.
      *
      * @psalm-pure
      */
-    public static function getForDispatch(string $cased_method_id, int $argument_offset): self
-    {
-        $label = 'dispatch of ' . $cased_method_id . '#' . ($argument_offset + 1);
+    public static function getForDispatch(
+        string $cased_method_id,
+        int $argument_offset,
+        bool $specialized_calls = false,
+        ?string $variadic_argument_name = null,
+        bool $any_following = false,
+    ): self {
+        $label = ($specialized_calls ? 'specialized ' : '') . 'dispatch of ' . $cased_method_id
+            . '#' . ($argument_offset + 1);
+        // the names of arguments are case-sensitive
+        $arguments = $variadic_argument_name !== null
+            ? ' (' . $variadic_argument_name . ':)'
+            : ($any_following ? ' (...)' : '');
 
-        return self::make(strtolower($label), $label, null);
+        return self::make(strtolower($label) . $arguments, $label . $arguments, null);
     }
 
     /**
@@ -419,7 +432,7 @@ final class DataFlowNode implements Stringable
      * The sink of the values of the array a parameter is given, for its value sinks (see
      * FunctionLikeParameter::$value_sinks): the parameter's node flows into it through a fetch of any value.
      *
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     public static function getForArgumentValues(self $param_node, int $taints): self
     {
@@ -487,13 +500,32 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * The index at which the variadic $param is declared in $storage when the argument at $position comes after
+     * it, null when the node at $position is the declared one (or $param isn't declared in $storage). An argument
+     * the variadic parameter collects has a node keyed by its position, which the body reads through the declared one.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getVariadicDeclaredOffset(
+        FunctionLikeStorage $storage,
+        FunctionLikeParameter $param,
+        int $position,
+    ): ?int {
+        $declared = self::getParameterOffset($storage, $param, -1);
+
+        return $declared !== -1 && $declared < $position ? $declared : null;
+    }
+
+    /**
      * The declared parameter index that identifies $param within $storage. Argument nodes are keyed
      * by this rather than by the parameter's position in a given call, so a named argument resolves
      * to the same node as the equivalent positional one -- and as the method body's own parameter
      * node (see {@see FunctionLikeAnalyzer}). For a positional call this is already the call offset,
-     * so nothing changes. Falls back to $fallback (the call offset) for a variadic parameter --
-     * matching the per-call-position nodes the flow path creates -- and when $param cannot be
-     * located, keeping id -> parameter deterministic (see the class invariant).
+     * so nothing changes. For a variadic parameter it is the call offset (matching the per-call-position
+     * nodes the flow path creates), but never before the variadic's own index: an argument written
+     * before it is a named one, which must not take the node of a parameter declared there. Falls back
+     * to $fallback (the call offset) when $param cannot be located, keeping id -> parameter
+     * deterministic (see the class invariant).
      *
      * @psalm-mutation-free
      */
@@ -502,13 +534,9 @@ final class DataFlowNode implements Stringable
         FunctionLikeParameter $param,
         int $fallback,
     ): int {
-        if ($param->is_variadic) {
-            return $fallback;
-        }
-
         foreach ($storage->params as $i => $candidate) {
             if ($candidate->name === $param->name) {
-                return $i;
+                return $param->is_variadic ? max($fallback, $i) : $i;
             }
         }
 
@@ -522,7 +550,7 @@ final class DataFlowNode implements Stringable
      * Reconciler. It stands for $node when types compare their parent nodes (see
      * getNarrowedNodeId()). $node itself if it is one already.
      *
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     public static function getForNarrowingToScalar(self $node): self
     {
@@ -546,7 +574,7 @@ final class DataFlowNode implements Stringable
      * Reconciler. Like the nodes of getForNarrowingToScalar(), it stands for $node when types compare their
      * parent nodes (see getNarrowedNodeId()). $node itself if it doesn't take those taints already.
      *
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     public static function getForNarrowingAway(self $node, int $taints): self
     {
@@ -597,42 +625,52 @@ final class DataFlowNode implements Stringable
      * The node of an array of $node once a check tells it holds nothing under a key (see Reconciler), the
      * removal being made by $removal (its label and location): data flows from $node to it through an
      * overwrite of that key. It holds part of what $node holds, so it is merged away where $node is merged
-     * in (see combineParentNodes()). The same removal from a node it made is that node: the key is already
-     * gone (e.g. in the next iteration of a loop).
+     * in (see combineParentNodes()). The same removal (by label, wherever it is made) from a node it made,
+     * or from one made from such a node, is that node: the key is already gone (e.g. in the next iteration
+     * of a loop, or where a check is made again in a context that holds it).
      *
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     public static function getForKeyRemoval(self $node, self $removal): self
     {
-        if (self::getKeyRemovalParts($node->id)[0] === $removal->id) {
-            return $node;
+        $prefix = self::KEY_REMOVED . strlen($removal->label) . ':' . $removal->label;
+        $prefix_length = strlen($prefix);
+        $offset = 0;
+
+        while (($base_offset = self::getKeyRemovalBaseOffset($node->id, $offset)) !== null) {
+            if (substr_compare($node->id, $prefix, $offset, $prefix_length) === 0) {
+                return $node;
+            }
+
+            $offset = $base_offset;
         }
 
         // $removal's location is a function of its id, so of this id too: see the class invariant
         return self::make(
-            self::KEY_REMOVED . strlen($removal->id) . ':' . $removal->id . $node->id,
+            $prefix . strlen($removal->id) . ':' . $removal->id . $node->id,
             $removal->label,
             $removal->code_location,
         );
     }
 
     /**
-     * The id of the removal and the id of the node the key is removed from, of the node of id $id if it is one
-     * of getForKeyRemoval(), else nulls
+     * The offset in $id of the id of the node the key is removed from, if $id has the id of a node of
+     * getForKeyRemoval() at $offset, else null
      *
-     * @return array{?string, ?string}
      * @psalm-pure
      */
-    private static function getKeyRemovalParts(string $id): array
+    private static function getKeyRemovalBaseOffset(string $id, int $offset): ?int
     {
-        if (!str_starts_with($id, self::KEY_REMOVED)) {
-            return [null, null];
+        if (substr_compare($id, self::KEY_REMOVED, $offset, strlen(self::KEY_REMOVED)) !== 0) {
+            return null;
         }
 
-        $colon = (int) strpos($id, ':', strlen(self::KEY_REMOVED));
-        $length = (int) substr($id, strlen(self::KEY_REMOVED), $colon - strlen(self::KEY_REMOVED));
+        $offset += strlen(self::KEY_REMOVED);
+        $colon = (int) strpos($id, ':', $offset);
+        $offset = $colon + 1 + (int) substr($id, $offset, $colon - $offset);
+        $colon = (int) strpos($id, ':', $offset);
 
-        return [substr($id, $colon + 1, $length), substr($id, $colon + 1 + $length)];
+        return $colon + 1 + (int) substr($id, $offset, $colon - $offset);
     }
 
     /**
@@ -658,13 +696,15 @@ final class DataFlowNode implements Stringable
             $base_id = $parent_node_id;
 
             while (true) {
-                $base_id = str_starts_with($base_id, self::NARROWED_TO_SCALAR)
-                    ? substr($base_id, strlen(self::NARROWED_TO_SCALAR))
-                    : self::getKeyRemovalParts($base_id)[1];
+                $offset = str_starts_with($base_id, self::NARROWED_TO_SCALAR)
+                    ? strlen(self::NARROWED_TO_SCALAR)
+                    : self::getKeyRemovalBaseOffset($base_id, 0);
 
-                if ($base_id === null) {
+                if ($offset === null) {
                     break;
                 }
+
+                $base_id = substr($base_id, $offset);
 
                 if (isset($parent_nodes[$base_id])) {
                     unset($parent_nodes[$parent_node_id]);
@@ -731,6 +771,19 @@ final class DataFlowNode implements Stringable
             $specialization_key,
             $taints,
         );
+    }
+
+    /**
+     * What the virtual calls of a method on a class give the `$this` of the overrides of the classes extending it
+     * that may run instead: shared by all those calls, so it has no location.
+     *
+     * @psalm-pure
+     */
+    public static function getForThisDispatch(string $cased_method_id): self
+    {
+        $label = 'dispatch of $this to ' . $cased_method_id;
+
+        return self::make(strtolower($label), $label, null);
     }
 
     /**
@@ -899,7 +952,7 @@ final class DataFlowNode implements Stringable
      * the node the path comes from: its label and location, a pure function of its id, are those of that
      * node.
      *
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     public static function getForPathVariant(string $from_id, ?self $from, string $path_type): self
     {
@@ -909,6 +962,31 @@ final class DataFlowNode implements Stringable
             null,
             $from?->label ?? $from_id,
             $from?->code_location,
+        );
+    }
+
+    /**
+     * The source of the taints a function-like returns under the keys $keys, outermost first, which leads into its
+     * return node $return_node (see FunctionCallReturnTypeFetcher::taintUsingStorage()). Its label and location, a
+     * pure function of its id, are those of the return node.
+     *
+     * @param non-empty-list<string> $keys
+     * @psalm-mutation-free
+     */
+    public static function getForReturnKey(self $return_node, array $keys, int $taints = 0): self
+    {
+        $suffix = '';
+        foreach ($keys as $key) {
+            $suffix .= "['" . $key . "']";
+        }
+
+        return new self(
+            $return_node->id . $suffix,
+            null,
+            null,
+            $return_node->label . $suffix,
+            $return_node->code_location,
+            $taints,
         );
     }
 
@@ -923,6 +1001,23 @@ final class DataFlowNode implements Stringable
     public static function getForVariableUseDestination(string $id, array $path_types = []): self
     {
         return new self($id, null, null, $id, null, 0, null, $path_types);
+    }
+
+    /**
+     * Rebuilds a node of the graph from what NodeTable keeps of it, with the location it had, so its location is
+     * still the one its id has (see the class invariant).
+     *
+     * @psalm-pure
+     */
+    public static function fromRow(
+        string $id,
+        ?string $unspecialized_id,
+        ?string $specialization_key,
+        string $label,
+        ?CodeLocation $code_location,
+        int $taints,
+    ): self {
+        return new self($id, $unspecialized_id, $specialization_key, $label, $code_location, $taints);
     }
 
     /**

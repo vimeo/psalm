@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -18,6 +19,7 @@ use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
@@ -35,6 +37,7 @@ use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonDecimalIntString;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyMixed;
@@ -49,14 +52,19 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_any;
 use function array_filter;
+use function array_intersect_assoc;
 use function array_intersect_key;
 use function array_key_exists;
 use function array_keys;
@@ -70,6 +78,8 @@ use function min;
 use function strcspn;
 use function strtolower;
 use function substr;
+
+use const ARRAY_FILTER_USE_BOTH;
 
 /**
  * @internal
@@ -86,7 +96,6 @@ final class TypeCombiner
      *  - and `array + array<string> = array<mixed>`
      *
      * @psalm-external-mutation-free
-     * @psalm-suppress ImpurePropertyAssignment We're not actually mutating any external instance
      * @param  non-empty-list<Atomic>    $types
      * @param  int    $literal_limit any greater number of literal types than this
      *                               will be merged to a scalar
@@ -197,9 +206,6 @@ final class TypeCombiner
 
             $combination->array_type_params = [];
 
-            /**
-             * @psalm-suppress PossiblyNullArrayAccess
-             */
             unset(
                 $combination->value_types['array'],
                 $combination->named_object_types['Traversable'],
@@ -272,16 +278,17 @@ final class TypeCombiner
             $generic_type = substr($generic_type, 0, strcspn($generic_type, '<['));
 
             /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
-            $generic_object = new TGenericObject(
+            $new_types[] = (new TGenericObject(
                 $generic_type,
                 $generic_type_params,
                 false,
-                $combination->object_static[$generic_type] ?? false,
+                false,
                 $combination->extra_types,
                 $from_docblock,
+            ))->setIsStatic(
+                $combination->object_static[$generic_type] ?? false,
+                $combination->object_static_resolved[$generic_type] ?? false,
             );
-
-            $new_types[] = $generic_object;
         }
 
         if ($combination->class_string_types) {
@@ -362,8 +369,13 @@ final class TypeCombiner
                 continue;
             }
 
-            if ($type instanceof TNever && (count($combination->value_types) > 1 || count($new_types))) {
-                $has_never = true;
+            // a type variable minted for an empty construction stands for
+            // `never` until something binds it, and `never` adds nothing to a
+            // union: `T|Foo` for such a variable is just `Foo`
+            if (($type instanceof TNever || ($type instanceof TTypeVariable && $type->isNeverBound()))
+                && (count($combination->value_types) > 1 || count($new_types))
+            ) {
+                $has_never = $has_never || $type instanceof TNever;
                 continue;
             }
 
@@ -427,6 +439,44 @@ final class TypeCombiner
         }
 
         return $new_types;
+    }
+
+    /**
+     * `object` is every object, shapes included. Shapes are open, so an object matching one shape may have any
+     * additional property: two shapes are only known to share the properties both declare
+     *
+     * @return ?TObject the type to hold, null if $existing is that already
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function combineObjects(?Atomic $existing, TObject $type, ?Codebase $codebase): ?TObject
+    {
+        if ($existing instanceof TObject && $existing::class === TObject::class) {
+            return null;
+        }
+
+        if (!$existing instanceof TObjectWithProperties || !$type instanceof TObjectWithProperties) {
+            return $type;
+        }
+
+        $properties = [];
+
+        foreach (array_intersect_key($existing->properties, $type->properties) as $name => $property) {
+            $properties[$name] = Type::combineUnionTypes($property, $type->properties[$name], $codebase);
+        }
+
+        $extra_types = array_filter(
+            array_intersect_key($existing->extra_types, $type->extra_types),
+            static fn(Atomic $extra_type, string $key): bool
+                => $extra_type->getId() === $type->extra_types[$key]->getId(),
+            ARRAY_FILTER_USE_BOTH,
+        );
+
+        return new TObjectWithProperties(
+            $properties,
+            array_intersect_assoc($existing->methods, $type->methods),
+            $extra_types,
+            $existing->from_docblock && $type->from_docblock,
+        );
     }
 
     /**
@@ -567,7 +617,6 @@ final class TypeCombiner
                 $combination->builtin_type_params['iterable'] = [Type::getMixed(), Type::getMixed()];
             }
 
-            /** @psalm-suppress PossiblyNullArrayAccess */
             unset(
                 $combination->named_object_types['Traversable'],
                 $combination->builtin_type_params['Traversable'],
@@ -595,6 +644,10 @@ final class TypeCombiner
             } else {
                 $combination->object_static[$type->value] = $type->is_static;
             }
+
+            // a static already bound to its receiver stays bound, or the next method call binds it again
+            $combination->object_static_resolved[$type->value] = $type->is_static_resolved
+                && ($combination->object_static_resolved[$type->value] ?? true);
         }
 
         if ($type instanceof TKeyedArray && $type->is_callable) {
@@ -719,6 +772,14 @@ final class TypeCombiner
             $combination->objectlike_sealed = $combination->objectlike_sealed
                 && $type->fallback_params === null;
 
+            if (!$type->fallback_params
+                || ($combination->objectlike_key_type
+                    ? $combination->objectlike_key_type->getId() !== $type->fallback_params[0]->getId()
+                    : $existing_objectlike_entries)
+            ) {
+                $combination->objectlike_same_fallback_key = false;
+            }
+
             $has_defined_keys = false;
 
             $class_strings = $type->class_strings ?? [];
@@ -730,6 +791,9 @@ final class TypeCombiner
                     $combination->objectlike_entries[$candidate_property_name] = $candidate_property_type
                         ->setPossiblyUndefined($existing_objectlike_entries
                             || $candidate_property_type->possibly_undefined);
+                    if ($existing_objectlike_entries && $combination->objectlike_same_fallback_key) {
+                        $combination->objectlike_missing_keys[$candidate_property_name] = true;
+                    }
                 } else {
                     $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
                         $value_type,
@@ -749,9 +813,7 @@ final class TypeCombiner
                     $has_defined_keys = true;
                 }
 
-                if (($candidate_property_type->possibly_undefined || ($value_type->possibly_undefined ?? true))
-                    && $combination->fallbackKeyContains($candidate_property_name)
-                ) {
+                if ($value_type === null && $combination->fallbackKeyContains($candidate_property_name)) {
                     $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
                         $combination->objectlike_entries[$candidate_property_name],
                         $combination->objectlike_value_type,
@@ -812,6 +874,9 @@ final class TypeCombiner
             foreach ($missing_entries as $k => $_) {
                 $combination->objectlike_entries[$k] = $combination->objectlike_entries[$k]
                     ->setPossiblyUndefined(true);
+                if ($combination->objectlike_same_fallback_key) {
+                    $combination->objectlike_missing_keys[$k] = true;
+                }
             }
 
             if ($combination->objectlike_value_type) {
@@ -821,7 +886,7 @@ final class TypeCombiner
                     }
                     $combination->objectlike_entries[$k] =  Type::combineUnionTypes(
                         $combination->objectlike_entries[$k],
-                        $combination->objectlike_value_type,
+                        $type->fallback_params[1] ?? $combination->objectlike_value_type,
                         $codebase,
                         $overwrite_empty_array,
                     );
@@ -852,8 +917,20 @@ final class TypeCombiner
                 return null;
             }
 
-            $combination->named_object_types = null;
-            $combination->value_types[$type_key] = $type;
+            // an object with properties is a shape, which a named object doesn't have to match
+            if (!$type instanceof TObjectWithProperties) {
+                $combination->named_object_types = null;
+            }
+
+            $combined_object = self::combineObjects(
+                $type_key === 'object' ? ($combination->value_types['object'] ?? null) : null,
+                $type,
+                $codebase,
+            );
+
+            if ($combined_object !== null) {
+                $combination->value_types[$type_key] = $combined_object;
+            }
 
             return null;
         }
@@ -882,6 +959,26 @@ final class TypeCombiner
                 }
 
                 return null;
+            }
+
+            $combination->value_types[$type_key] = $type;
+
+            return null;
+        }
+
+        if ($type instanceof TTemplateKeyOf || $type instanceof TTemplateValueOf) {
+            $existing_type = $combination->value_types[$type_key] ?? null;
+
+            if (($existing_type instanceof TTemplateKeyOf || $existing_type instanceof TTemplateValueOf)
+                && $existing_type->defining_class === $type->defining_class
+                && !$existing_type->as->equals($type->as)
+            ) {
+                $type = new ($type::class)(
+                    $type->param_name,
+                    $type->defining_class,
+                    Type::combineUnionTypes($type->as, $existing_type->as, $codebase, false, false),
+                    $type->from_docblock,
+                );
             }
 
             $combination->value_types[$type_key] = $type;
@@ -1089,18 +1186,56 @@ final class TypeCombiner
                 }
             }
         } elseif ($type instanceof TLiteralString) {
-            if ($combination->strings !== null && count($combination->strings) < $literal_limit) {
+            $string_type = $combination->value_types['string'] ?? null;
+
+            if (($string_type instanceof TDecimalIntString || $string_type instanceof TNonDecimalIntString)
+                && self::isLiteralInDecimalIntString($string_type, $type)
+            ) {
+                // do nothing
+            } elseif ($combination->strings !== null && count($combination->strings) < $literal_limit) {
                 $combination->strings[$type_key] = $type;
+            } elseif (($string_type instanceof TDecimalIntString || $string_type instanceof TNonDecimalIntString)
+                && $combination->strings !== null
+            ) {
+                // too many literals to keep beside a (non-)decimal-int-string: they all join it
+                $literals = $combination->strings;
+                $literals[$type_key] = $type;
+                $combination->strings = null;
+
+                foreach ($literals as $literal_key => $literal) {
+                    self::scrapeStringProperties($literal_key, $literal, $combination, $codebase, $literal_limit);
+                }
             } else {
                 $shared_classlikes = $codebase ? self::getSharedTypes($combination, $codebase) : [];
 
+                $had_literals = $combination->strings !== null;
                 $combination->strings = null;
 
                 if (isset($combination->value_types['string'])
-                    && $combination->value_types['string'] instanceof TNumericString
-                    && is_numeric($type->value)
+                    && $combination->value_types['string'] instanceof TString
+                    && StringRefinement::isCombinedRefinement($combination->value_types['string'])
                 ) {
-                    // do nothing
+                    $combination->value_types['string'] = self::combineRefinedStrings(
+                        $combination->value_types['string'],
+                        $type,
+                    );
+                } elseif ($string_type instanceof TDecimalIntString || $string_type instanceof TNonDecimalIntString) {
+                    $combination->value_types['string'] = self::combineDecimalIntString($string_type, $type);
+                } elseif (isset($combination->value_types['string'])
+                    && $combination->value_types['string'] instanceof TNumericString
+                    && !$type instanceof TLiteralClassString
+                ) {
+                    if (!$had_literals
+                        && $type->value === ''
+                        && $combination->value_types['string']::class === TNumericString::class
+                    ) {
+                        // stays beside the numeric-string, as when the literal is combined first
+                        $combination->strings = [$type_key => $type];
+                    } elseif (!is_numeric($type->value)) {
+                        $combination->value_types['string'] = $type->value === ''
+                            ? new TString()
+                            : new TNonEmptyString();
+                    }
                 } elseif (isset($combination->value_types['class-string'])
                     && $type instanceof TLiteralClassString
                 ) {
@@ -1152,10 +1287,22 @@ final class TypeCombiner
             }
         } else {
             $type_key = 'string';
+            $had_string_type = isset($combination->value_types['string']);
 
             if (!isset($combination->value_types['string'])) {
                 if ($combination->strings) {
-                    if ($type instanceof TNumericString) {
+                    if ($type instanceof TString && StringRefinement::isCombinedRefinement($type)) {
+                        foreach ($combination->strings as $string_type) {
+                            $type = self::combineRefinedStrings($type, $string_type);
+                        }
+
+                        $combination->value_types['string'] = $type;
+                    } elseif ($type instanceof TDecimalIntString || $type instanceof TNonDecimalIntString) {
+                        $combination->value_types['string'] = $type;
+                        $combination->strings = self::removeLiteralsInDecimalIntString($type, $combination->strings);
+
+                        return;
+                    } elseif ($type instanceof TNumericString) {
                         $has_only_numeric_strings = true;
                         $has_only_non_empty_strings = true;
 
@@ -1258,7 +1405,27 @@ final class TypeCombiner
                 if ($type::class === TString::class) {
                     $combination->value_types['string'] = $type;
                 } elseif ($combination->value_types['string']::class !== $type::class) {
-                    if ($type::class === TNonEmptyString::class
+                    if ($type instanceof TString
+                        && $combination->value_types['string'] instanceof TString
+                        && (StringRefinement::isCombinedRefinement($type)
+                            || StringRefinement::isCombinedRefinement($combination->value_types['string']))
+                    ) {
+                        $combination->value_types['string'] = self::combineRefinedStrings(
+                            $combination->value_types['string'],
+                            $type,
+                        );
+                    } elseif ($type instanceof TString
+                        && $combination->value_types['string'] instanceof TString
+                        && ($type instanceof TDecimalIntString
+                            || $type instanceof TNonDecimalIntString
+                            || $combination->value_types['string'] instanceof TDecimalIntString
+                            || $combination->value_types['string'] instanceof TNonDecimalIntString)
+                    ) {
+                        $combination->value_types['string'] = self::combineDecimalIntString(
+                            $combination->value_types['string'],
+                            $type,
+                        );
+                    } elseif ($type::class === TNonEmptyString::class
                         && $combination->value_types['string']::class === TNumericString::class
                     ) {
                         $combination->value_types['string'] = $type;
@@ -1313,11 +1480,127 @@ final class TypeCombiner
                     } else {
                         $combination->value_types['string'] = new TString();
                     }
+                } else {
+                    // the literals beside this string type were placed when it was first added
+                    return;
                 }
             }
 
-            $combination->strings = null;
+            $literals = $had_string_type ? $combination->strings : null;
+            $string_type = $combination->value_types['string'] ?? null;
+
+            if ($string_type instanceof TDecimalIntString || $string_type instanceof TNonDecimalIntString) {
+                // the literals it doesn't contain stay beside it
+                $combination->strings = self::removeLiteralsInDecimalIntString($string_type, $literals ?? []);
+            } else {
+                // the literals kept beside the previous string type join the new one
+                $combination->strings = null;
+
+                foreach ($literals ?? [] as $literal_key => $literal) {
+                    self::scrapeStringProperties($literal_key, $literal, $combination, $codebase, $literal_limit);
+                }
+            }
         }
+    }
+
+    /**
+     * The narrowest string type containing both types, when either is only modelled by its refinements: the
+     * refinements both types have
+     *
+     * @psalm-pure
+     */
+    private static function combineRefinedStrings(TString $type_1, TString $type_2): TString
+    {
+        $refinements = StringRefinement::getImplied($type_1) & StringRefinement::getImplied($type_2);
+
+        // the refinements shared by two string types, without the literal one, always make a string type
+        $type = StringRefinement::getType($refinements & ~StringRefinement::LITERAL);
+        assert($type !== null);
+
+        return $type;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isLiteralInDecimalIntString(TString $type, TLiteralString $literal): bool
+    {
+        return (ArrayAnalyzer::getLiteralArrayKeyInt($literal->value) !== false)
+            === $type instanceof TDecimalIntString;
+    }
+
+    /**
+     * @param array<string, TLiteralString> $literals
+     * @return array<string, TLiteralString>
+     * @psalm-pure
+     */
+    private static function removeLiteralsInDecimalIntString(TString $type, array $literals): array
+    {
+        foreach ($literals as $key => $literal) {
+            if (self::isLiteralInDecimalIntString($type, $literal)) {
+                unset($literals[$key]);
+            }
+        }
+
+        return $literals;
+    }
+
+    /**
+     * The narrowest string type containing both types, when one is a decimal-int-string or a non-decimal-int-string
+     *
+     * @psalm-pure
+     */
+    private static function combineDecimalIntString(TString $type_1, TString $type_2): TString
+    {
+        if (!$type_1 instanceof TDecimalIntString && !$type_1 instanceof TNonDecimalIntString) {
+            [$type_1, $type_2] = [$type_2, $type_1];
+        }
+
+        if ($type_1::class === $type_2::class) {
+            return $type_1;
+        }
+
+        if ($type_1 instanceof TNonDecimalIntString) {
+            if (($type_2 instanceof TLiteralString && ArrayAnalyzer::getLiteralArrayKeyInt($type_2->value) === false)
+                || $type_2 instanceof TClassString
+                || $type_2 instanceof TTraitString
+            ) {
+                return $type_1;
+            }
+
+            return new TString();
+        }
+
+        // a decimal-int-string is a non-empty lowercase numeric string
+        if ($type_2 instanceof TLiteralString) {
+            if (ArrayAnalyzer::getLiteralArrayKeyInt($type_2->value) !== false) {
+                return $type_1;
+            }
+
+            if (is_numeric($type_2->value)) {
+                return new TNumericString();
+            }
+
+            if (strtolower($type_2->value) === $type_2->value) {
+                return $type_2->value === '' ? new TLowercaseString() : new TNonEmptyLowercaseString();
+            }
+
+            return $type_2->value === '' ? new TString() : new TNonEmptyString();
+        }
+
+        if ($type_2::class === TNumericString::class
+            || $type_2::class === TLowercaseString::class
+            || $type_2::class === TNonEmptyLowercaseString::class
+            || $type_2::class === TNonEmptyString::class
+        ) {
+            return $type_2;
+        }
+
+        if ($type_2 instanceof TNonEmptyString) {
+            return new TNonEmptyString();
+        }
+
+        return new TString();
     }
 
     private static function scrapeIntProperties(
@@ -1331,11 +1614,10 @@ final class TypeCombiner
         }
 
         if ($type instanceof TLiteralInt) {
-            if ($combination->ints !== null && count($combination->ints) < $literal_limit) {
-                $combination->ints[$type_key] = $type;
-            } else {
-                $combination->ints[$type_key] = $type;
+            $is_below_limit = $combination->ints !== null && count($combination->ints) < $literal_limit;
+            $combination->ints[$type_key] = $type;
 
+            if (!$is_below_limit) {
                 $all_nonnegative = !array_any(
                     $combination->ints,
                     static fn($int): bool => $int->value < 0,
@@ -1526,14 +1808,27 @@ final class TypeCombiner
             }
 
             if ($combination->objectlike_value_type
-                && $combination->objectlike_value_type->isMixed()
-                && $combination->array_type_params
-                && !$combination->array_type_params[1]->isNever()
+                && $combination->objectlike_same_fallback_key
+                && !$combination->array_type_params
+                && !$combination->all_arrays_lists
+                && !$combination->all_arrays_callable
             ) {
-                $combination->objectlike_entries = array_filter(
-                    $combination->objectlike_entries,
-                    static fn(Union $type): bool => !$type->possibly_undefined,
-                );
+                // a key that every array lacking it may hold in its fallback, with the fallback's type, is the fallback
+                $fallback_value_type = $combination->objectlike_value_type;
+                foreach ($combination->objectlike_missing_keys as $k => $_) {
+                    $objectlike_entry = $combination->objectlike_entries[$k];
+                    if ($objectlike_entry->possibly_undefined
+                        && $combination->fallbackKeyAlwaysContains($k)
+                        && ($objectlike_entry->hasMixed()
+                            ? $fallback_value_type->hasMixed()
+                            : $objectlike_entry->getId() === $fallback_value_type->getId())
+                    ) {
+                        unset(
+                            $combination->objectlike_entries[$k],
+                            $combination->objectlike_class_string_keys[$k],
+                        );
+                    }
+                }
             }
 
             if ($combination->objectlike_entries) {
@@ -1555,12 +1850,7 @@ final class TypeCombiner
                     $fallback_value_type = $combination->array_type_params[1];
                 }
 
-                $sealed = $combination->objectlike_sealed && (
-                    !$combination->array_type_params
-                    || (isset($combination->array_type_params[1])
-                        && $combination->array_type_params[1]->isNever()
-                    )
-                );
+                $sealed = $combination->objectlike_sealed;
 
                 if ($combination->all_arrays_callable) {
                     $objectlike = TKeyedArray::makeCallable(

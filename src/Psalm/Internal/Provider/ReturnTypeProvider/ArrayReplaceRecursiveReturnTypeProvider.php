@@ -398,7 +398,7 @@ final class ArrayReplaceRecursiveReturnTypeProvider implements FunctionReturnTyp
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function isEmptyArray(Atomic $array): bool
     {

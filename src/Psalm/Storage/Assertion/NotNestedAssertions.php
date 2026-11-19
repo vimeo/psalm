@@ -8,10 +8,6 @@ use Override;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
-use function json_encode;
-
-use const JSON_THROW_ON_ERROR;
-
 /**
  * @psalm-immutable
  * @api
@@ -41,7 +37,7 @@ final class NotNestedAssertions extends Assertion
 
     public function __toString(): string
     {
-        return '!@' . json_encode($this->assertions, JSON_THROW_ON_ERROR);
+        return '!@' . NestedAssertions::getFormulaString($this->assertions);
     }
 
     /**

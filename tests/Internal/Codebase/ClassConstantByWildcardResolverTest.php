@@ -40,6 +40,7 @@ final class ClassConstantByWildcardResolverTest extends TestCase
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->scanFiles();
         $resolved = $this->resolver->resolve('ReconciliationTest\\Foo', '*');
+        self::assertNotNull($resolved);
         self::assertNotEmpty($resolved);
         foreach ($resolved as $type) {
             self::assertInstanceOf(TLiteralString::class, $type);
@@ -65,6 +66,7 @@ final class ClassConstantByWildcardResolverTest extends TestCase
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->scanFiles();
         $resolved = $this->resolver->resolve('ReconciliationTest\\Foo', 'BA*');
+        self::assertNotNull($resolved);
         self::assertNotEmpty($resolved);
         foreach ($resolved as $type) {
             self::assertInstanceOf(TLiteralString::class, $type);

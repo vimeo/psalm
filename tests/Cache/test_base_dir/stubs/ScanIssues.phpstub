@@ -1,0 +1,21 @@
+<?php
+
+abstract class ScanIssues
+{
+    public const A = 1;
+    public const A = 2;
+
+    public $x;
+    public $x;
+
+    /** @param int $y */
+    public function __construct(
+        /** @var int */
+        public $y,
+    ) {
+    }
+
+    private final function f(): void
+    {
+    }
+}

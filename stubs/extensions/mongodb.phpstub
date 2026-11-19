@@ -545,6 +545,10 @@ namespace MongoDB\Driver
 
 namespace MongoDB\Driver\Monitoring
 {
+    interface Subscriber
+    {
+    }
+
     /**
      * Subscribes to the events of every manager of the process
      *

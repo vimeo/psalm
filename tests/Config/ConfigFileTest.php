@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Psalm\Tests\Config;
 
 use Override;
+use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\Test;
 use Psalm\Config;
 use Psalm\Exception\ConfigException;
 use Psalm\Internal\PluginManager\ConfigFile;
-use Psalm\Internal\RuntimeCaches;
-use Psalm\Tests\TestCase;
+use Psalm\Tests\DeferredAnalyzerTestCase;
 
 use function assert;
 use function file_get_contents;
@@ -22,8 +23,8 @@ use function unlink;
 
 use const PHP_EOL;
 
-/** @group PluginManager */
-final class ConfigFileTest extends TestCase
+#[Group('PluginManager')]
+final class ConfigFileTest extends DeferredAnalyzerTestCase
 {
     private string $file_path;
 
@@ -40,7 +41,8 @@ final class ConfigFileTest extends TestCase
     #[Override]
     public function setUp(): void
     {
-        RuntimeCaches::clearAll();
+        parent::setUp();
+
         $temp_name = tempnam(sys_get_temp_dir(), 'psalm-test-config');
         assert($temp_name !== false);
         $this->file_path = $temp_name;
@@ -50,11 +52,10 @@ final class ConfigFileTest extends TestCase
     public function tearDown(): void
     {
         @unlink($this->file_path);
+        parent::tearDown();
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function canCreateConfigObject(): void
     {
         file_put_contents($this->file_path, trim('
@@ -66,9 +67,7 @@ final class ConfigFileTest extends TestCase
         $this->assertInstanceOf(Config::class, $config_file->getConfig());
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function addCanAddPluginClassToExistingPluginsNode(): void
     {
         file_put_contents(
@@ -97,9 +96,7 @@ final class ConfigFileTest extends TestCase
         ));
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function addCanCreateMissingPluginsNode(): void
     {
         file_put_contents(
@@ -120,9 +117,7 @@ final class ConfigFileTest extends TestCase
         ));
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function removeDoesNothingWhenThereIsNoPluginsNode(): void
     {
         $noPlugins = '<?xml version="1.0"?>
@@ -141,9 +136,7 @@ final class ConfigFileTest extends TestCase
         );
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function removeKillsEmptyPluginsNode(): void
     {
         $noPlugins = '<?xml version="1.0" encoding="UTF-8"?>
@@ -167,9 +160,7 @@ final class ConfigFileTest extends TestCase
         );
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function removeKillsSpecifiedPlugin(): void
     {
         $noPlugins = trim('
@@ -195,9 +186,7 @@ final class ConfigFileTest extends TestCase
         );
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function removeKillsSpecifiedPluginWithOneRemaining(): void
     {
         $noPlugins = trim('

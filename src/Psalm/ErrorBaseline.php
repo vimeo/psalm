@@ -108,7 +108,7 @@ final class ErrorBaseline
 
             $fileName = str_replace('\\', '/', $fileName);
 
-            $files[$fileName] = [];
+            $files[$fileName] ??= [];
 
             foreach ($file->childNodes as $issue) {
                 if (!$issue instanceof DOMElement) {
@@ -117,7 +117,7 @@ final class ErrorBaseline
 
                 $issueType = $issue->tagName;
 
-                $files[$fileName][$issueType] = ['o' => 0, 's' => []];
+                $files[$fileName][$issueType] ??= ['o' => 0, 's' => []];
                 $codeSamples = $issue->getElementsByTagName('code');
 
                 foreach ($codeSamples as $codeSample) {

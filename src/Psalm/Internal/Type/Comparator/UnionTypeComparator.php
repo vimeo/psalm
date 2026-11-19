@@ -9,25 +9,42 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyOf;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 
+use function array_map;
 use function array_merge;
 use function array_pop;
 use function array_push;
 use function array_reverse;
+use function array_unique;
+use function array_values;
+use function assert;
 use function count;
+use function implode;
 use function is_array;
+use function sort;
 
 use const PHP_INT_MAX;
 
@@ -71,7 +88,22 @@ final class UnionTypeComparator
 
         $container_has_template = $container_type->hasTemplateOrStatic();
 
-        $input_atomic_types = array_reverse(self::getTypeParts($codebase, $input_type));
+        $container_type_parts = self::getTypeParts($codebase, $container_type);
+
+        // the container's int and string literals by key and its other parts, split once an input literal needs them
+        $container_literals = null;
+        $other_container_parts = [];
+
+        // key-of<T> and value-of<T> are within their bound, but only key-of<T> and value-of<T> are within them
+        $input_atomic_types = array_reverse(self::getTypeParts(
+            $codebase,
+            $input_type,
+            !self::hasTemplateKeyOrValueOf($container_type),
+        ));
+
+        // every input part no container part accepts is examined before the comparison fails, so that the result
+        // does not depend on the order of the input parts
+        $failed_parts = [];
 
         while ($input_type_part = array_pop($input_atomic_types)) {
             if ($input_type_part instanceof TNull && $ignore_null) {
@@ -94,13 +126,12 @@ final class UnionTypeComparator
                 // A type variable in input position is constrained from above
                 // by the container: record `name <: container` and treat it
                 // as contained.
-                $container_single = $container_type->isSingle()
-                    ? $container_type->getSingleAtomic()
-                    : null;
-
-                if ($container_single instanceof TTypeVariable
-                    && $container_single->name === $input_type_part->name
-                ) {
+                //
+                // A container that already holds the variable itself (`T <: T|X`)
+                // constrains nothing, and recording it would make the variable's
+                // bounds refer back to the variable, which can never be rendered
+                // or resolved to a finite type.
+                if (isset($container_type->getAtomicTypes()[$input_type_part->name])) {
                     continue;
                 }
 
@@ -118,23 +149,15 @@ final class UnionTypeComparator
             $type_match_found = false;
             $scalar_type_match_found = false;
             $all_to_string_cast = true;
+            $some_to_string_cast = false;
 
-            $all_type_coerced = null;
-            $all_type_coerced_from_mixed = null;
             $all_type_coerced_from_as_mixed = null;
 
             $some_type_coerced = false;
             $some_type_coerced_from_mixed = false;
+            $some_type_coerced_from_scalar = false;
 
             $some_missing_shape_fields = null;
-
-            /**
-             * type-variable bounds recorded by each container arm this input
-             * part matched, one entry per matching arm
-             *
-             * @var list<array{list<array{string, TemplateBound}>, list<array{string, TemplateBound}>}>
-             */
-            $matched_arm_bounds = [];
 
             if ($input_type_part instanceof TArrayKey
                 && ($container_type->hasInt() && $container_type->hasString())
@@ -150,6 +173,36 @@ final class UnionTypeComparator
                 }
             }
 
+            if ($input_type_part instanceof TIterable
+                && !$input_type_part->extra_types
+                && $container_type->hasArray()
+                && ($container_type->hasObject() || $container_type->containsClassLike('traversable'))
+            ) {
+                // an iterable is an array or a Traversable
+                [$key_type, $value_type] = $input_type_part->type_params;
+
+                if (self::isContainedBy(
+                    $codebase,
+                    new Union([
+                        new TArray([
+                            self::isContainedBy($codebase, $key_type, Type::getArrayKey())
+                                ? $key_type
+                                : Type::getArrayKey(),
+                            $value_type,
+                        ]),
+                        new TGenericObject('Traversable', [$key_type, $value_type]),
+                    ]),
+                    $container_type,
+                    $ignore_null,
+                    $ignore_false,
+                    $union_comparison_result,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                )) {
+                    continue;
+                }
+            }
+
             if ($input_type_part instanceof TIntRange && $container_type->hasInt()) {
                 if (IntegerRangeComparator::isContainedByUnion(
                     $input_type_part,
@@ -159,7 +212,49 @@ final class UnionTypeComparator
                 }
             }
 
-            foreach (self::getTypeParts($codebase, $container_type) as $container_type_part) {
+            // Type variables among the container parts are only fallen back
+            // to when no concrete container part accepts the input part: a
+            // value that a concrete alternative already accounts for should
+            // not constrain a variable it never has to flow into.
+            $type_variable_container_parts = [];
+
+            // The bounds recorded by each concrete container part that
+            // accepted the input part. Only one alternative of a union needs
+            // to hold, so they are reconciled with each other below rather
+            // than all being imposed at once.
+            $alternative_bounds = [];
+            $unconditional_match = false;
+            $part_by_reference_mismatch = null;
+
+            $container_parts_to_compare = $container_type_parts;
+
+            if ($input_type_part::class === TLiteralInt::class || $input_type_part::class === TLiteralString::class) {
+                // only the container's int or string literal with the same key can contain the input, and comparing it
+                // with the other ones has no effect: skip them
+                if ($container_literals === null) {
+                    $container_literals = [];
+
+                    foreach ($container_type_parts as $container_type_part) {
+                        if ($container_type_part::class === TLiteralInt::class
+                            || $container_type_part::class === TLiteralString::class
+                        ) {
+                            $container_literals[$container_type_part->getKey()] = $container_type_part;
+                        } else {
+                            $other_container_parts[] = $container_type_part;
+                        }
+                    }
+                }
+
+                $container_parts_to_compare = $other_container_parts;
+
+                $same_literal = $container_literals[$input_type_part->getKey()] ?? null;
+
+                if ($same_literal !== null) {
+                    $container_parts_to_compare[] = $same_literal;
+                }
+            }
+
+            foreach ($container_parts_to_compare as $container_type_part) {
                 if ($ignore_null
                     && $container_type_part instanceof TNull
                     && !$input_type_part instanceof TNull
@@ -175,22 +270,8 @@ final class UnionTypeComparator
                 }
 
                 if ($container_type_part instanceof TTypeVariable) {
-                    // A type variable in container position is constrained
-                    // from below by the input: record `name >: input` and
-                    // treat it as a match.
-                    if ($union_comparison_result) {
-                        $union_comparison_result->type_variable_lower_bounds[] = [
-                            $container_type_part->name,
-                            new TemplateBound($input_type),
-                        ];
-                    }
-
-                    $type_match_found = true;
-                    $all_to_string_cast = false;
-                    $all_type_coerced = false;
-                    $all_type_coerced_from_mixed = false;
-                    $all_type_coerced_from_as_mixed = false;
-                    break;
+                    $type_variable_container_parts[] = $container_type_part;
+                    continue;
                 }
 
                 // if params are specified
@@ -263,15 +344,26 @@ final class UnionTypeComparator
                 }
 
                 if ($atomic_comparison_result) {
+                    if ($atomic_comparison_result->to_string_cast === true
+                        && ($input_type_part instanceof TNamedObject
+                            || $input_type_part instanceof TObjectWithProperties)
+                    ) {
+                        $some_to_string_cast = true;
+                    }
+
                     if ($atomic_comparison_result->scalar_type_match_found !== null) {
                         $scalar_type_match_found = $atomic_comparison_result->scalar_type_match_found;
                     }
 
-                    if ($union_comparison_result
-                        && $atomic_comparison_result->type_coerced_from_scalar !== null
-                    ) {
-                        $union_comparison_result->type_coerced_from_scalar
-                            = $atomic_comparison_result->type_coerced_from_scalar;
+                    if ($is_atomic_contained_by) {
+                        // the part only mismatches by reference when no alternative accepts it without a mismatch
+                        $part_by_reference_mismatch = $atomic_comparison_result->callable_by_reference_mismatch
+                            ? $part_by_reference_mismatch ?? true
+                            : false;
+                    }
+
+                    if ($atomic_comparison_result->type_coerced_from_scalar) {
+                        $some_type_coerced_from_scalar = true;
                     }
 
                     if ($is_atomic_contained_by
@@ -300,13 +392,6 @@ final class UnionTypeComparator
                     $is_atomic_contained_by = true;
                 }
 
-                if ($input_type_part instanceof Atomic\TIterable
-                    && ($container_type->hasArray() || $container_type->containsClassLike('traversable'))
-                ) {
-                    $scalar_type_match_found = false;
-                    $is_atomic_contained_by = true;
-                }
-
                 if ($atomic_comparison_result) {
                     if ($atomic_comparison_result->type_coerced) {
                         $some_type_coerced = true;
@@ -314,20 +399,6 @@ final class UnionTypeComparator
 
                     if ($atomic_comparison_result->type_coerced_from_mixed) {
                         $some_type_coerced_from_mixed = true;
-                    }
-
-                    if ($atomic_comparison_result->type_coerced !== true || $all_type_coerced === false) {
-                        $all_type_coerced = false;
-                    } else {
-                        $all_type_coerced = true;
-                    }
-
-                    if ($atomic_comparison_result->type_coerced_from_mixed !== true
-                        || $all_type_coerced_from_mixed === false
-                    ) {
-                        $all_type_coerced_from_mixed = false;
-                    } else {
-                        $all_type_coerced_from_mixed = true;
                     }
 
                     if ($atomic_comparison_result->type_coerced_from_as_mixed !== true
@@ -351,37 +422,62 @@ final class UnionTypeComparator
                             $all_to_string_cast = false;
                         }
 
-                        if ($union_comparison_result
-                            && ($atomic_comparison_result->type_variable_lower_bounds
-                                || $atomic_comparison_result->type_variable_upper_bounds)
-                        ) {
-                            $matched_arm_bounds[] = [
-                                $atomic_comparison_result->type_variable_lower_bounds,
-                                $atomic_comparison_result->type_variable_upper_bounds,
-                            ];
+                        if ($union_comparison_result) {
+                            if ($atomic_comparison_result->type_variable_lower_bounds
+                                || $atomic_comparison_result->type_variable_upper_bounds
+                            ) {
+                                $alternative_bounds[] = [
+                                    $atomic_comparison_result->type_variable_lower_bounds,
+                                    $atomic_comparison_result->type_variable_upper_bounds,
+                                ];
+                            } else {
+                                $unconditional_match = true;
+                            }
                         }
                     }
 
-                    $all_type_coerced_from_mixed = false;
                     $all_type_coerced_from_as_mixed = false;
-                    $all_type_coerced = false;
                 }
             }
 
-            if ($union_comparison_result && $matched_arm_bounds) {
-                [$arm_lower_bounds, $arm_upper_bounds] = self::mergeAlternativeArmBounds(
-                    $codebase,
-                    $matched_arm_bounds,
-                );
+            if ($union_comparison_result && $part_by_reference_mismatch) {
+                $union_comparison_result->callable_by_reference_mismatch = true;
+            }
+
+            if (!$type_match_found && $type_variable_container_parts) {
+                // A type variable in container position is constrained from
+                // below by an input part no concrete container part accepted:
+                // record `name >: part` and treat it as a match. Where several
+                // variables could take the part, only one needs to, and with
+                // nothing to tell them apart the first is constrained.
+                //
+                // The input part is never the variable itself (that case is
+                // handled above), so the bound cannot refer back to it.
+                if ($union_comparison_result) {
+                    $union_comparison_result->type_variable_lower_bounds[] = [
+                        $type_variable_container_parts[0]->name,
+                        new TemplateBound(new Union([$input_type_part])),
+                    ];
+                }
+
+                $type_match_found = true;
+                $all_to_string_cast = false;
+                $all_type_coerced_from_as_mixed = false;
+            } elseif ($union_comparison_result && $alternative_bounds && !$unconditional_match) {
+                // every accepting alternative constrained a type variable, so
+                // whichever holds, the variables are bound by at least their
+                // reconciliation; an alternative that accepted the part
+                // outright leaves them unconstrained instead
+                [$lower_bounds, $upper_bounds] = self::mergeAlternativeBounds($alternative_bounds, $codebase);
 
                 $union_comparison_result->type_variable_lower_bounds = array_merge(
                     $union_comparison_result->type_variable_lower_bounds,
-                    $arm_lower_bounds,
+                    $lower_bounds,
                 );
 
                 $union_comparison_result->type_variable_upper_bounds = array_merge(
                     $union_comparison_result->type_variable_upper_bounds,
-                    $arm_upper_bounds,
+                    $upper_bounds,
                 );
             }
 
@@ -389,52 +485,94 @@ final class UnionTypeComparator
                 // only set this flag if we're definite that the only
                 // reason the type match has been found is because there
                 // was a __toString cast
-                if ($all_to_string_cast && $type_match_found) {
+                if (($all_to_string_cast && $type_match_found)
+                    || ($some_to_string_cast && !$type_match_found)
+                ) {
                     $union_comparison_result->to_string_cast = true;
-                }
-
-                if ($all_type_coerced) {
-                    $union_comparison_result->type_coerced = true;
-                }
-
-                if ($all_type_coerced_from_mixed) {
-                    $union_comparison_result->type_coerced_from_mixed = true;
-
-                    if (($input_type->from_template_default && $input_type->from_docblock)
-                        || $all_type_coerced_from_as_mixed
-                    ) {
-                        $union_comparison_result->type_coerced_from_as_mixed = true;
-                    }
                 }
             }
 
             if (!$type_match_found) {
-                if ($union_comparison_result) {
-                    if ($some_type_coerced) {
-                        $union_comparison_result->type_coerced = true;
-                    }
-
-                    if ($some_type_coerced_from_mixed) {
-                        $union_comparison_result->type_coerced_from_mixed = true;
-
-                        if (($input_type->from_template_default && $input_type->from_docblock)
-                            || $all_type_coerced_from_as_mixed
-                        ) {
-                            $union_comparison_result->type_coerced_from_as_mixed = true;
-                        }
-                    }
-
-                    if (!$scalar_type_match_found) {
-                        $union_comparison_result->scalar_type_match_found = false;
-                    }
-
-                    if ($some_missing_shape_fields && !$some_type_coerced && !$scalar_type_match_found) {
-                        $union_comparison_result->missing_shape_fields = $some_missing_shape_fields;
-                    }
+                if (!$union_comparison_result) {
+                    return false;
                 }
 
-                return false;
+                $failed_parts[] = [
+                    'coerced' => $some_type_coerced,
+                    'to_string_cast' => $some_to_string_cast,
+                    'coerced_from_mixed' => $some_type_coerced_from_mixed,
+                    'coerced_from_scalar' => $some_type_coerced_from_scalar,
+                    'coerced_from_as_mixed' => $some_type_coerced_from_mixed
+                        && (($input_type->from_template_default && $input_type->from_docblock)
+                            || $all_type_coerced_from_as_mixed),
+                    'scalar_match' => $scalar_type_match_found,
+                    'missing_shape_fields' => $some_missing_shape_fields && !$some_type_coerced
+                        && !$scalar_type_match_found
+                            ? $some_missing_shape_fields
+                            : null,
+                ];
             }
+        }
+
+        if ($failed_parts && $union_comparison_result) {
+            $all_coerced = true;
+            $any_to_string_cast = false;
+            $all_coerced_from_mixed = true;
+            $all_coerced_from_as_mixed = true;
+            $all_coerced_from_scalar = true;
+            $any_scalar_match = false;
+            $all_scalar_match = true;
+            $missing_shape_fields = [];
+            $all_miss_shape_fields = true;
+
+            foreach ($failed_parts as $failed_part) {
+                $all_coerced = $all_coerced && $failed_part['coerced'];
+                $any_to_string_cast = $any_to_string_cast || $failed_part['to_string_cast'];
+                $all_coerced_from_mixed = $all_coerced_from_mixed && $failed_part['coerced_from_mixed'];
+                $all_coerced_from_as_mixed = $all_coerced_from_as_mixed && $failed_part['coerced_from_as_mixed'];
+                $all_coerced_from_scalar = $all_coerced_from_scalar && $failed_part['coerced_from_scalar'];
+                $any_scalar_match = $any_scalar_match || $failed_part['scalar_match'];
+
+                // a part that only fails because it is mixed says nothing about the scalar match of the others
+                $all_scalar_match = $all_scalar_match
+                    && ($failed_part['scalar_match'] || $failed_part['coerced_from_mixed']);
+
+                if ($failed_part['missing_shape_fields'] !== null) {
+                    $missing_shape_fields = array_merge($missing_shape_fields, $failed_part['missing_shape_fields']);
+                } else {
+                    $all_miss_shape_fields = false;
+                }
+            }
+
+            if ($all_coerced) {
+                $union_comparison_result->type_coerced = true;
+            } elseif ($any_to_string_cast) {
+                $union_comparison_result->type_coerced = false;
+            }
+
+            if ($all_coerced_from_mixed) {
+                $union_comparison_result->type_coerced_from_mixed = true;
+
+                if ($all_coerced_from_as_mixed) {
+                    $union_comparison_result->type_coerced_from_as_mixed = true;
+                }
+            }
+
+            $union_comparison_result->type_coerced_from_scalar = $all_coerced_from_scalar;
+
+            if (!$any_scalar_match || !$all_scalar_match) {
+                $union_comparison_result->scalar_type_match_found = false;
+            }
+
+            if ($all_miss_shape_fields && $missing_shape_fields) {
+                $missing_shape_fields = array_values(array_unique($missing_shape_fields));
+                sort($missing_shape_fields);
+                $union_comparison_result->missing_shape_fields = $missing_shape_fields;
+            }
+        }
+
+        if ($failed_parts) {
+            return false;
         }
 
         return true;
@@ -521,10 +659,11 @@ final class UnionTypeComparator
             foreach (self::getTypeParts($codebase, $input_type) as $input_type_part) {
                 if ($input_type_part instanceof TTypeVariable) {
                     // an unresolved type variable can still become anything
-                    // its bounds allow, so it can be contained here; the
-                    // constraint is reconciled when the surrounding
-                    // function-like has been analyzed, exactly as
-                    // self::isContainedBy() treats it
+                    // its bounds allow, so it can be contained here; it is
+                    // bound as itself (read sites unroll a variable nested in
+                    // another variable's bound), and the constraint is
+                    // reconciled when the surrounding function-like has been
+                    // analyzed, exactly as self::isContainedBy() treats it
                     $matching_input_keys[$input_type_part->getKey()] = true;
                     continue;
                 }
@@ -551,6 +690,135 @@ final class UnionTypeComparator
     }
 
     /**
+     * Merges the type-variable bounds recorded by the alternatives of a union
+     * container that each accepted the same input part. Only one alternative
+     * needs to hold, so a bound recorded by some of them constrains nothing on
+     * its own; what remains is what every alternative agrees on:
+     *
+     * - a variable every alternative bounded from above is bounded by the
+     *   union of the recorded types (a single alternative's several upper
+     *   bounds are folded the same way, which can only loosen them), flagged
+     *   as merged from union alternatives so it is never pinned as an
+     *   equality bound;
+     * - a variable every alternative bounded from below identically keeps that
+     *   bound; differing lower bounds are dropped.
+     *
+     * @param non-empty-list<array{
+     *     list<array{string, TemplateBound}>,
+     *     list<array{string, TemplateBound}>
+     * }> $alternatives
+     * @return array{list<array{string, TemplateBound}>, list<array{string, TemplateBound}>}
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function mergeAlternativeBounds(array $alternatives, Codebase $codebase): array
+    {
+        $alternative_count = count($alternatives);
+
+        if ($alternative_count === 1) {
+            return $alternatives[0];
+        }
+
+        /** @var array<string, array<int, list<TemplateBound>>> $lower_by_name */
+        $lower_by_name = [];
+        /** @var array<string, array<int, list<TemplateBound>>> $upper_by_name */
+        $upper_by_name = [];
+
+        foreach ($alternatives as $i => [$lower_bounds, $upper_bounds]) {
+            foreach ($lower_bounds as [$name, $bound]) {
+                $lower_by_name[$name][$i][] = $bound;
+            }
+
+            foreach ($upper_bounds as [$name, $bound]) {
+                $upper_by_name[$name][$i][] = $bound;
+            }
+        }
+
+        $merged_lower_bounds = [];
+
+        foreach ($lower_by_name as $name => $bounds_by_alternative) {
+            if (count($bounds_by_alternative) !== $alternative_count) {
+                continue;
+            }
+
+            if (count(array_unique(array_map(self::getBoundsId(...), $bounds_by_alternative))) === 1) {
+                // every alternative recorded the same bounds: the first stand
+                // for all of them
+                foreach ($bounds_by_alternative as $bounds) {
+                    foreach ($bounds as $bound) {
+                        $merged_lower_bounds[] = [$name, $bound];
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        $merged_upper_bounds = [];
+
+        foreach ($upper_by_name as $name => $bounds_by_alternative) {
+            if (count($bounds_by_alternative) !== $alternative_count) {
+                continue;
+            }
+
+            if (count(array_unique(array_map(self::getBoundsId(...), $bounds_by_alternative))) === 1) {
+                foreach ($bounds_by_alternative as $bounds) {
+                    foreach ($bounds as $bound) {
+                        $merged_upper_bounds[] = [$name, $bound];
+                    }
+
+                    break;
+                }
+
+                continue;
+            }
+
+            $merged_type = null;
+            $first_bound = null;
+            $all_mirrors = true;
+            $all_requirements = true;
+
+            foreach ($bounds_by_alternative as $bounds) {
+                foreach ($bounds as $bound) {
+                    $merged_type = Type::combineUnionTypes($merged_type, $bound->type, $codebase);
+                    $first_bound ??= $bound;
+                    $all_mirrors = $all_mirrors && $bound->from_invariant_argument_mirror;
+                    $all_requirements = $all_requirements && $bound->from_argument_requirement;
+                }
+            }
+
+            assert($merged_type !== null && $first_bound !== null);
+
+            // the arms are alternatives the value need only satisfy one of, the
+            // way Hack localizes `Foo<int>|Foo<string>` to `Foo<int|string>`
+            // for a covariant Foo: the merged bound is never an equality bound
+            $merged_bound = new TemplateBound(
+                $merged_type,
+                $first_bound->appearance_depth,
+                $first_bound->arg_offset,
+            );
+            $merged_bound->from_union_alternatives = true;
+            $merged_bound->from_invariant_argument_mirror = $all_mirrors;
+            $merged_bound->from_argument_requirement = $all_requirements;
+
+            $merged_upper_bounds[] = [$name, $merged_bound];
+        }
+
+        return [$merged_lower_bounds, $merged_upper_bounds];
+    }
+
+    /**
+     * @param list<TemplateBound> $bounds
+     * @psalm-capabilities read-props
+     */
+    private static function getBoundsId(array $bounds): string
+    {
+        $ids = array_map(static fn(TemplateBound $bound): string => $bound->type->getId(), $bounds);
+        sort($ids);
+
+        return implode('|', $ids);
+    }
+
+    /**
      * Can any part of the $type1 be equal to any part of $type2
      */
     public static function canExpressionTypesBeIdentical(
@@ -567,8 +835,8 @@ final class UnionTypeComparator
             return true;
         }
 
-        foreach (self::getTypeParts($codebase, $type1) as $type1_part) {
-            foreach (self::getTypeParts($codebase, $type2) as $type2_part) {
+        foreach (self::getTypeParts($codebase, $type1, true) as $type1_part) {
+            foreach (self::getTypeParts($codebase, $type2, true) as $type2_part) {
                 //special case for TIntRange because it can contain a part of another TIntRange.
                 //For example int<0,10> and int<5, 15> can be identical but none contain the other
                 if ($type1_part instanceof TIntRange && $type2_part instanceof TIntRange) {
@@ -596,105 +864,43 @@ final class UnionTypeComparator
     }
 
     /**
-     * When one input part matches several arms of a union container that each
-     * constrain the same type variable (`Foo<`_0>` against `Foo<int>|Foo<string>`
-     * records `_0 <: int` from one arm and `_0 <: string` from the other), the
-     * arms are alternatives the value need only satisfy one of. Recording both
-     * as-is would demand the variable satisfy every arm at once. Bounds on the
-     * same variable from different arms are merged into one bound whose type is
-     * the union of the arm types, the way Hack localizes `(Foo<int> | Foo<string>)`
-     * to `Foo<(int | string)>` for a covariant Foo.
-     *
-     * @param non-empty-list<array{list<array{string, TemplateBound}>, list<array{string, TemplateBound}>}> $arm_bounds
-     * @return array{list<array{string, TemplateBound}>, list<array{string, TemplateBound}>}
+     * @psalm-pure
      */
-    private static function mergeAlternativeArmBounds(Codebase $codebase, array $arm_bounds): array
+    private static function hasTemplateKeyOrValueOf(Union $type): bool
     {
-        if (count($arm_bounds) === 1) {
-            return $arm_bounds[0];
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateKeyOf || $atomic_type instanceof TTemplateValueOf) {
+                return true;
+            }
         }
 
-        $arm_lower_bounds = [];
-        $arm_upper_bounds = [];
-
-        foreach ($arm_bounds as [$lower_bounds, $upper_bounds]) {
-            $arm_lower_bounds[] = $lower_bounds;
-            $arm_upper_bounds[] = $upper_bounds;
-        }
-
-        return [
-            self::mergeAlternativeArmSideBounds($codebase, $arm_lower_bounds),
-            self::mergeAlternativeArmSideBounds($codebase, $arm_upper_bounds),
-        ];
+        return false;
     }
 
     /**
-     * Merges one side (lower or upper) of the bounds recorded by the matching
-     * arms: a variable constrained by several arms gets a single bound whose
-     * type is the union of the arm bounds.
-     *
-     * @param list<list<array{string, TemplateBound}>> $arm_side_bounds one entry per matching arm
-     * @return list<array{string, TemplateBound}>
-     */
-    private static function mergeAlternativeArmSideBounds(Codebase $codebase, array $arm_side_bounds): array
-    {
-        /** @var array<string, non-empty-list<TemplateBound>> */
-        $bounds_by_name = [];
-        /** @var array<string, array<int, true>> arms that constrained each variable */
-        $arms_by_name = [];
-
-        foreach ($arm_side_bounds as $arm_i => $bounds) {
-            foreach ($bounds as [$name, $bound]) {
-                $bounds_by_name[$name][] = $bound;
-                $arms_by_name[$name][$arm_i] = true;
-            }
-        }
-
-        $merged = [];
-
-        foreach ($bounds_by_name as $name => $bounds) {
-            if (count($arms_by_name[$name]) < 2) {
-                foreach ($bounds as $bound) {
-                    $merged[] = [$name, $bound];
-                }
-
-                continue;
-            }
-
-            $type = null;
-            $all_mirrors = true;
-            $all_requirements = true;
-
-            foreach ($bounds as $bound) {
-                $type = $type ? Type::combineUnionTypes($type, $bound->type, $codebase) : $bound->type;
-                $all_mirrors = $all_mirrors && $bound->from_invariant_argument_mirror;
-                $all_requirements = $all_requirements && $bound->from_argument_requirement;
-            }
-
-            $merged_bound = new TemplateBound(
-                $type,
-                $bounds[0]->appearance_depth,
-                $bounds[0]->arg_offset,
-            );
-            $merged_bound->from_union_alternatives = true;
-            $merged_bound->from_invariant_argument_mirror = $all_mirrors;
-            $merged_bound->from_argument_requirement = $all_requirements;
-
-            $merged[] = [$name, $merged_bound];
-        }
-
-        return $merged;
-    }
-
-    /**
+     * @param bool $expand_template_key_or_value_of whether key-of<T> and value-of<T> stand for their bound
      * @return list<Atomic>
      */
     private static function getTypeParts(
         Codebase $codebase,
         Union $union_type,
+        bool $expand_template_key_or_value_of = false,
     ): array {
         $atomic_types = [];
         foreach ($union_type->getAtomicTypes() as $atomic_type) {
+            if ($expand_template_key_or_value_of
+                && ($atomic_type instanceof TTemplateKeyOf || $atomic_type instanceof TTemplateValueOf)
+            ) {
+                $bound = $atomic_type instanceof TTemplateKeyOf
+                    ? TKeyOf::getArrayKeyType($atomic_type->as)
+                    : TValueOf::getValueType($atomic_type->as, $codebase);
+
+                if ($bound !== null) {
+                    array_push($atomic_types, ...self::getTypeParts($codebase, $bound, true));
+                    continue;
+                }
+            }
+
             if (!$atomic_type instanceof TTypeAlias && !$atomic_type instanceof TClassConstant) {
                 $atomic_types[] = $atomic_type;
                 continue;

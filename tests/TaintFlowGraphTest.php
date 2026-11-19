@@ -4,18 +4,32 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Psalm\CodeLocation;
 use Psalm\CodeLocation\Raw;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\Path;
 use Psalm\IssueBuffer;
+use Psalm\Storage\FunctionStorage;
 use Psalm\Type\TaintKind;
+use ReflectionProperty;
 
+use function array_diff;
+use function array_keys;
 use function array_reverse;
 use function json_encode;
+use function ksort;
+use function memory_get_usage;
+use function range;
+use function serialize;
 use function sort;
+use function str_repeat;
 use function str_starts_with;
+use function substr_count;
+use function unserialize;
 
 use const JSON_THROW_ON_ERROR;
 
@@ -163,6 +177,147 @@ final class TaintFlowGraphTest extends TestCase
     }
 
     /**
+     * A forked worker's graph reaches the main process serialized (see TaintFlowGraph::__serialize()). The graph
+     * merged from it must be the same as the one merged from the worker's own object, and its nodes must not share
+     * objects in the serialized string: PHP's unserialize() is slow to resolve a reference to one.
+     */
+    public function testGraphMergedAfterSerializationIsTheSame(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $location = new Raw(str_repeat('$a = 1;', 10), $file_path, 'somefile.php', 0, 4);
+
+        $graph = new TaintFlowGraph();
+        $previous = null;
+        foreach (range(1, 12_000) as $i) {
+            $node = DataFlowNode::getForAssignment('$var' . $i, $location);
+            $graph->addNode($node);
+            if ($previous !== null) {
+                $graph->addPath($previous, $node, '=');
+            }
+            $previous = $node;
+        }
+        $graph->addSink(DataFlowNode::getForAssignment('$sink', $location));
+        $graph->addSource(DataFlowNode::getForAssignment('$source', $location));
+
+        $serialized = serialize($graph);
+        $this->assertSame(0, substr_count($serialized, ';r:') + substr_count($serialized, '{r:'));
+
+        $expected = new TaintFlowGraph();
+        $expected->addGraph($graph);
+
+        /** @var TaintFlowGraph $unserialized */
+        $unserialized = unserialize($serialized);
+        $actual = new TaintFlowGraph();
+        $actual->addGraph($unserialized);
+
+        $this->assertEquals($expected, $actual);
+    }
+
+    /**
+     * A forked worker's graph reaches the main process serialized: hundreds of thousands of nodes on a large code
+     * base. Each id must be written once, however many nodes, sources and paths refer to it, and the locations of
+     * the nodes as their fields, not as CodeLocation objects (see TaintFlowGraph::__serialize()).
+     */
+    public function testSerializedGraphWritesEachIdOnceAndNoLocationObject(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $location = new Raw(str_repeat('$a = 1;', 10), $file_path, 'somefile.php', 0, 4);
+
+        $graph = new TaintFlowGraph();
+        $nodes = [];
+        foreach (range(1, 10) as $i) {
+            $nodes[] = DataFlowNode::getForAssignment('$var' . $i, $location);
+        }
+        foreach ($nodes as $i => $node) {
+            $graph->addNode($node);
+            if ($i > 0) {
+                $graph->addPath($nodes[$i - 1], $node, '=');
+            }
+        }
+        $graph->addSource($nodes[0]->setTaints(TaintKind::INPUT_HTML));
+        $graph->addSink($nodes[9]);
+
+        $serialized = serialize($graph);
+
+        foreach ($nodes as $node) {
+            $this->assertSame(1, substr_count($serialized, $node->id), $node->id);
+        }
+        // the graph is the only object written
+        $this->assertSame(1, substr_count($serialized, 'O:'));
+
+        /** @var TaintFlowGraph $unserialized */
+        $unserialized = unserialize($serialized);
+        $this->assertEquals($graph, $unserialized);
+    }
+
+    /**
+     * A path is immutable: the edges of a graph with the same type, length and taints share one, before and after
+     * the graph is serialized.
+     */
+    public function testEdgesWithTheSameFieldsShareTheirPath(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $location = new Raw('$a = 1;', $file_path, 'somefile.php', 0, 4);
+
+        $graph = new TaintFlowGraph();
+        $a = DataFlowNode::getForAssignment('$a', $location);
+        $b = DataFlowNode::getForAssignment('$b', $location);
+        $c = DataFlowNode::getForAssignment('$c', $location);
+        $graph->addPath($a, $b, '=', TaintKind::INPUT_HTML);
+        $graph->addPath($b, $c, '=', TaintKind::INPUT_HTML);
+        $graph->addPath($a, $c, '=');
+
+        /** @var TaintFlowGraph $unserialized */
+        $unserialized = unserialize(serialize($graph));
+
+        foreach ([$graph, $unserialized] as $read) {
+            /** @var array<string, array<string, Path>> $edges */
+            $edges = (new ReflectionProperty(DataFlowGraph::class, 'forward_edges'))->getValue($read);
+            $this->assertSame($edges[$a->id][$b->id], $edges[$b->id][$c->id]);
+            $this->assertNotSame($edges[$a->id][$b->id], $edges[$a->id][$c->id]);
+        }
+    }
+
+    /**
+     * A source or sink with the row of the node of its id is written once, so after a round trip it must still have
+     * that row, and one with another row (here, with taints) must keep its own.
+     */
+    public function testNodesSharedWithSourcesSinksAndSentNodesStayShared(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $location = new Raw('$a = 1;', $file_path, 'somefile.php', 0, 4);
+
+        $graph = new TaintFlowGraph();
+        $source = DataFlowNode::getForAssignment('$source', $location);
+        $graph->addNode($source);
+        $graph->addSource($source);
+        $sink = DataFlowNode::getForAssignment('$sink', $location);
+        $graph->addSink($sink);
+        $sent = DataFlowNode::getForAssignment('$sent', $location);
+        $graph->addNode($sent);
+        $graph->addGenerator($sent, $sent);
+        // A source with the id of a node, but not that node
+        $graph->addNode(DataFlowNode::getForAssignment('$other', $location));
+        $other_source = DataFlowNode::getForAssignment('$other', $location)->setTaints(TaintKind::INPUT_HTML);
+        $graph->addSource($other_source);
+
+        $serialized = serialize($graph);
+        $this->assertSame(1, substr_count($serialized, $other_source->id));
+
+        /** @var TaintFlowGraph $unserialized */
+        $unserialized = unserialize($serialized);
+        $this->assertEquals($graph, $unserialized);
+
+        $read = fn(string $property): array => (array) (fn(): mixed => $this->$property)->call($unserialized);
+        $nodes = $read('nodes');
+
+        $this->assertSame($nodes[$source->id], $read('sources')[$source->id]);
+        $this->assertSame($nodes[$sink->id], $read('sinks')[$sink->id]);
+        $this->assertEquals($sent, $read('generator_sent_nodes')[$sent->id]);
+        $this->assertNotSame($nodes[$other_source->id], $read('sources')[$other_source->id]);
+    }
+
+    /**
      * Two files can add the same path between two nodes, changing taints differently: a flow takes either, so
      * the taint one of them keeps reaches the sink, whichever graph is merged first.
      */
@@ -197,6 +352,148 @@ final class TaintFlowGraphTest extends TestCase
                 ),
             );
         }
+    }
+
+    /**
+     * Which generators a send is linked to must not depend on the order the workers' graphs are merged in, which
+     * sets the order of a node's edges. linkGeneratorSends() reaches a node here with 17 call stacks, one over
+     * TaintFlowGraph::GENERATOR_SEND_STACKS, and which of them it replaces with "any call matches" decides whether
+     * `other`, the generator that isn't sent to, is linked too.
+     */
+    public function testGeneratorSendLinksAreDeterministicAcrossMergeOrder(): void
+    {
+        $lines = $this->getGeneratorSendLinkLines(false);
+
+        // the 17 generators sent to are on the lines 2 to 18, the one that isn't on the line 19
+        $this->assertSame([], array_diff(range(2, 18), $lines));
+        $this->assertSame($lines, $this->getGeneratorSendLinkLines(true));
+    }
+
+    /**
+     * Resolves a tainted send that reaches 17 generators, 16 of them through calls of a relay function, with a sink
+     * on what is sent to each. One more generator, `other`, is reachable only where linkGeneratorSends() matches any
+     * call. Merges the workers' graphs in reverse order when $reverse_merge_order is true.
+     *
+     * @return list<int> the lines of the sinks reached, one per linked generator
+     */
+    private function getGeneratorSendLinkLines(bool $reverse_merge_order): array
+    {
+        IssueBuffer::clear();
+
+        $this->project_analyzer->trackTaintedInputs();
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $file_contents = "<?php\n" . str_repeat("echo \$x;\n", 20);
+        $this->addFile($file_path, $file_contents);
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+
+        $storage = new FunctionStorage();
+        $node = static fn(string $id, ?string $key = null): DataFlowNode
+            => DataFlowNode::getForMethodReturn($id, $storage, specialization_key: $key);
+
+        $shared = DataFlowNode::getForGlobalVariable('shared');
+        $relays = 16;
+        $order = range(0, $relays);
+
+        if ($reverse_merge_order) {
+            $order = array_reverse($order);
+        }
+
+        // the node every call of the shared function is reached from: its edges are added by each worker
+        $graph = new TaintFlowGraph();
+
+        foreach ($order as $i) {
+            $worker = new TaintFlowGraph();
+            $call = $node('root#1', "R$i");
+            $worker->addNode($shared);
+            $worker->addNode($call);
+            $worker->addPath($shared, $call, '=');
+            $graph->addGraph($worker);
+        }
+
+        $edge = static function (DataFlowNode $from, DataFlowNode $to) use ($graph): void {
+            $graph->addNode($from);
+            $graph->addNode($to);
+            $graph->addPath($from, $to, '=');
+        };
+
+        // the sink of the generator with the index $index is on the line $index + 2 of the file
+        $sink_for = static function (
+            int $index,
+            DataFlowNode $sent,
+        ) use (
+            $graph,
+            $edge,
+            $file_path,
+            $file_contents,
+        ): void {
+            $start = 6 + $index * 9;
+            $sink = DataFlowNode::getForTaint(
+                "sink $index",
+                new Raw($file_contents, $file_path, 'somefile.php', $start, $start + 4),
+                TaintKind::INPUT_HTML,
+            );
+            $graph->addSink($sink);
+            $edge($sent, $sink);
+        };
+
+        // 16 relays and 1 direct call of the shared function, each with the generator it is given
+        for ($i = 0; $i <= $relays; $i++) {
+            $direct = $i === $relays;
+            $edge(
+                $direct ? $node('pass1', 'H') : $node('relay', "A$i"),
+                $node('root#1', "R$i"),
+            );
+            $generator = $node("gen$i");
+            $sent = $node("gen$i sent");
+            $graph->addNode($sent);
+            $graph->addGenerator($generator, $sent);
+            $sink_for($i, $sent);
+            $edge($generator, $direct ? $node('pass1#1', 'H') : $node('relay#1', "A$i"));
+        }
+
+        // the relays are called through another shared function, called with the generator that isn't sent to
+        $edge($node('pass1', 'I'), $node('relay'));
+        $edge($node('pass1#1'), $node('pass1'));
+        $edge($node('pass2', 'K'), $node('pass1#1', 'I'));
+        $edge($node('pass2#1'), $node('pass2'));
+        $edge($node('relay#1'), $node('pass2#1', 'K'));
+
+        $other = $node('other');
+        $other_sent = $node('other sent');
+        $graph->addNode($other_sent);
+        $graph->addGenerator($other, $other_sent);
+        $sink_for($relays + 1, $other_sent);
+        $edge($other, $node('pass2#1', 'L'));
+
+        $send = DataFlowNode::getForTaint(
+            'send',
+            new Raw($file_contents, $file_path, 'somefile.php', 0, 4),
+            TaintKind::INPUT_HTML,
+        );
+        $graph->addSource($send);
+        $root = $node('root#1');
+        $graph->addGeneratorSend($send, [$root->id => $root]);
+
+        $codebase->taint_flow_graph = $graph;
+        $graph->connectSinksAndSources($codebase->progress);
+
+        $lines = [];
+
+        foreach (IssueBuffer::getIssuesData() as $file_issues) {
+            foreach ($file_issues as $issue) {
+                if ($issue->type === 'TaintedHtml') {
+                    $lines[$issue->line_from] = true;
+                }
+            }
+        }
+
+        ksort($lines);
+
+        return array_keys($lines);
     }
 
     /**
@@ -263,5 +560,71 @@ final class TaintFlowGraphTest extends TestCase
         }
 
         return $issue_types;
+    }
+
+    /**
+     * A forked worker's graph reaches the main process serialized, with hundreds of thousands of paths on a large
+     * codebase. Unserializing an object without __unserialize() also builds a table of its properties
+     * (https://github.com/php/php-src/issues/10126), which takes more memory than the path itself.
+     */
+    public function testUnserializedPathsHaveNoPropertyTable(): void
+    {
+        $paths = [];
+        foreach (range(1, 10_000) as $i) {
+            $paths[] = new Path('arg', $i, TaintKind::INPUT_HTML);
+        }
+
+        $serialized = serialize($paths);
+        unset($paths);
+
+        $before = memory_get_usage();
+        /** @var list<Path> $paths */
+        $paths = unserialize($serialized);
+        $bytes_per_path = (memory_get_usage() - $before) / 10_000;
+
+        // ~590 bytes a path with a property table, ~210 without
+        $this->assertLessThan(400, $bytes_per_path);
+        $this->assertSame(TaintKind::INPUT_HTML, $paths[0]->added_taints);
+        $this->assertSame(10_000, $paths[9_999]->length);
+    }
+
+    /**
+     * A location is kept for the whole run, so a property table built while reading its compact state would stay
+     * with it (https://github.com/php/php-src/issues/10126).
+     */
+    public function testCompactStateLeavesNoPropertyTable(): void
+    {
+        $locations = [];
+        foreach (range(1, 10_000) as $_) {
+            $locations[] = CodeLocation::fromCompactState('/a/b.php', 'b.php', 10, 100, 120, []);
+        }
+
+        $before = memory_get_usage();
+        foreach ($locations as $location) {
+            /** @psalm-suppress UnusedMethodCall only the memory the call leaves behind is of interest */
+            $location->getCompactState();
+        }
+        $bytes_per_location = (memory_get_usage() - $before) / 10_000;
+
+        // ~1336 bytes a location with a property table, 0 without
+        $this->assertLessThan(100, $bytes_per_location);
+    }
+
+    public function testCompactStateReturnsTheStateItWasMadeFrom(): void
+    {
+        // Private, protected and public properties: their keys in (array) $this differ
+        $state = [
+            'end_line_number' => 12,
+            'text' => 'foo',
+            'docblock_start' => 90,
+            'docblock_line_number' => 8,
+        ];
+
+        $location = CodeLocation::fromCompactState('/a/b.php', 'b.php', 10, 100, 120, $state);
+        $this->assertSame($state, $location->getCompactState());
+
+        $state = ['class' => Raw::class] + $state;
+        $location = CodeLocation::fromCompactState('/a/b.php', 'b.php', 10, 100, 120, $state);
+        $this->assertSame($state, $location->getCompactState());
     }
 }

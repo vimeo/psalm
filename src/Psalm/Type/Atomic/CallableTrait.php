@@ -21,6 +21,7 @@ use function implode;
 /**
  * @psalm-immutable
  * @api
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 trait CallableTrait
 {
@@ -54,6 +55,7 @@ trait CallableTrait
         return $cloned;
     }
     /**
+     * @param CapabilitySet|Union $purity
      * @return static
      */
     public function setPurity(int|Union $purity): self
@@ -72,6 +74,7 @@ trait CallableTrait
      * counts as its upper bound (any capability): use {@see CallPurityResolver} where the
      * enclosing function-like's own purity templates must be taken into account.
      *
+     * @return CapabilitySet
      * @psalm-mutation-free
      */
     public function getCapabilities(): int
@@ -96,6 +99,7 @@ trait CallableTrait
     }
 
     /**
+     * @param CapabilitySet|Union $purity
      * @psalm-pure
      */
     public static function purityFrom(int|Union $purity): Union
@@ -119,6 +123,19 @@ trait CallableTrait
         return $this->value . '[' . ($purity ?? $this->purity->getId()) . ']';
     }
 
+    /**
+     * By-reference parameters print as `int &$_` (`int &...$_` for a variadic one) so that the id parses back
+     */
+    private static function getParamId(FunctionLikeParameter $param): string
+    {
+        if (!$param->by_ref) {
+            return $param->getId();
+        }
+
+        return ($param->type ? $param->type->getId() : 'mixed')
+            . ($param->is_variadic ? ' &...$_' : ' &$_' . ($param->is_optional ? '=' : ''));
+    }
+
     public function getParamString(): string
     {
         $param_string = '';
@@ -129,7 +146,7 @@ trait CallableTrait
                     $param_string .= ', ';
                 }
 
-                $param_string .= $param->getId();
+                $param_string .= self::getParamId($param);
             }
 
             $param_string .= ')';
@@ -191,7 +208,10 @@ trait CallableTrait
                     $type_string = $param->type->toNamespacedString($namespace, $aliased_classes, $this_class, false);
                 }
 
-                $params_array[] = ($param->is_variadic ? '...' : '') . $type_string . ($param->is_optional ? '=' : '');
+                $params_array[] = ($param->by_ref && $param->is_variadic ? '' : ($param->is_variadic ? '...' : ''))
+                    . $type_string
+                    . ($param->by_ref ? ($param->is_variadic ? ' &...$_' : ' &$_') : '')
+                    . ($param->is_optional ? '=' : '');
             }
 
             $param_string = '(' . implode(', ', $params_array) . ')';
@@ -241,7 +261,7 @@ trait CallableTrait
                     $param_string .= ', ';
                 }
 
-                $param_string .= $param->getId();
+                $param_string .= self::getParamId($param);
             }
 
             $param_string .= ')';

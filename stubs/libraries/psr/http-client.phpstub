@@ -1,0 +1,20 @@
+<?php
+
+// The taints psr/http-client passes along: what a server answers is input. Loaded when the analysed code uses the
+// package, refining its interfaces (see Config::visitStubFiles()).
+
+namespace Psr\Http\Client
+{
+    use Psr\Http\Message\RequestInterface;
+    use Psr\Http\Message\ResponseInterface;
+
+    interface ClientInterface
+    {
+        /**
+         * @throws ClientExceptionInterface If an error happens while processing the request.
+         *
+         * @psalm-taint-source input
+         */
+        public function sendRequest(RequestInterface $request): ResponseInterface;
+    }
+}

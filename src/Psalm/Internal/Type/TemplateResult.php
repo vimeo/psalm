@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
 use function array_replace_recursive;
@@ -48,6 +49,14 @@ final class TemplateResult
     public array $upper_bounds_unintersectable_types = [];
 
     /**
+     * `static` of the call when it is known before the arguments are analyzed (a template receiver or a forwarding call
+     * has none) and whether it is final: the arguments are checked, and the return type is expanded, with them
+     */
+    public string|TNamedObject|null $static_class_type = null;
+
+    public bool $static_class_is_final = false;
+
+    /**
      * @param array<string, array<string, Union>> $template_types
      * @param array<string, array<string, Union>> $lower_bounds
      * @psalm-mutation-free
@@ -75,6 +84,9 @@ final class TemplateResult
         $lower_bounds = array_replace_recursive($instance->lower_bounds, $result->lower_bounds);
         $instance->lower_bounds = $lower_bounds;
         $instance->template_types = [...$instance->template_types, ...$result->template_types];
+
+        $instance->static_class_type = $result->static_class_type;
+        $instance->static_class_is_final = $result->static_class_is_final;
 
         return $instance;
     }

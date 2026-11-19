@@ -33,6 +33,16 @@ Configuration file may be split into several files using [XInclude](https://www.
 </projectFiles>
 ```
 
+## Keep the configuration private
+
+`psalm.xml` lists the layout of your code, and a [baseline](dealing_with_code_issues.md#using-a-baseline-file) lists the issues Psalm found, with taint analysis the places that are vulnerable. Don't leave them where a web server serves them (the document root of a web project):
+
+```nginx
+location ~ /(psalm.*|.*baseline.*)\.xml$ {
+    deny all;
+}
+```
+
 ## Different configuration file
 
 You can also create a different configuration file, then run Psalm with:
@@ -62,6 +72,22 @@ This corresponds to Psalm‘s [error-detection level](error_levels.md).
 ```
 Setting this to `"false"` hides all issues with `Mixed` types in Psalm’s output. If not given, this defaults to `"false"` when `errorLevel` is 3 or higher, and `"true"` when the error level is 1 or 2.
 
+`"true"` only stops Psalm from hiding them: above level 2 they are reported as `info`, so give the issue the error level you want in `<issueHandlers>`. For a `mixed` value passed to `strtolower()` (`MixedArgument`; `MixedAssignment` behaves the same):
+
+```xml
+<psalm errorLevel="1" />                                  <!-- MixedArgument: error -->
+<psalm errorLevel="2" />                                  <!-- MixedArgument: info -->
+<psalm errorLevel="5" />                                  <!-- nothing -->
+<psalm errorLevel="5" reportMixedIssues="true" />         <!-- MixedArgument: info -->
+<psalm errorLevel="5" reportMixedIssues="true">           <!-- MixedArgument: error -->
+  <issueHandlers><MixedArgument errorLevel="error" /></issueHandlers>
+</psalm>
+<psalm errorLevel="5" reportMixedIssues="false">          <!-- nothing, even with the handler -->
+  <issueHandlers><MixedArgument errorLevel="error" /></issueHandlers>
+</psalm>
+<psalm errorLevel="1" reportMixedIssues="false" />        <!-- nothing -->
+```
+
 #### totallyTyped
 
 \(Deprecated\) This setting has been replaced by `reportMixedIssues` which is automatically enabled when `errorLevel` is 1.
@@ -73,8 +99,8 @@ Setting this to `"false"` hides all issues with `Mixed` types in Psalm’s outpu
   resolveFromConfigFile="[bool]"
 />
 ```
-If this is enabled, relative directories mentioned in the config file will be resolved relative to the location
-of the config file. If it is disabled, or absent they will be resolved relative to the working directory of the Psalm process.
+If this is enabled (the default), relative directories mentioned in the config file will be resolved relative to the location
+of the config file. If it is disabled, they will be resolved relative to the working directory of the Psalm process.
 
 New versions of Psalm enable this option when generating config files. Older versions did not include it.
 
@@ -152,6 +178,16 @@ If true we force strict typing on numerical and string operations (see https://g
 
 If false, disallows comparing a boolean to a literal boolean (mostly a codestyle rule, not a bug detection rule; see [RedundantIdentityWithTrue](https://psalm.dev/docs/running_psalm/issues/RedundantIdentityWithTrue/)). Defaults to `true`.
 
+#### strictNullableComparison
+
+```xml
+<psalm
+  strictNullableComparison="[bool]"
+>
+```
+
+If true, `<`, `>`, `<=` and `>=` report [PossiblyNullOperand](https://psalm.dev/docs/running_psalm/issues/PossiblyNullOperand/) (or [NullOperand](https://psalm.dev/docs/running_psalm/issues/NullOperand/)) for an operand that can be `null`, so the `null` case has to be handled explicitly. Defaults to `false`.
+
 #### rememberPropertyAssignmentsAfterCall
 
 ```xml
@@ -168,7 +204,12 @@ Setting this to `false` means that function calls will cause Psalm to forget wha
   allowStringToStandInForClass="[bool]"
 >
 ```
-When `true`, strings can be used as classes, meaning `$some_string::someMethod()` is allowed. If `false`, only class constant strings (of the form `Foo\Bar::class`) can stand in for classes, otherwise an `InvalidStringClass` issue is emitted. Defaults to `false`.
+When `true`, string literals naming existing, compatible classes are accepted in `class-string`
+arguments and return values, dynamic class expressions, and comparisons against class strings.
+When `false`, prefer `Foo\Bar::class` to a literal class name. Class expressions and
+comparisons emit `InvalidStringClass`; type-checked class-string arguments and returns
+emit the usual type diagnostics. Ordinary strings outside class-name contexts are unaffected.
+Defaults to `false`.
 
 #### disableSuppressAll
 
@@ -186,7 +227,7 @@ When `true`, disables wildcard suppression of all issues with `@psalm-suppress a
   memoizeMethodCallResults="[bool]"
 >
 ```
-When `true`, the results of method calls without arguments passed are remembered between repeated calls of that method on a given object. Defaults to `false`.
+When `true`, the results of method calls without arguments passed are [memoized](https://en.wikipedia.org/wiki/Memoization) between repeated calls of that method on a given object. Defaults to `false`.
 
 #### hoistConstants
 
@@ -255,7 +296,7 @@ When `true`, Psalm infers property types from assignments seen in straightforwar
   findUnusedVariablesAndParams="[bool]"
 >
 ```
-When `true`, Psalm will attempt to find all unused variables, the equivalent of running with `--find-unused-variables`. Defaults to `false`.
+When `true`, Psalm will attempt to find all unused variables, the equivalent of running with `--find-unused-variables`. If not given, it takes the value of `findUnusedCode` when that is set; otherwise it is `true` at `errorLevel="1"` (unless `reportMixedIssues="false"`) and `false` at the other levels.
 
 #### findUnusedCode
 ```xml
@@ -268,6 +309,38 @@ When `true`, Psalm will attempt to find all unused code (including unused variab
 Unused-code detection is based on a graph of references between code elements, resolved by reachability from the program's entry points (the public API, top-level code, free functions, and code outside of the project directories). As a result, a class, method, property or constant that is referenced only by other unused code — including cycles of otherwise unreferenced code — is reported as unused. Suppressing an unused-code issue (e.g. `@psalm-suppress UnusedClass`) only silences the report for that symbol; it does not turn the symbol into an entry point, so code that only it references is still reported.
 
 This is enabled by default since Psalm 6, so unused code issues are reported even without passing `--find-unused-code` (or `--find-dead-code`). Set `findUnusedCode="false"` to turn it off.
+
+#### markAllNonInternalCodeAsApi
+```xml
+<psalm
+  markAllNonInternalCodeAsApi="[bool]"
+>
+```
+**For libraries only.** When `true`, unused-code detection treats every class that isn't marked `@internal` or `@psalm-internal` as if it were marked [`@api`](../annotating_code/supported_annotations.md#api-psalm-api), except for its members that are marked internal. Other checks, like `ClassMustBeFinal`, are not affected. Defaults to `false`.
+
+```php
+<?php
+namespace Lib;
+
+class Client {                           // ClassMustBeFinal, but no UnusedClass
+    public function send(): void {       // no issue
+        $this->encode();
+    }
+    private function encode(): void {}   // no issue, used by an API method
+    private function unused(): void {}   // UnusedMethod
+    /** @internal */
+    public function reset(): void {}     // PossiblyUnusedMethod
+}
+
+/** @internal */
+final class Helper {}                    // UnusedClass
+```
+
+The code the library doesn't ship, such as its tests, [is internal](../annotating_code/supported_annotations.md#psalm-internal) without the annotation.
+
+**This breaks unused-code detection for internal code that isn't marked `@internal`**: Psalm treats it as public API, so it is never reported as unused, and neither is any code that only it uses. Mark every class and member that isn't meant for users of the library with `@internal` (or `@psalm-internal`) before enabling this.
+
+Don't enable it in applications: almost all of their code is internal, so it would turn off most of unused-code detection. Code that a framework calls (controllers, commands, …) is already marked as used by the framework's Psalm plugin; mark any other such code with `@api` instead.
 
 #### forceJit
 ```xml
@@ -294,6 +367,8 @@ When `true`, Psalm will disable usage of the cache, the equivalent of running wi
 When `false`, Psalm will disable usage of the array cache. 
 
 The array cache is used together with the file cache to avoid re-loading cache entries when re-scanning the same file, which offers a nice performance improvement.
+
+A cache created by [`--consolidate-cache`](./command_line_usage.md#consolidating-the-cache) is only read when the array cache is enabled.
 
 Defaults to `true`.
 
@@ -346,6 +421,22 @@ When `true`, Psalm will complain when referencing an explicit string offset on a
 ```
 When `true`, Psalm will complain when referencing an explicit integer offset on an array e.g. `$arr[7]` without a user first asserting that it exists (either via an `isset` check or via an object-like array). Defaults to `false`.
 
+#### strictOptionalCallableParams
+```xml
+<psalm
+  strictOptionalCallableParams="[bool]"
+>
+```
+When `true`, a callable whose parameter is required is not accepted where a `callable` type declares that parameter optional (`callable(string=): string`), because the receiver may call it without the argument. Defaults to `false`.
+
+```php
+/** @param callable(string=): string $c */
+function map(callable $c): string { return $c(); }
+
+map(fn(string $a): string => $a); // InvalidArgument
+map(fn(string $a = "d"): string => $a); // no issue
+```
+
 #### ensureOverrideAttribute
 ```xml
 <psalm
@@ -353,6 +444,69 @@ When `true`, Psalm will complain when referencing an explicit integer offset on 
 >
 ```
 When `true`, Psalm will report class and interface methods that override a method on a parent, but do not have an `Override` attribute. Defaults to `true`.
+
+#### suggestPurityAnnotations
+```xml
+<psalm
+  suggestPurityAnnotations="[bool]"
+>
+```
+When `true`, Psalm will report code that could carry a purity annotation: [MissingPureAnnotation](issues/MissingPureAnnotation.md), [MissingImmutableAnnotation](issues/MissingImmutableAnnotation.md), [MissingAbstractPureAnnotation](issues/MissingAbstractPureAnnotation.md) and [MissingInterfaceImmutableAnnotation](issues/MissingInterfaceImmutableAnnotation.md). Defaults to `false`. Running `psalm --alter --issues=MissingPureAnnotation` or `--issues=MissingImmutableAnnotation` turns it on for that run. Capability checks (`ImpureFunctionCall` and the like) compare a call with what the callee declares, whatever this is set to.
+
+#### assumeGettersMutationFree
+```xml
+<psalm
+  assumeGettersMutationFree="[bool]"
+>
+```
+When `true`, a method with no purity annotation whose body is `return $this->property;` (of a property with a type) is taken as mutation-free, so it can be called from a `@psalm-pure` function or a mutation-free method. Set it to `false` to take such a method as any other method without an annotation (it needs `@psalm-pure`, `@psalm-mutation-free` or `@psalm-capabilities` to be called from there), for example when the classes you call may change their getters. Defaults to `true`.
+
+```php
+<?php
+
+final class Lib
+{
+    private string $name = '';
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+}
+
+/** @psalm-pure */
+function name(Lib $lib): string
+{
+    return $lib->getName(); // no issue; ImpureMethodCall with assumeGettersMutationFree="false"
+}
+```
+
+#### loadLibraryStubs
+```xml
+<psalm
+  loadLibraryStubs="[bool]"
+>
+```
+When `true`, Psalm loads the stubs it ships for the libraries your code uses (in `stubs/libraries`), which declare how their methods pass taints along and what they may do (their [capabilities](../annotating_code/purity_model.md)). A stub is only loaded when the scan finds one of the classes it declares, or the scanned code (e.g. the files your autoloader includes) declares one of its functions, and it only refines what it declares of them. Defaults to `true`.
+
+#### loadLibraryPlugins
+```xml
+<psalm
+  loadLibraryPlugins="[bool]"
+>
+```
+When `true`, Psalm enables these plugins without listing them in [`<plugins>`](plugins/using_plugins.md). Defaults to `true`.
+
+| Plugin | Enabled when |
+|---|---|
+| `psalm/plugin-phpunit` | `composer.json` requires `phpunit/phpunit` |
+| `psalm/plugin-mockery` | `composer.json` requires `mockery/mockery` |
+| `psalm/plugin-symfony` | `composer.json` requires `symfony/framework-bundle` |
+| `psalm/plugin-laravel` | `composer.json` requires `laravel/framework` or `orchestra/testbench` |
+| `weirdan/doctrine-psalm-plugin` | `composer.json` requires `doctrine/orm`, `doctrine/dbal`, `doctrine/collections` or `doctrine/persistence` |
+| the plugin of `webmozart/assert` (2.4 and later) | `webmozart/assert` is installed |
+
+Psalm itself requires these plugins, so they don't need installing.
 
 #### phpVersion
 ```xml
@@ -475,7 +629,7 @@ Whether or not to report issues only for files that were passed explicitly as ar
   cacheDirectory="[string]"
 >
 ```
-The directory used to store Psalm's cache data - if you specify one (and it does not already exist), its parent directory must already exist, otherwise Psalm will throw an error.
+The directory used to store Psalm's cache data. Psalm creates it recursively when initializing the cache.
 
 Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or empty, a default equal to `$HOME/.cache/psalm` is used or `sys_get_temp_dir() . '/psalm'` when not defined.
 
@@ -517,15 +671,17 @@ Defaults to `false`.
   serializer="['igbinary'|'default']"
 >
 ```
-Allows you to hard-code a serializer for Psalm to use when caching data. By default, Psalm uses `ext-igbinary` *if* the version is greater than or equal to 2.0.5, otherwise it defaults to PHP's built-in serializer.
+Allows you to hard-code a serializer for Psalm to use when caching data. By default, Psalm uses `ext-igbinary` *if* the version is greater than or equal to 2.0.5, otherwise it defaults to PHP's built-in serializer. The value `default` means PHP's built-in serializer, not the automatic choice.
 
 #### compressor
 ```xml
 <psalm
-  compressor="['lz4'|'deflate'|'off']"
+  compressor="['auto'|'zstd'|'lz4'|'deflate'|'off']"
 >
 ```
-Allows you to hard-code a compressor for Psalm's cache. By default, Psalm uses `ext-zlib` deflate, if it's enabled.
+Allows you to hard-code a compressor for Psalm's cache. The default is `auto`: `ext-zstd` (version 0.15.0 or later) if it's enabled, otherwise `ext-zlib` deflate if it's enabled, otherwise no compression.
+If the extension of the compressor you ask for is missing, Psalm warns and uses `auto`.
+Caches are stored per compressor, so to restore a cache built on another machine (for example on CI), set the compressor explicitly.
 
 #### threads
 ```xml
@@ -541,7 +697,7 @@ Allows you to hard-code the number of threads Psalm will use (similar to `--thre
         scanThreads="[int]"
 >
 ```
-Allows you to hard-code the number of threads Psalm will use during the scan phase (as opposed to the analysis phase, controlled by the `threads` field) (similar to `--scan-threads` on the command line). This value will be used in place of detecting threads from the host machine, but will be overridden by using `--scan-threads` or `--debug` (which sets threads to 1) on the command line.
+Allows you to hard-code the number of threads Psalm will use during the scan phase (as opposed to the analysis phase, controlled by the `threads` field) (similar to `--scan-threads` on the command line). This value will be used in place of detecting threads from the host machine, but will be overridden by using `--scan-threads`, `--threads` or `--debug` (which sets threads to 1) on the command line.
 
 #### maxStringLength
 ```xml
@@ -575,6 +731,15 @@ Please note that changing this setting might introduce unwanted side effects and
 Specifies the maximum scan and analysis duration for individual files; files which take longer than the specified amount of seconds (as a floating point, so values smaller than one second are also accepted) will print out a warning to CLI (the scan will **not** be interrupted).  
 
 Only used in multithreaded mode, defaults to 10 seconds.  
+
+#### minTypeCoverage
+```xml
+<psalm
+  minTypeCoverage="95"
+>
+```
+
+Fails a full run whose [type coverage](command_line_usage.md#minimum-type-coverage) is below this percentage. By default there is no minimum.
 
 #### restrictReturnTypes
 
@@ -669,6 +834,7 @@ Optional. A list of extensions to enable. By default, only extensions required b
 ```xml
 <enableExtensions>
   <extension name="decimal"/>
+  <extension name="imagick"/>
   <extension name="pdo"/>
 </enableExtensions>
 ```
@@ -729,8 +895,20 @@ or interfaces defined in a stub file, this stub should be configured with attrib
 </stubs>
 ```
 
+A `<directory name="path/to/stubs" />` adds every `.php` and `.phpstub` file below it, in alphabetical order, and takes
+the same `preloadClasses` attribute:
+
+```xml
+<stubs>
+  <directory name="path/to/stubs" />
+  <directory name="path/to/base-classes" preloadClasses="true" />
+</stubs>
+```
+
 Stubs aren't analyzed, but the issues of their docblocks (e.g. `InvalidDocblock`) are reported, also for the stubs
 plugins add, so that an annotation a stub gets wrong isn't silently dropped.
+
+Psalm also ships stubs for some libraries, loaded when your code uses them (see [loadLibraryStubs](#loadlibrarystubs)).
 
 Note: some extension stubs are already built into Psalm, and can be enabled by requiring the extension in your `composer.json` or by using the [enableExtensions](https://psalm.dev/docs/running_psalm/configuration/#enableextensions) config key.  
 

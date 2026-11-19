@@ -5,11 +5,22 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\Analyzer\MethodComparator;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Provider\Providers;
+use Psalm\IssueBuffer;
+use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
+use function dirname;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -18,6 +29,138 @@ final class MethodSignatureTest extends TestCase
     use InvalidCodeAnalysisWithIssuesTestTrait;
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testStubNativeReturnWithoutGeneratedMetadata(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.5', 'tests');
+        self::assertNull(InternalCallMapHandler::getSignatureReturnType('Ds\\Collection::isEmpty'));
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                use Ds\\Collection;
+
+                final class Bag {
+                    /** @psalm-mutation-free */
+                    public function isEmpty(): int {
+                        return 1;
+                    }
+                }',
+        );
+        $this->analyzeFile('somefile.php', new Context());
+        $codebase = $this->project_analyzer->getCodebase();
+        $implementer = $codebase->classlike_storage_provider->get('Bag');
+        $guide = $codebase->classlike_storage_provider->get('Ds\\Collection');
+        $method = $implementer->methods['isempty'];
+        self::assertNotNull($method->location);
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MethodSignatureMismatch');
+        MethodComparator::compare(
+            $codebase,
+            null,
+            $implementer,
+            $guide,
+            $method,
+            $guide->methods['isempty'],
+            'Bag',
+            $method->visibility,
+            $method->location,
+            [],
+        );
+    }
+
+    public function testCallmapOnlyNativeReturnRequiresSignature(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        // Declare the API without its native type, as extension stubs need not duplicate callmap metadata.
+        $this->addStubFile(
+            'mysqli-result.phpstub',
+            '<?php
+                /** @template TValue */
+                class mysqli_result {
+                    /** @return false|float|int|null|string */
+                    public function fetch_column(int $column = 0) {}
+                }',
+        );
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @extends mysqli_result<array<string, mixed>> */
+                abstract class Result extends mysqli_result {
+                    /** @return int */
+                    public function fetch_column(int $column = 0) {
+                        return 1;
+                    }
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MethodSignatureMustProvideReturnType');
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testMismatchingParamShowsExactCallMapGuideType(): void
+    {
+        // with the extension stub disabled, the callmap type of the guide method is not overridden by a stub
+        $this->project_analyzer = new ProjectAnalyzer(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <disableExtensions>
+                        <extension name="dom"/>
+                    </disableExtensions>
+                </psalm>',
+            ),
+            new Providers(
+                $this->file_provider,
+                new FakeParserCacheProvider(),
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('7.4', 'tests');
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage(
+            'MethodSignatureMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:49 - Argument 1 of D::loadXML'
+            . ' has wrong type \'int\', expecting \'non-empty-string\' as defined by DOMDocument::loadXML',
+        );
+
+        $this->addFile(
+            self::$src_dir_path . 'somefile.php',
+            '<?php
+                final class D extends DOMDocument {
+                    public function loadXML(int $source, int $options = 0): bool { return true; }
+                }',
+        );
+        $this->analyzeFile(self::$src_dir_path . 'somefile.php', new Context());
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerLegacyTentativeReturnVersions(): iterable
+    {
+        return ['php74' => ['7.4'], 'php80' => ['8.0']];
+    }
+
+    #[DataProvider('providerLegacyTentativeReturnVersions')]
+    public function testLegacyVersionDoesNotRequireTentativeReturnSignature(string $php_version): void
+    {
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
+        // The regression introduced a level-8 native-signature error, independently of PHPDoc compatibility.
+        $this->project_analyzer->getConfig()->level = 8;
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @extends LimitIterator<int, string, Iterator<int, string>> */
+                final class Window extends LimitIterator {
+                    /** @psalm-capabilities read-props */
+                    public function getPosition() { return 0; }
+                }',
+        );
+        $this->analyzeFile('somefile.php', new Context());
+    }
 
     public function testExtendSoapClientWithDocblockTypes(): void
     {
@@ -294,13 +437,672 @@ final class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testOverrideOfAMethodInheritingADocblockBroaderThanItsNativeParamIsComparedWithTheNativeOne(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface I {
+                    /**
+                     * @param object $record
+                     */
+                    public function preSaveRevision(stdClass $record): void;
+                }
+
+                class Base implements I {
+                    /**
+                     * {@inheritdoc}
+                     */
+                    public function preSaveRevision(stdClass $record): void {}
+                }
+
+                class Node extends Base {
+                    public function preSaveRevision(stdClass $record): void {}
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        // Node matches the native param of Base, which is what it overrides: only the docblock of the interface
+        // is broader than the native param, and it is reported where the interface is implemented
+        self::assertSame(
+            [
+                "Parameter \$record has wrong type 'object', should be 'stdClass'",
+                "Argument 1 of Base::preSaveRevision has the more specific type 'stdClass', expecting 'object' as"
+                    . ' defined by I::preSaveRevision',
+                "Argument 1 of Node::preSaveRevision has the more specific type 'stdClass', expecting 'object' as"
+                    . ' defined by I::preSaveRevision',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testOverrideOfAMethodDocumentedWithAToStringObjectIsComparedWithItsNativeStringParam(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Foo {
+                    public function __toString(): string { return "foo"; }
+                }
+
+                interface I {
+                    /** @param Foo $x */
+                    public function m($x): void;
+                }
+
+                class A implements I {
+                    public function m(string $x): void {}
+                }
+
+                final class B extends A {
+                    /** @param non-empty-string $x */
+                    public function m($x): void {}
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        // the docblock of I does not document the native string param of A: an object is not a string
+        self::assertSame(
+            [
+                "Argument 1 of A::m has wrong type 'string', expecting 'Foo' as defined by I::m",
+                "Argument 1 of B::m has wrong type 'non-empty-string', expecting 'Foo' as defined by I::m",
+                "Argument 1 of B::m has the more specific type 'non-empty-string', expecting 'string' as defined by"
+                    . ' A::m',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    /**
+     * @param list<string> $expected_issues
+     */
+    #[DataProvider('providerInheritedPseudoMethodMismatch')]
+    public function testInheritedPseudoMethodMismatchIsReportedOnlyWhereItIsIntroduced(
+        string $code,
+        array $expected_issues,
+        ?string $parents_code = null,
+    ): void {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        if ($parents_code !== null) {
+            $this->addFile(self::$src_dir_path . 'parents.php', $parents_code);
+        }
+
+        $this->addFile($file_path, $code);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            $expected_issues,
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{0: string, 1: list<string>, 2?: string}>
+     * @psalm-pure
+     */
+    public static function providerInheritedPseudoMethodMismatch(): iterable
+    {
+        $makeable = '<?php
+            trait Makeable {
+                /**
+                 * @param mixed ...$arguments
+                 * @return static
+                 */
+                public static function make(...$arguments) {
+                    throw new LogicException();
+                }
+            }
+            abstract class Element { use Makeable; }
+            /**
+             * @method static static make(string $name, string|null $attribute = null)
+             */
+            abstract class Field extends Element {}
+            /**
+             * @method static static make(string $name, string|null $attribute = null)
+             */
+            class Heading extends Field {}';
+
+        return [
+            'chainOfClassesRedeclaringTheMethod' => [
+                $makeable . '
+                    final class DangerHeading extends Heading {}',
+                [
+                    'MoreSpecificImplementedParamType: Argument 1 of Field::make has the more specific type'
+                        . " 'string', expecting 'mixed' as defined by Makeable::make",
+                    'MethodSignatureMismatch: Method Field::make has more required parameters than parent method'
+                        . ' Makeable::make',
+                    'MoreSpecificImplementedParamType: Argument 1 of Heading::make has the more specific type'
+                        . " 'string', expecting 'mixed' as defined by Makeable::make",
+                    'MethodSignatureMismatch: Method Heading::make has more required parameters than parent method'
+                        . ' Makeable::make',
+                ],
+            ],
+            'parentsOutsideTheAnalyzedFile' => [
+                '<?php
+                    final class DangerHeading extends Heading {}',
+                [],
+                $makeable,
+            ],
+            'methodOfATraitMeetingAMethodOfTheParent' => [
+                '<?php
+                    /**
+                     * @method static void create(string $a, string $b)
+                     */
+                    trait Creates {}
+                    class Factory { public static function create(): void {} }
+                    class UsesTrait extends Factory { use Creates; }
+                    class InheritsTrait extends UsesTrait {}',
+                [
+                    'MethodSignatureMismatch: Method UsesTrait::create has more required parameters than parent'
+                        . ' method Factory::create',
+                ],
+            ],
+            'interfaceAddedBySubclass' => [
+                '<?php
+                    interface Contract { public function run(int $a): void; }
+                    /**
+                     * @method void run(string $a, string $b)
+                     */
+                    class Dispatcher { public function __call(string $n, array $a) { return null; } }
+                    abstract class AddsContract extends Dispatcher implements Contract {}
+                    abstract class InheritsContract extends AddsContract {}',
+                [
+                    "ImplementedParamTypeMismatch: Argument 1 of AddsContract::run has wrong type 'string',"
+                        . " expecting 'int' as defined by Contract::run",
+                    'MethodSignatureMismatch: Method AddsContract::run has more required parameters than parent'
+                        . ' method Contract::run',
+                ],
+            ],
+            'chainOfInterfaces' => [
+                '<?php
+                    interface Base { public function go(): void; }
+                    /**
+                     * @method void go(string $a, string $b)
+                     */
+                    interface Child extends Base {}
+                    interface GrandChild extends Child {}',
+                [
+                    'MethodSignatureMismatch: Method Child::go has more required parameters than parent method'
+                        . ' Base::go',
+                ],
+            ],
+            'interfaceWithSeveralParents' => [
+                '<?php
+                    interface Base { public function go(): void; }
+                    interface Other {}
+                    /**
+                     * @method void go(string $a, string $b)
+                     */
+                    interface Mid extends Base {}
+                    interface Leaf extends Other, Mid {}',
+                [
+                    'MethodSignatureMismatch: Method Mid::go has more required parameters than parent method'
+                        . ' Base::go',
+                ],
+            ],
+            'parentWithARealMethodAndAPseudoOne' => [
+                '<?php
+                    /**
+                     * @method void foo(string $a, string $b)
+                     */
+                    class A { public function foo(): void {} }
+                    class B extends A {}
+                    class C extends B {}',
+                [
+                    'MethodSignatureMismatch: Method A::foo has more required parameters than parent method A::foo',
+                ],
+            ],
+            'parentWithAMethodOfATrait' => [
+                '<?php
+                    trait T { public function foo(int $x): void {} }
+                    /**
+                     * @method void foo(string $x)
+                     */
+                    abstract class P { use T; }
+                    abstract class C extends P {}
+                    abstract class D extends C {}',
+                [
+                    "ImplementedParamTypeMismatch: Argument 1 of P::foo has wrong type 'string', expecting 'int'"
+                        . ' as defined by T::foo',
+                ],
+            ],
+            'parentWithAStaticMethodOfATrait' => [
+                '<?php
+                    trait T { public static function foo(int $x): void {} }
+                    /**
+                     * @method static void foo(string $x)
+                     */
+                    abstract class P { use T; }
+                    abstract class C extends P {}
+                    abstract class D extends C {}',
+                [
+                    "ImplementedParamTypeMismatch: Argument 1 of P::foo has wrong type 'string', expecting 'int'"
+                        . ' as defined by T::foo',
+                ],
+            ],
+            'grandparentWithAMethodOfATrait' => [
+                '<?php
+                    trait T { public function foo(int $x): void {} }
+                    abstract class G { use T; }
+                    /**
+                     * @method void foo(string $x)
+                     */
+                    abstract class P extends G {}
+                    abstract class C extends P {}',
+                [
+                    "ImplementedParamTypeMismatch: Argument 1 of P::foo has wrong type 'string', expecting 'int'"
+                        . ' as defined by T::foo',
+                ],
+            ],
+            'parentWithAMethodOfATraitMadeProtected' => [
+                '<?php
+                    trait T { public function foo(int $x): void {} }
+                    /**
+                     * @method void foo(string $x)
+                     */
+                    abstract class P { use T { foo as protected; } }
+                    abstract class C extends P {}',
+                [],
+            ],
+            'staticMethodNextToAnInheritedInstanceOne' => [
+                '<?php
+                    class G { public function foo(): void {} }
+                    /**
+                     * @method void foo()
+                     */
+                    class P extends G {}
+                    /**
+                     * @method static void foo(string $a, string $b)
+                     */
+                    class C extends P {}',
+                [
+                    'MethodSignatureMismatch: Method C::foo has more required parameters than parent method'
+                        . ' G::foo',
+                ],
+            ],
+        ];
+    }
+
+    public function testPseudoMethodOfAnInterfaceWithAnUndefinedParentIsNotCompared(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @method void foo(string $a)
+                 */
+                interface J extends MissingInterface {}',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            ['UndefinedClass: Class, interface or enum named MissingInterface does not exist'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     /**
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticTypeArgumentMatchesInheritedReturnType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Getter {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /** @implements Getter<static> */
+                    class Node implements Getter {
+                        public function get(): static {
+                            return $this;
+                        }
+                    }
+
+                    final class Leaf extends Node {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticTypeArgumentMatchesDocumentedReturnType' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, static> */
+                    abstract class Bag implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool { return true; }
+                        /** @return static */
+                        public function offsetGet(mixed $offset): static { return $this; }
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    final class SubBag extends Bag {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticTypeArgumentMatchesDocumentedParamType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Setter {
+                        /** @param T $value */
+                        public function set(mixed $value): void;
+                    }
+
+                    /** @implements Setter<static> */
+                    class Node implements Setter {
+                        /** @param static $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    final class Leaf extends Node {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'parametersDocumentedByDifferentAncestorsAreInheritedEach' => [
+                'code' => '<?php
+                    interface Source {
+                        /**
+                         * @param list<string> $names
+                         */
+                        public function merge(array $names, array $counts): int;
+                    }
+
+                    abstract class Middle implements Source {
+                        /**
+                         * @param array<string, int> $counts
+                         */
+                        #[Override]
+                        public function merge(array $names, array $counts): int {
+                            return 0;
+                        }
+                    }
+
+                    final class Leaf extends Middle {
+                        #[Override]
+                        public function merge($names, $counts): int {
+                            /** @psalm-check-type-exact $names = list<string> */
+                            /** @psalm-check-type-exact $counts = array<string, int> */
+                            return count($names) + count($counts);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MoreSpecificImplementedParamType'],
+                'php_version' => '8.3',
+            ],
+            'overrideOfAMethodDocumentedByTheInterfaceItImplements' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @param Closure $c
+                         * @psalm-param Closure():string $c
+                         */
+                        public function foo(Closure $c): void;
+                    }
+
+                    class A implements I {
+                        public function foo(Closure $c): void {}
+                    }
+
+                    class B extends A {
+                        /**
+                         * @param Closure $c
+                         * @psalm-param Closure():string $c
+                         */
+                        public function foo(Closure $c): void {}
+                    }',
+            ],
+            'overrideOfAMethodDocumentedByTheInterfaceKeepsTheParamOfItsParent' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @no-named-arguments
+                         * @param Closure $c
+                         * @psalm-param Closure():string $c
+                         */
+                        public function foo(Closure $c, array &$a): void;
+                    }
+
+                    class A implements I {
+                        public function foo(Closure $d, array &$a): void {}
+                    }
+
+                    class B extends A {
+                        /**
+                         * @param Closure $d
+                         * @psalm-param Closure():string $d
+                         */
+                        public function foo(Closure $d, array &$a): void {}
+                    }',
+            ],
+            'overrideDocumentingSomeParamsKeepsItsOwnType' => [
+                'code' => '<?php
+                    class Repository {
+                        /**
+                         * @param string|null $key
+                         * @param bool $strict
+                         */
+                        public function flag($key = null, $strict = false): bool {
+                            return $strict || $key !== null;
+                        }
+                    }
+
+                    final class CachedRepository extends Repository {
+                        /**
+                         * @param bool|int $strict
+                         */
+                        #[\Override]
+                        public function flag($key = null, $strict = false): bool {
+                            /** @psalm-check-type-exact $key = string|null */;
+                            /** @psalm-check-type-exact $strict = bool|int */;
+
+                            return false;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideDocumentingSomeParamsInheritsTheOthersFromTheParent' => [
+                'code' => '<?php
+                    class Repository {
+                        /**
+                         * @param string|null $key
+                         * @param bool $default
+                         * @param bool $strict
+                         */
+                        public function flag($key = null, $default = false, $strict = false): bool {
+                            return $default || $strict || $key !== null;
+                        }
+                    }
+
+                    final class CachedRepository extends Repository {
+                        /**
+                         * @inheritDoc
+                         * @param bool $strict
+                         */
+                        #[\Override]
+                        public function flag($key = null, $default = false, $strict = false): bool {
+                            /** @psalm-check-type-exact $key = string|null */;
+                            /** @psalm-check-type-exact $default = bool */;
+                            /** @psalm-check-type-exact $strict = bool */;
+
+                            return false;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeThatTheNativeTypeDoesNotContainIsNotApplied' => [
+                'code' => '<?php
+                    class P {
+                        /** @param string $x */
+                        public function g($x, int $y): void {}
+                    }
+
+                    final class Q extends P {
+                        /** @param positive-int $y */
+                        #[\Override]
+                        public function g(int $x, int $y): void {
+                            /** @psalm-check-type-exact $x = int */;
+                            /** @psalm-check-type-exact $y = positive-int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ImplementedParamTypeMismatch', 'MoreSpecificImplementedParamType'],
+                'php_version' => '8.3',
+            ],
+            'inheritedParamTypeThatTheNativeTypeDoesNotContainIsNotInTheFirstClassCallable' => [
+                'code' => '<?php
+                    class P {
+                        /** @param string $x */
+                        public function g($x, int $y): void {}
+                    }
+
+                    final class Q extends P {
+                        /** @param positive-int $y */
+                        #[\Override]
+                        public function g(int $x, int $y): void {}
+                    }
+
+                    $c = (new Q)->g(...);
+                    /** @psalm-check-type-exact $c = Closure(int, positive-int):void */;',
+                'assertions' => [],
+                'ignored_issues' => ['ImplementedParamTypeMismatch', 'MoreSpecificImplementedParamType'],
+                'php_version' => '8.3',
+            ],
+            'unrelatedInterfacesDocumentingAParameterAlikeGiveTheOverrideTheirType' => [
+                'code' => '<?php
+                    interface A {
+                        /** @param int $x */
+                        public function f($x): void;
+                    }
+
+                    interface B {
+                        /** @param int $x */
+                        public function f($x): void;
+                    }
+
+                    final class C implements A, B {
+                        /** @return void */
+                        #[\Override]
+                        public function f($x): void {
+                            /** @psalm-check-type-exact $x = int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'variadicParameterTakesTheOmittedParameters' => [
+                'code' => '<?php
+                    interface I {
+                        public function a(int $x, int $y): void;
+                        public function b(int $x = 1): void;
+                    }
+
+                    final class V implements I {
+                        public function a(int ...$x): void {}
+                        public function b(int ...$x): void {}
+                    }
+
+                    abstract class P {
+                        abstract public function a(int $x, int $y): void;
+                    }
+
+                    final class Q extends P {
+                        public function a(int ...$x): void {}
+                    }',
+            ],
+            'abstractConstructorCompatibleChild' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    class B extends A {
+                        public function __construct(int $a, int $b = 0) {}
+                    }
+                    new B(1);',
+            ],
+            'nonAbstractConstructorMayDiffer' => [
+                'code' => '<?php
+                    abstract class A {
+                        public function __construct(int $a) {}
+                    }
+                    class B extends A {
+                        public function __construct(string $a) {}
+                    }
+                    new B("a");',
+            ],
+            'staticReturnOfAnInheritedMethodSatisfiesAnInterface' => [
+                'code' => '<?php
+                    interface ModelInterface {
+                        public function setId(?string $value): static;
+                    }
+
+                    abstract class BaseModel {
+                        public function setId(?string $value): static {
+                            return $this;
+                        }
+                    }
+
+                    class ConcreteModel extends BaseModel implements ModelInterface {}
+
+                    interface SelfInterface {
+                        public function make(): self;
+                    }
+
+                    class Maker implements SelfInterface {
+                        public function make(): static {
+                            return $this;
+                        }
+                    }
+
+                    class ConcreteMaker extends Maker implements SelfInterface {}',
+            ],
+            'overrideDateTimeDiffWithTheNativeParameterName' => [
+                'code' => '<?php
+                    class Date extends DateTime {
+                        public function diff(
+                            \\DateTimeInterface $targetObject,
+                            bool $absolute = false,
+                        ): \\DateInterval {
+                            return parent::diff(targetObject: $targetObject, absolute: $absolute);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'privateArgs' => [
                 'code' => '<?php
                     class A {
@@ -759,6 +1561,150 @@ final class MethodSignatureTest extends TestCase
                         public function getTraceAsString(): string;
                     }',
             ],
+            'implicitStringableWithoutReturnSignature' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString() {
+                            return "text";
+                        }
+                    }
+                    $text = (new Text())->__toString();',
+                'assertions' => ['$text' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'untypedAmqpValueDoesNotRequireNativeReturnType' => [
+                'code' => '<?php
+                    final class Value implements AMQPValue {
+                        /** @return string */
+                        public function toAmqpValue() {
+                            return "value";
+                        }
+                    }
+                    $value = (new Value())->toAmqpValue();',
+                'assertions' => ['$value' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'tentativeReturnTypeWillChangeRemainsSupported' => [
+                'code' => '<?php
+                    final class Value implements JsonSerializable {
+                        /** @return int */
+                        #[ReturnTypeWillChange]
+                        public function jsonSerialize() {
+                            return 1;
+                        }
+                    }
+                    $value = (new Value())->jsonSerialize();',
+                'assertions' => ['$value' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'tentativeExplicitReturnTypeWillChangeIn81' => [
+                'code' => '<?php
+                    final class Date extends DateTimeImmutable {
+                        /** @psalm-capabilities read-props */
+                        #[ReturnTypeWillChange]
+                        public function modify(string $modifier): int { return 1; }
+                    }
+                    $value = (new Date())->modify("+1 day");',
+                'assertions' => ['$value' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'tentativeExplicitReturnTypeWillChangeIn82' => [
+                'code' => '<?php
+                    final class Date extends DateTimeImmutable {
+                        /** @psalm-capabilities read-props */
+                        #[ReturnTypeWillChange]
+                        public function modify(string $modifier): int { return 1; }
+                    }
+                    $value = (new Date())->modify("+1 day");',
+                'assertions' => ['$value' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'untypedJsonSerializableBeforeTentativeReturns' => [
+                'code' => '<?php
+                    final class Value implements JsonSerializable {
+                        /** @return int */
+                        public function jsonSerialize() {
+                            return 1;
+                        }
+                    }
+                    $value = (new Value())->jsonSerialize();',
+                'assertions' => ['$value' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'explicitStringableWithoutReturnSignature' => [
+                'code' => '<?php
+                    final class Text implements Stringable {
+                        public function __toString() {
+                            return "text";
+                        }
+                    }
+                    $text = (new Text())->__toString();',
+                'assertions' => ['$text' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nativeToStringWithoutReturnSignatureIn80' => [
+                'code' => '<?php
+                    final class E extends Exception {
+                        public function __toString() { return "exception"; }
+                    }
+                    final class Failure extends Error {
+                        public function __toString() { return "error"; }
+                    }
+                    /** @extends ReflectionClass<object> */
+                    final class Reflection extends ReflectionClass {
+                        public function __toString() { return "reflection"; }
+                    }
+                    final class ReflectionInterface implements Reflector {
+                        public function __toString() { return "reflector"; }
+                    }
+                    $exception = (new E())->__toString();
+                    $error = (new Failure())->__toString();
+                    $reflection = (new Reflection(stdClass::class))->__toString();
+                    $reflector = (new ReflectionInterface())->__toString();',
+                'assertions' => [
+                    '$exception' => 'string',
+                    '$error' => 'string',
+                    '$reflection' => 'string',
+                    '$reflector' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nativeToStringWithoutReturnSignatureIn84' => [
+                'code' => '<?php
+                    final class E extends Exception {
+                        public function __toString() { return "exception"; }
+                    }
+                    final class Failure extends Error {
+                        public function __toString() { return "error"; }
+                    }
+                    /** @extends ReflectionClass<object> */
+                    final class Reflection extends ReflectionClass {
+                        public function __toString() { return "reflection"; }
+                    }
+                    final class ReflectionInterface implements Reflector {
+                        public function __toString() { return "reflector"; }
+                    }
+                    $exception = (new E())->__toString();
+                    $error = (new Failure())->__toString();
+                    $reflection = (new Reflection(stdClass::class))->__toString();
+                    $reflector = (new ReflectionInterface())->__toString();',
+                'assertions' => [
+                    '$exception' => 'string',
+                    '$error' => 'string',
+                    '$reflection' => 'string',
+                    '$reflector' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'allowExceptionToStringWithNoType' => [
                 'code' => '<?php
                     class E extends Exception {
@@ -1113,6 +2059,96 @@ final class MethodSignatureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'nativeToStringFromTraits' => [
+                'code' => '<?php
+                    trait StringableTrait {
+                        public function __TOSTRING() { return "exception"; }
+                    }
+                    trait Renderer {
+                        public function render(): string { return "error"; }
+                    }
+                    final class E extends Exception {
+                        use StringableTrait;
+                    }
+                    final class Failure extends Error {
+                        use Renderer { render as __toString; }
+                    }
+                    $exception = (new E())->__toString();
+                    $error = (new Failure())->__toString();',
+                'assertions' => [
+                    '$exception' => 'string',
+                    '$error' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'toStringObjectReturnForUnionWithItsClass' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        /** @return string|Foo */
+                        public function m();
+                    }
+
+                    final class C implements I {
+                        /** @return Foo */
+                        public function m() { return new Foo(); }
+                    }',
+            ],
+            'toStringObjectParamForConditionalWithItsClass' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    class P {
+                        /** @param Foo $x */
+                        public function m($x): void {}
+                    }
+
+                    /** @template T of bool */
+                    final class C extends P {
+                        /** @param (T is true ? string|Foo : Foo) $x */
+                        public function m($x): void {}
+                    }',
+            ],
+            'toStringObjectReturnForStringable' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        public function m(): Stringable;
+                    }
+
+                    final class C implements I {
+                        /** @return Foo */
+                        public function m(): Stringable { return new Foo(); }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'toStringObjectParamForStringParam' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        /** @param string $x */
+                        public function m($x): void;
+                    }
+
+                    final class C implements I {
+                        /** @param string|Foo $x */
+                        public function m($x): void {}
+                    }',
+            ],
         ];
     }
 
@@ -1120,9 +2156,225 @@ final class MethodSignatureTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticTypeArgumentStillChecksDocumentedReturnType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Getter {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /** @implements Getter<static> */
+                    class Node implements Getter {
+                        /** @return int */
+                        public function get(): mixed {
+                            return 1;
+                        }
+                    }',
+                'error_message' => "ImplementedReturnTypeMismatch - src" . DIRECTORY_SEPARATOR
+                    . "somefile.php:10:37 - The inherited return type 'Node&static' for Getter::get",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unrelatedInterfacesDocumentingAParameterDifferentlyGiveAnUndocumentedOverrideNoType' => [
+                'code' => '<?php
+                    interface A {
+                        /** @param int $x */
+                        public function f($x): void;
+                    }
+
+                    interface B {
+                        /** @param string $x */
+                        public function f($x): void;
+                    }
+
+                    final class C implements A, B {
+                        #[\Override]
+                        public function f($x): void {}
+                    }',
+                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:43',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'unrelatedInterfacesDocumentingAParameterDifferentlyGiveAnOverrideDocumentingItsReturnNoType' => [
+                'code' => '<?php
+                    interface A {
+                        /** @param int $x */
+                        public function f($x): void;
+                    }
+
+                    interface B {
+                        /** @param string $x */
+                        public function f($x): void;
+                    }
+
+                    final class C implements A, B {
+                        /** @return void */
+                        #[\Override]
+                        public function f($x): void {}
+                    }',
+                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:43',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'overrideOfAMethodDocumentedByTheInterfaceWithAMoreSpecificParam' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @param Closure $c
+                         * @psalm-param Closure():string $c
+                         */
+                        public function foo(Closure $c): void;
+                    }
+
+                    class A implements I {
+                        public function foo(Closure $c): void {}
+                    }
+
+                    class B extends A {
+                        /**
+                         * @param Closure $c
+                         * @psalm-param Closure():non-empty-string $c
+                         */
+                        public function foo(Closure $c): void {}
+                    }',
+                'error_message' => 'MoreSpecificImplementedParamType',
+            ],
+            'variadicParameterOfAnotherTypeThanTheOmittedParameter' => [
+                'code' => '<?php
+                    interface I {
+                        public function f(int $x, string $y): void;
+                    }
+
+                    final class C implements I {
+                        public function f(int ...$x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'variadicParameterIsNotPassedByReferenceLikeTheOmittedParameter' => [
+                'code' => '<?php
+                    interface I {
+                        public function f(int $x, int &$y): void;
+                    }
+
+                    final class C implements I {
+                        public function f(int ...$x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'variadicParameterPassedByReferenceWhereTheOmittedParameterIsNot' => [
+                'code' => '<?php
+                    interface I {
+                        public function f(int $x, int $y): void;
+                    }
+
+                    final class C implements I {
+                        public function f(int &...$x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'fewerArgumentsThanTheOptionalOnesOfAnInterface' => [
+                'code' => '<?php
+                    interface I {
+                        public function fooFoo(int $a, int $b = 1): void;
+                    }
+
+                    final class A implements I {
+                        public function fooFoo(int $a): void {}
+                    }',
+                'error_message' => 'Method A::fooFoo has fewer parameters than parent method I::fooFoo',
+            ],
+            'fewerArgumentsThanTheOptionalOnesOfAnAbstractTraitMethod' => [
+                'code' => '<?php
+                    trait T {
+                        abstract public function fooFoo(int $a, int $b = 1): void;
+                    }
+
+                    final class A {
+                        use T;
+
+                        public function fooFoo(int $a): void {}
+                    }',
+                'error_message' => 'Method A::fooFoo has fewer parameters than parent method T::fooFoo',
+            ],
+            'returnTypeMessageOfAMethodWithOneKeepsItsType' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function run(): string;
+                    }
+
+                    class B extends A {
+                        public function run(): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => "MethodSignatureMismatch - src" . DIRECTORY_SEPARATOR . "somefile.php:7:25 - Method B::run"
+                    . " with return type 'int' is different to return type 'string' of inherited method A::run",
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'returnTypeMessageOfAMethodWithoutOneIsMixed' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function run(): array|false;
+                    }
+
+                    class B extends A {
+                        public function run() {
+                            return false;
+                        }
+                    }',
+                'error_message' => "MethodSignatureMismatch - src" . DIRECTORY_SEPARATOR . "somefile.php:7:25 - Method B::run"
+                    . " with return type 'mixed' is different to return type",
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'staticReturnOfAnInheritedMethodDoesNotSatisfyAnUnrelatedInterface' => [
+                'code' => '<?php
+                    interface OtherInterface {
+                        public function make(): Other;
+                    }
+
+                    class Other {}
+
+                    class Maker {
+                        public function make(): static {
+                            return $this;
+                        }
+                    }
+
+                    class ConcreteMaker extends Maker implements OtherInterface {}',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'returnTypeWillChangeDoesNotSuppressNativeContract' => [
+                'code' => '<?php
+                    final class Connection extends mysqli {
+                        #[ReturnTypeWillChange]
+                        public function execute_query(string $query, ?array $params = null): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'returnTypeWillChangeDoesNotSuppressMissingNativeContract' => [
+                'code' => '<?php
+                    trait Renderer {
+                        /** @return string */
+                        #[ReturnTypeWillChange]
+                        public function render() { return "exception"; }
+                    }
+                    final class E extends Exception {
+                        use Renderer { render as __toString; }
+                    }',
+                'error_message' => 'MethodSignatureMustProvideReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'oneParam' => [
                 'code' => '<?php
                     interface I {
@@ -1535,7 +2787,7 @@ final class MethodSignatureTest extends TestCase
                         public function f($f): void {}
                     }',
                 'error_message' => 'MethodSignatureMismatch',
-                'ignored_issues' => ['MoreSpecificImplementedParamType'],
+                'error_levels' => ['MoreSpecificImplementedParamType'],
             ],
             'preventOneOfUnionMoreSpecific' => [
                 'code' => '<?php
@@ -1575,10 +2827,9 @@ final class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidReturnType',
-                'ignored_issues' => ['InvalidParent'],
+                'error_levels' => ['InvalidParent'],
             ],
-            // not sure how to handle it
-            'SKIPPED-returnsParentWithNoParentAndInvalidParentSuppressedMismatchingReturn' => [
+            'returnsParentWithNoParentAndInvalidParentSuppressedMismatchingReturn' => [
                 'code' => '<?php
                     class Foo {
                         public function f(): parent {
@@ -1586,8 +2837,8 @@ final class MethodSignatureTest extends TestCase
                         }
                     }
                 ',
-                'error_message' => 'InvalidReturnType',
-                'ignored_issues' => ['InvalidParent'],
+                'error_message' => 'FalsableReturnStatement',
+                'error_levels' => ['InvalidParent'],
             ],
             'regularMethodMismatchFromParentUse' => [
                 'code' => '<?php
@@ -1679,7 +2930,7 @@ final class MethodSignatureTest extends TestCase
                         use FooTrait;
                     }',
                 'error_message' => 'MethodSignatureMismatch',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.3',
             ],
             'inconsistentConstructorExplicitParentConstructorArgCount' => [
@@ -1717,6 +2968,37 @@ final class MethodSignatureTest extends TestCase
 
                     class BadAChild extends A {
                         public function __construct(string $s) {}
+                    }',
+                'error_message' => 'ConstructorSignatureMismatch',
+            ],
+            'abstractConstructorParamTypeMismatch' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    class B extends A {
+                        public function __construct(string $a) {}
+                    }',
+                'error_message' => 'ConstructorSignatureMismatch',
+            ],
+            'abstractConstructorMoreRequiredParams' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    class B extends A {
+                        public function __construct(int $a, int $b) {}
+                    }',
+                'error_message' => 'ConstructorSignatureMismatch',
+            ],
+            'abstractConstructorInGrandparent' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    abstract class B extends A {}
+                    class C extends B {
+                        public function __construct(string $a) {}
                     }',
                 'error_message' => 'ConstructorSignatureMismatch',
             ],
@@ -1760,7 +3042,7 @@ final class MethodSignatureTest extends TestCase
                 ',
                 'error_message' => 'MethodSignatureMismatch',
             ],
-            'SKIPPED-noMixedTypehintInDescendant' => [
+            'SKIPPED-noMixedTypehintInDescendant' => [ // #13926
                 'code' => '<?php
                     class a {
                         public function test(): mixed {
@@ -1774,8 +3056,22 @@ final class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'MethodSignatureMismatch',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'stringableChildInterfaceStillRequiresDeclaredReturnType' => [
+                'code' => '<?php
+                    interface TextInterface extends Stringable {
+                        public function __toString(): string;
+                    }
+                    final class Text implements TextInterface {
+                        public function __toString() {
+                            return "text";
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'noTypehintInNativeDescendant' => [
                 'code' => '<?php
@@ -1786,7 +3082,60 @@ final class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'MethodSignatureMustProvideReturnType',
-                'ignored_issues' => [],
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'nativeToStringRejectsIncompatibleExplicitReturnType' => [
+                'code' => '<?php
+                    final class E extends Exception {
+                        public function __toString(): int { return 1; }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nativeMysqliSignatureIn82' => [
+                'code' => '<?php
+                    final class Connection extends mysqli {
+                        public function execute_query(string $query, ?array $params = null): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'nativeMysqliSignatureIn85' => [
+                'code' => '<?php
+                    final class Connection extends mysqli {
+                        public function execute_query(string $query, ?array $params = null): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'nativeMysqliRequiresReturnSignature' => [
+                'code' => '<?php
+                    final class Connection extends mysqli {
+                        public function execute_query(string $query, ?array $params = null) {
+                            return false;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMustProvideReturnType',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'nativeCallmapSignatureRejectsIncompatibleReturnType' => [
+                'code' => '<?php
+                    final class Counter implements Countable {
+                        public function count(): string {
+                            return "one";
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'absentByRefReturnInDescendant' => [
@@ -1975,6 +3324,215 @@ final class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
                 'error_levels' => [],
                 'php_version' => '8.4',
+            ],
+            'nativeToStringTraitAliasRequiresReturnSignature' => [
+                'code' => '<?php
+                    trait Renderer {
+                        /** @return string */
+                        public function render() { return "exception"; }
+                    }
+                    final class E extends Exception {
+                        use Renderer { render as __toString; }
+                    }',
+                'error_message' => 'MethodSignatureMustProvideReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'toStringObjectDocblockReturnForStringDocblockReturn' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        /** @return string */
+                        public function m();
+                    }
+
+                    final class C implements I {
+                        /** @return Foo */
+                        public function m() { return new Foo(); }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'toStringObjectNativeReturnForStringDocblockReturn' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        /** @return string */
+                        public function m();
+                    }
+
+                    final class C implements I {
+                        public function m(): Foo { return new Foo(); }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'toStringObjectOrStringReturnForStringReturn' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        /** @return string */
+                        public function m();
+                    }
+
+                    final class C implements I {
+                        /** @return Foo|string */
+                        public function m() { return new Foo(); }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'stringableReturnForStringReturn' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return string */
+                        public function m();
+                    }
+
+                    final class C implements I {
+                        public function m(): Stringable { return new Exception(); }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'toStringObjectSignatureReturnForStringSignatureReturn' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        public function m(): string;
+                    }
+
+                    final class C implements I {
+                        public function m(): Foo { return new Foo(); }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'stringDocblockParamForToStringObjectDocblockParam' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        /** @param Foo $x */
+                        public function m($x): void;
+                    }
+
+                    final class C implements I {
+                        /** @param string $x */
+                        public function m($x): void {}
+                    }',
+                'error_message' => 'ImplementedParamTypeMismatch',
+            ],
+            'stringParamForStringOrStringableParam' => [
+                'code' => '<?php
+                    interface I {
+                        /** @param string|Stringable $x */
+                        public function m($x): void;
+                    }
+
+                    final class C implements I {
+                        /** @param string $x */
+                        public function m($x): void {}
+                    }',
+                'error_message' => 'MoreSpecificImplementedParamType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'toStringObjectReturnForNonEmptyStringReturn' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        /** @return non-empty-string */
+                        public function m();
+                    }
+
+                    final class C implements I {
+                        /** @return Foo */
+                        public function m() { return new Foo(); }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'nonEmptyStringParamForToStringObjectParam' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        /** @param Foo $x */
+                        public function m($x): void;
+                    }
+
+                    final class C implements I {
+                        /** @param non-empty-string $x */
+                        public function m($x): void {}
+                    }',
+                'error_message' => 'ImplementedParamTypeMismatch',
+            ],
+            'conditionalStringParamForToStringObjectParam' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    class P {
+                        /** @param Foo $x */
+                        public function m($x): void {}
+                    }
+
+                    /** @template T of bool */
+                    final class C extends P {
+                        /** @param (T is true ? string : non-empty-string) $x */
+                        public function m($x): void {}
+                    }',
+                'error_message' => 'ImplementedParamTypeMismatch',
+            ],
+            'nonEmptyStringFirstConditionalParamForToStringObjectParam' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    class P {
+                        /** @param Foo $x */
+                        public function m($x): void {}
+                    }
+
+                    /** @template T of bool */
+                    final class C extends P {
+                        /** @param (T is true ? non-empty-string : int) $x */
+                        public function m($x): void {}
+                    }',
+                'error_message' => 'ImplementedParamTypeMismatch',
+            ],
+            'stringSignatureParamForToStringObjectSignatureParam' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __toString(): string { return "foo"; }
+                    }
+
+                    interface I {
+                        public function m(Foo $x): void;
+                    }
+
+                    final class C implements I {
+                        public function m(string $x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
             ],
         ];
     }

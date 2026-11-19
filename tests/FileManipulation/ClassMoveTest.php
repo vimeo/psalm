@@ -4,41 +4,28 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\FileManipulation;
 
-use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
+use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
-use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
 use function strpos;
 
-final class ClassMoveTest extends TestCase
+final class ClassMoveTest extends DeferredAnalyzerTestCase
 {
     protected ProjectAnalyzer $project_analyzer;
 
     /**
-     * @psalm-external-mutation-free
+     * @param array<string, string> $migrations
      */
-    #[Override]
-    public function setUp(): void
-    {
-        RuntimeCaches::clearAll();
-
-        $this->file_provider = new FakeFileProvider();
-    }
-
-    /**
-     * @dataProvider providerValidCodeParse
-     * @param array<string, string> $constants_to_move
-     */
+    #[DataProvider('providerValidCodeParse')]
     public function testValidCode(
-        string $input_code,
-        string $output_code,
-        array $constants_to_move,
+        string $input,
+        string $output,
+        array $migrations,
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -61,12 +48,12 @@ final class ClassMoveTest extends TestCase
 
         $this->addFile(
             $file_path,
-            $input_code,
+            $input,
         );
 
         $codebase = $this->project_analyzer->getCodebase();
 
-        $this->project_analyzer->refactorCodeAfterCompletion($constants_to_move);
+        $this->project_analyzer->refactorCodeAfterCompletion($migrations);
 
         $this->analyzeFile($file_path, $context);
 
@@ -76,16 +63,40 @@ final class ClassMoveTest extends TestCase
 
         $this->project_analyzer->migrateCode();
 
-        $this->assertSame($output_code, $codebase->getFileContents($file_path));
+        $this->assertSame($output, $codebase->getFileContents($file_path));
     }
+
 
     /**
      * @return array<string,array{input:string,output:string,migrations:array<string, string>}>
      * @psalm-pure
      */
-    public function providerValidCodeParse(): array
+    public static function providerValidCodeParse(): array
     {
         return [
+            'renameClassInDocblockOfTypedProperty' => [
+                'input' => '<?php
+                    namespace Ns;
+
+                    class A {}
+
+                    class C {
+                        /** @var list<A> */
+                        public array $items = [];
+                    }',
+                'output' => '<?php
+                    namespace Ns;
+
+                    class B {}
+
+                    class C {
+                        /** @var list<B> */
+                        public array $items = [];
+                    }',
+                'migrations' => [
+                    'Ns\A' => 'Ns\B',
+                ],
+            ],
             'renameEmptyClass' => [
                 'input' => '<?php
                     namespace Ns;
@@ -169,6 +180,38 @@ final class ClassMoveTest extends TestCase
                      */
                     function foo(?B $a, $b, $c) : ?B {
                         return $a;
+                    }',
+                'migrations' => [
+                    'Ns\A' => 'Ns\B',
+                ],
+            ],
+            'renameClassInDocblockUnionsWithSpacesAroundPipe' => [
+                'input' => '<?php
+                    namespace Ns;
+
+                    class A {}
+
+                    /**
+                     * @param A |null $a the a
+                     * @param A  |  null $b
+                     * @return A
+                     *     |null
+                     */
+                    function foo($a, $b) {
+                        return $a ?? $b;
+                    }',
+                'output' => '<?php
+                    namespace Ns;
+
+                    class B {}
+
+                    /**
+                     * @param B|null $a the a
+                     * @param B|null $b
+                     * @return B|null
+                     */
+                    function foo($a, $b) {
+                        return $a ?? $b;
                     }',
                 'migrations' => [
                     'Ns\A' => 'Ns\B',
@@ -776,6 +819,54 @@ final class ClassMoveTest extends TestCase
                 ',
                 'migrations' => [
                     'Foo\Bar' => 'Zoo\Baz',
+                ],
+            ],
+            'renameClassKeepsSelfStaticAndParentPropertyFetches' => [
+                'input' => '<?php
+                    namespace Ns;
+
+                    class P {
+                        /** @var ?int */
+                        public static $bar;
+                    }
+
+                    class A extends P {
+                        /** @var ?int */
+                        public static $foo;
+
+                        public static function baz(): void {
+                            self::$foo = 1;
+                            static::$foo = 2;
+                            parent::$bar = 3;
+                            echo self::$foo;
+                            echo static::$foo;
+                            echo parent::$bar;
+                        }
+                    }',
+                'output' => '<?php
+                    namespace Ns;
+
+                    class Q {
+                        /** @var int|null */
+                        public static $bar;
+                    }
+
+                    class B extends Q {
+                        /** @var int|null */
+                        public static $foo;
+
+                        public static function baz(): void {
+                            self::$foo = 1;
+                            static::$foo = 2;
+                            parent::$bar = 3;
+                            echo self::$foo;
+                            echo static::$foo;
+                            echo parent::$bar;
+                        }
+                    }',
+                'migrations' => [
+                    'Ns\A' => 'Ns\B',
+                    'Ns\P' => 'Ns\Q',
                 ],
             ],
         ];

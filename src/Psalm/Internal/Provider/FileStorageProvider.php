@@ -52,15 +52,19 @@ final class FileStorageProvider
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-props|write-refs|read-globals|write-globals
      */
     public function remove(string $file_path): void
     {
         unset(self::$storage[strtolower($file_path)]);
+
+        // the copy in the cache's memory was populated in place, a rescan of the file must not get it back
+        $this->cache?->evict($file_path);
     }
 
     public function has(string $file_path, ?string $file_contents = null): bool
     {
+        $original_file_path = $file_path;
         $file_path = strtolower($file_path);
 
         if (isset(self::$storage[$file_path])) {
@@ -81,10 +85,28 @@ final class FileStorageProvider
             return false;
         }
 
+        // the cache doesn't tell the spellings of a path apart, but the locations in the storage, and the storages of
+        // the class-likes in the file, have the spelling they were scanned with
+        if ($cached_value->file_path !== $original_file_path) {
+            // the scan replaces the entry, which the cache would otherwise skip as already stored
+            $this->cache->forget($file_path);
+
+            return false;
+        }
+
         self::$storage[$file_path] = $cached_value;
         self::$new_storage[$file_path] = $cached_value;
 
         return true;
+    }
+
+    /**
+     * Whether scanning the file is likely to find its storage ready: it is in memory, or cached for its contents
+     */
+    public function isCached(string $file_path, FileProvider $file_provider): bool
+    {
+        return isset(self::$storage[strtolower($file_path)])
+            || ($this->cache !== null && $this->cache->hasEntry($file_path, $file_provider));
     }
 
     /**

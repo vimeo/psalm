@@ -20,8 +20,21 @@ Run with `--help` to see a list of options that Psalm supports.
 
 Psalm exits with status `0` when it successfully completed and found no issues,
 `1` when there was a problem running Psalm and `2` when it completed
-successfully but found some issues. Any exit status apart from those indicate
-some internal problem.
+successfully but found issues or the [type coverage](#minimum-type-coverage) is
+below the minimum. Any exit status apart from those indicates some internal problem.
+
+## Minimum type coverage
+
+`--min-type-coverage` (or the [`minTypeCoverage`](configuration.md#mintypecoverage) config attribute) makes Psalm exit with status `2` when the type coverage is below the given percentage:
+
+```bash
+./vendor/bin/psalm --min-type-coverage=95
+# STDERR: Type coverage 93.41% is below the minimum of 95.00%
+```
+
+Type coverage is the number in Psalm's summary line and on [Shepherd](#shepherd): the share of expressions whose inferred type is not `mixed`. Files in a `<directory ignoreTypeStats="true">` aren't counted.
+
+Only full runs are checked: the option can't be combined with file paths, `--set-baseline` or `--update-baseline`, and the config attribute is skipped on such runs.
 
 ## Shepherd
 
@@ -37,7 +50,7 @@ To run Psalm up to 50% faster, use the [official docker image](https://psalm.dev
 
 Psalm also has a couple of command-line options that will result in faster builds:
 
-- `--threads=[n]` to run Psalm’s analysis in a number of threads
+- `--threads=[n|auto]` to run Psalm’s analysis in a number of threads (`auto`, the default, uses one per CPU core)
 - `--diff` which only checks files you’ve updated since the last run (and their dependents).
 
 In Psalm 4 `--diff` is turned on by default (you can disable it with `--no-diff`).
@@ -47,6 +60,23 @@ If you are running Psalm on a build server, you may want to configure the server
 is preserved between runs.
 
 Running them together (e.g. `--threads=8 --diff`) will result in the fastest possible Psalm run.
+
+### Consolidating the cache
+
+`--consolidate-cache` merges the cache entries of the project into an index and a data file per cache, without analysing anything.
+On a build server this means saving and restoring a handful of files instead of tens of thousands.
+
+```bash
+# restore the cache directory with your CI's cache step
+vendor/bin/psalm                      # analyses, writes cache entries as separate files
+vendor/bin/psalm --consolidate-cache  # no analysis: merges them into an index and a data file per cache
+# save the cache directory with your CI's cache step
+```
+
+A run reads the index of a consolidated cache and then only the entries it needs.
+Entries written by later runs are stored as separate files again, so consolidate after the last run before saving the cache.
+With `ext-zstd` the consolidated cache is compressed with a dictionary made from its entries, which makes it about a third smaller than the separate entries.
+With another compressor it takes more disk space than the separate files, because each entry stays compressed on its own.
 
 ## Reviewing issues in your IDE of choice
 

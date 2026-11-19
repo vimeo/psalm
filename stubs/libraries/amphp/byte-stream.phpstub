@@ -1,0 +1,38 @@
+<?php
+
+// The taints amphp/byte-stream 2 passes along: what a payload's methods return is the content of the payload, so
+// a payload a source taints (e.g. the body of an amphp/http-client response) taints it. Loaded when the analysed
+// code uses the package, refining its classes (see Config::visitStubFiles()).
+
+namespace Amp\ByteStream {
+
+use Amp\Cancellation;
+
+final class Payload implements ReadableStream, \IteratorAggregate, \Stringable
+{
+    /**
+     * @psalm-flow ($this) -> return
+     */
+    final public function read(?Cancellation $cancellation = null): ?string
+    {
+    }
+
+    /**
+     * Buffers entire stream before returning. Use {@see self::read()} to read the stream chunk by chunk.
+     *
+     * @throws BufferException|StreamException
+     *
+     * @psalm-flow ($this) -> return
+     */
+    final public function buffer(?Cancellation $cancellation = null, int $limit = \PHP_INT_MAX): string
+    {
+    }
+
+    /**
+     * @psalm-flow ($this) -> return
+     */
+    public function __toString(): string
+    {
+    }
+}
+}

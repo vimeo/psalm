@@ -132,7 +132,6 @@ final class PluginFileExtensionsSocket implements FileExtensionsInterface
      */
     private function addFileExtension(string $fileExtension): void
     {
-        /** @psalm-suppress RedundantCondition */
         if (!in_array($fileExtension, $this->additionalFileExtensions, true)
             && !in_array($fileExtension, $this->config->getFileExtensions(), true)
         ) {

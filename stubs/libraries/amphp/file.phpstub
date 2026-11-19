@@ -1,0 +1,123 @@
+<?php
+
+// The taints amphp/file 3 passes along: the paths its functions open, read, write, list, move, link, delete or change
+// are file sinks. Loaded when the analysed code uses the package's functions (see Config::visitStubFiles()).
+
+namespace Amp\File {
+
+/**
+ * @throws FilesystemException
+ *
+ * @psalm-taint-sink file $path
+ */
+function openFile(string $path, string $mode): File
+{
+}
+
+/**
+ * @psalm-taint-sink file $original
+ * @psalm-taint-sink file $link
+ */
+function createSymlink(string $original, string $link): void
+{
+}
+
+/**
+ * @psalm-taint-sink file $target
+ * @psalm-taint-sink file $link
+ */
+function createHardlink(string $target, string $link): void
+{
+}
+
+/**
+ * @psalm-taint-sink file $from
+ * @psalm-taint-sink file $to
+ */
+function move(string $from, string $to): void
+{
+}
+
+/**
+ * @psalm-taint-sink file $path
+ */
+function deleteFile(string $path): void
+{
+}
+
+/**
+ * @psalm-taint-sink file $path
+ */
+function createDirectory(string $path, int $mode = 0777): void
+{
+}
+
+/**
+ * @psalm-taint-sink file $path
+ */
+function createDirectoryRecursively(string $path, int $mode = 0777): void
+{
+}
+
+/**
+ * @psalm-taint-sink file $path
+ */
+function deleteDirectory(string $path): void
+{
+}
+
+/**
+ * @return list<string>
+ *
+ * @psalm-taint-sink file $path
+ */
+function listFiles(string $path): array
+{
+}
+
+/**
+ * @psalm-taint-sink file $path
+ */
+function changePermissions(string $path, int $mode): void
+{
+}
+
+/**
+ * @param int|null $uid null to ignore
+ * @param int|null $gid null to ignore
+ *
+ * @psalm-taint-sink file $path
+ */
+function changeOwner(string $path, ?int $uid, ?int $gid = null): void
+{
+}
+
+/**
+ * @param int|null $modificationTime The touch time. If $time is not supplied, the current system time is used.
+ * @param int|null $accessTime The access time. If not supplied, the modification time is used.
+ *
+ * @psalm-taint-sink file $path
+ */
+function touch(string $path, ?int $modificationTime = null, ?int $accessTime = null): void
+{
+}
+
+/**
+ * @param string $path The file path from which to buffer contents.
+ *
+ * @psalm-taint-sink file $path
+ */
+function read(string $path): string
+{
+}
+
+/**
+ * @param string $path The file path to which to $contents should be written.
+ * @param string $contents The data to write to the specified $path.
+ *
+ * @psalm-taint-sink file $path
+ */
+function write(string $path, string $contents): void
+{
+}
+}

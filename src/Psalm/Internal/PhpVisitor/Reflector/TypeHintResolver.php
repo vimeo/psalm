@@ -15,7 +15,6 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Issue\ParseError;
-use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -32,6 +31,48 @@ use function strtolower;
 final class TypeHintResolver
 {
     /**
+     * The keys by which a member of a native union duplicates another one, each with the name PHP reports. PHP never
+     * resolves `static`, and resolves `self` and `parent` to the class name only from PHP 8.5 on, in a class that is
+     * neither a trait nor anonymous, outside of closures (they can be bound to another class).
+     *
+     * @return array<string, string>
+     */
+    private static function getDuplicateKeysOfAUnionMember(
+        PhpParser\NodeAbstract $hint,
+        Union $resolved_type,
+        ?ClassLikeStorage $classlike_storage,
+        int $analysis_php_version_id,
+    ): array {
+        if ($hint instanceof PhpParser\Node\Name && !$hint instanceof PhpParser\Node\Name\FullyQualified) {
+            $lower_hint = strtolower($hint->getFirst());
+
+            if ($lower_hint === 'static') {
+                return ['static' => 'static'];
+            }
+
+            if ($lower_hint === 'self' || $lower_hint === 'parent') {
+                $class_name = $classlike_storage
+                    && $analysis_php_version_id >= 8_05_00
+                    && !$classlike_storage->is_trait
+                    && !$classlike_storage->anonymous
+                    ? ($lower_hint === 'self' ? $classlike_storage->name : $classlike_storage->parent_class)
+                    : null;
+
+                return $class_name !== null ? [$class_name => $class_name] : [$lower_hint => $lower_hint];
+            }
+        }
+
+        $keys = [];
+
+        foreach ($resolved_type->getAtomicTypes() as $key => $_) {
+            // the key of a builtin type can carry more than its name (`callable[impure]`)
+            $keys[$key] = $hint instanceof Identifier ? strtolower($hint->name) : $key;
+        }
+
+        return $keys;
+    }
+
+    /**
      * @param Identifier|IntersectionType|Name|NullableType|UnionType $hint
      */
     public static function resolve(
@@ -42,6 +83,7 @@ final class TypeHintResolver
         ?ClassLikeStorage $classlike_storage,
         Aliases $aliases,
         int $analysis_php_version_id,
+        bool $is_closure = false,
     ): Union {
         if ($hint instanceof PhpParser\Node\UnionType) {
             $type = null;
@@ -51,13 +93,13 @@ final class TypeHintResolver
             }
 
             if ($analysis_php_version_id < 8_00_00) {
-                IssueBuffer::maybeAdd(
-                    new ParseError(
-                        'Union types are not supported in PHP < 8',
-                        $code_location,
-                    ),
+                $file_storage->scan_issues[] = new ParseError(
+                    'Union types are not supported in PHP < 8',
+                    $code_location,
                 );
             }
+
+            $seen_keys = [];
 
             foreach ($hint->types as $atomic_typehint) {
                 $resolved_type = self::resolve(
@@ -68,7 +110,26 @@ final class TypeHintResolver
                     $classlike_storage,
                     $aliases,
                     $analysis_php_version_id,
+                    $is_closure,
                 );
+
+                $member_keys = self::getDuplicateKeysOfAUnionMember(
+                    $atomic_typehint,
+                    $resolved_type,
+                    $is_closure ? null : $classlike_storage,
+                    $analysis_php_version_id,
+                );
+
+                foreach ($member_keys as $member_key => $member_name) {
+                    if (isset($seen_keys[$member_key])) {
+                        $file_storage->scan_issues[] = new ParseError(
+                            'Duplicate type ' . $member_name . ' is redundant',
+                            $code_location,
+                        );
+                    }
+                }
+
+                $seen_keys += $member_keys;
 
                 $type = Type::combineUnionTypes($resolved_type, $type);
             }
@@ -82,11 +143,9 @@ final class TypeHintResolver
             }
 
             if ($analysis_php_version_id < 8_01_00) {
-                IssueBuffer::maybeAdd(
-                    new ParseError(
-                        'Intersection types are not supported in PHP < 8.1',
-                        $code_location,
-                    ),
+                $file_storage->scan_issues[] = new ParseError(
+                    'Intersection types are not supported in PHP < 8.1',
+                    $code_location,
                 );
             }
 
@@ -106,17 +165,16 @@ final class TypeHintResolver
                     $classlike_storage,
                     $aliases,
                     $analysis_php_version_id,
+                    $is_closure,
                 );
 
                 foreach ($resolved_type->getAtomicTypes() as $atomic_type) {
                     if (!$atomic_type instanceof TNamedObject) {
-                        IssueBuffer::maybeAdd(
-                            new ParseError(
-                                $resolved_type->hasScalarType()
-                                    ? 'Intersection types cannot contain scalar types'
-                                    : 'Intersection types can only contain class types',
-                                $code_location,
-                            ),
+                        $file_storage->scan_issues[] = new ParseError(
+                            $resolved_type->hasScalarType()
+                                ? 'Intersection types cannot contain scalar types'
+                                : 'Intersection types can only contain class types',
+                            $code_location,
                         );
 
                         return Type::getMixed();

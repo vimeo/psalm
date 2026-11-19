@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
-use Amp\PHPUnit\AsyncTestCase as BaseAsyncTestCase;
 use Override;
+use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
@@ -32,7 +32,10 @@ use function is_string;
 use const ARRAY_FILTER_USE_KEY;
 use const DIRECTORY_SEPARATOR;
 
-abstract class AsyncTestCase extends BaseAsyncTestCase
+/**
+ * A test case for code using amphp: awaiting from a test runs the event loop.
+ */
+abstract class AsyncTestCase extends BaseTestCase
 {
     protected static string $src_dir_path;
     protected ProjectAnalyzer $project_analyzer;
@@ -149,7 +152,7 @@ abstract class AsyncTestCase extends BaseAsyncTestCase
      */
     protected function getTestName(bool $withDataSet = true): string
     {
-        return $this->getName($withDataSet);
+        return $withDataSet ? $this->nameWithDataSet() : $this->name();
     }
 
     /**

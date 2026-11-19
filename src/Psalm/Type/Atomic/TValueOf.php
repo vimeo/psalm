@@ -105,7 +105,7 @@ final class TValueOf extends Atomic
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function isViableTemplateType(Union $template_type): bool
     {
@@ -115,6 +115,7 @@ final class TValueOf extends Atomic
                 && !$type instanceof TKeyedArray
                 && !$type instanceof TPropertiesOf
                 && !$type instanceof TNamedObject
+                && !$type instanceof TTypeAlias
             ) {
                 return false;
             }

@@ -99,19 +99,36 @@ final class ParseTreeCreator
                     break;
 
                 case '>':
-                    do {
-                        if ($this->current_leaf->parent === null || $this->current_leaf instanceof PurityTree) {
-                            throw new TypeParseTreeException('Cannot parse generic type');
-                        }
+                    // after a trailing comma the generic itself is the current leaf
+                    if (!($this->current_leaf instanceof GenericTree
+                        && $this->t > 0
+                        && $this->type_tokens[$this->t - 1][0] === ',')
+                    ) {
+                        do {
+                            if ($this->current_leaf->parent === null || $this->current_leaf instanceof PurityTree) {
+                                throw new TypeParseTreeException('Cannot parse generic type');
+                            }
 
-                        $this->current_leaf = $this->current_leaf->parent;
-                    } while (!$this->current_leaf instanceof GenericTree);
+                            $this->current_leaf = $this->current_leaf->parent;
+                        } while (!$this->current_leaf instanceof GenericTree);
+                    }
 
                     $this->current_leaf->terminated = true;
 
                     break;
 
                 case '}':
+                    // after a trailing comma the array itself is the current leaf
+                    if ($this->current_leaf instanceof KeyedArrayTree
+                        && $this->current_leaf->children !== []
+                        && $this->t > 0
+                        && $this->type_tokens[$this->t - 1][0] === ','
+                    ) {
+                        $this->current_leaf->terminated = true;
+
+                        break;
+                    }
+
                     do {
                         if ($this->current_leaf->parent === null) {
                             throw new TypeParseTreeException('Cannot parse array type');
@@ -154,6 +171,7 @@ final class ParseTreeCreator
                     break;
 
                 case 'is':
+                case 'is not':
                 case 'as':
                 case 'of':
                     $this->handleIsOrAs($type_token);
@@ -264,12 +282,34 @@ final class ParseTreeCreator
      */
     private function parseCallableParam(array $current_token, ParseTree $current_parent): void
     {
+        // the `=` or `...` written right after the type has already made the param: `int= $name`
+        if ($this->current_leaf instanceof CallableParamTree
+            && $this->current_leaf->name === null
+            && $current_token[0][0] === '$'
+            && strlen($current_token[0]) > 1
+        ) {
+            /** @var non-empty-string $name */
+            $name = substr($current_token[0], 1);
+            $this->current_leaf->name = $name;
+
+            return;
+        }
+
         $variadic = false;
+        $by_ref = false;
         $has_default = false;
 
         if ($current_token[0] === '&') {
+            $by_ref = true;
             ++$this->t;
             $current_token = $this->t < $this->type_token_count ? $this->type_tokens[$this->t] : null;
+
+            // `&...$args`
+            if ($current_token && $current_token[0] === '...') {
+                $variadic = true;
+                ++$this->t;
+                $current_token = $this->t < $this->type_token_count ? $this->type_tokens[$this->t] : null;
+            }
         } elseif ($current_token[0] === '...') {
             $variadic = true;
 
@@ -289,6 +329,7 @@ final class ParseTreeCreator
         $new_leaf = new CallableParamTree($current_parent);
         $new_leaf->has_default = $has_default;
         $new_leaf->variadic = $variadic;
+        $new_leaf->by_ref = $by_ref;
         $potential_name = substr($current_token[0], 1);
         if ($potential_name !== '') {
             $new_leaf->name = $potential_name;
@@ -500,6 +541,16 @@ final class ParseTreeCreator
             throw new TypeParseTreeException('Cannot parse comma without a parent node');
         }
 
+        // after a comma the current leaf is its container, and a second comma would climb out of it
+        $prev = $this->t - 1;
+        while ($prev >= 0 && $this->type_tokens[$prev][0] === ' ') {
+            $prev--;
+        }
+
+        if ($prev >= 0 && $this->type_tokens[$prev][0] === ',') {
+            throw new TypeParseTreeException('Unexpected token ,');
+        }
+
         $context_node = $this->current_leaf;
 
         if ($context_node instanceof PurityTree) {
@@ -638,6 +689,8 @@ final class ParseTreeCreator
         }
 
         while (($current_parent instanceof UnionTree
+                || $current_parent instanceof IntersectionTree
+                || $current_parent instanceof NullableTree
                 || $current_parent instanceof CallableWithReturnTypeTree)
             && $this->current_leaf->parent
         ) {
@@ -682,7 +735,9 @@ final class ParseTreeCreator
             throw new TypeParseTreeException('Unexpected space');
         }
 
-        if ($this->current_leaf instanceof KeyedArrayTree) {
+        // a space inside the braces of a shape is not significant, one after it separates a method parameter's type
+        // from its name
+        if ($this->current_leaf instanceof KeyedArrayTree && !$this->current_leaf->terminated) {
             return;
         }
 
@@ -839,6 +894,28 @@ final class ParseTreeCreator
             return;
         }
 
+        // `callable(int &$i)` and `callable(int &...$i)`: the tokenizer drops the space before `&`
+        $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
+        $token_after_next = $this->t + 2 < $this->type_token_count ? $this->type_tokens[$this->t + 2] : null;
+
+        if ($next_token !== null
+            && ($next_token[0][0] === '$'
+                || ($next_token[0] === '...' && $token_after_next !== null && $token_after_next[0][0] === '$'))
+        ) {
+            while ($current_parent
+                && !$current_parent instanceof MethodTree
+                && !$current_parent instanceof CallableTree
+            ) {
+                $this->current_leaf = $current_parent;
+                $current_parent = $current_parent->parent;
+            }
+
+            if ($current_parent instanceof CallableTree) {
+                $this->parseCallableParam($this->type_tokens[$this->t], $current_parent);
+                return;
+            }
+        }
+
         $new_parent_leaf = new IntersectionTree($current_parent);
         $new_parent_leaf->children = [$this->current_leaf];
 
@@ -852,10 +929,30 @@ final class ParseTreeCreator
         $this->current_leaf = $new_parent_leaf;
     }
 
+    /**
+     * Whether the current token is a key of a shape (`array{as: int}`, `array{of?: int}`), not an operator
+     *
+     * @psalm-capabilities read-props
+     */
+    private function isKeyOfKeyedArray(): bool
+    {
+        if (!$this->current_leaf instanceof KeyedArrayTree) {
+            return false;
+        }
+
+        $next_token = $this->type_tokens[$this->t + 1][0] ?? null;
+
+        if ($next_token === '?') {
+            $next_token = $this->type_tokens[$this->t + 2][0] ?? null;
+        }
+
+        return $next_token === ':';
+    }
+
     /** @param array{0: string, 1: int, 2?: string} $type_token */
     private function handleIsOrAs(array $type_token): void
     {
-        if ($this->t === 0) {
+        if ($this->t === 0 || $this->isKeyOfKeyedArray()) {
             $this->handleValue($type_token);
         } else {
             $current_parent = $this->current_leaf->parent;
@@ -887,6 +984,22 @@ final class ParseTreeCreator
                     $this->current_leaf->value,
                     $current_parent,
                 );
+                $this->current_leaf->negated = $type_token[0] === 'is not';
+
+                if ($current_parent) {
+                    $current_parent->children[] = $this->current_leaf;
+                }
+            } elseif (($type_token[0] === 'is' || $type_token[0] === 'is not')
+                && ($this->current_leaf instanceof GenericTree || $this->current_leaf instanceof EncapsulationTree)
+                && $this->current_leaf->terminated
+            ) {
+                // a condition on a type depending on a template, e.g. `value-of<T> is string`
+                $subject = $this->current_leaf;
+                $subject->parent = null;
+
+                $this->current_leaf = new TemplateIsTree('', $current_parent);
+                $this->current_leaf->subject = $subject;
+                $this->current_leaf->negated = $type_token[0] === 'is not';
 
                 if ($current_parent) {
                     $current_parent->children[] = $this->current_leaf;
@@ -983,23 +1096,7 @@ final class ParseTreeCreator
                 break;
 
             case '(':
-                if (in_array(
-                    $type_token[0],
-                    [
-                        'callable',
-                        'pure-callable',
-                        'self-mutating-callable',
-                        'self-accessing-callable',
-                        'impure-callable',
-
-                        'Closure', '\Closure',
-                        'pure-Closure',
-                        'self-mutating-Closure',
-                        'self-accessing-Closure',
-                        'impure-Closure',
-                    ],
-                    true,
-                )) {
+                if (in_array($type_token[0], self::CALLABLE_KEYWORDS, true)) {
                     $new_leaf = new CallableTree(
                         $type_token[0],
                         $new_parent,

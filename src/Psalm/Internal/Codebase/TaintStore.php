@@ -16,6 +16,7 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\InterpolatedStringPart;
 use PhpParser\Node\Name;
+use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\InterpolatedString;
 use PhpParser\Node\Scalar\MagicConst\Class_;
 use PhpParser\Node\Scalar\MagicConst\Function_;
@@ -41,8 +42,11 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
+use function array_filter;
+use function array_pop;
 use function array_values;
 use function count;
+use function explode;
 use function in_array;
 use function ltrim;
 use function str_ends_with;
@@ -74,7 +78,7 @@ final class TaintStore
      * (`Store::$data[$key] -> return`), see TaintFlowAnnotation. Any other flow is not one of a keyed store.
      *
      * @param ?Aliases $aliases resolve the class of the store, else it is fully qualified
-     * @param ?string $self_class the class `self` and `static` name
+     * @param ?string $self_class the class `self` names, and `static` where the class of a call is not known
      */
     public static function addFlow(
         FunctionLikeStorage $storage,
@@ -87,6 +91,10 @@ final class TaintStore
         }
 
         $class_name = $flow->store_class;
+
+        // `static::$data`: the store of the class the method is called on
+        $is_late_bound = $self_class !== null && strtolower($class_name) === 'static';
+
         if ($self_class !== null && in_array(strtolower($class_name), ['self', 'static'], true)) {
             $class_name = $self_class;
         } elseif ($aliases !== null) {
@@ -112,6 +120,7 @@ final class TaintStore
                 'key' => $key,
                 'is_list' => $flow->store_key_is_list,
                 'path_type' => $flow->path_type,
+                'is_late_bound' => $is_late_bound,
             ];
 
             return;
@@ -142,6 +151,7 @@ final class TaintStore
                 'params' => $params,
                 'callable_params' => $callable_params,
                 'path_type' => $flow->path_type,
+                'is_late_bound' => $is_late_bound,
             ];
         }
     }
@@ -217,13 +227,11 @@ final class TaintStore
             }
 
             $graph->addNode($write_node);
-            self::addWrite(
-                $graph,
-                $write['store'],
-                self::getKeyNames($statements_analyzer, $write['key'], $write['is_list'], $args),
-                $write_node,
-                $write['path_type'],
-            );
+
+            $names = self::getKeyNames($statements_analyzer, $write['key'], $write['is_list'], $args);
+            foreach (self::getStores($statements_analyzer->getCodebase(), $write, $method_id, true) as $store) {
+                self::addWrite($graph, $store, $names, $write_node, $write['path_type']);
+            }
         }
 
         foreach ($storage->taint_store_reads as $read) {
@@ -232,18 +240,86 @@ final class TaintStore
                 $call_location,
             );
             $graph->addNode($read_node);
-            self::addRead(
-                $graph,
-                $read['store'],
-                self::getKeyNames($statements_analyzer, $read['key'], $read['is_list'], $args),
-                $read_node,
-                $read['path_type'],
-            );
+
+            $names = self::getKeyNames($statements_analyzer, $read['key'], $read['is_list'], $args);
+            foreach (self::getStores($statements_analyzer->getCodebase(), $read, $method_id, false) as $store) {
+                self::addRead($graph, $store, $names, $read_node, $read['path_type']);
+            }
 
             $return_type = $return_type->addParentNodes([$read_node->id => $read_node]);
         }
 
         return $return_type;
+    }
+
+    /**
+     * The stores a call writes or reads: the one of the flow, or for `static::$data` the one of the class the method
+     * is called on. An object of a class may be one of the classes extending it, and be read as one of their parent
+     * classes and interfaces: a write is into the store of each of them, a read from the store of the class only.
+     *
+     * @param array{store: string, is_late_bound: bool, ...} $flow
+     * @return list<string>
+     * @psalm-capabilities read-props
+     */
+    private static function getStores(
+        Codebase $codebase,
+        array $flow,
+        ?MethodIdentifier $method_id,
+        bool $is_write,
+    ): array {
+        if (!$flow['is_late_bound']
+            || $method_id === null
+            || !$codebase->classlike_storage_provider->has($method_id->fq_class_name)
+        ) {
+            return [$flow['store']];
+        }
+
+        $parts = explode('::$', $flow['store'], 2);
+        if (!isset($parts[1])) {
+            return [$flow['store']];
+        }
+
+        $property = $parts[1];
+        $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+
+        if (!$is_write) {
+            return [$class_storage->name . '::$' . $property];
+        }
+
+        // the class and all its descendants (dependent_classlikes only lists the direct ones), with their ancestors
+        $classes = [];
+        $seen = [];
+        $pending = [strtolower($class_storage->name)];
+        while (($class = array_pop($pending)) !== null) {
+            if (isset($seen[$class]) || !$codebase->classlike_storage_provider->has($class)) {
+                continue;
+            }
+
+            $seen[$class] = true;
+            $storage = $codebase->classlike_storage_provider->get($class);
+            $classes[$storage->name] = true;
+
+            foreach ($storage->dependent_classlikes as $dependent => $_) {
+                $pending[] = $dependent;
+            }
+
+            foreach ([
+                ...$storage->parent_classes,
+                ...$storage->parent_interfaces,
+                ...$storage->class_implements,
+            ] as $ancestor) {
+                if ($codebase->classlike_storage_provider->has($ancestor)) {
+                    $classes[$codebase->classlike_storage_provider->get($ancestor)->name] = true;
+                }
+            }
+        }
+
+        $stores = [];
+        foreach ($classes as $class => $_) {
+            $stores[] = $class . '::$' . $property;
+        }
+
+        return $stores;
     }
 
     /**
@@ -313,14 +389,54 @@ final class TaintStore
         Expr $assigned,
         DataFlowNode $var_node,
     ): void {
+        // for an array, the start of its items (of the keys a list of keys names)
         $type = $statements_analyzer->node_data->getType($assigned);
-        if ($type === null || !$type->hasString() || $type->isSingleStringLiteral()) {
+        if ($type === null || (!$type->hasString() && !$type->hasArray()) || $type->isSingleStringLiteral()) {
+            return;
+        }
+
+        if ($assigned instanceof Array_ && $assigned->items === []) {
+            $graph->addEmptyArray($var_node);
+
             return;
         }
 
         $start = self::getKnownStart($statements_analyzer, $assigned);
         if ($start !== null && $start !== '') {
             $graph->addStringStart($var_node, $start);
+        }
+    }
+
+    /**
+     * Records what the items of an array start with once one is assigned (`$keys[] = 'lock_' . $id;`), for the array's
+     * node after the assignment: what the assigned value and the items it held before start with
+     *
+     * @param array<string, DataFlowNode> $previous_nodes the nodes of the array before the assignment
+     */
+    public static function recordItemAssignment(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph $graph,
+        array $previous_nodes,
+        Expr $assigned,
+        DataFlowNode $array_node,
+    ): void {
+        $start = self::getKnownStart($statements_analyzer, $assigned);
+
+        // what `[]` was assigned to held no item
+        $previous_nodes = array_filter(
+            $previous_nodes,
+            static fn(DataFlowNode $node): bool => !$graph->isEmptyArray($node->id),
+        );
+        if ($start !== null && $start !== '' && $previous_nodes !== []) {
+            $previous_start = self::getStartOfNodes($statements_analyzer, $previous_nodes);
+            $start = $previous_start === null ? null : StringStartScanner::getCommonStart($start, $previous_start);
+        }
+
+        // a loop analyzes the assignment again with more previous nodes: what it recorded then may not hold anymore
+        if ($start === null || $start === '') {
+            $graph->removeStringStart($array_node);
+        } else {
+            $graph->addStringStart($array_node, $start);
         }
     }
 
@@ -406,13 +522,15 @@ final class TaintStore
             if ($function === 'implode' || $function === 'join') {
                 return self::getKnownStartOfImplode($statements_analyzer, $expr->getArgs());
             }
+
+            return self::getKnownStartOfFunctionCall($statements_analyzer, $expr->name);
         }
 
         // a list of names: what they all start with
         if ($expr instanceof Array_ && $expr->items !== []) {
             $start = null;
             foreach ($expr->items as $item) {
-                $item_start = $item === null || $item->unpack
+                $item_start = $item->unpack
                     ? null
                     : self::getKnownStart($statements_analyzer, $item->value);
                 if ($item_start === null) {
@@ -435,7 +553,7 @@ final class TaintStore
      * @return array<int, list<Arg>>|null
      * @psalm-capabilities read-props
      */
-    private static function getArgsByParam(FunctionLikeStorage $storage, array $args): ?array
+    public static function getArgsByParam(FunctionLikeStorage $storage, array $args): ?array
     {
         $by_param = [];
         $param_count = count($storage->params);
@@ -470,7 +588,7 @@ final class TaintStore
     /**
      * @psalm-mutation-free
      */
-    private static function getParamOffset(FunctionLikeStorage $storage, string $param_name): ?int
+    public static function getParamOffset(FunctionLikeStorage $storage, string $param_name): ?int
     {
         foreach ($storage->params as $i => $param_storage) {
             if ($param_storage->name === $param_name) {
@@ -504,7 +622,7 @@ final class TaintStore
         if ($key_expr instanceof Array_) {
             $names = [];
             foreach ($key_expr->items as $item) {
-                if ($item === null || $item->unpack) {
+                if ($item->unpack) {
                     return [[false, '']];
                 }
 
@@ -553,7 +671,12 @@ final class TaintStore
         $start = null;
 
         foreach ($nodes as $node_id => $_) {
-            $node_start = $graph?->getStringStart($node_id)
+            // an empty array has no item to start otherwise
+            if ($graph !== null && $graph->isEmptyArray($node_id)) {
+                continue;
+            }
+
+            $node_start = ($graph !== null ? $graph->getStringStart($node_id) : null)
                 ?? self::getParameterStart($statements_analyzer, $node_id);
             if ($node_start === null) {
                 return null;
@@ -632,7 +755,10 @@ final class TaintStore
 
         $class = null;
         $method_name = null;
+        // `$this->method()` and `static::method()` call what a class extending $self may override it with
+        $late_bound = true;
         if ($expr instanceof StaticCall && $expr->class instanceof Name && $expr->name instanceof Identifier) {
+            $late_bound = $expr->class->toLowerString() === 'static';
             $class = in_array($expr->class->toLowerString(), ['self', 'static'], true)
                 ? $self
                 : ClassLikeAnalyzer::getFQCLNFromNameObject($expr->class, $statements_analyzer->getAliases());
@@ -653,12 +779,48 @@ final class TaintStore
         $declaring_method_id = $codebase->methods->getDeclaringMethodId(new MethodIdentifier($class, $method_name));
 
         return $declaring_method_id === null
+            || ($late_bound && !StringStartScanner::isOwnMethodFinal($codebase, $class, $declaring_method_id))
             ? null
             : StringStartScanner::getMethodStart(
                 $codebase,
                 $declaring_method_id->fq_class_name,
                 $declaring_method_id->method_name,
             );
+    }
+
+    /**
+     * What the function of the project called returns starts with, as the scan recorded it (see StringStartScanner)
+     */
+    private static function getKnownStartOfFunctionCall(StatementsAnalyzer $statements_analyzer, Name $name): ?string
+    {
+        $codebase = $statements_analyzer->getCodebase();
+        $declaring_function_ids = $codebase->file_storage_provider->get($statements_analyzer->getRootFilePath())
+            ->declaring_function_ids;
+
+        // those declared in the files the file includes, and those registered globally (autoloaded files, ...)
+        $has_storage = static fn(string $function_id): bool => isset($declaring_function_ids[$function_id])
+            || $codebase->functions->hasStubbedFunction($function_id);
+
+        $function_id = strtolower(
+            $name instanceof FullyQualified
+                ? $name->toString()
+                : $codebase->functions->getFullyQualifiedFunctionNameFromString(
+                    $name->toString(),
+                    $statements_analyzer,
+                ),
+        );
+
+        // a function not found in the namespace is the global one
+        if (!$has_storage($function_id) && !$name instanceof FullyQualified) {
+            $function_id = strtolower($name->toString());
+        }
+
+        return $has_storage($function_id)
+            ? StringStartScanner::getFunctionStart(
+                $codebase,
+                $codebase->functions->getStorage($statements_analyzer, $function_id),
+            )
+            : null;
     }
 
     /**
@@ -715,7 +877,7 @@ final class TaintStore
         $separator = (string) self::getKnownStart($statements_analyzer, $args[0]->value);
         $start = '';
         foreach ($args[1]->value->items as $index => $item) {
-            if ($item === null || $item->unpack || $item->key !== null) {
+            if ($item->unpack || $item->key !== null) {
                 return $index === 0 ? null : $start;
             }
 

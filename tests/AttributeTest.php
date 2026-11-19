@@ -6,6 +6,7 @@ namespace Psalm\Tests;
 
 use Override;
 use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -39,13 +40,72 @@ final class AttributeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testDeprecatedTraitMessageMatchesPhp(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.5', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                #[\Deprecated("use V", "1.0")]
+                trait Positional {}
+
+                #[\Deprecated(since: "1.0", message: "use W")]
+                trait Named {}
+
+                #[\Deprecated("")]
+                trait EmptyMessage {}
+
+                #[\Deprecated(since: "2.0")]
+                trait SinceOnly {}
+
+                final class U {
+                    use Positional, Named, EmptyMessage, SinceOnly;
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $messages = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'DeprecatedTrait') {
+                $messages[] = $issue->message;
+            }
+        }
+
+        $this->assertSame(
+            [
+                'Trait Positional is deprecated, use V',
+                'Trait Named is deprecated, use W',
+                'Trait EmptyMessage is deprecated',
+                'Trait SinceOnly is deprecated',
+            ],
+            $messages,
+        );
+    }
+
     /**
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
+            'attributeOfTheClassConstantTargetOnClassConstants' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_CLASS_CONSTANT)]
+                    final class OnConst {}
+
+                    final class K {
+                        #[OnConst]
+                        public const C = 1;
+
+                        #[OnConst]
+                        public const D = 2, E = 3;
+                    }
+                    echo K::C . K::D . K::E;',
+            ],
             'classAndPropertyAttributesExists' => [
                 'code' => '<?php
                     namespace Foo;
@@ -259,32 +319,6 @@ final class AttributeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'returnTypeWillChangeNoSignatureType' => [
-                'code' => '<?php
-                    class Foo {
-                        /**
-                         * @param array<string> $arg
-                         * @return string
-                         */
-                        public function run($arg) : string {
-                            return implode("s", $arg);
-                        }
-                    }
-
-                    class Bar extends Foo {
-                        /**
-                         * @param array<string> $arg
-                         * @return string
-                         */
-                        #[ReturnTypeWillChange]
-                        public function run($arg) {
-                            return implode(" ", $arg);
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
             'allowDynamicProperties' => [
                 'code' => '<?php
 
@@ -367,6 +401,81 @@ final class AttributeTest extends TestCase
                             #[\Override] protected int $foo = 2
                         ) {}
                     }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'userDefinedOverrideAttributeOnClassConstant' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_CLASS_CONSTANT)]
+                    class Override {}
+
+                    class C {
+                        #[Override]
+                        public const int K = 1;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'attributeOnEnumCase' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_CLASS_CONSTANT)]
+                    final class OnConst {}
+
+                    enum E {
+                        #[OnConst]
+                        #[\Deprecated]
+                        case A;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'getAttributesOfOverrideOnClassConstantInPhp86' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public const string BAR = "baz";
+                    }
+
+                    $r = new ReflectionClassConstant(Foo::class, "BAR");
+                    $r->getAttributes(\Override::class);
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'delayedTargetValidationDefersInternalAttributeTarget' => [
+                'code' => '<?php
+                    #[\DelayedTargetValidation]
+                    #[\Override]
+                    final class Delayed {}
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'delayedTargetValidationInSeparateGroupAfterInternalAttribute' => [
+                'code' => '<?php
+                    class A {
+                        #[\NoDiscard]
+                        #[\DelayedTargetValidation]
+                        public int $foo = 1;
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'delayedTargetValidationDefersAttributeAttributeTarget' => [
+                'code' => '<?php
+                    #[\DelayedTargetValidation]
+                    #[\Attribute]
+                    function f(): void {}
                 ',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -531,9 +640,80 @@ final class AttributeTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'missingAttributeOnClassConstant' => [
+                'code' => '<?php
+                    final class K {
+                        #[\Nope]
+                        public const C = 1;
+                    }',
+                'error_message' => 'UndefinedAttributeClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27',
+            ],
+            'attributeOfAnotherTargetOnEnumCase' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_METHOD)]
+                    final class OnlyMethod {}
+
+                    enum E {
+                        #[OnlyMethod]
+                        case A;
+                    }
+                ',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:27 - Attribute OnlyMethod cannot be used on a class constant',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'overrideAttributeOnEnumCaseBeforePhp86' => [
+                'code' => '<?php
+                    enum E {
+                        #[\Override]
+                        case A;
+                    }
+                ',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27 - Attribute Override cannot be used on a class constant',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'attributeOfAnotherTargetOnClassConstant' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_METHOD)]
+                    final class OnlyMethod {}
+
+                    final class K {
+                        #[OnlyMethod]
+                        public const C = 1;
+                    }',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:27',
+            ],
+            'returnTypeWillChangeDoesNotSuppressUserDefinedNativeSignature' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @param array<string> $arg
+                         * @return string
+                         */
+                        public function run($arg) : string {
+                            return implode("s", $arg);
+                        }
+                    }
+
+                    class Bar extends Foo {
+                        /**
+                         * @param array<string> $arg
+                         * @return string
+                         */
+                        #[ReturnTypeWillChange]
+                        public function run($arg) {
+                            return implode(" ", $arg);
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:17:25 - Method Bar::run',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'attributeClassHasNoAttributeAnnotation' => [
                 'code' => '<?php
                     class A {}
@@ -629,6 +809,30 @@ final class AttributeTest extends TestCase
                     trait Foo {}',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23',
             ],
+            'missingAttributeOnNamespacedTrait' => [
+                'code' => '<?php
+                    namespace N;
+
+                    #[\Nope]
+                    trait T {}
+
+                    final class A {
+                        use T;
+                    }',
+                'error_message' => 'UndefinedAttributeClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:23',
+            ],
+            'namespacedTraitCannotBeAttributeClass' => [
+                'code' => '<?php
+                    namespace N {
+                        #[\Attribute]
+                        trait T {}
+                    }
+
+                    namespace {
+                        trait T {}
+                    }',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27',
+            ],
             'abstractClassCannotBeAttributeClass' => [
                 'code' => '<?php
                     #[Attribute]
@@ -643,7 +847,7 @@ final class AttributeTest extends TestCase
                     }',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23',
             ],
-            'SKIPPED-attributeInvalidTargetClassConst' => [ // Will be implemented in Psalm 5 where we have better class const analysis
+            'attributeInvalidTargetClassConst' => [
                 'code' => '<?php
                     class Foo {
                         #[Attribute]
@@ -740,7 +944,7 @@ final class AttributeTest extends TestCase
                     $r->getAttributes(Attr::class);
                 ',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:39 - Attribute Attr cannot be used on a class',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'getAttributesOnFunctionWithNonFunctionAttribute' => [
@@ -785,7 +989,7 @@ final class AttributeTest extends TestCase
                     $r->getAttributes(Attr::class);
                 ',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:39 - Attribute Attr cannot be used on a property',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'getAttributesOnClassConstantWithNonClassConstantAttribute' => [
@@ -802,7 +1006,7 @@ final class AttributeTest extends TestCase
                     $r->getAttributes(Attr::class);
                 ',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:39 - Attribute Attr cannot be used on a class constant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'getAttributesOnClassConstantWithOverrideAttribute' => [
@@ -816,7 +1020,7 @@ final class AttributeTest extends TestCase
                     $r->getAttributes(\Override::class);
                 ',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:39 - Attribute Override cannot be used on a class constant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'getAttributesOnParameterWithNonParameterAttribute' => [
@@ -830,7 +1034,7 @@ final class AttributeTest extends TestCase
                     $r->getAttributes(Attr::class);
                 ',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:39 - Attribute Attr cannot be used on a function/method parameter',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'getAttributesWithNonAttribute' => [
@@ -843,7 +1047,7 @@ final class AttributeTest extends TestCase
                     $r->getAttributes(NonAttr::class);
                 ',
                 'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:39 - The class NonAttr doesn\'t have the Attribute attribute',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'analyzeConstructorForNonexistentAttributes' => [
@@ -905,7 +1109,7 @@ final class AttributeTest extends TestCase
                     }
                 ',
                 'error_message' => 'UndefinedConstant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'sensitiveParameterOnMethod' => [
@@ -923,8 +1127,86 @@ final class AttributeTest extends TestCase
                     }
                 ',
                 'error_message' => 'Attribute SensitiveParameter cannot be used on a method',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.2',
+            ],
+            'delayedTargetValidationKeepsUserAttributeTargetCheck' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_METHOD)]
+                    class MethodOnly {}
+
+                    #[\DelayedTargetValidation]
+                    #[MethodOnly]
+                    class Foo {}
+                ',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:23 - Attribute MethodOnly cannot be used on a class',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'delayedTargetValidationUndefinedBelowPhp85' => [
+                'code' => '<?php
+                    #[\DelayedTargetValidation]
+                    class Foo {}
+                ',
+                'error_message' => 'UndefinedAttributeClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'delayedTargetValidationPolyfillBelowPhp85' => [
+                'code' => '<?php
+                    #[Attribute]
+                    final class DelayedTargetValidation {}
+
+                    #[\DelayedTargetValidation]
+                    #[\Override]
+                    final class Delayed {}
+                ',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:23 - Attribute Override cannot be used on a class',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'deprecatedAttributeOnTraitBeforePhp85' => [
+                'code' => '<?php
+                    #[\Deprecated("t")]
+                    trait T {}
+                ',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:23 - Attribute Deprecated cannot be used on a class',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'deprecatedAttributeOnClass' => [
+                'code' => '<?php
+                    #[\Deprecated("c")]
+                    class C {}
+                ',
+                'error_message' => 'Attribute Deprecated cannot be used on a class',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'deprecatedAttributeOnTrait' => [
+                'code' => '<?php
+                    #[\Deprecated("use Logger instead")]
+                    trait LegacyLogger {}
+
+                    final class Service {
+                        use LegacyLogger;
+                    }
+                ',
+                'error_message' => 'DeprecatedTrait - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:29 - Trait LegacyLogger is deprecated, use Logger instead',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'userAttributeOnTraitWithInvalidTarget' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_METHOD)]
+                    final class OnlyMethods {}
+
+                    #[OnlyMethods]
+                    trait T {}
+                ',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:23 - Attribute OnlyMethods cannot be used on a class',
+                'error_levels' => [],
+                'php_version' => '8.5',
             ],
         ];
     }

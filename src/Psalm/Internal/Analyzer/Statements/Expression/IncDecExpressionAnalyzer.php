@@ -9,10 +9,13 @@ use PhpParser\Node\Expr\PostDec;
 use PhpParser\Node\Expr\PostInc;
 use PhpParser\Node\Expr\PreDec;
 use PhpParser\Node\Expr\PreInc;
+use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Node\Expr\BinaryOp\VirtualMinus;
 use Psalm\Node\Expr\BinaryOp\VirtualPlus;
 use Psalm\Node\Expr\VirtualAssign;
@@ -85,6 +88,14 @@ final class IncDecExpressionAnalyzer
 
             if ($var_id && isset($context->vars_in_scope[$var_id])) {
                 $context->vars_in_scope[$var_id] = $result_type;
+                if ($context->references_in_scope) {
+                    ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem(
+                        $statements_analyzer,
+                        $context,
+                        $var_id,
+                        new CodeLocation($statements_analyzer, $stmt->var),
+                    );
+                }
 
                 if ($codebase->find_unused_variables && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
                     $context->assigned_var_ids[$var_id] = (int) $stmt->var->getAttribute('startFilePos');
@@ -138,6 +149,34 @@ final class IncDecExpressionAnalyzer
             $statements_analyzer->node_data = $old_node_data;
         }
 
+        self::markPreIncrementUsed($statements_analyzer, $stmt, $context);
+
         return true;
+    }
+
+    /**
+     * The value of `++$i` (the new value of $i) is used where it is evaluated for its value only, like an array key
+     */
+    private static function markPreIncrementUsed(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $stmt,
+        Context $context,
+    ): void {
+        if (!$context->inside_general_use
+            || !$statements_analyzer->data_flow_graph
+            || !($stmt instanceof PreInc || $stmt instanceof PreDec)
+        ) {
+            return;
+        }
+
+        $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+        foreach ($stmt_type->parent_nodes ?? [] as $parent_node) {
+            $statements_analyzer->data_flow_graph->addPath(
+                $parent_node,
+                DataFlowNode::getForVariableUse(),
+                'variable-use',
+            );
+        }
     }
 }

@@ -69,4 +69,27 @@ final class ArrayCreationInfo
     public array $unpacked_nodes = [];
 
     public bool $can_be_empty = true;
+
+    /**
+     * Appends in place: re-creating the list for every item makes analysing an array literal quadratic in its size
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function addItemKeyTypes(Union $key_type): void
+    {
+        foreach ($key_type->getAtomicTypes() as $atomic_type) {
+            $this->item_key_atomic_types[] = $atomic_type;
+        }
+    }
+
+    /**
+     * @see addItemKeyTypes()
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function addItemValueTypes(Union $value_type): void
+    {
+        foreach ($value_type->getAtomicTypes() as $atomic_type) {
+            $this->item_value_atomic_types[] = $atomic_type;
+        }
+    }
 }

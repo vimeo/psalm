@@ -20,9 +20,256 @@ final class ClassTemplateExtendsTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodTemplateBoundToAnIntermediateClassTemplateOfAnObjectWithoutTypeParams' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Model {}
+                    final class Customer extends Model {}
+                    final class Mechanic extends Model {}
+
+                    /** @template TModel of Model */
+                    abstract class BaseFactory
+                    {
+                        final public function __construct() {}
+
+                        public static function new(): static
+                        {
+                            return new static();
+                        }
+
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /**
+                     * @template TModel of Model
+                     * @extends BaseFactory<TModel>
+                     */
+                    abstract class Factory extends BaseFactory
+                    {
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        #[\Override]
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /** @extends Factory<Customer> */
+                    final class CustomerFactory extends Factory {}
+
+                    /**
+                     * @template TMechanic of Mechanic
+                     * @extends Factory<TMechanic>
+                     */
+                    final class MechanicFactory extends Factory {}
+
+                    function test(CustomerFactory $customers): void
+                    {
+                        $customers->for(MechanicFactory::new());
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['UnsafeGenericInstantiation'],
+                'php_version' => '8.3',
+            ],
+            'methodTemplateBoundToAnIntermediateClassParamOfAnObjectWithoutTypeParams' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Model {}
+                    final class Customer extends Model {}
+                    final class Mechanic extends Model {}
+
+                    /** @template TModel of Model */
+                    abstract class BaseFactory
+                    {
+                        final public function __construct() {}
+
+                        public static function new(): static
+                        {
+                            return new static();
+                        }
+
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /**
+                     * @template TModel of Model
+                     * @extends BaseFactory<TModel>
+                     */
+                    abstract class Factory extends BaseFactory
+                    {
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        #[\Override]
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /** @extends Factory<Customer> */
+                    final class CustomerFactory extends Factory {}
+
+                    /**
+                     * @template TMechanic of Mechanic
+                     * @extends Factory<TMechanic>
+                     */
+                    final class MechanicFactory extends Factory {}
+
+                    function test(CustomerFactory $customers): void
+                    {
+                        $customers->for(CustomerFactory::new());
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['UnsafeGenericInstantiation'],
+                'php_version' => '8.3',
+            ],
+            'implementedTemplateWithUnionOfOwnTemplateIsResolvedAtTheCall' => [
+                'code' => '<?php
+                    /** @template T1 */
+                    interface InputType {
+                        /** @return T1 */
+                        public function castValue(mixed $value);
+                    }
+
+                    /**
+                     * @template T2
+                     * @implements InputType<T2|null>
+                     */
+                    final class NullableType implements InputType {
+                        /** @param T2 $innerType */
+                        public function __construct(private $innerType) {}
+
+                        public function castValue(mixed $value) {
+                            throw new \Exception("irrelevant");
+                        }
+                    }
+
+                    /** @var NullableType<string> $n */
+                    $n = new NullableType("a");
+                    $result = $n->castValue(1);',
+                'assertions' => [
+                    '$result===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'implementedTemplateWithOwnTemplateIsResolvedAtTheCall' => [
+                'code' => '<?php
+                    /** @template T1 */
+                    interface Box {
+                        /** @return T1 */
+                        public function get();
+                    }
+
+                    /**
+                     * @template T2
+                     * @implements Box<list<T2>>
+                     */
+                    final class ListBox implements Box {
+                        /** @param list<T2> $items */
+                        public function __construct(private array $items) {}
+
+                        public function get() {
+                            return $this->items;
+                        }
+                    }
+
+                    /** @var ListBox<int> $box */
+                    $box = new ListBox([1]);
+                    $items = $box->get();',
+                'assertions' => [
+                    '$items===' => 'list<int>',
+                ],
+            ],
+            'inheritedDocblockReturnTypeResolvesThroughSubclassTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     */
+                    interface ReadableList {
+                        /** @return list<T> */
+                        public function toArray(): array;
+                    }
+
+                    /**
+                     * @template T
+                     * @implements ReadableList<T>
+                     */
+                    class Collection implements ReadableList {
+                        /** @param list<T> $values */
+                        public function __construct(protected array $values = []) {}
+
+                        public function toArray(): array {
+                            return $this->values;
+                        }
+                    }
+
+                    /**
+                     * @template T of scalar
+                     * @extends Collection<T>
+                     */
+                    class ScalarList extends Collection {}
+
+                    /** @var ScalarList<string> $strings */
+                    $strings = new ScalarList();
+                    $list = $strings->toArray();
+                ',
+                'assertions' => [
+                    '$list===' => 'list<string>',
+                ],
+            ],
+            'inheritedDocblockReturnTypeResolvesSwappedTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    interface Pair {
+                        /** @return array{A, B} */
+                        public function toArray(): array;
+                    }
+
+                    /**
+                     * @template K
+                     * @template V
+                     * @implements Pair<V, K>
+                     */
+                    class Impl implements Pair {
+                        /** @param array{V, K} $pair */
+                        public function __construct(private array $pair) {}
+
+                        public function toArray(): array {
+                            return $this->pair;
+                        }
+                    }
+
+                    /**
+                     * @template X
+                     * @template Y
+                     * @extends Impl<Y, X>
+                     */
+                    class Swapped extends Impl {}
+
+                    /** @var Swapped<int, string> $swapped */
+                    $swapped = new Swapped([1, "a"]);
+                    $pair = $swapped->toArray();
+                ',
+                'assertions' => [
+                    '$pair===' => 'list{int, string}',
+                ],
+            ],
             'newResolvesATemplateNotGivenToTheParentToItsBound' => [
                 'code' => '<?php
                     /** @template T */
@@ -43,7 +290,7 @@ final class ClassTemplateExtendsTest extends TestCase
                         return new Table([1]);
                     }',
             ],
-            'SKIPPED-interface' => [
+            'interface' => [
                 'code' => '<?php
                     /**
                      * Singleton interface
@@ -4851,6 +5098,50 @@ final class ClassTemplateExtendsTest extends TestCase
                     /** @implements Holder<Box<static>> */
                     class NonFinalNestedStatic extends Base implements Holder {}',
             ],
+            'selfInExtendsIsTheExtendingClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @return T */
+                        public function get(): mixed { throw new Exception(); }
+                    }
+
+                    /** @extends Base<self> */
+                    class Child extends Base {}
+
+                    final class GrandChild extends Child {}
+
+                    $a = (new Child())->get();
+                    $b = (new GrandChild())->get();',
+                'assertions' => [
+                    '$a===' => 'Child',
+                    '$b===' => 'Child',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'selfInImplementsIsTheImplementingClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Holder {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    /** @implements Holder<self> */
+                    class Impl implements Holder {
+                        public function get(): mixed { return $this; }
+                    }
+
+                    final class SubImpl extends Impl {}
+
+                    $a = (new SubImpl())->get();',
+                'assertions' => [
+                    '$a===' => 'Impl',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nestedSelfInGenericTemplateArg' => [
                 'code' => '<?php
                     abstract class Base {}
@@ -4884,6 +5175,365 @@ final class ClassTemplateExtendsTest extends TestCase
                     /** @template-extends ParentHolder<static> */
                     final class TemplateExtendsStatic extends ParentHolder {}',
             ],
+            'extendsLeavingOutTrailingTemplateWithDefault' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template TModel of object
+                     * @template TCount of int|null = null
+                     */
+                    abstract class Factory {
+                        public static function new(): static {
+                            throw new Exception();
+                        }
+
+                        /** @return TCount */
+                        public function count(): mixed {
+                            throw new Exception();
+                        }
+
+                        /** @return (TCount is null|0|1 ? TModel : list<TModel>) */
+                        public function create(): mixed {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @psalm-immutable */
+                    final class User {}
+
+                    /** @extends Factory<User> */
+                    final class UserFactory extends Factory {}
+
+                    $factory = new UserFactory();
+                    $count = $factory->count();
+                    $created = $factory->create();
+                    $static_count = UserFactory::new()->count();',
+                'assertions' => [
+                    '$count===' => 'null',
+                    '$created===' => 'User',
+                    '$static_count===' => 'null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templatesWithDefaultsBoundWithoutExtendsOrPartially' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template TM of object = stdClass
+                     */
+                    abstract class Res {
+                        /** @return TM */
+                        public function m(): object {
+                            throw new Exception();
+                        }
+                    }
+
+                    final class MyRes extends Res {}
+
+                    abstract class MidRes extends Res {}
+
+                    final class LeafRes extends MidRes {}
+
+                    /**
+                     * @template TK of array-key
+                     * @template TV = string
+                     */
+                    interface Repo {
+                        /** @return TV */
+                        public function find(): mixed;
+                    }
+
+                    /** @implements Repo<int> */
+                    final class IntRepo implements Repo {
+                        public function find(): mixed {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @template U = list<T>
+                     */
+                    trait Wraps {
+                        /** @return U */
+                        public function wrapped(): mixed {
+                            throw new Exception();
+                        }
+                    }
+
+                    final class IntWraps {
+                        /** @use Wraps<int> */
+                        use Wraps;
+                    }
+
+                    $mine = (new MyRes())->m();
+                    $leaf = (new LeafRes())->m();
+                    $found = (new IntRepo())->find();
+                    $wrapped = (new IntWraps())->wrapped();',
+                'assertions' => [
+                    '$mine===' => 'stdClass',
+                    '$leaf===' => 'stdClass',
+                    '$found===' => 'string',
+                    '$wrapped===' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateDefaultSyntaxForms' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @psalm-template TA of int = 5
+                     * @phpstan-template TB = \'a=b\'
+                     * @template-covariant TC of callable(int=): void = callable(int=): void
+                     * @template TD of array{x?: int} = array{x?: int} description text after the default
+                     */
+                    abstract class Forms {
+                        /** @return TA */
+                        public function a(): int {
+                            throw new Exception();
+                        }
+
+                        /** @return TB */
+                        public function b(): mixed {
+                            throw new Exception();
+                        }
+
+                        /** @return TC */
+                        public function c(): callable {
+                            throw new Exception();
+                        }
+
+                        /** @return TD */
+                        public function d(): array {
+                            throw new Exception();
+                        }
+                    }
+
+                    final class F extends Forms {}
+
+                    $f = new F();
+                    $a = $f->a();
+                    $b = $f->b();
+                    $c = $f->c();
+                    $d = $f->d();',
+                'assertions' => [
+                    '$a===' => '5',
+                    '$b===' => '\'a=b\'',
+                    '$c===' => 'callable[impure](int=):void',
+                    '$d===' => 'array{x?: int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateDefaultWithinBoundNamingEarlierTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutable
+                     * @template T of object
+                     * @template U of T = T
+                     * @template K of array-key = int
+                     * @template V of array<K, mixed> = array<K, U>
+                     */
+                    abstract class Corr {
+                        /** @return U */
+                        public function u(): object {
+                            throw new Exception();
+                        }
+
+                        /** @return V */
+                        public function v(): array {
+                            throw new Exception();
+                        }
+                    }
+
+                    final class Item {}
+
+                    /** @extends Corr<Item> */
+                    final class C extends Corr {}
+
+                    $u = (new C())->u();
+                    $v = (new C())->v();',
+                'assertions' => [
+                    '$u===' => 'Item',
+                    '$v===' => 'array<int, Item>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticReturnOnChildOfConstrainedTemplateParent' => [
+                'code' => '<?php
+                    /** @template T of \\DateTimeInterface */
+                    abstract class AbstractSelector
+                    {
+                        public function limit(int $limit): static { return $this; }
+                    }
+
+                    /** @extends AbstractSelector<\\DateTime> */
+                    final class Selector extends AbstractSelector {}
+
+                    $s = (new Selector)->limit(10);',
+                'assertions' => [
+                    '$s===' => 'Selector',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nativeReturnTypeOverridingInheritedTemplateReturn' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Foo
+                    {
+                        /** @return T|null */
+                        abstract public function bar();
+                    }
+
+                    /** @extends Foo<string> */
+                    class Bar extends Foo
+                    {
+                        public function bar(): string|null
+                        {
+                            return null;
+                        }
+                    }
+
+                    $v = (new Bar())->bar();',
+                'assertions' => [
+                    '$v===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'untypedOverrideBindsTheMethodTemplateOfTheParentParamDocblock' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Query {}
+
+                    class Base
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T, Query<T>): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void {}
+                    }
+
+                    final class Box extends Base
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    function takesStdClass(stdClass $_s): void {}
+
+                    /** @param Query<stdClass> $_q */
+                    function takesQuery(Query $_q): void {}
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function ($item, $query): void {
+                            takesStdClass($item);
+                            takesQuery($query);
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'untypedStaticOverrideBindsTheMethodTemplateOfTheParentParamDocblock' => [
+                'code' => '<?php
+                    class Base
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T): void $callback
+                         */
+                        public static function each(string $class, Closure $callback): void {}
+                    }
+
+                    final class Box extends Base
+                    {
+                        public static function each($class, $callback): void {}
+                    }
+
+                    function takesStdClass(stdClass $_s): void {}
+
+                    Box::each(stdClass::class, function ($item): void {
+                        takesStdClass($item);
+                    });',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'untypedImplementationBindsTheMethodTemplateOfTheInterfaceParamDocblock' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    final class Query {}
+
+                    interface Collection
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T, Query<T>): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void;
+                    }
+
+                    final class Box implements Collection
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    /** @param Query<stdClass> $_q */
+                    function takesQuery(Query $_q): void {}
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function ($_item, $query): void {
+                            takesQuery($query);
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'untypedOverrideBindsTheMethodTemplateBesideTheClassTemplate' => [
+                'code' => '<?php
+                    /** @template TKey */
+                    class Base
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T, TKey): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void {}
+                    }
+
+                    /** @extends Base<int> */
+                    final class Box extends Base
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    function takesStdClass(stdClass $_s): void {}
+
+                    function takesInt(int $_i): void {}
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function ($item, $key): void {
+                            takesStdClass($item);
+                            takesInt($key);
+                        });
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -4891,9 +5541,196 @@ final class ClassTemplateExtendsTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'untypedOverrideChecksTheClosureAgainstTheBoundMethodTemplate' => [
+                'code' => '<?php
+                    class Base
+                    {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @param Closure(T): void $callback
+                         */
+                        public function each(string $class, Closure $callback): void {}
+                    }
+
+                    final class Box extends Base
+                    {
+                        public function each($class, $callback): void {}
+                    }
+
+                    function f(Box $box): void
+                    {
+                        $box->each(stdClass::class, function (int $_i): void {});
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:53 - Argument 2 of Box::each expects Closure[impure](stdClass):void',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'objectWithoutTypeParamsOfAnotherModelIsNotABaseFactoryOfTheCustomer' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Model {}
+                    final class Customer extends Model {}
+                    final class Mechanic extends Model {}
+
+                    /** @template TModel of Model */
+                    abstract class BaseFactory
+                    {
+                        final public function __construct() {}
+
+                        public static function new(): static
+                        {
+                            return new static();
+                        }
+
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /**
+                     * @template TModel of Model
+                     * @extends BaseFactory<TModel>
+                     */
+                    abstract class Factory extends BaseFactory
+                    {
+                        /**
+                         * @template TRelated of Model
+                         * @param BaseFactory<TRelated> $factory
+                         */
+                        #[\Override]
+                        public function for(BaseFactory $factory): void {}
+                    }
+
+                    /** @extends Factory<Customer> */
+                    final class CustomerFactory extends Factory {}
+
+                    /**
+                     * @template TMechanic of Mechanic
+                     * @extends Factory<TMechanic>
+                     */
+                    final class MechanicFactory extends Factory {}
+
+                    /** @param BaseFactory<Customer> $factory */
+                    function takesCustomerFactory(BaseFactory $factory): void {}
+
+                    function test(): void
+                    {
+                        takesCustomerFactory(MechanicFactory::new());
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => ['UnsafeGenericInstantiation'],
+                'php_version' => '8.3',
+            ],
+            'extendsFillsThePartialGenericInAGeneratedDefault' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template A
+                     * @template B of string = "pivot"
+                     */
+                    final class Rel {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template X
+                     * @template Y = Rel<int>
+                     */
+                    final class Outer {}
+
+                    /**
+                     * @psalm-mutable
+                     * @template T
+                     */
+                    abstract class Base {
+                        /** @return T */
+                        abstract public function get(): mixed;
+                    }
+
+                    /** @extends Base<Outer<int>> */
+                    final class Partial extends Base {
+                        /** @return Outer<int, Rel<int, "other">> */
+                        public function get(): mixed {
+                            throw new Exception();
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'php_version' => '8.0',
+            ],
+            'extendsFillsThePartialGenericInAGeneratedDefaultOfAProperty' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template A
+                     * @template B of string = "w"
+                     */
+                    final class Wrap {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template TModel
+                     * @template TNext = Wrap<TModel>
+                     */
+                    final class Rel {}
+
+                    /**
+                     * @psalm-mutable
+                     * @template T
+                     */
+                    abstract class Base {
+                        /** @var T|null */
+                        public mixed $p = null;
+                    }
+
+                    /**
+                     * @psalm-mutable
+                     * @extends Base<Rel<int>>
+                     */
+                    final class Part extends Base {}
+
+                    /** @param Rel<int, Wrap<int, "x">> $bad */
+                    function f(Part $p, Rel $bad): void {
+                        $p->p = $bad;
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'php_version' => '8.0',
+            ],
+            'implementsFillsThePartialGenericInAGeneratedDefault' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-immutable
+                     * @template A
+                     * @template B of string = "w"
+                     */
+                    final class Wrap {}
+
+                    /**
+                     * @psalm-immutable
+                     * @template TModel
+                     * @template TNext = Wrap<TModel>
+                     */
+                    final class Rel {}
+
+                    /** @template T */
+                    interface I {
+                        /** @param T $t */
+                        public function set(mixed $t): void;
+                    }
+
+                    /** @implements I<Rel<int>> */
+                    final class Impl implements I {
+                        /** @param Rel<int, Wrap<int, "x">> $t */
+                        public function set(mixed $t): void {}
+                    }',
+                'error_message' => 'ImplementedParamTypeMismatch',
+                'php_version' => '8.0',
+            ],
             'extendsWithUnfulfilledNonTemplate' => [
                 'code' => '<?php
                     namespace A;
@@ -6185,6 +7022,40 @@ final class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
                 'error_message' => 'UnsafeGenericInstantiation',
+            ],
+            'extendsWithoutParamsLeavingOutTemplateWithoutDefault' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @template TB = int
+                     */
+                    abstract class Two {}
+
+                    final class NoArgs extends Two {}',
+                'error_message' => 'NoArgs has missing template params when extending Two, expecting at least 1',
+            ],
+            'extendsWithoutParamsLeavingOutTemplateBeforeAPurityTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TA
+                     * @psalm-purity-template C(pure) <= io
+                     */
+                    abstract class Box {}
+
+                    final class NoArgs extends Box {}',
+                'error_message' => 'NoArgs has missing template params when extending Box, expecting at least 1',
+            ],
+            'extendsLeavingOutTemplateWithoutDefaultAfterOneWithDefault' => [
+                'code' => '<?php
+                    /**
+                     * @template TA = int
+                     * @template TB
+                     */
+                    abstract class Two {}
+
+                    /** @extends Two<string> */
+                    final class OneArg extends Two {}',
+                'error_message' => 'OneArg has missing template params when extending Two, expecting 2',
             ],
         ];
     }

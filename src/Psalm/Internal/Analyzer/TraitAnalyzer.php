@@ -8,8 +8,9 @@ use Attribute;
 use Override;
 use PhpParser\Node\Stmt\Trait_;
 use Psalm\Aliases;
+use Psalm\CodeLocation;
 use Psalm\Context;
-use Psalm\IssueBuffer;
+use Psalm\Type;
 
 use function assert;
 
@@ -74,11 +75,13 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
         assert($stmt->name !== null);
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$codebase->classlike_storage_provider->has($stmt->name->name)) {
+        $fq_trait_name = Type::getFQCLNFromString($stmt->name->name, $statements_analyzer->getAliases());
+
+        if (!$codebase->classlike_storage_provider->has($fq_trait_name)) {
             return;
         }
 
-        $storage = $codebase->classlike_storage_provider->get($stmt->name->name);
+        $storage = $codebase->classlike_storage_provider->get($fq_trait_name);
 
         ClassLikeAnalyzer::registerDocblockSuppressions($storage, $statements_analyzer->getFilePath(), $codebase);
 
@@ -91,8 +94,17 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
             $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues(),
         );
 
-        foreach ($storage->docblock_issues as $docblock_issue) {
-            IssueBuffer::maybeAdd($docblock_issue);
-        }
+        self::reportDocblockIssues(
+            $statements_analyzer,
+            $storage,
+            $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues(),
+        );
+
+        self::checkMixins(
+            $statements_analyzer,
+            $storage,
+            new CodeLocation($statements_analyzer, $stmt->name, null, true),
+            $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues(),
+        );
     }
 }

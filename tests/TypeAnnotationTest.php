@@ -5,21 +5,143 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function getcwd;
+
+use const DIRECTORY_SEPARATOR;
 
 final class TypeAnnotationTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testNullableReturnOfATypeAliasOfAClassScannedLaterContainsNull(): void
+    {
+        // files are scanned in the order of their paths
+        $stage_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'Stage.php';
+        $builder_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'ZBuilder.php';
+
+        $this->addFile(
+            $stage_path,
+            '<?php
+                namespace Lib;
+
+                /** @psalm-import-type StageExpression from Builder */
+                abstract class Stage
+                {
+                    /** @return StageExpression */
+                    abstract public function getExpression(): ?array;
+                }
+
+                /** @var Stage $stage */
+                $x = $stage->getExpression();',
+        );
+
+        $this->addFile(
+            $builder_path,
+            '<?php
+                namespace Lib;
+
+                /** @psalm-type StageExpression = array<string, mixed> */
+                final class Builder {}',
+        );
+
+        // known to exist, as through an autoloader, but scanned after the class that imports the alias
+        $this->project_analyzer->getCodebase()->classlikes->addFullyQualifiedClassName('Lib\Builder', $builder_path);
+
+        $context = new Context();
+
+        $this->analyzeFile($stage_path, $context);
+
+        $this->assertSame('array<string, mixed>|null', $context->vars_in_scope['$x']->getId());
+    }
+
     /**
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
+            'typeImportRenamedWithAs' => [
+                'code' => '<?php
+                    namespace A {
+                        /**
+                         * @psalm-type Phone = array{phone: string}
+                         */
+                        final class Phone {}
+                    }
+
+                    namespace B {
+                        use A\Phone;
+
+                        /**
+                         * @psalm-import-type Phone from Phone as PhoneType
+                         */
+                        final class User {
+                            /** @param PhoneType $arg */
+                            public function foo(array $arg): string {
+                                return $arg["phone"];
+                            }
+                        }
+                    }',
+            ],
+            'typeAliasOfAClassWithATemplateNamedLikeAShapeKey' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-type Shape = array{T: int, U?: string}
+                     */
+                    final class Box {
+                        /**
+                         * @var Shape
+                         */
+                        public array $shape = ["T" => 1];
+                    }',
+            ],
+            'typeAliasOfAClassWithATemplateThatDoesNotUseIt' => [
+                'code' => '<?php
+                    namespace Some\\Ns;
+
+                    /**
+                     * @template T of object
+                     * @psalm-type Items=list<int>
+                     */
+                    final class Box {
+                        /**
+                         * @var Items
+                         */
+                        public array $items = [];
+
+                        /**
+                         * @return T|null
+                         */
+                        public function first(): ?object {
+                            return null;
+                        }
+                    }',
+            ],
+            'typeAliasOfAClassWithATemplateNamedLikeTheOneOfAClassStringMap' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-type Maps = list<class-string-map<T as Exception, T>>
+                     */
+                    final class Registry {
+                        /**
+                         * @var Maps
+                         */
+                        public array $maps = [];
+                    }
+
+                    $maps = (new Registry())->maps;',
+                'assertions' => [
+                    '$maps===' => 'list<class-string-map<T as Exception, T:class-string-map as Exception>>',
+                ],
+            ],
             'atInArrayKey' => [
                 'code' => '<?php
 
@@ -460,6 +582,34 @@ final class TypeAnnotationTest extends TestCase
                      */
                     class C implements A {}
                 ',
+            ],
+            'importedTypeAliasAsBoundOfAUsedOrExtendedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-import-type Conf from Mapper
+                     * @template T of Conf
+                     */
+                    trait ConfTrait {
+                        /** @param T $conf */
+                        public function setConfig(array $conf): void {}
+                    }
+
+                    /**
+                     * @psalm-type Conf = array<string, array{a: int, b: string}>
+                     */
+                    final class Mapper {
+                        /** @use ConfTrait<Conf> */
+                        use ConfTrait;
+                    }
+
+                    /**
+                     * @psalm-import-type Conf from Mapper
+                     * @template T of Conf
+                     */
+                    abstract class ConfHolder {}
+
+                    /** @extends ConfHolder<array<string, array{a: int, b: string}>> */
+                    final class MapperConfHolder extends ConfHolder {}',
             ],
             'importedTypeAliasAsTypeParameterForExtendedClass' => [
                 'code' => '<?php
@@ -1096,6 +1246,34 @@ final class TypeAnnotationTest extends TestCase
                     }
                 PHP,
             ],
+            'checkTypeOverSeveralDocblockLines' => [
+                'code' => '<?php
+                    function f(): void {
+                        $response = ["status" => 0, "message" => "success"];
+
+                        /**
+                         * @psalm-check-type $response = array{
+                         *   status: int,
+                         *   message: string
+                         * }
+                         */
+                        echo json_encode($response);
+                    }',
+            ],
+            'checkTypeExactOverSeveralDocblockLines' => [
+                'code' => '<?php
+                    function f(): void {
+                        $response = ["status" => 0, "message" => "success"];
+
+                        /**
+                         * @psalm-check-type-exact $response = array{
+                         *   message: "success",
+                         *   status: 0
+                         * }
+                         */
+                        echo json_encode($response);
+                    }',
+            ],
         ];
     }
 
@@ -1103,9 +1281,96 @@ final class TypeAnnotationTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'typeImportNamedLikeAnExistingClass' => [
+                'code' => '<?php
+                    namespace A {
+                        /**
+                         * @psalm-type Phone = array{phone: string}
+                         */
+                        final class Phone {}
+                    }
+
+                    namespace B {
+                        use A\Phone;
+
+                        /**
+                         * @psalm-import-type Phone from Phone
+                         */
+                        final class User {}
+                    }',
+                'error_message' => 'InvalidTypeImport - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:47 - Type alias Phone imported from A\Phone is named like the class A\Phone',
+            ],
+            'typeAliasUsingTheTemplateOfItsClassInANamespace' => [
+                'code' => '<?php
+                    namespace Some\\Ns;
+
+                    interface DataInner {}
+
+                    /**
+                     * @template T of object
+                     *
+                     * @psalm-type DataType=array<class-string<T>, DataInner>
+                     */
+                    final class Data {
+                        /**
+                         * @var DataType
+                         */
+                        private array $inner = [];
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:11:21 - Type alias DataType cannot use the template T of its class',
+            ],
+            'typeAliasUsingTheTemplateOfItsClassAsTheValueOfAShapeKeyOfTheSameName' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-type Shape = array{T: T}
+                     */
+                    final class Box {
+                        /**
+                         * @var Shape
+                         */
+                        public array $shape = [];
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:6:21 - Type alias Shape cannot use the template T of its class',
+            ],
+            'typeAliasUsingTheTemplateOfItsClassAfterAClassStringMapBindingTheSameName' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @psalm-type Shape = array{map: class-string-map<T as Exception, T>, other: T}
+                     */
+                    final class Box {
+                        /**
+                         * @var Shape
+                         */
+                        public array $shape;
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:6:21 - Type alias Shape cannot use the template T of its class',
+            ],
+            'typeAliasUsingTheTemplateOfItsClassWithoutANamespace' => [
+                'code' => '<?php
+                    interface DataInner {}
+
+                    /**
+                     * @template T of object
+                     *
+                     * @psalm-type DataType=array<class-string<T>, DataInner>
+                     */
+                    final class Data {
+                        /**
+                         * @var DataType
+                         */
+                        private array $inner = [];
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:9:21 - Type alias DataType cannot use the template T of its class',
+            ],
             'invalidTypeAlias' => [
                 'code' => '<?php
                     namespace Barrr;
@@ -1405,8 +1670,18 @@ final class TypeAnnotationTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidDocblock',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'typeAliasImportedFromAnExistingClassWithoutTheAliasDoesNotCrash' => [
+                'code' => '<?php
+                    /** @psalm-import-type StageExpression from \\Directory */
+                    abstract class Stage
+                    {
+                        /** @return StageExpression */
+                        abstract public function getExpression(): ?array;
+                    }',
+                'error_message' => 'MismatchingDocblockReturnType',
             ],
         ];
     }

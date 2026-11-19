@@ -109,6 +109,11 @@ final class PsalmRestarter extends XdebugHandler
                 $value = self::toBytes($value);
             } elseif ($ini_name === 'enable_cli') {
                 $value = in_array($value, ['1', 'true', true, 1]) ? 1 : 0;
+            } elseif ($ini_name === 'jit' && $required_value === 'off') {
+                // a bare `off` reads back as '' (as do no/false/none)
+                $value = in_array(strtolower($value), ['', '0', 'off', 'no', 'false', 'disable'], true)
+                    ? 'off'
+                    : $value;
             } elseif (is_int($required_value)) {
                 $value = (int) $value;
             }
@@ -137,12 +142,11 @@ final class PsalmRestarter extends XdebugHandler
 
         $unit = strtolower($value[strlen($value) - 1]);
 
-        if (in_array($unit, ['g', 'm', 'k'], true)) {
-            $value = (int) $value;
-        } else {
+        if (!in_array($unit, ['g', 'm', 'k'], true)) {
             $unit = '';
-            $value = (int) $value;
         }
+
+        $value = (int) $value;
 
         switch ($unit) {
             case 'g':

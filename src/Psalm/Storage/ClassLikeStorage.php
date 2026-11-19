@@ -14,6 +14,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\DeprecatedClass;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -26,6 +27,7 @@ use function in_array;
 
 /**
  * @api
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class ClassLikeStorage implements HasAttributesInterface
 {
@@ -67,28 +69,60 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $deprecated = false;
 
     /**
+     * The literal message of a native #[\Deprecated] attribute, if any.
+     *
+     * @var non-empty-string|null
+     */
+    public ?string $deprecated_message = null;
+
+    /**
      * @var list<non-empty-string>
      */
     public array $internal = [];
 
     /**
+     * The `@mixin T` the class declares, and those plugins add. Those of its traits and parent classes are not
+     * included.
+     *
      * @var TTemplateParam[]
      */
     public array $templatedMixins = [];
 
     /**
+     * The named `@mixin`s the class declares, and those plugins add. Those of its traits and parent classes are not
+     * included.
+     *
      * @var list<TNamedObject>
      */
     public array $namedMixins = [];
 
     /**
-     * Named mixins reachable only through another mixin's own `@mixin` chain, deepest hop first.
-     * Filled during population; see getNamedMixinsForLookup().
+     * The `@mixin`s the class declares, in declaration order: the same objects as in namedMixins and
+     * templatedMixins, so getMixins() can tell them from those plugins added.
      *
+     * @internal
+     * @var list<TNamedObject|TTemplateParam>
+     */
+    public array $declaredMixins = [];
+
+    /**
+     * @deprecated Always empty; will be removed in psalm-plugin-api 0.5.0. Each mixin is bound in the context of the
+     *     class declaring it.
+     * @var array<lowercase-string, string>
+     */
+    public array $inheritedNamedMixinDeclaringClasses = [];
+
+    /**
+     * @deprecated Always empty; will be removed in psalm-plugin-api 0.5.0. The mixins of a mixin are looked up along
+     *     with it.
      * @var list<TNamedObject>
      */
     public array $transitiveNamedMixins = [];
 
+    /**
+     * @deprecated Never set or read; will be removed in psalm-plugin-api 0.5.0. Each mixin is bound in the context
+     *     of the class declaring it.
+     */
     public ?string $mixin_declaring_fqcln = null;
 
     public ?bool $sealed_properties = null;
@@ -103,6 +137,15 @@ final class ClassLikeStorage implements HasAttributesInterface
      * @var array<int, string>
      */
     public array $suppressed_issues = [];
+
+    /**
+     * The subset of $suppressed_issues written in this class-like's own docblock, keyed by the
+     * char offset of the issue name. Plugins append to $suppressed_issues, never to this, so only
+     * these entries have a source location to report as unused.
+     *
+     * @var array<int, string>
+     */
+    public array $docblock_suppressed_issues = [];
 
     /**
      * Is this class user-defined
@@ -159,6 +202,11 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $final = false;
 
+    /**
+     * An anonymous class cannot be extended
+     */
+    public bool $anonymous = false;
+
     public bool $final_from_docblock = false;
 
     public bool $trait_used = false;
@@ -179,6 +227,21 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $trait_alias_map_cased = [];
 
     /**
+     * The trait an alias is qualified with (`use A { A::f as g; }`), by the alias name
+     *
+     * @var array<lowercase-string, lowercase-string>
+     */
+    public array $trait_alias_trait_map = [];
+
+    /**
+     * The traits whose method is not used because of `insteadof` (`use A, B { B::f insteadof A; }`),
+     * by the method name
+     *
+     * @var array<lowercase-string, array<lowercase-string, true>>
+     */
+    public array $trait_excluded_methods = [];
+
+    /**
      * @var array<lowercase-string, bool>
      */
     public array $trait_final_map = [];
@@ -194,6 +257,7 @@ final class ClassLikeStorage implements HasAttributesInterface
 
     public bool $is_enum = false;
 
+    /** @var CapabilitySet */
     public int $capabilities = Capabilities::ALL;
 
     /**
@@ -226,6 +290,24 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $inherits_taint_specialize = false;
 
     /**
+     * The array property holding the properties of the objects of the class under their names, from
+     * `@psalm-taint-property-bag` on the class or a class it extends (see PropertyBagTaints)
+     */
+    public ?string $taint_property_bag = null;
+
+    /**
+     * Whether the methods of the class only run from the command line (`@psalm-cli-only`): what they print goes to a
+     * terminal, not to an HTML response
+     */
+    public bool $cli_only = false;
+
+    /**
+     * Whether the instances of the class only exist in command-line processes (`@psalm-cli-only-instances`): its
+     * instance methods, and the function-likes requiring an instance of it, only run from the command line
+     */
+    public bool $cli_only_instances = false;
+
+    /**
      * @var array<lowercase-string, MethodStorage>
      */
     public array $methods = [];
@@ -240,6 +322,20 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public array $pseudo_static_methods = [];
 
+    /**
+     * Every `@method` of a name declared more than once, in the order of the docblock
+     *
+     * @var array<lowercase-string, non-empty-list<MethodStorage>>
+     */
+    public array $pseudo_method_overloads = [];
+
+    /**
+     * Same as $pseudo_method_overloads, for the static `@method`s
+     *
+     * @var array<lowercase-string, non-empty-list<MethodStorage>>
+     */
+    public array $pseudo_static_method_overloads = [];
+
     public bool $has_children = false;
 
     /**
@@ -251,6 +347,13 @@ final class ClassLikeStorage implements HasAttributesInterface
      * @var array<lowercase-string, MethodIdentifier>
      */
     public array $declaring_pseudo_method_ids = [];
+
+    /**
+     * Same as $declaring_pseudo_method_ids, but for static pseudo methods
+     *
+     * @var array<lowercase-string, MethodIdentifier>
+     */
+    public array $declaring_pseudo_static_method_ids = [];
 
     /**
      * @var array<lowercase-string, MethodIdentifier>
@@ -342,19 +445,35 @@ final class ClassLikeStorage implements HasAttributesInterface
     public ?array $template_covariants = null;
 
     /**
-     * The default value of each purity template that has one (`@psalm-purity-template C(pure) <= io`):
-     * what a subclass that does not bind the template gets.
+     * The templates declared with `@psalm-purity-template` (capability sets); the others are type templates.
+     *
+     * @var array<string, true>
+     */
+    public array $purity_templates = [];
+
+    /**
+     * What a template left out of a use of the class stands for: the declared default of a type template, in which
+     * earlier templates stand for their arguments (`@template T of Bound = Default`), or the default of a purity
+     * template (`@psalm-purity-template C(pure) <= io`), else its upper bound. Subclasses not binding it get it, as do
+     * uses like `Foo<A>` leaving out trailing type templates, but not a use without type arguments (`Foo`).
      *
      * @var array<string, Union>
      */
     public array $template_defaults = [];
 
     /**
+     * Where each declared type template default is, for the issues about it.
+     *
+     * @var array<string, CodeLocation>
+     */
+    public array $template_default_locations = [];
+
+    /**
      * The lower bound of each purity template that has one (`@psalm-purity-template write-props <= C`):
      * what every value of the template requires, so the methods depending on it get these
      * capabilities unconditionally, and subclasses may not bind it to less.
      *
-     * @var array<string, int>
+     * @var array<string, CapabilitySet>
      */
     public array $template_lower_bounds = [];
 
@@ -439,6 +558,18 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $enforce_template_inheritance = false;
 
     public ?string $extension_requirement = null;
+
+    /**
+     * The type arguments of the class `@psalm-require-extends` names, in the templates of the trait
+     */
+    public ?TGenericObject $extension_requirement_type = null;
+
+    /**
+     * The type arguments of the interfaces `@psalm-require-implements` names, in the templates of the trait
+     *
+     * @var array<string, TGenericObject>
+     */
+    public array $implementation_requirement_types = [];
 
     /**
      * @var array<int, string>
@@ -532,8 +663,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     }
 
     /**
-     * How many template params a use of this class must give: all of them, except trailing purity
-     * templates with a default, which need not be given.
+     * How many template params a use of this class must give: all but the trailing ones with a default.
      *
      * @psalm-mutation-free
      */
@@ -570,15 +700,70 @@ final class ClassLikeStorage implements HasAttributesInterface
     }
 
     /**
-     * Named mixins in member-lookup order: transitive ones first, then those declared on or inherited by
-     * the class, so that with last-match-wins lookup a nearer mixin shadows a deeper one.
-     *
+     * @deprecated Will be removed in psalm-plugin-api 0.5.0; read namedMixins, which now holds only the named mixins
+     *     the class declares (and those plugins added).
      * @return list<TNamedObject>
      * @psalm-mutation-free
      */
     public function getNamedMixinsForLookup(): array
     {
-        return [...$this->transitiveNamedMixins, ...$this->namedMixins];
+        return $this->namedMixins;
+    }
+
+    /**
+     * @deprecated Will be removed in psalm-plugin-api 0.5.0. The class whose templates the type arguments of the
+     *     mixin are written with: the class declaring them, or the class itself.
+     * @psalm-mutation-free
+     */
+    public function getNamedMixinDeclaringClass(TNamedObject $mixin): string
+    {
+        foreach ($mixin instanceof TGenericObject ? $mixin->type_params : [] as $type_param) {
+            foreach ($type_param->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TTemplateParam) {
+                    return $atomic_type->defining_class;
+                }
+            }
+        }
+
+        return $this->name;
+    }
+
+    /**
+     * @deprecated Will be removed in psalm-plugin-api 0.5.0; read namedMixins and templatedMixins.
+     * @return list<TNamedObject|TTemplateParam>
+     * @psalm-mutation-free
+     */
+    public function getOwnMixins(): array
+    {
+        return $this->getMixins();
+    }
+
+    /**
+     * The mixins the class declares in declaration order, then those plugins added to namedMixins or
+     * templatedMixins. Those of its traits and parent classes are not included.
+     *
+     * @internal
+     * @return list<TNamedObject|TTemplateParam>
+     * @psalm-mutation-free
+     */
+    public function getMixins(): array
+    {
+        $current_mixins = [...$this->namedMixins, ...$this->templatedMixins];
+        $mixins = [];
+
+        foreach ($this->declaredMixins as $mixin) {
+            if (in_array($mixin, $current_mixins, true)) {
+                $mixins[] = $mixin;
+            }
+        }
+
+        foreach ($current_mixins as $mixin) {
+            if (!in_array($mixin, $this->declaredMixins, true)) {
+                $mixins[] = $mixin;
+            }
+        }
+
+        return $mixins;
     }
 
     /**

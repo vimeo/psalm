@@ -4,44 +4,35 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\FileManipulation;
 
-use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
+use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
-use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
 use function strpos;
 
-abstract class FileManipulationTestCase extends TestCase
+abstract class FileManipulationTestCase extends DeferredAnalyzerTestCase
 {
     protected ProjectAnalyzer $project_analyzer;
 
     /**
-     * @psalm-external-mutation-free
-     */
-    #[Override]
-    public function setUp(): void
-    {
-        RuntimeCaches::clearAll();
-
-        $this->file_provider = new FakeFileProvider();
-    }
-
-    /**
-     * @dataProvider providerValidCodeParse
      * @param string[] $issues_to_fix
+     * @param array<string, string> $other_files the contents of the files analysed along with somefile.php
+     * @param (callable(TestConfig): void)|null $configure
      */
+    #[DataProvider('providerValidCodeParse')]
     public function testValidCode(
-        string $input_code,
-        string $output_code,
+        string $input,
+        string $output,
         string $php_version,
         array $issues_to_fix,
         bool $safe_types,
         bool $allow_backwards_incompatible_changes = true,
+        array $other_files = [],
+        ?callable $configure = null,
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -49,22 +40,9 @@ abstract class FileManipulationTestCase extends TestCase
         }
 
         $config = new TestConfig();
-        $config->setCustomErrorLevel(
-            'MissingImmutableAnnotation',
-            TestConfig::REPORT_ERROR,
-        );
-        $config->setCustomErrorLevel(
-            'MissingInterfaceImmutableAnnotation',
-            TestConfig::REPORT_ERROR,
-        );
-        $config->setCustomErrorLevel(
-            'MissingPureAnnotation',
-            TestConfig::REPORT_ERROR,
-        );
-        $config->setCustomErrorLevel(
-            'MissingAbstractPureAnnotation',
-            TestConfig::REPORT_ERROR,
-        );
+        if ($configure !== null) {
+            $configure($config);
+        }
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
@@ -85,8 +63,12 @@ abstract class FileManipulationTestCase extends TestCase
 
         $this->addFile(
             $file_path,
-            $input_code,
+            $input,
         );
+
+        foreach ($other_files as $other_file_name => $other_file_contents) {
+            $this->addFile(self::$src_dir_path . $other_file_name, $other_file_contents);
+        }
 
         $this->project_analyzer->setPhpVersion($php_version, 'tests');
 
@@ -113,11 +95,11 @@ abstract class FileManipulationTestCase extends TestCase
         $this->project_analyzer->consolidateAnalyzedData();
 
         $this->project_analyzer->getCodebase()->analyzer->updateFile($file_path, false);
-        $this->assertSame($output_code, $this->project_analyzer->getCodebase()->getFileContents($file_path));
+        $this->assertSame($output, $this->project_analyzer->getCodebase()->getFileContents($file_path));
     }
 
     /**
-     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:array<string>,safe_types:bool,allow_backwards_incompatible_changes?:bool}>
+     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:array<string>,safe_types:bool,allow_backwards_incompatible_changes?:bool,other_files?:array<string, string>,configure?:callable(TestConfig):void}>
      */
-    abstract public function providerValidCodeParse(): array;
+    abstract public static function providerValidCodeParse(): array;
 }

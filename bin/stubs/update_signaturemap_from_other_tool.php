@@ -40,13 +40,17 @@ foreach ($new_local as $name => $data) {
     if (!is_array($data)) {
         throw new UnexpectedValueException('bad data for ' . $name);
     }
-    $return_type = array_shift($data);
+    $return_type = $data[0] ?? $data[-1];
+    // Foreign analysis refinements must not replace the local signature or its provenance.
+    unset($data[0], $data[-1], $data[-2]);
+    $data = array_intersect_key($local_b[$name] ?? [], [-1 => true, -2 => true]) + $data;
     echo '\'' . str_replace("'", "\'", $name) . '\' => [\'' . str_replace("'", "\'", $return_type) . '\'';
 
     if ($data) {
         $signature = [];
 
         foreach ($data as $param_name => $type) {
+            $param_name = (string) $param_name;
             $signature[] = '\'' . str_replace("'", "\'", $param_name) . '\'=>\'' . str_replace("'", "\'", $type) . '\'';
         }
 

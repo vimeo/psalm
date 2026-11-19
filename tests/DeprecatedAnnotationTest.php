@@ -17,9 +17,26 @@ final class DeprecatedAnnotationTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
+            'deprecatedClassUsingATraitWithSelfAndStaticReturnTypes' => [
+                'code' => '<?php
+                    trait MyTrait {
+                        public function foo(): static {
+                            return $this;
+                        }
+
+                        public function bar(): self {
+                            return $this;
+                        }
+                    }
+
+                    /** @deprecated */
+                    final class MyClass {
+                        use MyTrait;
+                    }',
+            ],
             'deprecatedMethod' => [
                 'code' => '<?php
                     class Foo {
@@ -131,9 +148,25 @@ final class DeprecatedAnnotationTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'deprecatedClassReturnedByAMethodOfAnotherTrait' => [
+                'code' => '<?php
+                    /** @deprecated */
+                    final class Old {}
+
+                    trait MyTrait {
+                        public function old(): Old {
+                            return new Old();
+                        }
+                    }
+
+                    final class MyClass {
+                        use MyTrait;
+                    }',
+                'error_message' => 'DeprecatedClass',
+            ],
             'deprecatedMethodWithCall' => [
                 'code' => '<?php
                     class Foo {
@@ -341,7 +374,7 @@ final class DeprecatedAnnotationTest extends TestCase
                     Foo::B;
                 ',
                 'error_message' => 'DeprecatedConstant',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'deprecatedEnumCaseFetchAttr' => [
@@ -356,7 +389,24 @@ final class DeprecatedAnnotationTest extends TestCase
                     Foo::B;
                 ',
                 'error_message' => 'DeprecatedConstant',
-                'ignored_issues' => [],
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'deprecatedEnumCaseFetchOnAnInstance' => [
+                'code' => '<?php
+                    enum Foo {
+                        case A;
+
+                        /** @deprecated */
+                        case B;
+                    }
+
+                    function f(Foo $foo): Foo {
+                        return $foo::B;
+                    }
+                ',
+                'error_message' => 'DeprecatedConstant',
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'deprecatedClassConstFetch' => [

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Psalm\Tests\FileUpdates;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
@@ -34,10 +36,10 @@ final class AnalyzedMethodTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserCacheProvider($config, '', false),
+            new ParserCacheProvider($config, '', CacheMode::Memory),
             null,
             null,
-            new FileReferenceCacheProvider($config, '', false),
+            new FileReferenceCacheProvider($config, '', CacheMode::Memory),
             new ProjectCacheProvider(),
         );
 
@@ -49,11 +51,11 @@ final class AnalyzedMethodTest extends TestCase
     }
 
     /**
-     * @dataProvider providerTestValidUpdates
      * @param array<string, string> $start_files
      * @param array<string, string> $end_files
      * @param array<string, string> $ignored_issues
      */
+    #[DataProvider('providerTestValidUpdates')]
     public function testValidInclude(
         array $start_files,
         array $end_files,
@@ -110,9 +112,9 @@ final class AnalyzedMethodTest extends TestCase
     }
 
     /**
-     * @return array<string,array{start_files:array<string,string>,end_files:array<string,string>,initial_analyzed_methods:array<string,array<string,int>>,unaffected_analyzed_methods:array<string,array<string,int>>,0?:array<string,string>}>
+     * @return array<string,array{start_files:array<string,string>,end_files:array<string,string>,initial_analyzed_methods:array<string,array<string,int>>,unaffected_analyzed_methods:array<string,array<string,int>>,ignored_issues?:array<string,string>}>
      */
-    public function providerTestValidUpdates(): array
+    public static function providerTestValidUpdates(): array
     {
         return [
             'basicRequire' => [
@@ -192,7 +194,7 @@ final class AnalyzedMethodTest extends TestCase
                         'foo\b::noreturntype' => 1,
                     ],
                 ],
-                [
+                'ignored_issues' => [
                     'MissingReturnType' => Config::REPORT_INFO,
                 ],
             ],
@@ -502,7 +504,7 @@ final class AnalyzedMethodTest extends TestCase
                         'foo\b::noreturntype' => 1,
                     ],
                 ],
-                [
+                'ignored_issues' => [
                     'MissingReturnType' => Config::REPORT_INFO,
                 ],
             ],
@@ -1178,7 +1180,7 @@ final class AnalyzedMethodTest extends TestCase
                         'foo\a::__construct' => 2,
                     ],
                 ],
-                [
+                'ignored_issues' => [
                     'PropertyNotSetInConstructor' => Config::REPORT_INFO,
                     'DocblockTypeContradiction' => Config::REPORT_INFO,
                     'RedundantConditionGivenDocblockType' => Config::REPORT_INFO,

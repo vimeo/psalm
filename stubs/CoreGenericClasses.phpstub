@@ -354,27 +354,27 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * Sort the entries by value
      * @link http://php.net/manual/en/arrayobject.asort.php
      *
-     * @return void
+     * @return true
      *
      * @since 5.2.0
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template TStorage
      */
-    public function asort() { }
+    public function asort(int $flags = SORT_REGULAR) { }
 
     /**
      * Sort the entries by key
      * @link http://php.net/manual/en/arrayobject.ksort.php
      *
-     * @return void
+     * @return true
      *
      * @since 5.2.0
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template TStorage
      */
-    public function ksort() { }
+    public function ksort(int $flags = SORT_REGULAR) { }
 
     /**
      * Sort the entries with a user-defined comparison function and maintain key association
@@ -389,7 +389,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @psalm-purity-template P
      * @param callable[P](TValue, TValue):int $cmp_function
-     * @return void
+     * @return true
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template P, TStorage
@@ -411,7 +411,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      *
      * @psalm-purity-template P
      * @param callable[P](TKey, TKey):int $cmp_function The callable comparison function.
-     * @return void
+     * @return true
      *
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template P, TStorage
@@ -424,7 +424,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * Sort entries using a "natural order" algorithm
      * @link http://php.net/manual/en/arrayobject.natsort.php
      *
-     * @return void
+     * @return true
      *
      * @since 5.2.0
      *
@@ -437,7 +437,7 @@ class ArrayObject implements IteratorAggregate, ArrayAccess, Serializable, Count
      * Sort an array using a case insensitive "natural order" algorithm
      * @link http://php.net/manual/en/arrayobject.natcasesort.php
      *
-     * @return void
+     * @return true
      *
      * @since 5.2.0
      *
@@ -588,12 +588,16 @@ final class WeakReference
  * @implements Traversable<TKey,TVal>
  *
  * @since 8.0.0
+ *
+ * @psalm-capabilities read-props|write-this-props
  */
 final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traversable
 {
     /**
      * @param TKey $offset
      * @return bool
+     *
+     * @psalm-mutation-free
      */
     public function offsetExists($offset) {}
 
@@ -601,6 +605,8 @@ final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traver
      * @param TKey $offset
      * @return TVal|null
      * @psalm-ignore-nullable-return
+     *
+     * @psalm-mutation-free
      */
     public function offsetGet($offset) {}
 
@@ -617,7 +623,20 @@ final class WeakMap implements ArrayAccess, Countable, IteratorAggregate, Traver
      */
     public function offsetUnset($offset) {}
 
-    /** @return Traversable<TKey, TVal> */
+    /**
+     * @return int<0, max>
+     *
+     * @psalm-mutation-free
+     */
+    public function count(): int {}
+
+    /**
+     * Iterating over the map reads it
+     *
+     * @return Traversable[read-props]<TKey, TVal>
+     *
+     * @psalm-mutation-free
+     */
     public function getIterator() { }
 }
 
@@ -748,3 +767,12 @@ class DateInterval
     public static function createFromDateString(string $datetime = ''): DateInterval|false {}
 }
 
+class DateTime implements DateTimeInterface
+{
+    /**
+     * @psalm-mutation-free
+     * @psalm-ignore-falsable-return
+     * @return static|false
+     */
+    public static function createFromFormat(string $format, string $datetime, ?DateTimeZone $timezone = null) {}
+}

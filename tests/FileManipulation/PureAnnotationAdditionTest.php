@@ -12,7 +12,7 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): array
+    public static function providerValidCodeParse(): array
     {
         return [
             'correctClassCasing' => [
@@ -52,6 +52,66 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                         }
                     }',
                 'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'propertyWritesOfArgumentsAreNotPure' => [
+                'input' => '<?php
+                    final class C {
+                        public int $n = 0;
+                        public ?C $o = null;
+                    }
+
+                    function assign(C $c): void {
+                        $c->n = 1;
+                    }
+
+                    function remove(C $c): void {
+                        unset($c->o);
+                    }
+
+                    function assignNested(C $c): void {
+                        if ($c->o) {
+                            $c->o->n = 1;
+                        }
+                    }
+
+                    function assignFresh(): C {
+                        $c = new C();
+                        $c->n = 1;
+                        unset($c->o);
+                        return $c;
+                    }',
+                'output' => '<?php
+                    final class C {
+                        public int $n = 0;
+                        public ?C $o = null;
+                    }
+
+                    function assign(C $c): void {
+                        $c->n = 1;
+                    }
+
+                    function remove(C $c): void {
+                        unset($c->o);
+                    }
+
+                    function assignNested(C $c): void {
+                        if ($c->o) {
+                            $c->o->n = 1;
+                        }
+                    }
+
+                    /**
+                     * @psalm-pure
+                     */
+                    function assignFresh(): C {
+                        $c = new C();
+                        $c->n = 1;
+                        unset($c->o);
+                        return $c;
+                    }',
+                'php_version' => '8.1',
                 'issues_to_fix' => ['MissingPureAnnotation'],
                 'safe_types' => true,
             ],
@@ -1871,6 +1931,22 @@ final class PureAnnotationAdditionTest extends FileManipulationTestCase
                         public function bar(string $s) : string {
                             return $string;
                         }
+                    }',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingPureAnnotation'],
+                'safe_types' => true,
+            ],
+            'addPureAnnotationToGeneratorWithoutReturn' => [
+                'input' => '<?php
+                    function gen(): Generator {
+                        yield 1;
+                    }',
+                'output' => '<?php
+                    /**
+                     * @psalm-pure
+                     */
+                    function gen(): Generator {
+                        yield 1;
                     }',
                 'php_version' => '7.4',
                 'issues_to_fix' => ['MissingPureAnnotation'],

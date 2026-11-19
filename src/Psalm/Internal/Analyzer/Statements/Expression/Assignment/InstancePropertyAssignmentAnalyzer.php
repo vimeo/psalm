@@ -23,6 +23,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -99,6 +100,8 @@ final class InstancePropertyAssignmentAnalyzer
     /**
      * @param   PropertyFetch|PropertyItem  $stmt
      * @param   bool                        $direct_assignment whether the variable is assigned explicitly
+     * @param   bool                        $modifies_value written through a reference, as an array element or
+     *                                                      from its current value
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -108,6 +111,7 @@ final class InstancePropertyAssignmentAnalyzer
         Union $assignment_value_type,
         Context $context,
         bool $direct_assignment = true,
+        bool $modifies_value = false,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -152,6 +156,12 @@ final class InstancePropertyAssignmentAnalyzer
                 ),
             ];
         } else {
+            // `$a->p .= ...` and `$a->p++` are analysed as an assignment of an operation on that same fetch
+            $modifies_value = $modifies_value
+                || ($assignment_value instanceof PhpParser\Node\Expr\BinaryOp
+                    && !$assignment_value instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+                    && $assignment_value->left === $stmt);
+
             $assigned_properties = self::analyzeRegularAssignment(
                 $statements_analyzer,
                 $stmt,
@@ -162,7 +172,16 @@ final class InstancePropertyAssignmentAnalyzer
                 $assignment_value_type,
                 $prop_name,
                 $var_id,
+                $modifies_value,
             );
+        }
+
+        if ($stmt instanceof PropertyFetch) {
+            $assigned_var_id = ExpressionIdentifier::getExtendedVarId($stmt, $context->self, $statements_analyzer);
+
+            if ($assigned_var_id !== null) {
+                $context->forgetNarrowedShapeProperty($assigned_var_id);
+            }
         }
 
         if (!$assigned_properties) {
@@ -179,7 +198,6 @@ final class InstancePropertyAssignmentAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
             && count($assigned_properties) === 1
         ) {
             $codebase->analyzer->addNodeType(
@@ -187,6 +205,14 @@ final class InstancePropertyAssignmentAnalyzer
                 $stmt->name,
                 $assigned_properties[0]->property_type->getId(),
             );
+        }
+
+        $can_narrow_property = true;
+        foreach ($assigned_properties as $assigned_property) {
+            if ($assigned_property->interface_setter) {
+                $can_narrow_property = false;
+                break;
+            }
         }
 
         foreach ($assigned_properties as $assigned_property) {
@@ -209,8 +235,11 @@ final class InstancePropertyAssignmentAnalyzer
             );
 
             if ($type_match_found && $union_comparison_results->replacement_union_type) {
-                if ($var_id) {
-                    $context->vars_in_scope[$var_id] = $union_comparison_results->replacement_union_type;
+                if ($var_id && $can_narrow_property) {
+                    $context->vars_in_scope[$var_id] = $union_comparison_results->replacement_union_type
+                        ->setProperties([
+                            'initialized_class' => ($context->vars_in_scope[$var_id] ?? null)?->initialized_class,
+                        ]);
                 }
             }
 
@@ -219,7 +248,17 @@ final class InstancePropertyAssignmentAnalyzer
                     || $union_comparison_results->type_variable_upper_bounds)
             ) {
                 // transfer any type-variable bounds recorded while checking
-                // the assignment
+                // the assignment; a value that only reaches an upper bound
+                // through mixed is reported as MixedPropertyTypeCoercion at
+                // reconciliation
+                foreach ($union_comparison_results->type_variable_upper_bounds as [$_, $upper_bound]) {
+                    $upper_bound->property_requirement_id = $assigned_property->id;
+                }
+
+                foreach ($union_comparison_results->type_variable_lower_bounds as [$_, $lower_bound]) {
+                    $lower_bound->property_value_id = $assigned_property->id;
+                }
+
                 $statements_analyzer->type_variable_tracker->addBounds(
                     $union_comparison_results->type_variable_lower_bounds,
                     $union_comparison_results->type_variable_upper_bounds,
@@ -228,6 +267,7 @@ final class InstancePropertyAssignmentAnalyzer
                         $assignment_value ?? $stmt,
                         $context->include_location,
                     ),
+                    $statements_analyzer->getSuppressedIssues(),
                 );
             }
 
@@ -378,6 +418,17 @@ final class InstancePropertyAssignmentAnalyzer
         }
     }
 
+    /**
+     * Set on an assigned property fetch whose write trackPropertyImpurity() charged, so
+     * AssignmentAnalyzer doesn't charge it again
+     */
+    public const WRITE_CHARGED = 'psalm-property-write-charged';
+
+    /**
+     * Charges writing a property, and returns whether it did (it can't without a receiver variable)
+     *
+     * @param bool $modifies_value written through a reference, as an array element or from its current value
+     */
     public static function trackPropertyImpurity(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\PropertyFetch $stmt,
@@ -386,7 +437,8 @@ final class InstancePropertyAssignmentAnalyzer
         ClassLikeStorage $declaring_class_storage,
         Context $context,
         ?string $lhs_var_id,
-    ): void {
+        bool $modifies_value = false,
+    ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
         $stmt_var_type = $statements_analyzer->node_data->getType($stmt->var);
@@ -395,35 +447,16 @@ final class InstancePropertyAssignmentAnalyzer
             && $stmt_var_type->reference_free
             && $stmt_var_type->allow_mutations;
 
-        $appearing_property_class = $codebase->properties->getAppearingClassForProperty(
+        $can_set_readonly_property = self::checkReadonlyPropertyWrite(
+            $statements_analyzer,
+            $stmt,
             $property_id,
-            true,
+            $property_storage,
+            $context,
+            $property_var_pure_compatible,
+            $modifies_value,
         );
 
-        $can_set_readonly_property = true;
-        if ($appearing_property_class) {
-            $can_set_readonly_property = $context->self
-                && $context->calling_method_id
-                && ($appearing_property_class === $context->self
-                    || $codebase->classExtends($context->self, $appearing_property_class))
-                && (str_ends_with($context->calling_method_id, '::__construct')
-                    || str_ends_with($context->calling_method_id, '::unserialize')
-                    || str_ends_with($context->calling_method_id, '::__unserialize')
-                    || str_ends_with($context->calling_method_id, '::__clone')
-                    || $property_storage->allow_private_mutation
-                    || $property_var_pure_compatible);
-
-            if (!$can_set_readonly_property && $property_storage->readonly) {
-                IssueBuffer::maybeAdd(
-                    new InaccessibleProperty(
-                        $property_id . ' is marked readonly',
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    ),
-                    $statements_analyzer->getSuppressedIssues(),
-                );
-            }
-        }
-        
         // writing the property of an object reached from global state writes global state
         $var_type = $statements_analyzer->node_data->getType($stmt->var);
         $on_global_state = $var_type !== null && $var_type->from_global_state;
@@ -436,8 +469,9 @@ final class InstancePropertyAssignmentAnalyzer
             // the inferred level as for the reported one. `$this` is the caller's own instance,
             // never a fresh one, even where its type is reference-free, and an object a closure
             // captured from the scope that created it is the closure's own state.
+            $writes_fresh_object = $property_var_pure_compatible && $lhs_var_id !== '$this';
             $real = match (true) {
-                $property_var_pure_compatible && $lhs_var_id !== '$this' => Capabilities::NONE,
+                $writes_fresh_object => Capabilities::NONE,
                 $lhs_var_id === '$this',
                 $var_type !== null && $var_type->closure_state => Capabilities::WRITE_THIS_PROPS,
                 default => Capabilities::WRITE_PROPS,
@@ -447,6 +481,10 @@ final class InstancePropertyAssignmentAnalyzer
             $mut = $lhs_var_id === '$this' && $can_set_readonly_property
                 ? ($property_var_pure_compatible ? Capabilities::NONE : Capabilities::READ_PROPS)
                 : $real;
+
+            // a fresh object holding global state (see MethodCallPurityAnalyzer::getMethodCapabilities()) is
+            // still fresh: nobody else sees its own properties change
+            $on_global_state = $on_global_state && !$writes_fresh_object;
 
             if ($on_global_state) {
                 $real |= Capabilities::WRITE_GLOBALS;
@@ -468,25 +506,98 @@ final class InstancePropertyAssignmentAnalyzer
             );
             $codebase->analyzer->addMutableClass(
                 $declaring_class_storage->name,
-                $mut,
+                // writing a fresh object is free for the writer, but the class still has a property written
+                // where a readonly one couldn't be: it can't be immutable (as before the waiver)
+                $writes_fresh_object && !$can_set_readonly_property ? $mut | Capabilities::WRITE_PROPS : $mut,
             );
-        } else {
-            if ($on_global_state) {
-                $statements_analyzer->signalMutation(
-                    Capabilities::WRITE_PROPS | Capabilities::WRITE_GLOBALS,
-                    $context,
-                    'property assignment to ' . $property_id . ' on an object reached from global state',
-                    ImpurePropertyAssignment::class,
-                    $stmt,
-                );
-            }
 
-            // e.g. the property of an array element: the class is still being mutated from outside
-            $codebase->analyzer->addMutableClass(
-                $declaring_class_storage->name,
-                Capabilities::ALL,
+            return true;
+        }
+
+        if ($on_global_state) {
+            $statements_analyzer->signalMutation(
+                Capabilities::WRITE_PROPS | Capabilities::WRITE_GLOBALS,
+                $context,
+                'property assignment to ' . $property_id . ' on an object reached from global state',
+                ImpurePropertyAssignment::class,
+                $stmt,
             );
         }
+
+        // e.g. the property of an array element: the class is still being mutated from outside
+        $codebase->analyzer->addMutableClass(
+            $declaring_class_storage->name,
+            Capabilities::ALL,
+        );
+
+        return $on_global_state;
+    }
+
+    /**
+     * Reports writing a readonly property where PHP forbids it, and returns whether the write is the class
+     * initialising its own property: a `public(set)` readonly one written elsewhere is allowed, but still a mutation
+     *
+     * @param bool $modifies_value written through a reference, as an array element or from its current value
+     */
+    public static function checkReadonlyPropertyWrite(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        string $property_id,
+        PropertyStorage $property_storage,
+        Context $context,
+        bool $property_var_pure_compatible,
+        bool $modifies_value,
+    ): bool {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $appearing_property_class = $codebase->properties->getAppearingClassForProperty(
+            $property_id,
+            true,
+        );
+
+        $can_set_readonly_property = true;
+        if ($appearing_property_class) {
+            $can_set_readonly_property = $context->self
+                && $context->calling_method_id
+                && ($appearing_property_class === $context->self
+                    || $codebase->classExtends($context->self, $appearing_property_class))
+                && (str_ends_with($context->calling_method_id, '::__construct')
+                    || str_ends_with($context->calling_method_id, '::unserialize')
+                    || str_ends_with($context->calling_method_id, '::__unserialize')
+                    || str_ends_with($context->calling_method_id, '::__clone')
+                    || $property_storage->allow_private_mutation
+                    || $property_var_pure_compatible);
+
+            if (!$can_set_readonly_property
+                && $property_storage->readonly
+                // `public(set)` only lets any scope initialise it: a promoted one is already initialised, and
+                // a modification needs it initialised
+                && ($modifies_value || !$property_storage->readonly_public_set || $property_storage->is_promoted)
+            ) {
+                IssueBuffer::maybeAdd(
+                    new InaccessibleProperty(
+                        $property_id . ' is marked readonly',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            } elseif ($property_storage->readonly_default
+                && $codebase->analysis_php_version_id >= 8_06_00
+                && !str_ends_with((string) $context->calling_method_id, '::unserialize')
+                && !str_ends_with((string) $context->calling_method_id, '::__unserialize')
+                && !str_ends_with((string) $context->calling_method_id, '::__clone')
+            ) {
+                IssueBuffer::maybeAdd(
+                    new InaccessibleProperty(
+                        $property_id . ' is readonly and already initialised by its default',
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+        }
+
+        return $can_set_readonly_property;
     }
 
     public static function analyzeStatement(
@@ -496,7 +607,9 @@ final class InstancePropertyAssignmentAnalyzer
     ): void {
         foreach ($stmt->props as $prop) {
             if ($prop->default) {
-                if ($stmt->isReadonly()) {
+                if ($stmt->isReadonly()
+                    && ($stmt->isStatic() || $statements_analyzer->getCodebase()->analysis_php_version_id < 8_06_00)
+                ) {
                     IssueBuffer::maybeAdd(
                         new InvalidPropertyAssignment(
                             'Readonly property ' . $context->self . '::$' . $prop->name->name
@@ -892,6 +1005,7 @@ final class InstancePropertyAssignmentAnalyzer
         Union $assignment_value_type,
         string $prop_name,
         ?string &$var_id,
+        bool $modifies_value,
     ): array {
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
@@ -905,6 +1019,8 @@ final class InstancePropertyAssignmentAnalyzer
         if ($lhs_type === null) {
             return [];
         }
+
+        $lhs_type = TypeExpander::expandTemplateKeyOfAndValueOf($codebase, $lhs_type);
 
         $lhs_var_id = ExpressionIdentifier::getVarId(
             $stmt->var,
@@ -934,7 +1050,6 @@ final class InstancePropertyAssignmentAnalyzer
 
         if ($lhs_type->hasMixed()) {
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -952,7 +1067,8 @@ final class InstancePropertyAssignmentAnalyzer
 
             IssueBuffer::maybeAdd(
                 new MixedPropertyAssignment(
-                    $lhs_var_id . ' of type mixed cannot be assigned to',
+                    ExpressionIdentifier::getNameForMessage($lhs_var_id, $stmt->var)
+                        . ' of type mixed cannot be assigned to',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -962,7 +1078,6 @@ final class InstancePropertyAssignmentAnalyzer
         }
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
                     instanceof FunctionLikeAnalyzer)
@@ -974,7 +1089,8 @@ final class InstancePropertyAssignmentAnalyzer
         if ($lhs_type->isNull()) {
             IssueBuffer::maybeAdd(
                 new NullPropertyAssignment(
-                    $lhs_var_id . ' of type null cannot be assigned to',
+                    ExpressionIdentifier::getNameForMessage($lhs_var_id, $stmt->var)
+                        . ' of type null cannot be assigned to',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -986,7 +1102,8 @@ final class InstancePropertyAssignmentAnalyzer
         if ($lhs_type->isNullable() && !$lhs_type->ignore_nullable_issues) {
             IssueBuffer::maybeAdd(
                 new PossiblyNullPropertyAssignment(
-                    $lhs_var_id . ' with possibly null type \'' . $lhs_type . '\' cannot be assigned to',
+                    ExpressionIdentifier::getNameForMessage($lhs_var_id, $stmt->var)
+                        . ' with possibly null type \'' . $lhs_type . '\' cannot be assigned to',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -1004,6 +1121,7 @@ final class InstancePropertyAssignmentAnalyzer
         $assigned_properties = [];
 
         $context_type = null;
+        $can_cache_read = true;
 
         while ($lhs_atomic_types) {
             $lhs_type_part = array_pop($lhs_atomic_types);
@@ -1032,19 +1150,19 @@ final class InstancePropertyAssignmentAnalyzer
                 $lhs_var_id,
                 $has_valid_assignment_type,
                 $has_regular_setter,
+                $modifies_value,
             );
 
             if ($assigned_property) {
                 $assigned_properties[] = $assigned_property;
 
-                if ($context_type) {
-                    $context_type = Type::combineUnionTypes(
-                        $context_type,
-                        $assigned_property->assignment_type,
-                        $codebase,
-                    );
+                $read_type = $assigned_property->interface_setter
+                    ? $assigned_property->read_type
+                    : $assigned_property->assignment_type;
+                if ($read_type === null) {
+                    $can_cache_read = false;
                 } else {
-                    $context_type = $assigned_property->assignment_type;
+                    $context_type = Type::combineUnionTypes($context_type, $read_type, $codebase);
                 }
             }
         }
@@ -1055,7 +1173,8 @@ final class InstancePropertyAssignmentAnalyzer
             if (!$has_valid_assignment_type) {
                 IssueBuffer::maybeAdd(
                     new InvalidPropertyAssignment(
-                        $lhs_var_id . ' with non-object type \'' . $invalid_assignment_type .
+                        ExpressionIdentifier::getNameForMessage($lhs_var_id, $stmt->var)
+                        . ' with non-object type \'' . $invalid_assignment_type .
                         '\' cannot treated as an object',
                         new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                     ),
@@ -1064,7 +1183,8 @@ final class InstancePropertyAssignmentAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidPropertyAssignment(
-                        $lhs_var_id . ' with possible non-object type \'' . $invalid_assignment_type .
+                        ExpressionIdentifier::getNameForMessage($lhs_var_id, $stmt->var)
+                        . ' with possible non-object type \'' . $invalid_assignment_type .
                         '\' cannot treated as an object',
                         new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                     ),
@@ -1087,7 +1207,11 @@ final class InstancePropertyAssignmentAnalyzer
             }
 
             // because we don't want to be assigning for property declarations
-            $context->vars_in_scope[$var_id] = $context_type;
+            if ($can_cache_read) {
+                $context->vars_in_scope[$var_id] = $context_type;
+            } else {
+                unset($context->vars_in_scope[$var_id]);
+            }
         }
 
         return $assigned_properties;
@@ -1112,6 +1236,7 @@ final class InstancePropertyAssignmentAnalyzer
         ?string $lhs_var_id,
         bool &$has_valid_assignment_type,
         bool &$has_regular_setter,
+        bool $modifies_value,
     ): ?AssignedProperty {
         if ($lhs_type_part instanceof TNull) {
             return null;
@@ -1135,9 +1260,9 @@ final class InstancePropertyAssignmentAnalyzer
         // stdClass and SimpleXMLElement are special cases where we cannot infer the return types
         // but we don't want to throw an error
         // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
-        if ($lhs_type_part instanceof TObject ||
-            (
-            in_array(
+        if ($lhs_type_part instanceof TObject
+            || $codebase->classlikes->isUniversalObjectCrate($lhs_type_part->value, $prop_name)
+            || in_array(
                 strtolower($lhs_type_part->value),
                 Config::getInstance()->getUniversalObjectCrates() + [
                     'dateinterval',
@@ -1145,7 +1270,6 @@ final class InstancePropertyAssignmentAnalyzer
                     'domnode',
                 ],
                 true,
-            )
             )
         ) {
             if ($var_id) {
@@ -1177,6 +1301,18 @@ final class InstancePropertyAssignmentAnalyzer
 
         $class_exists = false;
         $interface_exists = false;
+        $interface_setter = false;
+
+        // a private property of the current class, assigned on an object of a child class
+        $is_recovered_by_self = static fn(string $class_name): bool => $context->self !== null
+            && $class_name !== $context->self
+            && $codebase->classlikes->classExtends($class_name, $context->self)
+            && $codebase->propertyExists(
+                $context->self . '::$' . $prop_name,
+                false,
+                $statements_analyzer,
+                $context,
+            );
 
         if (!$codebase->classExists($lhs_type_part->value, null, $context)) {
             if ($codebase->interfaceExists($lhs_type_part->value, null, $context)) {
@@ -1187,24 +1323,52 @@ final class InstancePropertyAssignmentAnalyzer
 
                 $override_property_visibility = $interface_storage->override_property_visibility;
 
-                foreach ($intersection_types as $intersection_type) {
-                    if ($intersection_type instanceof TNamedObject
-                        && $codebase->classExists($intersection_type->value, null, $context)
-                    ) {
-                        $fq_class_name = $intersection_type->value;
-                        $class_exists = true;
-                        break;
+                // of the classes the interface is intersected with, the one that declares the property wins,
+                // then an interface with a matching hook, then any other class
+                $hook_interface = AtomicPropertyFetchAnalyzer::findInterfaceWithPropertyHook(
+                    $codebase,
+                    $lhs_type_part,
+                    $prop_name,
+                    true,
+                );
+
+                foreach ([true, false] as $declaring_only) {
+                    foreach ($intersection_types as $intersection_type) {
+                        if ($intersection_type instanceof TNamedObject
+                            && $codebase->classExists($intersection_type->value, null, $context)
+                            && ($declaring_only
+                                ? isset($codebase->classlike_storage_provider->get($intersection_type->value)
+                                    ->declaring_property_ids[$prop_name])
+                                : $hook_interface === null
+                                    || $codebase->classlike_storage_provider->get($intersection_type->value)->final
+                                    || $is_recovered_by_self($intersection_type->value))
+                        ) {
+                            $fq_class_name = $intersection_type->value;
+                            $class_exists = true;
+                            break 2;
+                        }
                     }
                 }
 
-                // Test if the property has a 'set' hook
-                $interface_property = $stmt->name instanceof PhpParser\Node\Identifier
-                    ? $interface_storage->properties[$stmt->name->name] ?? null
-                    : null;
-                $has_set_hook = $codebase->analysis_php_version_id >= 8_04_00
-                    && $interface_property?->hook_set !== null;
+                if ($hook_interface !== null && !$class_exists) {
+                    $interface_setter = true;
+                    $fq_class_name = $hook_interface->value;
+                    $lhs_type_part = $hook_interface;
+                } elseif (!$class_exists) {
+                    // a property an isset() found is there: it is the object that has it, not the interface
+                    if ($var_id !== null
+                        && InstancePropertyFetchAnalyzer::isUndeclaredInterfacePropertyOf(
+                            $codebase,
+                            $lhs_type_part,
+                            $prop_name,
+                        )
+                        && isset($context->vars_in_scope[$var_id])
+                        && !$context->vars_in_scope[$var_id]->isNull()
+                        && !$context->vars_in_scope[$var_id]->possibly_undefined
+                    ) {
+                        return null;
+                    }
 
-                if (!$class_exists && !$has_set_hook) {
                     if (IssueBuffer::accepts(
                         new NoInterfaceProperties(
                             'Interfaces cannot have properties',
@@ -1241,6 +1405,40 @@ final class InstancePropertyAssignmentAnalyzer
             }
         } else {
             $class_exists = true;
+
+            $closed_by_final_class = false;
+
+            foreach ([$lhs_type_part, ...$intersection_types] as $type_part) {
+                $closed_by_final_class = $closed_by_final_class
+                    || ($type_part instanceof TNamedObject
+                        && $codebase->classExists($type_part->value)
+                        && $codebase->classlike_storage_provider->get($type_part->value)->final);
+            }
+
+            if ($intersection_types !== []
+                && !$closed_by_final_class
+                && !$codebase->propertyExists(
+                    $lhs_type_part->value . '::$' . $prop_name,
+                    false,
+                    $statements_analyzer,
+                    $context,
+                )
+                && !$is_recovered_by_self($lhs_type_part->value)
+            ) {
+                $hook_interface = AtomicPropertyFetchAnalyzer::findInterfaceWithPropertyHook(
+                    $codebase,
+                    $lhs_type_part,
+                    $prop_name,
+                    true,
+                );
+
+                if ($hook_interface !== null) {
+                    $interface_setter = true;
+                    $fq_class_name = $hook_interface->value;
+                    $lhs_type_part = $hook_interface;
+                    $class_exists = false;
+                }
+            }
         }
 
         $property_id = $fq_class_name . '::$' . $prop_name;
@@ -1249,7 +1447,18 @@ final class InstancePropertyAssignmentAnalyzer
 
         $set_method_id = new MethodIdentifier($fq_class_name, '__set');
 
-        if ((!$codebase->propertyExists($property_id, false, $statements_analyzer, $context)
+        $property_exists = $codebase->propertyExists($property_id, false, $statements_analyzer, $context);
+
+        // a property that exists but isn't visible has no `__set` to fall back to
+        $has_pseudo_property_without_magic_setter = !$property_exists
+            && self::hasPseudoPropertyWithoutMagicSetter(
+                $codebase,
+                $class_exists,
+                $fq_class_name,
+                $prop_name,
+            );
+
+        if ((!$property_exists
                 || ($lhs_var_id !== '$this'
                     && $fq_class_name !== $context->self
                     && ClassLikeAnalyzer::checkPropertyVisibility(
@@ -1262,18 +1471,18 @@ final class InstancePropertyAssignmentAnalyzer
                         true,
                     ) !== true)
             )
-            && $codebase->methodExists(
-                $set_method_id,
-                $context->calling_method_id,
-                $codebase->collect_locations
-                    ? new CodeLocation($statements_analyzer->getSource(), $stmt)
-                    : null,
-                !$context->collect_initializations
-                && !$context->collect_mutations
-                    ? $statements_analyzer
-                    : null,
-                $statements_analyzer->getFilePath(),
-            )
+            && ($has_pseudo_property_without_magic_setter
+                || $codebase->methodExists(
+                    $set_method_id,
+                    $context->calling_method_id,
+                    $codebase->collect_locations
+                        ? new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        : null,
+                    !$context->collect_initializations
+                        ? $statements_analyzer
+                        : null,
+                    $statements_analyzer->getFilePath(),
+                ))
         ) {
             $has_magic_setter = true;
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
@@ -1290,7 +1499,7 @@ final class InstancePropertyAssignmentAnalyzer
 
                     $has_regular_setter = true;
 
-                    if (!$context->collect_initializations && !$context->collect_mutations) {
+                    if (!$context->collect_initializations) {
                         self::taintProperty(
                             $statements_analyzer,
                             $stmt,
@@ -1309,7 +1518,9 @@ final class InstancePropertyAssignmentAnalyzer
                 }
             }
 
-            if ($assignment_value) {
+            if ($assignment_value
+                && (!$has_pseudo_property_without_magic_setter || isset($class_storage->declaring_method_ids['__set']))
+            ) {
                 self::analyzeSetCall(
                     $var_id,
                     $context,
@@ -1325,7 +1536,7 @@ final class InstancePropertyAssignmentAnalyzer
              * not in that list, fall through
              */
             if ($var_id === null || !$class_storage->hasSealedProperties($codebase->config)) {
-                if (!$context->collect_initializations && !$context->collect_mutations) {
+                if (!$context->collect_initializations) {
                     self::taintProperty(
                         $statements_analyzer,
                         $stmt,
@@ -1351,7 +1562,7 @@ final class InstancePropertyAssignmentAnalyzer
             }
         }
 
-        if (!$class_exists) {
+        if (!$class_exists && !$interface_setter) {
             return null;
         }
 
@@ -1379,9 +1590,23 @@ final class InstancePropertyAssignmentAnalyzer
             }
         }
 
+        // a private property of the current class, assigned on an object of a child class
+        if ($context->self !== null
+            && $fq_class_name !== $context->self
+            && !$codebase->propertyExists($property_id, false, $statements_analyzer, $context)
+            && $codebase->classlikes->classExtends($fq_class_name, $context->self)
+            && $codebase->propertyExists(
+                $context->self . '::$' . $prop_name,
+                false,
+                $statements_analyzer,
+                $context,
+            )
+        ) {
+            $property_id = $context->self . '::$' . $prop_name;
+        }
+
         if ($statements_analyzer->data_flow_graph
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
@@ -1408,11 +1633,6 @@ final class InstancePropertyAssignmentAnalyzer
         )
         ) {
             if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this') {
-                // if this is a proper error, we'll see it on the first pass
-                if ($context->collect_mutations) {
-                    return null;
-                }
-
                 IssueBuffer::maybeAdd(
                     new UndefinedThisPropertyAssignment(
                         'Instance property ' . $property_id . ' is not defined',
@@ -1448,7 +1668,6 @@ final class InstancePropertyAssignmentAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
@@ -1458,30 +1677,16 @@ final class InstancePropertyAssignmentAnalyzer
         }
 
         if (!$override_property_visibility) {
-            if (!$context->collect_mutations) {
-                if (ClassLikeAnalyzer::checkPropertyVisibility(
-                    $property_id,
-                    $context,
-                    $statements_analyzer,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $statements_analyzer->getSuppressedIssues(),
-                    true,
-                    true,
-                ) === false) {
-                    return null;
-                }
-            } else {
-                if (ClassLikeAnalyzer::checkPropertyVisibility(
-                    $property_id,
-                    $context,
-                    $statements_analyzer,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $statements_analyzer->getSuppressedIssues(),
-                    false,
-                    true,
-                ) !== true) {
-                    return null;
-                }
+            if (ClassLikeAnalyzer::checkPropertyVisibility(
+                $property_id,
+                $context,
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getSuppressedIssues(),
+                true,
+                true,
+            ) === false) {
+                return null;
             }
         }
 
@@ -1500,9 +1705,8 @@ final class InstancePropertyAssignmentAnalyzer
 
         $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
 
-        if (isset($declaring_class_storage->properties[$prop_name])) {
-            $property_storage = $declaring_class_storage->properties[$prop_name];
-
+        $property_storage = $declaring_class_storage->properties[$prop_name] ?? null;
+        if ($property_storage !== null) {
             if ($property_storage->deprecated) {
                 IssueBuffer::maybeAdd(
                     new DeprecatedProperty(
@@ -1514,11 +1718,13 @@ final class InstancePropertyAssignmentAnalyzer
                 );
             }
 
-            if ($context->self && !NamespaceAnalyzer::isWithinAny($context->self, $property_storage->internal)) {
+            $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+            if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $property_storage->internal)) {
                 IssueBuffer::maybeAdd(
                     new InternalProperty(
                         $property_id . ' is internal to ' . InternalClass::listToPhrase($property_storage->internal)
-                            . ' but called from ' . $context->self,
+                            . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id,
                     ),
@@ -1526,7 +1732,7 @@ final class InstancePropertyAssignmentAnalyzer
                 );
             }
 
-            self::trackPropertyImpurity(
+            if (self::trackPropertyImpurity(
                 $statements_analyzer,
                 $stmt,
                 $property_id,
@@ -1534,7 +1740,10 @@ final class InstancePropertyAssignmentAnalyzer
                 $declaring_class_storage,
                 $context,
                 $lhs_var_id,
-            );
+                $modifies_value,
+            )) {
+                $stmt->setAttribute(self::WRITE_CHARGED, true);
+            }
 
             if ($property_storage->getter_method) {
                 $getter_id = $lhs_var_id . '->' . $property_storage->getter_method . '()';
@@ -1650,10 +1859,35 @@ final class InstancePropertyAssignmentAnalyzer
             }
         }
 
+        $read_type = null;
+        if ($interface_setter && $property_storage !== null && $property_storage->hook_get !== null) {
+            $read_type = $codebase->properties->getPropertyType($property_id, false, $statements_analyzer, $context)
+                ?? Type::getMixed();
+            $read_type = TypeExpander::expandUnion(
+                $codebase,
+                $read_type,
+                $fq_class_name,
+                $lhs_type_part,
+                $declaring_class_storage->parent_class,
+            );
+            $read_type = Methods::localizeType($codebase, $read_type, $fq_class_name, $declaring_property_class);
+            if ($lhs_type_part instanceof TGenericObject) {
+                $read_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
+                    $codebase,
+                    $read_type,
+                    $lhs_type_part,
+                    $codebase->classlike_storage_provider->get($fq_class_name),
+                    $declaring_class_storage,
+                );
+            }
+        }
+
         return new AssignedProperty(
             $class_property_type,
             $property_id,
             $assignment_value_type,
+            $interface_setter,
+            $read_type,
         );
     }
 
@@ -1792,6 +2026,29 @@ final class InstancePropertyAssignmentAnalyzer
         }
 
         return $lhs_type_part instanceof TGenericObject ? $lhs_type_part : null;
+    }
+
+    /**
+     * Whether `@property` or `@property-write` declares the property although there is no `__set`, and
+     * `usePhpDocPropertiesWithoutMagicCall` or `#[AllowDynamicProperties]` lets it stand in for one
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function hasPseudoPropertyWithoutMagicSetter(
+        Codebase $codebase,
+        bool $class_exists,
+        string $fq_class_name,
+        string $prop_name,
+    ): bool {
+        if (!$class_exists) {
+            return false;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+        return isset($class_storage->pseudo_property_set_types['$' . $prop_name])
+            && ($codebase->config->use_phpdoc_property_without_magic_or_parent
+                || $class_storage->hasAttributeIncludingParents('AllowDynamicProperties', $codebase));
     }
 
     private static function analyzeSetCall(

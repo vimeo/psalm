@@ -12,20 +12,23 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\Codebase\NosqlEqualityOperand;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\DuplicateArrayKey;
 use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\MixedArrayOffset;
-use Psalm\Issue\ParseError;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -34,8 +37,10 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -43,17 +48,11 @@ use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 
-use function array_merge;
-use function array_values;
 use function count;
-use function filter_var;
 use function is_int;
-use function is_numeric;
 use function is_string;
 use function substr;
-use function trim;
 
-use const FILTER_VALIDATE_INT;
 use const PHP_INT_MAX;
 
 /**
@@ -78,17 +77,6 @@ final class ArrayAnalyzer
         $array_creation_info = new ArrayCreationInfo();
 
         foreach ($stmt->items as $item) {
-            if ($item === null) {
-                IssueBuffer::maybeAdd(
-                    new ParseError(
-                        'Array element cannot be empty',
-                        new CodeLocation($statements_analyzer, $stmt),
-                    ),
-                );
-
-                return false;
-            }
-
             self::analyzeArrayItem(
                 $statements_analyzer,
                 $context,
@@ -203,7 +191,8 @@ final class ArrayAnalyzer
                         $good_types[] = new TLiteralInt(0);
                         $good_types[] = new TLiteralInt(1);
                     } elseif ($atomic_key_type instanceof TLiteralFloat) {
-                        $good_types[] = new TLiteralInt((int) $atomic_key_type->value);
+                        $int = LiteralCast::toInt($atomic_key_type->value);
+                        $good_types[] = $int === null ? new TInt : new TLiteralInt($int);
                     } elseif ($atomic_key_type instanceof TFloat) {
                         $good_types[] = new TInt;
                     } else {
@@ -234,7 +223,8 @@ final class ArrayAnalyzer
     }
 
     /**
-     * @psalm-assert-if-false !numeric $literal_array_key
+     * The int PHP casts an array key to, or false if it stays a string
+     *
      * @psalm-pure
      */
     public static function getLiteralArrayKeyInt(
@@ -244,24 +234,132 @@ final class ArrayAnalyzer
             return $literal_array_key;
         }
 
-        if (!is_numeric($literal_array_key)) {
-            return false;
+        // only an int in its canonical decimal form is cast to an int, e.g. not '015', '+5', '5 ' or '-0'
+        $int_array_key = (int) $literal_array_key;
+
+        return (string) $int_array_key === $literal_array_key ? $int_array_key : false;
+    }
+
+    /**
+     * The type of an array key after PHP casts decimal int strings to ints, e.g. `'5'` to `5`,
+     * `decimal-int-string` to `int` and `numeric-string` to `int|numeric-string`
+     *
+     * @psalm-pure
+     */
+    public static function castArrayKeyType(Union $key_type): Union
+    {
+        $input_types = [];
+        $changed = false;
+
+        foreach ($key_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam) {
+                // each value of `T of decimal-int-string` is cast too, so such keys are ints rather than T, and
+                // those of `T of numeric-string` are T|int
+                [$cast_types, $template] = self::splitTemplateArrayKey($atomic_type);
+
+                if ($cast_types !== []) {
+                    $changed = true;
+                    $input_types = [...$input_types, ...$cast_types];
+
+                    if ($template !== null) {
+                        $input_types[] = $template;
+                    }
+
+                    continue;
+                }
+            }
+
+            $input_types[] = $atomic_type;
         }
 
-        // PHP 8 values with whitespace after number are counted as numeric
-        // and filter_var treats them as such too
-        // ensures that '15 ' will stay '15 '
-        if (trim($literal_array_key) !== $literal_array_key) {
-            return false;
+        // an int contains every literal int
+        $has_int = false;
+        foreach ($input_types as $atomic_type) {
+            if ($atomic_type instanceof TNumericString
+                || ($atomic_type instanceof TInt && $atomic_type->getKey() === 'int')
+            ) {
+                $has_int = true;
+            }
         }
 
-        // '+5' will pass the filter_var check but won't be changed in keys
-        if ($literal_array_key[0] === '+') {
-            return false;
+        $atomic_types = [];
+
+        foreach ($input_types as $atomic_type) {
+            if ($atomic_type instanceof TDecimalIntString) {
+                $atomic_type = new TInt($atomic_type->from_docblock);
+                $changed = true;
+            } elseif ($atomic_type instanceof TNumericString) {
+                // e.g. '12' is cast to an int, but '1.5', '012' or ' 12' stay strings
+                $atomic_types['int'] ??= new TInt($atomic_type->from_docblock);
+                $changed = true;
+            } elseif (self::isIntArrayKeyString($atomic_type)) {
+                $atomic_type = $has_int ? new TInt($atomic_type->from_docblock) : new TLiteralInt(
+                    (int) $atomic_type->value,
+                    $atomic_type->from_docblock,
+                );
+                $changed = true;
+            }
+
+            $atomic_types[$atomic_type->getKey()] ??= $atomic_type;
         }
 
-        // e.g. 015 is numeric but won't be typecast as it's not a valid int
-        return filter_var($literal_array_key, FILTER_VALIDATE_INT);
+        if ($changed && isset($atomic_types['int'])) {
+            foreach ($atomic_types as $key => $atomic_type) {
+                if ($atomic_type instanceof TInt && $key !== 'int') {
+                    unset($atomic_types[$key]);
+                }
+            }
+        }
+
+        return $changed && $atomic_types !== [] ? $key_type->setTypes($atomic_types) : $key_type;
+    }
+
+    /**
+     * @psalm-pure
+     * @psalm-assert-if-true TLiteralString $atomic_type
+     */
+    private static function isIntArrayKeyString(Atomic $atomic_type): bool
+    {
+        return $atomic_type instanceof TLiteralString
+            && !$atomic_type instanceof TLiteralClassString
+            && self::getLiteralArrayKeyInt($atomic_type->value) !== false;
+    }
+
+    /**
+     * Splits the bound of a template used as an array key into the types PHP casts to ints and the template
+     * narrowed to the rest, or null if every value of the template is cast
+     *
+     * @return array{list<TDecimalIntString|TLiteralString>, ?TTemplateParam}
+     * @psalm-pure
+     */
+    private static function splitTemplateArrayKey(TTemplateParam $template): array
+    {
+        $cast_types = [];
+        $kept_types = [];
+
+        foreach ($template->as->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TDecimalIntString || self::isIntArrayKeyString($atomic_type)) {
+                $cast_types[] = $atomic_type;
+            } elseif ($atomic_type instanceof TNumericString) {
+                $cast_types[] = new TDecimalIntString($atomic_type->from_docblock);
+                $kept_types[] = $atomic_type;
+            } elseif ($atomic_type instanceof TTemplateParam) {
+                [$nested_cast_types, $nested_template] = self::splitTemplateArrayKey($atomic_type);
+                $cast_types = [...$cast_types, ...$nested_cast_types];
+
+                if ($nested_template !== null) {
+                    $kept_types[] = $nested_template;
+                }
+            } else {
+                $kept_types[] = $atomic_type;
+            }
+        }
+
+        if ($cast_types === []) {
+            return [[], $template];
+        }
+
+        return [$cast_types, $kept_types === [] ? null : $template->replaceAs(new Union($kept_types))];
     }
 
     private static function analyzeArrayItem(
@@ -322,9 +420,18 @@ final class ArrayAnalyzer
             if ($item_key_type = $statements_analyzer->node_data->getType($item->key)) {
                 $key_type = $item_key_type;
 
+                // null is what a nullable type that is asked to be ignored (e.g. a return type) doesn't have
+                if ($key_type->ignore_nullable_issues && $key_type->isNullable() && !$key_type->isNull()) {
+                    $key_type_without_null = $key_type->getBuilder();
+                    $key_type_without_null->removeType('null');
+                    $key_type = $key_type_without_null->freeze();
+                }
+
                 if ($key_type->isNull()) {
                     $key_type = Type::getString('');
                 }
+
+                $key_type = self::castArrayKeyType($key_type);
 
                 if ($item->key instanceof PhpParser\Node\Scalar\String_
                     && self::getLiteralArrayKeyInt($item->key->value) !== false
@@ -437,6 +544,7 @@ final class ArrayAnalyzer
 
                         // what an item holds can't carry the taints its type can't (see Union::getTaintsToRemove())
                         $removed_taints |= $item_value_type->getTaintsToRemove($codebase->getInputTaints());
+                        $removed_taints |= NosqlEqualityOperand::getRemovedTaints($statements_analyzer, $item);
                     }
 
                     foreach ($item_value_type->parent_nodes as $parent_node) {
@@ -530,14 +638,8 @@ final class ArrayAnalyzer
                 $array_creation_info->property_types[$item_key_value] = $item_value_type;
             } else {
                 $array_creation_info->can_create_objectlike = false;
-                $array_creation_info->item_key_atomic_types = array_merge(
-                    $array_creation_info->item_key_atomic_types,
-                    array_values($key_type->getAtomicTypes()),
-                );
-                $array_creation_info->item_value_atomic_types = array_merge(
-                    $array_creation_info->item_value_atomic_types,
-                    array_values($item_value_type->getAtomicTypes()),
-                );
+                $array_creation_info->addItemKeyTypes($key_type);
+                $array_creation_info->addItemValueTypes($item_value_type);
             }
         } else {
             if ($item_key_value !== null
@@ -546,10 +648,7 @@ final class ArrayAnalyzer
                 $array_creation_info->property_types[$item_key_value] = Type::getMixed();
             } else {
                 $array_creation_info->can_create_objectlike = false;
-                $array_creation_info->item_key_atomic_types = array_merge(
-                    $array_creation_info->item_key_atomic_types,
-                    array_values($key_type->getAtomicTypes()),
-                );
+                $array_creation_info->addItemKeyTypes($key_type);
                 $array_creation_info->item_value_atomic_types[] = new TMixed();
             }
         }
@@ -683,10 +782,7 @@ final class ArrayAnalyzer
                                 $array_creation_info->int_offset + 1,
                                 null,
                             );
-                            $array_creation_info->item_value_atomic_types = array_merge(
-                                $array_creation_info->item_value_atomic_types,
-                                array_values($property_value->getAtomicTypes()),
-                            );
+                            $array_creation_info->addItemValueTypes($property_value);
                             continue;
                         }
                         $new_offset = ++$array_creation_info->int_offset;
@@ -785,14 +881,8 @@ final class ArrayAnalyzer
                 }
             }
 
-            $array_creation_info->item_key_atomic_types = array_merge(
-                $array_creation_info->item_key_atomic_types,
-                array_values($iterable_type->type_params[0]->getAtomicTypes()),
-            );
-            $array_creation_info->item_value_atomic_types = array_merge(
-                $array_creation_info->item_value_atomic_types,
-                array_values($iterable_type->type_params[1]->getAtomicTypes()),
-            );
+            $array_creation_info->addItemKeyTypes($iterable_type->type_params[0]);
+            $array_creation_info->addItemValueTypes($iterable_type->type_params[1]);
         }
 
         if ($all_non_empty) {

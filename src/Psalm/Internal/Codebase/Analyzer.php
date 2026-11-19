@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
-use Amp\Future;
 use InvalidArgumentException;
 use PhpParser;
 use Psalm\Codebase;
@@ -17,6 +16,7 @@ use Psalm\Internal\FileManipulation\ClassDocblockManipulator;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\FunctionDocblockManipulator;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
+use Psalm\Internal\FileManipulation\UnifiedDiffRenderer;
 use Psalm\Internal\Fork\AnalyzerTask;
 use Psalm\Internal\Fork\InitAnalyzerTask;
 use Psalm\Internal\Fork\Pool;
@@ -30,14 +30,13 @@ use Psalm\Progress\Progress;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Union;
-use SebastianBergmann\Diff\Differ;
-use SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder;
 use UnexpectedValueException;
 
 use function Amp\Future\await;
 use function array_filter;
 use function array_intersect_key;
 use function array_merge;
+use function array_unique;
 use function array_values;
 use function count;
 use function explode;
@@ -46,7 +45,9 @@ use function ksort;
 use function number_format;
 use function pathinfo;
 use function preg_replace;
+use function sort;
 use function str_ends_with;
+use function str_replace;
 use function str_starts_with;
 use function strlen;
 use function strpos;
@@ -83,15 +84,16 @@ use const PHP_INT_MAX;
  *      unused_suppressions: array<string, array<int, int>>,
  *      used_suppressions: array<string, array<int, bool>>,
  *      function_docblock_manipulators: array<string, array<int, FunctionDocblockManipulator>>,
- *      mutable_classes: array<string, int>,
+ *      mutable_classes: array<string, CapabilitySet>,
  *      issue_handlers: array{type: string, index: int, count: int}[],
  * }
  */
 
 /**
- * @internal
- *
  * Called in the analysis phase of Psalm's execution
+ *
+ * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class Analyzer
 {
@@ -108,8 +110,6 @@ final class Analyzer
      * @var array<string, array<string, bool>>
      */
     private array $mixed_member_names = [];
-
-    private bool $count_mixed = true;
 
     /**
      * Used to store debug performance data
@@ -139,6 +139,11 @@ final class Analyzer
      * @var array<string>|null
      */
     private ?array $files_to_update = null;
+
+    /**
+     * @var array<string, true>
+     */
+    private array $changed_files = [];
 
     /**
      * @var array<string, array<string, int>>
@@ -171,7 +176,7 @@ final class Analyzer
     public array $possible_method_param_types = [];
 
     /**
-     * @var array<string, int>
+     * @var array<string, CapabilitySet>
      */
     public array $mutable_classes = [];
 
@@ -211,6 +216,8 @@ final class Analyzer
      */
     public function setFilesToUpdate(array $files_to_update): void
     {
+        $files_to_update = array_unique($files_to_update);
+        sort($files_to_update);
         $this->files_to_update = $files_to_update;
     }
 
@@ -257,7 +264,7 @@ final class Analyzer
             $project_analyzer->consolidateAnalyzedData();
         }
 
-        foreach (IssueBuffer::getIssuesData() as $file_path => $file_issues) {
+        foreach (IssueBuffer::getAllIssuesData() as $file_path => $file_issues) {
             $codebase->file_reference_provider->clearExistingIssuesForFile($file_path);
 
             foreach ($file_issues as $issue_data) {
@@ -265,16 +272,14 @@ final class Analyzer
             }
         }
 
+        $codebase->file_reference_provider->setAnalyzedMethods($this->analyzed_methods);
+        $codebase->file_reference_provider->setFileMaps($this->getFileMaps());
+        $codebase->file_reference_provider->setTypeCoverage($this->mixed_counts);
         $codebase->file_reference_provider->updateReferenceCache($codebase, $scanned_files);
 
         if ($codebase->track_unused_suppressions) {
             IssueBuffer::processUnusedSuppressions($codebase->file_provider);
         }
-
-        $codebase->file_reference_provider->setAnalyzedMethods($this->analyzed_methods);
-        $codebase->file_reference_provider->setFileMaps($this->getFileMaps());
-        $codebase->file_reference_provider->setTypeCoverage($this->mixed_counts);
-        $codebase->file_reference_provider->updateReferenceCache($codebase, $scanned_files);
 
         if ($codebase->diff_methods) {
             $codebase->statements_provider->resetDiffs();
@@ -287,8 +292,14 @@ final class Analyzer
 
             $files_to_update = $this->files_to_update ?? $this->files_to_analyze;
 
+            $diff_renderer = new UnifiedDiffRenderer(
+                $project_analyzer->stdout_report_options->use_color ?? false,
+                $project_analyzer->stdout_report_options->in_ci ?? false,
+                $project_analyzer->show_diff,
+            );
+
             foreach ($files_to_update as $file_path) {
-                $this->updateFile($file_path, $project_analyzer->dry_run);
+                $this->updateFile($file_path, $project_analyzer->dry_run, $diff_renderer);
             }
 
             $project_analyzer->migrateCode();
@@ -319,15 +330,11 @@ final class Analyzer
             // Wait for all tasks to complete and collect the results.
             await($pool->runAll(new InitAnalyzerTask));
             $pool->run($this->files_to_analyze, AnalyzerTask::class, $task_done_closure);
-            $forked_pool_data = $pool->runAll(new ShutdownAnalyzerTask);
-
             $this->progress->debug('Collecting forked analysis results' . "\n");
             $this->progress->startPhase(Phase::MERGING_THREAD_RESULTS);
-            $this->progress->expand(count($forked_pool_data));
+            $this->progress->expand($pool->threads);
 
-            foreach (Future::iterate($forked_pool_data) as $pool_data) {
-                $pool_data = $pool_data->await();
-
+            foreach ($pool->runAllThenKill(new ShutdownAnalyzerTask) as $pool_data) {
                 IssueBuffer::addIssues($pool_data['issues']);
                 IssueBuffer::addFixableIssues($pool_data['fixable_issue_counts']);
 
@@ -433,12 +440,6 @@ final class Analyzer
 
         $method_dependencies = $file_reference_provider->getAllMethodDependencies();
 
-        $all_referencing_methods = $method_dependencies;
-
-        foreach ($code_use_graph->getFunctionLikeReferencesToMembers() as $member_id => $referencing_methods) {
-            $all_referencing_methods[$member_id] = ($all_referencing_methods[$member_id] ?? []) + $referencing_methods;
-        }
-
         $method_param_uses = $file_reference_provider->getAllMethodParamUses();
 
         $references_to_mixed_member_names = $file_reference_provider->getAllReferencesToMixedMemberNames();
@@ -447,6 +448,17 @@ final class Analyzer
         // Finish loading cached data from disk
 
         $changed_members = $statements_provider->getChangedMembers();
+        $unchanged_signature_members = $statements_provider->getUnchangedSignatureMembers();
+
+        $all_referencing_methods = $method_dependencies;
+
+        // only needed to invalidate the references to changed members, which a run with no changed files has none of
+        if ($changed_members || $unchanged_signature_members) {
+            foreach ($code_use_graph->getFunctionLikeReferencesToMembers() as $member_id => $referencing_methods) {
+                $all_referencing_methods[$member_id]
+                    = ($all_referencing_methods[$member_id] ?? []) + $referencing_methods;
+            }
+        }
 
         foreach ($changed_members as $file_path => $members_by_file) {
             foreach ($members_by_file as $changed_member => $_) {
@@ -472,7 +484,7 @@ final class Analyzer
 
         $newly_invalidated_methods = [];
 
-        foreach ($statements_provider->getUnchangedSignatureMembers() as $file_unchanged_signature_members) {
+        foreach ($unchanged_signature_members as $file_unchanged_signature_members) {
             $newly_invalidated_methods = array_merge($newly_invalidated_methods, $file_unchanged_signature_members);
 
             foreach ($file_unchanged_signature_members as $unchanged_signature_member_id => $_) {
@@ -915,10 +927,6 @@ final class Analyzer
      */
     public function incrementMixedCount(string $file_path): void
     {
-        if (!$this->count_mixed) {
-            return;
-        }
-
         if (!isset($this->mixed_counts[$file_path])) {
             $this->mixed_counts[$file_path] = [0, 0];
         }
@@ -931,10 +939,6 @@ final class Analyzer
      */
     public function decrementMixedCount(string $file_path): void
     {
-        if (!$this->count_mixed) {
-            return;
-        }
-
         if (!isset($this->mixed_counts[$file_path])) {
             return;
         }
@@ -951,10 +955,6 @@ final class Analyzer
      */
     public function incrementNonMixedCount(string $file_path): void
     {
-        if (!$this->count_mixed) {
-            return;
-        }
-
         if (!isset($this->mixed_counts[$file_path])) {
             $this->mixed_counts[$file_path] = [0, 0];
         }
@@ -1158,23 +1158,26 @@ final class Analyzer
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-mutation-free
      */
-    public function disableMixedCounts(): void
+    public function getChangedFilesCount(): int
     {
-        $this->count_mixed = false;
+        return count($this->changed_files);
     }
 
     /**
      * @psalm-external-mutation-free
      */
-    public function enableMixedCounts(): void
+    public function markFileChanged(string $file_path): void
     {
-        $this->count_mixed = true;
+        $this->changed_files[$file_path] = true;
     }
 
-    public function updateFile(string $file_path, bool $dry_run): void
-    {
+    public function updateFile(
+        string $file_path,
+        bool $dry_run,
+        ?UnifiedDiffRenderer $diff_renderer = null,
+    ): void {
         FileManipulationBuffer::add(
             $file_path,
             FunctionDocblockManipulator::getManipulationsForFile($file_path),
@@ -1212,7 +1215,8 @@ final class Analyzer
         );
 
         $last_start = PHP_INT_MAX;
-        $existing_contents = $this->file_provider->getContents($file_path);
+        $original_contents = $this->file_provider->getContents($file_path);
+        $existing_contents = $original_contents;
 
         foreach ($file_manipulations as $manipulation) {
             if ($manipulation->start <= $last_start) {
@@ -1221,22 +1225,31 @@ final class Analyzer
             }
         }
 
-        if ($dry_run) {
-            echo $file_path . ':' . "\n";
-
-            $differ = new Differ(
-                new StrictUnifiedDiffOutputBuilder([
-                    'fromFile' => $file_path,
-                    'toFile' => $file_path,
-                ]),
-            );
-
-            echo $differ->diff($this->file_provider->getContents($file_path), $existing_contents);
-
+        if ($existing_contents === $original_contents) {
             return;
         }
 
-        $this->progress->alterFileDone($file_path);
+        $this->markFileChanged($file_path);
+        $relative_path = str_replace('\\', '/', $this->config->shortenFileName($file_path));
+
+        if ($diff_renderer) {
+            echo $diff_renderer->render(
+                $this->getChangedFilesCount(),
+                $relative_path,
+                $file_path,
+                $original_contents,
+                $existing_contents,
+            );
+        }
+
+        if ($dry_run) {
+            return;
+        }
+
+        // the title of a shown diff already tells which file is altered
+        if (!$diff_renderer?->show_diff) {
+            $this->progress->alterFileDone($relative_path);
+        }
 
         $this->file_provider->setContents($file_path, $existing_contents);
     }
@@ -1365,6 +1378,7 @@ final class Analyzer
     }
 
     /**
+     * @param CapabilitySet $capabilities
      * @psalm-external-mutation-free
      */
     public function addMutableClass(string $fqcln, int $capabilities): void

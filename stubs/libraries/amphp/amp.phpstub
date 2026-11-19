@@ -1,0 +1,21 @@
+<?php
+
+// The capabilities (see docs/annotating_code/purity_model.md) of amphp/amp 3. Loaded when the analysed code uses the
+// package (see Config::visitStubFiles()).
+
+namespace Amp {
+
+/**
+ * Non-blocking sleep for the specified number of seconds: it suspends the current fiber and runs the event loop
+ * meanwhile, as a blocking sleep lets other processes run, so it does io as usleep() does.
+ *
+ * @param float $timeout Number of seconds to wait.
+ * @param bool $reference If false, unreference the underlying watcher.
+ * @param Cancellation|null $cancellation Cancel waiting if cancellation is requested.
+ *
+ * @psalm-capabilities io
+ */
+function delay(float $timeout, bool $reference = true, ?Cancellation $cancellation = null): void
+{
+}
+}

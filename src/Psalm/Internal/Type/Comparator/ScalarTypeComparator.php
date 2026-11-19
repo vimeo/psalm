@@ -6,14 +6,18 @@ namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
+use Psalm\Internal\Type\StringRefinement;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TDependentGetDebugType;
 use Psalm\Type\Atomic\TDependentGetType;
+use Psalm\Type\Atomic\TEmptyScalar;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
@@ -24,8 +28,10 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonDecimalIntString;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
+use Psalm\Type\Atomic\TNonEmptyScalar;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
@@ -72,6 +78,34 @@ final class ScalarTypeComparator
             && $input_type_part instanceof TFloat
         ) {
             return true;
+        }
+
+        if ($input_type_part instanceof TString
+            && $container_type_part instanceof TString
+            && (StringRefinement::isCombinedRefinement($input_type_part)
+                || StringRefinement::isCombinedRefinement($container_type_part))
+        ) {
+            return self::isContainedByRefinedString(
+                $input_type_part,
+                $container_type_part,
+                $atomic_comparison_result,
+            );
+        }
+
+        if ($input_type_part instanceof TDecimalIntString
+            || $input_type_part instanceof TNonDecimalIntString
+            || $container_type_part instanceof TDecimalIntString
+            || $container_type_part instanceof TNonDecimalIntString
+        ) {
+            $is_contained_by = self::isContainedByDecimalIntString(
+                $input_type_part,
+                $container_type_part,
+                $atomic_comparison_result,
+            );
+
+            if ($is_contained_by !== null) {
+                return $is_contained_by;
+            }
         }
 
         if (($container_type_part instanceof TNonEmptyString
@@ -172,7 +206,7 @@ final class ScalarTypeComparator
 
             if ($input_type_part instanceof TLiteralString) {
                 if (strtolower($input_type_part->value) === $input_type_part->value) {
-                    return $input_type_part->value || $container_type_part instanceof TLowercaseString;
+                    return $input_type_part->value !== '' || $container_type_part instanceof TLowercaseString;
                 }
 
                 return false;
@@ -292,7 +326,29 @@ final class ScalarTypeComparator
             return false;
         }
 
-        if ($container_type_part instanceof TScalar && $input_type_part instanceof Scalar) {
+        if ($container_type_part instanceof TEmptyScalar || $container_type_part instanceof TNonEmptyScalar) {
+            $wants_empty = $container_type_part instanceof TEmptyScalar;
+
+            if ($wants_empty ? $input_type_part->isFalsy() : $input_type_part->isTruthy()) {
+                return true;
+            }
+
+            if ($atomic_comparison_result
+                && !($wants_empty ? $input_type_part->isTruthy() : $input_type_part->isFalsy())
+            ) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
+        }
+
+        if (($input_type_part instanceof TEmptyScalar && $container_type_part->isTruthy())
+            || ($input_type_part instanceof TNonEmptyScalar && $container_type_part->isFalsy())
+        ) {
+            return false;
+        }
+
+        if ($container_type_part instanceof TScalar) {
             return true;
         }
 
@@ -422,6 +478,25 @@ final class ScalarTypeComparator
             return false;
         }
 
+        if ($codebase->config->allow_string_standin_for_class
+            && $input_type_part::class === TLiteralString::class
+        ) {
+            if ($container_type_part instanceof TLiteralClassString) {
+                return $input_type_part->value === $container_type_part->value;
+            }
+
+            if ($container_type_part instanceof TClassString
+                && !$container_type_part instanceof TTemplateParamClass
+            ) {
+                return ClassLikeStringComparator::canLiteralNameBeClassString(
+                    $codebase,
+                    $input_type_part,
+                    $container_type_part,
+                    $allow_interface_equality,
+                );
+            }
+        }
+
         if (($container_type_part instanceof TClassString || $container_type_part instanceof TLiteralClassString)
             && ($input_type_part instanceof TClassString || $input_type_part instanceof TLiteralClassString)
         ) {
@@ -448,6 +523,13 @@ final class ScalarTypeComparator
             }
 
             return false;
+        }
+
+        if ($container_type_part instanceof TTraitString
+            && $input_type_part instanceof TLiteralClassString
+            && $codebase->classlikes->traitExists($input_type_part->value)
+        ) {
+            return true;
         }
 
         if (($input_type_part instanceof TClassString
@@ -564,6 +646,138 @@ final class ScalarTypeComparator
                     = $input_type_part instanceof TScalar;
                 $atomic_comparison_result->scalar_type_match_found = !$container_type_part->from_docblock;
             }
+        }
+
+        return false;
+    }
+
+    /**
+     * Compares string types when either is only modelled by its refinements, such as
+     * `lowercase-string&non-falsy-string`: the input is contained when it has every refinement of the container
+     */
+    private static function isContainedByRefinedString(
+        TString $input_type_part,
+        TString $container_type_part,
+        ?TypeComparisonResult $atomic_comparison_result,
+    ): bool {
+        $input_refinements = StringRefinement::get($input_type_part);
+        $container_refinements = StringRefinement::get($container_type_part);
+
+        if ($container_refinements === null) {
+            // e.g. a class-string, of which the input may be
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
+        }
+
+        $input_refinements ??= StringRefinement::getImplied($input_type_part);
+
+        if ($container_type_part instanceof TLiteralString) {
+            // the input is not a literal string here, but it may have the value of the container
+            if ($atomic_comparison_result && ($input_refinements & ~$container_refinements) === 0) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
+        }
+
+        if (($container_refinements & ~$input_refinements) === 0) {
+            return true;
+        }
+
+        if ($atomic_comparison_result && !$input_type_part instanceof TLiteralString) {
+            $atomic_comparison_result->type_coerced = true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Compares string types when either is a decimal-int-string or a non-decimal-int-string, or returns null to compare
+     * them as other scalar types
+     */
+    private static function isContainedByDecimalIntString(
+        Scalar $input_type_part,
+        Scalar $container_type_part,
+        ?TypeComparisonResult $atomic_comparison_result,
+    ): ?bool {
+        if (!$input_type_part instanceof TString || !$container_type_part instanceof TString) {
+            return null;
+        }
+
+        if ($container_type_part instanceof TDecimalIntString || $container_type_part instanceof TNonDecimalIntString) {
+            if ($input_type_part::class === $container_type_part::class) {
+                return true;
+            }
+
+            $wants_decimal_int = $container_type_part instanceof TDecimalIntString;
+
+            if ($input_type_part instanceof TLiteralString) {
+                $is_decimal_int = ArrayAnalyzer::getLiteralArrayKeyInt($input_type_part->value) !== false;
+
+                return $is_decimal_int === $wants_decimal_int;
+            }
+
+            if ($input_type_part instanceof TDecimalIntString || $input_type_part instanceof TNonDecimalIntString) {
+                return false;
+            }
+
+            if (!$wants_decimal_int
+                && ($input_type_part instanceof TClassString || $input_type_part instanceof TTraitString)
+            ) {
+                // a class name doesn't start with a digit
+                return true;
+            }
+
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
+        }
+
+        if ($input_type_part instanceof TNonDecimalIntString) {
+            // it can be any string but a decimal int, e.g. the empty string, an uppercase one or a float
+            if ($container_type_part instanceof TLiteralString) {
+                if ($atomic_comparison_result
+                    && ArrayAnalyzer::getLiteralArrayKeyInt($container_type_part->value) === false
+                ) {
+                    $atomic_comparison_result->type_coerced = true;
+                }
+
+                return false;
+            }
+
+            if ($atomic_comparison_result) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
+        }
+
+        // a decimal-int-string is a non-empty lowercase numeric string, falsy for "0"
+        if ($container_type_part::class === TNumericString::class
+            || $container_type_part::class === TNonEmptyString::class
+            || $container_type_part::class === TLowercaseString::class
+            || $container_type_part::class === TNonEmptyLowercaseString::class
+        ) {
+            return true;
+        }
+
+        if ($container_type_part instanceof TLiteralString) {
+            if ($atomic_comparison_result
+                && ArrayAnalyzer::getLiteralArrayKeyInt($container_type_part->value) !== false
+            ) {
+                $atomic_comparison_result->type_coerced = true;
+            }
+
+            return false;
+        }
+
+        if ($atomic_comparison_result) {
+            $atomic_comparison_result->type_coerced = true;
         }
 
         return false;

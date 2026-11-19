@@ -17,7 +17,7 @@ final class ClassLoadOrderTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'singleFileInheritance' => [
@@ -131,7 +131,7 @@ final class ClassLoadOrderTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'inheritanceLoopOne' => [
@@ -152,7 +152,7 @@ final class ClassLoadOrderTest extends TestCase
                     class I extends G {}',
                 'error_message' => 'Circular reference',
             ],
-            'SKIPPED-invalidDeferredReference' => [
+            'SKIPPED-invalidDeferredReference' => [ // #13938
                 'code' => '<?php
                     class B {
                         const C = A;

@@ -7,6 +7,10 @@ namespace Psalm\Tests\Internal\Codebase;
 use InvalidArgumentException;
 use Override;
 use PHPUnit\Framework\AssertionFailedError;
+use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Depends;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\ExpectationFailedException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -26,9 +30,10 @@ use ReflectionMethod;
 use ReflectionParameter;
 use ReflectionType;
 
-use function array_shift;
+use function array_diff_key;
 use function class_exists;
 use function count;
+use function dirname;
 use function enum_exists;
 use function explode;
 use function function_exists;
@@ -50,7 +55,7 @@ use const PHP_MINOR_VERSION;
 use const PHP_VERSION;
 use const PHP_VERSION_ID;
 
-/** @group callmap */
+#[Group('callmap')]
 final class InternalCallMapHandlerTest extends TestCase
 {
     /**
@@ -168,18 +173,18 @@ final class InternalCallMapHandlerTest extends TestCase
      * @var array<int|string, string|list<string>>
      */
     private static array $ignoredReturnTypeOnlyFunctions = [
-        'datetime::add' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
-        'datetime::modify' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
-        'datetime::createfromformat' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'datetime::add' => ['8.1', '8.2', '8.3', '8.4', '8.5', '8.6'], // DateTime does not contain static
+        'datetime::modify' => ['8.1', '8.2', '8.3', '8.4', '8.5', '8.6'], // DateTime does not contain static
+        'datetime::createfromformat' => ['8.1', '8.2', '8.3', '8.4', '8.5', '8.6'], // DateTime does not contain static
         'datetime::createfromimmutable' => ['8.1'],
-        'datetime::createfrominterface',
-        'datetimeimmutable::createfrominterface',
-        'datetime::setdate' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
-        'datetime::setisodate' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
-        'datetime::settime' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
-        'datetime::settimestamp' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
-        'datetime::settimezone' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
-        'datetime::sub' => ['8.1', '8.2', '8.3', '8.4', '8.5'], // DateTime does not contain static
+        'datetime::createfrominterface' => ['8.1', '8.2', '8.3', '8.4', '8.5'],
+        'datetimeimmutable::createfrominterface' => ['8.1', '8.2', '8.3', '8.4', '8.5'],
+        'datetime::setdate' => ['8.1', '8.2', '8.3', '8.4', '8.5', '8.6'], // DateTime does not contain static
+        'datetime::setisodate' => ['8.1', '8.2', '8.3', '8.4', '8.5', '8.6'], // DateTime does not contain static
+        'datetime::settime' => ['8.1', '8.2', '8.3', '8.4', '8.5', '8.6'], // DateTime does not contain static
+        'datetime::settimestamp' => ['8.1', '8.2', '8.3', '8.4', '8.5', '8.6'], // DateTime does not contain static
+        'datetime::settimezone' => ['8.1', '8.2', '8.3', '8.4', '8.5', '8.6'], // DateTime does not contain static
+        'datetime::sub' => ['8.1', '8.2', '8.3', '8.4', '8.5', '8.6'], // DateTime does not contain static
     ];
 
     /**
@@ -225,6 +230,8 @@ final class InternalCallMapHandlerTest extends TestCase
     #[Override]
     public static function setUpBeforeClass(): void
     {
+        parent::setUpBeforeClass();
+
         $project_analyzer = new ProjectAnalyzer(
             new TestConfig(),
             new Providers(
@@ -249,18 +256,23 @@ final class InternalCallMapHandlerTest extends TestCase
         }
     }
 
-    /**
-     * @covers \Psalm\Internal\Codebase\InternalCallMapHandler::getCallMap
-     */
     public function testGetcallmapReturnsAValidCallmap(): void
     {
         $callMap = InternalCallMapHandler::getCallMap();
         self::assertArrayKeysAreStrings($callMap, "Returned CallMap has non-string keys");
         self::assertArrayValuesAreArrays($callMap, "Returned CallMap has non-array values");
         foreach ($callMap as $function => $signature) {
-            self::assertArrayKeysAreZeroOrString($signature, "Function " . $function . " in returned CallMap has invalid keys");
+            self::assertArrayKeysAreZeroOrString(array_diff_key($signature, [-1 => true, -2 => true]), "Function " . $function . " in returned CallMap has invalid keys");
             self::assertArrayValuesAreStrings($signature, "Function " . $function . " in returned CallMap has non-string values");
-            foreach ($signature as $type) {
+            if (isset($signature[-2])) {
+                self::assertContains($signature[-2], ['tentative', 'none'], $function);
+                if ($signature[-2] === 'tentative') {
+                    self::assertArrayHasKey(-1, $signature, $function);
+                } else {
+                    self::assertArrayNotHasKey(-1, $signature, $function);
+                }
+            }
+            foreach (array_diff_key($signature, [-2 => true]) as $type) {
                 self::assertStringIsParsableType($type, "Function " . $function . " in returned CallMap contains invalid type declaration " . $type);
             }
         }
@@ -273,7 +285,81 @@ final class InternalCallMapHandlerTest extends TestCase
         $collator_sort_entry = $entries[0];
         $this->assertIsArray($collator_sort_entry->params);
         $this->assertArrayHasKey(1, $collator_sort_entry->params);
-        $this->assertEquals('arr', $collator_sort_entry->params[1]->name);
+        $this->assertSame('arr', $collator_sort_entry->params[1]->name);
+    }
+
+    public function testSignatureReturnTypesAreSeparateFromAnalysisTypes(): void
+    {
+        $project_analyzer = new ProjectAnalyzer(
+            new TestConfig(),
+            new Providers(new FakeFileProvider(), new FakeParserCacheProvider()),
+        );
+        $project_analyzer->setPhpVersion('8.1', 'tests');
+
+        /** @var array<string, array<int|string, string>> $disk_map */
+        $disk_map = require dirname(__DIR__, 3) . '/dictionaries/CallMap_81.php';
+        self::assertArrayNotHasKey(0, $disk_map['jsonserializable::jsonserialize']);
+        self::assertArrayHasKey(-1, $disk_map['jsonserializable::jsonserialize']);
+        self::assertSame('mixed', $disk_map['jsonserializable::jsonserialize'][-1]);
+        self::assertArrayHasKey(0, $disk_map['strlen']);
+        self::assertSame('int<0, max>', $disk_map['strlen'][0]);
+        unset($disk_map);
+        $loaded_map = InternalCallMapHandler::getCallMap();
+        self::assertArrayNotHasKey(0, $loaded_map['jsonserializable::jsonserialize']);
+        unset($loaded_map);
+
+        self::assertNull(InternalCallMapHandler::getSignatureReturnType('AMQPValue::toAmqpValue'));
+        self::assertSame('mixed', InternalCallMapHandler::getSignatureReturnType('JsonSerializable::jsonSerialize')?->getId());
+        self::assertSame('int', InternalCallMapHandler::getSignatureReturnType('strlen')?->getId());
+        self::assertSame(
+            'mixed',
+            InternalCallMapHandler::getSignatureReturnType("max'1")?->getId(),
+        );
+        self::assertNull(InternalCallMapHandler::getSignatureReturnType('not_a_builtin'));
+        $json_callables = InternalCallMapHandler::getCallablesFromCallMap('JsonSerializable::jsonSerialize');
+        self::assertNotNull($json_callables);
+        self::assertSame('mixed', $json_callables[0]->return_type?->getId());
+        $callables = InternalCallMapHandler::getCallablesFromCallMap('strlen');
+        self::assertNotNull($callables);
+        self::assertSame('int<0, max>', $callables[0]->return_type?->getId());
+        $params = $callables[0]->params;
+        self::assertNotNull($params);
+        self::assertArrayHasKey(0, $params);
+        self::assertCount(1, $params);
+        self::assertSame('string', $params[0]->name);
+
+        $project_analyzer->setPhpVersion('8.0', 'tests');
+        self::assertNull(InternalCallMapHandler::getSignatureReturnType('JsonSerializable::jsonSerialize'));
+    }
+
+    public function testBundledExtensionNativeReturnMetadata(): void
+    {
+        $project_analyzer = new ProjectAnalyzer(
+            new TestConfig(),
+            new Providers(new FakeFileProvider(), new FakeParserCacheProvider()),
+        );
+
+        foreach (['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6'] as $version) {
+            $project_analyzer->setPhpVersion($version, 'tests');
+            foreach (['SNMP::getErrno', 'tidy::getStatus', 'XSLTProcessor::getSecurityPrefs'] as $method) {
+                self::assertSame(
+                    $version >= '8.1' ? 'int' : null,
+                    InternalCallMapHandler::getSignatureReturnType($method)?->getId(),
+                    $version . ': ' . $method,
+                );
+            }
+            self::assertSame(
+                $version >= '8.1' ? 'false|float|int|null|string' : null,
+                InternalCallMapHandler::getSignatureReturnType('mysqli_result::fetch_column')?->getId(),
+                $version,
+            );
+            self::assertSame(
+                $version >= '8.1' ? 'bool|mysqli_result' : null,
+                InternalCallMapHandler::getSignatureReturnType('mysqli::query')?->getId(),
+                $version,
+            );
+            self::assertNull(InternalCallMapHandler::getSignatureReturnType('mysqli::__construct'), $version);
+        }
     }
 
     public function testGetCallablesFromCallmapRemovesWPrefixFromParameterNames(): void
@@ -283,13 +369,31 @@ final class InternalCallMapHandlerTest extends TestCase
         $curl_multi_exec_entry = $entries[0];
         $this->assertIsArray($curl_multi_exec_entry->params);
         $this->assertArrayHasKey(1, $curl_multi_exec_entry->params);
-        $this->assertEquals('still_running', $curl_multi_exec_entry->params[1]->name);
+        $this->assertSame('still_running', $curl_multi_exec_entry->params[1]->name);
+    }
+
+    public function testGetCallablesFromCallmapFollowsTheAnalysedPhpVersion(): void
+    {
+        $project_analyzer = new ProjectAnalyzer(
+            new TestConfig(),
+            new Providers(new FakeFileProvider(), new FakeParserCacheProvider()),
+        );
+
+        $project_analyzer->setPhpVersion('8.0', 'tests');
+        $php80_entries = InternalCallMapHandler::getCallablesFromCallMap('date_format');
+        $project_analyzer->setPhpVersion('7.4', 'tests');
+        $php74_entries = InternalCallMapHandler::getCallablesFromCallMap('date_format');
+
+        $this->assertNotNull($php80_entries);
+        $this->assertNotNull($php74_entries);
+        $this->assertSame('string', $php80_entries[0]->return_type?->getId());
+        $this->assertSame('false|string', $php74_entries[0]->return_type?->getId());
     }
 
     /**
      * @return iterable<string, array{string, array<int|string, string>}>
      */
-    public function callMapEntryProvider(): iterable
+    public static function callMapEntryProvider(): iterable
     {
         /**
          * This call is needed since InternalCallMapHandler uses the singleton that is initialized by it.
@@ -383,13 +487,13 @@ final class InternalCallMapHandlerTest extends TestCase
     }
 
     /**
-     * @depends testIgnoresAreSortedAndUnique
-     * @depends testGetcallmapReturnsAValidCallmap
-     * @dataProvider callMapEntryProvider
-     * @coversNothing
      * @psalm-param string $functionName
      * @param array<int|string, string> $callMapEntry
      */
+    #[Depends('testIgnoresAreSortedAndUnique')]
+    #[Depends('testGetcallmapReturnsAValidCallmap')]
+    #[DataProvider('callMapEntryProvider')]
+    #[CoversNothing]
     public function testIgnoredFunctionsStillFail(string $functionName, array $callMapEntry): void
     {
         $functionIgnored = $this->isIgnored($functionName);
@@ -408,8 +512,8 @@ final class InternalCallMapHandlerTest extends TestCase
             return;
         }
 
-        /** @var string $entryReturnType */
-        $entryReturnType = array_shift($callMapEntry);
+        $entryReturnType = $callMapEntry[0] ?? $callMapEntry[-1];
+        unset($callMapEntry[0], $callMapEntry[-1], $callMapEntry[-2]);
 
         if ($functionIgnored) {
             try {
@@ -441,13 +545,13 @@ final class InternalCallMapHandlerTest extends TestCase
     /**
      * This function will test functions that are in the callmap AND currently defined
      *
-     * @coversNothing
-     * @depends testGetcallmapReturnsAValidCallmap
-     * @depends testIgnoresAreSortedAndUnique
-     * @dataProvider callMapEntryProvider
      * @psalm-param string $functionName
      * @param array<int|string, string> $callMapEntry
      */
+    #[Depends('testGetcallmapReturnsAValidCallmap')]
+    #[Depends('testIgnoresAreSortedAndUnique')]
+    #[DataProvider('callMapEntryProvider')]
+    #[CoversNothing]
     public function testCallMapCompliesWithReflection(string $functionName, array $callMapEntry): void
     {
         if ($this->isIgnored($functionName)) {
@@ -462,8 +566,8 @@ final class InternalCallMapHandlerTest extends TestCase
             return;
         }
 
-        /** @var string $entryReturnType */
-        $entryReturnType = array_shift($callMapEntry);
+        $entryReturnType = $callMapEntry[0] ?? $callMapEntry[-1];
+        unset($callMapEntry[0], $callMapEntry[-1], $callMapEntry[-2]);
 
         /** @var array<string, string> $callMapEntry */
         $this->assertEntryParameters($function, $callMapEntry);
@@ -630,7 +734,7 @@ final class InternalCallMapHandlerTest extends TestCase
             }
         }
 
-        // Reflection::getPsalmTypeFromReflectionType adds |null to mixed types so skip comparison
+        // Mixed permits narrower analysis types, including non-nullable ones.
         if (!$expectedType->hasMixed()) {
             $this->assertSame($expectedType->isNullable(), $callMapType->isNullable(), "{$msgPrefix} type '{$specified}' missing null from reflected type '{$reflected}'");
             //$this->assertSame($expectedType->hasBool(), $callMapType->hasBool(), "{$msgPrefix} type '{$specified}' missing bool from reflected type '{$reflected}'");

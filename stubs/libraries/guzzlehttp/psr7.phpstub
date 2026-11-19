@@ -1,0 +1,44 @@
+<?php
+
+// The taints guzzlehttp/psr7 2 passes along: a request is built to be sent to its URI, and a URI holds what it is
+// given. Loaded when the analysed code uses the package, refining its classes (see Config::visitStubFiles()).
+
+namespace GuzzleHttp\Psr7
+{
+    use Psr\Http\Message\RequestInterface;
+    use Psr\Http\Message\StreamInterface;
+    use Psr\Http\Message\UriInterface;
+
+    class Request implements RequestInterface
+    {
+        use MessageTrait;
+
+        /**
+         * @param string                               $method  HTTP method
+         * @param string|UriInterface                  $uri     URI
+         * @param (string|string[])[]                  $headers Request headers
+         * @param string|resource|StreamInterface|null $body    Request body
+         * @param string                               $version Protocol version
+         *
+         * @psalm-taint-sink ssrf $uri
+         */
+        public function __construct(
+            string $method,
+            $uri,
+            array $headers = [],
+            $body = null,
+            string $version = '1.1'
+        ) {}
+    }
+
+    class Uri implements UriInterface, \JsonSerializable
+    {
+        /**
+         * The methods sending a request to the URI are the sinks of what it holds
+         *
+         * @psalm-taint-specialize
+         * @psalm-flow ($uri) -> return
+         */
+        public function __construct(string $uri = '') {}
+    }
+}

@@ -8,8 +8,8 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\ImpureFunctionCall;
@@ -48,16 +48,6 @@ final class EchoAnalyzer
             $expr_type = $statements_analyzer->node_data->getType($expr);
 
             if ($statements_analyzer->taint_flow_graph) {
-                if ($expr_type && $expr_type->hasObjectType()) {
-                    $expr_type = CastAnalyzer::castStringAttempt(
-                        $statements_analyzer,
-                        $context,
-                        $expr_type,
-                        $expr,
-                        false,
-                    );
-                }
-
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
                 $echo_param_sink = DataFlowNode::getForCallableArg(
@@ -65,10 +55,11 @@ final class EchoAnalyzer
                     'echo',
                     $i,
                     $call_location,
-                    TaintKind::INPUT_HTML
+                    (TaintKind::INPUT_HTML
                         | TaintKind::INPUT_HAS_QUOTES
                         | TaintKind::USER_SECRET
-                        | TaintKind::SYSTEM_SECRET,
+                        | TaintKind::SYSTEM_SECRET)
+                    & ~(CliOutput::isInCliOnlyCode($statements_analyzer, $context) ? CliOutput::HTML_TAINTS : 0),
                 );
 
 

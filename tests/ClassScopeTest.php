@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -13,11 +15,52 @@ final class ClassScopeTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testInaccessiblePrivateMethodFromTheGlobalScopeHasNoContext(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/InaccessibleMethod - .*Cannot access private method A::__construct$/');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class A {
+                    private function __construct() {}
+                }
+
+                new A();',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testMethodDeniedByAProviderFromTheGlobalScopeHasNoContext(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/InaccessibleMethod - .*Cannot access method VisibilityDenied::foo$/');
+
+        $this->project_analyzer->getCodebase()->methods->visibility_provider->registerClosure(
+            'VisibilityDenied',
+            static fn(): bool => false,
+        );
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class VisibilityDenied {
+                    public function foo(): void {}
+                }
+
+                (new VisibilityDenied())->foo();',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     /**
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'accessiblePrivateMethodFromSubclass' => [
@@ -161,7 +204,7 @@ final class ClassScopeTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'inaccessiblePrivateMethod' => [

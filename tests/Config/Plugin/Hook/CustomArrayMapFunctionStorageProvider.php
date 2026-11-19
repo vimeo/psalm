@@ -121,7 +121,7 @@ final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStor
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function createExpectedCallable(
         Union $input_type,
@@ -138,7 +138,7 @@ final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStor
 
     /**
      * @return list<TCallable>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function createRestCallables(
         DynamicTemplateProvider $template_provider,
@@ -176,7 +176,7 @@ final class CustomArrayMapFunctionStorageProvider implements DynamicFunctionStor
      * Creates variadic template list for custom_array_map function.
      *
      * @return list<TTemplateParam>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function createTemplates(
         DynamicTemplateProvider $template_provider,

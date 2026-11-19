@@ -401,6 +401,19 @@ return array (
         'locale' => 'string',
       ),
     ),
+    'mysqli_report' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'flags' => 'int',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'flags' => 'int',
+      ),
+    ),
     'openssl_csr_sign' => 
     array (
       'old' => 
@@ -1058,6 +1071,19 @@ return array (
       'new' => 
       array (
         0 => 'true',
+      ),
+    ),
+    'xsltprocessor::setprofiling' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'filename' => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'true',
+        'filename' => 'null|string',
       ),
     ),
   ),

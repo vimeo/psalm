@@ -1,5 +1,46 @@
 # Taint Flow
 
+## The taint graph
+
+Psalm builds a directed graph while it analyses the code: a *node* stands for a value in a place (a variable, an
+argument, the result of a call), an *edge* says that the value of one node flows into the next. A *source* is a node
+that starts with taints (user input), a *sink* is a node that must not receive them. Psalm reports the paths from a
+source to a sink that no escape removes.
+
+```php
+<?php // --taint-analysis
+function wrap(string $s): string { return $s; }
+
+$x = wrap($_GET['a']);
+echo $x;
+```
+
+`psalm --taint-analysis --dump-taint-graph=taints.dot` writes the graph; these are its edges for the example, in the order
+of the flow:
+
+```
+"$_GET specialized in src/a.php:64" -> "$_GET['a'] from src/a.php:64-68"
+"$_GET['a'] from src/a.php:64-68" -> "string-cast from src/a.php:64-73"
+"string-cast from src/a.php:64-73" -> "call to wrap from src/a.php:64-73"
+"call to wrap from src/a.php:64-73" -> "wrap#1 specialized in src/a.php:59"
+"wrap#1" -> "$s from src/a.php:27-28"
+"$s from src/a.php:27-28" -> "wrap"
+"wrap specialized in src/a.php:59" -> "$x from src/a.php:54-55"
+"$x from src/a.php:54-55" -> "$GLOBALS['x']" -> "call to echo from src/a.php:82-83"
+"call to echo from src/a.php:82-83" -> "echo#1 specialized in src/a.php:77"
+```
+
++ `wrap#1` is the node of the first argument of `wrap()` and `wrap` the node of its result: the nodes of the function
+  itself. Unless the function is specialized, they are shared by all its calls, so what one caller passes in comes out
+  at every other caller.
++ *Specialized* nodes (`wrap#1 specialized in …`) belong to one call only. For a function that is
+  [specialized](avoiding_false_positives.md#specializing-taints-in-functions), or that Psalm infers to be pure, the
+  taints go from the arguments of a call to its result without leaving that call, which is why the flow above ends in
+  `$x` and not in the other callers of `wrap()`.
+
+To add edges that the code doesn't show, use the annotations of the next section, or the methods described in
+[Taint flows from plugins](#taint-flows-from-plugins).
+
 ## Optimized Taint Flow
 
 When dealing with frameworks, keeping track of the data flow might involve different layers
@@ -75,6 +116,14 @@ what they were given. This is useful for methods whose bodies Psalm doesn't anal
 stubs and vendor code. With `@psalm-taint-specialize`, each call returns what its own object holds; without it, what
 any object the method is called on holds flows into what every call returns.
 
+The methods of the builtin containers and iterators (`ArrayObject`, `ArrayIterator`, `SplObjectStorage`, …) and of
+`Generator` return what their object holds without annotations: `getArrayCopy()` all of it, `offsetGet('key')` what
+is stored under `'key'`, `current()` an element, `key()` a key, and `Generator::getReturn()` what the generator
+returns. Plugins that follow calls themselves (such as the method calls of a template) get the path along which a
+method returns what its object holds with `Codebase::getReceiverTaintPath()`: `=`, `arrayvalue-fetch`,
+`arrayvalue-fetch-'key'` given the types of the arguments of a call with a literal key, `arraykey-fetch` or `return`,
+or null for a method returning none of it.
+
 ### Callable result to return value hint
 
 ```php
@@ -100,6 +149,34 @@ function show(Cache $cache): void
 `$compute()` in a return value hint states that what the function returns holds what the callables given to `$compute`
 return: the closure's body, or the function named. Here `TaintedHtml` is detected. As for `$this`, each call returns
 what its own callables return only with `@psalm-taint-specialize`.
+
+### Arguments to callables
+
+```php
+<?php // --taint-analysis
+interface Events
+{
+    /**
+     * @param callable(string): void $listener
+     * @psalm-taint-specialize
+     * @psalm-flow ($payload) -> $listener()
+     */
+    public function dispatch(string $payload, callable $listener): void;
+}
+
+function listen(Events $events): void
+{
+    $events->dispatch((string) ($_GET['x'] ?? ''), function (string $payload): void {
+        echo $payload; // TaintedHtml
+    });
+    $events->dispatch('safe', function (string $payload): void {
+        echo $payload; // no issue
+    });
+}
+```
+
+`-> $listener()` states that the callables given to `$listener` are called with what is given to `$payload`, as their
+arguments.
 
 ### Keyed stores
 
@@ -134,9 +211,12 @@ echo Cache::get('title_1');   // no issue
   `$key`, and `Store::$data[$key] -> return` makes a call return what is stored under its key. `($compute())` stores
   what the callables given to `$compute` return, as in a [return value hint](#callable-result-to-return-value-hint):
   `($compute()) -> Cache::$data[$key]` for a cache computing what it stores when the key is missing.
-+ A store is named like a static property, `Class::$name`. The class and the property need not exist; `self` and
-  `static` name the class declaring the method. The methods of other classes (a wrapper, an extension) share a store
-  by naming the same one.
++ A store is named like a static property, `Class::$name`. The class and the property need not exist; `self` names
+  the class declaring the method. The methods of other classes (a wrapper, an extension) share a store by naming the
+  same one.
++ `static` names the class the method is called on, giving each class its own store, e.g. for the temporary
+  properties of ORM models: `($value) -> static::$temp[$key]`. What is stored through a class can be read through it,
+  its subclasses and their parents and interfaces, but not through unrelated classes.
 + `[*]` is any key: `($values) -> Store::$data[*]` for a method storing an array of keys and values, and
   `Store::$data[*] -> return` for one returning what is stored under any key. `[$keys[*]]` is each key of a list, as
   for `mGet(array $keys)`. In nested stores, like `Store::$data[$namespace][$key]`, only the first key tells the values
@@ -144,14 +224,171 @@ echo Cache::get('title_1');   // no issue
 + Keys are told apart by what the analysis knows of them: the exact keys of literal strings and class names, else how
   the key starts: the start of a concatenation, of an interpolated string, of a `sprintf()` format up to its first
   conversion other than `%s`, of an `implode()` of a list with a literal separator, `__CLASS__`, or what the variable
-  (also one a closure uses), the property of `$this` or the method of the class giving the key starts with. A
-  property set only by its default and its constructor starts like what the constructor is given by the `new` of the
-  classes analyzed. A key the analysis knows nothing of can be any key.
+  (also one a closure uses), the property of `$this`, the method of the class or the function giving the key starts
+  with. A property set only by its default and its constructor starts like what the constructor is given by the `new`
+  of the classes analyzed. The keys of a list start like all its items: those of a literal list, those assigned to it
+  (`$keys[] = 'lock_' . $id;`), and those of a list a method or a function builds this way and returns. A key the
+  analysis knows nothing of can be any key.
 + Psalm's stubs declare the keyed store of phpredis, `Redis::$data`, and that of APCu, `APCu::$data`. Plugins can
   connect their own nodes to a store with `Codebase::addTaintStoreWrite()` (paths from a node into the store under
   the names) and `Codebase::addTaintStoreRead()` (paths from the store to a node), with the names
   `Codebase::getTaintStoreNames()` tells for an expression, for stores whose keys an annotation can't express (a
   table named in an SQL query).
+
+### Properties set and got by name
+
+ORM models and other property bags often set and get properties by name. These annotations tell Psalm which property
+a method sets or returns:
+
+```php
+<?php // --taint-analysis
+/**
+ * @property string $title
+ * @property string $body
+ */
+abstract class Model
+{
+    abstract public function __get(string $name): mixed;
+
+    /** @psalm-flow ($value) -> $this->$name */
+    abstract public function set(string $name, string $value): void;
+
+    /** @psalm-flow $this->$name -> return */
+    abstract public function get(string $name): string;
+}
+
+function save(Model $model): void {
+    $model->set('title', $_GET['title'] ?? '');
+}
+
+function show(Model $model): void {
+    echo $model->title;       // TaintedHtml
+    echo $model->get('title'); // TaintedHtml
+    echo $model->get('body');  // no issue
+}
+```
+
++ `($value) -> $this->$name` sets the property named by `$name` to `$value`, like `$object->title = $value`.
++ `$this->$name -> return` returns that property, like `$object->title`.
++ `$this->*` is any property: `($values) -> $this->*` for a method like `setProperties()`, `$this->* -> return` for
+  one like `toArray()`.
++ `($values) -> $this->{key}` sets each property to what is under its name in the array `$values`, and
+  `$this->{key} -> return[key]` returns an array holding each property under its name. Unlike `$this->*`, they keep
+  the properties apart:
+
+  ```php
+  /** @psalm-flow ($values) -> $this->{key} */
+  abstract public function setProperties(array $values): void;
+
+  /** @psalm-flow $this->{key} -> return[key] */
+  abstract public function toArray(): array;
+  ```
+
+  After `$model->setProperties(['title' => $_GET['title'], 'body' => 'text'])`, only `$model->title` and
+  `$model->toArray()['title']` are tainted. What is under a key the analysis doesn't know (an array whose keys aren't
+  literals, or a key read with a variable) may be any property, and a key that names no property of the class is
+  still returned under that key.
++ When `$name` isn't a literal string, the call sets or returns every property it may name. A copy loop,
+  `foreach ($values as $name => $value) { $model->set($name, $value); }`, sets each property to what is under its
+  name in `$values`, as `($values) -> $this->{key}` does, when `$name` and `$value` are still the key and the value of
+  the loop.
++ For a class with [`@psalm-taint-specialize`](avoiding_false_positives.md#specializing-taints-in-classes), properties
+  are tracked per object.
+
+### Properties held in an array property
+
+Models often hold their properties in an array property under their names, and their methods read and write them
+there. `@psalm-taint-property-bag` on the class names that array property: in the methods of the class and of the
+classes extending it, an element of it under a literal key is the property of that name.
+
+```php
+<?php // --taint-analysis
+/** @psalm-taint-property-bag $properties */
+abstract class Model
+{
+    /** @var array<string, mixed> */
+    protected array $properties = [];
+
+    abstract public function __get(string $name): mixed;
+}
+
+/**
+ * @property string $title
+ * @property string $body
+ */
+final class Article extends Model
+{
+    public function setTitle(string $title): void {
+        $this->properties['title'] = $title;
+    }
+
+    public function getBody(): string {
+        return (string) $this->properties['body'];
+    }
+}
+
+function save(Article $article): void {
+    $article->setTitle($_GET['title'] ?? '');
+}
+
+function show(Article $article): void {
+    echo $article->title;     // TaintedHtml
+    echo $article->getBody(); // no issue
+}
+```
+
++ `$this->properties['title']` reads `$this->title`, and `$this->properties['title'] = $value` sets it, also under
+  further keys (`$this->properties['tags']['main'] = $tag`). They meet `$object->title`, `@property` tags and the
+  flows of [properties set and got by name](#properties-set-and-got-by-name).
++ An element under a key that isn't a literal, and the whole array, are only the array property: declare the flows
+  of the methods setting and getting properties by name with `@psalm-flow`.
+
+### A property and its elements
+
+A method can also say which property it sets or returns by naming it, and which element of an array property by the
+parameter giving its key, for request objects and other containers holding their values in an array property:
+
+```php
+<?php // --taint-analysis
+abstract class Request
+{
+    /** @var array<string, string> */
+    protected array $vars = [];
+
+    /** @psalm-flow ($vars) -> $this->vars */
+    abstract public function __construct(array $vars);
+
+    /** @psalm-flow ($value) -> $this->vars[$name] */
+    abstract public function set(string $name, string $value): void;
+
+    /** @psalm-flow $this->vars[$name] -> return */
+    abstract public function get(string $name): string;
+
+    /** @psalm-flow $this->vars -> return */
+    abstract public function toArray(): array;
+}
+
+function save(Request $request): void {
+    $request->set('title', $_GET['title'] ?? '');
+}
+
+function show(Request $request): void {
+    echo $request->get('title');            // TaintedHtml
+    echo $request->get('body');             // no issue
+    echo $request->toArray()['title'];      // TaintedHtml
+}
+```
+
++ `($value) -> $this->vars` sets the property `vars`, like `$object->vars = $value`, and `$this->vars -> return`
+  returns it. The arrays set keep their keys.
++ `($value) -> $this->vars[$name]` sets the element of `vars` under the key given to `$name`, like
+  `$object->vars[$name] = $value`, and `$this->vars[$name] -> return` returns it. Keys are told apart as for
+  [keyed stores](#keyed-stores).
++ `$this->vars[*]` is any element: `($value) -> $this->vars[*]` for a method like `add()`, `$this->vars[*] -> return`
+  for one returning any of them.
++ The flows into the properties of a constructor set them on the object it constructs: `new Request(['title' =>
+  $_GET['title']])` taints `get('title')` of the requests. They also apply to `($values) -> $this->$name`,
+  `($values) -> $this->*` and `($values) -> $this->{key}`.
 
 ### Combined proxy & return value hint
 
@@ -171,3 +408,31 @@ echo handleInput($_GET['malicious'] ?? '');
 
 The example above combines both previous examples and shows, that the `@psalm-flow` annotation
 can be used multiple times. Here, it would lead to detecting both `TaintedHtml` and `TaintedShell`.
+
+## Taint flows from plugins
+
+Plugins can add flows that annotations can't express with these `Codebase` methods (`$source` is the event's
+`getStatementsSource()`):
+
++ `getTaintNode($source, $label, $location, $value_type = null)`: a node for a value at a location. The taints of
+  `$value_type` flow into it. To make an expression carry what reaches the node, use
+  `$type->addParentNodes([$node])`.
++ `getTaintPropertyNode('Class::$name')`: the node holding a property's value. The property doesn't need to be declared.
++ `addTaintSink($taint_id, $location, $taints)`: adds a sink and returns it.
++ `addTaintPath($source, $from, $to, $path_type = '=', $added_taints = 0, $removed_taints = 0)`: connects two nodes.
++ `addTaintPropertyAssignment($source, $value, 'Class::$name')`: assigns the node `$value` to an instance property
+  of an object of the class, as `$object->name = ` does: what the parent classes sharing the property and the
+  subclasses read of it gets the value too.
++ `getTaintReturnNode($source, $function, $call_location = null)`, `getTaintArgumentNode($source, $function, $offset,
+  $call_location = null)` and `getTaintReceiverNode($source, 'Class::method', $call_location)`: the nodes of what a
+  function (`'ns\f'`), a method (`'Class::method'`) or a closure (its `Closure`/`ArrowFunction` node) returns, of its
+  parameter at `$offset` and of the object it runs on, for a call the code doesn't show (e.g. a framework's). Given
+  the location of the call, these are the nodes of that call if Psalm tells its calls apart (see
+  `@psalm-taint-specialize`); the receiver node only exists then (null otherwise).
++ `tracksTaintFlow($source)`: false when taints aren't tracked there, e.g. when `TaintedInput` is suppressed. The
+  methods above then add nothing.
+
+See [examples/plugins/TaintModelFields.php](https://github.com/vimeo/psalm/blob/master/examples/plugins/TaintModelFields.php),
+which tracks ORM model fields from `set()` to `get()`, and
+[examples/plugins/TaintPageComponents.php](https://github.com/vimeo/psalm/blob/master/examples/plugins/TaintPageComponents.php),
+which outputs what the components of a page render, as a framework would.

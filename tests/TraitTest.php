@@ -5,8 +5,16 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_map;
+use function array_values;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -16,12 +24,585 @@ final class TraitTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
+     * @param list<array{int, string}> $expected_issues line and message of each UndefinedTrait
+     */
+    #[DataProvider('providerInvalidTraitUsedByAClassWhoseMethodIsFollowed')]
+    public function testInvalidTraitIsReportedWhenMethodMutationsAreCollected(
+        string $code,
+        array $expected_issues,
+    ): void {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, $code);
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = IssueBuffer::getIssuesDataForFile($file_path);
+
+        $undefined_traits = array_map(
+            static fn(IssueData $issue): array => [$issue->line_from, $issue->message],
+            array_values(array_filter(
+                $issues,
+                static fn(IssueData $issue): bool => $issue->type === 'UndefinedTrait',
+            )),
+        );
+
+        self::assertSame($expected_issues, $undefined_traits);
+
+        self::assertSame([], array_values(array_filter(
+            $issues,
+            static fn(IssueData $issue): bool => $issue->type === 'PropertyNotSetInConstructor',
+        )));
+    }
+
+    /**
+     * @return iterable<string, array{code: string, expected_issues: list<array{int, string}>}>
+     * @psalm-pure
+     */
+    public static function providerInvalidTraitUsedByAClassWhoseMethodIsFollowed(): iterable
+    {
+        return [
+            'missingTrait' => [
+                'code' => '<?php
+                    class Base {
+                        use MissingTrait;
+
+                        protected string $name;
+
+                        protected function init(): void {
+                            $this->name = "x";
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function __construct() {
+                            $this->init();
+                        }
+                    }',
+                'expected_issues' => [[3, 'Trait MissingTrait does not exist']],
+            ],
+            'missingTraitUsedByATrait' => [
+                'code' => '<?php
+                    trait T1 {
+                        use MissingTrait;
+                    }
+
+                    class Base {
+                        use T1;
+
+                        protected string $name;
+
+                        protected function init(): void {
+                            $this->name = "x";
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function __construct() {
+                            $this->init();
+                        }
+                    }',
+                'expected_issues' => [[3, 'Trait MissingTrait does not exist']],
+            ],
+            'classUsedAsTrait' => [
+                'code' => '<?php
+                    class NotATrait {}
+
+                    class Base {
+                        use NotATrait;
+
+                        protected string $name;
+
+                        protected function init(): void {
+                            $this->name = "x";
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function __construct() {
+                            $this->init();
+                        }
+                    }',
+                'expected_issues' => [
+                    [4, 'Class NotATrait is not a trait'],
+                    [5, 'Trait NotATrait does not exist'],
+                ],
+            ],
+            'interfaceUsedAsTrait' => [
+                'code' => '<?php
+                    interface NotATrait {}
+
+                    class Base {
+                        use NotATrait;
+
+                        protected string $name;
+
+                        protected function init(): void {
+                            $this->name = "x";
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function __construct() {
+                            $this->init();
+                        }
+                    }',
+                'expected_issues' => [
+                    [4, 'Interface NotATrait is not a trait'],
+                    [5, 'Trait NotATrait does not exist'],
+                ],
+            ],
+            'missingTraitNextToAnExistingTrait' => [
+                'code' => '<?php
+                    trait SetsName {
+                        protected function init(): void {
+                            $this->name = "x";
+                        }
+                    }
+
+                    class Base {
+                        use MissingTrait, SetsName;
+
+                        protected string $name;
+                    }
+
+                    final class Child extends Base {
+                        public function __construct() {
+                            $this->init();
+                        }
+                    }',
+                'expected_issues' => [[9, 'Trait MissingTrait does not exist']],
+            ],
+        ];
+    }
+
+    /**
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticReturnOfTraitMethodOverriddenByMethodOfLaterTrait' => [
+                'code' => '<?php
+                    trait A {
+                        public function get(): static {
+                            return $this;
+                        }
+                    }
+
+                    trait B {
+                        public function get(): static {
+                            return $this;
+                        }
+                    }
+
+                    class C {
+                        use A;
+                    }
+
+                    class D extends C {
+                        use B;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'parentReturnOfTraitMethodIsTheParentOfTheClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {}
+
+                    class C extends A {}
+
+                    trait B {
+                        public function get(): parent {
+                            return new C();
+                        }
+                    }
+
+                    class D extends C {
+                        use B;
+                    }
+
+                    class E extends D {
+                        #[\Override]
+                        public function get(): C {
+                            return new C();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'nullableStaticReturnOfTraitMethodOverriddenByChild' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait B {
+                        public function get(): ?static {
+                            return null;
+                        }
+                    }
+
+                    class D {
+                        use B;
+                    }
+
+                    class E extends D {
+                        #[\Override]
+                        public function get(): ?static {
+                            return null;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'selfReturnOfTraitMethodIsTheClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface SomeInterface
+                    {
+                        public function duplicate(): self;
+                    }
+
+                    trait SomeTrait
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class Concrete implements SomeInterface
+                    {
+                        use SomeTrait;
+                    }
+
+                    class ConcreteChild extends Concrete
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class Other implements SomeInterface
+                    {
+                        use SomeTrait;
+
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'constructorInitializesPropertyThroughMethodOfNestedTrait' => [
+                'code' => '<?php
+                    class MyClass {
+                        use Outer;
+
+                        public function __construct(string $text) {
+                            $this->setContent($text);
+                        }
+                    }
+
+                    trait Outer {
+                        use Inner;
+                    }
+
+                    trait Inner {
+                        protected string $content;
+
+                        public function setContent(string $text): void {
+                            $this->content = $text;
+                        }
+                    }',
+            ],
+            'constructorInitializesPropertyThroughMethodOfTwiceNestedTrait' => [
+                'code' => '<?php
+                    class MyClass {
+                        use Outer;
+
+                        public function __construct(string $text) {
+                            $this->setContent($text);
+                        }
+                    }
+
+                    trait Outer {
+                        use Middle;
+                    }
+
+                    trait Middle {
+                        use Inner;
+                    }
+
+                    trait Inner {
+                        protected string $content;
+
+                        public function setContent(string $text): void {
+                            $this->content = $text;
+                        }
+                    }',
+            ],
+            'methodOfTheClassIsNotMadePrivateByTheVisibilityOfANestedTrait' => [
+                'code' => '<?php
+                    trait Inner {
+                        public function f(): void {}
+                    }
+
+                    trait Outer {
+                        use Inner {
+                            f as private;
+                        }
+                    }
+
+                    class Consumer {
+                        use Outer;
+
+                        public function f(): void {}
+                    }
+
+                    (new Consumer)->f();',
+            ],
+            'methodExcludedByInsteadofIsNotMadePrivateByTheVisibilityOfANestedTrait' => [
+                'code' => '<?php
+                    trait Inner {
+                        public function f(): void {}
+                    }
+
+                    trait Other {
+                        public function f(): void {}
+                    }
+
+                    trait Outer {
+                        use Inner {
+                            f as private;
+                        }
+                    }
+
+                    class Consumer {
+                        use Outer, Other {
+                            Other::f insteadof Outer;
+                        }
+                    }
+
+                    (new Consumer)->f();',
+            ],
+            'visibilityChangedInANestedTraitReachesTheClass' => [
+                'code' => '<?php
+                    trait Inner {
+                        protected function exposed(): void {}
+                        protected function overridden(): void {}
+                    }
+
+                    trait Outer {
+                        use Inner {
+                            exposed as public;
+                            overridden as public;
+                        }
+                    }
+
+                    class Plain {
+                        use Outer;
+                    }
+
+                    class Narrowing {
+                        use Outer {
+                            overridden as protected;
+                        }
+                    }
+
+                    (new Plain)->exposed();
+                    (new Plain)->overridden();
+                    (new Narrowing)->exposed();',
+            ],
+            'insteadofPicksTheTraitListedSecond' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait A { public function items(): int { return 1; } }
+                    trait B { public function items(): string { return "b"; } }
+
+                    final class Post {
+                        use A, B {
+                            B::items insteadof A;
+                            A::items as oldItems;
+                        }
+                    }
+
+                    $items = (new Post())->items();
+                    $old = (new Post())->oldItems();
+
+                    /** @psalm-check-type-exact $items = string */
+                    /** @psalm-check-type-exact $old = int */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'insteadofPicksTheTraitListedFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait A { public function items(): int { return 1; } }
+                    trait B { public function items(): string { return "b"; } }
+
+                    final class Post {
+                        use A, B {
+                            A::items insteadof B;
+                            B::items as oldItems;
+                        }
+                    }
+
+                    $items = (new Post())->items();
+                    $old = (new Post())->oldItems();
+
+                    /** @psalm-check-type-exact $items = int */
+                    /** @psalm-check-type-exact $old = string */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'insteadofAndAliasWithTheTraitsReversed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait A { public function items(): int { return 1; } }
+                    trait B { public function items(): string { return "b"; } }
+
+                    final class Post {
+                        use B, A {
+                            B::items insteadof A;
+                            A::items as oldItems;
+                        }
+                    }
+
+                    $items = (new Post())->items();
+                    $old = (new Post())->oldItems();
+
+                    /** @psalm-check-type-exact $items = string */
+                    /** @psalm-check-type-exact $old = int */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'insteadofPicksTheTraitListedFirstWithTheTraitsReversed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait A { public function items(): int { return 1; } }
+                    trait B { public function items(): string { return "b"; } }
+
+                    final class Post {
+                        use B, A {
+                            A::items insteadof B;
+                            B::items as oldItems;
+                        }
+                    }
+
+                    $items = (new Post())->items();
+                    $old = (new Post())->oldItems();
+
+                    /** @psalm-check-type-exact $items = int */
+                    /** @psalm-check-type-exact $old = string */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'insteadofExcludesEveryListedTraitOfAnImportedNamespace' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace Lib {
+                        trait A { public function items(): int { return 1; } }
+                        trait B { public function items(): string { return "b"; } }
+                        trait C { public function items(): float { return 1.5; } }
+                    }
+
+                    namespace App {
+                        use Lib\A;
+                        use Lib\B as Renamed;
+                        use Lib\C;
+
+                        final class Post {
+                            use A, Renamed, C {
+                                C::items insteadof A, Renamed;
+                            }
+                        }
+
+                        $items = (new Post())->items();
+                    }
+
+                    /** @psalm-check-type-exact $items = float */
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'constructorCallsATraitMethodThatChecksInstanceofThis' => [
+                'code' => '<?php
+                    interface MyInterface {}
+
+                    trait MyTrait {
+                        public function doSomething(): void {
+                            if ($this instanceof MyInterface) {
+                                return;
+                            }
+                        }
+                    }
+
+                    class MyClass implements MyInterface {
+                        use MyTrait;
+
+                        protected string $foo;
+                        protected string $bar;
+
+                        public function __construct() {
+                            $this->foo = "cow";
+                            $this->doSomething();
+                            $this->bar = "cow";
+                        }
+                    }',
+            ],
+            'traitPropertiesTypedSelf' => [
+                'code' => '<?php
+                    trait MyTrait {
+                        private static self $instance;
+                        public ?self $next = null;
+                    }
+
+                    class Implementor {
+                        use MyTrait;
+                    }
+
+                    class Child extends Implementor {}',
+            ],
+            'constructorCallsAPrivateAliasOfATraitMethodThatSetsAProperty' => [
+                'code' => '<?php
+                    trait TraitA {
+                        private string $foo;
+
+                        public function init(string $foo): void {
+                            $this->foo = $foo;
+                        }
+                    }
+
+                    class A {
+                        use TraitA {
+                            TraitA::init as private initTraitA;
+                        }
+
+                        public function __construct(string $foo) {
+                            $this->initTraitA($foo);
+                        }
+                    }',
+            ],
             'accessiblePrivateMethodFromTrait' => [
                 'code' => '<?php
                     trait T {
@@ -1214,6 +1795,144 @@ final class TraitTest extends TestCase
 
                     test(function(string ...$args): void {});',
             ],
+            'anonymousClassUsingTheTraitThatCreatesIt' => [
+                'code' => '<?php
+                    class Operator {}
+
+                    interface SupportsOperator {
+                        public function operator(): Operator;
+                    }
+
+                    trait NestsOperatorTrait {
+                        public function operator(): Operator&SupportsOperator {
+                            return new class extends Operator implements SupportsOperator {
+                                use NestsOperatorTrait;
+                            };
+                        }
+                    }
+
+                    final class NestingBuilder implements SupportsOperator {
+                        use NestsOperatorTrait;
+                    }
+
+                    echo get_class((new NestingBuilder())->operator());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'traitReadsAClassConstantWithTheLiteralTheUsingClassesGiveIt' => [
+                'code' => '<?php
+                    /** @param positive-int $i */
+                    function takesPositive(int $i): void {}
+
+                    trait TestTrait {
+                        public function run(): void {
+                            takesPositive(self::VALUE);
+                            takesPositive(static::VALUE);
+                        }
+                    }
+
+                    final class ClassOne {
+                        use TestTrait;
+
+                        public const VALUE = 1;
+                    }
+
+                    final class ClassTwo {
+                        use TestTrait;
+
+                        public const VALUE = 2;
+                    }
+
+                    (new ClassOne())->run();
+                    (new ClassTwo())->run();',
+            ],
+            'traitReadsAClassConstantOnThisWithTheLiteralsTheUsingClassesGiveIt' => [
+                'code' => '<?php
+                    trait TestTrait {
+                        public function testFunction(): void {
+                            if ($this::VALUE) {
+                                echo "True";
+                            } else {
+                                echo "False";
+                            }
+                        }
+                    }
+
+                    final class ClassOne {
+                        use TestTrait;
+
+                        public const VALUE = true;
+                    }
+
+                    final class ClassTwo {
+                        use TestTrait;
+
+                        public const VALUE = false;
+                    }
+
+                    (new ClassOne())->testFunction();
+                    (new ClassTwo())->testFunction();',
+            ],
+            'traitReadsAClassConstantOnThisNarrowedToASubclass' => [
+                'code' => '<?php
+                    trait T {
+                        public function f(): void {
+                            if ($this instanceof B) {
+                                if ($this::C === "b") {
+                                    echo "b";
+                                }
+                            }
+                        }
+                    }
+
+                    class A {
+                        use T;
+
+                        /** @var string */
+                        const C = "a";
+                    }
+
+                    final class B extends A {
+                        const C = "b";
+                    }',
+            ],
+            'traitReadsAClassConstantEachUsingClassDefinesDifferently' => [
+                'code' => '<?php
+                    trait TestTrait {
+                        public function testFunction(): void {
+                            if (self::VALUE) {
+                                echo "True";
+                            } else {
+                                echo "False";
+                            }
+
+                            if (static::VALUE) {
+                                echo "True";
+                            } else {
+                                echo "False";
+                            }
+                        }
+                    }
+
+                    final class ClassOne {
+                        use TestTrait;
+
+                        public const VALUE = true;
+                    }
+
+                    final class ClassTwo {
+                        use TestTrait;
+
+                        public const VALUE = false;
+                    }
+
+                    (new ClassOne())->testFunction();
+                    (new ClassTwo())->testFunction();',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
         ];
     }
 
@@ -1221,9 +1940,241 @@ final class TraitTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticReturnOfTraitMethodOverriddenByUnrelatedReturnTypeOfLaterTrait' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    trait A {
+                        public function get(): static {
+                            return $this;
+                        }
+                    }
+
+                    trait B {
+                        public function get(): Foo {
+                            return new Foo();
+                        }
+                    }
+
+                    class C {
+                        use A;
+                    }
+
+                    class D extends C {
+                        use B;
+                    }',
+                'error_message' => "Method B::get with return type 'Foo' is different to return type",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'selfReturnOfTraitMethodRejectsTheParentOfTheClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait SomeTrait
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class Concrete
+                    {
+                        use SomeTrait;
+                    }
+
+                    class ConcreteChild extends Concrete
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class GrandChild extends ConcreteChild
+                    {
+                        public function duplicate(): Concrete
+                        {
+                            return new Concrete();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'Method GrandChild::duplicate with return type',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'constructorCallsMethodOfNestedTraitThatDoesNotInitializeProperty' => [
+                'code' => '<?php
+                    class MyClass {
+                        use Outer;
+
+                        public function __construct(string $text) {
+                            $this->setContent($text);
+                        }
+                    }
+
+                    trait Outer {
+                        use Inner;
+                    }
+
+                    trait Inner {
+                        protected string $content;
+
+                        public function setContent(string $text): void {
+                            echo $text;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'constructorCallsAPublicAliasOfATraitMethodThatSetsAPrivateProperty' => [
+                'code' => '<?php
+                    trait TraitA {
+                        private string $foo;
+
+                        public function init(string $foo): void {
+                            $this->foo = $foo;
+                        }
+                    }
+
+                    class A {
+                        use TraitA {
+                            TraitA::init as public initTraitA;
+                        }
+
+                        public function __construct(string $foo) {
+                            $this->initTraitA($foo);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'constructorCallsMethodOfNestedTraitThatTheOuterTraitOverrides' => [
+                'code' => '<?php
+                    class MyClass {
+                        use Outer;
+
+                        public function __construct(string $text) {
+                            $this->setContent($text);
+                        }
+                    }
+
+                    trait Outer {
+                        use Inner;
+
+                        public function setContent(string $text): void {
+                            echo $text;
+                        }
+                    }
+
+                    trait Inner {
+                        protected string $content;
+
+                        public function setContent(string $text): void {
+                            $this->content = $text;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'constructorCallsMethodOfATraitThatTheClassOverrides' => [
+                'code' => '<?php
+                    trait Inner {
+                        protected string $content;
+
+                        public function setContent(string $text): void {
+                            $this->content = $text;
+                        }
+                    }
+
+                    class MyClass {
+                        use Inner;
+
+                        public function __construct(string $text) {
+                            $this->setContent($text);
+                        }
+
+                        public function setContent(string $text): void {
+                            echo $text;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'visibilityNarrowedInANestedTraitReachesTheClass' => [
+                'code' => '<?php
+                    trait Inner {
+                        public function hidden(): void {}
+                    }
+
+                    trait Outer {
+                        use Inner {
+                            hidden as private;
+                        }
+                    }
+
+                    class Plain {
+                        use Outer;
+                    }
+
+                    (new Plain)->hidden();',
+                'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:34 - Cannot access private method Plain::hidden',
+            ],
+            'classChangesTheVisibilityOfANestedTraitMethodAgain' => [
+                'code' => '<?php
+                    trait Inner {
+                        protected function f(): void {}
+                    }
+
+                    trait Outer {
+                        use Inner {
+                            f as public;
+                        }
+                    }
+
+                    class Narrowing {
+                        use Outer {
+                            f as protected;
+                        }
+                    }
+
+                    (new Narrowing)->f();',
+                'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:38 - Cannot access protected method Narrowing::f',
+            ],
+            'constructorCallsAnAliasOfATraitMethodThatTheClassOverrides' => [
+                'code' => '<?php
+                    trait Setup {
+                        private int $value;
+
+                        public function init(): void {
+                            echo "trait";
+                        }
+                    }
+
+                    final class MyClass {
+                        use Setup {
+                            Setup::init as private initTrait;
+                        }
+
+                        public function __construct() {
+                            $this->initTrait();
+                        }
+
+                        public function init(): void {
+                            $this->value = 1;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'docblockPropertyTypeNotContainedBySignatureTypeSelf' => [
+                'code' => '<?php
+                    class Child {}
+
+                    class Wrong {
+                        /** @var Child */
+                        public ?self $x = null;
+                    }',
+                'error_message' => 'MismatchingDocblockPropertyType',
+            ],
             'inaccessiblePrivateMethodFromInheritedTrait' => [
                 'code' => '<?php
                     trait T {
@@ -1450,7 +2401,7 @@ final class TraitTest extends TestCase
                     trait A { const B = 0; }
                     PHP,
                 'error_message' => 'ConstantDeclarationInTrait',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'duplicateTraitProperty' => [
@@ -1461,6 +2412,19 @@ final class TraitTest extends TestCase
                     }
                     ',
                 'error_message' => 'DuplicateProperty',
+            ],
+            'classConstantOutsideATraitKeepsItsLiteralType' => [
+                'code' => '<?php
+                    final class ClassOne {
+                        public const VALUE = true;
+
+                        public function check(): void {
+                            if (self::VALUE) {
+                                echo "True";
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }

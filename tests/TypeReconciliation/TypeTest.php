@@ -20,9 +20,35 @@ final class TypeTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
+            'instanceofAnInterfaceKeepsOnlyTheClassesThatMayImplementIt' => [
+                'code' => '<?php
+                    interface Marker {}
+                    final class Implementing implements Marker {}
+                    final class Unrelated {}
+                    class Open {}
+
+                    function check(Implementing|Unrelated|Open $x): void {
+                        if ($x instanceof Marker) {
+                            /** @psalm-check-type-exact $x = Implementing|Marker&Open */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'closedResourceIsTruthyLikeAnyResource' => [
+                'code' => '<?php
+                    /** @param resource|closed-resource|null $stream */
+                    function check($stream): bool {
+                        return $stream ? true : false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'sealArray' => [
                 'code' => '<?php
                     /** @var array */
@@ -1366,11 +1392,11 @@ final class TypeTest extends TestCase
     }
 
     /**
-     * @return iterable<string,array{code:string,error_message:string,ignored_issues?:list<string>,php_version?:string}>
+     * @return iterable<string,array{code:string,error_message:string,error_levels?:list<string>,php_version?:string}>
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'possiblyUndefinedVariable' => [

@@ -15,7 +15,7 @@ final class ParamTypeManipulationTest extends FileManipulationTestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): array
+    public static function providerValidCodeParse(): array
     {
         return [
             'fixMismatchingDocblockParamType70' => [
@@ -104,6 +104,31 @@ final class ParamTypeManipulationTest extends FileManipulationTestCase
                         public function fooFoo(string $a): void {}
                     }
 
+                    (new C)->fooFoo("hello");',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingParamType'],
+                'safe_types' => true,
+            ],
+            'noParamTypeWhenAMixedArgumentIsPassed' => [
+                'input' => '<?php
+                    class C {
+                        public function fooFoo($a): void {}
+                    }
+
+                    /** @var mixed */
+                    $m = null;
+
+                    (new C)->fooFoo($m);
+                    (new C)->fooFoo("hello");',
+                'output' => '<?php
+                    class C {
+                        public function fooFoo($a): void {}
+                    }
+
+                    /** @var mixed */
+                    $m = null;
+
+                    (new C)->fooFoo($m);
                     (new C)->fooFoo("hello");',
                 'php_version' => '7.1',
                 'issues_to_fix' => ['MissingParamType'],

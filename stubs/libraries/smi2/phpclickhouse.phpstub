@@ -1,0 +1,280 @@
+<?php
+
+// The taints smi2/phpclickhouse passes along: the queries and the table and column names a client sends are SQL
+// sinks, the files it reads or writes file sinks, and its formatters escape the values they quote. The values
+// bound into `{name}` placeholders are inserted as they are, and are not followed. Loaded when the analysed
+// code uses the package, refining its classes (see Config::visitStubFiles()).
+
+namespace ClickHouseDB {
+use ClickHouseDB\Exception\QueryException;
+use ClickHouseDB\Exception\TransportException;
+use ClickHouseDB\Query\Degeneration;
+use ClickHouseDB\Query\Degeneration\Bindings;
+use ClickHouseDB\Query\Degeneration\Conditions;
+use ClickHouseDB\Query\WhereInFile;
+use ClickHouseDB\Query\WriteToFile;
+use ClickHouseDB\Quote\FormatLine;
+use ClickHouseDB\Transport\Http;
+use ClickHouseDB\Transport\Stream;
+
+class Client
+{
+    /**
+     * @psalm-taint-sink sql $sql
+     */
+    public function write(string $sql, array $bindings = [], bool $exception = true, array $querySettings = []): Statement
+    {
+    }
+
+    /**
+     * @psalm-taint-sink sql $sql
+     */
+    public function select(
+        string $sql,
+        array $bindings = [],
+        ?WhereInFile $whereInFile = null,
+        ?WriteToFile $writeToFile = null,
+        array $querySettings = []
+    ): Statement
+    {
+    }
+
+    /**
+     * @psalm-taint-sink sql $sql
+     */
+    public function selectAsync(
+        string $sql,
+        array $bindings = [],
+        ?WhereInFile $whereInFile = null,
+        ?WriteToFile $writeToFile = null,
+        array $querySettings = []
+    ): Statement
+    {
+    }
+
+    /**
+     * @param string $sql SQL with {name:Type} placeholders, e.g. 'SELECT * FROM t WHERE id = {id:UInt32}'
+     * @param array<string, mixed> $params Parameter values, e.g. ['id' => 42]
+     * @param array $querySettings Per-query settings override
+     *
+     * @psalm-taint-sink sql $sql
+     */
+    public function selectWithParams(string $sql, array $params, array $querySettings = []): Statement
+    {
+    }
+
+    /**
+     * @param string $sql SQL with {name:Type} placeholders
+     * @param array<string, mixed> $params Parameter values
+     * @param bool $exception Throw on error
+     * @param array $querySettings Per-query settings override
+     *
+     * @psalm-taint-sink sql $sql
+     */
+    public function writeWithParams(string $sql, array $params, bool $exception = true, array $querySettings = []): Statement
+    {
+    }
+
+    /**
+     * @param Stream $streamRead Stream to write results into (use StreamRead)
+     * @param string $sql SQL with {name:Type} placeholders, e.g. 'SELECT * FROM t WHERE id = {id:UInt32} FORMAT JSONEachRow'
+     * @param array<string, mixed> $params Parameter values, e.g. ['id' => 42]
+     * @param array $querySettings Per-query settings override
+     *
+     * @psalm-taint-sink sql $sql
+     */
+    public function readWithParams(Stream $streamRead, string $sql, array $params, array $querySettings = []): Statement
+    {
+    }
+
+    /**
+     * @param array $querySettings Per-query settings override
+     * @return \Generator yields associative arrays, one per row
+     *
+     * @psalm-taint-sink sql $sql
+     */
+    public function selectGenerator(string $sql, array $bindings = [], array $querySettings = []): \Generator
+    {
+    }
+
+    /**
+     * @psalm-taint-sink sql $table
+     */
+    public function showCreateTable(string $table): mixed
+    {
+    }
+
+    /**
+     * @param mixed[][] $values
+     * @param string[] $columns
+     * @throws Exception\TransportException
+     *
+     * @psalm-taint-sink sql $table
+     * @psalm-taint-sink sql $columns
+     */
+    public function insert(string $table, array $values, array $columns = []): Statement
+    {
+    }
+
+    /**
+     * @param string $tableName - name table
+     * @param mixed[] $values - array column_name => value (if we insert one row) or array list column_name => value if we insert many lines
+     *
+     * @psalm-taint-sink sql $tableName
+     */
+    public function insertAssocBulk(string $tableName, array $values): Statement
+    {
+    }
+
+    /**
+     * @param string|string[] $fileNames
+     * @param string[] $columns
+     *
+     * @psalm-taint-sink sql $tableName
+     * @psalm-taint-sink sql $columns
+     * @psalm-taint-sink file $fileNames
+     */
+    public function insertBatchTSVFiles(string $tableName, $fileNames, array $columns = []): array
+    {
+    }
+
+    /**
+     * @param string|string[] $fileNames
+     * @param string[] $columns
+     * @param string $format ['TabSeparated','TabSeparatedWithNames','CSV','CSVWithNames']
+     * @return Statement[]
+     * @throws Exception\TransportException
+     *
+     * @psalm-taint-sink sql $tableName
+     * @psalm-taint-sink sql $columns
+     * @psalm-taint-sink sql $format
+     * @psalm-taint-sink file $fileNames
+     */
+    public function insertBatchFiles(string $tableName, $fileNames, array $columns = [], string $format = 'CSV'): array
+    {
+    }
+
+    /**
+     * @param string[] $columns
+     * @param string $format ['TabSeparated','TabSeparatedWithNames','CSV','CSVWithNames']
+     *
+     * @psalm-taint-sink sql $tableName
+     * @psalm-taint-sink sql $columns
+     * @psalm-taint-sink sql $format
+     */
+    public function insertBatchStream(string $tableName, array $columns = [], string $format = 'CSV'): Transport\CurlerRequest
+    {
+    }
+
+    /**
+     * @param array<string, mixed> $bind
+     * @throws Exception\TransportException
+     *
+     * @psalm-taint-sink sql $sql
+     */
+    public function streamWrite(Stream $stream, string $sql, array $bind = []): Statement
+    {
+    }
+
+    /**
+     * @param array<string, mixed> $bind
+     *
+     * @psalm-taint-sink sql $sql
+     */
+    public function streamRead(Stream $streamRead, string $sql, array $bind = []): Statement
+    {
+    }
+
+    /**
+     * @throws \Exception
+     *
+     * @psalm-taint-sink sql $database
+     * @psalm-taint-sink sql $table
+     */
+    public function isExists(string $database, string $table): array
+    {
+    }
+
+    /**
+     * @deprecated
+     *
+     * @psalm-taint-sink sql $dataBaseTableName
+     */
+    public function dropPartition(string $dataBaseTableName, string $partition_id): Statement
+    {
+    }
+
+    /**
+     * @throws \Exception
+     * @deprecated
+     *
+     * @psalm-taint-sink sql $tableName
+     */
+    public function truncateTable(string $tableName): array
+    {
+    }
+}
+}
+
+namespace ClickHouseDB\Quote {
+class FormatLine
+{
+    /**
+     * @psalm-taint-specialize
+     * @psalm-flow ($row) -> return
+     * @psalm-taint-escape ($skipEncode is false ? 'sql' : null)
+     */
+    public static function Insert(array $row, bool $skipEncode = false): string
+    {
+    }
+
+    /**
+     * @psalm-taint-specialize
+     * @psalm-flow ($row) -> return
+     */
+    public static function TSV(array $row): string
+    {
+    }
+
+    /**
+     * @psalm-taint-specialize
+     * @psalm-flow ($row) -> return
+     */
+    public static function CSV(array $row): string
+    {
+    }
+}
+}
+
+namespace ClickHouseDB\Quote {
+use ClickHouseDB\Exception\UnsupportedValueType;
+use ClickHouseDB\Query\Expression\Expression;
+use ClickHouseDB\Type\Type;
+use DateTimeInterface;
+
+class ValueFormatter
+{
+    /**
+     * @psalm-taint-specialize
+     * @psalm-flow ($value) -> return
+     * @psalm-taint-escape ($addQuotes is true ? 'sql' : null)
+     */
+    public static function formatValue(mixed $value, bool $addQuotes = true): mixed
+    {
+    }
+}
+}
+
+namespace ClickHouseDB\Query {
+use ClickHouseDB\Exception\QueryException;
+
+class WriteToFile
+{
+    /**
+     * @psalm-taint-sink file $file_name
+     */
+    public function __construct(string $file_name, bool $overwrite = true, ?string $format = null)
+    {
+    }
+}
+}

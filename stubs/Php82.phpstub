@@ -7,7 +7,7 @@
 
 namespace {
     class ReflectionClass implements Reflector {
-        /** @psalm-pure */
+        /** @psalm-capabilities read-props */
         public function isReadOnly(): bool {}
     }
 

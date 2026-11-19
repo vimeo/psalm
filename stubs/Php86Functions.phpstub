@@ -1,0 +1,16 @@
+<?php
+
+// Functions introduced in PHP 8.6. Loaded only when analysing >= 8.6 so that they stay undefined
+// for older target versions. See Php82Functions.phpstub.
+
+/**
+ * The result is always one of the three arguments.
+ *
+ * @psalm-pure
+ * @template T
+ * @param T $value
+ * @param T $min
+ * @param T $max
+ * @return T
+ */
+function clamp(mixed $value, mixed $min, mixed $max): mixed {}

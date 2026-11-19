@@ -14,11 +14,14 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\PropertyBagTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -45,9 +48,11 @@ use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
+use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_fill;
+use function array_key_last;
 use function array_keys;
 use function array_pop;
 use function array_reverse;
@@ -60,10 +65,11 @@ use function implode;
 use function is_string;
 use function preg_match;
 use function sort;
+use function spl_object_id;
 use function str_contains;
+use function str_ends_with;
 use function str_starts_with;
 use function strlen;
-use function strpos;
 use function substr;
 
 /**
@@ -76,12 +82,17 @@ final class ArrayAssignmentAnalyzer
      */
     private const MAX_KEY_VALUES = 8;
 
+    /**
+     * @param bool $by_reference whether the item is passed by reference, and $assignment_value_type is what the call
+     *     leaves in it
+     */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
         Context $context,
         ?PhpParser\Node\Expr $assign_value,
         Union $assignment_value_type,
+        bool $by_reference = false,
     ): void {
         $nesting = 0;
         $var_id = ExpressionIdentifier::getVarId(
@@ -98,7 +109,10 @@ final class ArrayAssignmentAnalyzer
             $assignment_value_type,
             $context,
             true,
+            by_reference: $by_reference,
         );
+
+        PropertyBagTaints::taintAssignment($statements_analyzer, $stmt, $assignment_value_type, $context);
 
         if (!$statements_analyzer->node_data->getType($stmt->var) && $var_id) {
             $context->vars_in_scope[$var_id] = Type::getMixed();
@@ -107,6 +121,9 @@ final class ArrayAssignmentAnalyzer
 
     /**
      * @param bool $is_assignment whether $assign_value is the value assigned, not an operand of it
+     * @param bool $assigns_root_property false when a reference to the item is only taken: a property holding the
+     *     array then only has its type updated, it isn't assigned
+     * @param bool $by_reference whether the item is passed by reference (or a reference to it is taken)
      * @return false|null
      */
     public static function updateArrayType(
@@ -116,6 +133,8 @@ final class ArrayAssignmentAnalyzer
         Union $assignment_type,
         Context $context,
         bool $is_assignment = false,
+        bool $assigns_root_property = true,
+        bool $by_reference = false,
     ): ?bool {
         $root_array_expr = $stmt;
 
@@ -141,12 +160,47 @@ final class ArrayAssignmentAnalyzer
         $root_type = $statements_analyzer->node_data->getType($root_array_expr) ?? Type::getMixed();
 
         if ($root_type->hasMixed()) {
+            $vars_before_read = $context->vars_in_scope;
+
+            // read the chain as PHP does for a write: missing offsets along the arrays are created
+            $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+            $context->inside_by_ref_offset = true;
+
             ExpressionAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->var,
                 $context,
                 true,
             );
+
+            $context->inside_by_ref_offset = $was_inside_by_ref_offset;
+
+            // the read creates the missing offsets as null, the write below creates them as arrays
+            foreach (array_slice($child_stmts, 1) as $child_stmt) {
+                $child_var_id = ExpressionIdentifier::getExtendedVarId(
+                    $child_stmt,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer,
+                );
+
+                if ($child_var_id === null
+                    || isset($vars_before_read[$child_var_id])
+                    || !isset($context->vars_in_scope[$child_var_id])
+                    || !$context->vars_in_scope[$child_var_id]->hasType('null')
+                    // an object isn't replaced by the array the write creates from null
+                    || $context->vars_in_scope[$child_var_id]->hasObjectType()
+                ) {
+                    continue;
+                }
+
+                if ($context->vars_in_scope[$child_var_id]->isNull()) {
+                    unset($context->vars_in_scope[$child_var_id]);
+                } else {
+                    $offset_type = $context->vars_in_scope[$child_var_id]->getBuilder();
+                    $offset_type->removeType('null');
+                    $context->vars_in_scope[$child_var_id] = $offset_type->freeze();
+                }
+            }
 
             if ($stmt->dim) {
                 ExpressionAnalyzer::analyze(
@@ -186,6 +240,7 @@ final class ArrayAssignmentAnalyzer
             $current_dim,
             $offset_already_existed,
             $is_assignment ? $context : null,
+            $by_reference,
         );
 
         $root_is_string = $root_type->isString();
@@ -250,20 +305,30 @@ final class ArrayAssignmentAnalyzer
 
         $statements_analyzer->node_data->setType($root_array_expr, $root_type);
 
-        if ($root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch) {
-            if ($root_array_expr->name instanceof PhpParser\Node\Identifier) {
+        // an element of an object (an ArrayAccess) is written by its offsetSet(), charged as that call: the
+        // property keeps holding the same object, so it isn't assigned
+        if ($assigns_root_property
+            && $root_array_expr instanceof PhpParser\Node\Expr\PropertyFetch
+            && !$root_type->isObjectType()
+        ) {
+            $prop_name = InstancePropertyFetchAnalyzer::getPropertyName($statements_analyzer, $root_array_expr);
+
+            if ($prop_name !== null) {
                 InstancePropertyAssignmentAnalyzer::analyze(
                     $statements_analyzer,
                     $root_array_expr,
-                    $root_array_expr->name->name,
+                    $prop_name,
                     null,
                     $root_type,
                     $context,
                     false,
+                    true,
                 );
 
                 self::trackPropertyElementImpurity($statements_analyzer, $root_array_expr, $context);
             } else {
+                assert(!$root_array_expr->name instanceof PhpParser\Node\Identifier);
+
                 if (ExpressionAnalyzer::analyze($statements_analyzer, $root_array_expr->name, $context) === false) {
                     return false;
                 }
@@ -272,7 +337,8 @@ final class ArrayAssignmentAnalyzer
                     return false;
                 }
             }
-        } elseif ($root_array_expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        } elseif ($assigns_root_property
+            && $root_array_expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
             && $root_array_expr->name instanceof PhpParser\Node\Identifier
         ) {
             if (StaticPropertyAssignmentAnalyzer::analyze(
@@ -290,13 +356,33 @@ final class ArrayAssignmentAnalyzer
                 && !$root_type->possibly_undefined_from_try
                     ? $root_type->setPossiblyUndefined(false)
                     : $root_type;
+            $context->writeToReferencesPossiblyBound($root_var_id, $root_type, $codebase);
+
+            if ($context->references_in_scope) {
+                $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
+
+                self::updateArraysHoldingBoundItem($statements_analyzer, $context, $root_var_id, $location);
+
+                foreach ($child_stmts as $child_stmt) {
+                    $child_var_id = ExpressionIdentifier::getExtendedVarId(
+                        $child_stmt,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer,
+                    );
+
+                    if ($child_var_id !== null) {
+                        self::updateArraysHoldingBoundItem($statements_analyzer, $context, $child_var_id, $location);
+                    }
+                }
+            }
         }
 
         if ($root_array_expr instanceof PhpParser\Node\Expr\MethodCall
             || $root_array_expr instanceof PhpParser\Node\Expr\StaticCall
             || $root_array_expr instanceof PhpParser\Node\Expr\FuncCall
         ) {
-            if ($root_type->hasArray()) {
+            // a function returning by reference returns the array itself
+            if ($root_type->hasArray() && !$root_type->by_ref) {
                 IssueBuffer::maybeAdd(
                     new InvalidArrayAssignment(
                         'Assigning to the output of a function has no effect',
@@ -308,6 +394,268 @@ final class ArrayAssignmentAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * What is written to a variable bound by reference to array items (`$r = &$a['k']`, `$a['k'] = &$r`) is written
+     * to the arrays holding those items: their types are rebuilt from its new type
+     */
+    public static function updateArraysHoldingBoundItem(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        string $var_id,
+        CodeLocation $location,
+    ): void {
+        if (!isset($context->references_in_scope[$var_id]) && !($context->referenced_counts[$var_id] ?? 0)) {
+            return;
+        }
+
+        $referenced_id = self::getReferencedVarId($context, $var_id);
+
+        foreach ([$referenced_id => $referenced_id] + $context->references_in_scope as $item_id => $_) {
+            if ($item_id !== $var_id
+                && str_ends_with($item_id, ']')
+                && isset($context->vars_in_scope[$item_id])
+                && self::getReferencedVarId($context, $item_id) === $referenced_id
+            ) {
+                self::updateArraysHoldingItem($statements_analyzer, $context, $item_id, $location);
+            }
+        }
+    }
+
+    /**
+     * The variable the reference chain from $var_id ends at
+     *
+     * @psalm-mutation-free
+     */
+    private static function getReferencedVarId(Context $context, string $var_id): string
+    {
+        $seen = [];
+
+        while (isset($context->references_in_scope[$var_id]) && !isset($seen[$var_id])) {
+            $seen[$var_id] = true;
+            $var_id = $context->references_in_scope[$var_id];
+        }
+
+        return $var_id;
+    }
+
+    private static function updateArraysHoldingItem(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        string $item_id,
+        CodeLocation $location,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $item_type = $context->vars_in_scope[$item_id];
+        $key_parts = Reconciler::breakUpPathIntoParts($item_id);
+
+        while (count($key_parts) > 3 && end($key_parts) === ']') {
+            array_pop($key_parts);
+            $key = array_pop($key_parts);
+            array_pop($key_parts);
+            $array_id = implode('', $key_parts);
+
+            if ($key === null || !isset($context->vars_in_scope[$array_id])) {
+                return;
+            }
+
+            $array_type = $context->vars_in_scope[$array_id];
+            $holds_mixed = $item_type->hasMixed();
+
+            foreach ($array_type->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TKeyedArray) {
+                    $holds_mixed = $holds_mixed || $atomic_type->getGenericValueType()->hasMixed();
+                } elseif ($atomic_type instanceof TArray) {
+                    $holds_mixed = $holds_mixed || $atomic_type->type_params[1]->hasMixed();
+                } else {
+                    return;
+                }
+            }
+
+            $key_values = self::getKeyValuesOfOffset($context, $key);
+
+            if (count($key_values) === 1) {
+                $array_type = self::setItemOfKey($codebase, $array_type, $key_values[0], $item_type);
+            } elseif ($key_values) {
+                $array_type = self::updateTypeWithKeyValues($codebase, $array_type, $item_type, $key_values);
+            } else {
+                // the key the item is under, as an assignment to it has it
+                $key_type = Type::getArrayKey();
+
+                if ($key[0] === '$'
+                    && isset($context->vars_in_scope[$key])
+                    && !$context->vars_in_scope[$key]->hasMixed()
+                ) {
+                    $key_type = $context->vars_in_scope[$key];
+
+                    // PHP takes null as the empty string
+                    if ($key_type->isNullable()) {
+                        $key_type = $key_type->getBuilder();
+                        $key_type->removeType('null');
+                        $key_type = $key_type->addType(Type::getAtomicStringFromLiteral(''))->freeze();
+                    }
+
+                    $key_type = ArrayFetchAnalyzer::castInvalidOffsetTypes(
+                        ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type),
+                    );
+                }
+
+                // as for an assignment, an item under any of the keys that may be anything is mixed
+                $array_type = Type::combineUnionTypes(
+                    $array_type,
+                    new Union([new TNonEmptyArray([$key_type, $holds_mixed ? Type::getMixed() : $item_type])]),
+                    $codebase,
+                );
+            }
+
+            if ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
+                // the array holds what was written under the key, as for an assignment of the item
+                $array_node = DataFlowNode::getForAssignment($array_id . ' through ' . $item_id, $location);
+                $graph->addNode($array_node);
+
+                $old_array_type = $context->vars_in_scope[$array_id];
+                $copy_path_type = count($key_values) === 1
+                    ? self::getOverwritePathType($old_array_type, $key_values[0])
+                    : '=';
+
+                foreach ($old_array_type->parent_nodes as $old_array_node) {
+                    $graph->addPath($old_array_node, $array_node, $copy_path_type);
+                }
+
+                foreach ($item_type->parent_nodes as $item_node) {
+                    if (count($key_values) > 1) {
+                        self::taintAssignmentUnderKeys($graph, $item_node, $array_node, $key_values, $location, 0);
+                    } else {
+                        $graph->addPath(
+                            $item_node,
+                            $array_node,
+                            $key_values
+                                ? 'arrayvalue-assignment-\'' . $key_values[0]->value . '\''
+                                : 'arrayvalue-assignment',
+                        );
+                    }
+                }
+
+                $array_type = $array_type->setParentNodes([$array_node->id => $array_node]);
+            }
+
+            $context->vars_in_scope[$array_id] = $array_type;
+            $item_type = $array_type;
+        }
+    }
+
+    /**
+     * The array with $item_type under the key, which it holds whether it had it before or not, as an assignment to
+     * the item leaves it
+     */
+    private static function setItemOfKey(
+        Codebase $codebase,
+        Union $array_type,
+        TLiteralInt|TLiteralString $key_value,
+        Union $item_type,
+    ): Union {
+        $key = $key_value->value;
+        $item_type = $item_type->setPossiblyUndefined(false);
+        $atomic_types = [];
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray) {
+                if ($atomic_type->is_list && !isset($atomic_type->properties[$key])) {
+                    // which keys the list holds then depends on the ones before
+                    return self::updateTypeWithKeyValues($codebase, $array_type, $item_type, [$key_value]);
+                }
+
+                $properties = $atomic_type->properties;
+                $properties[$key] = $item_type;
+                $atomic_types[] = $atomic_type->setProperties($properties);
+            } elseif ($atomic_type instanceof TArray) {
+                $atomic_types[] = TKeyedArray::make(
+                    [$key => $item_type],
+                    null,
+                    $atomic_type->isEmptyArray() ? null : $atomic_type->type_params,
+                );
+            } else {
+                return self::updateTypeWithKeyValues($codebase, $array_type, $item_type, [$key_value]);
+            }
+        }
+
+        return (new Union($atomic_types))->setParentNodes($array_type->parent_nodes);
+    }
+
+    /**
+     * The literal keys the offset of a var id (`'k'`, `0`, `$k`) can be, or none when one of them isn't known
+     *
+     * @return list<TLiteralInt|TLiteralString>
+     */
+    private static function getKeyValuesOfOffset(Context $context, string $offset): array
+    {
+        if ($offset[0] === '\'' || $offset[0] === '"') {
+            $key_value = Type::getAtomicStringFromLiteral(ExpressionIdentifier::unquoteOffset($offset));
+
+            return $key_value instanceof TLiteralString ? [$key_value] : [];
+        }
+
+        if (preg_match('/^-?[0-9]+$/', $offset) === 1) {
+            return [new TLiteralInt((int) $offset)];
+        }
+
+        if ($offset[0] !== '$' || !isset($context->vars_in_scope[$offset])) {
+            return [];
+        }
+
+        $key_values = [];
+
+        foreach ($context->vars_in_scope[$offset]->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TLiteralInt && !$atomic_type instanceof TLiteralString) {
+                return [];
+            }
+
+            $key_values[] = $atomic_type;
+        }
+
+        return count($key_values) <= self::MAX_KEY_VALUES ? $key_values : [];
+    }
+
+    /**
+     * The expressions an item is reached through besides the arrays holding it: the keys, what the root array is
+     * fetched from, or the root itself when it is not a variable or a property
+     *
+     * @return list<PhpParser\Node\Expr>
+     * @psalm-capabilities read-props
+     */
+    public static function getOperands(PhpParser\Node\Expr\ArrayDimFetch $stmt): array
+    {
+        $operands = [];
+        $root = $stmt;
+
+        while ($root instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            if ($root->dim) {
+                $operands[] = $root->dim;
+            }
+
+            $root = $root->var;
+        }
+
+        if ($root instanceof PhpParser\Node\Expr\PropertyFetch) {
+            $operands[] = $root->var;
+            $root_children = [$root->name];
+        } elseif ($root instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+            $root_children = [$root->class, $root->name];
+        } elseif ($root instanceof Variable) {
+            $root_children = [$root->name];
+        } else {
+            $operands[] = $root;
+            $root_children = [];
+        }
+
+        foreach ($root_children as $root_child) {
+            if ($root_child instanceof PhpParser\Node\Expr) {
+                $operands[] = $root_child;
+            }
+        }
+
+        return $operands;
     }
 
     /**
@@ -656,6 +1004,19 @@ final class ArrayAssignmentAnalyzer
 
             $stmt_type = $stmt_type->setParentNodes([$parent_node->id => $parent_node]);
 
+            // the start of the items, for the keys of a keyed store a list of keys names: $assign_value is the
+            // value assigned only with $assignment_context, not an operand of it
+            $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+            if ($assign_value !== null && $assignment_context !== null && $taint_flow_graph && !$stmt_type->by_ref) {
+                TaintStore::recordItemAssignment(
+                    $statements_analyzer,
+                    $taint_flow_graph,
+                    $old_parent_nodes,
+                    $assign_value,
+                    $parent_node,
+                );
+            }
+
             foreach ($old_parent_nodes as $old_parent_node) {
                 $graph->addPath(
                     $old_parent_node,
@@ -781,7 +1142,7 @@ final class ArrayAssignmentAnalyzer
      * Assigning an offset of anything that may not be an array (an ArrayAccess object, a string...) may do anything
      * else with what it held, so the path keeps it all then.
      *
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function getOverwritePathType(Union $array_type, TLiteralInt|TLiteralString $key): string
     {
@@ -895,7 +1256,9 @@ final class ArrayAssignmentAnalyzer
                     }
                 }
 
-                $array_atomic_key_type = ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type);
+                $array_atomic_key_type = ArrayFetchAnalyzer::castInvalidOffsetTypes(
+                    ArrayFetchAnalyzer::replaceOffsetTypeWithInts($key_type),
+                );
             } else {
                 $array_atomic_key_type = Type::getArrayKey();
             }
@@ -980,6 +1343,18 @@ final class ArrayAssignmentAnalyzer
                     && $atomic_root_type_array->fallback_params === null
                 ) {
                     $array_atomic_type = $atomic_root_type_array;
+
+                    // the item an append in the middle of a nested write added holds nothing yet: it is the value
+                    $last_item_key = array_key_last($atomic_root_type_array->properties);
+
+                    if ($array_atomic_type_list !== null
+                        && $atomic_root_type_array->properties[$last_item_key]->isNever()
+                    ) {
+                        $array_atomic_type = $atomic_root_type_array->setProperties([
+                            ...$atomic_root_type_array->properties,
+                            $last_item_key => $array_atomic_type_list,
+                        ]);
+                    }
                 } elseif ($atomic_root_type_array instanceof TNonEmptyArray
                     || ($atomic_root_type_array instanceof TKeyedArray
                         && $atomic_root_type_array->is_list
@@ -1018,27 +1393,12 @@ final class ArrayAssignmentAnalyzer
                     }
                 } elseif ($atomic_root_type_array instanceof TKeyedArray
                     && $atomic_root_type_array->fallback_params === null
+                    && $array_atomic_type_array
                 ) {
-                    if ($array_atomic_type_array) {
-                        $array_atomic_type = new TNonEmptyArray(
-                            $array_atomic_type_array,
-                            count($atomic_root_type_array->properties),
-                        );
-                    } else {
-                        assert($array_atomic_type_list !== null);
-                        $array_atomic_type = array_fill(
-                            $atomic_root_type_array->getMinCount(),
-                            count($atomic_root_type_array->properties)-1,
-                            $array_atomic_type_list,
-                        );
-                        assert(count($array_atomic_type) > 0);
-                        $array_atomic_type = TKeyedArray::make(
-                            $array_atomic_type,
-                            null,
-                            null,
-                            true,
-                        );
-                    }
+                    $array_atomic_type = new TNonEmptyArray(
+                        $array_atomic_type_array,
+                        count($atomic_root_type_array->properties),
+                    );
                     $from_countable_object_like = true;
                 } elseif ($array_atomic_type_list) {
                     $array_atomic_type = Type::getNonEmptyListAtomic(
@@ -1165,11 +1525,14 @@ final class ArrayAssignmentAnalyzer
         ?PhpParser\Node\Expr &$current_dim,
         bool &$offset_already_existed,
         ?Context $assignment_context,
+        bool $by_reference,
     ): void {
         $var_id_additions = [];
         $written_offsets = [];
+        $existing_offsets = [];
 
         $root_var = end($child_stmts)->var;
+        $previous_dim_is_append = false;
 
         // First go from the root element up, and go as far as we can to figure out what
         // array types there are
@@ -1223,7 +1586,10 @@ final class ArrayAssignmentAnalyzer
 
             $extended_var_id = $root_var_id . implode('', $var_id_additions);
 
-            if ($parent_var_id && isset($context->vars_in_scope[$parent_var_id])) {
+            $existing_offsets[spl_object_id($child_stmt)] = isset($context->vars_in_scope[$extended_var_id])
+                && !$context->vars_in_scope[$extended_var_id]->possibly_undefined;
+
+            if ($parent_var_id && !$previous_dim_is_append && isset($context->vars_in_scope[$parent_var_id])) {
                 $array_type = $context->vars_in_scope[$parent_var_id];
                 $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
             }
@@ -1241,12 +1607,18 @@ final class ArrayAssignmentAnalyzer
                 $context,
                 $assign_value,
                 !$is_last ? null : $assignment_type,
+                $by_reference,
             );
             if ($child_stmt->dim) {
                 $statements_analyzer->node_data->setType(
                     $child_stmt->dim,
                     $child_stmt_dim_type_or_int,
                 );
+            }
+
+            // the element an append creates holds nothing yet
+            if (!$child_stmt->dim && !$is_last) {
+                $child_stmt_type = Type::getNever();
             }
 
             $statements_analyzer->node_data->setType(
@@ -1295,28 +1667,14 @@ final class ArrayAssignmentAnalyzer
             $current_dim = $child_stmt->dim;
 
             $parent_var_id = $extended_var_id;
+            $previous_dim_is_append = !$child_stmt->dim;
         }
 
         if ($root_var_id !== null) {
             self::removeAliasedOffsets($context, $root_var_id, $written_offsets);
         }
 
-        if ($statements_analyzer->data_flow_graph
-            && $root_var_id !== null
-            && isset($context->references_to_external_scope[$root_var_id])
-            && $root_var instanceof Variable && is_string($root_var->name)
-            && $root_var_id === '$' . $root_var->name
-        ) {
-            // Array is a reference to an external scope, mark it as used
-            $statements_analyzer->data_flow_graph->addPath(
-                DataFlowNode::getForAssignment(
-                    $root_var_id,
-                    new CodeLocation($statements_analyzer->getSource(), $root_var),
-                ),
-                DataFlowNode::getForVariableUse(),
-                'variable-use',
-            );
-        }
+        self::markExternalReferenceAsUsed($statements_analyzer, $context, $root_var_id, $root_var);
 
         if ($root_var_id
             && $full_var_id
@@ -1336,7 +1694,48 @@ final class ArrayAssignmentAnalyzer
             $context->possibly_assigned_var_ids[$extended_var_id] = true;
         }
 
-        array_shift($child_stmts);
+        $outermost_child_stmt = array_shift($child_stmts);
+
+        if ($child_stmts && ($existing_offsets[spl_object_id($outermost_child_stmt)] ?? false)) {
+            // the root array is what the outermost key is eventually written to
+            $parent_var_id = $root_var_id;
+            $offset_already_existed = true;
+        }
+
+        self::updateParentTypes(
+            $statements_analyzer,
+            $codebase,
+            $context,
+            $child_stmts,
+            $existing_offsets,
+            $root_var_id,
+            $parent_var_id,
+            $root_type,
+            $current_type,
+            $current_dim,
+            $var_id_additions,
+        );
+    }
+
+    /**
+     * @param list<PhpParser\Node\Expr\ArrayDimFetch> $child_stmts
+     * @param array<int, bool> $existing_offsets
+     * @param list<string> $var_id_additions
+     */
+    private static function updateParentTypes(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        array $child_stmts,
+        array $existing_offsets,
+        ?string $root_var_id,
+        ?string &$parent_var_id,
+        Union &$root_type,
+        Union &$current_type,
+        ?PhpParser\Node\Expr &$current_dim,
+        array &$var_id_additions,
+    ): void {
+        $previous_child_stmt = null;
 
         // only update as many child stmts are we were able to process above
         foreach ($child_stmts as $child_stmt) {
@@ -1356,7 +1755,15 @@ final class ArrayAssignmentAnalyzer
                     $key_values,
                 );
             } else {
-                if (!$current_dim) {
+                if (!$current_dim
+                    || self::isExistingOffsetOfList(
+                        $statements_analyzer,
+                        $child_stmt_type,
+                        $current_dim,
+                        $previous_child_stmt !== null
+                            && ($existing_offsets[spl_object_id($previous_child_stmt)] ?? false),
+                    )
+                ) {
                     $array_assignment_type = Type::getList($current_type);
                 } else {
                     $key_type = $statements_analyzer->node_data->getType($current_dim);
@@ -1392,6 +1799,7 @@ final class ArrayAssignmentAnalyzer
 
             $current_type = $child_stmt_type;
             $current_dim = $child_stmt->dim;
+            $previous_child_stmt = $child_stmt;
 
             array_pop($var_id_additions);
 
@@ -1402,6 +1810,8 @@ final class ArrayAssignmentAnalyzer
                 $parent_array_var_id = $root_var_id . implode('', array_slice($var_id_additions, 0, -1));
                 $context->vars_in_scope[$extended_var_id] = $child_stmt_type;
                 $context->possibly_assigned_var_ids[$extended_var_id] = true;
+                // the next array to update is the one that holds this one
+                $parent_var_id = $parent_array_var_id;
             }
 
             if ($statements_analyzer->data_flow_graph) {
@@ -1431,6 +1841,46 @@ final class ArrayAssignmentAnalyzer
                 }
             }
         }
+    }
+
+    private static function markExternalReferenceAsUsed(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        ?string $root_var_id,
+        PhpParser\Node\Expr $root_var,
+    ): void {
+        if ($statements_analyzer->data_flow_graph
+            && $root_var_id !== null
+            && isset($context->references_to_external_scope[$root_var_id])
+            && $root_var instanceof Variable && is_string($root_var->name)
+            && $root_var_id === '$' . $root_var->name
+        ) {
+            // Array is a reference to an external scope, mark it as used
+            $statements_analyzer->data_flow_graph->addPath(
+                DataFlowNode::getForAssignment(
+                    $root_var_id,
+                    new CodeLocation($statements_analyzer->getSource(), $root_var),
+                ),
+                DataFlowNode::getForVariableUse(),
+                'variable-use',
+            );
+        }
+    }
+
+    /**
+     * Writing to an offset that is known to exist, with an int key, leaves a list a list.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isExistingOffsetOfList(
+        StatementsAnalyzer $statements_analyzer,
+        Union $array_type,
+        PhpParser\Node\Expr $dim,
+        bool $offset_existed,
+    ): bool {
+        return $offset_existed
+            && $array_type->hasList()
+            && $statements_analyzer->node_data->getType($dim)?->isInt() === true;
     }
 
     /**
@@ -1497,10 +1947,14 @@ final class ArrayAssignmentAnalyzer
 
         for ($i = $position; $i < $length; $i++) {
             if ($var_id[$i] === "'") {
-                // string literals aren't escaped in var ids, so one ends where a quote closes a key
-                $i = strpos($var_id, "']", $i + 1);
+                // a string literal ends at the first quote that isn't escaped
+                for ($i++; $i < $length && $var_id[$i] !== "'"; $i++) {
+                    if ($var_id[$i] === '\\') {
+                        $i++;
+                    }
+                }
 
-                if ($i === false) {
+                if ($i >= $length) {
                     return null;
                 }
             } elseif ($var_id[$i] === '[') {
@@ -1618,7 +2072,7 @@ final class ArrayAssignmentAnalyzer
             if ($string_to_int !== false) {
                 $var_id_addition = '[' . $string_to_int . ']';
             } else {
-                $var_id_addition = '[\'' . $offset_type->value . '\']';
+                $var_id_addition = '[' . ExpressionIdentifier::quoteOffset($offset_type->value) . ']';
             }
 
             return [$offset_type, $var_id_addition, true];

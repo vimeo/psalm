@@ -19,7 +19,11 @@ use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\Codebase\TaintFlowGraph;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
@@ -31,6 +35,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ArgumentTypeCoercion;
+use Psalm\Issue\CallableByReferenceMismatch;
 use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
@@ -64,16 +69,20 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_shift;
 use function count;
 use function explode;
 use function implode;
 use function in_array;
 use function is_string;
+use function max;
 use function mb_ord;
 use function preg_split;
 use function reset;
@@ -92,6 +101,9 @@ use const PREG_SPLIT_NO_EMPTY;
  */
 final class ArgumentAnalyzer
 {
+    /** Set on an argument PHP never passes, whose type isn't checked against its parameter */
+    public const NOT_PASSED = 'not_passed';
+
     // callable $this
     // some PHP-internal functions (e.g. array_filter) will call the callback within the current context
     // unlike user-defined functions which call the callback in their context
@@ -163,7 +175,12 @@ final class ArgumentAnalyzer
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map,
+        bool $static_is_called_class = false,
     ): ?bool {
+        if ($arg->getAttribute(self::NOT_PASSED) === true) {
+            return null;
+        }
+
         $codebase = $statements_analyzer->getCodebase();
 
         // virtual arguments are those of calls PHP makes itself, such as offsetGet() or __get()
@@ -188,7 +205,6 @@ final class ArgumentAnalyzer
         if (!$arg_value_type) {
             if ($function_param && !$function_param->by_ref) {
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)
@@ -216,7 +232,7 @@ final class ArgumentAnalyzer
                     IssueBuffer::maybeAdd(
                         new MixedArgument(
                             'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                                . ' cannot be mixed, expecting ' . $param_type,
+                                . ' cannot be mixed, expecting ' . $param_type->getId(),
                             new CodeLocation($statements_analyzer->getSource(), $arg->value),
                             $cased_method_id,
                         ),
@@ -291,6 +307,7 @@ final class ArgumentAnalyzer
             $template_result,
             $specialize_taint,
             $in_call_map,
+            $static_is_called_class,
         ) === false) {
             return false;
         }
@@ -382,6 +399,7 @@ final class ArgumentAnalyzer
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map,
+        bool $static_is_called_class,
     ): ?bool {
         if (!$function_param->type) {
             if (!$codebase->infer_types_from_usage && !$statements_analyzer->data_flow_graph) {
@@ -422,9 +440,12 @@ final class ArgumentAnalyzer
             $parent_class,
             true,
             false,
-            $static_classlike_storage->final ?? false,
+            ($static_classlike_storage->final ?? false) || $static_is_called_class,
             true,
         );
+
+        // what the argument says about each template is read from the declared type, before class templates are bound
+        $declared_param_type = $param_type;
 
         if ($class_generic_params) {
             // here we're replacing the param types and arg types with the bound
@@ -513,33 +534,13 @@ final class ArgumentAnalyzer
                 $context->calling_method_id ?: $context->calling_function_id,
             );
 
-            foreach ($bindable_template_params as $template_type) {
-                if (!isset(
-                    $template_result->lower_bounds
-                        [$template_type->param_name]
-                        [$template_type->defining_class],
-                )) {
-                    if (isset(
-                        $template_result->upper_bounds
-                            [$template_type->param_name]
-                            [$template_type->defining_class],
-                    )) {
-                        $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class] = [
-                            new TemplateBound(
-                                $template_result->upper_bounds
-                                    [$template_type->param_name]
-                                    [$template_type->defining_class]->type,
-                            ),
-                        ];
-                    } else {
-                        $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class] = [
-                            new TemplateBound(
-                                $template_type->as,
-                            ),
-                        ];
-                    }
-                }
-            }
+            self::addConstraintFallbacks(
+                $codebase,
+                $template_result,
+                $bindable_template_params,
+                $declared_param_type,
+                $arg_type_param,
+            );
 
             $param_type = TypeExpander::expandUnion(
                 $codebase,
@@ -549,7 +550,7 @@ final class ArgumentAnalyzer
                 $parent_class,
                 true,
                 false,
-                $static_classlike_storage->final ?? false,
+                ($static_classlike_storage->final ?? false) || $static_is_called_class,
                 true,
             );
         }
@@ -569,7 +570,6 @@ final class ArgumentAnalyzer
         if ($arg->unpack) {
             if ($arg_value_type->hasMixed()) {
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)
@@ -605,6 +605,8 @@ final class ArgumentAnalyzer
                         $context,
                         $specialize_taint,
                         $in_call_map,
+                        null,
+                        $unpacked_argument_offset,
                     );
                 }
 
@@ -614,6 +616,36 @@ final class ArgumentAnalyzer
             if ($arg_value_type->hasArray()) {
                 $unpacked_atomic_array = $arg_value_type->getArray();
                 $arg_key_allowed = true;
+
+                // a template param is as iterable as its bound
+                $unpacked_atomic_types = $arg_value_type->getAtomicTypes();
+
+                while ($unpacked_atomic_type = array_shift($unpacked_atomic_types)) {
+                    if ($unpacked_atomic_type instanceof TTemplateParam) {
+                        $unpacked_atomic_types = [
+                            ...$unpacked_atomic_types,
+                            ...$unpacked_atomic_type->as->getAtomicTypes(),
+                        ];
+
+                        continue;
+                    }
+
+                    if (!$unpacked_atomic_type instanceof TClassStringMap
+                        && !$unpacked_atomic_type instanceof TMixed
+                        && !$unpacked_atomic_type->isIterable($codebase)
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new PossiblyInvalidArgument(
+                                'Tried to unpack non-iterable ' . $arg_value_type->getId(),
+                                new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                                $cased_method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+
+                        break;
+                    }
+                }
 
                 if ($unpacked_atomic_array instanceof TKeyedArray) {
                     if (!$allow_named_args && !$unpacked_atomic_array->getGenericKeyType()->isInt()) {
@@ -645,6 +677,12 @@ final class ArgumentAnalyzer
 
                             $arg_value_type = new Union([$arg_value_type_atomic]);
                         }
+                    } elseif ($codebase->analysis_php_version_id >= 8_00_00
+                        && $allow_named_args
+                        && $unpacked_atomic_array->getGenericKeyType()->allStringLiterals()
+                    ) {
+                        // the parameter has no key here: another unpacked argument can give it
+                        return null;
                     } else {
                         $arg_value_type = Type::getMixed();
                     }
@@ -789,11 +827,134 @@ final class ArgumentAnalyzer
             $specialize_taint,
             $in_call_map,
             $function_call_location,
+            $arg->name?->name,
+            $unpacked_argument_offset,
         ) === false) {
             return false;
         }
 
         return null;
+    }
+
+    /**
+     * Gives each template the argument did not bind its constraint (or the upper bound the argument gave it) as a
+     * stand-in lower bound, and sets {@see TemplateBound::$from_template_free_argument} on its lower bounds, those of
+     * earlier arguments included: a template takes its default only if no argument says anything about it.
+     *
+     * @param list<TTemplateParam> $bindable_template_params
+     */
+    private static function addConstraintFallbacks(
+        Codebase $codebase,
+        TemplateResult $template_result,
+        array $bindable_template_params,
+        Union $declared_param_type,
+        Union $arg_type,
+    ): void {
+        foreach ($bindable_template_params as $template_type) {
+            $lower_bounds = $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class]
+                ?? [];
+
+            foreach ($lower_bounds as $lower_bound) {
+                if ($lower_bound->from_template_free_argument) {
+                    $lower_bound->from_template_free_argument
+                        = self::saysNothingAbout($codebase, $template_type, $declared_param_type, $arg_type);
+                }
+            }
+
+            if ($lower_bounds !== []) {
+                continue;
+            }
+
+            $fallback_bound = new TemplateBound(
+                $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class]->type
+                    ?? $template_type->as,
+            );
+            $fallback_bound->from_constraint_fallback = true;
+            $fallback_bound->from_template_free_argument
+                = self::saysNothingAbout($codebase, $template_type, $declared_param_type, $arg_type);
+
+            $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class] = [
+                $fallback_bound,
+            ];
+        }
+    }
+
+    /**
+     * Whether the argument fits the parts of the declared type not naming the template, read at their bounds. As a
+     * template there may take anything (`(callable(): T)|U`), no part of the argument may then fit or coerce to the
+     * parts naming the template.
+     */
+    private static function saysNothingAbout(
+        Codebase $codebase,
+        TTemplateParam $template_type,
+        Union $declared_param_type,
+        Union $arg_type,
+    ): bool {
+        $naming_types = [];
+        $other_types = [];
+
+        foreach ($declared_param_type->getAtomicTypes() as $key => $atomic) {
+            foreach ((new Union([$atomic]))->getTemplateTypes() as $named_template) {
+                if ($named_template->param_name === $template_type->param_name
+                    && $named_template->defining_class === $template_type->defining_class
+                ) {
+                    $naming_types[$key] = $atomic;
+
+                    continue 2;
+                }
+            }
+
+            $other_types[$key] = $atomic;
+        }
+
+        if ($other_types === []) {
+            return false;
+        }
+
+        $other_type = new Union($other_types);
+
+        if (!UnionTypeComparator::isContainedBy($codebase, $arg_type, self::atBounds($codebase, $other_type))) {
+            return false;
+        }
+
+        if ($naming_types === [] || $other_type->getTemplateTypes() === []) {
+            return true;
+        }
+
+        $naming_type = self::atBounds($codebase, new Union($naming_types));
+
+        foreach ($arg_type->getAtomicTypes() as $arg_atomic) {
+            $comparison_result = new TypeComparisonResult();
+
+            if (UnionTypeComparator::isContainedBy(
+                $codebase,
+                new Union([$arg_atomic]),
+                $naming_type,
+                false,
+                false,
+                $comparison_result,
+            ) || $comparison_result->type_coerced || $comparison_result->type_coerced_from_mixed) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static function atBounds(Codebase $codebase, Union $type): Union
+    {
+        return TypeExpander::expandUnion(
+            $codebase,
+            $type,
+            null,
+            null,
+            null,
+            true,
+            false,
+            false,
+            false,
+            true,
+        );
     }
 
     /**
@@ -818,12 +979,13 @@ final class ArgumentAnalyzer
         bool $specialize_taint,
         bool $in_call_map,
         CodeLocation $function_call_location,
+        ?string $argument_name = null,
+        int $unpacked_argument_offset = 0,
     ): ?bool {
         $codebase = $statements_analyzer->getCodebase();
 
         if ($param_type->hasMixed()) {
             if ($codebase->infer_types_from_usage
-                && !$input_type->hasMixed()
                 && !$param_type->from_docblock
                 && !$param_type->had_template
                 && $method_id
@@ -857,6 +1019,8 @@ final class ArgumentAnalyzer
                     $context,
                     $specialize_taint,
                     $in_call_map,
+                    $argument_name,
+                    $unpack ? $unpacked_argument_offset : null,
                 );
             }
 
@@ -867,7 +1031,6 @@ final class ArgumentAnalyzer
 
         if ($input_type->hasMixed()) {
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -896,8 +1059,8 @@ final class ArgumentAnalyzer
             IssueBuffer::maybeAdd(
                 new MixedArgument(
                     'Argument ' . ($argument_offset + 1) . $method_identifier
-                        . ' cannot be ' . $input_type->getId() . ', expecting ' .
-                        $param_type,
+                        . ' cannot be ' . $input_type->getId() . ', expecting '
+                        . $param_type->getId(),
                     $arg_location,
                     $cased_method_id,
                     $origin_location,
@@ -941,6 +1104,8 @@ final class ArgumentAnalyzer
                     $context,
                     $specialize_taint,
                     $in_call_map,
+                    $argument_name,
+                    $unpack ? $unpacked_argument_offset : null,
                 );
             }
 
@@ -965,7 +1130,6 @@ final class ArgumentAnalyzer
         }
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
                     instanceof FunctionLikeAnalyzer)
@@ -1071,6 +1235,32 @@ final class ArgumentAnalyzer
             $union_comparison_results,
         );
 
+        // the callable form of a string naming a function doesn't fit, but the string may fit the rest of the param
+        /** @var Union|null $original_input_type set by HighOrderFunctionArgHandler */
+        $original_input_type = $input_expr->getAttribute(HighOrderFunctionArgHandler::ORIGINAL_ARG_TYPE_ATTRIBUTE);
+
+        if ($original_input_type
+            && (!$type_match_found || $union_comparison_results->type_coerced)
+            && $param_type->hasCallableType()
+        ) {
+            $param_types_without_callable = array_filter(
+                $param_type->getAtomicTypes(),
+                static fn(Atomic $atomic) => !$atomic->isCallableType(),
+            );
+
+            if ($param_types_without_callable
+                && UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $original_input_type,
+                    new Union($param_types_without_callable),
+                )
+            ) {
+                $input_type = $original_input_type;
+                $union_comparison_results = new TypeComparisonResult();
+                $type_match_found = true;
+            }
+        }
+
         if ($union_comparison_results->type_variable_lower_bounds
             || $union_comparison_results->type_variable_upper_bounds
         ) {
@@ -1088,12 +1278,17 @@ final class ArgumentAnalyzer
                 $upper_bound->from_argument_requirement = true;
             }
 
+            foreach ($union_comparison_results->type_variable_lower_bounds as [$_, $lower_bound]) {
+                $lower_bound->from_argument_value = true;
+            }
+
             // transfer any type-variable bounds the containment comparison
             // recorded, stamped with the argument's position
             $statements_analyzer->type_variable_tracker->addBounds(
                 $union_comparison_results->type_variable_lower_bounds,
                 $union_comparison_results->type_variable_upper_bounds,
                 $arg_location,
+                $statements_analyzer->getSuppressedIssues(),
             );
         }
 
@@ -1119,6 +1314,12 @@ final class ArgumentAnalyzer
                 $context,
                 $specialize_taint,
                 $in_call_map,
+                $argument_name,
+                $unpack ? $unpacked_argument_offset : null,
+                $param_type->isString()
+                    || $union_comparison_results->to_string_cast === true
+                    // a builtin taking a stringable-object (sprintf) converts it
+                    || ($in_call_map && self::hasStringableObject($param_type)),
             );
 
             if ($function_param->assert_untainted) {
@@ -1142,21 +1343,25 @@ final class ArgumentAnalyzer
 
             foreach ($input_type->getAtomicTypes() as $input_type_part) {
                 if ($input_type_part instanceof TKeyedArray) {
-                    // If the param accept an array, we don't report arrays as wrong callbacks.
-                    if (null !== $param_type_without_callable && UnionTypeComparator::isContainedBy(
-                        $codebase,
-                        $input_type,
-                        $param_type_without_callable,
-                    )) {
-                        continue;
-                    }
-
                     $potential_method_id = CallableTypeComparator::getCallableMethodIdFromTKeyedArray(
                         $input_type_part,
                         $codebase,
                         $context->calling_method_id,
                         $statements_analyzer->getFilePath(),
                     );
+
+                    // If the param accept an array, we don't report arrays as wrong callbacks.
+                    if (null !== $param_type_without_callable && UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $input_type,
+                        $param_type_without_callable,
+                    )) {
+                        if ($potential_method_id && $potential_method_id !== 'not-callable') {
+                            $potential_method_ids[] = $potential_method_id;
+                        }
+
+                        continue;
+                    }
 
                     if ($potential_method_id === null && $codebase->analysis_php_version_id >= 8_02_00) {
                         [$lhs,] = $input_type_part->properties;
@@ -1313,6 +1518,19 @@ final class ArgumentAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                 );
             }
+        }
+
+        if ($union_comparison_results->callable_by_reference_mismatch) {
+            IssueBuffer::maybeAdd(
+                new CallableByReferenceMismatch(
+                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId()
+                        . ', but ' . $input_type->getId() . ' takes a parameter by reference where it is called with'
+                        . ' a value',
+                    $arg_location,
+                    $cased_method_id,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         if ($union_comparison_results->to_string_cast && $cased_method_id !== 'echo' && $cased_method_id !== 'print') {
@@ -1493,6 +1711,31 @@ final class ArgumentAnalyzer
         return null;
     }
 
+    /**
+     * A `callable` parameter checks the callable in the scope of the function it is declared by, and a protected
+     * method is accessible from that scope when its class and the scope's class are in one hierarchy.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isProtectedCallableAccessibleFromCallee(
+        Codebase $codebase,
+        int $visibility,
+        MethodIdentifier $callable_method_id,
+        ?MethodIdentifier $callee_method_id,
+    ): bool {
+        if ($visibility !== ClassLikeAnalyzer::VISIBILITY_PROTECTED || !$callee_method_id) {
+            return false;
+        }
+
+        $callable_class = $codebase->methods->getDeclaringMethodId($callable_method_id)?->fq_class_name;
+        $callee_class = $codebase->methods->getDeclaringMethodId($callee_method_id)?->fq_class_name;
+
+        return $callable_class !== null
+            && $callee_class !== null
+            && ($codebase->classExtends($callable_class, $callee_class)
+                || $codebase->classExtends($callee_class, $callable_class));
+    }
+
     private static function verifyCallableInContext(
         MethodIdentifier $potential_method_id,
         ?string $cased_method_id,
@@ -1533,7 +1776,14 @@ final class ArgumentAnalyzer
                             && $method_id->fq_class_name !== $context->self
                             && $method_id->fq_class_name !== 'Closure')
                     ) {
-                        if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
+                        if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                            && !self::isProtectedCallableAccessibleFromCallee(
+                                $codebase,
+                                $method_storage->visibility,
+                                $potential_method_id,
+                                $method_id,
+                            )
+                        ) {
                             IssueBuffer::maybeAdd(
                                 new InvalidArgument(
                                     'Argument ' . ($argument_offset + 1) . $method_identifier
@@ -1609,7 +1859,7 @@ final class ArgumentAnalyzer
                 foreach ($param_type_part->type_params[1]->getAtomicTypes() as $param_array_type_part) {
                     if ($param_array_type_part instanceof TClassString) {
                         foreach ($input_expr->items as $item) {
-                            if ($item && $item->value instanceof PhpParser\Node\Scalar\String_) {
+                            if ($item->value instanceof PhpParser\Node\Scalar\String_) {
                                 if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                                     $statements_analyzer,
                                     $item->value->value,
@@ -1727,7 +1977,12 @@ final class ArgumentAnalyzer
                                 }
                             }
 
-                            if ($non_existent_method_ids && !$param_type->hasString() && !$param_type->hasArray()) {
+                            // of an intersection, one of the types having the method is enough
+                            if ($non_existent_method_ids
+                                && count($non_existent_method_ids) === count($function_id_parts)
+                                && !$param_type->hasString()
+                                && !$param_type->hasArray()
+                            ) {
                                 if (MethodAnalyzer::checkMethodExists(
                                     $codebase,
                                     $non_existent_method_ids[0],
@@ -1747,6 +2002,7 @@ final class ArgumentAnalyzer
                                     $function_id,
                                     $arg_location,
                                     false,
+                                    $context,
                                 ) === false
                             ) {
                                 return;
@@ -1849,6 +2105,14 @@ final class ArgumentAnalyzer
             ]);
         }
 
+        if (!$was_cloned
+            && !$input_type_changed
+            && !$unpack
+            && ($context->vars_in_scope[$var_id] ?? null) === $input_type
+        ) {
+            return;
+        }
+
         if ($context->inside_conditional && !isset($context->assigned_var_ids[$var_id])) {
             $context->assigned_var_ids[$var_id] = 0;
         }
@@ -1888,6 +2152,69 @@ final class ArgumentAnalyzer
         }
     }
 
+    /**
+     * @psalm-pure
+     */
+    private static function hasStringableObject(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TObjectWithProperties && isset($atomic_type->methods['__tostring'])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The arguments a variadic parameter collects flow into its declared node, which the body reads
+     */
+    private static function linkArgumentToVariadicDeclaredNode(
+        Codebase $codebase,
+        TaintFlowGraph|CombinedFlowGraph|VariableUseGraph $graph,
+        DataFlowNode $method_node,
+        FunctionLikeParameter $function_param,
+        FunctionLikeStorage $function_storage,
+        int $argument_offset,
+        string $cased_method_id,
+        ?MethodIdentifier $called_declaring_method_id,
+        ?string $called_body_suffix,
+        ?CodeLocation $specialization_location,
+    ): void {
+        $variadic_declared_offset = $function_param->is_variadic
+            ? DataFlowNode::getVariadicDeclaredOffset(
+                $function_storage,
+                $function_param,
+                DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset),
+            )
+            : null;
+
+        if ($variadic_declared_offset === null) {
+            return;
+        }
+
+        $variadic_node = $called_body_suffix !== null && $called_declaring_method_id
+            ? InheritedMethodTaints::withMethodSuffix(
+                $called_declaring_method_id,
+                $called_body_suffix,
+                static fn(): DataFlowNode => DataFlowNode::getForMethodArgument(
+                    $codebase->methods->getCasedMethodId($called_declaring_method_id),
+                    $variadic_declared_offset,
+                    $codebase->methods->getStorage($called_declaring_method_id),
+                    $specialization_location,
+                ),
+            )
+            : DataFlowNode::getForMethodArgument(
+                $cased_method_id,
+                $variadic_declared_offset,
+                $function_storage,
+                $specialization_location,
+            );
+
+        $graph->addNode($variadic_node);
+        $graph->addPath($method_node, $variadic_node, 'arg');
+    }
+
     private static function processTaintedness(
         StatementsAnalyzer $statements_analyzer,
         string $cased_method_id,
@@ -1902,8 +2229,45 @@ final class ArgumentAnalyzer
         Context $context,
         bool $specialize_taint,
         bool $in_call_map,
+        ?string $argument_name = null,
+        ?int $unpacked_argument_offset = null,
+        bool $converts_to_string = false,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
+
+        $string_param = $function_param->type && $function_param->type->isString();
+
+        if (!$input_type->isString() && ($string_param || ($converts_to_string && $input_type->hasObjectType()))) {
+            // the argument check reports a bad argument itself, but the implicit __toString call is signalled
+            // whether or not a data-flow graph is built
+            $string_type = CastAnalyzer::castStringAttempt(
+                $statements_analyzer,
+                $context,
+                $input_type,
+                $expr,
+                false,
+                false,
+            );
+
+            // a string parameter takes the whole value as a string; any other only converts its objects, and what
+            // else the value may be keeps its own flow
+            if ($string_param) {
+                $input_type = $string_type;
+            } else {
+                $input_type = $input_type->setParentNodes($input_type->isObjectType()
+                    ? $string_type->parent_nodes
+                    : [...$input_type->parent_nodes, ...$string_type->parent_nodes]);
+            }
+        }
+
+        // a builtin taking an array of strings (vsprintf, str_replace) converts the objects among its values
+        if ($converts_to_string && $in_call_map && !$string_param) {
+            $value_type = CastAnalyzer::getArrayValueType($input_type);
+
+            if ($value_type && $value_type->hasObjectType()) {
+                CastAnalyzer::castStringAttempt($statements_analyzer, $context, $value_type, $expr, false, false);
+            }
+        }
 
         if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
             return;
@@ -1917,14 +2281,9 @@ final class ArgumentAnalyzer
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
         $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
-        if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
-            $input_type = CastAnalyzer::castStringAttempt(
-                $statements_analyzer,
-                $context,
-                $input_type,
-                $expr,
-                false,
-            );
+        // printed by code only running from the command line: to a terminal
+        if ($expr->getAttribute(CliOutput::PRINTED_ATTRIBUTE) === true) {
+            $removed_taints |= CliOutput::HTML_TAINTS;
         }
 
         $callable_kind = $in_call_map ? 'builtin' : ($method_id ? 'magic-method' : 'callable-object');
@@ -1937,8 +2296,7 @@ final class ArgumentAnalyzer
         // (see getParameterOffset() / getForMethodArgumentById()), not by its position in this call,
         // so a named argument resolves to the same node as the equivalent positional one (and as the
         // method body's parameter node). When the caller has no storage it is resolved from the cased
-        // method id; only a genuinely storage-less callable falls back to getForCallableArg(), which
-        // has no declared parameter to key on and so uses the call offset.
+        // method id; only a genuinely storage-less callable falls back to getForCallableArg().
         // a call of parent::/self:: going into the body of the method analyzed for the class of `$this`
         /** @var string|null $body_class set by StaticCallAnalyzer */
         $body_class = $expr->getAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE);
@@ -2000,57 +2358,25 @@ final class ArgumentAnalyzer
         // classes extending it go when they inherit the method, which can't run those overrides: what the call
         // dispatches to the overrides goes through a node of its own, not the parameter. That node is shared by
         // the virtual calls of the method on the class, so that their number doesn't multiply its paths.
-        $dispatch_node = null;
-
-        if (!$specialize_taint
-            && $taint_flow_graph
+        $dispatch_routes = $taint_flow_graph
             && $method_id
             && $method_id->method_name !== '__construct'
             // a call naming its class (parent::, self::, A::) runs that method only (see StaticCallAnalyzer)
             && $expr->getAttribute(self::NON_VIRTUAL_CALL_ATTRIBUTE) !== true
-        ) {
-            $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
-
-            if ($class_storage->dependent_classlikes !== []) {
-                $param_offset = $function_storage
-                    ? DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset)
-                    : $argument_offset;
-
-                $dispatch_node = DataFlowNode::getForDispatch($cased_method_id, $param_offset);
-
-                // the first of these calls links it to the overrides
-                if (!$taint_flow_graph->hasNode($dispatch_node)) {
-                    $taint_flow_graph->addNode($dispatch_node);
-
-                    $cased_method_name = explode('::', $cased_method_id)[1];
-
-                    foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
-                        $dependent_classlike_storage = $codebase->classlike_storage_provider->get(
-                            $dependent_classlike_lc,
-                        );
-
-                        // Resolve the declaring method's storage (a dependent class usually inherits the
-                        // method, so it has no storage under its own id) so this node's location -- and the
-                        // declared parameter it is keyed by -- is the same canonical one used wherever else
-                        // the node id is created.
-                        $new_sink = DataFlowNode::getForMethodArgumentById(
-                            $codebase->methods,
-                            $dependent_classlike_storage->name . '::' . $cased_method_name,
-                            $param_offset,
-                            null,
-                            $function_param,
-                        ) ?? DataFlowNode::getForCallableArg(
-                            'inherited-method',
-                            $dependent_classlike_storage->name . '::' . $cased_method_name,
-                            $param_offset,
-                        );
-
-                        $taint_flow_graph->addNode($new_sink);
-                        $taint_flow_graph->addPath($dispatch_node, $new_sink, 'arg');
-                    }
-                }
-            }
-        }
+                ? self::getDispatchRoutes(
+                    $statements_analyzer,
+                    $taint_flow_graph,
+                    $method_id,
+                    $cased_method_id,
+                    $function_storage,
+                    $function_param,
+                    $argument_offset,
+                    $specialize_taint,
+                    $argument_name,
+                    $unpacked_argument_offset,
+                    $expr,
+                )
+                : [];
 
         if ($method_id && $taint_flow_graph && $called_body_suffix === null) {
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
@@ -2088,19 +2414,30 @@ final class ArgumentAnalyzer
                 );
 
                 $taint_flow_graph->addNode($new_sink);
-                $taint_flow_graph->addPath(
-                    $method_node,
-                    $new_sink,
-                    'arg',
-                    $added_taints,
-                    $removed_taints,
-                );
+                // what this call's argument adds and removes is on its own path into $method_node, which the
+                // other calls may share: on this one, it would apply to theirs too, the last call deciding for all
+                $taint_flow_graph->addPath($method_node, $new_sink, 'arg');
             }
         }
 
         $graph->addNode($method_node);
 
-        if ($taint_flow_graph && $function_storage && !$in_call_map) {
+        if ($function_storage) {
+            self::linkArgumentToVariadicDeclaredNode(
+                $codebase,
+                $graph,
+                $method_node,
+                $function_param,
+                $function_storage,
+                $argument_offset,
+                $cased_method_id,
+                $called_declaring_method_id,
+                $called_body_suffix,
+                $specialization_location,
+            );
+        }
+
+        if ($taint_flow_graph && $function_storage) {
             $callable_param_method_id = $cased_method_id;
             $callable_param_storage = $function_storage;
 
@@ -2111,16 +2448,28 @@ final class ArgumentAnalyzer
                 $callable_param_storage = $codebase->methods->getStorage($declaring_method_id);
             }
 
-            FunctionCallReturnTypeFetcher::taintCallablePassedToParam(
-                $statements_analyzer,
-                $taint_flow_graph,
-                $callable_param_method_id,
-                DataFlowNode::getParameterOffset($callable_param_storage, $function_param, $argument_offset),
+            $callable_param_offset = DataFlowNode::getParameterOffset(
                 $callable_param_storage,
-                $specialization_location,
-                $input_type,
-                $arg_location,
+                $function_param,
+                $argument_offset,
             );
+
+            // a builtin calls its callables out of the analyzed code: they matter only to the flows of its stub
+            if (!$in_call_map
+                || isset($callable_param_storage->return_source_callable_params[$callable_param_offset])
+                || isset($callable_param_storage->callable_param_argument_sources[$callable_param_offset])
+            ) {
+                FunctionCallReturnTypeFetcher::taintCallablePassedToParam(
+                    $statements_analyzer,
+                    $taint_flow_graph,
+                    $callable_param_method_id,
+                    $callable_param_offset,
+                    $callable_param_storage,
+                    $specialization_location,
+                    $input_type,
+                    $arg_location,
+                );
+            }
         }
 
         $argument_value_node = DataFlowNode::getForAssignment(
@@ -2138,8 +2487,24 @@ final class ArgumentAnalyzer
             $removed_taints,
         );
 
-        if ($dispatch_node && $taint_flow_graph) {
-            $taint_flow_graph->addPath($argument_value_node, $dispatch_node, 'arg', $added_taints, $removed_taints);
+        if ($taint_flow_graph) {
+            foreach ($dispatch_routes as [$dispatch_node, $element_type]) {
+                if ($element_type === null) {
+                    $taint_flow_graph->addPath(
+                        $argument_value_node,
+                        $dispatch_node,
+                        'arg',
+                        $added_taints,
+                        $removed_taints,
+                    );
+
+                    continue;
+                }
+
+                foreach ($element_type->parent_nodes as $parent_node) {
+                    $taint_flow_graph->addPath($parent_node, $dispatch_node, 'arg', $added_taints, $removed_taints);
+                }
+            }
         }
 
         foreach ($input_type->parent_nodes as $parent_node) {
@@ -2159,6 +2524,286 @@ final class ArgumentAnalyzer
             $taint_flow_graph->addSource($taint_source);
         }
     }
+    /**
+     * The nodes that the argument of a virtual call goes through to the overrides of the method, each with the
+     * type it takes: null for the argument itself, else an element of an unpacked array, which has the position
+     * or the name of its own. An argument unpacked into a variadic parameter takes the elements it is known to
+     * have by their position (from its own) or key; else it may be any of them, in any parameter from its offset.
+     *
+     * @return list<array{DataFlowNode, Union|null}>
+     */
+    private static function getDispatchRoutes(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph $taint_flow_graph,
+        MethodIdentifier $method_id,
+        string $cased_method_id,
+        ?FunctionLikeStorage $function_storage,
+        FunctionLikeParameter $function_param,
+        int $argument_offset,
+        bool $specialize_taint,
+        ?string $argument_name,
+        ?int $unpacked_argument_offset,
+        PhpParser\Node\Expr $expr,
+    ): array {
+        $class_storage = $statements_analyzer->getCodebase()->classlike_storage_provider->get(
+            $method_id->fq_class_name,
+        );
+
+        if ($class_storage->dependent_classlikes === []) {
+            return [];
+        }
+
+        $param_offset = $function_storage
+            ? DataFlowNode::getParameterOffset($function_storage, $function_param, $argument_offset)
+            : $argument_offset;
+
+        // [offset, name, whether it may be any following parameter, element]
+        $arguments = [[$param_offset, $function_param->is_variadic ? $argument_name : null, false, null]];
+
+        if ($unpacked_argument_offset !== null && $function_param->is_variadic) {
+            $unpacked_type = $statements_analyzer->node_data->getType($expr);
+            $unpacked_array = $unpacked_type && $unpacked_type->isSingle() ? $unpacked_type->getSingleAtomic() : null;
+
+            if (!$unpacked_array instanceof TKeyedArray || $unpacked_array->fallback_params !== null) {
+                $arguments = [[$param_offset, null, true, null]];
+            } else {
+                $arguments = [];
+                $element_index = 0;
+
+                foreach ($unpacked_array->properties as $key => $element) {
+                    if (is_string($key)) {
+                        // a fixed parameter of the declared signature takes it: its own argument is the one dispatched
+                        foreach ($function_storage->params ?? [] as $declared_param) {
+                            if (!$declared_param->is_variadic && $declared_param->name === $key) {
+                                continue 2;
+                            }
+                        }
+
+                        $arguments[] = [$param_offset, $key, false, $element];
+                    } elseif ($element_index++ >= $unpacked_argument_offset) {
+                        // the ones before are the arguments of the fixed parameters of the declared signature
+                        $position = $argument_offset + $element_index - 1 - $unpacked_argument_offset;
+                        $arguments[] = [$position, null, false, $element];
+                    }
+                }
+            }
+        }
+
+        $routes = [];
+
+        foreach ($arguments as [$offset, $name, $any_following, $element]) {
+            $dispatch_node = self::getDispatchNode(
+                $statements_analyzer,
+                $taint_flow_graph,
+                $method_id,
+                $cased_method_id,
+                $function_param,
+                $offset,
+                $specialize_taint,
+                $name,
+                $any_following,
+            );
+
+            if ($dispatch_node) {
+                $routes[] = [$dispatch_node, $element];
+            }
+        }
+
+        return $routes;
+    }
+
+    /**
+     * The node that the calls of the method, giving the parameter at $param_offset (or the one of the name
+     * $variadic_argument_name, which the variadic parameter takes), go through to the overrides of the classes
+     * extending it, if any may run.
+     */
+    private static function getDispatchNode(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph $taint_flow_graph,
+        MethodIdentifier $method_id,
+        string $cased_method_id,
+        FunctionLikeParameter $function_param,
+        int $param_offset,
+        bool $specialize_taint,
+        ?string $variadic_argument_name,
+        bool $any_following,
+    ): ?DataFlowNode {
+        $codebase = $statements_analyzer->getCodebase();
+        $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+
+        $dispatch_node = DataFlowNode::getForDispatch(
+            $cased_method_id,
+            $param_offset,
+            $specialize_taint,
+            $variadic_argument_name,
+            $any_following,
+        );
+
+        if ($taint_flow_graph->isEmptyDispatch($dispatch_node)) {
+            return null;
+        }
+
+        if ($taint_flow_graph->hasNode($dispatch_node)) {
+            return $dispatch_node;
+        }
+
+        // the first of these calls links it to the methods that may run
+        $new_sinks = [];
+        $declared_links = [];
+
+        $cased_method_name = explode('::', $cased_method_id)[1];
+        $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+
+        foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
+            $dependent_classlike_storage = $codebase->classlike_storage_provider->get($dependent_classlike_lc);
+
+            $dependent_method_id = new MethodIdentifier($dependent_classlike_lc, $method_id->method_name);
+            $dependent_appearing_method_id = $codebase->methods->getAppearingMethodId($dependent_method_id);
+            $dependent_declaring_method_id = $codebase->methods->getDeclaringMethodId($dependent_method_id);
+            $dependent_storage = $dependent_declaring_method_id
+                && $codebase->methods->hasStorage($dependent_declaring_method_id)
+                ? $codebase->methods->getStorage($dependent_declaring_method_id)
+                : null;
+            $is_override = $dependent_appearing_method_id !== null
+                && (string) $dependent_appearing_method_id !== (string) $appearing_method_id;
+
+            // An argument of a variadic parameter binds to the parameters of the override that take it: a named
+            // one the fixed parameter of that name, else the variadic one; one that may be any following the
+            // position, each from it; any other the one at its position. The variadic parameter is keyed by
+            // position, but never before its own index (see DataFlowNode::getParameterOffset()).
+            $dependent_offsets = [null];
+
+            if ($function_param->is_variadic && $dependent_storage) {
+                $dependent_offsets = $variadic_argument_name === null && !$any_following ? [$param_offset] : [];
+
+                foreach ($dependent_storage->params as $i => $dependent_param) {
+                    if ($dependent_param->is_variadic) {
+                        if ($any_following || $dependent_offsets === []) {
+                            $dependent_offsets[] = max($param_offset, $i);
+                        }
+                    } elseif ($any_following
+                        ? $i >= $param_offset
+                        : $dependent_param->name === $variadic_argument_name
+                    ) {
+                        $dependent_offsets[] = $i;
+                    }
+                }
+            }
+
+            // a specialized call takes the method itself through its own parameter: only the overrides,
+            // which it used not to take at all
+            if ($specialize_taint && !$is_override) {
+                continue;
+            }
+
+            foreach ($dependent_offsets as $dependent_offset) {
+                // The parameter of an override specialized by call, in the specialization keyed by the
+                // location of the method, which the dispatch of its returns leaves (see
+                // MethodCallReturnTypeFetcher::getReturnDispatchNode()): what its body returns of the
+                // argument then reaches the call.
+                if ($is_override
+                    && $dependent_storage
+                    && $dependent_storage->location
+                    && TaintFlowGraph::isCallSpecialized(
+                        $taint_flow_graph,
+                        $codebase,
+                        $dependent_storage,
+                        $dependent_storage->location,
+                    )
+                ) {
+                    $new_sink = DataFlowNode::getForMethodArgument(
+                        FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $dependent_method_id),
+                        $dependent_offset ?? $param_offset,
+                        $dependent_storage,
+                        $dependent_storage->location,
+                    );
+                } else {
+                    // Resolve the declaring method's storage (a dependent class usually inherits the
+                    // method, so it has no storage under its own id) so this node's location -- and the
+                    // declared parameter it is keyed by -- is the same canonical one used wherever else
+                    // the node id is created.
+                    $new_sink = DataFlowNode::getForMethodArgumentById(
+                        $codebase->methods,
+                        $dependent_classlike_storage->name . '::' . $cased_method_name,
+                        $dependent_offset ?? $param_offset,
+                        null,
+                        $dependent_offset === null ? $function_param : null,
+                    ) ?? DataFlowNode::getForCallableArg(
+                        'inherited-method',
+                        $dependent_classlike_storage->name . '::' . $cased_method_name,
+                        $dependent_offset ?? $param_offset,
+                    );
+                }
+
+                $new_sinks[$new_sink->id] = $new_sink;
+
+                // an argument the variadic parameter of the override collects goes on into its declared node
+                $dependent_variadic = null;
+
+                foreach ($dependent_storage->params ?? [] as $dependent_param) {
+                    if ($dependent_param->is_variadic) {
+                        $dependent_variadic = $dependent_param;
+                    }
+                }
+
+                $declared_offset = $dependent_offset !== null && $dependent_storage && $dependent_variadic
+                    ? DataFlowNode::getVariadicDeclaredOffset(
+                        $dependent_storage,
+                        $dependent_variadic,
+                        $dependent_offset,
+                    )
+                    : null;
+
+                if ($declared_offset !== null && $dependent_storage) {
+                    $declared_sink = $is_override
+                        && $dependent_storage->location
+                        && TaintFlowGraph::isCallSpecialized(
+                            $taint_flow_graph,
+                            $codebase,
+                            $dependent_storage,
+                            $dependent_storage->location,
+                        )
+                            ? DataFlowNode::getForMethodArgument(
+                                FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $dependent_method_id),
+                                $declared_offset,
+                                $dependent_storage,
+                                $dependent_storage->location,
+                            )
+                            : DataFlowNode::getForMethodArgumentById(
+                                $codebase->methods,
+                                $dependent_classlike_storage->name . '::' . $cased_method_name,
+                                $declared_offset,
+                            );
+
+                    if ($declared_sink) {
+                        $declared_links[$new_sink->id] = [$new_sink, $declared_sink];
+                    }
+                }
+            }
+        }
+
+        if ($new_sinks === []) {
+            // no override may run: the classes extending this one inherit the method
+            $taint_flow_graph->addEmptyDispatch($dispatch_node);
+
+            return null;
+        }
+
+        $taint_flow_graph->addNode($dispatch_node);
+
+        foreach ($new_sinks as $new_sink) {
+            $taint_flow_graph->addNode($new_sink);
+            $taint_flow_graph->addPath($dispatch_node, $new_sink, 'arg');
+        }
+
+        foreach ($declared_links as [$new_sink, $declared_sink]) {
+            $taint_flow_graph->addNode($declared_sink);
+            $taint_flow_graph->addPath($new_sink, $declared_sink, 'arg');
+        }
+
+        return $dispatch_node;
+    }
+
     /**
      * Resolves type variables appearing inside callable/closure parameter and
      * return positions through their accumulated bounds, leaving everything
@@ -2222,7 +2867,8 @@ final class ArgumentAnalyzer
             return $param_type;
         }
 
-        return new Union($resolved_atomic_types);
+        // keep the union's own properties (from_docblock, possibly_undefined, ...)
+        return $param_type->getBuilder()->setTypes($resolved_atomic_types)->freeze();
     }
 
     /**

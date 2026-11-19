@@ -15,7 +15,7 @@ final class TraceTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'traceVariable' => [
@@ -43,9 +43,6 @@ final class TraceTest extends TestCase
                     /** @psalm-trace $b */
                     echo 1;',
                 'error_message' => 'UndefinedTrace',
-                'ignored_issues' => [
-                    'MixedAssignment',
-                ],
             ],
         ];
     }

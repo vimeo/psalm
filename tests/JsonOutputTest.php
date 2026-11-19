@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
@@ -20,13 +19,8 @@ use function substr;
 final class JsonOutputTest extends TestCase
 {
     #[Override]
-    public function setUp(): void
+    protected function setUpProjectAnalyzer(): void
     {
-        // `TestCase::setUp()` creates its own ProjectAnalyzer and Config instance, but we don't want to do that in this
-        // case, so don't run a `parent::setUp()` call here.
-        RuntimeCaches::clearAll();
-        $this->file_provider = new FakeFileProvider();
-
         $config = new TestConfig();
         $config->throw_exception = false;
 
@@ -45,14 +39,12 @@ final class JsonOutputTest extends TestCase
         $this->project_analyzer->getCodebase()->reportUnusedCode();
     }
 
-    /**
-     * @dataProvider providerTestJsonOutputErrors
-     */
+    #[DataProvider('providerTestJsonOutputErrors')]
     public function testJsonOutputErrors(
         string $code,
         int $error_count,
         string $message,
-        int $line_number,
+        int $line,
         string $error,
     ): void {
         $this->addFile('somefile.php', $code);
@@ -64,18 +56,19 @@ final class JsonOutputTest extends TestCase
         $this->assertSame('somefile.php', $issue_data->file_path);
         $this->assertSame('error', $issue_data->severity);
         $this->assertSame($message, $issue_data->message);
-        $this->assertSame($line_number, $issue_data->line_from);
+        $this->assertSame($line, $issue_data->line_from);
         $this->assertSame(
             $error,
             substr($code, $issue_data->from, $issue_data->to - $issue_data->from),
         );
     }
 
+
     /**
      * @return array<string,array{code:string,error_count:int,message:string,line:int,error:string}>
      * @psalm-pure
      */
-    public function providerTestJsonOutputErrors(): array
+    public static function providerTestJsonOutputErrors(): array
     {
         return [
             'returnTypeError' => [

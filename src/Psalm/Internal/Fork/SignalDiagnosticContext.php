@@ -87,7 +87,7 @@ final class SignalDiagnosticContext implements Context
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function translate(ContextException $e): ContextException
     {

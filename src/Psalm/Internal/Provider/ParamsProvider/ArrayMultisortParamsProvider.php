@@ -24,7 +24,6 @@ use function in_array;
 use const SORT_ASC;
 use const SORT_DESC;
 use const SORT_FLAG_CASE;
-use const SORT_LOCALE_STRING;
 use const SORT_NATURAL;
 use const SORT_NUMERIC;
 use const SORT_REGULAR;
@@ -35,6 +34,11 @@ use const SORT_STRING;
  */
 final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterface
 {
+    /**
+     * The value of `SORT_LOCALE_STRING`, which is deprecated since PHP 8.6: reading it would emit a deprecation.
+     */
+    private const SORT_LOCALE_STRING = 5;
+
     /**
      * @return array<lowercase-string>
      * @psalm-pure
@@ -158,7 +162,7 @@ final class ArrayMultisortParamsProvider implements FunctionParamsProviderInterf
                     SORT_REGULAR,
                     SORT_NUMERIC,
                     SORT_STRING,
-                    SORT_LOCALE_STRING,
+                    self::SORT_LOCALE_STRING,
                     SORT_NATURAL,
                     SORT_STRING|SORT_FLAG_CASE,
                     SORT_NATURAL|SORT_FLAG_CASE,

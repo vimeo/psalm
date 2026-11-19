@@ -8,9 +8,12 @@ use InvalidArgumentException;
 use LogicException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Type\AtomicParts;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\IntMask;
+use Psalm\Internal\Type\StringRefinement;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
@@ -29,6 +32,7 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TIterable;
+use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -38,6 +42,7 @@ use Psalm\Type\Atomic\TLowercaseString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
+use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
@@ -52,8 +57,11 @@ use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTrue;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\Union;
@@ -210,6 +218,10 @@ abstract class Type
      */
     public static function getIntRange(?int $min, ?int $max): Union
     {
+        if ($min === null && $max === null) {
+            return self::getInt();
+        }
+
         return new Union([new TIntRange($min, $max)]);
     }
 
@@ -828,20 +840,27 @@ abstract class Type
             } elseif ($type_2_mixed) {
                 $combined_type = $type_1->getBuilder();
                 $intersection_performed = true;
+            } elseif (($template_of_intersection = self::intersectTemplateKeyOrValueOf(
+                $type_1,
+                $type_2,
+                $codebase,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+            )) !== null) {
+                $combined_type = new MutableUnion([$template_of_intersection]);
+                $intersection_performed = true;
             } else {
                 $combined_type = null;
                 foreach ($type_1->getAtomicTypes() as $type_1_atomic) {
                     foreach ($type_2->getAtomicTypes() as $type_2_atomic) {
-                        $intersection_atomic = self::intersectAtomicTypes(
+                        foreach (self::intersectAtomicTypesOrParts(
                             $type_1_atomic,
                             $type_2_atomic,
                             $codebase,
                             $intersection_performed,
                             $allow_interface_equality,
                             $allow_float_int_equality,
-                        );
-
-                        if (null !== $intersection_atomic) {
+                        ) as $intersection_atomic) {
                             if (null === $combined_type) {
                                 $combined_type = new MutableUnion([$intersection_atomic]);
                             } else {
@@ -854,26 +873,28 @@ abstract class Type
 
             //if a type is contained by the other, the intersection is the narrowest type
             if (!$intersection_performed) {
+                $comparison_result_1_in_2 = new TypeComparisonResult();
+                $comparison_result_2_in_1 = new TypeComparisonResult();
                 $type_1_in_2 = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $type_1,
                     $type_2,
                     false,
                     false,
-                    null,
+                    $comparison_result_1_in_2,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                );
+                ) && !$comparison_result_1_in_2->to_string_cast;
                 $type_2_in_1 = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $type_2,
                     $type_1,
                     false,
                     false,
-                    null,
+                    $comparison_result_2_in_1,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                );
+                ) && !$comparison_result_2_in_1->to_string_cast;
                 if ($type_1_in_2) {
                     $intersection_performed = true;
                     $combined_type = $type_1->getBuilder();
@@ -925,6 +946,193 @@ abstract class Type
         return $combined_type;
     }
 
+    /**
+     * e.g. array and iterable<int, Foo> are array<int, Foo>
+     */
+    private static function intersectArrayWithIterable(
+        Codebase $codebase,
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+        bool $allow_interface_equality,
+        bool $allow_float_int_equality,
+    ): ?TArray {
+        if ($type_1_atomic instanceof TArray && $type_2_atomic instanceof TIterable) {
+            $array_atomic = $type_1_atomic;
+            $iterable_atomic = $type_2_atomic;
+        } elseif ($type_1_atomic instanceof TIterable && $type_2_atomic instanceof TArray) {
+            $array_atomic = $type_2_atomic;
+            $iterable_atomic = $type_1_atomic;
+        } else {
+            return null;
+        }
+
+        $key_intersection = self::intersectUnionTypes(
+            $array_atomic->type_params[0],
+            $iterable_atomic->type_params[0],
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+        $value_intersection = self::intersectUnionTypes(
+            $array_atomic->type_params[1],
+            $iterable_atomic->type_params[1],
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+
+        if ($key_intersection === null
+            || $value_intersection === null
+            || $key_intersection->isNever()
+            || $value_intersection->isNever()
+        ) {
+            return null;
+        }
+
+        return $array_atomic->setTypeParams([$key_intersection, $value_intersection]);
+    }
+
+    /**
+     * e.g. int|string and value-of<T> (T of array) are value-of<T>, T narrowed to array<array-key, int|string>
+     */
+    private static function intersectTemplateKeyOrValueOf(
+        Union $type_1,
+        Union $type_2,
+        Codebase $codebase,
+        bool $allow_interface_equality,
+        bool $allow_float_int_equality,
+    ): TTemplateKeyOf|TTemplateValueOf|null {
+        if ($type_1->isSingle() && !self::hasTemplateKeyOrValueOf($type_2)) {
+            $template_of = $type_1->getSingleAtomic();
+            $other_type = $type_2;
+        } elseif ($type_2->isSingle() && !self::hasTemplateKeyOrValueOf($type_1)) {
+            $template_of = $type_2->getSingleAtomic();
+            $other_type = $type_1;
+        } else {
+            return null;
+        }
+
+        if (!$template_of instanceof TTemplateKeyOf && !$template_of instanceof TTemplateValueOf) {
+            return null;
+        }
+
+        $template = $template_of->as->isSingle() ? $template_of->as->getSingleAtomic() : null;
+
+        if (!$template instanceof TTemplateParam) {
+            return null;
+        }
+
+        $key_type = TKeyOf::getArrayKeyType($template->as);
+        $value_type = TValueOf::getValueType($template->as, $codebase);
+
+        if ($key_type === null || $value_type === null) {
+            return null;
+        }
+
+        $narrowed_type = self::intersectUnionTypes(
+            $template_of instanceof TTemplateKeyOf ? $key_type : $value_type,
+            $other_type,
+            $codebase,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+
+        if ($narrowed_type === null || $narrowed_type->isNever()) {
+            return null;
+        }
+
+        if ($narrowed_type->getId() === ($template_of instanceof TTemplateKeyOf ? $key_type : $value_type)->getId()) {
+            return $template_of;
+        }
+
+        $narrowed_template = new Union([$template->replaceAs(new Union([new TArray(
+            $template_of instanceof TTemplateKeyOf ? [$narrowed_type, $value_type] : [$key_type, $narrowed_type],
+        )]))]);
+
+        return $template_of instanceof TTemplateKeyOf
+            ? new TTemplateKeyOf(
+                $template_of->param_name,
+                $template_of->defining_class,
+                $narrowed_template,
+                $template_of->from_docblock,
+            )
+            : new TTemplateValueOf(
+                $template_of->param_name,
+                $template_of->defining_class,
+                $narrowed_template,
+                $template_of->from_docblock,
+            );
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function hasTemplateKeyOrValueOf(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateKeyOf || $atomic_type instanceof TTemplateValueOf) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The intersection of two atomic types, or of their parts when neither contains the other: e.g. callable and
+     * string are a callable-string
+     *
+     * @return list<Atomic>
+     */
+    private static function intersectAtomicTypesOrParts(
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+        Codebase $codebase,
+        bool &$intersection_performed,
+        bool $allow_interface_equality,
+        bool $allow_float_int_equality,
+    ): array {
+        $intersection_atomic = self::intersectAtomicTypes(
+            $type_1_atomic,
+            $type_2_atomic,
+            $codebase,
+            $intersection_performed,
+            $allow_interface_equality,
+            $allow_float_int_equality,
+        );
+
+        if ($intersection_atomic !== null) {
+            return [$intersection_atomic];
+        }
+
+        $type_1_parts = AtomicParts::split($type_1_atomic, $type_2_atomic, $codebase);
+        $type_2_parts = $type_1_parts === null ? AtomicParts::split($type_2_atomic, $type_1_atomic, $codebase) : null;
+
+        if ($type_1_parts === null && $type_2_parts === null) {
+            return [];
+        }
+
+        $intersection_atomics = [];
+
+        foreach ($type_1_parts ?? [$type_1_atomic] as $type_1_part) {
+            foreach ($type_2_parts ?? [$type_2_atomic] as $type_2_part) {
+                $intersection_atomics = [
+                    ...$intersection_atomics,
+                    ...self::intersectAtomicTypesOrParts(
+                        $type_1_part,
+                        $type_2_part,
+                        $codebase,
+                        $intersection_performed,
+                        $allow_interface_equality,
+                        $allow_float_int_equality,
+                    ),
+                ];
+            }
+        }
+
+        return $intersection_atomics;
+    }
+
     private static function intersectAtomicTypes(
         Atomic $type_1_atomic,
         Atomic $type_2_atomic,
@@ -974,13 +1182,18 @@ abstract class Type
 
         if (null === $intersection_atomic) {
             try {
+                $comparison_result_2_in_1 = new TypeComparisonResult();
+                $comparison_result_1_in_2 = new TypeComparisonResult();
+
+                // an object that is only castable to string is not contained by string
                 if (AtomicTypeComparator::isContainedBy(
                     $codebase,
                     $type_2_atomic,
                     $type_1_atomic,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                )) {
+                    $comparison_result_2_in_1,
+                ) && !$comparison_result_2_in_1->to_string_cast) {
                     $intersection_atomic = $type_2_atomic;
                     $wider_type = $type_1_atomic;
                     $intersection_performed = true;
@@ -990,9 +1203,59 @@ abstract class Type
                     $type_2_atomic,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                )) {
+                    $comparison_result_1_in_2,
+                ) && !$comparison_result_1_in_2->to_string_cast) {
                     $intersection_atomic = $type_1_atomic;
                     $wider_type = $type_2_atomic;
+                    $intersection_performed = true;
+                } elseif ($type_1_atomic instanceof TString
+                    && $type_2_atomic instanceof TString
+                    && ($refined_string = StringRefinement::intersect($type_1_atomic, $type_2_atomic)) !== null
+                ) {
+                    $intersection_atomic = $refined_string;
+                    $intersection_performed = true;
+                } elseif ($type_1_atomic instanceof TArray
+                    && $type_2_atomic instanceof TArray
+                    && ($type_1_atomic instanceof TNonEmptyArray || $type_2_atomic instanceof TNonEmptyArray)
+                ) {
+                    // e.g. array<string, int> and non-empty-array are non-empty-array<string, int>
+                    $key_intersection = self::intersectUnionTypes(
+                        $type_1_atomic->type_params[0],
+                        $type_2_atomic->type_params[0],
+                        $codebase,
+                        $allow_interface_equality,
+                        $allow_float_int_equality,
+                    );
+                    $value_intersection = self::intersectUnionTypes(
+                        $type_1_atomic->type_params[1],
+                        $type_2_atomic->type_params[1],
+                        $codebase,
+                        $allow_interface_equality,
+                        $allow_float_int_equality,
+                    );
+
+                    // a non-empty array of never is no array
+                    if ($key_intersection !== null
+                        && $value_intersection !== null
+                        && !$key_intersection->isNever()
+                        && !$value_intersection->isNever()
+                    ) {
+                        $non_empty_array = $type_1_atomic instanceof TNonEmptyArray
+                            ? $type_1_atomic
+                            : $type_2_atomic;
+                        $intersection_atomic = $non_empty_array->setTypeParams(
+                            [$key_intersection, $value_intersection],
+                        );
+                        $intersection_performed = true;
+                    }
+                } elseif (($array_iterable_intersection = self::intersectArrayWithIterable(
+                    $codebase,
+                    $type_1_atomic,
+                    $type_2_atomic,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                )) !== null) {
+                    $intersection_atomic = $array_iterable_intersection;
                     $intersection_performed = true;
                 } elseif (($type_1_atomic instanceof TNonspecificLiteralString
                         && $type_2_atomic instanceof TNonEmptyString)
@@ -1021,10 +1284,7 @@ abstract class Type
             }
         }
 
-        if (self::mayHaveIntersection($type_1_atomic, $codebase)
-            && self::mayHaveIntersection($type_2_atomic, $codebase)
-        ) {
-            /** @psalm-suppress TypeDoesNotContainType */
+        if (self::mayIntersect($type_1_atomic, $type_2_atomic, $codebase)) {
             if ($type_1_atomic instanceof TNamedObject && $type_2_atomic instanceof TNamedObject) {
                 try {
                     $first = $codebase->classlike_storage_provider->get($type_1_atomic->value);
@@ -1078,6 +1338,25 @@ abstract class Type
         }
 
         return $intersection_atomic;
+    }
+
+    /**
+     * Both types support intersection, and a template whose bound no object can satisfy (e.g. `string`)
+     * isn't intersected with a class
+     */
+    private static function mayIntersect(Atomic $type_1, Atomic $type_2, Codebase $codebase): bool
+    {
+        if (!self::mayHaveIntersection($type_1, $codebase) || !self::mayHaveIntersection($type_2, $codebase)) {
+            return false;
+        }
+
+        if ($type_2 instanceof TTemplateParam) {
+            [$type_1, $type_2] = [$type_2, $type_1];
+        }
+
+        return !($type_1 instanceof TTemplateParam
+            && $type_2 instanceof TNamedObject
+            && !UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $type_1->as, new Union([$type_2])));
     }
 
     /**

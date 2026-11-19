@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\BooleanNotAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\PartialApplicationAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
@@ -52,7 +53,9 @@ use Psalm\Issue\RiskyTruthyFalsyComparison;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\Issue\UnsupportedReferenceUsage;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\PartialApplication;
 use Psalm\Node\Expr\VirtualFuncCall;
+use Psalm\Node\Expr\VirtualPipeValue;
 use Psalm\Node\Scalar\VirtualInterpolatedString;
 use Psalm\Node\VirtualArg;
 use Psalm\Node\VirtualName;
@@ -60,6 +63,7 @@ use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeExpressionAnalysisEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TMixed;
 
 use function count;
 use function in_array;
@@ -84,13 +88,23 @@ final class ExpressionAnalyzer
         ?TemplateResult $template_result = null,
         bool $assigned_to_reference = false,
     ): bool {
+        if ($statements_analyzer->node_data->isEvaluated($stmt)) {
+            return true;
+        }
+
         if (self::dispatchBeforeExpressionAnalysis($stmt, $context, $statements_analyzer) === false) {
             return false;
         }
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if (self::handleExpression(
+        $if_body_context = $context->if_body_context;
+
+        if ($if_body_context && !self::passesIfBodyContext($stmt, $context->inside_negation)) {
+            $context->if_body_context = null;
+        }
+
+        $handled = self::handleExpression(
             $statements_analyzer,
             $stmt,
             $context,
@@ -99,7 +113,11 @@ final class ExpressionAnalyzer
             $from_stmt,
             $template_result,
             $assigned_to_reference,
-        ) === false) {
+        );
+
+        $context->if_body_context = $if_body_context;
+
+        if ($handled === false) {
             return false;
         }
 
@@ -148,7 +166,11 @@ final class ExpressionAnalyzer
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
     ): void {
-        if (count($type->getAtomicTypes()) > 1) {
+        // mixed already contains the other types: like mixed alone, it says nothing of what is compared
+        $atomic_types = $type->getAtomicTypes();
+        if (count($atomic_types) > 1
+            && !(isset($atomic_types['mixed']) && $atomic_types['mixed']::class === TMixed::class)
+        ) {
             $has_truthy_or_falsy_exclusive_type = false;
             $both_types = $type->getBuilder();
             foreach ($both_types->getAtomicTypes() as $key => $atomic_type) {
@@ -175,6 +197,41 @@ final class ExpressionAnalyzer
                 );
             }
         }
+    }
+
+    /**
+     * Whether the operands of an expression of the condition all hold where it does, so that what they assign or
+     * narrow reaches the if body: those of an `&&`, of an `||` under a `!`, of a comparison to `true`, not those of a
+     * `xor`, of a negated `&&` or of a call argument
+     *
+     * @psalm-mutation-free
+     */
+    private static function passesIfBodyContext(PhpParser\Node\Expr $stmt, bool $inside_negation): bool
+    {
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+        ) {
+            return !$inside_negation;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+        ) {
+            return self::isTrueConst($stmt->left) || self::isTrueConst($stmt->right);
+        }
+
+        return $stmt instanceof PhpParser\Node\Expr\BooleanNot
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || $stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function isTrueConst(PhpParser\Node\Expr $expr): bool
+    {
+        return $expr instanceof PhpParser\Node\Expr\ConstFetch
+            && strtolower($expr->name->toString()) === 'true';
     }
 
     /**
@@ -218,6 +275,10 @@ final class ExpressionAnalyzer
 
         if ($stmt instanceof PhpParser\Node\Expr\StaticCall) {
             return StaticCallAnalyzer::analyze($statements_analyzer, $stmt, $context, $template_result);
+        }
+
+        if ($stmt instanceof PartialApplication) {
+            return PartialApplicationAnalyzer::analyze($statements_analyzer, $stmt, $context);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch) {
@@ -389,8 +450,16 @@ final class ExpressionAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                 );
 
-                // Analyze as if it were a normal assignment and just pretend the reference doesn't exist
-                return self::analyzeAssignment($statements_analyzer, $stmt, $context, $from_stmt);
+                // Analyze as if it were a normal assignment and just pretend the reference doesn't exist, but for the
+                // offset it binds, which PHP creates
+                $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+                $context->inside_by_ref_offset = $stmt->expr instanceof PhpParser\Node\Expr\ArrayDimFetch;
+
+                try {
+                    return self::analyzeAssignment($statements_analyzer, $stmt, $context, $from_stmt);
+                } finally {
+                    $context->inside_by_ref_offset = $was_inside_by_ref_offset;
+                }
             }
 
             return true;
@@ -466,6 +535,12 @@ final class ExpressionAnalyzer
             && $analysis_php_version_id >= 8_00_00
         ) {
             return NullsafeAnalyzer::analyze($statements_analyzer, $stmt, $context);
+        }
+
+        if ($stmt instanceof VirtualPipeValue) {
+            $statements_analyzer->node_data->setType($stmt, $stmt->value_type);
+
+            return true;
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Error) {

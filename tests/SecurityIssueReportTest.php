@@ -37,6 +37,7 @@ final class SecurityIssueReportTest extends TestCase
         $this->assertTrue(is_subclass_of(TaintedInput::class, SecurityIssue::class));
 
         $files = glob(__DIR__ . '/../src/Psalm/Issue/Tainted*.php');
+        $this->assertIsArray($files);
         $this->assertNotEmpty($files);
 
         foreach ($files as $file) {
@@ -66,6 +67,7 @@ final class SecurityIssueReportTest extends TestCase
 
     /**
      * @param class-string<ConsoleReport|CompactReport> $report_class
+     * @psalm-pure
      */
     private function createReport(string $report_class): string
     {

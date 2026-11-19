@@ -17,9 +17,13 @@ use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
+use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
@@ -27,6 +31,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -77,11 +82,26 @@ final class MethodCallReturnTypeFetcher
 
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
-                return new Union([new TClosure(
-                    $method_storage->params,
-                    $method_storage->return_type,
-                    $method_storage->capabilities,
-                )]);
+                [$closure, $method_template_types] = self::getInheritedClosure(
+                    $codebase,
+                    $method_id,
+                    $method_storage,
+                    $statements_analyzer,
+                );
+
+                return self::getFirstClassCallableType(
+                    $codebase,
+                    $stmt,
+                    $closure,
+                    $template_result,
+                    $method_template_types,
+                    $fq_class_name,
+                    $static_type,
+                    $class_storage->parent_class,
+                    $static_type instanceof TNamedObject
+                    && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                    true,
+                );
             }
 
             return Type::getClosure();
@@ -99,7 +119,17 @@ final class MethodCallReturnTypeFetcher
             );
 
             if ($return_type_candidate) {
-                return $return_type_candidate;
+                return self::taintReturnType(
+                    $statements_analyzer,
+                    $stmt,
+                    $context,
+                    $method_id,
+                    $declaring_method_id,
+                    $cased_method_id,
+                    $args,
+                    $template_result,
+                    $return_type_candidate,
+                );
             }
         }
 
@@ -133,12 +163,26 @@ final class MethodCallReturnTypeFetcher
                 );
 
                 if ($return_type_candidate) {
-                    return $return_type_candidate;
+                    return self::taintReturnType(
+                        $statements_analyzer,
+                        $stmt,
+                        $context,
+                        $method_id,
+                        $declaring_method_id,
+                        $cased_method_id,
+                        $args,
+                        $template_result,
+                        $return_type_candidate,
+                    );
                 }
             }
         }
 
-        if (InternalCallMapHandler::inCallMap((string) $call_map_id)) {
+        // Enum factories and cases() need value-dependent resolution, not the interface's generic static type.
+        if (InternalCallMapHandler::inCallMap((string) $call_map_id)
+            && !(($method_name === 'cases' || $method_name === 'from' || $method_name === 'tryfrom')
+                && $codebase->classlike_storage_provider->get($fq_class_name)->is_enum)
+        ) {
             if (($template_result->lower_bounds || $class_storage->stubbed)
                 && ($method_storage = ($class_storage->methods[$method_id->method_name] ?? null))
                 && $method_storage->return_type
@@ -239,19 +283,27 @@ final class MethodCallReturnTypeFetcher
 
                 $config = Config::getInstance();
 
-                // only check the type locally if it's defined externally
+                // only check the type locally if it's defined externally, reporting its issues at one call
                 if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
-                    /** @psalm-suppress UnusedMethodCall Actually generates issues */
-                    $return_type_candidate->check(
-                        $statements_analyzer,
-                        new CodeLocation($statements_analyzer, $stmt),
-                        $statements_analyzer->getSuppressedIssues(),
-                        $context->phantom_classes,
-                        true,
-                        false,
-                        false,
-                        $context,
+                    $issue_group = IssueBuffer::setIssueGroup(
+                        $return_type_location->file_path . ':' . $return_type_location->raw_file_start,
                     );
+
+                    try {
+                        /** @psalm-suppress UnusedMethodCall Actually generates issues */
+                        $return_type_candidate->check(
+                            $statements_analyzer,
+                            new CodeLocation($statements_analyzer, $stmt),
+                            $statements_analyzer->getSuppressedIssues(),
+                            $context->phantom_classes,
+                            true,
+                            false,
+                            false,
+                            $context,
+                        );
+                    } finally {
+                        IssueBuffer::setIssueGroup($issue_group);
+                    }
                 }
             } else {
                 $result->returns_by_ref =
@@ -266,6 +318,54 @@ final class MethodCallReturnTypeFetcher
 
         $return_type_candidate = TypeVariableTracker::resolveTypeVariables($return_type_candidate, $codebase);
 
+        return self::taintReturnType(
+            $statements_analyzer,
+            $stmt,
+            $context,
+            $method_id,
+            $declaring_method_id,
+            $cased_method_id,
+            $args,
+            $template_result,
+            $return_type_candidate,
+        );
+    }
+
+    /**
+     * What a call gives, whichever way its return type was found: a plugin supplying the type of a call doesn't
+     * make it lose the taints its method declares.
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     */
+    private static function taintReturnType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        Context $context,
+        MethodIdentifier $method_id,
+        ?MethodIdentifier $declaring_method_id,
+        string $cased_method_id,
+        array $args,
+        TemplateResult $template_result,
+        Union $return_type_candidate,
+    ): Union {
+        $result_added_taints = 0;
+        $result_removed_taints = 0;
+        $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+
+        // the event of taintMethodCallResult() is about the receiver; this one is about the call
+        if ($taint_flow_graph) {
+            $event = new AddRemoveTaintsEvent(
+                $stmt,
+                $context,
+                $statements_analyzer,
+                $statements_analyzer->getCodebase(),
+            );
+            $dispatcher = $statements_analyzer->getCodebase()->config->eventDispatcher;
+
+            $result_added_taints = $dispatcher->dispatchAddTaints($event);
+            $result_removed_taints = $dispatcher->dispatchRemoveTaints($event);
+        }
+
         self::taintMethodCallResult(
             $statements_analyzer,
             $return_type_candidate,
@@ -276,57 +376,33 @@ final class MethodCallReturnTypeFetcher
             $declaring_method_id,
             $cased_method_id,
             $context,
+            $template_result,
+            $result_added_taints,
+            $result_removed_taints,
         );
 
-        // what a generator gives comes from what it yields (see YieldAnalyzer::taintGenerator())
-        $generator_path_type = match (strtolower((string) $declaring_method_id)) {
-            'generator::current', 'generator::send' => 'arrayvalue-fetch',
-            'generator::key' => 'arraykey-fetch',
-            'generator::getreturn' => 'return',
-            default => null,
-        };
-
-        if ($generator_path_type !== null
-            && ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
+        // what is sent to a generator becomes the value of its yield expressions (what it gives back, see
+        // YieldAnalyzer::taintGenerator(), flows as dictionaries/InternalTaintObjectFlowMap.php says)
+        if (strtolower((string) $declaring_method_id) === 'generator::send'
+            && isset($args[0])
+            && $taint_flow_graph
             && ($var_type = $statements_analyzer->node_data->getType($stmt->var))
             && $var_type->parent_nodes
+            && ($sent_type = $statements_analyzer->node_data->getType($args[0]->value))
+            && $sent_type->parent_nodes
         ) {
-            $generator_node = DataFlowNode::getForAssignment(
-                'generator ' . $cased_method_id,
-                new CodeLocation($statements_analyzer, $stmt->name),
+            $sent_node = DataFlowNode::getForAssignment(
+                'sent to the generator',
+                new CodeLocation($statements_analyzer, $args[0]->value),
             );
 
-            $graph->addNode($generator_node);
+            $taint_flow_graph->addNode($sent_node);
 
-            foreach ($var_type->parent_nodes as $parent_node) {
-                $graph->addPath($parent_node, $generator_node, $generator_path_type);
+            foreach ($sent_type->parent_nodes as $parent_node) {
+                $taint_flow_graph->addPath($parent_node, $sent_node, 'arg');
             }
 
-            $return_type_candidate = $return_type_candidate->addParentNodes(
-                [$generator_node->id => $generator_node],
-            );
-
-            // what is sent becomes the value of the yield expressions of the generator
-            if ($generator_path_type === 'arrayvalue-fetch'
-                && isset($args[0])
-                && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
-                && ($sent_type = $statements_analyzer->node_data->getType($args[0]->value))
-                && $sent_type->parent_nodes
-                && strtolower((string) $declaring_method_id) === 'generator::send'
-            ) {
-                $sent_node = DataFlowNode::getForAssignment(
-                    'sent to the generator',
-                    new CodeLocation($statements_analyzer, $args[0]->value),
-                );
-
-                $taint_flow_graph->addNode($sent_node);
-
-                foreach ($sent_type->parent_nodes as $parent_node) {
-                    $taint_flow_graph->addPath($parent_node, $sent_node, 'arg');
-                }
-
-                $taint_flow_graph->addGeneratorSend($sent_node, $var_type->parent_nodes);
-            }
+            $taint_flow_graph->addGeneratorSend($sent_node, $var_type->parent_nodes);
         }
 
         return NativeClassTaintAnalyzer::taint(
@@ -337,6 +413,40 @@ final class MethodCallReturnTypeFetcher
             $args,
             $return_type_candidate,
         );
+    }
+
+    /**
+     * What the method removes from its return depends on the arguments of this call: its result has a node of its own,
+     * as $method_call_node may be shared with the other calls, the last call deciding for all
+     */
+    private static function escapeReturnByArguments(
+        Codebase $codebase,
+        TaintFlowGraph|CombinedFlowGraph|VariableUseGraph $graph,
+        MethodStorage $method_storage,
+        ?TemplateResult $template_result,
+        MethodIdentifier $method_id,
+        CodeLocation $node_location,
+        DataFlowNode $method_call_node,
+        Union &$return_type_candidate,
+    ): void {
+        $removed_taints = $template_result
+            ? FunctionCallReturnTypeFetcher::getConditionallyRemovedTaints(
+                $codebase,
+                $method_storage,
+                $template_result,
+            )
+            : 0;
+
+        if (!$removed_taints) {
+            return;
+        }
+
+        $escaped_node = DataFlowNode::getForAssignment((string) $method_id . '-escaped', $node_location);
+
+        $graph->addNode($escaped_node);
+        $graph->addPath($method_call_node, $escaped_node, 'conditionally-escaped', 0, $removed_taints);
+
+        $return_type_candidate = $return_type_candidate->setParentNodes([$escaped_node->id => $escaped_node]);
     }
 
     /**
@@ -352,6 +462,9 @@ final class MethodCallReturnTypeFetcher
         ?MethodIdentifier $declaring_method_id,
         string $cased_method_id,
         Context $context,
+        ?TemplateResult $template_result = null,
+        int $result_added_taints = 0,
+        int $result_removed_taints = 0,
     ): void {
         if (!($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
             || !$declaring_method_id
@@ -394,11 +507,9 @@ final class MethodCallReturnTypeFetcher
         );
 
         // what the object holds before the call, which a specialized call may replace in the context below
-        $receiver_parent_nodes = $method_storage->return_source_this === null
-            ? []
-            : (($var_id !== null && isset($context->vars_in_scope[$var_id])
-                ? $context->vars_in_scope[$var_id]
-                : $statements_analyzer->node_data->getType($var_expr))?->parent_nodes ?? []);
+        $receiver_parent_nodes = (($var_id !== null && isset($context->vars_in_scope[$var_id])
+            ? $context->vars_in_scope[$var_id]
+            : $statements_analyzer->node_data->getType($var_expr))?->parent_nodes ?? []);
 
         if ($specialize_call && $taint_flow_graph) {
             // the receiver is only tracked through calls explicitly specialized: see FunctionLikeAnalyzer
@@ -529,13 +640,7 @@ final class MethodCallReturnTypeFetcher
                     );
 
                     $taint_flow_graph->addNode($declaring_method_call_node);
-                    $taint_flow_graph->addPath(
-                        $declaring_method_call_node,
-                        $method_call_node,
-                        'parent',
-                        $added_taints,
-                        $removed_taints,
-                    );
+                    $taint_flow_graph->addPath($declaring_method_call_node, $method_call_node, 'parent');
                 }
 
                 $return_type_candidate = $return_type_candidate->setParentNodes([
@@ -570,13 +675,7 @@ final class MethodCallReturnTypeFetcher
                     );
 
                     $taint_flow_graph->addNode($declaring_method_call_node);
-                    $taint_flow_graph->addPath(
-                        $declaring_method_call_node,
-                        $method_call_node,
-                        'parent',
-                        $added_taints,
-                        $removed_taints,
-                    );
+                    $taint_flow_graph->addPath($declaring_method_call_node, $method_call_node, 'parent');
                 }
 
                 $taint_flow_graph->addNode($method_call_node);
@@ -610,13 +709,7 @@ final class MethodCallReturnTypeFetcher
                 );
 
                 $graph->addNode($declaring_method_call_node);
-                $graph->addPath(
-                    $declaring_method_call_node,
-                    $method_call_node,
-                    'parent',
-                    $added_taints,
-                    $removed_taints,
-                );
+                $graph->addPath($declaring_method_call_node, $method_call_node, 'parent');
             }
 
             $graph->addNode($method_call_node);
@@ -625,6 +718,17 @@ final class MethodCallReturnTypeFetcher
                 $method_call_node->id => $method_call_node,
             ]);
         }
+
+        self::escapeReturnByArguments(
+            $codebase,
+            $graph,
+            $method_storage,
+            $template_result,
+            $method_id,
+            $node_location,
+            $method_call_node,
+            $return_type_candidate,
+        );
 
         if (!$taint_flow_graph) {
             return;
@@ -642,8 +746,8 @@ final class MethodCallReturnTypeFetcher
                     $parent_node,
                     $method_call_node,
                     $method_storage->return_source_this,
-                    $added_taints | $method_storage->added_taints,
-                    $removed_taints | $method_storage->removed_taints | $type_removed_taints,
+                    $method_storage->added_taints,
+                    $method_storage->removed_taints | $type_removed_taints,
                 );
             }
         }
@@ -654,6 +758,7 @@ final class MethodCallReturnTypeFetcher
             $method_id,
             $method_storage,
             $node_location,
+            $receiver_parent_nodes,
         );
 
         if ($dispatch_node) {
@@ -700,6 +805,47 @@ final class MethodCallReturnTypeFetcher
             $method_id,
             $specialize_call ? $node_location : null,
         );
+
+        ConditionalTaintSinks::taintCall(
+            $statements_analyzer,
+            $taint_flow_graph,
+            $method_storage,
+            $args,
+            $cased_method_id,
+            $node_location,
+        );
+
+        $return_type_candidate = ReceiverPropertyTaints::taintCall(
+            $statements_analyzer,
+            $taint_flow_graph,
+            $method_storage,
+            $args,
+            $method_id->fq_class_name,
+            $receiver_parent_nodes,
+            $var_id,
+            $context,
+            $node_location,
+            $return_type_candidate,
+        );
+
+        $added_taints |= $result_added_taints;
+        $removed_taints |= $result_removed_taints;
+
+        // what the plugins add to and remove from the result of this call, on a node of its own: the nodes the
+        // result comes from may be shared with the other calls, the last call deciding for all
+        if ($added_taints !== 0 || $removed_taints !== 0) {
+            $call_result_node = DataFlowNode::getForAssignment($cased_method_id, $node_location);
+
+            $graph->addNode($call_result_node);
+
+            foreach ($return_type_candidate->parent_nodes as $parent_node) {
+                $graph->addPath($parent_node, $call_result_node, '=', $added_taints, $removed_taints);
+            }
+
+            $return_type_candidate = $return_type_candidate->setParentNodes([
+                $call_result_node->id => $call_result_node,
+            ]);
+        }
     }
 
     /**
@@ -711,6 +857,11 @@ final class MethodCallReturnTypeFetcher
      * DataFlowNode::getForReturnDispatch()) shared by the virtual calls of the method on the class, once, so that
      * the number of calls doesn't multiply its paths. Each call takes it through a node of its own, so that what is
      * added to the result of a call doesn't go to the others.
+     *
+     * The overrides specialized by call take the object of the call, from $receiver_parent_nodes, as their `$this`,
+     * through a node shared the same way (see DataFlowNode::getForThisDispatch()).
+     *
+     * @param array<string, DataFlowNode> $receiver_parent_nodes
      */
     public static function getReturnDispatchNode(
         Codebase $codebase,
@@ -718,6 +869,7 @@ final class MethodCallReturnTypeFetcher
         MethodIdentifier $method_id,
         MethodStorage $method_storage,
         CodeLocation $call_location,
+        array $receiver_parent_nodes = [],
     ): ?DataFlowNode {
         // a constructor is called on the class it constructs, a private method is not overridden
         if ($method_id->method_name === '__construct'
@@ -735,9 +887,15 @@ final class MethodCallReturnTypeFetcher
 
         $cased_method_id = $class_storage->name . '::' . (string) $method_storage->cased_name;
         $dispatch_node = DataFlowNode::getForReturnDispatch($cased_method_id);
+        $this_dispatch_node = DataFlowNode::getForThisDispatch($cased_method_id);
+
+        if ($taint_flow_graph->isEmptyDispatch($dispatch_node)) {
+            return null;
+        }
 
         if (!$taint_flow_graph->hasNode($dispatch_node)) {
             $return_nodes = [];
+            $this_nodes = [];
             $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
             foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
@@ -775,10 +933,29 @@ final class MethodCallReturnTypeFetcher
                 );
 
                 $return_nodes[$return_node->id] = $return_node;
+
+                // The body of a method specialized by call takes `$this` from a node (see FunctionLikeAnalyzer): the
+                // one of the specialization the return node above leaves, so that what it returns of the object, as a
+                // parent class's method calling a method its subclass overrides to return `$this` or a property,
+                // reaches the call
+                if ($specialization_location !== null
+                    && $dependent_storage->specialize_call
+                    && !$method_storage->is_static
+                ) {
+                    $this_node = DataFlowNode::getForAssignment(
+                        '$this in ' . (string) FunctionLikeAnalyzer::getBodyMethodId($codebase, $dependent_method_id),
+                        $specialization_location,
+                        DataFlowNode::getSpecializationKey($specialization_location),
+                    );
+
+                    $this_nodes[$this_node->id] = $this_node;
+                }
             }
 
             // no other method may run: the classes extending this one inherit the method
             if ($return_nodes === []) {
+                $taint_flow_graph->addEmptyDispatch($dispatch_node);
+
                 return null;
             }
 
@@ -788,6 +965,15 @@ final class MethodCallReturnTypeFetcher
                 $taint_flow_graph->addNode($return_node);
                 $taint_flow_graph->addPath($return_node, $dispatch_node, 'dispatch');
             }
+
+            if ($this_nodes !== []) {
+                $taint_flow_graph->addNode($this_dispatch_node);
+
+                foreach ($this_nodes as $this_node) {
+                    $taint_flow_graph->addNode($this_node);
+                    $taint_flow_graph->addPath($this_dispatch_node, $this_node, '=');
+                }
+            }
         }
 
         $call_node = DataFlowNode::getForAssignment($dispatch_node->label, $call_location);
@@ -795,7 +981,149 @@ final class MethodCallReturnTypeFetcher
         $taint_flow_graph->addNode($call_node);
         $taint_flow_graph->addPath($dispatch_node, $call_node, 'dispatch');
 
+        // Without what the plugins add to and remove from this call: the parent nodes of the object may be shared with
+        // the other calls, the last call deciding for all. They apply to the result of the call on a node of its own.
+        if ($receiver_parent_nodes !== [] && $taint_flow_graph->hasNode($this_dispatch_node)) {
+            foreach ($receiver_parent_nodes as $parent_node) {
+                $taint_flow_graph->addPath($parent_node, $this_dispatch_node, '=');
+            }
+        }
+
         return $call_node;
+    }
+
+    /**
+     * The node attribute set on a first-class callable given as the callback of array_map(), which binds the templates
+     * of its method itself: they then stay in its closure. Other calls bind them through the inferred template result.
+     */
+    public const CALL_ARGUMENT_ATTRIBUTE = 'first_class_callable_argument';
+
+    /**
+     * The closure of a method for a first-class callable. A method without a return type of its own inherits the type
+     * of the parent that documents it (the one a call of the method uses), with the templates that type refers to;
+     * its parameters are those of a call, the method's own with the parent's docblock types.
+     *
+     * @return array{TClosure, array<string, non-empty-array<string, Union>>} the closure and its method templates
+     */
+    public static function getInheritedClosure(
+        Codebase $codebase,
+        MethodIdentifier $method_id,
+        MethodStorage $method_storage,
+        StatementsAnalyzer $statements_analyzer,
+    ): array {
+        $params = $codebase->methods->getMethodParams($method_id);
+        $callable_id = strtolower((string) ($codebase->methods->getDeclaringMethodId($method_id) ?? $method_id));
+
+        // a signature return type without a docblock one inherits the docblock return type of the parent, as a
+        // call does
+        if ($method_storage->return_type !== null && $method_storage->has_docblock_return_type) {
+            return [
+                new TClosure(
+                    $params,
+                    $method_storage->return_type,
+                    $method_storage->capabilities,
+                    callable_id: $callable_id,
+                ),
+                $method_storage->template_types ?? [],
+            ];
+        }
+
+        $self_class = null;
+        $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+        $documenting_method_id = $appearing_method_id !== null
+            ? $codebase->classlike_storage_provider->get($appearing_method_id->fq_class_name)
+                ->documenting_method_ids[$appearing_method_id->method_name] ?? null
+            : null;
+
+        return [
+            new TClosure(
+                $params,
+                $codebase->methods->getMethodReturnType($codebase, $method_id, $self_class, $statements_analyzer),
+                $method_storage->capabilities,
+                callable_id: $callable_id,
+            ),
+            ($documenting_method_id !== null
+                ? $codebase->methods->getStorage($documenting_method_id)->template_types
+                : null) ?? $method_storage->template_types ?? [],
+        ];
+    }
+
+    /**
+     * The closure of a first-class callable of a method, typed as a call of the method on the same receiver: with its
+     * template bounds (those of the class, from the receiver) and `static`. The method's own templates left unbound
+     * stand for their bounds, as a function's do in its closure, unless the call it is an argument of may bind them.
+     *
+     * @param array<string, non-empty-array<string, Union>> $method_template_types
+     */
+    public static function getFirstClassCallableType(
+        Codebase $codebase,
+        PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall|null $stmt,
+        TClosure $closure,
+        TemplateResult $template_result,
+        array $method_template_types,
+        ?string $self_class,
+        string|TNamedObject|TTemplateParam|null $static_class_type,
+        ?string $parent_class,
+        bool $final,
+        bool $expand_generic = false,
+        bool $keep_method_templates = false,
+    ): Union {
+        $keep_method_templates = $keep_method_templates
+            || $stmt?->getAttribute(self::CALL_ARGUMENT_ATTRIBUTE) === true;
+        $bounds_result = new TemplateResult([], []);
+        $bounds_result->lower_bounds = $template_result->lower_bounds;
+
+        // in the order they are declared in, as a bound may be another template of the method (`@template B of A`)
+        foreach ($method_template_types as $template_name => $bounds) {
+            foreach ($bounds as $defining_class => $bound) {
+                if (isset($template_result->lower_bounds[$template_name][$defining_class])) {
+                    continue;
+                }
+
+                if ($bounds_result->lower_bounds) {
+                    $bound = TemplateInferredTypeReplacer::replace($bound, $bounds_result, $codebase);
+                }
+
+                $bounds_result->lower_bounds[$template_name][$defining_class] = [new TemplateBound(
+                    $keep_method_templates
+                        ? new Union([new TTemplateParam($template_name, $bound, $defining_class)])
+                        : $bound,
+                )];
+            }
+        }
+
+        $closure_type = new Union([$closure]);
+
+        if ($bounds_result->lower_bounds) {
+            $closure_type = TemplateInferredTypeReplacer::replace(
+                TypeExpander::expandUnion($codebase, $closure_type, null, null, null),
+                $bounds_result,
+                $codebase,
+            );
+
+            // a template bound to mixed gives way to its as-type, which may be another template of the method
+            for ($i = $keep_method_templates ? 0 : count($method_template_types); $i > 0; $i--) {
+                $replaced = TemplateInferredTypeReplacer::replace($closure_type, $bounds_result, $codebase);
+
+                if ($replaced->getId() === $closure_type->getId()) {
+                    break;
+                }
+
+                $closure_type = $replaced;
+            }
+        }
+
+        return TypeExpander::expandUnion(
+            $codebase,
+            $closure_type,
+            $self_class,
+            $static_class_type,
+            $parent_class,
+            true,
+            false,
+            $final,
+            $expand_generic,
+        );
     }
 
     public static function replaceTemplateTypes(
@@ -809,7 +1137,9 @@ final class MethodCallReturnTypeFetcher
             $bindable_template_types = $return_type_candidate->getTemplateTypes();
 
             foreach ($bindable_template_types as $template_type) {
+                // the template of a class-string-map belongs to the type, not to the call
                 if ($template_type->defining_class !== $method_id->fq_class_name
+                    && $template_type->defining_class !== 'class-string-map'
                     && !isset(
                         $template_result->lower_bounds
                             [$template_type->param_name]

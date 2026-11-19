@@ -35,10 +35,13 @@ vendor/bin/psalter --plugin=vendor/vimeo/psalm/examples/plugins/ClassUnqualifier
 
 The above example plugin converts all unnecessarily qualified classnames in your code to shorter aliased versions.
 
+Plugins enabled in `psalm.xml` can also make the issues they report fixable with `--issues`, when [they support it](../running_psalm/plugins/authoring_plugins.md#fixing-plugin-issues-with-psalter).
+
 ## Supported fixes
 
 This initial release provides support for the following alterations, corresponding to the names of issues Psalm finds.
 To fix all of these at once, run `vendor/bin/psalter --issues=all`
+The `all` list does not include `MissingPureAnnotation`, `MissingImmutableAnnotation` and `MissingThrowsDocblock`: name them explicitly, e.g. `--issues=MissingPureAnnotation,MissingImmutableAnnotation`.
 
 ### MissingReturnType
 

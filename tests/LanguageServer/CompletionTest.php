@@ -9,6 +9,7 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
@@ -17,8 +18,6 @@ use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use Psalm\Type;
-
-use function count;
 
 final class CompletionTest extends TestCase
 {
@@ -35,10 +34,10 @@ final class CompletionTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserCacheProvider($config, '', false),
+            new ParserCacheProvider($config, '', CacheMode::Memory),
             null,
             null,
-            new FileReferenceCacheProvider($config, '', false),
+            new FileReferenceCacheProvider($config, '', CacheMode::Memory),
             new ProjectCacheProvider(),
         );
 
@@ -967,7 +966,7 @@ final class CompletionTest extends TestCase
         $this->assertSame('*Bar-my_function_in', $completion_data[0]);
 
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
-        $this->assertSame(1, count($completion_items));
+        $this->assertCount(1, $completion_items);
         $this->assertEquals('My Function in a Bar', $completion_items[0]->documentation);
     }
 
@@ -998,7 +997,7 @@ final class CompletionTest extends TestCase
         $this->assertSame('*Bar-strlen', $completion_data[0]);
 
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
-        $this->assertSame(2, count($completion_items));
+        $this->assertCount(2, $completion_items);
     }
 
     public function testCompletionForFunctionNamesRespectUsedNamespaces(): void
@@ -1024,7 +1023,7 @@ final class CompletionTest extends TestCase
         $this->assertSame('*Bar-atleaston', $completion_data[0]);
 
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
-        $this->assertSame(1, count($completion_items));
+        $this->assertCount(1, $completion_items);
         $this->assertSame('phpf\\atLeastOnce', $completion_items[0]->label);
     }
 
@@ -1051,7 +1050,7 @@ final class CompletionTest extends TestCase
         $this->assertSame('*Bar-Atleaston', $completion_data[0]);
 
         $completion_items = $codebase->getCompletionItemsForPartialSymbol($completion_data[0], $completion_data[2], 'somefile.php');
-        $this->assertSame(0, count($completion_items));
+        $this->assertCount(0, $completion_items);
     }
 
     public function testGetMatchingFunctionNames(): void
@@ -1073,10 +1072,10 @@ final class CompletionTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
 
         $functions = $codebase->functions->getMatchingFunctionNames('*-array_su', 0, 'somefile.php', $codebase);
-        $this->assertSame(1, count($functions));
+        $this->assertCount(1, $functions);
 
         $functions = $codebase->functions->getMatchingFunctionNames('*-my_funct', 0, 'somefile.php', $codebase);
-        $this->assertSame(1, count($functions));
+        $this->assertCount(1, $functions);
     }
 
     public function testGetMatchingFunctionNamesFromPredefinedFunctions(): void
@@ -1095,7 +1094,7 @@ final class CompletionTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
 
         $functions = $codebase->functions->getMatchingFunctionNames('*-urlencod', 0, 'somefile.php', $codebase);
-        $this->assertSame(1, count($functions));
+        $this->assertCount(1, $functions);
     }
 
     public function testGetMatchingFunctionNamesFromUsedFunction(): void
@@ -1118,7 +1117,7 @@ final class CompletionTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
 
         $functions = $codebase->functions->getMatchingFunctionNames('*Foo-atleaston', 81, 'somefile.php', $codebase);
-        $this->assertSame(1, count($functions));
+        $this->assertCount(1, $functions);
     }
 
     public function testGetMatchingFunctionNamesFromUsedNamespace(): void
@@ -1141,7 +1140,7 @@ final class CompletionTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
 
         $functions = $codebase->functions->getMatchingFunctionNames('*Foo-atleaston', 81, 'somefile.php', $codebase);
-        $this->assertSame(1, count($functions));
+        $this->assertCount(1, $functions);
     }
 
     public function testGetMatchingFunctionNamesFromUsedNamespaceRespectFirstCharCase(): void
@@ -1164,7 +1163,7 @@ final class CompletionTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
 
         $functions = $codebase->functions->getMatchingFunctionNames('*Foo-Atleaston', 81, 'somefile.php', $codebase);
-        $this->assertSame(0, count($functions));
+        $this->assertCount(0, $functions);
     }
 
     public function testGetMatchingFunctionNamesWithNamespace(): void
@@ -1186,10 +1185,10 @@ final class CompletionTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
 
         $functions = $codebase->functions->getMatchingFunctionNames('*Foo-array_su', 45, 'somefile.php', $codebase);
-        $this->assertSame(1, count($functions));
+        $this->assertCount(1, $functions);
 
         $functions = $codebase->functions->getMatchingFunctionNames('Foo-my_funct', 45, 'somefile.php', $codebase);
-        $this->assertSame(1, count($functions));
+        $this->assertCount(1, $functions);
     }
 
     public function testCompletionOnInstanceofWithNamespaceAndUse(): void

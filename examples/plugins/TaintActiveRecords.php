@@ -60,7 +60,7 @@ final class TaintActiveRecords implements AddTaintsInterface
     /**
      * @return bool `true` if union contains a type of model
      *
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function containsActiveRecord(Union $union_type): bool
     {

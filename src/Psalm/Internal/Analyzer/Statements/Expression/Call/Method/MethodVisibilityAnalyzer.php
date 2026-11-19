@@ -57,7 +57,7 @@ final class MethodVisibilityAnalyzer
                 if (IssueBuffer::accepts(
                     new InaccessibleMethod(
                         'Cannot access method ' . $codebase_methods->getCasedMethodId($method_id) .
-                            ' from context ' . $context->self,
+                            ($context->self !== null ? ' from context ' . $context->self : ''),
                         $code_location,
                     ),
                     $suppressed_issues,
@@ -152,7 +152,7 @@ final class MethodVisibilityAnalyzer
                     if (IssueBuffer::accepts(
                         new InaccessibleMethod(
                             'Cannot access private method ' . $codebase_methods->getCasedMethodId($method_id) .
-                                ' from context ' . $context->self,
+                                ($context->self !== null ? ' from context ' . $context->self : ''),
                             $code_location,
                         ),
                         $suppressed_issues,

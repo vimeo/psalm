@@ -6,6 +6,7 @@ namespace Psalm\Storage;
 
 use Override;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Issue\CodeIssue;
 use Psalm\Type\Union;
@@ -19,6 +20,7 @@ use function implode;
 
 /**
  * @api
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 {
@@ -47,6 +49,8 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public ?Union $signature_return_type = null;
 
+    public bool $has_tentative_return_type = false;
+
     public ?CodeLocation $signature_return_type_location = null;
 
     public ?string $cased_name = null;
@@ -55,6 +59,15 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * @var array<int, string>
      */
     public array $suppressed_issues = [];
+
+    /**
+     * The subset of $suppressed_issues written in this function-like's own docblock, keyed by the
+     * char offset of the issue name. Plugins append to $suppressed_issues, never to this, so only
+     * these entries have a source location to report as unused.
+     *
+     * @var array<int, string>
+     */
+    public array $docblock_suppressed_issues = [];
 
     public ?bool $deprecated = null;
 
@@ -75,14 +88,29 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public array $defined_constants = [];
 
     /**
+     * The globals the body binds with `global` or writes through `$GLOBALS['name']`, by variable id
+     *
      * @var array<string, bool>
      */
     public array $global_variables = [];
 
     /**
+     * The function-likes the body calls by name, whose bodies may write globals too (see
+     * GlobalAnalyzer::getGlobalsWrittenBy()): lowercase function ids, and `fq_class_name::method_name` method ids
+     *
+     * @var array<lowercase-string, true>
+     */
+    public array $called_function_like_ids = [];
+
+    /**
      * @var array<string, Union>
      */
     public array $global_types = [];
+
+    /**
+     * @var array<string, DocblockTypeLocation>
+     */
+    public array $global_type_locations = [];
 
     /**
      * An array holding the class template "as" types.
@@ -96,6 +124,21 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * @var array<string, non-empty-array<string, Union>>|null
      */
     public ?array $template_types = null;
+
+    /**
+     * What each template with a default (`@template T of Bound = Default`) is when a call does not infer it, the
+     * earlier templates of the function-like and those of its class standing for what they are at the call.
+     *
+     * @var array<string, Union>
+     */
+    public array $template_defaults = [];
+
+    /**
+     * Where each template default is, for the issues about it.
+     *
+     * @var array<string, CodeLocation>
+     */
+    public array $template_default_locations = [];
 
     /**
      * @var array<int, Possibilities>
@@ -145,6 +188,8 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     /**
      * The capabilities (side effects) this function-like may use: a bitmask of
      * {@see Capabilities} constants, {@see Capabilities::ALL} when unannotated.
+     *
+     * @var CapabilitySet
      */
     public int $capabilities = Capabilities::ALL;
 
@@ -169,6 +214,8 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     /**
      * The capabilities declared besides {@see self::$conditional_capabilities}, which a call requires whatever its
      * arguments
+     *
+     * @var CapabilitySet
      */
     public int $unconditional_capabilities = Capabilities::ALL;
 
@@ -207,12 +254,26 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public bool $specialize_call = false;
 
     /**
+     * Whether the function-like only runs from the command line (`@psalm-cli-only`): what it prints goes to a
+     * terminal, not to an HTML response
+     */
+    public bool $cli_only = false;
+
+    /**
      * Whether the function-like is a builtin, declared by Psalm's stubs or built from the call map: it has no body,
      * so the taints of each of its calls flow as its declaration says (see TaintFlowGraph::isCallSpecialized()).
      */
     public bool $builtin = false;
 
     public int $taint_source_types = 0;
+
+    /**
+     * The taints of the sources under keys of what the function-like returns, the keys outermost first:
+     * `@psalm-taint-source input return['key']`
+     *
+     * @var list<array{non-empty-list<string>, int}>
+     */
+    public array $taint_source_keys = [];
 
     public int $added_taints = 0;
 
@@ -222,6 +283,14 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * @var array<Union>
      */
     public array $conditionally_removed_taints = [];
+
+    /**
+     * `@psalm-taint-sink (<conditional>) $param`: the offset of the parameter, and the conditional type of the taints
+     * it is a sink of, which each call resolves with its arguments
+     *
+     * @var list<array{param: int, type: Union}>
+     */
+    public array $conditional_taint_sinks = [];
 
     /**
      * @var array<int, string>
@@ -243,9 +312,18 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public array $return_source_callable_params = [];
 
     /**
+     * The path types of the flows from arguments to the arguments the callables given to a parameter are called with,
+     * by the offset of that parameter, then of the parameter given them: `@psalm-flow ($subject) -> $callback()`
+     *
+     * @var array<int, array<int, string>>
+     */
+    public array $callable_param_argument_sources = [];
+
+    /**
      * The flows of arguments into keyed stores: `@psalm-flow ($value) -> Store::$data[$key]`. `key` is the offset of
      * the parameter giving the key (a list of keys with `is_list`), null for any key; `params` are those whose
      * arguments are stored, `callable_params` those whose callables' results are (`($compute()) -> ...`).
+     * `is_late_bound` for a store of `static`, the store of the class the method is called on.
      *
      * @var list<array{
      *     store: string,
@@ -254,6 +332,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      *     params: list<int>,
      *     callable_params: list<int>,
      *     path_type: string,
+     *     is_late_bound: bool,
      * }>
      */
     public array $taint_store_writes = [];
@@ -261,9 +340,59 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     /**
      * The flows out of keyed stores into what the function-like returns: `@psalm-flow Store::$data[$key] -> return`
      *
-     * @var list<array{store: string, key: ?int, is_list: bool, path_type: string}>
+     * @var list<array{store: string, key: ?int, is_list: bool, path_type: string, is_late_bound: bool}>
      */
     public array $taint_store_reads = [];
+
+    /**
+     * The flows of arguments into a property of the object a method is called on:
+     * `@psalm-flow ($value) -> $this->$name`. `name` is the offset of the parameter giving the name of the property,
+     * null for any property; `params` are those whose arguments are set.
+     *
+     * @var list<array{name: ?int, params: list<int>, path_type: string}>
+     */
+    public array $taint_property_writes = [];
+
+    /**
+     * The flows out of a property of the object a method is called on into what it returns:
+     * `@psalm-flow $this->$name -> return`
+     *
+     * @var list<array{name: ?int, path_type: string}>
+     */
+    public array $taint_property_reads = [];
+
+    /**
+     * The flows of arrays given to a method into the properties of the object it is called on that their keys name:
+     * `@psalm-flow ($values) -> $this->{key}`. Each is the offsets of the parameters whose arguments are set.
+     *
+     * @var list<list<int>>
+     */
+    public array $taint_keyed_property_writes = [];
+
+    /**
+     * Whether a method returns the properties of the object it is called on under their names:
+     * `@psalm-flow $this->{key} -> return[key]`
+     */
+    public bool $taint_keyed_property_read = false;
+
+    /**
+     * The flows of arguments into a property of the object a method is called on that the annotation names, or into
+     * an element of it: `@psalm-flow ($value) -> $this->data`, `($value) -> $this->data[$key]`,
+     * `($value) -> $this->data[*]`. `element` is the offset of the parameter giving the key of the element, `*` for any
+     * element, null for the property itself; `params` are those whose arguments are set.
+     *
+     * @var list<array{property: string, element: int|'*'|null, params: list<int>, path_type: string}>
+     */
+    public array $taint_named_property_writes = [];
+
+    /**
+     * The flows out of a property of the object a method is called on that the annotation names, or out of an element
+     * of it, into what the method returns: `@psalm-flow $this->data -> return`, `$this->data[$key] -> return`,
+     * `$this->data[*] -> return`
+     *
+     * @var list<array{property: string, element: int|'*'|null, path_type: string}>
+     */
+    public array $taint_named_property_reads = [];
 
     /** How the arguments can be passed */
     public ?NamedArguments $named_arguments = null;
@@ -306,6 +435,7 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      *
      * @param array<string, non-empty-array<string, Union>> $class_template_types the templates of the
      *                                                                             containing class, if any
+     * @return CapabilitySet
      * @psalm-mutation-free
      */
     public function getWorstCaseCapabilities(array $class_template_types = []): int

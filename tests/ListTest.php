@@ -19,9 +19,25 @@ final class ListTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
+            'keyedDestructuringOfATypedValueIsNotAMixedAssignment' => [
+                'code' => '<?php
+                    /** @return array{name: string, tags: list<string>} */
+                    function row(): array {
+                        return ["name" => "x", "tags" => []];
+                    }
+
+                    ["name" => $name, "tags" => $tags] = row();
+
+                    /** @var mixed $mixed */
+                    $mixed = 1;
+                    /** @psalm-suppress MixedAssignment */
+                    ["a" => $suppressed] = ["a" => $mixed];
+
+                    echo $name . implode(",", $tags);',
+            ],
             'destructureAKeyFromEachTypeOfAUnion' => [
                 'code' => '<?php
                     /** @return array{author: int}|ArrayObject<string, string> */
@@ -181,6 +197,46 @@ final class ListTest extends TestCase
                     foo(Foo::VARS);
                     ',
             ],
+            'destructuringIntoOffsetsOfUndefinedVariable' => [
+                'code' => '<?php
+                    if (!isset($ticket[\'custid\']) || !$ticket[\'custid\']) {
+                        [$ticket[\'requestor\'], $ticket[\'requestor_mail\']] = sscanf($ticket[\'req\'], "%[^<]<%[^>]");
+                    } else {
+                        [$ticket[\'requestor_mail\']] = sscanf($ticket[\'req\'], "<%[^>]");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [
+                    'PossiblyUndefinedGlobalVariable',
+                    'UndefinedGlobalVariable',
+                    'PossiblyUndefinedArrayOffset',
+                    'PossiblyNullArrayAccess',
+                    'MixedArrayAccess',
+                    'MixedArrayAssignment',
+                    'MixedAssignment',
+                    'PossiblyInvalidArrayAccess',
+                    'InvalidArrayOffset',
+                    'MixedArgument',
+                ],
+            ],
+            'destructuringIntoOffsetsOfUndefinedVariableWithUserFunction' => [
+                'code' => '<?php
+                    /** @return list{string, string}|null */
+                    function parse(string $s) { return null; }
+
+                    if (!isset($t[\'id\'])) {
+                        [$t[\'a\'], $t[\'b\']] = parse(\'x\');
+                    } else {
+                        [$t[\'b\']] = parse(\'x\');
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [
+                    'PossiblyUndefinedGlobalVariable',
+                    'UndefinedGlobalVariable',
+                    'PossiblyUndefinedArrayOffset',
+                    'PossiblyNullArrayAccess',
+                    'PossiblyInvalidArrayAccess',
+                ],
+            ],
         ];
     }
 
@@ -188,9 +244,33 @@ final class ListTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'keyedDestructuringOfAMixedValueIsAMixedAssignment' => [
+                'code' => '<?php
+                    /** @return array{name: mixed} */
+                    function row(): array {
+                        return ["name" => "x"];
+                    }
+
+                    ["name" => $name] = row();
+
+                    echo strlen((string) $name);',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32 - Unable to determine the type that $name is being assigned to',
+            ],
+            'keyedDestructuringOfAMixedValueFromAMapIsAMixedAssignment' => [
+                'code' => '<?php
+                    /** @return array<string, mixed> */
+                    function row(): array {
+                        return [];
+                    }
+
+                    ["name" => $name] = row();
+
+                    echo strlen((string) $name);',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32 - Unable to determine the type that $name is being assigned to',
+            ],
             'thisVarWithBadType' => [
                 'code' => '<?php
                     class A {

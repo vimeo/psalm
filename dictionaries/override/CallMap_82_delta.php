@@ -3,15 +3,6 @@
 return array (
   'added' => 
   array (
-    'datetimeinterface::__serialize' => 
-    array (
-      0 => 'array<array-key, mixed>',
-    ),
-    'datetimeinterface::__unserialize' => 
-    array (
-      0 => 'void',
-      'data' => 'array<array-key, mixed>',
-    ),
     'imap_is_open' => 
     array (
       0 => 'bool',
@@ -357,6 +348,45 @@ return array (
         'permission=' => 'int',
         'map_size=' => 'int',
         'flags=' => 'int|null',
+      ),
+    ),
+    'ds\\hashable::equals' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool',
+        'obj' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'bool',
+        'object' => 'mixed',
+      ),
+    ),
+    'ds\\sequence::filter' => 
+    array (
+      'old' => 
+      array (
+        0 => 'Ds\\Sequence',
+        'callback=' => 'callable[impure]|null',
+      ),
+      'new' => 
+      array (
+        0 => 'Ds\\Sequence',
+        'callback=' => 'callable[impure]',
+      ),
+    ),
+    'ds\\sequence::sort' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'comparator=' => 'callable[impure]|null',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'comparator=' => 'callable[impure]',
       ),
     ),
     'iterator_count' => 

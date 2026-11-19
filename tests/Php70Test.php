@@ -17,7 +17,7 @@ final class Php70Test extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'functionTypeHints' => [
@@ -224,7 +224,7 @@ final class Php70Test extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'anonymousClassWithBadStatement' => [

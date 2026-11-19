@@ -10,6 +10,7 @@ use PhpParser\Node\Name;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\FileSource;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
@@ -20,6 +21,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
@@ -27,9 +29,10 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Internal\TypeVisitor\TraitSelfResolver;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\InvalidArgument;
-use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\Issue\TypeDoesNotContainType;
@@ -38,13 +41,17 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\VirtualName;
+use Psalm\StatementsSource;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
+use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -58,15 +65,14 @@ use function array_filter;
 use function array_map;
 use function array_merge;
 use function array_unique;
+use function array_values;
 use function assert;
 use function count;
-use function explode;
 use function implode;
 use function in_array;
 use function is_int;
-use function is_numeric;
+use function is_string;
 use function mt_rand;
-use function pathinfo;
 use function preg_match;
 use function preg_replace;
 use function spl_object_id;
@@ -74,8 +80,6 @@ use function str_contains;
 use function str_replace;
 use function str_starts_with;
 use function strtolower;
-
-use const PATHINFO_EXTENSION;
 
 /**
  * @internal
@@ -93,38 +97,7 @@ abstract class CallAnalyzer
         $project_analyzer = $source->getFileAnalyzer()->project_analyzer;
         $codebase = $source->getCodebase();
 
-        if ($context->collect_mutations &&
-            $context->self &&
-            (
-                $context->self === $fq_class_name ||
-                $codebase->classExtends(
-                    $context->self,
-                    $fq_class_name,
-                )
-            )
-        ) {
-            $method_id = new MethodIdentifier(
-                $fq_class_name,
-                $method_name_lc,
-            );
-
-            if ((string) $method_id !== $source->getId()) {
-                if ($context->collect_initializations) {
-                    if (isset($context->initialized_methods[(string) $method_id])) {
-                        return;
-                    }
-
-                    $context->initialized_methods[(string) $method_id] = true;
-                }
-
-                $project_analyzer->getMethodMutations(
-                    $method_id,
-                    $context,
-                    $source->getRootFilePath(),
-                    $source->getRootFileName(),
-                );
-            }
-        } elseif ($context->collect_initializations &&
+        if ($context->collect_initializations &&
             $context->self &&
             (
                 $context->self === $fq_class_name
@@ -138,6 +111,7 @@ abstract class CallAnalyzer
             $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
 
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+            $source_appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
             if (isset($context->vars_in_scope['$this'])) {
                 foreach ($context->vars_in_scope['$this']->getAtomicTypes() as $atomic_type) {
@@ -201,6 +175,8 @@ abstract class CallAnalyzer
 
             $is_final = $method_storage->final;
 
+            $visibility = $method_storage->visibility;
+
             if ($method_name !== $declaring_method_id->method_name) {
                 $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
@@ -212,13 +188,16 @@ abstract class CallAnalyzer
                     if (isset($appearing_class_storage->trait_final_map[$method_name_lc])) {
                         $is_final = true;
                     }
+
+                    // a trait method can be made private by the alias that is called
+                    $visibility = $appearing_class_storage->trait_visibility_map[$method_name_lc] ?? $visibility;
                 }
             }
 
             if ($class_analyzer instanceof ClassLikeAnalyzer
                 && !$method_storage->is_static
                 && ($context->collect_nonprivate_initializations
-                    || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    || $visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
                     || $is_final)
             ) {
                 $local_vars_in_scope = [];
@@ -235,22 +214,35 @@ abstract class CallAnalyzer
                     }
                 }
 
+                // what the followed method learns about `$this` holds only inside it
+                $local_this_type = $context->vars_in_scope['$this'] ?? null;
+
                 $local_vars_possibly_in_scope = $context->vars_possibly_in_scope;
+
+                // the followed method starts without the conditions of its caller (see ClassLikeAnalyzer)
+                $local_clauses = $context->clauses;
 
                 $old_calling_method_id = $context->calling_method_id;
 
-                if ($fq_class_name === $source->getFQCLN()) {
-                    $class_analyzer->getMethodMutations($declaring_method_id->method_name, $context);
-                } else {
-                    $declaring_fq_class_name = $declaring_method_id->fq_class_name;
+                // the class whose code has the method: the class using the trait that declares it, or the ancestor
+                // the method appears in, as the class analyzer of the source only knows its own methods and traits
+                $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id)
+                    ?? $source_appearing_method_id;
+                $method_class_name = $appearing_method_id !== null
+                    ? $appearing_method_id->fq_class_name
+                    : $declaring_method_id->fq_class_name;
 
+                if ($method_class_name === $source->getFQCLN()) {
+                    $class_analyzer->getMethodMutations($method_name_lc, $context);
+                } else {
                     $old_self = $context->self;
-                    $context->self = $declaring_fq_class_name;
+                    $context->self = $method_class_name;
                     $project_analyzer->getMethodMutations(
-                        $declaring_method_id,
+                        new MethodIdentifier($method_class_name, $method_name_lc),
                         $context,
                         $source->getRootFilePath(),
                         $source->getRootFileName(),
+                        $source->getFileAnalyzer(),
                     );
                     $context->self = $old_self;
                 }
@@ -261,11 +253,30 @@ abstract class CallAnalyzer
                     $context->vars_in_scope[$var] = $type;
                 }
 
+                $context->clauses = $local_clauses;
+
+                if ($local_this_type !== null) {
+                    $context->vars_in_scope['$this'] = $local_this_type;
+                }
+
                 foreach ($local_vars_possibly_in_scope as $var => $_) {
                     $context->vars_possibly_in_scope[$var] = true;
                 }
             }
         }
+    }
+
+    /**
+     * Whether $source is code of a trait: it is analyzed once for each class using the trait, which share its closures
+     * (and the param types the hints of closure arguments write in them)
+     */
+    public static function isInTrait(StatementsSource $source): bool
+    {
+        while (!$source instanceof ClassLikeAnalyzer && ($parent_source = $source->getSource()) !== $source) {
+            $source = $parent_source;
+        }
+
+        return $source instanceof TraitAnalyzer;
     }
 
     /**
@@ -278,6 +289,7 @@ abstract class CallAnalyzer
         Context $context,
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer,
+        bool $static_is_called_class = false,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -293,7 +305,13 @@ abstract class CallAnalyzer
             ) !== false;
         }
 
-        $method_params = $codebase->methods->getMethodParams($method_id, $statements_analyzer, $args, $context);
+        $method_params = $codebase->methods->getMethodParams(
+            $method_id,
+            $statements_analyzer,
+            $args,
+            $context,
+            $code_location,
+        );
 
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -317,16 +335,22 @@ abstract class CallAnalyzer
 
             $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
+            // the class using a trait holds the docblock its method inherits
+            $documenting_class_storage = $declaring_class_storage->is_trait ? $class_storage : $declaring_class_storage;
+
             if ($declaring_class_storage->user_defined
                 && !$method_storage->has_docblock_param_types
-                && isset($declaring_class_storage->documenting_method_ids[$method_name])
+                && isset($documenting_class_storage->documenting_method_ids[$method_name])
             ) {
-                $documenting_method_id = $declaring_class_storage->documenting_method_ids[$method_name];
+                $documenting_method_id = $documenting_class_storage->documenting_method_ids[$method_name];
 
                 $documenting_method_storage = $codebase->methods->getStorage($documenting_method_id);
 
                 if ($documenting_method_storage->template_types) {
                     $method_storage = $documenting_method_storage;
+
+                    // the inherited parameter types refer to the templates of the documenting method, bound by the call
+                    $template_result->template_types += $documenting_method_storage->template_types;
                 }
             }
 
@@ -357,6 +381,7 @@ abstract class CallAnalyzer
             $template_result,
             $code_location,
             $context,
+            $static_is_called_class,
         ) === false) {
             return false;
         }
@@ -454,7 +479,7 @@ abstract class CallAnalyzer
     /**
      * @param array<string, array<string, Union>>  $template_extended_params
      * @param array<string, array<string, Union>>  $found_generic_params
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     public static function getGenericParamForOffset(
         string $fq_class_name,
@@ -527,7 +552,6 @@ abstract class CallAnalyzer
             return [];
         }
 
-        /** @psalm-suppress PossiblyNullPropertyFetch */
         if ($callable_arg->items[0]->key || $callable_arg->items[1]->key) {
             return [];
         }
@@ -566,11 +590,72 @@ abstract class CallAnalyzer
             return [];
         }
 
+        return self::getMethodIdsFromObjectType($class_arg_type, $method_name_arg->value);
+    }
+
+    /**
+     * @return list<non-empty-string>
+     */
+    public static function getFunctionIdsFromFirstClassCallable(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\CallLike $callable,
+    ): array {
+        if ($callable instanceof PhpParser\Node\Expr\FuncCall) {
+            if (!$callable->name instanceof Name) {
+                return [];
+            }
+
+            $function_id = $callable->name->toString();
+
+            if (!$callable->name instanceof Name\FullyQualified) {
+                $functions = $statements_analyzer->getCodebase()->functions;
+                $namespaced_function_id = $functions->getFullyQualifiedFunctionNameFromString(
+                    $function_id,
+                    $statements_analyzer,
+                );
+
+                if ($functions->functionExists($statements_analyzer, strtolower($namespaced_function_id))) {
+                    $function_id = $namespaced_function_id;
+                }
+            }
+
+            return [$function_id];
+        }
+
+        if ($callable instanceof PhpParser\Node\Expr\StaticCall) {
+            if (!$callable->class instanceof Name || !$callable->name instanceof Identifier) {
+                return [];
+            }
+
+            $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
+                $callable->class,
+                $statements_analyzer->getAliases(),
+            );
+
+            return [$fq_class_name . '::' . $callable->name->name];
+        }
+
+        if ($callable instanceof PhpParser\Node\Expr\MethodCall
+            && $callable->name instanceof Identifier
+            && ($object_type = $statements_analyzer->node_data->getType($callable->var))
+        ) {
+            return self::getMethodIdsFromObjectType($object_type, $callable->name->name);
+        }
+
+        return [];
+    }
+
+    /**
+     * @return list<non-empty-string>
+     * @psalm-pure
+     */
+    private static function getMethodIdsFromObjectType(Union $object_type, string $method_name): array
+    {
         $method_ids = [];
 
-        foreach ($class_arg_type->getAtomicTypes() as $type_part) {
+        foreach ($object_type->getAtomicTypes() as $type_part) {
             if ($type_part instanceof TNamedObject) {
-                $method_id = $type_part->value . '::' . $method_name_arg->value;
+                $method_id = $type_part->value . '::' . $method_name;
 
                 foreach ($type_part->extra_types as $extra_type) {
                     if ($extra_type instanceof TTemplateParam
@@ -580,7 +665,7 @@ abstract class CallAnalyzer
                         throw new UnexpectedValueException('Shouldn’t get a generic param here');
                     }
 
-                    $method_id .= '&' . $extra_type->value . '::' . $method_name_arg->value;
+                    $method_id .= '&' . $extra_type->value . '::' . $method_name;
                 }
 
                 $method_ids[] = '$' . $method_id;
@@ -615,6 +700,11 @@ abstract class CallAnalyzer
                 && $codebase->functions->functionExists($statements_analyzer, $root_function_id)
             ) {
                 $function_id = $root_function_id;
+            } elseif ($context !== null
+                && (isset($context->phantom_functions[$function_id])
+                    || ($can_be_in_root_scope && isset($context->phantom_functions[$root_function_id])))
+            ) {
+                return false;
             } else {
                 IssueBuffer::maybeAdd(
                     new UndefinedFunction(
@@ -645,7 +735,7 @@ abstract class CallAnalyzer
         // A native function (from a stub or the runtime's reflection) with no `@since` is dated by
         // the versioned callmaps. A polyfill declared in PHP code makes it available.
         $is_native = $function_storage->location === null
-            || pathinfo($function_storage->location->file_path, PATHINFO_EXTENSION) === 'phpstub';
+            || $codebase->scanner->isStubFile($function_storage->location->file_path);
 
         if ($since_php_version_id === null && $is_native) {
             $since_php_version_id = InternalCallMapHandler::getIntroducingPhpVersionId($function_id);
@@ -655,7 +745,7 @@ abstract class CallAnalyzer
             && $is_native
             && ($codebase->getGuardedPhpVersionId($context) ?? $codebase->analysis_php_version_id)
                 < $since_php_version_id
-            && !$codebase->functions->isDeclaredInCode($function_id)
+            && !$codebase->functions->isDeclaredInCode($function_id, $codebase->scanner)
         ) {
             IssueBuffer::maybeAdd(
                 new UndefinedFunction(
@@ -672,6 +762,240 @@ abstract class CallAnalyzer
     }
 
     /**
+     * The assertions on a parameter with its offset replaced by the offset of the argument given for it, which differs
+     * when arguments are named. Assertions on a parameter no argument is given for are dropped.
+     *
+     * An assertion on a scalar parameter of an internal function doesn't narrow an argument that may be `mixed` in
+     * coercive mode: PHP converts a scalar or a Stringable object to the type of the parameter, so the argument keeps
+     * its own type (an `SplFileInfo` passed to `is_link()` is no `non-empty-string`).
+     *
+     * @param array<Possibilities> $assertions
+     * @param list<PhpParser\Node\Arg> $args
+     * @return list<Possibilities>
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public static function getAssertionsOnArgs(
+        array $assertions,
+        FunctionLikeStorage $storage,
+        array $args,
+        ?NodeDataProvider $node_data = null,
+        bool $strict_types = false,
+    ): array {
+        if ($node_data !== null && !$strict_types && self::isInCallMap($storage)) {
+            $assertions = array_filter(
+                $assertions,
+                static fn(Possibilities $assertion): bool
+                    => !self::isOnAMixedArgumentOfAScalarParameter($assertion, $storage, $args, $node_data),
+            );
+        }
+
+        $arg_offsets = [];
+        $has_named_arg = false;
+
+        foreach ($args as $arg_offset => $arg) {
+            if ($arg->name === null) {
+                $arg_offsets[$arg_offset] ??= $arg_offset;
+                continue;
+            }
+
+            $has_named_arg = true;
+
+            foreach ($storage->params as $param_offset => $param) {
+                if ($param->name === $arg->name->name) {
+                    $arg_offsets[$param_offset] ??= $arg_offset;
+                }
+            }
+        }
+
+        if (!$has_named_arg) {
+            return array_values($assertions);
+        }
+
+        $assertions_on_args = [];
+
+        foreach ($assertions as $assertion) {
+            if (!is_int($assertion->var_id)) {
+                $assertions_on_args[] = $assertion;
+            } elseif (isset($arg_offsets[$assertion->var_id])) {
+                $assertions_on_args[] = new Possibilities($arg_offsets[$assertion->var_id], $assertion->rule);
+            }
+        }
+
+        return $assertions_on_args;
+    }
+
+    /**
+     * @psalm-capabilities read-props|write-this-props
+     */
+    private static function isInCallMap(FunctionLikeStorage $storage): bool
+    {
+        $name = $storage->cased_name;
+
+        if ($name === null) {
+            return false;
+        }
+
+        if (!$storage instanceof MethodStorage) {
+            return InternalCallMapHandler::inCallMap($name);
+        }
+
+        return $storage->defining_fqcln !== null
+            && InternalCallMapHandler::inCallMap($storage->defining_fqcln . '::' . $name);
+    }
+
+    /**
+     * @param list<PhpParser\Node\Arg> $args
+     * @psalm-capabilities read-props
+     */
+    private static function isOnAMixedArgumentOfAScalarParameter(
+        Possibilities $assertion,
+        FunctionLikeStorage $storage,
+        array $args,
+        NodeDataProvider $node_data,
+    ): bool {
+        if (!is_int($assertion->var_id) || !isset($storage->params[$assertion->var_id])) {
+            return false;
+        }
+
+        $param = $storage->params[$assertion->var_id];
+
+        if ($param->type === null || $param->is_variadic) {
+            return false;
+        }
+
+        foreach ($param->type->getAtomicTypes() as $atomic_type) {
+            // a template is as scalar as its bound
+            $bound_types = $atomic_type instanceof TTemplateParam ? $atomic_type->as->getAtomicTypes() : [$atomic_type];
+
+            foreach ($bound_types as $bound_type) {
+                if (!$bound_type instanceof Scalar) {
+                    return false;
+                }
+            }
+        }
+
+        foreach ($args as $arg_offset => $arg) {
+            if ($arg->name === null ? $arg_offset === $assertion->var_id : $arg->name->name === $param->name) {
+                $arg_type = $node_data->getType($arg->value);
+
+                return $arg_type !== null && $arg_type->hasMixed();
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * `self` written in the assertions of a method of a trait, at any depth of the types, is the class using the trait
+     */
+    public static function resolveTraitSelf(Possibilities $possibilities, string $self_class): Possibilities
+    {
+        $rules = [];
+
+        foreach ($possibilities->rule as $rule) {
+            $atomic_type = $rule->getAtomicType();
+
+            if ($atomic_type === null) {
+                $rules[] = $rule;
+
+                continue;
+            }
+
+            $union = new Union([$atomic_type]);
+            (new TraitSelfResolver($self_class))->traverse($union);
+
+            foreach ($union->getAtomicTypes() as $resolved_atomic_type) {
+                $rules[] = $rule->setAtomicType($resolved_atomic_type);
+            }
+        }
+
+        return new Possibilities($possibilities->var_id, $rules);
+    }
+
+    /**
+     * An assertion on a static property of `self`, `parent` or `static` is about the property of the class they name
+     * in the called method, and also about that property named through `self::` of the caller or through the class
+     * the call names, when it is the same property. Those the caller cannot name are dropped.
+     *
+     * @param array<Possibilities> $assertions
+     * @param ?string $self_class the class `self` is in the called method, null for a function
+     * @param ?string $static_class the class `static` is in the called method, `static` when the call forwards the
+     *                              caller's, null when unknown
+     * @param ?string $called_class the class the call names, or the class of the object it is made on
+     * @return list<Possibilities>
+     * @psalm-capabilities read-props
+     */
+    public static function resolveStaticPropertyAssertionClasses(
+        array $assertions,
+        Codebase $codebase,
+        Context $context,
+        ?string $self_class,
+        ?string $static_class,
+        ?string $called_class = null,
+    ): array {
+        $resolved_assertions = [];
+
+        foreach ($assertions as $assertion) {
+            if (!is_string($assertion->var_id)
+                || !preg_match('/^(self|parent|static)::\$(\w+)(.*)$/is', $assertion->var_id, $matches)
+            ) {
+                $resolved_assertions[] = $assertion;
+
+                continue;
+            }
+
+            [, $class_keyword, $property_name, $rest] = $matches;
+
+            $class = match (strtolower($class_keyword)) {
+                'self' => $self_class,
+                'parent' => $self_class !== null
+                    ? $codebase->classlikes->getStorageFor($self_class)?->parent_class
+                    : null,
+                default => $static_class,
+            };
+
+            if ($class === null) {
+                continue;
+            }
+
+            if ($class === 'static') {
+                $resolved_assertions[] = new Possibilities('static::$' . $property_name . $rest, $assertion->rule);
+
+                continue;
+            }
+
+            $class_storage = $codebase->classlikes->getStorageFor($class);
+
+            if ($class_storage === null) {
+                continue;
+            }
+
+            $asserted_classes = [$class_storage->name => true];
+
+            foreach ([$context->self, $called_class] as $alias_class) {
+                $alias_storage = $alias_class !== null ? $codebase->classlikes->getStorageFor($alias_class) : null;
+
+                if ($alias_storage !== null
+                    && isset($class_storage->appearing_property_ids[$property_name])
+                    && ($alias_storage->appearing_property_ids[$property_name] ?? null)
+                        === $class_storage->appearing_property_ids[$property_name]
+                ) {
+                    $asserted_classes[$alias_storage->name] = true;
+                }
+            }
+
+            foreach ($asserted_classes as $asserted_class => $_) {
+                $resolved_assertions[] = new Possibilities(
+                    $asserted_class . '::$' . $property_name . $rest,
+                    $assertion->rule,
+                );
+            }
+        }
+
+        return $resolved_assertions;
+    }
+
+    /**
      * @param Identifier|Name $expr
      * @param  Possibilities[] $var_assertions
      * @param  list<PhpParser\Node\Arg> $args
@@ -684,6 +1008,8 @@ abstract class CallAnalyzer
         TemplateResult $template_result,
         Context $context,
         StatementsAnalyzer $statements_analyzer,
+        ?string $static_class = null,
+        ?string $self_class = null,
     ): void {
         $type_assertions = [];
 
@@ -710,72 +1036,38 @@ abstract class CallAnalyzer
                 $assertion_var_id = $thisName;
             } elseif (str_starts_with($var_possibilities->var_id, '$this->') && $thisName !== null) {
                 $assertion_var_id = $thisName . str_replace('$this->', '->', $var_possibilities->var_id);
-            } elseif (str_starts_with($var_possibilities->var_id, 'self::') && $context->self) {
-                $assertion_var_id = $context->self . str_replace('self::', '::', $var_possibilities->var_id);
             } elseif (str_contains($var_possibilities->var_id, '::$')) {
                 // allow assertions to bring external static props into scope
                 $assertion_var_id = $var_possibilities->var_id;
+            } elseif ($var_possibilities->var_id === Context::PHP_SAPI_VAR_ID) {
+                // a guard asserting the SAPI narrows it like an inline check, so e.g. the code after it is CLI code
+                $assertion_var_id = Context::PHP_SAPI_VAR_ID;
+            } elseif (AssertionFinder::isArrayOffsetAssertionId($var_possibilities->var_id)) {
+                $assertion_var_id = AssertionFinder::getArrayOffsetVarId(
+                    $var_possibilities->var_id,
+                    $args,
+                    null,
+                    $statements_analyzer,
+                );
             } elseif (isset($context->vars_in_scope[$var_possibilities->var_id])) {
                 $assertion_var_id = $var_possibilities->var_id;
+            } elseif (AssertionFinder::splitArgumentOffsetVarId($var_possibilities->var_id) !== null) {
+                $assertion_var_id = AssertionFinder::getArgumentOffsetVarId(
+                    $var_possibilities->var_id,
+                    $args,
+                    $statements_analyzer,
+                );
             } elseif (str_contains($var_possibilities->var_id, '->')) {
-                $exploded = explode('->', $var_possibilities->var_id);
+                $assertion_var_id = AssertionFinder::getAssertedArgumentPropertyVarId(
+                    $expr,
+                    $args,
+                    $statements_analyzer,
+                    $var_possibilities->var_id,
+                );
 
-                if (count($exploded) < 2) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            'Assert notation is malformed',
-                            new CodeLocation($statements_analyzer, $expr),
-                        ),
-                    );
+                if ($assertion_var_id === null) {
                     continue;
                 }
-
-                [$var_id, $property] = $exploded;
-
-                $var_id = is_numeric($var_id) ? (int) $var_id : $var_id;
-
-                if (!is_int($var_id) || !isset($args[$var_id])) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            'Variable ' . $var_id . ' is not an argument so cannot be asserted',
-                            new CodeLocation($statements_analyzer, $expr),
-                        ),
-                    );
-                    continue;
-                }
-
-                /** @var PhpParser\Node\Expr\Variable $arg_value */
-                $arg_value = $args[$var_id]->value;
-
-                $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $statements_analyzer);
-
-                if (!$arg_var_id) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            'Variable being asserted as argument ' . ($var_id+1) .  ' cannot be found in local scope',
-                            new CodeLocation($statements_analyzer, $expr),
-                        ),
-                    );
-                    continue;
-                }
-
-                if (count($exploded) === 2) {
-                    $failedMessage = AssertionFinder::isPropertyImmutableOnArgument(
-                        $property,
-                        $statements_analyzer->getNodeTypeProvider(),
-                        $statements_analyzer->getCodebase()->classlike_storage_provider,
-                        $arg_value,
-                    );
-
-                    if (null !== $failedMessage) {
-                        IssueBuffer::maybeAdd(
-                            new InvalidDocblock($failedMessage, new CodeLocation($statements_analyzer, $expr)),
-                        );
-                        continue;
-                    }
-                }
-
-                $assertion_var_id = str_replace((string) $var_id, $arg_var_id, $var_possibilities->var_id);
             }
 
             $codebase = $statements_analyzer->getCodebase();
@@ -795,8 +1087,8 @@ abstract class CallAnalyzer
                                 $template_result,
                                 $codebase,
                             ),
-                            null,
-                            null,
+                            $self_class,
+                            $static_class !== null ? new TNamedObject($static_class) : null,
                             null,
                         );
 
@@ -894,16 +1186,25 @@ abstract class CallAnalyzer
                         $statements_analyzer->getCodebase(),
                     );
                 } elseif ($single_rule instanceof Falsy) {
-                    $assert_clauses = Algebra::negateFormula(
-                        FormulaGenerator::getFormula(
-                            spl_object_id($arg_value),
-                            spl_object_id($arg_value),
+                    try {
+                        $assert_clauses = FormulaGenerator::getNegatedFormula(
+                            FormulaGenerator::getFormula(
+                                spl_object_id($arg_value),
+                                spl_object_id($arg_value),
+                                $arg_value,
+                                $context->self,
+                                $statements_analyzer,
+                                $codebase,
+                            ),
                             $arg_value,
+                            spl_object_id($arg_value),
                             $context->self,
                             $statements_analyzer,
                             $codebase,
-                        ),
-                    );
+                        );
+                    } catch (ComplicatedExpressionException) {
+                        $assert_clauses = [];
+                    }
                 } elseif ($single_rule instanceof IsType
                     && $single_rule->type instanceof TTrue
                 ) {
@@ -969,7 +1270,6 @@ abstract class CallAnalyzer
                         && $context->vars_in_scope[$var_id]->hasMixed()
                     ) {
                         if (!$context->collect_initializations
-                            && !$context->collect_mutations
                             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                             && (!(($parent_source = $statements_analyzer->getSource())
                                         instanceof FunctionLikeAnalyzer)
@@ -1044,14 +1344,46 @@ abstract class CallAnalyzer
                                 = $template_result->upper_bounds_unintersectable_types;
                         }
 
-                        if (!UnionTypeComparator::isContainedBy(
+                        $is_contained_by = UnionTypeComparator::isContainedBy(
                             $statements_analyzer->getCodebase(),
                             $lower_bound_type,
                             $upper_bound_type,
                             false,
                             false,
                             $union_comparison_result,
-                        )) {
+                        );
+
+                        if ($is_contained_by
+                            && ($union_comparison_result->type_variable_lower_bounds
+                                || $union_comparison_result->type_variable_upper_bounds)
+                        ) {
+                            // the lower bound is a type variable (a class template
+                            // minted at a construction site): the containment held
+                            // by recording a bound on it, which reconciles against
+                            // the construction-site inference once the function-like
+                            // has been analyzed — as a requirement of this call
+                            foreach ($union_comparison_result->type_variable_upper_bounds as [$_, $variable_bound]) {
+                                $variable_bound->from_argument_requirement = true;
+                            }
+
+                            $statements_analyzer->type_variable_tracker->addBounds(
+                                $union_comparison_result->type_variable_lower_bounds,
+                                $union_comparison_result->type_variable_upper_bounds,
+                                $code_location,
+                                $statements_analyzer->getSuppressedIssues(),
+                            );
+                        }
+
+                        // elements that may be mixed say nothing about the type the callback takes, as for
+                        // array_map(), whose callback is not checked against them either
+                        if (!$is_contained_by
+                            && $function_id === 'array_reduce'
+                            && $lower_bound_type->hasMixed()
+                        ) {
+                            continue;
+                        }
+
+                        if (!$is_contained_by) {
                             if ($union_comparison_result->type_coerced) {
                                 if ($union_comparison_result->type_coerced_from_mixed) {
                                     IssueBuffer::maybeAdd(
@@ -1120,9 +1452,13 @@ abstract class CallAnalyzer
                         continue;
                     }
 
+                    // type variables of different instantiations that stand for the same type are one type
                     $equality_types = array_unique(
                         array_map(
-                            static fn($bound_with_equality) => $bound_with_equality->type->getId(),
+                            static fn($bound_with_equality) => TypeVariableTracker::resolveTypeVariables(
+                                $bound_with_equality->type,
+                                $statements_analyzer->getCodebase(),
+                            )->getId(),
                             $bounds_with_equality,
                         ),
                     );

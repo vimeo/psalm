@@ -8,6 +8,7 @@ use Closure;
 use PhpParser\Node\Arg;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Provider\ParamsProvider\FfiMemcmpParamsProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PdoStatementSetFetchMode;
 use Psalm\Plugin\EventHandler\Event\MethodParamsProviderEvent;
 use Psalm\Plugin\EventHandler\MethodParamsProviderInterface;
@@ -36,6 +37,7 @@ final class MethodParamsProvider
         self::$handlers = [];
 
         $this->registerClass(PdoStatementSetFetchMode::class);
+        $this->registerClass(FfiMemcmpParamsProvider::class);
     }
 
     /**

@@ -17,7 +17,7 @@ final class CloneTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
             'cloneCorrect' => [
@@ -57,6 +57,17 @@ final class CloneTest extends TestCase
                 'assertions' => ['$b===' => 'Foo'],
                 'ignored_issues' => [],
                 'php_version' => '8.5',
+            ],
+            'cloneWithPropertiesIsStillValidOnPhp86' => [
+                'code' => '<?php
+                    class Foo {
+                        public function __construct(public int $x) {}
+                    }
+                    $o = new Foo(1);
+                    $b = clone($o, ["x" => 2]);',
+                'assertions' => ['$b===' => 'Foo'],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
             ],
             'cloneWithReadonlyPropertyAllowed' => [
                 'code' => '<?php
@@ -229,7 +240,7 @@ final class CloneTest extends TestCase
                 'code' => '<?php
                     $f = clone(...);',
                 'assertions' => [],
-                'ignored_issues' => ['UnusedVariable'],
+                'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
             'cloneCalledThroughVariableFunctionNotIntercepted' => [
@@ -278,7 +289,7 @@ final class CloneTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'invalidIntClone' => [

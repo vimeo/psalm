@@ -14,10 +14,10 @@ final class CoreStubsTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'RecursiveArrayIterator::CHILD_ARRAYS_ONLY (#6464)' => [
             'code' => '<?php
@@ -511,10 +511,10 @@ final class CoreStubsTest extends TestCase
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         yield 'json_decode invalid depth' => [
             'code' => '<?php
@@ -533,7 +533,7 @@ final class CoreStubsTest extends TestCase
                 str_contains("literal", "");
             ',
             'error_message' => 'InvalidLiteralArgument',
-            'ignored_issues' => [],
+            'error_levels' => [],
             'php_version' => '8.0',
         ];
         yield 'str_starts_with literal haystack' => [
@@ -541,7 +541,7 @@ final class CoreStubsTest extends TestCase
                 str_starts_with("literal", "");
             ',
             'error_message' => 'InvalidLiteralArgument',
-            'ignored_issues' => [],
+            'error_levels' => [],
             'php_version' => '8.0',
         ];
         yield 'str_ends_with literal haystack' => [
@@ -549,7 +549,7 @@ final class CoreStubsTest extends TestCase
                 str_ends_with("literal", "");
             ',
             'error_message' => 'InvalidLiteralArgument',
-            'ignored_issues' => [],
+            'error_levels' => [],
             'php_version' => '8.0',
         ];
     }

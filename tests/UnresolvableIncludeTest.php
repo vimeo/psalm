@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 
 final class UnresolvableIncludeTest extends TestCase
 {
-    /**
-     * @dataProvider providerUnresolvableInclude
-     */
-    public function testShouldThrowUnresolvableInclude(string $phpCode, int $expectedExceptionLine): void
+    #[DataProvider('providerUnresolvableInclude')]
+    public function testShouldThrowUnresolvableInclude(string $code, int $expectedExceptionLine): void
     {
-        $this->addFile('somefile.php', $phpCode);
+        $this->addFile('somefile.php', $code);
         $context = new Context();
 
         $this->expectException(CodeException::class);
@@ -23,11 +22,24 @@ final class UnresolvableIncludeTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
+    public function testIncludeOfDeprecatedBuiltInConstant(): void
+    {
+        // PHP 8.4+ reports ASSERT_ACTIVE as deprecated when its value is read
+        $this->addFile('somefile.php', '<?php
+            include ASSERT_ACTIVE;
+        ');
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UnresolvableInclude - somefile.php:2:');
+
+        $this->withErrorsThrown(fn() => $this->analyzeFile('somefile.php', new Context()));
+    }
+
     /**
      * @return array<string,array{code:string,expectedExceptionLine:int}>
      * @psalm-pure
      */
-    public function providerUnresolvableInclude(): array
+    public static function providerUnresolvableInclude(): array
     {
         return [
             'basic' => [
@@ -38,26 +50,45 @@ final class UnresolvableIncludeTest extends TestCase
                 ',
                 'expectedExceptionLine' => 3,
             ],
+            'file_exists_negated_in_an_and_condition' => [
+                'code' => '<?php
+                    function requireFile(string $s, bool $flag) : void {
+                        if ($flag && !file_exists($s)) {
+                            require_once($s);
+                        }
+                    }
+                ',
+                'expectedExceptionLine' => 4,
+            ],
+            'file_exists_in_an_or_condition' => [
+                'code' => '<?php
+                    function requireFile(string $s, bool $flag) : void {
+                        if ($flag || file_exists($s)) {
+                            require_once($s);
+                        }
+                    }
+                ',
+                'expectedExceptionLine' => 4,
+            ],
         ];
     }
 
-    /**
-     * @dataProvider providerNoUnresolvableInclude
-     */
-    public function testShouldNotThrowUnresolvableInclude(string $phpCode): void
+    #[DataProvider('providerNoUnresolvableInclude')]
+    public function testShouldNotThrowUnresolvableInclude(string $code): void
     {
-        $this->addFile('somefile.php', $phpCode);
+        $this->addFile('somefile.php', $code);
 
         $context = new Context();
 
         $this->analyzeFile('somefile.php', $context);
     }
 
+
     /**
      * @return array<string,array{code:string}>
      * @psalm-pure
      */
-    public function providerNoUnresolvableInclude(): array
+    public static function providerNoUnresolvableInclude(): array
     {
         return [
             'github_issue_908_file_exists' => [
@@ -66,6 +97,34 @@ final class UnresolvableIncludeTest extends TestCase
                         if (file_exists($s)) {
                             require_once($s);
                         }
+                    }
+                ',
+            ],
+            'github_issue_3241_file_exists_of_a_constant' => [
+                'code' => '<?php
+                    define("SOME_PATH", (string) getenv("SOME_PATH"));
+
+                    if (is_file(SOME_PATH)) {
+                        require_once SOME_PATH;
+                    }
+                ',
+            ],
+            'github_issue_3241_file_exists_in_an_and_condition' => [
+                'code' => '<?php
+                    function requireFile(string $s, bool $flag) : void {
+                        if ($flag && file_exists($s)) {
+                            require_once($s);
+                        }
+
+                        if (is_file($s) && $flag) {
+                            require_once($s);
+                        }
+                    }
+
+                    define("SOME_PATH", (string) getenv("SOME_PATH"));
+
+                    if (defined("SOME_PATH") && SOME_PATH && file_exists(SOME_PATH)) {
+                        require_once SOME_PATH;
                     }
                 ',
             ],

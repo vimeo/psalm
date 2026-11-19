@@ -11,17 +11,19 @@ use Psalm\Context;
 use Psalm\Plugin\EventHandler\Event\MethodCapabilitiesProviderEvent;
 use Psalm\Plugin\EventHandler\MethodCapabilitiesProviderInterface;
 use Psalm\StatementsSource;
+use Psalm\Storage\Capabilities;
 
 use function is_subclass_of;
 use function strtolower;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class MethodCapabilitiesProvider
 {
     /**
-     * @var array<lowercase-string, array<Closure(MethodCapabilitiesProviderEvent): ?int>>
+     * @var array<lowercase-string, array<Closure(MethodCapabilitiesProviderEvent): (CapabilitySet|null)>>
      */
     private static array $handlers = [];
 
@@ -45,7 +47,7 @@ final class MethodCapabilitiesProvider
     }
 
     /**
-     * @param Closure(MethodCapabilitiesProviderEvent): ?int $c
+     * @param Closure(MethodCapabilitiesProviderEvent): (CapabilitySet|null) $c
      * @psalm-capabilities read-globals|write-globals
      */
     public function registerClosure(string $fq_classlike_name, Closure $c): void
@@ -61,6 +63,9 @@ final class MethodCapabilitiesProvider
         return isset(self::$handlers[strtolower($fq_classlike_name)]);
     }
 
+    /**
+     * @return CapabilitySet|null
+     */
     public function getMethodCapabilities(
         StatementsSource $statements_source,
         string $fq_classlike_name,

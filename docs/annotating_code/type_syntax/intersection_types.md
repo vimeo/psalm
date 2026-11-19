@@ -33,4 +33,46 @@ function foo($a, $b) {
 
 The returned type will contain the properties of both `A` and `B`. In other words, it will be `{a: int, b: int}`.
 
-Intersections are only valid for lists of only *object types* and lists of only *object-like arrays*.
+Intersections of objects are only valid for lists of only *object types* and lists of only *object-like arrays*.
+
+Scalar types can be intersected too: `lowercase-string&non-empty-string` is a `non-empty-lowercase-string`,
+`lowercase-string&non-falsy-string` a non-falsy lowercase string, `numeric-string&non-falsy-string` a numeric string
+other than `'0'`, `lowercase-string&numeric-string` a numeric string such as `'1e3'` but not `'1E3'`,
+`int<0, max>&int<min, 10>` an `int<0, 10>`, `int&int-mask<1, 2>` is `0|1|2|3`, `array-key&string` is `string` and
+`string&callable` is a `callable-string`. Types referring to class constants, such as `value-of<Foo::BAR>&int` or
+`(Foo::A|Foo::B)&int<2, 5>`, are intersected once the constants are known.
+An intersection Psalm has no exact type for (e.g. `literal-string&non-falsy-string`) is reported as an invalid
+docblock, and so is one no value can have (e.g. `int<0, 5>&int<6, 10>`).
+
+A conditional type can be intersected with other types: `(T is int ? A : B)&C` is `(T is int ? A&C : B&C)`, a
+branch no value can have becoming `never`.
+
+You can also intersect a class with an object shape to describe properties the class doesn't declare. This helps with
+classes that read properties through the magic `__get` method, where Psalm can't know which properties exist:
+
+```php
+<?php
+
+class Row
+{
+    /** @param array<string, mixed> $columns */
+    public function __construct(private array $columns) {}
+
+    public function __get(string $name): mixed
+    {
+        return $this->columns[$name] ?? null;
+    }
+}
+
+/** @param Row&object{email: string} $user */
+function sendWelcomeEmail(Row $user): void
+{
+    mail($user->email, 'Welcome!', 'Thanks for signing up.');
+}
+```
+
+With a plain `Row`, `$user->email` would be `mixed`. With `Row&object{email: string}` it is a `string`.
+
+Psalm takes a property from the shape only when the class doesn't declare it. The shape takes priority over a property
+that comes from a `@mixin`. A `final` class can only have undeclared properties through `__get`, so for a final class
+without `__get` (its own or inherited) Psalm still reports `UndefinedPropertyFetch`.

@@ -33,8 +33,6 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
-use function array_merge;
-use function array_values;
 use function assert;
 use function count;
 use function is_string;
@@ -444,7 +442,17 @@ final class SimpleTypeInferer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Object_) {
-            return Type::getObject();
+            $operand_type = self::infer(
+                $codebase,
+                $nodes,
+                $stmt->expr,
+                $aliases,
+                $file_source,
+                $existing_class_constants,
+                $fq_classlike_name,
+            );
+
+            return $operand_type ? CastAnalyzer::getObjectCastType($operand_type) : Type::getObject();
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\Cast\Array_) {
@@ -559,10 +567,6 @@ final class SimpleTypeInferer
         $array_creation_info = new ArrayCreationInfo();
 
         foreach ($stmt->items as $item) {
-            if ($item === null) {
-                continue;
-            }
-
             if (!self::handleArrayItem(
                 $codebase,
                 $nodes,
@@ -680,10 +684,7 @@ final class SimpleTypeInferer
                     $key_type = Type::getInt(false, (int) $item->key->value);
                 }
 
-                $array_creation_info->item_key_atomic_types = array_merge(
-                    $array_creation_info->item_key_atomic_types,
-                    array_values($key_type->getAtomicTypes()),
-                );
+                $array_creation_info->addItemKeyTypes($key_type);
 
                 if ($key_type->isSingleStringLiteral()) {
                     $item_key_literal_type = $key_type->getSingleStringLiteral();
@@ -773,10 +774,7 @@ final class SimpleTypeInferer
             }
         }
 
-        $array_creation_info->item_value_atomic_types = array_merge(
-            $array_creation_info->item_value_atomic_types,
-            array_values($single_item_value_type->getAtomicTypes()),
-        );
+        $array_creation_info->addItemValueTypes($single_item_value_type);
 
         return true;
     }
@@ -799,10 +797,7 @@ final class SimpleTypeInferer
                         $array_creation_info->item_key_atomic_types[] = new TLiteralInt($new_offset);
                     }
 
-                    $array_creation_info->item_value_atomic_types = array_merge(
-                        $array_creation_info->item_value_atomic_types,
-                        array_values($property_value->getAtomicTypes()),
-                    );
+                    $array_creation_info->addItemValueTypes($property_value);
 
                     $array_creation_info->array_keys[$new_offset] = true;
                     $array_creation_info->property_types[$new_offset] = $property_value;
@@ -819,12 +814,7 @@ final class SimpleTypeInferer
                         $array_creation_info->item_key_atomic_types[] = new TInt();
                     }
 
-                    $array_creation_info->item_value_atomic_types = array_merge(
-                        $array_creation_info->item_value_atomic_types,
-                        array_values(
-                            $unpacked_atomic_type->fallback_params[1]->getAtomicTypes(),
-                        ),
-                    );
+                    $array_creation_info->addItemValueTypes($unpacked_atomic_type->fallback_params[1]);
                 }
             } elseif ($unpacked_atomic_type instanceof TArray) {
                 if ($unpacked_atomic_type->isEmptyArray()) {
@@ -840,14 +830,11 @@ final class SimpleTypeInferer
                     $array_creation_info->item_key_atomic_types[] = new TInt();
                 }
 
-                $array_creation_info->item_value_atomic_types = array_merge(
-                    $array_creation_info->item_value_atomic_types,
-                    array_values(
-                        isset($unpacked_atomic_type->type_params[1])
-                            ? $unpacked_atomic_type->type_params[1]->getAtomicTypes()
-                            : [new TMixed()],
-                    ),
-                );
+                if (isset($unpacked_atomic_type->type_params[1])) {
+                    $array_creation_info->addItemValueTypes($unpacked_atomic_type->type_params[1]);
+                } else {
+                    $array_creation_info->item_value_atomic_types[] = new TMixed();
+                }
             }
         }
         return true;

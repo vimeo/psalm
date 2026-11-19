@@ -13,8 +13,9 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 
 use function array_intersect_key;
+use function array_keys;
 use function array_pop;
-use function md5;
+use function hash;
 use function str_contains;
 use function strpos;
 use function strtolower;
@@ -36,6 +37,7 @@ use function substr;
  * unreferenced code) is correctly reported as unused.
  *
  * @psalm-import-type MutationInfo from MutationLevelResolver
+ * @psalm-import-type CapabilitySet from Capabilities
  * @internal
  */
 final class CodeUseGraph
@@ -71,6 +73,13 @@ final class CodeUseGraph
     public const EDGE_OVERRIDE = 'override';
 
     /**
+     * From a class to a magic method PHP calls implicitly, without a call
+     * Psalm can see (`__destruct`, `__serialize`, ...): the method is used
+     * once its class is.
+     */
+    public const EDGE_IMPLICIT_CALL = 'implicit-call';
+
+    /**
      * Edge types derived from the class storages rather than from the analysed
      * code: recomputed on every run instead of being cached.
      */
@@ -78,6 +87,7 @@ final class CodeUseGraph
         self::EDGE_PUBLIC_API => true,
         self::EDGE_OVERRIDE => true,
         self::EDGE_METHOD => true,
+        self::EDGE_IMPLICIT_CALL => true,
     ];
 
     private const KIND_CLASS = 'class';
@@ -160,6 +170,15 @@ final class CodeUseGraph
     private ?array $used = null;
 
     /**
+     * Nodes that are not used, but are reachable from used code through a
+     * potential call (e.g. a call with a dynamic method name). Disjoint from
+     * $used, only meaningful once resolved.
+     *
+     * @var array<string, true>
+     */
+    private array $possibly_used = [];
+
+    /**
      * Cached reverse index of $node_files (file => node ids), rebuilt on demand.
      *
      * @var array<string, array<string, true>>|null
@@ -185,7 +204,7 @@ final class CodeUseGraph
     /**
      * The levels resolved from $mutation_info, see {@see self::getMutationLevels()}.
      *
-     * @var array<string, int>|null
+     * @var array<string, CapabilitySet>|null
      */
     private ?array $mutation_levels = null;
 
@@ -194,6 +213,11 @@ final class CodeUseGraph
      */
     public function __construct(
         public bool $collect_locations = false,
+        /**
+         * Whether edges (and their locations) are recorded. Only unused code detection, reference
+         * lookups and the `--diff` file references read them, not the mutation info.
+         */
+        public bool $record_edges = true,
     ) {
     }
 
@@ -295,8 +319,7 @@ final class CodeUseGraph
      */
     public static function useAliasNode(string $alias, string $file_path): string
     {
-        // do NOT change this to hash, it will fail on Windows for whatever reason
-        return self::KIND_USE_ALIAS . ' use:' . $alias . ':' . md5($file_path);
+        return self::KIND_USE_ALIAS . ' use:' . $alias . ':' . hash('xxh3', $file_path);
     }
 
     /**
@@ -412,7 +435,7 @@ final class CodeUseGraph
      */
     public function addEdge(string $source_node, string $target_node, string $type = self::EDGE_USE): void
     {
-        if ($source_node === $target_node) {
+        if (!$this->record_edges || $source_node === $target_node) {
             return;
         }
 
@@ -448,6 +471,10 @@ final class CodeUseGraph
         string $type = self::EDGE_USE,
         ?string $file_path = null,
     ): void {
+        if (!$this->record_edges) {
+            return;
+        }
+
         $file_path = $location?->file_path ?? $file_path;
 
         $calling_method_id = $context?->calling_method_id;
@@ -468,9 +495,8 @@ final class CodeUseGraph
 
         $this->addEdge($source_node, $target_node, $type);
 
-        if ($file_path !== null && !isset($this->node_files[$source_node])) {
-            $this->node_files[$source_node] = $file_path;
-            $this->file_nodes = null;
+        if ($file_path !== null) {
+            $this->noteNodeFile($source_node, $file_path);
         }
 
         if ($location !== null && $this->collect_locations) {
@@ -478,6 +504,22 @@ final class CodeUseGraph
             $this->locations[$target_node][$location_hash] = $location;
             $this->source_locations[$source_node][$target_node][$location_hash] = true;
             $this->location_sources[$target_node][$location_hash][$source_node] = true;
+        }
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    private function noteNodeFile(string $node_id, string $file_path): void
+    {
+        if (isset($this->node_files[$node_id])) {
+            return;
+        }
+
+        $this->node_files[$node_id] = $file_path;
+
+        if ($this->file_nodes !== null) {
+            $this->file_nodes[$file_path][$node_id] = true;
         }
     }
 
@@ -505,7 +547,10 @@ final class CodeUseGraph
         foreach ($other->node_files as $node_id => $file_path) {
             if (!isset($this->node_files[$node_id])) {
                 $this->node_files[$node_id] = $file_path;
-                $this->file_nodes = null;
+
+                if ($this->file_nodes !== null) {
+                    $this->file_nodes[$file_path][$node_id] = true;
+                }
             }
         }
 
@@ -559,6 +604,11 @@ final class CodeUseGraph
     {
         $this->mutation_info[$node_id] = $info;
         $this->mutation_levels = null;
+
+        if (!$this->record_edges) {
+            // stale info is pruned by file, which addReference() notes only while edges are recorded
+            $this->noteNodeFile($node_id, $info['location']->file_path);
+        }
     }
 
     /**
@@ -574,7 +624,7 @@ final class CodeUseGraph
      * The final mutation level of every function-like with mutation info, resolved once
      * the whole codebase has been analysed and cached until the mutation info changes.
      *
-     * @return array<string, int> node id => bitmask of {@see Capabilities} constants
+     * @return array<string, CapabilitySet> node id => bitmask of {@see Capabilities} constants
      * @psalm-external-mutation-free
      */
     public function getMutationLevels(): array
@@ -601,15 +651,25 @@ final class CodeUseGraph
      * Computes the set of used nodes: everything reachable from a root node
      * through non-write edges. Iterative, so cycles and deep graphs are fine.
      *
+     * Then computes the set of possibly used nodes: what used code may reach
+     * through the given potential calls, such as calls with a dynamic method
+     * name, and isn't used otherwise. A method only reachable this way is not
+     * used, as nothing is known to call it, but what it references shouldn't
+     * be reported as definitely unused either.
+     *
      * Must be called before isUsed(), and again after the graph changes.
      *
      * @param Closure[_](string): bool $is_external whether a node (with outgoing
      *        edges) belongs to code outside of the project, e.g. a vendor class
      *        or a caller made up by a plugin: such code is never reported as
      *        unused, so what it references is used.
+     * @param array<string, array<string, array<string, true>>> $potential_calls
+     *        source node => receiver class node => possible callee nodes. The
+     *        callees are only reached once both the source and the receiver
+     *        class are reached.
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
-    public function resolve(Closure $is_external): void
+    public function resolve(Closure $is_external, array $potential_calls = []): void
     {
         $used = [self::PUBLIC_API => true];
         $queue = [self::PUBLIC_API];
@@ -621,18 +681,65 @@ final class CodeUseGraph
             }
         }
 
-        /**
-         * Override edges whose target's class is not used yet, by class node
-         *
-         * @var array<string, list<string>>
-         */
         $deferred = [];
 
+        $this->reach($used, [], $queue, $deferred, $is_external, []);
+
+        $possibly_used = [];
+
+        if ($potential_calls !== []) {
+            // only the used nodes making potential calls have something new to reach
+            $this->reach(
+                $possibly_used,
+                $used,
+                array_keys(array_intersect_key($potential_calls, $used)),
+                $deferred,
+                $is_external,
+                $potential_calls,
+            );
+        }
+
+        $this->used = $used;
+        $this->possibly_used = $possibly_used;
+    }
+
+    /**
+     * Adds to $reached everything reachable from the queued nodes that isn't
+     * in $known already.
+     *
+     * @param array<string, true> $reached
+     * @param array<string, true> $known nodes reached by a previous pass
+     * @param list<string> $queue
+     * @param array<string, array<string, true>> $deferred nodes waiting for
+     *        the class node they're keyed by to be reached, kept across passes
+     * @param Closure[_](string): bool $is_external
+     * @param array<string, array<string, array<string, true>>> $potential_calls
+     * @psalm-capabilities read-props|write-refs
+     */
+    private function reach(
+        array &$reached,
+        array $known,
+        array $queue,
+        array &$deferred,
+        Closure $is_external,
+        array $potential_calls,
+    ): void {
         while ($queue) {
             $node_id = array_pop($queue);
 
+            /** @var array<string, true> */
+            $targets = [];
+
+            foreach ($potential_calls[$node_id] ?? [] as $class_node => $callees) {
+                if (isset($known[$class_node]) || isset($reached[$class_node])) {
+                    $targets += $callees;
+                } else {
+                    $deferred[$class_node] = ($deferred[$class_node] ?? []) + $callees;
+                }
+            }
+
             foreach ($this->forward_edges[$node_id] ?? [] as $target_node => $type) {
-                if ($type === self::EDGE_WRITE || isset($used[$target_node])) {
+                if ($type === self::EDGE_WRITE || isset($known[$target_node]) || isset($reached[$target_node])) {
                     continue;
                 }
 
@@ -651,30 +758,35 @@ final class CodeUseGraph
                     if ($owner_class !== null && !$is_external($node_id)) {
                         $owner_node = self::classNode($owner_class);
 
-                        if (!isset($used[$owner_node])) {
-                            $deferred[$owner_node][] = $target_node;
+                        if (!isset($known[$owner_node]) && !isset($reached[$owner_node])) {
+                            $deferred[$owner_node][$target_node] = true;
                             continue;
                         }
                     }
                 }
 
-                $used[$target_node] = true;
+                $targets[$target_node] = true;
+            }
+
+            foreach ($targets as $target_node => $_) {
+                if (isset($known[$target_node]) || isset($reached[$target_node])) {
+                    continue;
+                }
+
+                $reached[$target_node] = true;
                 $queue[] = $target_node;
 
-                if (isset($deferred[$target_node])) {
-                    foreach ($deferred[$target_node] as $deferred_node) {
-                        if (!isset($used[$deferred_node])) {
-                            $used[$deferred_node] = true;
-                            $queue[] = $deferred_node;
-                        }
+                // a class that is now reached releases what was waiting for it
+                foreach ($deferred[$target_node] ?? [] as $deferred_node => $_true) {
+                    if (!isset($known[$deferred_node]) && !isset($reached[$deferred_node])) {
+                        $reached[$deferred_node] = true;
+                        $queue[] = $deferred_node;
                     }
-
-                    unset($deferred[$target_node]);
                 }
+
+                unset($deferred[$target_node]);
             }
         }
-
-        $this->used = $used;
     }
 
     /**
@@ -690,8 +802,23 @@ final class CodeUseGraph
     }
 
     /**
-     * Whether a node is referenced by other used code, as opposed to being
-     * merely alive as an entry point or through its own members.
+     * Whether a node is not used, but reachable from used code through a
+     * potential call given to resolve().
+     *
+     * @psalm-mutation-free
+     */
+    public function isPossiblyUsed(string $node_id): bool
+    {
+        if ($this->used === null) {
+            throw new LogicException('The graph must be resolved before checking usage');
+        }
+
+        return isset($this->possibly_used[$node_id]);
+    }
+
+    /**
+     * Whether a node is referenced by other used or possibly used code, as
+     * opposed to being merely alive as an entry point or through its own members.
      *
      * @psalm-mutation-free
      */
@@ -703,7 +830,7 @@ final class CodeUseGraph
 
         foreach ($this->backward_edges[$node_id] ?? [] as $source_node => $type) {
             if (($type === self::EDGE_USE || $type === self::EDGE_WRITE)
-                && isset($this->used[$source_node])
+                && (isset($this->used[$source_node]) || isset($this->possibly_used[$source_node]))
                 && self::getOwnerClass($source_node) !== self::getOwnerClass($node_id)
             ) {
                 return true;
@@ -748,6 +875,21 @@ final class CodeUseGraph
         }
 
         return array_intersect_key($this->getReferencingNodes($node_id, $type), $this->used);
+    }
+
+    /**
+     * Returns only references made by code that is possibly used.
+     *
+     * @return array<string, true>
+     * @psalm-mutation-free
+     */
+    public function getPossiblyUsedReferencingNodes(string $node_id, ?string $type = null): array
+    {
+        if ($this->used === null) {
+            throw new LogicException('The graph must be resolved before checking usage');
+        }
+
+        return array_intersect_key($this->getReferencingNodes($node_id, $type), $this->possibly_used);
     }
 
     /**
@@ -890,6 +1032,16 @@ final class CodeUseGraph
             }
         }
 
+        if ($this->file_nodes !== null && isset($this->node_files[$node_id])) {
+            $node_file = $this->node_files[$node_id];
+
+            unset($this->file_nodes[$node_file][$node_id]);
+
+            if (!($this->file_nodes[$node_file] ?? [])) {
+                unset($this->file_nodes[$node_file]);
+            }
+        }
+
         unset(
             $this->forward_edges[$node_id],
             $this->node_files[$node_id],
@@ -897,7 +1049,6 @@ final class CodeUseGraph
         );
         $this->mutation_levels = null;
         $this->used = null;
-        $this->file_nodes = null;
         $this->class_referencing_nodes = null;
     }
 
@@ -966,7 +1117,8 @@ final class CodeUseGraph
      * @return array{
      *     edges: array<string, array<string, string>>,
      *     node_files: array<string, string>,
-     *     mutation_info: array<string, MutationInfo>
+     *     mutation_info: array<string, MutationInfo>,
+     *     edges_recorded: bool
      * }
      * @psalm-mutation-free
      */
@@ -992,6 +1144,7 @@ final class CodeUseGraph
             'edges' => $edges,
             'node_files' => $this->node_files,
             'mutation_info' => $mutation_info,
+            'edges_recorded' => $this->record_edges,
         ];
     }
 
@@ -1001,27 +1154,46 @@ final class CodeUseGraph
      * @param array{
      *     edges: array<string, array<string, string>>,
      *     node_files: array<string, string>,
-     *     mutation_info?: array<string, MutationInfo>
+     *     mutation_info?: array<string, MutationInfo>,
+     *     edges_recorded?: bool
      * } $data
      * @psalm-external-mutation-free
      */
     public function loadCacheData(array $data): void
     {
-        foreach ($data['edges'] as $source_node => $targets) {
-            foreach ($targets as $target_node => $type) {
-                $this->addEdge($source_node, $target_node, $type);
+        if ($this->record_edges) {
+            if ($this->forward_edges === []) {
+                // cached edges are already deduplicated and never self-referencing
+                $this->forward_edges = $data['edges'];
+
+                foreach ($data['edges'] as $source_node => $targets) {
+                    foreach ($targets as $target_node => $type) {
+                        $this->backward_edges[$target_node][$source_node] = $type;
+                    }
+                }
+
+                $this->used = null;
+                $this->class_referencing_nodes = null;
+            } else {
+                foreach ($data['edges'] as $source_node => $targets) {
+                    foreach ($targets as $target_node => $type) {
+                        $this->addEdge($source_node, $target_node, $type);
+                    }
+                }
             }
         }
 
         foreach ($data['node_files'] as $node_id => $file_path) {
             if (!isset($this->node_files[$node_id])) {
                 $this->node_files[$node_id] = $file_path;
+
+                if ($this->file_nodes !== null) {
+                    $this->file_nodes[$file_path][$node_id] = true;
+                }
             }
         }
 
         $this->mutation_info += $data['mutation_info'] ?? [];
         $this->mutation_levels = null;
-
-        $this->file_nodes = null;
     }
 }

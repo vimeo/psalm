@@ -5,8 +5,15 @@ declare(strict_types=1);
 namespace Psalm\Tests\Config;
 
 use Composer\Autoload\ClassLoader;
+use DOMDocument;
+use DOMXPath;
 use ErrorException;
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RequiresOperatingSystem;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
+use PHPUnit\Framework\Attributes\Test;
+use PhpParser;
 use Psalm\CodeLocation\Raw;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
@@ -16,9 +23,7 @@ use Psalm\Exception\ConfigException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\ErrorHandler;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Issue\PossiblyNullReference;
 use Psalm\Issue\TooManyArguments;
@@ -26,34 +31,63 @@ use Psalm\Issue\UndefinedFunction;
 use Psalm\Tests\Config\Plugin\FileTypeSelfRegisteringPlugin;
 use Psalm\Tests\Config\Plugin\TestPluginIssue;
 use Psalm\Tests\Config\Plugin\TestPluginIssueDefaultLevel;
+use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
-use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
+use RuntimeException;
+use Throwable;
+use UnexpectedValueException;
 
+use function array_flip;
+use function array_intersect_key;
+use function array_keys;
 use function array_map;
+use function array_pop;
+use function basename;
 use function dirname;
 use function error_get_last;
+use function file_get_contents;
+use function file_put_contents;
+use function function_exists;
 use function get_class;
 use function getcwd;
+use function glob;
 use function implode;
 use function in_array;
 use function is_array;
+use function is_dir;
+use function json_encode;
+use function mkdir;
 use function preg_match;
 use function realpath;
+use function restore_error_handler;
+use function restore_exception_handler;
+use function rmdir;
+use function rsort;
 use function set_error_handler;
+use function set_exception_handler;
+use function sort;
 use function sprintf;
+use function str_replace;
+use function substr;
 use function symlink;
+use function sys_get_temp_dir;
 use function uniqid;
 use function unlink;
 
 use const DIRECTORY_SEPARATOR;
+use const JSON_THROW_ON_ERROR;
+use const JSON_UNESCAPED_SLASHES;
 
-final class ConfigTest extends TestCase
+final class ConfigTest extends DeferredAnalyzerTestCase
 {
     protected ProjectAnalyzer $project_analyzer;
 
     /** @var callable(int, string, string=, int=, array=):bool|null */
     protected $original_error_handler = null;
+
+    /** @var callable(Throwable):void|null */
+    protected $original_exception_handler = null;
 
     #[Override]
     public static function setUpBeforeClass(): void
@@ -70,10 +104,12 @@ final class ConfigTest extends TestCase
     #[Override]
     public function setUp(): void
     {
-        RuntimeCaches::clearAll();
-        $this->file_provider = new FakeFileProvider();
+        parent::setUp();
+
         $this->original_error_handler = set_error_handler(null);
-        set_error_handler($this->original_error_handler);
+        restore_error_handler();
+        $this->original_exception_handler = set_exception_handler(null);
+        restore_exception_handler();
     }
 
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
@@ -163,9 +199,7 @@ final class ConfigTest extends TestCase
         $this->assertFalse($config->isInProjectDirs((string) realpath('examples/TemplateScanner.php')));
     }
 
-    /**
-     * @requires OS ^(?!WIN)
-     */
+    #[RequiresOperatingSystem('^(?!WIN)')]
     public function testIgnoreSymlinkedProjectDirectory(): void
     {
         @unlink(dirname(__DIR__, 1) . '/fixtures/symlinktest/ignored/b');
@@ -540,6 +574,83 @@ final class ConfigTest extends TestCase
 
         $this->assertFalse($config->reportIssueInFile('MissingReturnType', (string) realpath(__FILE__)));
         $this->assertFalse($config->reportIssueInFile('UndefinedClass', (string) realpath(__FILE__)));
+    }
+
+    public function testIssueNamedTwiceInTheIssueHandlersKeepsBothElements(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                        <directory name="tests" />
+                    </projectFiles>
+
+                    <issueHandlers>
+                        <MissingReturnType>
+                            <errorLevel type="suppress">
+                                <directory name="tests" />
+                            </errorLevel>
+                        </MissingReturnType>
+                        <UndefinedClass errorLevel="suppress" />
+                        <MissingReturnType>
+                            <errorLevel type="info">
+                                <directory name="src/Psalm/Internal/Analyzer" />
+                            </errorLevel>
+                        </MissingReturnType>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $config = $this->project_analyzer->getConfig();
+
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $config->getReportingLevelForFile('MissingReturnType', (string) realpath(__FILE__)),
+        );
+        $this->assertSame(
+            Config::REPORT_INFO,
+            $config->getReportingLevelForFile(
+                'MissingReturnType',
+                (string) realpath('src/Psalm/Internal/Analyzer/ProjectAnalyzer.php'),
+            ),
+        );
+        $this->assertSame(
+            Config::REPORT_ERROR,
+            $config->getReportingLevelForFile('MissingReturnType', (string) realpath('src/Psalm/Type.php')),
+        );
+        $this->assertFalse($config->reportIssueInFile('UndefinedClass', (string) realpath(__FILE__)));
+    }
+
+    public function testErrorLevelOfALaterElementOfTheSameIssueWins(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <issueHandlers>
+                        <MissingReturnType errorLevel="info" />
+                        <MissingReturnType errorLevel="suppress" />
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $this->assertSame(
+            Config::REPORT_SUPPRESS,
+            $this->project_analyzer->getConfig()->getReportingLevelForFile(
+                'MissingReturnType',
+                (string) realpath('src/Psalm/Type.php'),
+            ),
+        );
     }
 
     public function testIssueHandlerWithCustomErrorLevels(): void
@@ -1106,6 +1217,16 @@ final class ConfigTest extends TestCase
         );
     }
 
+    public function testAllIssueTypesIncludeTheIssuesWithAShortcode(): void
+    {
+        $issue_types = IssueHandler::getAllIssueTypes();
+
+        // psalm.dev resolves the https://psalm.dev/<shortcode> links of the issues in this list
+        $this->assertContains('ParseError', $issue_types);
+        $this->assertNotContains('CodeIssue', $issue_types);
+        $this->assertNotContains('PluginIssue', $issue_types);
+    }
+
     public function testAllPossibleIssues(): void
     {
         $all_possible_handlers = implode(
@@ -1135,6 +1256,138 @@ final class ConfigTest extends TestCase
                 </psalm>',
             ),
         );
+    }
+
+    #[DataProvider('providerConfigPathErrorNamesTheElement')]
+    public function testConfigPathErrorNamesTheElement(string $xml, string $expected_message): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage($expected_message);
+        Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+                ' . $xml . '
+            </psalm>',
+        );
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, string}>
+     */
+    public static function providerConfigPathErrorNamesTheElement(): iterable
+    {
+        yield 'directory of an issue handler' => [
+            '<issueHandlers>
+                <RedundantConditionGivenDocblockType>
+                    <errorLevel type="suppress">
+                        <directory name="missing_dir/" />
+                    </errorLevel>
+                </RedundantConditionGivenDocblockType>
+            </issueHandlers>',
+            'In <RedundantConditionGivenDocblockType>: Could not resolve config path to ',
+        ];
+        yield 'file of an issue handler' => [
+            '<issueHandlers>
+                <MixedAssignment>
+                    <errorLevel type="suppress">
+                        <file name="missing_file.php" />
+                    </errorLevel>
+                </MixedAssignment>
+            </issueHandlers>',
+            'In <MixedAssignment>: Could not resolve config path to ',
+        ];
+        yield 'glob directory of an issue handler' => [
+            '<issueHandlers>
+                <MixedAssignment>
+                    <errorLevel type="suppress">
+                        <directory name="missing_dir/*" />
+                    </errorLevel>
+                </MixedAssignment>
+            </issueHandlers>',
+            'In <MixedAssignment>: Could not resolve config path to ',
+        ];
+        yield 'glob file of an issue handler' => [
+            '<issueHandlers>
+                <MixedAssignment>
+                    <errorLevel type="suppress">
+                        <file name="missing_dir/*.php" />
+                    </errorLevel>
+                </MixedAssignment>
+            </issueHandlers>',
+            'In <MixedAssignment>: Could not resolve config path to ',
+        ];
+        yield 'plugin issue handler' => [
+            '<issueHandlers>
+                <PluginIssue name="MyPluginIssue">
+                    <errorLevel type="suppress">
+                        <directory name="missing_dir/" />
+                    </errorLevel>
+                </PluginIssue>
+            </issueHandlers>',
+            'In <PluginIssue name="MyPluginIssue">: Could not resolve config path to ',
+        ];
+        yield 'extraFiles' => [
+            '<extraFiles>
+                <directory name="missing_dir/" />
+            </extraFiles>',
+            'In <extraFiles>: Could not resolve config path to ',
+        ];
+        yield 'ignoreFiles of the taint analysis' => [
+            '<taintAnalysis>
+                <ignoreFiles>
+                    <directory name="missing_dir/" />
+                </ignoreFiles>
+            </taintAnalysis>',
+            'In <taintAnalysis><ignoreFiles>: Could not resolve config path to ',
+        ];
+    }
+
+    public function testConfigPathErrorOfTheProjectFilesNamesTheElement(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('In <projectFiles>: Could not resolve config path to ');
+        Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="missing_dir/" />
+                </projectFiles>
+            </psalm>',
+        );
+    }
+
+    #[DataProvider('provideInvalidMinTypeCoverage')]
+    public function testInvalidMinTypeCoverageIsAConfigError(string $min_type_coverage): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage("attribute 'minTypeCoverage'");
+        Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm minTypeCoverage="' . $min_type_coverage . '">
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+            </psalm>',
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function provideInvalidMinTypeCoverage(): iterable
+    {
+        yield 'above 100' => ['100.01'];
+        yield 'three decimals' => ['95.555'];
+        yield 'three decimals with a trailing zero' => ['95.500'];
+        yield 'whitespace' => [' 95'];
     }
 
     public function testImpossibleIssue(): void
@@ -1189,6 +1442,375 @@ final class ConfigTest extends TestCase
 
         $this->analyzeFile($file_path, new Context());
     }
+
+    public function testEveryExtensionOfTheSchemaCanBeEnabled(): void
+    {
+        $schema = new DOMDocument();
+        $schema->load(dirname(__DIR__, 2) . '/config.xsd');
+        $xpath = new DOMXPath($schema);
+        $xpath->registerNamespace('xs', 'http://www.w3.org/2001/XMLSchema');
+        $names = [];
+        foreach ($xpath->query('//xs:simpleType[@name="ExtensionType"]//xs:enumeration/@value') ?: [] as $name) {
+            if ($name->nodeValue !== null) {
+                $names[] = $name->nodeValue;
+            }
+        }
+
+        $this->assertContains('memcached', $names);
+
+        $default_config = TestConfig::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+            </psalm>',
+        );
+
+        $extensions = '';
+        foreach ($names as $name) {
+            $this->assertArrayHasKey($name, $default_config->php_extensions);
+            $extensions .= '<extension name="' . $name . '"/>';
+        }
+
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+                <enableExtensions>' . $extensions . '</enableExtensions>
+            </psalm>',
+        );
+
+        foreach ($names as $name) {
+            $this->assertTrue($config->php_extensions[$name], $name);
+        }
+    }
+
+    public function testZstdExtensionStubDeclaresItsFunctions(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <enableExtensions>
+                        <extension name="zstd"/>
+                    </enableExtensions>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+        $config = $this->project_analyzer->getConfig();
+        $config->visitStubFiles($this->project_analyzer->getCodebase());
+        $this->assertContains((string) realpath('stubs/extensions/zstd.phpstub'), $config->internal_stubs);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @return string|false
+                 * @psalm-pure
+                 */
+                function roundTrip(string $data) {
+                    $compressed = zstd_compress($data, ZSTD_COMPRESS_LEVEL_DEFAULT);
+                    return $compressed === false ? false : Zstd\\uncompress($compressed);
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, string}>
+     */
+    public static function providerExtensionStubs(): iterable
+    {
+        yield 'curl' => [
+            'curl',
+            '<?php
+                $curl = curl_init();
+                curl_setopt_array($curl, [
+                    CURLOPT_URL => "https://example.com",
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                ]);',
+        ];
+
+        yield 'ldap' => [
+            'ldap',
+            '<?php
+                echo LDAP_OPT_PROTOCOL_VERSION, LDAP_OPT_REFERRALS, LDAP_DEREF_NEVER;',
+        ];
+
+        yield 'openssl' => [
+            'openssl',
+            '<?php
+                echo OPENSSL_ALGO_SHA256, OPENSSL_KEYTYPE_RSA, OPENSSL_VERSION_NUMBER;',
+        ];
+
+        yield 'intl' => [
+            'intl',
+            '<?php
+                echo INTL_MAX_LOCALE_LEN, IDNA_DEFAULT, NumberFormatter::DECIMAL;',
+        ];
+
+        yield 'memcached' => [
+            'memcached',
+            '<?php
+                $memcached = new Memcached();
+                echo $memcached->getResultCode() === Memcached::RES_SUCCESS ? "ok" : "failed";',
+        ];
+
+        yield 'zip' => [
+            'zip',
+            '<?php
+                echo ZipArchive::CREATE, ZipArchive::OVERWRITE;',
+        ];
+    }
+
+    #[DataProvider('providerExtensionStubs')]
+    public function testExtensionStubCanBeEnabled(string $extension, string $code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <enableExtensions>
+                        <extension name="' . $extension . '"/>
+                    </enableExtensions>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+        $config = $this->project_analyzer->getConfig();
+        $config->visitStubFiles($this->project_analyzer->getCodebase());
+        $this->assertContains((string) realpath('stubs/extensions/' . $extension . '.phpstub'), $config->internal_stubs);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testEveryExtensionStubParses(): void
+    {
+        $paths = glob(dirname(__DIR__, 2) . '/stubs/extensions/*.phpstub');
+        $this->assertIsArray($paths);
+
+        $parser = (new PhpParser\ParserFactory())->createForNewestSupportedVersion();
+
+        foreach ($paths as $path) {
+            $code = file_get_contents($path);
+            $this->assertIsString($code);
+
+            try {
+                $parser->parse($code);
+            } catch (PhpParser\Error $e) {
+                $this->fail(basename($path) . ': ' . $e->getMessage());
+            }
+        }
+
+        $this->assertNotSame([], $paths);
+    }
+
+    public function testEveryExtensionStubHasAConfigurableExtension(): void
+    {
+        $paths = glob(dirname(__DIR__, 2) . '/stubs/extensions/*.phpstub');
+        $this->assertIsArray($paths);
+
+        $stubs = [];
+        foreach ($paths as $path) {
+            $stubs[] = basename($path, '.phpstub');
+        }
+
+        sort($stubs);
+
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+            </psalm>',
+        );
+
+        $configurable = array_keys(array_intersect_key($config->php_extensions, array_flip($stubs)));
+        sort($configurable);
+
+        $this->assertSame($stubs, $configurable);
+
+        $schema = file_get_contents(dirname(__DIR__, 2) . '/config.xsd');
+        foreach ($stubs as $stub) {
+            $this->assertStringContainsString('<xs:enumeration value="' . $stub . '"/>', (string) $schema, $stub);
+        }
+    }
+
+    public function testMutableDependencySuppressedForAReferencedClass(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <issueHandlers>
+                        <MutableDependency>
+                            <errorLevel type="suppress">
+                                <referencedClass name="AbstractSerializable" />
+                            </errorLevel>
+                        </MutableDependency>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                abstract class AbstractSerializable {}
+
+                /** @psalm-immutable */
+                final class Document extends AbstractSerializable {}',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testImmutableDependencySuppressedForAReferencedClass(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <issueHandlers>
+                        <ImmutableDependency>
+                            <errorLevel type="suppress">
+                                <referencedClass name="ImmutableParent" />
+                            </errorLevel>
+                        </ImmutableDependency>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-immutable */
+                abstract class ImmutableParent {}
+
+                final class Child extends ImmutableParent {}',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testMutableDependencyNotSuppressedForAnotherReferencedClass(): void
+    {
+        $this->expectExceptionMessage('MutableDependency');
+        $this->expectException(CodeException::class);
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <issueHandlers>
+                        <MutableDependency>
+                            <errorLevel type="suppress">
+                                <referencedClass name="SomethingElse" />
+                            </errorLevel>
+                        </MutableDependency>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                abstract class AbstractSerializable {}
+
+                /** @psalm-immutable */
+                final class Document extends AbstractSerializable {}',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, bool, bool}>
+     */
+    public static function providerIgnoreInternalFalseReturn(): iterable
+    {
+        yield 'a method of a stub, ignored' => ['\\DateTimeImmutable::createFromFormat("Y-m-d", $date)', true, false];
+        yield 'a method of a stub, reported' => ['\\DateTimeImmutable::createFromFormat("Y-m-d", $date)', false, true];
+        yield 'a method of a mutable class, ignored' => ['\\DateTime::createFromFormat("Y-m-d", $date)', true, false];
+        yield 'a method of a mutable class, reported' => ['\\DateTime::createFromFormat("Y-m-d", $date)', false, true];
+        yield 'a method of the call map, ignored' => ['(new \\DateTime())->modify($date)', true, false];
+        yield 'a method of the call map, not reported either' => ['(new \\DateTime())->modify($date)', false, false];
+        yield 'a function, ignored' => ['date_create_from_format("Y-m-d", $date)', true, false];
+        yield 'a function, reported' => ['date_create_from_format("Y-m-d", $date)', false, true];
+    }
+
+    #[DataProvider('providerIgnoreInternalFalseReturn')]
+    public function testIgnoreInternalFunctionFalseReturnAppliesToStubbedMethods(
+        string $call,
+        bool $ignore_false_return,
+        bool $is_reported,
+    ): void {
+        if ($is_reported) {
+            $this->expectException(CodeException::class);
+            $this->expectExceptionMessage('PossiblyFalseReference');
+        }
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm ignoreInternalFunctionFalseReturn="' . ($ignore_false_return ? 'true' : 'false') . '">
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function resetTimestamp(string $date): void {
+                    ' . $call . '->setTimestamp(0);
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        // an ignored issue: the analysis went through without an exception
+        $this->addToAssertionCount(1);
+    }
+
 
     public function testValidThrowInvalidCatch(): void
     {
@@ -1353,11 +1975,21 @@ final class ConfigTest extends TestCase
     #[Override]
     public function tearDown(): void
     {
-        set_error_handler($this->original_error_handler);
+        // remove the error and exception handlers the test installed
+        while (($handler = set_error_handler(null)) !== $this->original_error_handler && $handler !== null) {
+            restore_error_handler();
+            restore_error_handler();
+        }
+        restore_error_handler();
+        while (($handler = set_exception_handler(null)) !== $this->original_exception_handler && $handler !== null) {
+            restore_exception_handler();
+            restore_exception_handler();
+        }
+        restore_exception_handler();
 
         parent::tearDown();
 
-        if ($this->getName() === 'testTemplatedFiles') {
+        if ($this->name() === 'testTemplatedFiles') {
             $project_root = dirname(__DIR__, 2);
             foreach (['1.xml', '2.xml', '3.xml', '4.xml', '5.xml', '6.xml', '7.xml', '8.xml'] as $file_name) {
                 @unlink($project_root . DIRECTORY_SEPARATOR . $file_name);
@@ -1369,7 +2001,7 @@ final class ConfigTest extends TestCase
      * @return array<string, array{0: string, 1: string|null}>
      * @psalm-pure
      */
-    public function providerCustomTaintsOfTheConfig(): array
+    public static function providerCustomTaintsOfTheConfig(): array
     {
         $functions = '<?php
             /** @psalm-taint-sink nosql_json $query */
@@ -1480,9 +2112,7 @@ final class ConfigTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider providerCustomTaintsOfTheConfig
-     */
+    #[DataProvider('providerCustomTaintsOfTheConfig')]
     public function testCustomTaintsOfTheConfig(string $code, ?string $error): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -1524,7 +2154,7 @@ final class ConfigTest extends TestCase
      * @return array<string, array{0: string, 1: string}>
      * @psalm-pure
      */
-    public function providerInvalidCustomTaintsOfTheConfig(): array
+    public static function providerInvalidCustomTaintsOfTheConfig(): array
     {
         return [
             'the name of a built-in taint' => ['<taint name="html" />', 'has the name of a built-in taint'],
@@ -1537,9 +2167,7 @@ final class ConfigTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider providerInvalidCustomTaintsOfTheConfig
-     */
+    #[DataProvider('providerInvalidCustomTaintsOfTheConfig')]
     public function testInvalidCustomTaintsOfTheConfig(string $taints, string $error): void
     {
         $this->expectException(ConfigException::class);
@@ -1830,6 +2458,280 @@ final class ConfigTest extends TestCase
         $this->assertSame('8.0', $cfg->getPhpVersion());
     }
 
+    public function testReadsThePhp64bitRequirementOfComposerJsonForPhpVersion(): void
+    {
+        $root = __DIR__ . '/../fixtures/ComposerPhp64bitVersion';
+        $cfg = Config::loadFromXML($root, "<?xml version=\"1.0\"?><psalm></psalm>");
+        $this->assertSame('8.1', $cfg->getPhpVersion());
+    }
+
+    public function testReadsComposerJsonForPhp86Version(): void
+    {
+        $root = __DIR__ . '/../fixtures/ComposerPhp86Version';
+        $cfg = Config::loadFromXML($root, "<?xml version=\"1.0\"?><psalm></psalm>");
+        $php_version = (string) $cfg->getPhpVersion();
+        $this->assertSame('8.6', $php_version);
+
+        $project_analyzer = $this->getProjectAnalyzerWithConfig($cfg);
+        $project_analyzer->setPhpVersion($php_version, 'composer');
+        $this->assertSame(8_06_00, $project_analyzer->getCodebase()->analysis_php_version_id);
+    }
+
+    public function testRejectsUnreleasedPhpVersion(): void
+    {
+        $project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(dirname(__DIR__, 2), '<?xml version="1.0"?><psalm></psalm>'),
+        );
+
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage('is either not supported or doesn\'t exist');
+        $project_analyzer->setPhpVersion('8.7', 'tests');
+    }
+
+    /**
+     * @return array<string, array{array<string, string>, string, list<string>}>
+     * @psalm-pure
+     */
+    public static function providerLibraryPlugins(): array
+    {
+        $webmozart_assert = '{"packages": [{"name": "webmozart/assert", "extra": {"psalm": {"pluginClass": '
+            . '"Webmozart\\\\Assert\\\\PsalmPlugin"}}}]}';
+
+        return [
+            'installedPackageDeclaringAPlugin' => [
+                ['vendor/composer/installed.json' => $webmozart_assert],
+                '<psalm></psalm>',
+                ['Webmozart\Assert\PsalmPlugin'],
+            ],
+            'customVendorDir' => [
+                [
+                    'composer.json' => '{"config": {"vendor-dir": "lib"}}',
+                    'lib/composer/installed.json' => $webmozart_assert,
+                ],
+                '<psalm></psalm>',
+                ['Webmozart\Assert\PsalmPlugin'],
+            ],
+            'absoluteVendorDir' => [
+                [
+                    'composer.json' => '{"config": {"vendor-dir": "%root%/lib"}}',
+                    'lib/composer/installed.json' => $webmozart_assert,
+                ],
+                '<psalm></psalm>',
+                ['Webmozart\Assert\PsalmPlugin'],
+            ],
+            'numericVendorDir' => [
+                [
+                    'composer.json' => '{"config": {"vendor-dir": 7}}',
+                    '7/composer/installed.json' => $webmozart_assert,
+                ],
+                '<psalm></psalm>',
+                ['Webmozart\Assert\PsalmPlugin'],
+            ],
+            'vendorDirOfOtherProject' => [
+                [
+                    'composer.json' => '{"config": {"vendor-dir": "lib"}}',
+                    'vendor/composer/installed.json' => $webmozart_assert,
+                ],
+                '<psalm></psalm>',
+                [],
+            ],
+            'alreadyEnabled' => [
+                ['vendor/composer/installed.json' => $webmozart_assert],
+                '<psalm><plugins><pluginClass class="\webmozart\assert\PsalmPlugin"/></plugins></psalm>',
+                ['\webmozart\assert\PsalmPlugin'],
+            ],
+            'otherPluginEnabled' => [
+                ['vendor/composer/installed.json' => $webmozart_assert],
+                '<psalm><plugins><pluginClass class="Psalm\PhpUnitPlugin\Plugin"/></plugins></psalm>',
+                ['Psalm\PhpUnitPlugin\Plugin', 'Webmozart\Assert\PsalmPlugin'],
+            ],
+            'disabled' => [
+                ['vendor/composer/installed.json' => $webmozart_assert],
+                '<psalm loadLibraryPlugins="false"></psalm>',
+                [],
+            ],
+            'packageVersionWithoutAPlugin' => [
+                ['vendor/composer/installed.json' => '{"packages": [{"name": "webmozart/assert"}]}'],
+                '<psalm></psalm>',
+                [],
+            ],
+            'otherPackageDeclaringAPlugin' => [
+                [
+                    'vendor/composer/installed.json' => '{"packages": [{"name": "psalm/plugin-phpunit", "extra": '
+                        . '{"psalm": {"pluginClass": "Psalm\\\\PhpUnitPlugin\\\\Plugin"}}}]}',
+                ],
+                '<psalm></psalm>',
+                [],
+            ],
+            'pluginClassNotAString' => [
+                [
+                    'vendor/composer/installed.json' => '{"packages": [{"name": "webmozart/assert", "extra": '
+                        . '{"psalm": {"pluginClass": 1}}}]}',
+                ],
+                '<psalm></psalm>',
+                [],
+            ],
+            'packageNotAnObject' => [
+                ['vendor/composer/installed.json' => '{"packages": [1]}'],
+                '<psalm></psalm>',
+                [],
+            ],
+            'packagesNotAList' => [
+                ['vendor/composer/installed.json' => '{"packages": 1}'],
+                '<psalm></psalm>',
+                [],
+            ],
+            'withoutPackages' => [
+                ['vendor/composer/installed.json' => '{}'],
+                '<psalm></psalm>',
+                [],
+            ],
+            'malformedInstalledJson' => [
+                ['vendor/composer/installed.json' => '{'],
+                '<psalm></psalm>',
+                [],
+            ],
+            'notInstalled' => [
+                [],
+                '<psalm></psalm>',
+                [],
+            ],
+            'requiredPhpUnit' => [
+                ['composer.json' => '{"require-dev": {"phpunit/phpunit": "^12"}}'],
+                '<psalm></psalm>',
+                ['Psalm\PhpUnitPlugin\Plugin'],
+            ],
+            'requiredMockery' => [
+                ['composer.json' => '{"require-dev": {"mockery/mockery": "^1"}}'],
+                '<psalm></psalm>',
+                ['Psalm\MockeryPlugin\Plugin'],
+            ],
+            'requiredSymfony' => [
+                ['composer.json' => '{"require": {"symfony/framework-bundle": "^7"}}'],
+                '<psalm></psalm>',
+                ['Psalm\SymfonyPsalmPlugin\Plugin'],
+            ],
+            'requiredDoctrineOrm' => [
+                ['composer.json' => '{"require": {"doctrine/orm": "^3"}}'],
+                '<psalm></psalm>',
+                ['Weirdan\DoctrinePsalmPlugin\Plugin'],
+            ],
+            'requiredDoctrineDbal' => [
+                ['composer.json' => '{"require": {"doctrine/dbal": "^4"}}'],
+                '<psalm></psalm>',
+                ['Weirdan\DoctrinePsalmPlugin\Plugin'],
+            ],
+            'requiredSeveralDoctrineLibraries' => [
+                [
+                    'composer.json' => '{"require": {"doctrine/orm": "^3", "doctrine/dbal": "^4", '
+                        . '"doctrine/collections": "^2", "doctrine/persistence": "^4"}}',
+                ],
+                '<psalm></psalm>',
+                ['Weirdan\DoctrinePsalmPlugin\Plugin'],
+            ],
+            'requiredLaravel' => [
+                ['composer.json' => '{"require": {"laravel/framework": "^12"}}'],
+                '<psalm></psalm>',
+                ['Psalm\LaravelPlugin\Plugin'],
+            ],
+            'requiredTestbench' => [
+                ['composer.json' => '{"require-dev": {"orchestra/testbench": "^11"}}'],
+                '<psalm></psalm>',
+                ['Psalm\LaravelPlugin\Plugin'],
+            ],
+            'requiredLibrariesOfSeveralPlugins' => [
+                [
+                    'composer.json' => '{"require": {"laravel/framework": "^12", "psr/log": "^3"}, '
+                        . '"require-dev": {"phpunit/phpunit": "^12"}}',
+                    'vendor/composer/installed.json' => $webmozart_assert,
+                ],
+                '<psalm></psalm>',
+                ['Webmozart\Assert\PsalmPlugin', 'Psalm\LaravelPlugin\Plugin', 'Psalm\PhpUnitPlugin\Plugin'],
+            ],
+            'requiredLibraryInAnotherCase' => [
+                ['composer.json' => '{"require-dev": {"PHPUnit/PHPUnit": "^12"}}'],
+                '<psalm></psalm>',
+                ['Psalm\PhpUnitPlugin\Plugin'],
+            ],
+            'requiredLibraryInBothSections' => [
+                [
+                    'composer.json' => '{"require": {"mockery/mockery": "^1"}, '
+                        . '"require-dev": {"mockery/mockery": "^1"}}',
+                ],
+                '<psalm></psalm>',
+                ['Psalm\MockeryPlugin\Plugin'],
+            ],
+            'requiredLibraryOfAnEnabledPlugin' => [
+                ['composer.json' => '{"require-dev": {"phpunit/phpunit": "^12"}}'],
+                '<psalm><plugins><pluginClass class="\psalm\phpunitplugin\plugin"/></plugins></psalm>',
+                ['\psalm\phpunitplugin\plugin'],
+            ],
+            'requiredLibraryDisabled' => [
+                ['composer.json' => '{"require-dev": {"phpunit/phpunit": "^12"}}'],
+                '<psalm loadLibraryPlugins="false"></psalm>',
+                [],
+            ],
+            'requiredOtherLibraries' => [
+                ['composer.json' => '{"require": {"symfony/console": "^7", "guzzlehttp/guzzle": "^7"}}'],
+                '<psalm></psalm>',
+                [],
+            ],
+        ];
+    }
+
+    /**
+     * @param array<string, string> $files
+     * @param list<string> $expected_plugin_classes
+     */
+    #[DataProvider('providerLibraryPlugins')]
+    public function testEnablesThePluginsOfInstalledLibraries(
+        array $files,
+        string $config_xml,
+        array $expected_plugin_classes,
+    ): void {
+        $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-library-plugins-');
+        mkdir($root);
+        // the root inside a JSON string, whose backslashes on Windows need escaping
+        $json_root = substr(json_encode($root, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), 1, -1);
+        $dirs = [$root];
+        $paths = [];
+        foreach ($files as $path => $contents) {
+            $path = $root . DIRECTORY_SEPARATOR . $path;
+            for ($dir = dirname($path); !is_dir($dir); $dir = dirname($dir)) {
+                $dirs[] = $dir;
+            }
+            if (!is_dir(dirname($path))) {
+                mkdir(dirname($path), 0777, true);
+            }
+            file_put_contents($path, str_replace('%root%', $json_root, $contents));
+            $paths[] = $path;
+        }
+
+        try {
+            $config = Config::loadFromXML($root, '<?xml version="1.0"?>' . $config_xml);
+        } finally {
+            foreach ($paths as $path) {
+                unlink($path);
+            }
+            rsort($dirs);
+            foreach ($dirs as $dir) {
+                rmdir($dir);
+            }
+        }
+
+        $this->assertSame(
+            $expected_plugin_classes,
+            array_map(static fn(array $plugin): string => $plugin['class'], $config->getPluginClasses()),
+        );
+    }
+
+    public function testDisablesArrayCache(): void
+    {
+        $config = Config::loadFromXML(dirname(__DIR__, 2), '<?xml version="1.0"?><psalm arrayCache="false"></psalm>');
+
+        $this->assertFalse($config->array_cache);
+    }
+
     public function testSetsUsePhpStormMetaPath(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -1861,6 +2763,39 @@ final class ConfigTest extends TestCase
         $this->assertContains('datetime', $this->project_analyzer->getConfig()->getUniversalObjectCrates());
     }
 
+    public function testSetsUniversalObjectCratesOfAnInterface(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <universalObjectCrates>
+                        <class name="Countable" />
+                    </universalObjectCrates>
+                </psalm>',
+            ),
+        );
+
+        $this->assertContains('countable', $this->project_analyzer->getConfig()->getUniversalObjectCrates());
+    }
+
+    public function testRejectsAnUnknownUniversalObjectCrate(): void
+    {
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage('NoSuchUniversalObjectCrate is not a known class');
+
+        TestConfig::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <universalObjectCrates>
+                    <class name="NoSuchUniversalObjectCrate" />
+                </universalObjectCrates>
+            </psalm>',
+        );
+    }
+
     public function testInferPropertyTypesFromConstructorIsRead(): void
     {
         $cfg = Config::loadFromXML(
@@ -1874,7 +2809,7 @@ final class ConfigTest extends TestCase
      * @return array<string, array{0: int, 1: int|null}>
      * @psalm-pure
      */
-    public function pluginRegistersScannerAndAnalyzerDataProvider(): array
+    public static function pluginRegistersScannerAndAnalyzerDataProvider(): array
     {
         return [
             'regular' => [0, null], // flags, expected exception code
@@ -1885,13 +2820,12 @@ final class ConfigTest extends TestCase
         ];
     }
 
-    /**
-     * @test
-     * @dataProvider pluginRegistersScannerAndAnalyzerDataProvider
-     */
+    #[DataProvider('pluginRegistersScannerAndAnalyzerDataProvider')]
+    #[Test]
     public function pluginRegistersScannerAndAnalyzer(int $flags, ?int $expectedExceptionCode): void
     {
         $extension = uniqid('test');
+        /** @var array{scanner: class-string, analyzer: class-string, extension: string} $names */
         $names = [
             'scanner' => uniqid('PsalmTestFileTypeScanner'),
             'analyzer' => uniqid('PsalmTestFileTypeAnalyzer'),
@@ -2096,9 +3030,9 @@ final class ConfigTest extends TestCase
     }
 
     /**
-     * @requires extension apcu
      * @deprecated Remove in Psalm 6.
      */
+    #[RequiresPhpExtension('apcu')]
     public function testConfigWarnsAboutDeprecatedWayToLoadStubsButLoadsTheStub(): void
     {
         $config_xml = Config::loadFromXML(
@@ -2124,9 +3058,9 @@ final class ConfigTest extends TestCase
     }
 
     /**
-     * @requires extension apcu
      * @deprecated Remove deprecation warning part in Psalm 6.
      */
+    #[RequiresPhpExtension('apcu')]
     public function testConfigWithDisableExtensionsDoesNotLoadExtensionStubsAndHidesDeprecationWarning(): void
     {
         $config_xml = Config::loadFromXML(
@@ -2395,5 +3329,176 @@ final class ConfigTest extends TestCase
                 ),
             ),
         );
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerCacheAttributes(): iterable
+    {
+        yield 'compressor' => ['compressor'];
+        yield 'serializer' => ['serializer'];
+    }
+
+    #[DataProvider('providerCacheAttributes')]
+    public function testUnknownValueOfACacheAttributeFailsValidation(string $attribute): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage("attribute '$attribute'");
+
+        Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm ' . $attribute . '="zip"/>');
+    }
+
+    /**
+     * @return iterable<string, array{string, non-empty-string|null, string|null}> compressor, what it needs, a function of it
+     * @psalm-pure
+     */
+    public static function providerCompressorsThatAreResolvedLikeAnAbsentAttribute(): iterable
+    {
+        yield 'auto' => ['auto', null, null];
+        yield 'zstd' => ['zstd', 'ext-zstd', 'zstd_compress'];
+        yield 'lz4' => ['lz4', 'ext-lz4', 'lz4_compress'];
+        yield 'deflate' => ['deflate', 'ext-zlib', 'gzdeflate'];
+    }
+
+    /**
+     * `auto` and a compressor that is not available give what no attribute gives, `auto` without a warning
+     *
+     * @param non-empty-string|null $requirement
+     */
+    #[DataProvider('providerCompressorsThatAreResolvedLikeAnAbsentAttribute')]
+    public function testAutoOrUnavailableCompressorIsResolvedLikeAnAbsentAttribute(
+        string $compressor,
+        ?string $requirement,
+        ?string $function,
+    ): void {
+        if ($function !== null && function_exists($function)) {
+            $this->markTestSkipped("$function exists");
+        }
+
+        $absent = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm/>');
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            '<?xml version="1.0"?><psalm compressor="' . $compressor . '"/>',
+        );
+
+        $this->assertSame($absent->compressor, $config->compressor);
+        if ($requirement === null) {
+            $this->assertSame($absent->config_warnings, $config->config_warnings);
+
+            return;
+        }
+
+        $warnings = $config->config_warnings;
+        $warning = array_pop($warnings);
+        $this->assertSame($absent->config_warnings, $warnings);
+        $this->assertNotNull($warning);
+        $this->assertStringStartsWith($requirement, $warning);
+        $this->assertStringContainsString(' is missing, ', $warning);
+        $this->assertStringContainsString('compressor="' . $compressor . '"', $warning);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerAttributesOfTheZstdCompressor(): iterable
+    {
+        yield 'absent' => [''];
+        yield 'auto' => [' compressor="auto"'];
+        yield 'zstd' => [' compressor="zstd"'];
+    }
+
+    #[DataProvider('providerAttributesOfTheZstdCompressor')]
+    #[RequiresPhpExtension('zstd', '>=0.15.0')]
+    public function testCompressorIsZstdByDefaultAndWhenAskedFor(string $attributes): void
+    {
+        $config = Config::loadFromXML((string) getcwd(), '<?xml version="1.0"?><psalm' . $attributes . '/>');
+
+        $this->assertSame('zstd', $config->compressor);
+        $this->assertSame([], $config->config_warnings);
+    }
+
+    public function testRemoveCacheDirectoryToleratesAFileWrittenByAnotherProcess(): void
+    {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-cache-removal-', true);
+        mkdir($dir . DIRECTORY_SEPARATOR . 'classlike_cache', 0777, true);
+        file_put_contents($dir . DIRECTORY_SEPARATOR . 'classlike_cache' . DIRECTORY_SEPARATOR . 'cached', 'x');
+
+        // as in the CLI, where PHP warnings are turned into exceptions
+        set_error_handler(static function (int $severity, string $message): never {
+            throw new RuntimeException('PHP Error: ' . $message);
+        });
+
+        ConcurrentWriterStreamWrapper::register();
+
+        try {
+            // while this removes the cache, another Psalm process (a second language server on the same project)
+            // writes a file into the directory, which can then no longer be removed
+            Config::removeCacheDirectory(ConcurrentWriterStreamWrapper::PROTOCOL . '://' . $dir);
+
+            $this->assertFileDoesNotExist($dir . DIRECTORY_SEPARATOR . 'classlike_cache' . DIRECTORY_SEPARATOR . 'cached');
+        } finally {
+            ConcurrentWriterStreamWrapper::unregister();
+            restore_error_handler();
+            Config::removeCacheDirectory($dir);
+        }
+
+        $this->assertDirectoryDoesNotExist($dir);
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, bool, bool}>
+     */
+    public static function providerAssumeGettersMutationFree(): iterable
+    {
+        $open = 'class Lib { private string $name = ""; public function getName(): string { return $this->name; } }';
+        $final = 'final class Lib { private string $name = ""; public function getName(): string { return $this->name; } }';
+        $annotated = 'final class Lib { private string $name = "";'
+            . ' /** @psalm-mutation-free */ public function getName(): string { return $this->name; } }';
+
+        yield 'a getter of an open class, assumed' => [$open, true, false];
+        yield 'a getter of an open class, not assumed' => [$open, false, true];
+        yield 'a getter of a final class, assumed' => [$final, true, false];
+        yield 'a getter of a final class, not assumed' => [$final, false, true];
+        yield 'an annotated getter, not assumed' => [$annotated, false, false];
+    }
+
+    #[DataProvider('providerAssumeGettersMutationFree')]
+    public function testAssumeGettersMutationFree(string $class, bool $assume, bool $is_reported): void
+    {
+        if ($is_reported) {
+            $this->expectException(CodeException::class);
+            $this->expectExceptionMessage('ImpureMethodCall');
+        }
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm assumeGettersMutationFree="' . ($assume ? 'true' : 'false') . '">
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                ' . $class . '
+
+                /** @psalm-pure */
+                function name(Lib $lib): string {
+                    return $lib->getName();
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        // an accepted call: the analysis went through without an exception
+        $this->addToAssertionCount(1);
     }
 }

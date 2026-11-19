@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Storage;
 
+use Override;
 use Psalm\CodeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
@@ -16,7 +17,7 @@ use function property_exists;
  * @psalm-immutable
  * @api
  */
-final class ClassConstantStorage
+final class ClassConstantStorage implements HasAttributesInterface
 {
     /** @psalm-suppress MutableDependency Mutable by design */
     use CustomMetadataTrait;
@@ -82,5 +83,15 @@ final class ClassConstantStorage
 
 
         return "$visibility_text const $const$value";
+    }
+
+    /**
+     * @return list<AttributeStorage>
+     * @psalm-mutation-free
+     */
+    #[Override]
+    public function getAttributeStorages(): array
+    {
+        return $this->attributes;
     }
 }

@@ -21,9 +21,558 @@ final class FunctionCallTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
+            'fileTestFunctionsKeepAMixedArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(mixed $a, mixed $b, mixed $c): void {
+                        if (is_link($a)) {
+                            /** @psalm-check-type-exact $a = mixed */
+                        }
+
+                        if (file_exists($b)) {
+                            /** @psalm-check-type-exact $b = mixed */
+                        }
+
+                        if (is_dir($c) || is_readable($c)) {
+                            /** @psalm-check-type-exact $c = mixed */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'fileTestFunctionsKeepAnArgumentContainingMixed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $a, string $s): void {
+                        $x = $a['k'];
+                        if ($x === null) {
+                            $x = $s;
+                        }
+
+                        if (is_link($x)) {
+                            /** @psalm-check-type-exact $x = mixed|string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'fileTestFunctionsKeepAnSplFileInfoArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(SplFileInfo $a, SplFileInfo $b): void {
+                        if (is_link($a)) {
+                            /** @psalm-check-type-exact $a = SplFileInfo */
+                        }
+
+                        if (is_file($b) || file_exists($b)) {
+                            /** @psalm-check-type-exact $b = SplFileInfo */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
+            'fileTestFunctionsStillNarrowAStringArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(string $a, string $b): void {
+                        if (is_link($a)) {
+                            /** @psalm-check-type-exact $a = non-empty-string */
+                        }
+
+                        if (file_exists($b)) {
+                            /** @psalm-check-type-exact $b = non-empty-string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'fileTestFunctionsAssertANonEmptyString' => [
+                'code' => '<?php
+                    /** @param non-empty-string $path */
+                    function takesNonEmptyString(string $path): void {}
+
+                    function check(string $path): void {
+                        if (file_exists($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_file($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_dir($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_link($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_readable($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_writable($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_writeable($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_executable($path)) {
+                            takesNonEmptyString($path);
+                        }
+                    }',
+            ],
+            'fileTestFunctionsKeepAPossiblyEmptyStringWhenFalse' => [
+                'code' => '<?php
+                    function check(string $path): void {
+                        if (!file_exists($path)) {
+                            $a = $path;
+                        } else {
+                            $a = "x";
+                        }
+                        if (is_dir($path)) {
+                            $b = "x";
+                        } else {
+                            $b = $path;
+                        }
+                    }
+
+                    /** @var string $path */
+                    $path = "";
+                    if (is_file($path)) {
+                        $c = "x";
+                    } else {
+                        $c = $path;
+                    }',
+                'assertions' => [
+                    '$c===' => 'string',
+                ],
+            ],
+            'filterVarEmptyStringNullOnlyForAnEmptyInput' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string $s
+                     * @param non-empty-string $non_empty
+                     */
+                    function filter(string $s, string $non_empty, bool $flag): void {
+                        $stripped = filter_var($s, FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL | FILTER_FLAG_STRIP_LOW);
+                        $stripped_non_empty = filter_var(
+                            $non_empty,
+                            FILTER_DEFAULT,
+                            FILTER_FLAG_EMPTY_STRING_NULL | FILTER_FLAG_STRIP_LOW,
+                        );
+                        $literal = filter_var('abc', FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL);
+                        $false = filter_var(false, FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL);
+                        $bool = filter_var($flag, FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL);
+                        $unsafe_raw = filter_var($s, FILTER_UNSAFE_RAW, FILTER_FLAG_EMPTY_STRING_NULL);
+                        $encoded_literal = filter_var(
+                            'a&b',
+                            FILTER_DEFAULT,
+                            FILTER_FLAG_EMPTY_STRING_NULL | FILTER_FLAG_ENCODE_AMP,
+                        );
+                        $stripped_literal = filter_var('abc', FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL | FILTER_FLAG_STRIP_LOW);
+                        $null = filter_var(null, FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL);
+
+                        /** @psalm-check-type-exact $stripped = string|null */
+                        /** @psalm-check-type-exact $stripped_non_empty = string */
+                        /** @psalm-check-type-exact $literal = 'abc' */
+                        /** @psalm-check-type-exact $false = null */
+                        /** @psalm-check-type-exact $bool = '1'|null */
+                        /** @psalm-check-type-exact $unsafe_raw = non-empty-string|null */
+                        /** @psalm-check-type-exact $encoded_literal = non-empty-string */
+                        /** @psalm-check-type-exact $stripped_literal = string */
+                        /** @psalm-check-type-exact $null = null */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'filterVarEmptyStringNullOfTheDefaultFilter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string $s
+                     * @param non-empty-string $non_empty
+                     */
+                    function filter(string $s, string $non_empty): void {
+                        $maybe_empty = filter_var($s, options: FILTER_FLAG_EMPTY_STRING_NULL);
+                        $empty = filter_var('', options: FILTER_FLAG_EMPTY_STRING_NULL);
+                        $filled = filter_var($non_empty, options: FILTER_FLAG_EMPTY_STRING_NULL);
+
+                        /** @psalm-check-type-exact $maybe_empty = non-empty-string|null */
+                        /** @psalm-check-type-exact $empty = null */
+                        /** @psalm-check-type-exact $filled = non-empty-string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'filterVarSanitizesNullAsAnEmptyString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $default = filter_var(null);
+                    $special = filter_var(null, FILTER_SANITIZE_SPECIAL_CHARS);
+                    $full_special = filter_var(null, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+                    $encoded = filter_var(null, FILTER_SANITIZE_ENCODED);
+                    $slashes = filter_var(null, FILTER_SANITIZE_ADD_SLASHES);
+                    $email = filter_var(null, FILTER_SANITIZE_EMAIL);
+                    $url = filter_var(null, FILTER_SANITIZE_URL);
+                    $number_int = filter_var(null, FILTER_SANITIZE_NUMBER_INT);
+                    $number_float = filter_var(null, FILTER_SANITIZE_NUMBER_FLOAT);
+                    $unsafe_raw = filter_var(null, FILTER_UNSAFE_RAW);
+                    $stripped = filter_var(null, FILTER_DEFAULT, FILTER_FLAG_STRIP_LOW);
+                    $sanitize_string = filter_var(null, FILTER_SANITIZE_STRING);
+                    $forced_array = filter_var(null, FILTER_DEFAULT, FILTER_FORCE_ARRAY);
+
+                    /** @psalm-check-type-exact $default = '' */
+                    /** @psalm-check-type-exact $special = '' */
+                    /** @psalm-check-type-exact $full_special = '' */
+                    /** @psalm-check-type-exact $encoded = '' */
+                    /** @psalm-check-type-exact $slashes = '' */
+                    /** @psalm-check-type-exact $email = '' */
+                    /** @psalm-check-type-exact $url = '' */
+                    /** @psalm-check-type-exact $number_int = '' */
+                    /** @psalm-check-type-exact $number_float = '' */
+                    /** @psalm-check-type-exact $unsafe_raw = '' */
+                    /** @psalm-check-type-exact $stripped = '' */
+                    /** @psalm-check-type-exact $sanitize_string = string */
+                    /** @psalm-check-type-exact $forced_array = list{''} */
+                    PHP,
+            ],
+            'filterVarSanitizesANullableInputWithoutFailing' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param ?string $s
+                     * @param ?non-empty-string $non_empty
+                     * @param ?int $i
+                     * @param array<?string> $array
+                     */
+                    function filter(?string $s, ?string $non_empty, ?int $i, array $array): void {
+                        $default = filter_var($s);
+                        $special = filter_var($non_empty, FILTER_SANITIZE_SPECIAL_CHARS);
+                        $email = filter_var($s, FILTER_SANITIZE_EMAIL);
+                        $number = filter_var($i, FILTER_SANITIZE_NUMBER_INT);
+                        $elements = filter_var($array, FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
+
+                        /** @psalm-check-type-exact $default = string */
+                        /** @psalm-check-type-exact $special = string */
+                        /** @psalm-check-type-exact $email = string */
+                        /** @psalm-check-type-exact $number = ''|numeric-string */
+                        /** @psalm-check-type-exact $elements = array<array-key, string>|false */
+                    }
+                    PHP,
+            ],
+            'filterVarValidatesNullAsAnEmptyString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $bool = filter_var(null, FILTER_VALIDATE_BOOLEAN);
+                    $bool_null_on_failure = filter_var(null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                    $int = filter_var(null, FILTER_VALIDATE_INT);
+                    $int_null_on_failure = filter_var(null, FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE);
+                    $domain = filter_var(null, FILTER_VALIDATE_DOMAIN);
+                    $hostname = filter_var(null, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
+                    $regexp = filter_var(null, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/^$/']]);
+
+                    /** @psalm-check-type-exact $bool = false */
+                    /** @psalm-check-type-exact $bool_null_on_failure = false */
+                    /** @psalm-check-type-exact $int = false */
+                    /** @psalm-check-type-exact $int_null_on_failure = null */
+                    /** @psalm-check-type-exact $domain = '' */
+                    /** @psalm-check-type-exact $hostname = false */
+                    /** @psalm-check-type-exact $regexp = ''|false */
+                    PHP,
+            ],
+            'classExistsComparedWithTrueGuardsTheRightOperandOfAnd' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return class_exists(Optional::class) === true && Optional::available();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classExistsComparedWithFalseGuardsTheOperandsOfAndAndOr' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return false !== class_exists(Optional::class) && Optional::available();
+                    }
+
+                    function checkOr(): bool {
+                        return class_exists(Optional::class) === false || Optional::available();
+                    }
+
+                    function checkLoose(): bool {
+                        return class_exists(Optional::class) == true && Optional::available();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'lvaluesCanBePassedToByRefParams' => [
+                'code' => '<?php
+                    class A {
+                        public int $p = 1;
+                        public static int $s = 1;
+                    }
+                    function fooFoo(int &$v): void {}
+                    $a = ["k" => 1];
+                    $o = new A();
+                    $v = 1;
+                    fooFoo($v);
+                    fooFoo($a["k"]);
+                    fooFoo($o->p);
+                    fooFoo(A::$s);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classExistsInAFormTheOperandsDoNotFollowGuardsTheRightOperandAsBefore' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return (bool) class_exists(Optional::class) && Optional::available();
+                    }
+
+                    function checkOr(): bool {
+                        return !(bool) class_exists(Optional::class) || Optional::available();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCast'],
+                'php_version' => '8.1',
+            ],
+            'negatedClassExistsInAFormTheOperandsDoNotFollowGuardsTheRightOperandOfOrInAnIf' => [
+                'code' => '<?php
+                    function check(bool $a, bool $b, bool $c, bool $d): void {
+                        if (!(bool) class_exists(Optional::class) || Optional::available()) {
+                            echo "short";
+                        }
+
+                        if ($a || $b || $c || !(bool) class_exists(Optional::class) || Optional::available()) {
+                            echo "deep";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCast'],
+                'php_version' => '8.1',
+            ],
+            'classExistsAfterUnrelatedAndOperand' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (rand(0, 1) && class_exists(Foo::class)) {
+                        new Foo();
+                    }
+                    PHP,
+            ],
+            'classExistsBeforeUnrelatedAndOperand' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (class_exists(Foo::class) && rand(0, 1)) {
+                        new Foo();
+                    }
+                    PHP,
+            ],
+            'classExistsBetweenUnrelatedAndOperands' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (rand(0, 1) && class_exists(Foo::class) && rand(0, 1)) {
+                        new Foo();
+                    }
+                    PHP,
+            ],
+            'classExistsInElseifAnd' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (rand(0, 1)) {
+                        echo 1;
+                    } elseif (rand(0, 1) && class_exists(Foo::class)) {
+                        new Foo();
+                    }
+                    PHP,
+            ],
+            'classExistsInAndChainExpression' => [
+                'code' => <<<'PHP'
+                    <?php
+                    echo rand(0, 1) && class_exists(Foo::class) && new Foo();
+                    PHP,
+            ],
+            'classExistsInAndTernary' => [
+                'code' => <<<'PHP'
+                    <?php
+                    echo rand(0, 1) && class_exists(Foo::class) ? json_encode(new Foo()) : '';
+                    PHP,
+            ],
+            'internalFunctionsPreferringRefsAcceptAnAssignment' => [
+                'code' => '<?php
+                    $read = [STDIN];
+                    $r = stream_select($read, $w = null, $e = null, 0);',
+                'assertions' => [],
+            ],
+            'existenceChecksOfALowercaseOrLiteralStringKeepTheNameType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param non-empty-lowercase-string $function */
+                    function functionOf(string $function): void {
+                        if (function_exists($function)) {
+                            /** @psalm-check-type-exact $function = callable-string */
+                        }
+                    }
+
+                    /** @param lowercase-string $class */
+                    function classOf(string $class): void {
+                        if (class_exists($class)) {
+                            /** @psalm-check-type-exact $class = class-string */
+                        }
+                    }
+
+                    /** @param literal-string $name */
+                    function interfaceOf(string $name): void {
+                        if (interface_exists($name)) {
+                            /** @psalm-check-type-exact $name = interface-string */
+                        }
+                    }
+
+                    /** @param non-empty-lowercase-string $name */
+                    function callableOf(string $name): void {
+                        if (is_callable($name)) {
+                            /** @psalm-check-type-exact $name = callable-string */
+                        }
+                    }
+
+                    /** @param non-empty-literal-string $name */
+                    function literalCallableOf(string $name): void {
+                        if (is_callable($name)) {
+                            /** @psalm-check-type-exact $name = callable-string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'zeroIsANonEmptyLowercaseString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param non-empty-lowercase-string $s */
+                    function takesNonEmptyLowercase(string $s): void {}
+
+                    takesNonEmptyLowercase('0');
+                    takesNonEmptyLowercase('a');
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'propertyExistsOfAnUnknownOrDynamicPropertyIsNotReported' => [
+                'code' => '<?php
+                    class Page {
+                        public string $title = "";
+                    }
+
+                    function check(Page $page, object $object, string $name): void {
+                        if (property_exists($page, "missing")) {
+                            echo "dynamic";
+                        }
+
+                        if (property_exists($page, $name)) {
+                            echo "named";
+                        }
+
+                        if (property_exists($object, "title")) {
+                            echo "object";
+                        }
+
+                        if (property_exists(Page::class, "title") || property_exists("Other", "title")) {
+                            echo "class name";
+                        }
+                    }',
+            ],
+            'arrayFilterWithAStringCallableNarrowsTheResultOfACall' => [
+                'code' => '<?php
+                    /** @return list<object|null> */
+                    function objects(): array {
+                        return [];
+                    }
+
+                    /** @return list<int|string|null> */
+                    function scalars(): array {
+                        return [];
+                    }
+
+                    $objects = array_values(array_filter(objects(), "is_object"));
+                    $ints = array_filter(scalars(), "is_int");
+                    $unchanged = array_filter(objects(), "boolval");',
+                'assertions' => [
+                    '$objects===' => 'list<object>',
+                    '$ints===' => 'array<int<0, max>, int>',
+                    '$unchanged===' => 'array<int<0, max>, null|object>',
+                ],
+            ],
+            'fcloseTakesTheStandardStreamConstants' => [
+                'code' => '<?php
+                    fclose(STDIN);
+                    fclose(STDOUT);
+                    fclose(STDERR);',
+            ],
+            'domXPathEvaluateReturnsATypedResult' => [
+                'code' => '<?php
+                    $xpath = new DOMXPath(new DOMDocument());
+                    $value = $xpath->evaluate("count(//a)");
+
+                    if (is_numeric($value)) {
+                        echo "number";
+                    }
+
+                    if (is_string($value)) {
+                        echo "string";
+                    }
+
+                    if ($value instanceof DOMNodeList) {
+                        echo "nodes";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'filterVarIntWithFloatLiteralsOutsideTheRangeOfAnInt' => [
+                'code' => '<?php
+                    $big = filter_var(1e30, FILTER_VALIDATE_INT);
+                    $notANumber = filter_var(NAN, FILTER_VALIDATE_INT);
+                    $whole = filter_var(5.0, FILTER_VALIDATE_INT);
+                    $bigMin = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["min_range" => 1e30]]);
+                    $notANumberMax = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["max_range" => NAN]]);
+                    $knownMinAndNotANumberMax = filter_var(
+                        5,
+                        FILTER_VALIDATE_INT,
+                        ["options" => ["min_range" => 0, "max_range" => NAN]],
+                    );
+                    $bigMinAndKnownMax = filter_var(
+                        5,
+                        FILTER_VALIDATE_INT,
+                        ["options" => ["min_range" => 1e30, "max_range" => 10]],
+                    );
+                    $knownRange = filter_var(5, FILTER_VALIDATE_INT, ["options" => ["min_range" => 0, "max_range" => 10]]);',
+                'assertions' => [
+                    '$big===' => 'false',
+                    '$notANumber===' => 'false',
+                    '$whole===' => '5',
+                    '$bigMin===' => 'false|int',
+                    '$notANumberMax===' => 'false|int',
+                    '$knownMinAndNotANumberMax===' => 'false|int',
+                    '$bigMinAndKnownMax===' => 'false|int',
+                    '$knownRange===' => '5',
+                ],
+            ],
+
             'multibyteLiteralArgument' => [
                 'code' => '<?php
                     function startsWithGreeting(string $s): bool {
@@ -32,6 +581,122 @@ final class FunctionCallTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'classHierarchyFunctionsOfAnObjectNeverReturnFalse' => [
+                'code' => '<?php
+                    /** @var mixed $mixed */
+                    $mixed = null;
+                    /** @var object $object */
+                    $object = new stdClass();
+                    /** @var string $string */
+                    $string = "";
+                    /** @var object|string $either */
+                    $either = "";
+                    /** @var bool $autoload */
+                    $autoload = true;
+
+                    if (!is_object($mixed)) {
+                        throw new Exception();
+                    }
+
+                    $parents = class_parents($mixed);
+                    $interfaces = class_implements($object, $autoload);
+                    $traits = class_uses(object_or_class: $object, autoload: false);
+                    $parents_of_name = class_parents($string);
+                    $interfaces_of_name = class_implements($string, false);
+                    $traits_of_name = class_uses($string);
+                    $parents_of_either = class_parents($either);',
+                'assertions' => [
+                    '$parents===' => 'array<class-string, class-string>',
+                    '$interfaces===' => 'array<interface-string, interface-string>',
+                    '$traits===' => 'array<trait-string, trait-string>',
+                    '$parents_of_name===' => 'array<class-string, class-string>|false',
+                    '$interfaces_of_name===' => 'array<interface-string, interface-string>|false',
+                    '$traits_of_name===' => 'array<trait-string, trait-string>|false',
+                    '$parents_of_either===' => 'array<class-string, class-string>|false',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classHierarchyFunctionsOfAClassNameAreNotPossiblyFalseArguments' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @param class-string $class */
+                    function f(string $class): bool {
+                        return in_array(I::class, class_implements($class), true)
+                            || in_array(I::class, class_parents($class), true)
+                            || in_array(I::class, class_uses($class), true);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'substrOfANonEmptyStringFromItsStart' => [
+                'code' => '<?php
+                    /** @var non-empty-string $in */
+                    $in = "a";
+                    /** @var string $any */
+                    $any = "";
+                    /** @var int $int */
+                    $int = 1;
+                    /** @var int<1, max> $positive */
+                    $positive = 1;
+                    /** @var int<min, -1> $negative */
+                    $negative = -1;
+                    /** @var int<0, max> $not_negative */
+                    $not_negative = 0;
+                    /** @var int<min, 0> $not_positive */
+                    $not_positive = 0;
+
+                    $prefix = substr($in, 0, 4);
+                    $tail = substr($in, -3);
+                    $whole = substr($in, 0);
+                    $explicit_null = substr($in, 0, null);
+                    $dynamic_length = substr($in, 0, $positive);
+                    $dynamic_offset = substr($in, $not_positive, 2);
+                    $literal = substr("abc", 0, 2);
+
+                    $zero_length = substr($in, 0, 0);
+                    $unknown_length = substr($in, 0, $int);
+                    $not_negative_length = substr($in, 0, $not_negative);
+                    $negative_length = substr($in, 0, $negative);
+                    $later_offset = substr($in, 1, 4);
+                    $unknown_offset = substr($in, $int, 4);
+                    $positive_offset = substr($in, $positive, 4);
+                    $maybe_empty_input = substr($any, 0, 4);
+                    $empty_literal = substr("", 0, 4);',
+                'assertions' => [
+                    '$prefix===' => 'non-empty-string',
+                    '$tail===' => 'non-empty-string',
+                    '$whole===' => 'non-empty-string',
+                    '$explicit_null===' => 'non-empty-string',
+                    '$dynamic_length===' => 'non-empty-string',
+                    '$dynamic_offset===' => 'non-empty-string',
+                    '$literal===' => 'non-empty-string',
+                    '$zero_length===' => 'string',
+                    '$unknown_length===' => 'string',
+                    '$not_negative_length===' => 'string',
+                    '$negative_length===' => 'string',
+                    '$later_offset===' => 'string',
+                    '$unknown_offset===' => 'string',
+                    '$positive_offset===' => 'string',
+                    '$maybe_empty_input===' => 'string',
+                    '$empty_literal===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'substrBeforePhp8CanReturnFalse' => [
+                'code' => '<?php
+                    /** @var non-empty-string $in */
+                    $in = "a";
+                    $prefix = substr($in, 0, 4);',
+                'assertions' => [
+                    '$prefix===' => 'false|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
             ],
             'errorGetLastHasBacktraceSincePhp85' => [
                 'code' => '<?php
@@ -50,6 +715,72 @@ final class FunctionCallTest extends TestCase
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.4',
+            ],
+            'peclFunctionsOfExtensionsThePhp86ImageLacks' => [
+                'code' => '<?php
+                    $session = ssh2_connect("example.com", 22);
+                    $version = swoole_version();
+                    $string = _string("abc");
+                    $serialized = igbinary_serialize([1]);',
+                'assertions' => [
+                    '$version===' => 'string',
+                    '$string===' => 'Swoole\StringObject',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.6',
+            ],
+            'clampOfIntegers' => [
+                'code' => '<?php
+                    /** @var int $i */;
+                    $result = clamp($i, 0, 100);',
+                'assertions' => [
+                    '$result===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'clampOfFloats' => [
+                'code' => '<?php
+                    /** @var float $f */;
+                    $result = clamp($f, 0.0, 1.0);',
+                'assertions' => [
+                    '$result===' => 'float',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'clampOfMixedIntAndFloat' => [
+                'code' => '<?php
+                    /** @var int $i */;
+                    /** @var float $f */;
+                    $result = clamp($i, 0.5, $f);',
+                'assertions' => [
+                    '$result===' => 'float|int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'clampOfObjects' => [
+                'code' => '<?php
+                    $d = new DateTimeImmutable();
+                    $min = new DateTimeImmutable("yesterday");
+                    $max = new DateTimeImmutable("tomorrow");
+                    $result = clamp($d, $min, $max);',
+                'assertions' => [
+                    '$result===' => 'DateTimeImmutable',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'clampOfStrings' => [
+                'code' => '<?php
+                    /** @var string $s */;
+                    $result = clamp($s, "a", "z");',
+                'assertions' => [
+                    '$result===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
             ],
             'callTemplatedFunctionWithUnionArgument' => [
                 'code' => '<?php
@@ -183,6 +914,26 @@ final class FunctionCallTest extends TestCase
                     '$value===' => 'Value<42>',
                     '$nestedValue===' => '42',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'paramDefaultNewObjectImplementingInterface' => [
+                'code' => '<?php
+                    function f(Traversable $p = new ArrayObject()): void {}
+                    function g(Countable&Traversable $p = new ArrayObject()): void {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'paramDefaultNonFinalClassMayImplementInterface' => [
+                'code' => '<?php
+                    interface I {}
+                    class Foo {}
+                    class Impl extends Foo implements I {}
+                    /** @var Foo */
+                    const C = new Impl();
+                    function f(I $p = C): void {}',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
@@ -590,6 +1341,30 @@ final class FunctionCallTest extends TestCase
                     '$b===' => '\'y\'',
                 ],
             ],
+            'extractSkipDefinesAPossiblyUndefinedVariable' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        $a = 1;
+                    }
+
+                    extract(["a" => 2], EXTR_SKIP);
+
+                    $b = $a;',
+                'assertions' => [
+                    '$b===' => '1|2',
+                ],
+            ],
+            'extractSkipDefinesAVariableOfAPreviousIteration' => [
+                'code' => '<?php
+                    function f(array $xs): void {
+                        foreach ($xs as $_) {
+                            extract(["a" => 2], EXTR_SKIP);
+                            /** @psalm-check-type-exact $a = 1|2 */;
+                            echo $a;
+                            $a = 1;
+                        }
+                    }',
+            ],
             'compact' => [
                 'code' => '<?php
                     /**
@@ -622,6 +1397,73 @@ final class FunctionCallTest extends TestCase
                     }
 
                     a(["a" => "hello"]);',
+            ],
+            'getenvCalledWithOtherCasing' => [
+                'code' => '<?php
+                    $a = getEnv("some_key");
+                    $b = GETENV();
+                    $c = getenv("some_key", true);',
+                'assertions' => [
+                    '$a===' => 'false|string',
+                    '$b===' => 'array<string, string>',
+                    '$c===' => 'false|string',
+                ],
+            ],
+            'functionExistsGuardsTheRightOperandInsideAnotherNarrowingCondition' => [
+                'code' => '<?php
+                    function a(int $arg): void {
+                        if ($arg) {
+                            if (function_exists("do_something_a") && rand(0, 1)) {
+                                do_something_a("hello");
+                            }
+                        }
+                    }
+
+                    function b(int $arg): void {
+                        if (!empty($arg)) {
+                            if (function_exists("do_something_b") && do_something_b("hello")) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function c(int $arg): void {
+                        if ($arg) {
+                            if (defined("SOME_MISSING_CONSTANT") && SOME_MISSING_CONSTANT) {
+                                echo 1;
+                            }
+                        }
+                    }',
+            ],
+            'functionExistsGuardsOnlyTheFunctionsItNames' => [
+                'code' => '<?php
+                    function callable_string(int $arg): void {
+                        if (function_exists("guarded_callback")) {
+                            array_map("guarded_callback", [1]);
+                        }
+                    }
+
+                    function namespaced_name(int $arg): void {
+                        if ($arg) {
+                            if (function_exists("\\guarded_root") && \guarded_root()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function guarded_class(int $arg): void {
+                        if ($arg) {
+                            if (class_exists("GuardedClass") && GuardedClass::run()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function guarded_class_body(): void {
+                        if (class_exists("GuardedBodyClass") && rand(0, 1)) {
+                            GuardedBodyClass::run();
+                        }
+                    }',
             ],
             'getenv' => [
                 'code' => '<?php
@@ -704,6 +1546,46 @@ final class FunctionCallTest extends TestCase
                     '$elements' => 'non-empty-list<string>',
                 ],
             ],
+            'pathinfoOfStringMayLackDirname' => [
+                'code' => '<?php
+                    /** @var string $path */
+                    $info = pathinfo($path);',
+                'assertions' => [
+                    '$info===' => 'array{basename: string, dirname?: string, extension?: string, filename: string}',
+                ],
+            ],
+            'pathinfoOfEmptyStringMayLackDirname' => [
+                'code' => '<?php
+                    $info = pathinfo("");',
+                'assertions' => [
+                    '$info===' => 'array{basename: string, dirname?: string, extension?: string, filename: string}',
+                ],
+            ],
+            'pathinfoOfNonEmptyStringHasDirname' => [
+                'code' => '<?php
+                    /** @var non-empty-string $path */
+                    $info = pathinfo($path);
+                    $dir = $info["dirname"];',
+                'assertions' => [
+                    '$info===' => 'array{basename: string, dirname: string, extension?: string, filename: string}',
+                    '$dir===' => 'string',
+                ],
+            ],
+            'pathinfoOfLiteralPathHasDirname' => [
+                'code' => '<?php
+                    $dir = pathinfo("a/b.c")["dirname"];',
+                'assertions' => [
+                    '$dir===' => 'string',
+                ],
+            ],
+            'pathinfoOfStringWithFlagReturnsString' => [
+                'code' => '<?php
+                    /** @var string $path */
+                    $dir = pathinfo($path, PATHINFO_DIRNAME);',
+                'assertions' => [
+                    '$dir===' => 'string',
+                ],
+            ],
             'explodeWithPositiveLimit' => [
                 'code' => '<?php
                     /** @var string $string */
@@ -717,7 +1599,74 @@ final class FunctionCallTest extends TestCase
                     /** @var string $string */
                     $elements = explode(" ", $string, -5);',
                 'assertions' => [
-                    '$elements' => 'array<never, never>',
+                    '$elements===' => 'list<string>',
+                ],
+            ],
+            'explodeWithMinusOneLimit' => [
+                'code' => '<?php
+                    $elements = explode("-", "", -1);',
+                'assertions' => [
+                    '$elements===' => 'list<lowercase-string>',
+                ],
+            ],
+            'explodeWithMinusOneLimitOnString' => [
+                'code' => '<?php
+                    /** @var string $string */
+                    $elements = explode(" ", $string, -1);',
+                'assertions' => [
+                    '$elements===' => 'list<string>',
+                ],
+            ],
+            'explodeWithPossiblyNegativeLimit' => [
+                'code' => '<?php
+                    /**
+                     * @var string $string
+                     * @var int<-1, 1> $limit
+                     */
+                    $elements = explode(" ", $string, $limit);',
+                'assertions' => [
+                    '$elements===' => 'list<string>',
+                ],
+            ],
+            'explodeWithNamedNegativeLimit' => [
+                'code' => '<?php
+                    /** @var string $string */
+                    $elements = explode(limit: -1, string: $string, separator: " ");',
+                'assertions' => [
+                    '$elements===' => 'list<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'explodeWithNegativeLimitAccessFirst' => [
+                'code' => '<?php
+                    function first(string $string): string {
+                        return explode(" ", $string, -2)[0] ?? "";
+                    }',
+            ],
+            'explodeWithZeroLimit' => [
+                'code' => '<?php
+                    /** @var string $string */
+                    $elements = explode(" ", $string, 0);',
+                'assertions' => [
+                    '$elements===' => 'list{string}',
+                ],
+            ],
+            'explodeWithIntMaxLimit' => [
+                'code' => '<?php
+                    /**
+                     * @return non-empty-list<string>
+                     */
+                    function exploder(string $string): array {
+                        return explode(" ", $string, PHP_INT_MAX);
+                    }',
+            ],
+            'explodeLowercaseWithoutLimit' => [
+                'code' => '<?php
+                    /** @var lowercase-string $string */
+                    $elements = explode(" ", $string);',
+                'assertions' => [
+                    '$elements===' => 'non-empty-list<lowercase-string>',
                 ],
             ],
             'explodeWithDynamicLimit' => [
@@ -772,7 +1721,7 @@ final class FunctionCallTest extends TestCase
                      */
                     $elements = explode($delim, $string, -5);',
                 'assertions' => [
-                    '$elements' => 'array<never, never>',
+                    '$elements===' => 'list<string>',
                 ],
             ],
             'explodeWithDynamicDelimiterAndLimit' => [
@@ -817,6 +1766,28 @@ final class FunctionCallTest extends TestCase
                     function exploder(string $d, string $s) : array {
                         return explode($d, $s);
                     }',
+            ],
+            'assertAcceptsObjectAndNarrowsIt' => [
+                'code' => '<?php
+                    function f(?DateTime $d): DateTime {
+                        assert($d);
+                        return $d;
+                    }
+                    /** @var DateTime|null $foo */
+                    $foo = null;
+                    assert($foo);',
+                'assertions' => [
+                    '$foo===' => 'DateTime',
+                ],
+            ],
+            'assertAcceptsArrayAndFloat' => [
+                'code' => '<?php
+                    function f(array $a, float $f): void {
+                        assert($a);
+                        assert($f);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
             ],
             'allowPossiblyUndefinedClassInClassExists' => [
                 'code' => <<<'PHP'
@@ -1494,6 +2465,45 @@ final class FunctionCallTest extends TestCase
                     '$c' => 'int|list{int, int}',
                     '$d' => 'list{int, int}',
                 ],
+            ],
+            'builtinReturnTypeProvidersOnLessCommonCalls' => [
+                'code' => '<?php
+                    /** @return non-empty-list<int> */
+                    function getList(): array {
+                        return [1];
+                    }
+                    /** @return array{a: int, b?: int} */
+                    function getShape(): array {
+                        return ["a" => 1];
+                    }
+                    $a = sizeof(getList());
+                    $b = COUNT(getShape());
+                    $c = get_called_class();
+                    $d = get_parent_class();
+                    $e = count(...);
+                    $f = hrtime(...);
+                    $g = mb_strtolower(...);',
+                'assertions' => [
+                    '$a===' => 'int<1, max>',
+                    '$b===' => 'int<1, 2>',
+                    '$c===' => 'class-string',
+                    '$d===' => 'class-string|false',
+                    '$e===' => 'Closure[pure](Countable|array<array-key, mixed>, int=):int<0, max>',
+                    '$f===' => 'Closure[time](true=):(false|float|int)',
+                    '$g===' => 'Closure[pure](string, string=):lowercase-string',
+                ],
+            ],
+            'hrtimePolyfillBeforePhp73KeepsItsDeclaredType' => [
+                'code' => '<?php
+                    function hrtime(bool $as_number = false): string {
+                        return "polyfill";
+                    }
+                    $a = hrtime(true);',
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '7.2',
             ],
             'hrtimeCanBeFloat' => [
                 'code' => '<?php
@@ -2182,6 +3192,27 @@ final class FunctionCallTest extends TestCase
                         return $lines;
                     }',
             ],
+            'execOutputEmptyArrayIsListOfStrings' => [
+                'code' => '<?php
+                    $bar = array();
+                    exec("pwd", $bar);
+
+                    $baz = [];
+                    exec("pwd", $baz, $code);
+
+                    $foo = null;
+                    exec("pwd", $foo);
+
+                    /** @var array<string> $existing */
+                    $existing = [];
+                    exec("pwd", $existing);',
+                'assertions' => [
+                    '$bar===' => 'list<string>',
+                    '$baz===' => 'list<string>',
+                    '$foo===' => 'list<string>',
+                    '$existing===' => 'array<array-key, mixed>',
+                ],
+            ],
             'array_is_list' => [
                 'code' => '<?php
                     function getArray() : array {
@@ -2196,6 +3227,191 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'trimOfALiteralStringIsALiteralString' => [
+                'code' => '<?php
+                    $a = trim("  abc \n");
+                    $b = ltrim("  abc  ");
+                    $c = rtrim("  abc  ");
+                    $d = chop("abc \n");
+                    $e = trim("xxabcxx", "x");
+                    $f = trim("abc", "");
+                    $g = trim("");
+                    $h = trim("\0\x0B\t abc \r");
+                    $i = ltrim("0012", "0");
+
+                    /** @param "string"|"int"|"float" $type */
+                    function takesAType(string $type): void {}
+
+                    takesAType(trim("string "));',
+                'assertions' => [
+                    '$a===' => '\'abc\'',
+                    '$b===' => '\'abc  \'',
+                    '$c===' => '\'  abc\'',
+                    '$d===' => '\'abc\'',
+                    '$e===' => '\'abc\'',
+                    '$f===' => '\'abc\'',
+                    '$g===' => '\'\'',
+                    '$h===' => '\'abc\'',
+                    '$i===' => '\'12\'',
+                ],
+            ],
+            'trimOfALiteralStringIgnoresTheCaseOfTheCall' => [
+                'code' => '<?php
+                    $a = LTRIM("  abc  ");
+                    $b = \\rtrim("  abc  ");
+                    $c = Chop("  abc  ");
+                    $d = \\TRIM("  abc  ");',
+                'assertions' => [
+                    '$a===' => '\'abc  \'',
+                    '$b===' => '\'  abc\'',
+                    '$c===' => '\'  abc\'',
+                    '$d===' => '\'abc\'',
+                ],
+            ],
+            'trimThatIsNotOfOneLiteralKeepsTheStubType' => [
+                'code' => '<?php
+                    /** @var string $s */
+                    $s = getenv("X");
+                    /** @var "a "|"b " $union */
+                    $union = rand(0, 1) ? "a " : "b ";
+                    /** @var string $chars */
+                    $chars = getenv("Y");
+
+                    $a = trim($s);
+                    $b = trim($union);
+                    $c = trim("abc ", $chars);
+                    $d = trim("abc", "a..c");
+                    $e = trim(string: " abc ");
+                    $f = trim(...["abc "]);
+                    $g = trim(" abc ", " ", "extra");',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'lowercase-string',
+                    '$c===' => 'lowercase-string',
+                    '$d===' => 'lowercase-string',
+                    '$e===' => 'lowercase-string',
+                    '$f===' => 'lowercase-string',
+                ],
+                'ignored_issues' => ['TooManyArguments'],
+            ],
+            'strtolowerOfAStringableObjectIsNotRedundant' => [
+                'code' => '<?php
+                    class Test {
+                        public function __toString(): string {
+                            return "AAA";
+                        }
+                    }
+
+                    function lower(Test $test, Stringable $stringable): string {
+                        return strtolower($test) . strtolower($stringable);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
+            'objectWithRefinedToStringReturnMatchesStringParameter' => [
+                'code' => '<?php
+                    final class LowercaseText {
+                        /** @return lowercase-string */
+                        public function __toString(): string {
+                            return "lowercase";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new LowercaseText());',
+                'php_version' => '8.1',
+            ],
+            'genericObjectWithRefinedToStringReturnMatchesStringParameter' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private string $value) {}
+
+                        /** @return T */
+                        public function __toString(): string {
+                            return $this->value;
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @var Box<lowercase-string> $box */
+                    $box = new Box("lowercase");
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase($box);',
+                'php_version' => '8.1',
+            ],
+            'stringConditionOnObjectPreservesObjectType' => [
+                'code' => '<?php
+                    final class Path {
+                        public function __toString(): string {
+                            return "path";
+                        }
+
+                        public function getElement(): string {
+                            return "element";
+                        }
+                    }
+
+                    function getElement(Path $path): string {
+                        if (str_starts_with($path, "p")) {
+                            return $path->getElement();
+                        }
+
+                        return "";
+                    }',
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
+            'failedNestedStringCastDoesNotLeakFromArray' => [
+                'code' => '<?php
+                    final class Join {
+                        public function __toString(): string {
+                            return "join";
+                        }
+                    }
+
+                    /**
+                     * @param string|object|list<string>|array{join: array<int|string, object>} $part
+                     */
+                    function add(string|object|array $part): void {}
+
+                    add(["root" => new Join()]);',
+                'ignored_issues' => ['InvalidScalarArgument'],
+                'php_version' => '8.1',
+            ],
+            'strReplaceWithAsManyReplacementsAsSearches' => [
+                'code' => '<?php
+                    /** @var string $subject */
+                    $subject = getenv("X");
+                    /** @var list<string> $searches */
+                    $searches = [];
+                    /** @var list<string> $replacements */
+                    $replacements = [];
+                    /** @var list{0?: string, 1?: string} $optional */
+                    $optional = [];
+
+                    $a = str_replace(["a", "b"], ["x", "y"], $subject);
+                    $b = str_replace(["a", "b"], ["x", "y", "z"], $subject);
+                    $c = str_replace(["a", "b"], "x", $subject);
+                    $d = str_replace(["a", "b"], [], $subject);
+                    $e = str_replace($searches, ["x"], $subject);
+                    $f = str_replace(["a", "b"], $replacements, $subject);
+                    $g = str_replace(["a", "b"], $optional, $subject);
+                    $h = str_replace("a", "x", $subject);
+                    $i = str_replace(...["a", "x", $subject]);
+                    $j = str_replace(subject: $subject, replace: ["x"], search: ["a", "b"]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'array_is_list_on_empty_array' => [
                 'code' => '<?php
                     $a = [];
@@ -2204,6 +3420,69 @@ final class FunctionCallTest extends TestCase
                     }
                     ',
                 'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_keeps_keyed_array_shape' => [
+                'code' => '<?php
+                    /** @param array{0: string, 1: string[]} $arr */
+                    function f(array $arr): string {
+                        if (!array_is_list($arr)) {
+                            throw new Exception();
+                        }
+                        [$a0, $a1] = $arr;
+                        return $a0 . implode("", $a1);
+                    }
+
+                    /** @var array{0: string, 1: int} $s */
+                    $s = [];
+                    assert(array_is_list($s));
+                    ',
+                'assertions' => [
+                    '$s===' => 'list{string, int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_keeps_optional_keys_of_keyed_array' => [
+                'code' => '<?php
+                    /** @var array{0: string, 1?: int} $s */
+                    $s = [];
+                    assert(array_is_list($s));
+
+                    /** @var array{0?: string, 1: int} $t */
+                    $t = [];
+                    assert(array_is_list($t));
+                    ',
+                'assertions' => [
+                    '$s===' => 'list{0: string, 1?: int}',
+                    '$t===' => 'list{string, int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_keeps_callable_keyed_array' => [
+                'code' => '<?php
+                    /** @var array $c */
+                    $c = [];
+                    assert(is_callable($c));
+                    assert(array_is_list($c));
+                    ',
+                'assertions' => [
+                    '$c===' => 'callable-list{class-string|object, non-empty-string}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_on_keyed_array_with_extra_keys' => [
+                'code' => '<?php
+                    /** @var array{0: string, ...<int, bool>} $s */
+                    $s = [];
+                    assert(array_is_list($s));
+                    ',
+                'assertions' => [
+                    '$s===' => 'non-empty-list<bool|string>',
+                ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
@@ -2503,6 +3782,317 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'pregReplaceCallbackWithNamedUnmatchedAsNullFlag' => [
+                'code' => '<?php
+                    preg_replace_callback(
+                        pattern: "#^([a-z]+)$|^([0-9]+)$#",
+                        callback: fn (array $m): string => $m[1] === null ? "1" : "a",
+                        subject: "1234567890",
+                        flags: PREG_UNMATCHED_AS_NULL,
+                    );',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'pregReplaceCallbackWithFlagsThatAreNotKnown' => [
+                'code' => '<?php
+                    function spread(): void {
+                        $args = ["#(a)#", fn (array $m): string => "x", "a", -1, null, PREG_UNMATCHED_AS_NULL];
+                        preg_replace_callback(...$args);
+                    }
+
+                    function variable(int $flags): void {
+                        preg_replace_callback(
+                            "#(a)#",
+                            fn (array $m): string => "x",
+                            "a",
+                            -1,
+                            $count,
+                            $flags,
+                        );
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument', 'ArgumentTypeCoercion', 'PossiblyInvalidArgument', 'InvalidArgument'],
+            ],
+            'pregReplaceCallbackWithUnmatchedAsNullFlag' => [
+                'code' => '<?php
+                    $a = preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        fn ($m) => null === $m[1] ? "1" : "a",
+                        "1234567890",
+                        1,
+                        $count,
+                        PREG_UNMATCHED_AS_NULL,
+                    );
+
+                    $b = preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        function (array $m): string {
+                            return $m[1][0] === null ? "1" : "a";
+                        },
+                        "1234567890",
+                        -1,
+                        $count,
+                        PREG_OFFSET_CAPTURE | PREG_UNMATCHED_AS_NULL,
+                    );
+
+                    $c = preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        function (array $m): string {
+                            return $m[1][0] . $m[1][1];
+                        },
+                        "1234567890",
+                        -1,
+                        $count,
+                        PREG_OFFSET_CAPTURE,
+                    );',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedIntArrayOffset'],
+            ],
+            'filterVarIpGlobalRangeFlag' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-pure */
+                    function isGlobalIp(string $ip): bool
+                    {
+                        return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE) !== false;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'arrayIsListOfAShapeWithAGapInItsListKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{0?: string, 2?: int} $gap */
+                    function gap(array $gap): void {
+                        if (array_is_list($gap)) {
+                            /** @psalm-check-type-exact $gap = list{0?: string} */
+                        }
+                    }
+
+                    /** @param array{0?: string, 1: int} $requiredLast */
+                    function requiredLast(array $requiredLast): void {
+                        if (array_is_list($requiredLast)) {
+                            /** @psalm-check-type-exact $requiredLast = list{string, int} */
+                        }
+                    }
+
+                    /** @param array{1?: int, 0: string} $outOfOrder */
+                    function outOfOrder(array $outOfOrder): void {
+                        if (array_is_list($outOfOrder)) {
+                            /** @psalm-check-type-exact $outOfOrder = list{0: string, 1?: int} */
+                        }
+                    }
+
+                    /** @param array{2?: bool, 0?: string, 1: int} $outOfOrderWithRequiredKey */
+                    function outOfOrderWithRequiredKey(array $outOfOrderWithRequiredKey): void {
+                        if (array_is_list($outOfOrderWithRequiredKey)) {
+                            /** @psalm-check-type-exact $outOfOrderWithRequiredKey = list{0: string, 1: int, 2?: bool} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayIsListOfASealedShapeWithOptionalKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{a?: string} $onlyAString */
+                    function stringKey(array $onlyAString): void {
+                        if (array_is_list($onlyAString)) {
+                            /** @psalm-check-type-exact $onlyAString = array<never, never> */
+                        }
+                    }
+
+                    /** @param array{0?: string, 1?: int} $listKeys */
+                    function listKeys(array $listKeys): void {
+                        if (array_is_list($listKeys)) {
+                            /** @psalm-check-type-exact $listKeys = list{0?: string, 1?: int} */
+                        }
+                    }
+
+                    /** @param array{0?: string, a?: int} $mixedKeys */
+                    function mixedKeys(array $mixedKeys): void {
+                        if (array_is_list($mixedKeys)) {
+                            /** @psalm-check-type-exact $mixedKeys = list{0?: string} */
+                        }
+                    }
+
+                    /** @param array{0?: string, 1?: int} $listKeys */
+                    function nonEmpty(array $listKeys): void {
+                        assert(array_is_list($listKeys) && $listKeys !== []);
+                        /** @psalm-check-type-exact $listKeys = list{0: string, 1?: int} */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'curlMultiGetHandlesReturnsAListOfCurlHandles' => [
+                'code' => '<?php
+                    $mh = curl_multi_init();
+                    $handles = curl_multi_get_handles($mh);',
+                'assertions' => ['$handles===' => 'list<CurlHandle>'],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
+            'procOpenOnlyWritesPipes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $pipes = null;
+                    $process = proc_open('ls', [1 => ['pipe', 'w']], $pipes);
+                    PHP,
+                'assertions' => ['$pipes===' => 'array<array-key, resource>'],
+            ],
+            'procOpenOnlyWritesPipesOnPhp80' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $pipes = 'not an array';
+                    $process = proc_open(['ls'], [1 => ['pipe', 'w']], $pipes);
+                    PHP,
+                'assertions' => ['$pipes===' => 'array<array-key, resource>'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'splFileObjectFscanfOnlyWritesVars' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(SplFileObject $file, SplTempFileObject $temp): void {
+                        $hours = [];
+                        $file->fscanf('%d', $hours);
+                        /** @psalm-check-type-exact $hours = float|int|string */
+                        $minutes = [];
+                        $temp->fscanf('%d', $minutes);
+                        /** @psalm-check-type-exact $minutes = float|int|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'intltzOnlyWritesOutParams' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $tz = intltz_get_gmt();
+                        $raw = null;
+                        $dst = null;
+                        intltz_get_offset($tz, 0.0, false, $raw, $dst);
+                        /** @psalm-check-type-exact $raw = int */
+                        /** @psalm-check-type-exact $dst = int */
+                        $is_system = 'unknown';
+                        intltz_get_canonical_id('Europe/Paris', $is_system);
+                        /** @psalm-check-type-exact $is_system = bool */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'intltzGetCanonicalIdOnlyWritesIsSystemIdOnPhp74' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $is_system = 'unknown';
+                    intltz_get_canonical_id('Europe/Paris', $is_system);
+                    PHP,
+                'assertions' => ['$is_system===' => 'bool'],
+            ],
+            'opensslSealOnlyWritesIv' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(OpenSSLAsymmetricKey $key): void {
+                        $iv = null;
+                        openssl_seal('data', $sealed, $keys, [$key], 'aes-256-cbc', $iv);
+                        /** @psalm-check-type-exact $iv = string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'socketAddrinfoLookupTakesAnErrorCodeOnPhp86' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $error_code = null;
+                    $info = socket_addrinfo_lookup('localhost', null, [], $error_code);
+                    PHP,
+                'assertions' => [
+                    '$error_code===' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'socketCmsgSpaceReturnsIntOnPhp86' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $space = socket_cmsg_space(1, 1);
+                    PHP,
+                'assertions' => [
+                    '$space===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'ldapFreeResultReturnsTrueOnPhp86' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var mixed $result */
+                    $freed = ldap_free_result($result);
+                    PHP,
+                'assertions' => [
+                    '$freed===' => 'true',
+                ],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.6',
+            ],
+            'streamGetMetaDataOnlyAlwaysSetsModeSeekableStreamTypeAndUnreadBytes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param resource $stream */
+                    function f($stream): void {
+                        $meta = stream_get_meta_data($stream);
+                        $mode = $meta['mode'];
+                        $seekable = $meta['seekable'];
+                        $stream_type = $meta['stream_type'];
+                        $unread_bytes = $meta['unread_bytes'];
+                        $uri = $meta['uri'] ?? null;
+                        $wrapper_type = isset($meta['wrapper_type']) ? $meta['wrapper_type'] : null;
+                        $timed_out = $meta['timed_out'] ?? false;
+                        $mediatype = $meta['mediatype'] ?? null;
+                        $charset = $meta['charset'] ?? null;
+                        $base64 = $meta['base64'] ?? false;
+                        /** @psalm-check-type-exact $mode = string */
+                        /** @psalm-check-type-exact $seekable = bool */
+                        /** @psalm-check-type-exact $stream_type = string */
+                        /** @psalm-check-type-exact $unread_bytes = int */
+                        /** @psalm-check-type-exact $uri = string|null */
+                        /** @psalm-check-type-exact $wrapper_type = string|null */
+                        /** @psalm-check-type-exact $timed_out = bool */
+                        /** @psalm-check-type-exact $mediatype = string|null */
+                        /** @psalm-check-type-exact $charset = string|null */
+                        /** @psalm-check-type-exact $base64 = bool */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'streamGetMetaDataShapeOnPhp85' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $stream = fopen('php://memory', 'r+');
+                    if ($stream === false) {
+                        exit;
+                    }
+                    $meta = stream_get_meta_data($stream);
+                    PHP,
+                'assertions' => [
+                    '$meta===' => 'array{base64?: bool, blocked?: bool, charset?: string, crypto?: array{cipher_bits: int, cipher_name: string, cipher_version: string, protocol: string}, eof?: bool, mediatype?: string, mode: string, seekable: bool, stream_type: string, timed_out?: bool, unread_bytes: int, uri?: string, wrapper_data?: mixed, wrapper_type?: string}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -2510,9 +4100,236 @@ final class FunctionCallTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'fileTestFunctionOnAnEmptyStringIsAlwaysFalse' => [
+                'code' => '<?php
+                    $path = "";
+                    if (is_file($path)) {
+                        echo "never";
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'fileTestFunctionsStayImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function exists(string $path): bool {
+                        return file_exists($path);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
+            ],
+            'filterVarEmptyStringNullIsRedundantForAFilterWithoutIt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function filter(string $s): void {
+                        filter_var($s, FILTER_VALIDATE_INT, FILTER_FLAG_EMPTY_STRING_NULL);
+                    }
+                    PHP,
+                'error_message' => 'RedundantFlag',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'classExistsIdenticalToFalseDoesNotGuardTheRightOperandOfAnd' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return class_exists(Optional::class) === false && Optional::available();
+                    }',
+                'error_message' => 'UndefinedClass',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'classExistsInAndDoesNotLeakAfterTheCondition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (rand(0, 1) && class_exists(Foo::class)) {
+                    }
+                    new Foo();
+                    PHP,
+                'error_message' => 'UndefinedClass',
+            ],
+            'pregReplaceCallbackWithOffsetCaptureGivesPairsNotStrings' => [
+                'code' => '<?php
+                    preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        fn ($m) => strtoupper($m[1]),
+                        "1234567890",
+                        1,
+                        $count,
+                        PREG_OFFSET_CAPTURE,
+                    );',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => ['PossiblyUndefinedIntArrayOffset'],
+            ],
+            'streamSelectDoesNotTakeAContextBeforePhp86' => [
+                'code' => '<?php
+                    $read = [STDIN];
+                    $write = null;
+                    $except = null;
+
+                    stream_select($read, $write, $except, 0, 0, null);',
+                'error_message' => 'TooManyArguments',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'callableAndScalarUnionIsInvalidForInt' => [
+                'code' => '<?php
+                    /** @param int $i */
+                    function takesInt($i): void {}
+
+                    /** @param callable|scalar $x */
+                    function f($x): void {
+                        takesInt($x);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'scalarAndCallableUnionIsInvalidForInt' => [
+                'code' => '<?php
+                    /** @param int $i */
+                    function takesInt($i): void {}
+
+                    /** @param scalar|callable $x */
+                    function f($x): void {
+                        takesInt($x);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayAndScalarUnionIsAPlainMismatchForString' => [
+                'code' => '<?php
+                    function takesString(string $s): void {}
+
+                    /** @param array<mixed>|scalar $x */
+                    function f($x): void {
+                        takesString($x);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'stringableAndArrayAndScalarUnionIsPossiblyInvalidForStringable' => [
+                'code' => '<?php
+                    function takesStringable(Stringable $s): void {}
+
+                    /** @param Stringable|UnitEnum|array<mixed>|int|null|string $x */
+                    function g($x): void {
+                        takesStringable($x);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'floatAndIntUnionIsAnInvalidOffsetOfAConstantArray' => [
+                'code' => '<?php
+                    final class A {
+                        const S = [1 => "a", 1024 => "b"];
+
+                        /** @param float|int $x */
+                        public static function f($x): string {
+                            return self::S[$x];
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:36',
+            ],
+            'intAndFloatUnionIsAnInvalidOffsetOfAConstantArray' => [
+                'code' => '<?php
+                    final class A {
+                        const S = [1 => "a", 1024 => "b"];
+
+                        /** @param int|float $x */
+                        public static function f($x): string {
+                            return self::S[$x];
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:36',
+            ],
+            'emptyStringIsNotANonEmptyLowercaseString' => [
+                'code' => '<?php
+                    /** @param non-empty-lowercase-string $s */
+                    function takesNonEmptyLowercase(string $s): void {}
+
+                    takesNonEmptyLowercase("");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'propertyExistsOfADeclaredPropertyIsAlwaysTrue' => [
+                'code' => '<?php
+                    class Page {
+                        public string $title = "";
+                    }
+
+                    function check(Page $page): void {
+                        if (property_exists($page, "title")) {
+                            echo "has title";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - Operand of type true is always truthy',
+            ],
+            'negatedPropertyExistsOfAnInheritedPropertyIsAlwaysFalse' => [
+                'code' => '<?php
+                    class Page {
+                        public string $title = "";
+                    }
+
+                    final class Post extends Page {}
+
+                    function check(Post $post): void {
+                        if (!property_exists($post, "title")) {
+                            echo "no title";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:29 - Operand of type false is always falsy',
+            ],
+            'functionExistsDoesNotGuardAnotherFunctionInsideAnotherNarrowingCondition' => [
+                'code' => '<?php
+                    function run(int $arg): void {
+                        if ($arg) {
+                            if (function_exists("strlen") && unknown_function()) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:62 - Function unknown_function does not exist',
+            ],
+            'functionExistsDoesNotGuardAnotherFunctionInTheSameCondition' => [
+                'code' => '<?php
+                    function run(): void {
+                        if (function_exists("strlen") && unknown_function()) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:58 - Function unknown_function does not exist',
+            ],
+            'functionExistsDoesNotGuardAnotherFunctionInItsBody' => [
+                'code' => '<?php
+                    function run(): void {
+                        if (function_exists("guarded_function")) {
+                            guarded_function();
+                            unknown_function();
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29 - Function unknown_function does not exist',
+            ],
+            'functionExistsDoesNotGuardAnotherCallableString' => [
+                'code' => '<?php
+                    function run(): void {
+                        if (function_exists("guarded_callback")) {
+                            array_map("unknown_callback", [1]);
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'builtInByReferenceParameterRejectsAConstant' => [
+                'code' => '<?php
+                    const NUMBERS = [3, 1, 2];
+                    sort(NUMBERS);',
+                'error_message' => 'InvalidPassByReference - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:26 - Parameter 1 of sort expects a variable',
+            ],
+            'mysqliBindResultRequiresOutputVariable' => [
+                'code' => '<?php
+                    function bind(mysqli_stmt $statement): void {
+                        mysqli_stmt_bind_result($statement);
+                    }',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'invalidScalarArgument' => [
                 'code' => '<?php
                     function fooFoo(int $a): void {}
@@ -2584,7 +4401,6 @@ final class FunctionCallTest extends TestCase
                     $a = "hello";
                     fooFoo($a);',
                 'error_message' => 'MixedArgument',
-                'ignored_issues' => ['MixedAssignment'],
             ],
             'nullArgument' => [
                 'code' => '<?php
@@ -2640,12 +4456,26 @@ final class FunctionCallTest extends TestCase
                      */
                     function f($p, $p) {}',
                 'error_message' => 'DuplicateParam',
-                'ignored_issues' => ['MissingParamType'],
+                'error_levels' => ['MissingParamType'],
             ],
             'invalidParamDefault' => [
                 'code' => '<?php
                     function f(int $p = false) {}',
                 'error_message' => 'InvalidParamDefault',
+            ],
+            'invalidParamDefaultNewObjectNotImplementingInterface' => [
+                'code' => '<?php
+                    function f(Traversable $p = new stdClass()): void {}',
+                'error_message' => 'InvalidParamDefault',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'invalidParamDefaultNewObjectNotInUnion' => [
+                'code' => '<?php
+                    function f(Countable|int $p = new stdClass()): void {}',
+                'error_message' => 'InvalidParamDefault',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'invalidDocblockParamDefault' => [
                 'code' => '<?php
@@ -2661,6 +4491,203 @@ final class FunctionCallTest extends TestCase
                     function fooFoo(string &$v): void {}
                     fooFoo("a");',
                 'error_message' => 'InvalidPassByReference',
+            ],
+            'badByRefWithAssignArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo($s = "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithAssignOpArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo($t .= "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithBooleanNotArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(!$t);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithUnaryMinusArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(-$n);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithPostIncArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo($n++);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithPreIncArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(++$n);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithIssetArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(isset($t));',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithEmptyArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(empty($t));',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithInstanceofArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo($t instanceof stdClass);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithCloneArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(clone $o);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithClosureArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(function (): void {});',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithArrowFunctionArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(fn(): int => 1);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithMatchArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(match (1) { default => 2 });',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithErrorSuppressArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $a = 1;
+                    fooFoo(@$a);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithPrintArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    fooFoo(print "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithNewArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    fooFoo(new stdClass());',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithAssignArgumentOfAMethod' => [
+                'code' => '<?php
+                    class A {
+                        public function m(mixed &$v): void {}
+                    }
+                    (new A())->m($s = "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithAssignArgumentOfAStaticMethod' => [
+                'code' => '<?php
+                    class A {
+                        public static function m(mixed &$v): void {}
+                    }
+                    A::m($s = "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithAssignArgumentOfAVariadicParam' => [
+                'code' => '<?php
+                    function fooFoo(mixed &...$v): void {}
+                    $a = 1;
+                    fooFoo($a, $s = "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'badArrayByRef' => [
                 'code' => '<?php
@@ -2681,11 +4708,191 @@ final class FunctionCallTest extends TestCase
 
                     function takes_int(int $i) {}',
                 'error_message' => 'InvalidScalarArgument',
-                'ignored_issues' => [
-                    'MixedAssignment',
-                    'MixedArrayAccess',
-                    'RedundantConditionGivenDocblockType',
-                ],
+            ],
+            'objectToStringReturnDoesNotMatchLowercaseStringParameter' => [
+                'code' => '<?php
+                    final class UppercaseText {
+                        /** @return "AAA" */
+                        public function __toString(): string {
+                            return "AAA";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new UppercaseText());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnCoercesToLowercaseStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnCoercionReportsImplicitCast' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ArgumentTypeCoercion */
+                    acceptsLowercase(new Text());',
+                'error_message' => 'ImplicitToStringCast',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'stringableUnionWithNonStringableObjectDoesNotCoerce' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    final class Other {}
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @param Text|Other $value */
+                    function passObject($value): void {
+                        /** @psalm-suppress ImplicitToStringCast */
+                        acceptsLowercase($value);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'untypedObjectToStringReturnCoercesToLowercaseStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString() {
+                            return "text";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
+            'objectToStringReturnCoercesToClassStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param class-string $value */
+                    function acceptsClassString(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsClassString(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnCoercesToNumericStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param numeric-string $value */
+                    function acceptsNumericString(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsNumericString(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnDoesNotMatchLiteralStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        /** @return "AAA" */
+                        public function __toString(): string {
+                            return "AAA";
+                        }
+                    }
+
+                    /** @param "BBB"|"CCC" $value */
+                    function acceptsOtherLiterals(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsOtherLiterals(new Text());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnDoesNotMatchNonEmptyStringParameter' => [
+                'code' => '<?php
+                    final class EmptyText {
+                        /** @return "" */
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /** @param non-empty-string $value */
+                    function acceptsNonEmpty(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsNonEmpty(new EmptyText());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnCoercesToNonEmptyStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param non-empty-string $value */
+                    function acceptsNonEmpty(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsNonEmpty(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'clampIsUndefinedBeforePhp86' => [
+                'code' => '<?php
+                    $result = clamp(5, 0, 10);',
+                'error_message' => 'UndefinedFunction',
+                'error_levels' => [],
+                'php_version' => '8.5',
             ],
             'undefinedFunctionInArrayMap' => [
                 'code' => '<?php
@@ -2737,6 +4944,16 @@ final class FunctionCallTest extends TestCase
                 'code' => '<?php
                     $a = var_export(["a"]);',
                 'error_message' => 'AssignmentToVoid',
+            ],
+            'explodeWithNegativeLimitIsPossiblyEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @return non-empty-list<string>
+                     */
+                    function exploder(string $s): array {
+                        return explode("-", $s, -1);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'explodeWithEmptyString' => [
                 'code' => '<?php
@@ -2823,10 +5040,7 @@ final class FunctionCallTest extends TestCase
             ],
             'functionCallOnMixed' => [
                 'code' => '<?php
-                    /**
-                     * @var mixed $s
-                     * @psalm-suppress MixedAssignment
-                     */
+                    /** @var mixed $s */
                     $s = 1;
                     $s();',
                 'error_message' => 'MixedFunctionCall',
@@ -2889,7 +5103,6 @@ final class FunctionCallTest extends TestCase
                     function foo(int &$i) : void {}
 
                     $a = rand(0, 1) ? null : 5;
-                    /** @psalm-suppress MixedArgument */
                     foo((int) $a);',
                 'error_message' => 'InvalidPassByReference',
             ],
@@ -2913,6 +5126,38 @@ final class FunctionCallTest extends TestCase
                 'code' => '<?php
                     preg_match(\'/adsf/\');',
                 'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - Too few arguments for preg_match - expecting subject to be passed',
+            ],
+            'tooFewArgsForCallableNamesTheCallable' => [
+                'code' => '<?php
+                    /** @param callable(mixed): bool $c */
+                    function f(callable $c): void {
+                        $c();
+                    }',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - Too few arguments for callable(mixed) - expecting parameter #1 to be passed',
+            ],
+            'tooFewArgsForCallableCountsTheMissingParameterFromTheStart' => [
+                'code' => '<?php
+                    /** @param callable(int, string): void $c */
+                    function f(callable $c): void {
+                        $c(1);
+                    }',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - Too few arguments for callable(int, string) - expecting parameter #2 to be passed',
+            ],
+            'tooFewArgsForCallableWithNamedParametersNamesTheParameter' => [
+                'code' => '<?php
+                    /** @param callable(int $a, string $b): void $c */
+                    function f(callable $c): void {
+                        $c(1);
+                    }',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - Too few arguments for callable(int, string) - expecting b to be passed',
+            ],
+            'tooManyArgsForCallableNamesTheCallable' => [
+                'code' => '<?php
+                    /** @param callable(int, string): void $c */
+                    function f(callable $c): void {
+                        $c(1, "a", 3);
+                    }',
+                'error_message' => 'TooManyArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - Too many arguments for callable(int, string) - expecting 2 but saw 3',
             ],
             'compactUndefinedVariable' => [
                 'code' => '<?php
@@ -3013,6 +5258,13 @@ final class FunctionCallTest extends TestCase
                     }',
                 'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
+            'pathinfoDirnamePossiblyUndefined' => [
+                'code' => '<?php
+                    function dir_of(string $s) : string {
+                        return pathinfo($s)["dirname"];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
             'strposNoSetFirstParam' => [
                 'code' => '<?php
                     function sayHello(string $format): void {
@@ -3032,7 +5284,7 @@ final class FunctionCallTest extends TestCase
                     $ch = curl_init();
                     if (!is_resource($ch)) {}',
                 'error_message' => 'RedundantCondition',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'maxCallWithArray' => [
@@ -3079,13 +5331,103 @@ final class FunctionCallTest extends TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
+            'getObjectVarsOfAStdClassIsAMixedCoercion' => [
+                'code' => '<?php
+                    /** @param array{i: int} $array */
+                    function takesAnArray(array $array): void {
+                        echo $array["i"];
+                    }
+
+                    $obj = new stdClass();
+
+                    takesAnArray(get_object_vars($obj));',
+                'error_message' => 'MixedArgumentTypeCoercion',
+            ],
+            'strReplaceWithFewerReplacementsThanSearches' => [
+                'code' => '<?php
+                    $subject = "Hello";
+                    $search = ["a", "b", "c"];
+                    $replace = ["x", "y"];
+                    echo str_replace($search, $replace, $subject);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'strIreplaceWithFewerReplacementsThanSearches' => [
+                'code' => '<?php
+                    echo str_ireplace(["a", "b"], ["x"], "Hello");',
+                'error_message' => 'InvalidArgument',
+            ],
             'array_is_list_literal_array' => [
                 'code' => '<?php
                     $list = [1 => 0, 0 => 1];
                     assert(array_is_list($list));',
                 'error_message' => 'TypeDoesNotContainType',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'arrayIsListOfALiteralArrayOutOfOrderWithAnOptionalKey' => [
+                'code' => '<?php
+                    $list = [1 => 0, 0 => 1];
+                    if (rand(0, 1)) {
+                        $list[2] = 2;
+                    }
+                    assert(array_is_list($list));',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_on_list_shape' => [
+                'code' => '<?php
+                    /** @param list{string, int} $arr */
+                    function f(array $arr): void {
+                        assert(array_is_list($arr));
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_keyed_array_with_string_keys' => [
+                'code' => '<?php
+                    /** @param array{a: string, b: int} $arr */
+                    function f(array $arr): void {
+                        assert(array_is_list($arr));
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_keyed_array_without_first_key' => [
+                'code' => '<?php
+                    /** @param array{1: string, 2: int} $arr */
+                    function f(array $arr): void {
+                        assert(array_is_list($arr));
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'array_is_list_keyed_array_with_required_key_after_gap' => [
+                'code' => '<?php
+                    /** @param array{0: string, 2: int} $arr */
+                    function f(array $arr): void {
+                        assert(array_is_list($arr));
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'keyed_array_asserted_as_list_of_other_values' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert list<int> $value
+                     */
+                    function assertIntList($value): void {}
+
+                    /** @param array{0: string} $arr */
+                    function f(array $arr): void {
+                        assertIntList($arr);
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'passingObjectToStringableObjectParam' => [
                 'code' => '<?php
@@ -3177,6 +5519,11 @@ final class FunctionCallTest extends TestCase
                 ',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
+            'strtolowerOfALowercaseString' => [
+                'code' => '<?php
+                    echo strtolower("abc");',
+                'error_message' => 'The call to strtolower is unnecessary',
+            ],
             'is_a_withAStringAndNoThirdArg' => [
                 'code' => '<?php
                     is_a("Foo", Exception::class);
@@ -3246,7 +5593,23 @@ final class FunctionCallTest extends TestCase
                     }
                     ',
                 'error_message' => 'ParadoxicalCondition',
-                'ignored_issues' => [],
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'functionExistsOfANumericString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param numeric-string $function */
+                    function check(string $function): bool {
+                        if (function_exists($function)) {
+                            return true;
+                        }
+
+                        return false;
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
+                'error_levels' => [],
                 'php_version' => '8.1',
             ],
             'extractVarCheckInvalid' => [
@@ -3259,12 +5622,148 @@ final class FunctionCallTest extends TestCase
                     takesInt($foo);',
                 'error_message' => 'InvalidScalarArgument',
             ],
+            'extractForgetsTheOffsetsOfAVariableItOverwrites' => [
+                'code' => '<?php
+                    /** @param array{a?: int} $arr */
+                    function f(array $arr): int {
+                        $x = $arr;
+                        if (!isset($x["a"])) {
+                            return 0;
+                        }
+                        extract(["x" => []]);
+                        return $x["a"];
+                    }',
+                'error_message' => 'EmptyArrayAccess',
+            ],
             'unserializeWithInvalidMaxDepthType' => [
                 'code' => '<?php
                     unserialize("", ["max_depth" => "foo"]);',
                 'error_message' => 'InvalidScalarArgument',
-                'ignored_issues' => [],
+                'error_levels' => [],
                 'php_version' => '7.4',
+            ],
+            'languageConstructUnsetCalledAsAQualifiedFunction' => [
+                'code' => '<?php
+                    $what = 5;
+                    \unset($what);',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'languageConstructIssetCalledAsAQualifiedFunction' => [
+                'code' => '<?php
+                    $what = 5;
+                    if (\isset($what)) {
+                    }',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'languageConstructEmptyCalledAsAQualifiedFunction' => [
+                'code' => '<?php
+                    if (\empty("")) {
+                    }',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'languageConstructPrintCalledAsAQualifiedFunction' => [
+                'code' => '<?php
+                    \print("word");',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'languageConstructEvalCalledAsAQualifiedFunction' => [
+                'code' => '<?php
+                    \eval("return 1;");',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21',
+            ],
+            'languageConstructsCalledWithoutALeadingBackslashAreNotUndefinedFunctions' => [
+                'code' => '<?php
+                    $what = 5;
+                    unset($what);
+                    print("word");
+                    $other = [];
+                    if (isset($other["a"]) || empty($other)) {
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'pregReplaceCallbackWithoutUnmatchedAsNullFlag' => [
+                'code' => '<?php
+                    preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        fn ($m) => null === $m[1] ? "1" : "a",
+                        "1234567890",
+                        1,
+                        $count,
+                        0,
+                    );',
+                'error_message' => 'DocblockTypeContradiction',
+                'error_levels' => ['PossiblyUndefinedIntArrayOffset'],
+            ],
+            'pregReplaceCallbackWithUnmatchedAsNullFlagMayGiveNull' => [
+                'code' => '<?php
+                    preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        fn ($m) => strtoupper($m[1]),
+                        "1234567890",
+                        1,
+                        $count,
+                        PREG_UNMATCHED_AS_NULL,
+                    );',
+                'error_message' => 'PossiblyNullArgument',
+                'error_levels' => ['PossiblyUndefinedIntArrayOffset'],
+            ],
+            'arrayIsListOfAShapeWithARequiredKeyAfterAGapInItsListKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{0?: string, 2: int} $a */
+                    function f(array $a): void {
+                        if (array_is_list($a)) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:9 - Type array{0?: string, 2: int} for $a is never list',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayIsListOfAShapeWithARequiredStringKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{a: string} $a */
+                    function f(array $a): void {
+                        if (array_is_list($a)) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'streamGetMetaDataUriIsNotAlwaysSet' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $stream = popen('echo x', 'r');
+                    if ($stream === false) {
+                        exit;
+                    }
+                    $uri = stream_get_meta_data($stream)['uri'];
+                    PHP,
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'streamGetMetaDataTimedOutIsNotAlwaysSet' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $stream = fopen('data:,hi', 'r');
+                    if ($stream === false) {
+                        exit;
+                    }
+                    $timed_out = stream_get_meta_data($stream)['timed_out'];
+                    PHP,
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'streamGetMetaDataUnknownKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param resource $stream */
+                    function f($stream): void {
+                        $uri = stream_get_meta_data($stream)['uir'];
+                    }
+                    PHP,
+                'error_message' => 'InvalidArrayOffset',
             ],
         ];
     }

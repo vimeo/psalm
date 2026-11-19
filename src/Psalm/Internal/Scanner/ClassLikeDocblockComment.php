@@ -10,6 +10,7 @@ use Psalm\Storage\NamedArguments;
 
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class ClassLikeDocblockComment
 {
@@ -53,6 +54,13 @@ final class ClassLikeDocblockComment
      * @var array<int, array{string, ?string, ?string, bool, int}>
      */
     public array $templates = [];
+
+    /**
+     * The default of each type template that has one (`@template T of Bound = Default`), and its line.
+     *
+     * @var array<string, array{type: string, line_number: int}>
+     */
+    public array $template_defaults = [];
 
     /**
      * The names of the templates declared with `@psalm-purity-template`, whose values are
@@ -114,14 +122,26 @@ final class ClassLikeDocblockComment
 
     public bool $override_method_visibility = false;
 
-    /** @var int */
-    /** A bitmask of {@see Capabilities} constants */
+    /**
+     * A bitmask of {@see Capabilities} constants
+     *
+     * @var CapabilitySet
+     */
     public int $capabilities = Capabilities::ALL;
 
     public bool $has_mutations_annotation = false;
 
     /** Whether the class has `@psalm-taint-specialize` */
     public bool $taint_specialize = false;
+
+    /** Whether the class has `@psalm-cli-only` */
+    public bool $cli_only = false;
+
+    /** Whether the class has `@psalm-cli-only-instances` */
+    public bool $cli_only_instances = false;
+
+    /** The array property `@psalm-taint-property-bag` says holds the properties of the objects under their names */
+    public ?string $taint_property_bag = null;
 
     /**
      * @var array<int, string>

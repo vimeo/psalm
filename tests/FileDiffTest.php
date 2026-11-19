@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PhpParser;
 use Psalm\Internal\Diff\FileDiffer;
 use Psalm\Internal\Diff\FileStatementsDiffer;
@@ -19,9 +20,9 @@ use function var_export;
 final class FileDiffTest extends TestCase
 {
     /**
-     * @dataProvider getChanges
      * @param string[] $same_methods
      */
+    #[DataProvider('getChanges')]
     public function testCode(
         string $a,
         string $b,
@@ -35,10 +36,8 @@ final class FileDiffTest extends TestCase
             $this->markTestSkipped();
         }
 
-        $has_errors = false;
-
-        $a_stmts = StatementsProvider::parseStatements($a, 7_04_00, $has_errors);
-        $b_stmts = StatementsProvider::parseStatements($b, 7_04_00, $has_errors);
+        $a_stmts = StatementsProvider::parseStatements($a, 7_04_00);
+        $b_stmts = StatementsProvider::parseStatements($b, 7_04_00);
 
         $diff = FileStatementsDiffer::diff($a_stmts, $b_stmts, $a, $b);
 
@@ -57,7 +56,7 @@ final class FileDiffTest extends TestCase
             $diff[2],
         );
 
-        $this->assertSame(count($diff_map_offsets), count($diff[3]));
+        $this->assertCount(count($diff_map_offsets), $diff[3]);
 
         $found_offsets = array_map(
             /**
@@ -74,12 +73,13 @@ final class FileDiffTest extends TestCase
     }
 
     /**
-     * @dataProvider getChanges
      * @param string[] $same_methods
      * @param string[] $same_signatures
      * @param string[] $changed_methods
      * @param array<array-key,array{int,int}> $diff_map_offsets
+     * @param array<array-key,array{int,int}> $_deletion_ranges the same data sets serve testCode()
      */
+    #[DataProvider('getChanges')]
     public function testPartialAstDiff(
         string $a,
         string $b,
@@ -87,6 +87,7 @@ final class FileDiffTest extends TestCase
         array $same_signatures,
         array $changed_methods,
         array $diff_map_offsets,
+        array $_deletion_ranges,
     ): void {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -94,9 +95,7 @@ final class FileDiffTest extends TestCase
 
         $file_changes = FileDiffer::getDiff($a, $b);
 
-        $has_errors = false;
-
-        $a_stmts = StatementsProvider::parseStatements($a, 7_04_00, $has_errors);
+        $a_stmts = StatementsProvider::parseStatements($a, 7_04_00);
 
         $traverser = new PhpParser\NodeTraverser;
         $traverser->addVisitor(new CloningVisitor);
@@ -106,8 +105,14 @@ final class FileDiffTest extends TestCase
 
         $this->assertTreesEqual($a_stmts, $a_stmts_copy);
 
-        $b_stmts = StatementsProvider::parseStatements($b, 7_04_00, $has_errors, null, $a, $a_stmts_copy, $file_changes);
-        $b_clean_stmts = StatementsProvider::parseStatements($b, 7_04_00, $has_errors);
+        $b_stmts = StatementsProvider::parseStatements(
+            $b,
+            7_04_00,
+            existing_file_contents: $a,
+            existing_statements: $a_stmts_copy,
+            file_changes: $file_changes,
+        );
+        $b_clean_stmts = StatementsProvider::parseStatements($b, 7_04_00);
 
         $this->assertTreesEqual($b_clean_stmts, $b_stmts);
 
@@ -128,7 +133,7 @@ final class FileDiffTest extends TestCase
             $diff[2],
         );
 
-        $this->assertSame(count($diff_map_offsets), count($diff[3]));
+        $this->assertCount(count($diff_map_offsets), $diff[3]);
 
         $found_offsets = array_map(
             /**
@@ -148,7 +153,7 @@ final class FileDiffTest extends TestCase
      */
     private function assertTreesEqual(array $a, array $b): void
     {
-        $this->assertSame(count($a), count($b));
+        $this->assertCount(count($a), $b);
 
         foreach ($a as $i => $a_stmt) {
             $b_stmt = $b[$i];
@@ -202,7 +207,7 @@ final class FileDiffTest extends TestCase
      * @return array<string,array{string,string,string[],string[],string[],array<array-key,array{int,int}>,list<array{int,int}>}>
      * @psalm-pure
      */
-    public function getChanges(): array
+    public static function getChanges(): array
     {
         return [
             'sameFile' => [
@@ -366,7 +371,41 @@ final class FileDiffTest extends TestCase
                 ['foo\a::foo'],
                 [],
                 [[1, 0]],
+                [
+                    [84, 167],
+                ],
+            ],
+            'deletingTheLineThatReportsAnIssueFromTheBodyOfTheFirstMethod' => [
+                '<?php
+                class A {
+                    public function a(): bool
+                    {
+                        return $a;
+                    }
+
+                    public function b(): string
+                    {
+                        return \'\';
+                    }
+                }',
+                '<?php
+                class A {
+                    public function a(): bool
+                    {
+                    }
+
+                    public function b(): string
+                    {
+                        return \'\';
+                    }
+                }',
+                ['a::b'],
+                ['a::a'],
                 [],
+                [[-35, -1]],
+                [
+                    [52, 155],
+                ],
             ],
             'simpleBodyChangesWithoutSignatureChange' => [
                 '<?php
@@ -396,7 +435,9 @@ final class FileDiffTest extends TestCase
                 ['foo\a::foo'],
                 [],
                 [[32, 1]],
-                [],
+                [
+                    [84, 167],
+                ],
             ],
             'simpleBodyChangeWithSignatureChange' => [
                 '<?php
@@ -887,7 +928,9 @@ final class FileDiffTest extends TestCase
                 ['foo\a::bar'],
                 [],
                 [[0, 0], [4, 4]],
-                [],
+                [
+                    [299, 555],
+                ],
             ],
             'removeSpaceInFunction' => [
                 '<?php
@@ -962,7 +1005,9 @@ final class FileDiffTest extends TestCase
                 ['foo\a::bar'],
                 [],
                 [[0, 0], [-4, -4]],
-                [],
+                [
+                    [299, 559],
+                ],
             ],
             'removeFunctionAtBeginning' => [
                 '<?php
@@ -1278,7 +1323,7 @@ final class FileDiffTest extends TestCase
                 [],
                 [[84, 304], [327, 547]],
             ],
-            'SKIPPED-whiteSpaceOnly' => [
+            'whiteSpaceOnly' => [
                 '<?php
                 namespace Foo;
 
@@ -1303,11 +1348,11 @@ final class FileDiffTest extends TestCase
 
                     }
                 }',
+                [],
                 ['foo\a::foo', 'foo\a::bar'],
                 [],
                 [],
-                [],
-                [],
+                [[84, 160], [182, 258]],
             ],
             'changeDeclaredMethodId' => [
                 '<?php
@@ -1465,7 +1510,9 @@ final class FileDiffTest extends TestCase
                 ['foo\c::barbar'],
                 [],
                 [[-36, -1]],
-                [],
+                [
+                    [96, 282],
+                ],
             ],
             'docblockTwiceOver' => [
                 '<?php
@@ -1566,7 +1613,10 @@ final class FileDiffTest extends TestCase
                 ],
                 [],
                 [],
-                [],
+                [
+                    [114, 337],
+                    [364, 587],
+                ],
             ],
             'removeUse' => [
                 '<?php
@@ -1621,7 +1671,9 @@ final class FileDiffTest extends TestCase
                 ['foo\c::foo'],
                 [],
                 [],
-                [],
+                [
+                    [96, 281],
+                ],
             ],
             'vimeoDiff' => [
                 '<?php
@@ -1731,7 +1783,9 @@ final class FileDiffTest extends TestCase
                 ['a\c::foo'],
                 [],
                 [],
-                [],
+                [
+                    [189, 366],
+                ],
             ],
             'diffMultipleBadDocblocks' => [
                 '<?php
@@ -1807,6 +1861,169 @@ final class FileDiffTest extends TestCase
                 ['foo\a::foo', 'foo\a::bar', 'foo\a::foo', 'foo\a::bar'],
                 [[-6, 0]],
                 [[116, 428], [455, 756]],
+            ],
+            'keepMethodsOfClassWithDocblock' => [
+                '<?php
+                    /** @psalm-immutable */
+                    class A {
+                        public function foo() : int { return 1; }
+                        public function bar() : int { return 1; }
+                    }',
+                '<?php
+                    /** @psalm-immutable */
+                    class A {
+                        public function foo() : int { return 1; }
+                        public function bar() : int { return 2; }
+                    }',
+                ['a::foo'],
+                ['a::bar'],
+                [],
+                [[0, 0]],
+                [[170, 210]],
+            ],
+            'keepMethodsOfNamespacedClassWithDocblock' => [
+                '<?php
+                    namespace Foo;
+
+                    /** @psalm-immutable */
+                    class A {
+                        public function foo() : int { return 1; }
+                        public function bar() : int { return 1; }
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    /** @psalm-immutable */
+                    class A {
+                        public function foo() : int { return 1; }
+                        public function bar() : int { return 2; }
+                    }',
+                ['foo\a::foo'],
+                ['foo\a::bar'],
+                [],
+                [[0, 0]],
+                [[206, 246]],
+            ],
+            'changeClassDocblock' => [
+                '<?php
+                    /** @template K */
+                    class A {
+                        public function foo() : void {}
+                    }',
+                '<?php
+                    /** @template T */
+                    class A {
+                        public function foo() : void {}
+                    }',
+                [],
+                [],
+                ['a::foo'],
+                [[0, 0]],
+                [],
+            ],
+            'changeNamespacedClassDocblock' => [
+                '<?php
+                    namespace Foo;
+
+                    /** @template K */
+                    class A {
+                        public function foo() : void {}
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    /** @template T */
+                    class A {
+                        public function foo() : void {}
+                    }',
+                [],
+                [],
+                ['foo\a::foo'],
+                [[0, 0]],
+                [],
+            ],
+            'changeInterfaceParent' => [
+                '<?php
+                    namespace Foo;
+
+                    interface A extends B {
+                        public function foo() : void;
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    interface A extends C {
+                        public function foo() : void;
+                    }',
+                [],
+                [],
+                ['foo\a::foo'],
+                [[0, 0]],
+                [],
+            ],
+            'changeClassModifier' => [
+                '<?php
+                    namespace Foo;
+
+                    abstract class A {
+                        public function foo() : void {}
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    final class A {
+                        public function foo() : void {}
+                    }',
+                [],
+                [],
+                ['foo\a::foo'],
+                [[-3, 0]],
+                [],
+            ],
+            'changeClassAttribute' => [
+                '<?php
+                    namespace Foo;
+
+                    #[Attr(1)]
+                    class A {
+                        public function foo() : void {}
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    #[Attr(2)]
+                    class A {
+                        public function foo() : void {}
+                    }',
+                [],
+                [],
+                ['foo\a::foo'],
+                [[0, 0]],
+                [],
+            ],
+            'removeNamespacedFunction' => [
+                '<?php
+                    namespace Foo;
+
+                    class A {
+                        public function foo() : void {}
+                    }
+
+                    /** @return int */
+                    function bar() {
+                        return 1;
+                    }',
+                '<?php
+                    namespace Foo;
+
+                    class A {
+                        public function foo() : void {}
+                    }',
+                ['foo\a::foo'],
+                [],
+                [],
+                [[0, 0]],
+                [[171, 281]],
             ],
         ];
     }

@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
@@ -13,26 +14,47 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\ReferenceConstraint;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Type;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Union;
+use UnexpectedValueException;
+use WeakMap;
 
+use function array_pop;
+use function explode;
 use function is_string;
+use function preg_match;
+use function substr;
 
 /**
  * @internal
  */
 final class GlobalAnalyzer
 {
+    private const VARIABLE_ID_PATTERN = '/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/D';
+
+    /**
+     * @see getGlobalsWrittenBy()
+     * @var ?WeakMap<FunctionLikeStorage, array<string, bool>>
+     */
+    private static ?WeakMap $globals_written_by = null;
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Global_ $stmt,
         Context $context,
         ?Context $global_context,
     ): void {
-        if (!$context->collect_initializations && !$global_context) {
+        // a file documenting its `$this` (`@var Foo $this`) is a template included from a method
+        if (!$context->collect_initializations && !$global_context && !isset($context->vars_in_scope['$this'])) {
             IssueBuffer::maybeAdd(
                 new InvalidGlobal(
                     'Cannot use global scope here (unless this file is included from a non-global scope)',
@@ -71,6 +93,11 @@ final class GlobalAnalyzer
 
             FunctionLikeAnalyzer::unbindByRefParam($codebase, $context, $var_id);
 
+            // the variable is bound to the global instead: what it was bound to by reference keeps its value
+            if (isset($context->references_in_scope[$var_id]) || ($context->referenced_counts[$var_id] ?? 0) > 0) {
+                $context->removePossibleReference($var_id);
+            }
+
             $doc_comment = $stmt->getDocComment();
             $comment_type = null;
 
@@ -84,6 +111,17 @@ final class GlobalAnalyzer
                 );
             }
 
+            // `self` and `static` of a `@global` tag are the class the function is in
+            $global_type = isset($function_storage->global_types[$var_id])
+                ? TypeExpander::expandUnion(
+                    $codebase,
+                    $function_storage->global_types[$var_id],
+                    $context->self,
+                    $context->self,
+                    $statements_analyzer->getParentFQCLN(),
+                )
+                : null;
+
             if ($comment_type) {
                 $context->vars_in_scope[$var_id] = $comment_type;
                 $context->vars_possibly_in_scope[$var_id] = true;
@@ -92,14 +130,27 @@ final class GlobalAnalyzer
                 if ($var->name === 'argv' || $var->name === 'argc') {
                     $context->vars_in_scope[$var_id] =
                         VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
-                } elseif (isset($function_storage->global_types[$var_id])) {
-                    $context->vars_in_scope[$var_id] = $function_storage->global_types[$var_id];
+                } elseif ($global_type !== null) {
+                    $context->vars_in_scope[$var_id] = $global_type;
                     $context->vars_possibly_in_scope[$var_id] = true;
                 } else {
-                    $context->vars_in_scope[$var_id] =
-                        $global_context && $global_context->hasVariable($var_id)
-                            ? $global_context->vars_in_scope[$var_id]
-                            : VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
+                    $global_type = $global_context && $global_context->hasVariable($var_id)
+                        ? $global_context->vars_in_scope[$var_id]
+                        : VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
+
+                    // `global` creates the global as null when it is not set, but a superglobal is read as set
+                    if ($global_type->possibly_undefined || $global_type->possibly_undefined_from_try) {
+                        $global_type = $global_type->setPossiblyUndefined(false, false);
+
+                        if (!$global_type->isNullable()
+                            && !$global_type->hasMixed()
+                            && !VariableFetchAnalyzer::isReadAsSetSuperGlobal($var_id)
+                        ) {
+                            $global_type = $global_type->getBuilder()->addType(new TNull())->freeze();
+                        }
+                    }
+
+                    $context->vars_in_scope[$var_id] = $global_type;
 
                     $context->vars_possibly_in_scope[$var_id] = true;
 
@@ -135,13 +186,12 @@ final class GlobalAnalyzer
                 $context->by_ref_param_out_nodes[$var_id] = self::getGlobalNode($taint_flow_graph, $var_name);
             }
 
+            $context->bound_globals[$var_id] = $comment_type
+                ?? $global_type
+                ?? VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
             $context->references_to_external_scope[$var_id] = true;
+            $context->forgetReferencesPossiblyBound($var_id);
 
-            if (isset($context->references_in_scope[$var_id])) {
-                // Global shadows existing reference
-                $context->decrementReferenceCount($var_id);
-                unset($context->references_in_scope[$var_id]);
-            }
             $statements_analyzer->registerVariable(
                 $var_id,
                 new CodeLocation($statements_analyzer, $var),
@@ -157,6 +207,203 @@ final class GlobalAnalyzer
                 $global_context->referenced_globals[$var_id] = true;
             }
         }
+    }
+
+    /**
+     * A variable bound to a global is the global: what it holds after each statement flows into it, as any
+     * function-like called before the variable stops referencing it may read it (see
+     * FunctionLikeAnalyzer::unbindByRefParam() for the last value). At file scope, every variable is a global.
+     */
+    public static function taintBoundGlobals(StatementsAnalyzer $statements_analyzer, Context $context): void
+    {
+        if ((!$context->by_ref_param_out_nodes && !$context->is_global)
+            || !$taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()
+        ) {
+            return;
+        }
+
+        $var_ids = $context->is_global ? $context->vars_in_scope : $context->by_ref_param_out_nodes;
+
+        foreach ($var_ids as $var_id => $_) {
+            if (!self::isBoundToGlobal($context, $var_id)
+                || !isset($context->vars_in_scope[$var_id])
+                || !$context->vars_in_scope[$var_id]->parent_nodes
+            ) {
+                continue;
+            }
+
+            $global_node = self::getGlobalNode($taint_flow_graph, substr($var_id, 1));
+
+            foreach ($context->vars_in_scope[$var_id]->parent_nodes as $parent_node) {
+                $taint_flow_graph->addPath($parent_node, $global_node, '=');
+            }
+        }
+    }
+
+    /**
+     * What the variable $var_id holds, of type $type, once the rest of the program may have written to it, if it
+     * is a global: when it isn't assigned yet at file scope, or after a call of a function-like binding it.
+     */
+    public static function taintGlobalRead(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        string $var_id,
+        Union $type,
+    ): Union {
+        if (!self::isBoundToGlobal($context, $var_id)
+            || !$taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()
+        ) {
+            return $type;
+        }
+
+        return $type->addParentNodes(self::getGlobalReadNodes($taint_flow_graph, substr($var_id, 1)));
+    }
+
+    /**
+     * What the globals bound in this scope hold after a call of the function-like of $storage, which may have
+     * written to them, or the function-likes it calls may have (see getGlobalsWrittenBy()): what they held, or
+     * the type this scope declares for the global (inline @var, @global, <globals> config), which is the contract
+     * for what is written. Only the variables bound by `global`, or those of the file scope, are read: a
+     * by-reference parameter or a local that shares the name of the global keeps its type.
+     */
+    public static function readGlobalsWrittenBy(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        FunctionLikeStorage $storage,
+    ): void {
+        if (!$context->is_global && !$context->bound_globals) {
+            return;
+        }
+
+        $analysis_php_version_id = $statements_analyzer->getCodebase()->analysis_php_version_id;
+
+        foreach (self::getGlobalsWrittenBy($statements_analyzer, $storage) as $var_id => $_) {
+            if ((!$context->is_global && !isset($context->bound_globals[$var_id]))
+                || preg_match(self::VARIABLE_ID_PATTERN, $var_id) !== 1
+                || VariableFetchAnalyzer::isSuperGlobal($var_id)
+            ) {
+                continue;
+            }
+
+            $declared_type = $context->bound_globals[$var_id]
+                ?? VariableFetchAnalyzer::getGlobalType($var_id, $analysis_php_version_id);
+
+            // the callee may not write the global, and the variable may not reference it on every path: keep what it
+            // held (vanilla mixed already contains it)
+            $type = isset($context->vars_in_scope[$var_id]) && !$declared_type->isVanillaMixed()
+                ? Type::combineUnionTypes(
+                    $context->vars_in_scope[$var_id]->setProperties(['parent_nodes' => []]),
+                    $declared_type,
+                )
+                : $declared_type;
+
+            $context->removeVarFromConflictingClauses($var_id, $type, $statements_analyzer);
+            $context->vars_in_scope[$var_id] = self::taintGlobalRead($statements_analyzer, $context, $var_id, $type);
+            $context->vars_possibly_in_scope[$var_id] = true;
+        }
+    }
+
+    /**
+     * The globals the body of the function-like of $storage, or of those it calls by name, binds or writes
+     * through $GLOBALS (see FunctionLikeStorage::$global_variables), by variable id
+     *
+     * @return array<string, bool>
+     */
+    private static function getGlobalsWrittenBy(
+        StatementsAnalyzer $statements_analyzer,
+        FunctionLikeStorage $storage,
+    ): array {
+        if (!$storage->called_function_like_ids) {
+            return $storage->global_variables;
+        }
+
+        if (self::$globals_written_by === null) {
+            /** @var WeakMap<FunctionLikeStorage, array<string, bool>> */
+            self::$globals_written_by = new WeakMap();
+        }
+
+        $memoized = self::$globals_written_by[$storage] ?? null;
+
+        if ($memoized !== null) {
+            return $memoized;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $global_variables = [];
+        $seen = new WeakMap();
+        $seen[$storage] = true;
+        $queue = [$storage];
+
+        while ($queue) {
+            $function_like_storage = array_pop($queue);
+            $global_variables += $function_like_storage->global_variables;
+
+            foreach ($function_like_storage->called_function_like_ids as $function_like_id => $_) {
+                $callee_storage = self::getCalleeStorage($codebase, $statements_analyzer, $function_like_id);
+
+                if ($callee_storage !== null && !isset($seen[$callee_storage])) {
+                    $seen[$callee_storage] = true;
+                    $queue[] = $callee_storage;
+                }
+            }
+        }
+
+        self::$globals_written_by[$storage] = $global_variables;
+
+        return $global_variables;
+    }
+
+    /**
+     * @param lowercase-string $function_like_id
+     */
+    private static function getCalleeStorage(
+        Codebase $codebase,
+        StatementsAnalyzer $statements_analyzer,
+        string $function_like_id,
+    ): ?FunctionLikeStorage {
+        if ($function_like_id === '') {
+            return null;
+        }
+
+        $parts = explode('::', $function_like_id, 2);
+
+        if (!isset($parts[1])) {
+            try {
+                return $codebase->functions->getStorage($statements_analyzer, $function_like_id);
+            } catch (UnexpectedValueException) {
+                return null;
+            }
+        }
+
+        [$fq_class_name, $method_name] = $parts;
+
+        if (!$codebase->classlike_storage_provider->has($fq_class_name)) {
+            return null;
+        }
+
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId(
+            new MethodIdentifier($fq_class_name, $method_name),
+        );
+
+        return $declaring_method_id ? $codebase->methods->getStorage($declaring_method_id) : null;
+    }
+
+    /**
+     * Whether $var_id is a global: bound by `global`, or any variable at file scope (but not $a['k'], $a->p, ...,
+     * which are part of $a, nor the superglobals).
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isBoundToGlobal(Context $context, string $var_id): bool
+    {
+        if (isset($context->by_ref_param_out_nodes[$var_id])) {
+            return $context->by_ref_param_out_nodes[$var_id]->id
+                === DataFlowNode::getForGlobalVariable(substr($var_id, 1))->id;
+        }
+
+        return $context->is_global
+            && preg_match(self::VARIABLE_ID_PATTERN, $var_id) === 1
+            && !VariableFetchAnalyzer::isSuperGlobal($var_id);
     }
 
     /**

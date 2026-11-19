@@ -17,9 +17,77 @@ final class PropertiesOfTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertiesOfAClassWithTraitProperties' => [
+                'code' => '<?php
+                    trait Inner {
+                        public string $name = "";
+                    }
+
+                    trait Outer {
+                        use Inner;
+
+                        public bool $flag = false;
+                    }
+
+                    final class A {
+                        use Outer;
+
+                        public int $own = 1;
+                    }
+
+                    /**
+                     * @param properties-of<A> $properties
+                     * @return array{own: int, flag: bool, name: string}
+                     */
+                    function f(array $properties): array {
+                        return $properties;
+                    }',
+            ],
+            'keyOfPropertiesOfAClassWithTraitProperties' => [
+                'code' => '<?php
+                    trait T {
+                        public int $foo = 0;
+                    }
+
+                    final class A {
+                        use T;
+
+                        public int $bar = 0;
+                    }
+
+                    /**
+                     * @param key-of<properties-of<A>> $key
+                     */
+                    function f(string $key): void {
+                        echo $key;
+                    }
+
+                    f("foo");
+                    f("bar");',
+            ],
+            'propertiesOfAClassWithTheSamePropertyInItsTrait' => [
+                'code' => '<?php
+                    trait T {
+                        public int $foo = 0;
+                    }
+
+                    final class A {
+                        use T;
+
+                        public int $foo = 1;
+                    }
+
+                    /**
+                     * @param properties-of<A> $properties
+                     * @return array{foo: int}
+                     */
+                    function f(array $properties): array {
+                        return $properties;
+                    }',
+            ],
             'propertiesOfIntersection' => [
                 'code' => '<?php
 
@@ -260,9 +328,29 @@ final class PropertiesOfTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'keyOfPropertiesOfAClassWithTraitPropertiesRejectsUnknownKeys' => [
+                'code' => '<?php
+                    trait T {
+                        public int $foo = 0;
+                    }
+
+                    final class A {
+                        use T;
+                    }
+
+                    /**
+                     * @param key-of<properties-of<A>> $key
+                     */
+                    function f(string $key): void {
+                        echo $key;
+                    }
+
+                    f("x");',
+                'error_message' => 'InvalidArgument',
+            ],
             'onlyOneTemplateParam' => [
                 'code' => '<?php
                     class A {}

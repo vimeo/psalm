@@ -12,9 +12,11 @@ use PhpParser\ErrorHandler;
 use PhpParser\NameContext;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
+use PhpParser\Node\IntersectionType;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Stmt;
+use PhpParser\Node\UnionType;
 use PhpParser\NodeVisitorAbstract;
 
 /**
@@ -31,6 +33,7 @@ final class SimpleNameResolver extends NodeVisitorAbstract
     /**
      * @param ErrorHandler $errorHandler Error handler
      * @param null|array<int, array{0: int, 1: int, 2: int, 3: int, 4: int, 5: string}> $offset_map
+     * @psalm-capabilities read-props
      */
     public function __construct(ErrorHandler $errorHandler, ?array $offset_map = null)
     {
@@ -100,8 +103,10 @@ final class SimpleNameResolver extends NodeVisitorAbstract
             }
         }
 
-        if ($node instanceof Stmt\ClassMethod
+        if ($node instanceof Stmt\Function_
+                  || $node instanceof Stmt\ClassMethod
                   || $node instanceof Expr\Closure
+                  || $node instanceof Expr\ArrowFunction
         ) {
             $this->resolveSignature($node);
         } elseif ($node instanceof Expr\StaticCall
@@ -169,7 +174,7 @@ final class SimpleNameResolver extends NodeVisitorAbstract
     }
 
     /**
-     * @param Stmt\Function_|Stmt\ClassMethod|Expr\Closure $node
+     * @param Stmt\Function_|Stmt\ClassMethod|Expr\Closure|Expr\ArrowFunction $node
      */
     private function resolveSignature(PhpParser\NodeAbstract $node): void
     {
@@ -188,6 +193,14 @@ final class SimpleNameResolver extends NodeVisitorAbstract
     {
         if ($node instanceof NullableType) {
             $node->type = $this->resolveType($node->type);
+
+            return $node;
+        }
+        if ($node instanceof UnionType || $node instanceof IntersectionType) {
+            foreach ($node->types as &$type) {
+                $type = $this->resolveType($type);
+            }
+            unset($type);
 
             return $node;
         }

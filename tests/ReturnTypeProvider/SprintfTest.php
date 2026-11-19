@@ -15,10 +15,10 @@ final class SprintfTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'sprintfDNonEmpty' => [
             'code' => '<?php
@@ -340,7 +340,7 @@ final class SprintfTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
             'sprintfOnlyFormatWithoutPlaceholders' => [
@@ -402,9 +402,6 @@ final class SprintfTest extends TestCase
                     $x = sprintf("hello", "abc");
                 ',
                 'error_message' => 'TooManyArguments',
-                'ignored_issues' => [
-                    'RedundantFunctionCall',
-                ],
             ],
             'sprintfPaddedComplexEmptyStringFormat' => [
                 'code' => '<?php

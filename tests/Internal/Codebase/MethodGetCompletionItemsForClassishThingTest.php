@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Psalm\Tests\Internal\Codebase;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
@@ -36,10 +38,10 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserCacheProvider($config, '', false),
+            new ParserCacheProvider($config, '', CacheMode::Memory),
             null,
             null,
-            new FileReferenceCacheProvider($config, '', false),
+            new FileReferenceCacheProvider($config, '', CacheMode::Memory),
             new ProjectCacheProvider(),
         );
 
@@ -80,7 +82,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
      * @return iterable<array-key, array{0: string}>
      * @psalm-pure
      */
-    public function providerGaps(): iterable
+    public static function providerGaps(): iterable
     {
         return [
             'object-gap' => ['->'],
@@ -88,9 +90,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider providerGaps
-     */
+    #[DataProvider('providerGaps')]
     public function testSimpleOnceClass(string $gap): void
     {
         $content = <<<'EOF'
@@ -159,9 +159,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
         $this->assertEqualsCanonicalizing($expected_labels[$gap], $actual_labels);
     }
 
-    /**
-     * @dataProvider providerGaps
-     */
+    #[DataProvider('providerGaps')]
     public function testAbstractClass(string $gap): void
     {
         $content = <<<'EOF'
@@ -236,9 +234,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
         $this->assertEqualsCanonicalizing($expected_labels[$gap], $actual_labels);
     }
 
-    /**
-     * @dataProvider providerGaps
-     */
+    #[DataProvider('providerGaps')]
     public function testUseTrait(string $gap): void
     {
         $content = <<<'EOF'
@@ -317,9 +313,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
         $this->assertEqualsCanonicalizing($expected_labels[$gap], $actual_labels);
     }
 
-    /**
-     * @dataProvider providerGaps
-     */
+    #[DataProvider('providerGaps')]
     public function testUseTraitWithAbstractClass(string $gap): void
     {
         $content = <<<'EOF'
@@ -398,9 +392,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
         $this->assertEqualsCanonicalizing($expected_labels[$gap], $actual_labels);
     }
 
-    /**
-     * @dataProvider providerGaps
-     */
+    #[DataProvider('providerGaps')]
     public function testClassWithExtends(string $gap): void
     {
         $content = <<<'EOF'
@@ -468,9 +460,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
         $this->assertEqualsCanonicalizing($expected_labels[$gap], $actual_labels);
     }
 
-    /**
-     * @dataProvider providerGaps
-     */
+    #[DataProvider('providerGaps')]
     public function testAstractClassWithInterface(string $gap): void
     {
         $content = <<<'EOF'
@@ -501,9 +491,7 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
         $this->assertEqualsCanonicalizing($expected_labels[$gap], $actual_labels);
     }
 
-    /**
-     * @dataProvider providerGaps
-     */
+    #[DataProvider('providerGaps')]
     public function testClassWithAnnotationMixin(string $gap): void
     {
         $content = <<<'EOF'
@@ -584,5 +572,51 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
         ];
 
         $this->assertEqualsCanonicalizing($expected_labels, $actual_labels);
+    }
+
+    public function testMixinsOfTraitsAndParentClassesListAMemberOnceFromTheFirstMixin(): void
+    {
+        $content = <<<'EOF'
+            <?php
+            namespace B;
+
+            class FromTrait {
+                public function shared(): int { return 1; }
+                public function fromTrait(): void {}
+            }
+
+            class FromParent {
+                public function shared(): string { return ''; }
+                public function fromParent(): void {}
+            }
+
+            /** @mixin FromTrait */
+            trait ForwardsCalls {}
+
+            /** @mixin FromParent */
+            abstract class Base {}
+
+            final class A extends Base {
+                use ForwardsCalls;
+            }
+        EOF;
+
+        $this->addFile('somefile.php', $content);
+        $this->analyzeFile('somefile.php', new Context());
+
+        $details = [];
+
+        foreach ($this->codebase->getCompletionItemsForClassishThing('B\A', '->', true) as $item) {
+            $details[$item->label][] = $item->detail;
+        }
+
+        $this->assertSame(
+            [
+                'shared' => ['public function shared() : int'],
+                'fromTrait' => ['public function fromTrait() : void'],
+                'fromParent' => ['public function fromParent() : void'],
+            ],
+            $details,
+        );
     }
 }

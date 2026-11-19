@@ -6,11 +6,13 @@ namespace Psalm;
 
 use PhpParser\Node;
 use Psalm\Issue\CodeIssue;
+use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Union;
 
 /**
  * @api
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 interface StatementsSource extends FileSource
 {
@@ -85,6 +87,7 @@ interface StatementsSource extends FileSource
      * @param bool $callee_internal_mutations_ok whether mutations of the callee's own instance
      *        (e.g. of a freshly constructed object) are fine for the caller
      * @param ?string $callee_id the graph node of the callee, when it can't be derived from its storage (closures)
+     * @param CapabilitySet $mutation_level
      */
     public function signalMutationOnlyInferred(
         int $mutation_level,
@@ -94,8 +97,10 @@ interface StatementsSource extends FileSource
     ): void;
 
     /**
+     * @param CapabilitySet $mutation_level
      * @param non-empty-string $msg
      * @param class-string<CodeIssue> $class
+     * @param CapabilitySet|null $inferred_mutation_level
      */
     public function signalMutation(
         int $mutation_level,

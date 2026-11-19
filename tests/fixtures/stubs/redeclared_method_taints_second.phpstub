@@ -1,0 +1,10 @@
+<?php
+
+class StubRedeclaringASinkHolder
+{
+    /**
+     * @psalm-taint-sink sql $query
+     * @psalm-mutation-free
+     */
+    public function __construct(string $html, string $query) {}
+}

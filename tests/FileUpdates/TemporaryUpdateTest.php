@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Psalm\Tests\FileUpdates;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\CacheMode;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
@@ -42,10 +44,10 @@ final class TemporaryUpdateTest extends TestCase
 
         $providers = new Providers(
             $this->file_provider,
-            new ParserCacheProvider($config, '', false),
+            new ParserCacheProvider($config, '', CacheMode::Memory),
             null,
             null,
-            new FileReferenceCacheProvider($config, '', false),
+            new FileReferenceCacheProvider($config, '', CacheMode::Memory),
             new ProjectCacheProvider(),
         );
 
@@ -66,11 +68,11 @@ final class TemporaryUpdateTest extends TestCase
     }
 
     /**
-     * @dataProvider providerTestErrorFix
      * @param array<int, array<string, string>> $file_stages
      * @param array<int, array<int>> $error_positions
      * @param array<string, string> $ignored_issues
      */
+    #[DataProvider('providerTestErrorFix')]
     public function testErrorFix(
         array $file_stages,
         array $error_positions,
@@ -86,10 +88,6 @@ final class TemporaryUpdateTest extends TestCase
         }
 
         $config = $codebase->config;
-        $ignored_issues['MissingImmutableAnnotation'] = Config::REPORT_SUPPRESS;
-        $ignored_issues['MissingInterfaceImmutableAnnotation'] = Config::REPORT_SUPPRESS;
-        $ignored_issues['MissingPureAnnotation'] = Config::REPORT_SUPPRESS;
-        $ignored_issues['MissingAbstractPureAnnotation'] = Config::REPORT_SUPPRESS;
 
         foreach ($ignored_issues as $error_type => $error_level) {
             $config->setCustomErrorLevel($error_type, $error_level);
@@ -182,7 +180,7 @@ final class TemporaryUpdateTest extends TestCase
     /**
      * @return array<string,array{0: array<int, array<string, string>>,error_positions:array<int, array<int>>, ignored_issues?:array<string, string>, test_save?:bool, check_unused_code?: bool}>
      */
-    public function providerTestErrorFix(): array
+    public static function providerTestErrorFix(): array
     {
         return [
             'fixMissingColonSyntaxError' => [

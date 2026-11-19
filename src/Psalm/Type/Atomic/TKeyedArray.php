@@ -6,6 +6,7 @@ namespace Psalm\Type\Atomic;
 
 use Override;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -203,7 +204,7 @@ final class TKeyedArray extends Atomic
         return $this->is_list
             && count($this->properties) === 1
             && $this->fallback_params
-            && $this->properties[0]->equals($this->fallback_params[1], true, true, false);
+            && $this->properties[0]->equals($this->fallback_params[1], false, false, false);
     }
 
     #[Override]
@@ -612,7 +613,7 @@ final class TKeyedArray extends Atomic
             }
             $cloned = clone $this;
             $cloned->properties = [$replaced_list_type];
-            $cloned->fallback_params = [$this->fallback_params[1], $replaced_list_type];
+            $cloned->fallback_params = [$this->fallback_params[0], $replaced_list_type];
 
             return $cloned;
         }
@@ -706,11 +707,13 @@ final class TKeyedArray extends Atomic
         }
         $fallback_params = $this->fallback_params;
         foreach ($fallback_params ?? [] as $offset => $property) {
-            $fallback_params[$offset] = TemplateInferredTypeReplacer::replace(
+            $property = TemplateInferredTypeReplacer::replace(
                 $property,
                 $template_result,
                 $codebase,
             );
+            // PHP casts a decimal int string key to an int
+            $fallback_params[$offset] = $offset === 0 ? ArrayAnalyzer::castArrayKeyType($property) : $property;
         }
         if ($properties !== $this->properties || $fallback_params !== $this->fallback_params) {
             $cloned = clone $this;
@@ -744,6 +747,10 @@ final class TKeyedArray extends Atomic
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         if ($other_type::class !== static::class) {
+            return false;
+        }
+
+        if ($this->is_list !== $other_type->is_list) {
             return false;
         }
 

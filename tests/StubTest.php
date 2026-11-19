@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RequiresPhp;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -13,24 +16,28 @@ use Psalm\Exception\InvalidClasslikeOverrideException;
 use Psalm\Exception\InvalidMethodOverrideException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
+use function array_values;
 use function assert;
 use function dirname;
 use function explode;
+use function file_put_contents;
 use function getcwd;
 use function implode;
+use function rename;
 use function reset;
 use function strlen;
 use function strpos;
 use function substr;
+use function sys_get_temp_dir;
+use function tempnam;
+use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 
-final class StubTest extends TestCase
+final class StubTest extends DeferredAnalyzerTestCase
 {
     #[Override]
     public static function setUpBeforeClass(): void
@@ -42,16 +49,6 @@ final class StubTest extends TestCase
         $argv = [];
 
         new TestConfig();
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     */
-    #[Override]
-    public function setUp(): void
-    {
-        RuntimeCaches::clearAll();
-        $this->file_provider = new FakeFileProvider();
     }
 
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
@@ -94,6 +91,287 @@ final class StubTest extends TestCase
                 </psalm>',
             ),
         );
+    }
+
+    public function testNonexistentStubDirectory(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Cannot resolve stubs directory path');
+        TestConfig::loadFromXML(
+            dirname(__DIR__),
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+
+                <stubs>
+                    <directory name="tests/fixtures/invalid_stubs_directory" />
+                </stubs>
+            </psalm>',
+        );
+    }
+
+    public function testStubDirectoryDeclaresItsStubsRecursively(): void
+    {
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__),
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+
+                <stubs>
+                    <directory name="tests/fixtures/stubs_directory" />
+                </stubs>
+            </psalm>',
+        );
+
+        $directory = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR
+            . 'fixtures' . DIRECTORY_SEPARATOR . 'stubs_directory' . DIRECTORY_SEPARATOR;
+
+        $this->assertSame(
+            [
+                $directory . 'nested' . DIRECTORY_SEPARATOR . 'two.php',
+                $directory . 'one.phpstub',
+            ],
+            array_values($config->getStubFiles()),
+        );
+    }
+
+    public function testStubDirectoryWithPreloadedClassesIsNotAPlainStubFile(): void
+    {
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__),
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+
+                <stubs>
+                    <directory name="tests/fixtures/stubs_directory" preloadClasses="true" />
+                </stubs>
+            </psalm>',
+        );
+
+        $this->assertSame([], $config->getStubFiles());
+    }
+
+    public function testStubDirectoryMustBeADirectory(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Cannot resolve stubs directory path');
+        TestConfig::loadFromXML(
+            dirname(__DIR__),
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+
+                <stubs>
+                    <directory name="tests/fixtures/stubs_directory/one.phpstub" />
+                </stubs>
+            </psalm>',
+        );
+    }
+
+    public function testStubDirectoryByAbsolutePathAndNextToStubFiles(): void
+    {
+        $fixtures = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'fixtures';
+
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__),
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+
+                <stubs>
+                    <file name="tests/fixtures/stubs/systemclass.phpstub" />
+                    <directory name="' . $fixtures . DIRECTORY_SEPARATOR . 'stubs_directory' . '" />
+                </stubs>
+            </psalm>',
+        );
+
+        $this->assertSame(
+            [
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'systemclass.phpstub',
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs_directory' . DIRECTORY_SEPARATOR . 'nested'
+                    . DIRECTORY_SEPARATOR . 'two.php',
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs_directory' . DIRECTORY_SEPARATOR . 'one.phpstub',
+            ],
+            array_values($config->getStubFiles()),
+        );
+    }
+
+    public function testStubDirectoriesAndFilesFollowTheOrderOfTheConfig(): void
+    {
+        $fixtures = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'fixtures';
+
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__),
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+
+                <stubs>
+                    <file name="tests/fixtures/stubs/systemclass.phpstub" />
+                    <directory name="tests/fixtures/stubs_directory" />
+                    <file name="tests/fixtures/stubs/DomainException.phpstub" />
+                </stubs>
+            </psalm>',
+        );
+
+        $this->assertSame(
+            [
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'systemclass.phpstub',
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs_directory' . DIRECTORY_SEPARATOR . 'nested'
+                    . DIRECTORY_SEPARATOR . 'two.php',
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs_directory' . DIRECTORY_SEPARATOR . 'one.phpstub',
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'DomainException.phpstub',
+            ],
+            array_values($config->getStubFiles()),
+        );
+    }
+
+    #[DataProvider('providerStubDirectoryPreloadClasses')]
+    public function testStubDirectoryPreloadClassesAttribute(string $attribute, bool $is_preloaded): void
+    {
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__),
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+
+                <stubs>
+                    <directory name="tests/fixtures/stubs_directory"' . $attribute . ' />
+                </stubs>
+            </psalm>',
+        );
+
+        $this->assertCount($is_preloaded ? 0 : 2, $config->getStubFiles());
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, bool}>
+     */
+    public static function providerStubDirectoryPreloadClasses(): iterable
+    {
+        yield 'without the attribute' => ['', false];
+        yield 'true' => [' preloadClasses="true"', true];
+        yield '1' => [' preloadClasses="1"', true];
+        yield 'false' => [' preloadClasses="false"', false];
+        yield '0' => [' preloadClasses="0"', false];
+    }
+
+    public function testStubDirectoryFunctions(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <directory name="tests/fixtures/stubs_directory" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $a = stub_directory_one();
+                $b = stub_directory_two();',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testNativeFunctionStubbedInAPhpFileIsUndefinedBelowItsVersion(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UndefinedFunction');
+
+        $this->analyzeWithNativeFunctionStub(
+            '<?php
+                echo fdiv(1.0, 2.0);',
+        );
+    }
+
+    /**
+     * Analyses the code with a `.php` stub of a native function, written at run time since PHP cannot lint
+     * a file that redeclares it.
+     */
+    private function analyzeWithNativeFunctionStub(string $code): void
+    {
+        $temp_path = (string) tempnam(sys_get_temp_dir(), 'psalm_native_function_stub');
+        $stub_path = $temp_path . '.php';
+        rename($temp_path, $stub_path);
+        file_put_contents(
+            $stub_path,
+            '<?php
+                function fdiv(float $num1, float $num2): float {}',
+        );
+
+        try {
+            $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+                TestConfig::loadFromXML(
+                    dirname(__DIR__),
+                    '<?xml version="1.0"?>
+                    <psalm
+                        errorLevel="1"
+                    >
+                        <projectFiles>
+                            <directory name="src" />
+                        </projectFiles>
+
+                        <stubs>
+                            <file name="' . $stub_path . '" />
+                        </stubs>
+                    </psalm>',
+                ),
+            );
+
+            $file_path = (string) getcwd() . '/src/somefile.php';
+
+            $this->addFile($file_path, $code);
+
+            $this->analyzeFile($file_path, new Context());
+        } finally {
+            unlink($stub_path);
+        }
     }
 
     public function testStubFileClass(): void
@@ -648,9 +926,7 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @runInSeparateProcess
-     */
+    #[RunInSeparateProcess]
     public function testPolyfilledFunction(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -680,9 +956,7 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @runInSeparateProcess
-     */
+    #[RunInSeparateProcess]
     public function testConditionalConstantDefined(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -712,9 +986,7 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @runInSeparateProcess
-     */
+    #[RunInSeparateProcess]
     public function testStubbedConstantVarCommentType(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -754,9 +1026,47 @@ final class StubTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    /**
-     * @runInSeparateProcess
-     */
+    #[RunInSeparateProcess]
+    public function testStubDocblocksWithUnknownPsalmTagsDoNotCrash(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/unknown_psalm_annotation.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $stub = new StubWithTypoedAnnotations();
+                $name = (string) $stub->name;
+                echo StubWithTypoedAnnotations::LIMIT;
+                echo StubEnumWithTypoedAnnotation::Foo->name;',
+        );
+
+        // reported like the other docblock issues of stubs, instead of crashing the scan
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/InvalidDocblock.*Unrecognised annotation @psalm-supress/');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    #[RunInSeparateProcess]
     public function testClassAlias(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -1059,9 +1369,9 @@ final class StubTest extends TestCase
 
     /**
      * @return iterable<string, array{string,string}>
-     * @psalm-mutation-free
+     * @psalm-pure
      */
-    public function versionDependentStubsProvider(): iterable
+    public static function versionDependentStubsProvider(): iterable
     {
         yield '7.0' => [
             '7.0',
@@ -1077,7 +1387,7 @@ final class StubTest extends TestCase
         ];
     }
 
-    /** @dataProvider versionDependentStubsProvider */
+    #[DataProvider('versionDependentStubsProvider')]
     public function testVersionDependentStubs(string $php_version, string $code): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -1104,6 +1414,432 @@ final class StubTest extends TestCase
         $this->addFile($file_path, $code);
 
         $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testPreloadedStubOfBuiltinClassKeepsUndeclaredMethods(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/partial_builtin_class.phpstub" preloadClasses="true" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->visitPreloadedStubFiles($codebase);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return DateTime|false */
+                function create() {
+                    return DateTime::createFromFormat("Y", "2020");
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    #[RequiresPhp('>= 8.4.0')]
+    public function testStubOfBuiltinClassDeclaresPromotedProperty(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/promoted_property_of_builtin_class.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return non-empty-string */
+                function constantName(ReflectionConstant $constant): string
+                {
+                    return $constant->name;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    private function setUpWithStubFile(string $stub, string $php_version): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="' . $stub . '" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
+    }
+
+    public function testStubPropertyDocblockTypeWinsOverPropertyMap(): void
+    {
+        $this->setUpWithStubFile('tests/fixtures/stubs/property_type_of_mapped_class.phpstub', '8.4');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return non-empty-string */
+                function tokenText(PhpToken $t): string
+                {
+                    return $t->text;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubPromotedPropertyTypeWinsOverPropertyMap(): void
+    {
+        $this->setUpWithStubFile('tests/fixtures/stubs/promoted_property_of_mapped_class.phpstub', '8.4');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return non-empty-string */
+                function tokenText(PhpToken $t): string
+                {
+                    return $t->text;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testPropertyTypeInferredFromStubConstructorDoesNotWinOverPropertyMap(): void
+    {
+        $this->setUpWithStubFile('tests/fixtures/stubs/constructor_inferred_property_of_mapped_class.phpstub', '8.4');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function tokenPos(PhpToken $t): int
+                {
+                    return $t->pos;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubPromotedPropertyWithOnlyVarDocblockWinsOverPropertyMap(): void
+    {
+        $this->setUpWithStubFile('tests/fixtures/stubs/promoted_var_property_of_mapped_class.phpstub', '8.4');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return non-empty-string */
+                function tokenText(PhpToken $t): string
+                {
+                    return $t->text;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubPropertyNativeTypeWinsOverPropertyMap(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches(
+            '/NullableReturnStatement - .*somefile\.php:4:28 - '
+            . "The declared return type 'int' for tokenPos is not nullable, but the function returns 'int\|null'/",
+        );
+        $this->setUpWithStubFile('tests/fixtures/stubs/property_type_of_mapped_class.phpstub', '8.4');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function tokenPos(PhpToken $t): int
+                {
+                    return $t->pos;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubPropertyWithoutTypeGetsPropertyMapType(): void
+    {
+        $this->setUpWithStubFile('tests/fixtures/stubs/property_type_of_mapped_class.phpstub', '8.4');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function tokenLine(PhpToken $t): int
+                {
+                    return $t->line;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubOfMappedClassKeepsPropertiesItDoesNotDeclare(): void
+    {
+        $this->setUpWithStubFile('tests/fixtures/stubs/property_type_of_mapped_class.phpstub', '8.4');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function tokenId(PhpToken $t): int
+                {
+                    return $t->id;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testDateIntervalDaysKeepsIgnoringFalsableIssues(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function daysPlusOne(DateInterval $interval): int
+                {
+                    return $interval->days + 1;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testBundledStubKeepsPropertyMapTypeOfPdoExceptionCode(): void
+    {
+        $this->setUpWithStubFile('stubs/extensions/pdo.phpstub', '8.4');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class DbError extends PDOException
+                {
+                    public function numericCode(): int
+                    {
+                        return is_int($this->code) ? $this->code : 0;
+                    }
+                }
+
+                echo (new DbError())->numericCode();',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testBundledStubKeepsPropertyMapTypeOfRdKafkaMessageHeaders(): void
+    {
+        $this->setUpWithStubFile('stubs/extensions/rdkafka.phpstub', '8.4');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return array<string, string> */
+                function messageHeaders(RdKafka\Message $message): array
+                {
+                    return $message->headers ?? [];
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testPropertyMapStillOverridesPropertyTypeOfRealSource(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace PhpParser\Node\Stmt;
+
+                use PhpParser\Node\Stmt;
+
+                final class Else_
+                {
+                    /** @var array<array-key, Stmt> */
+                    public array $stmts = [];
+                }
+
+                /** @return list<Stmt> */
+                function elseStatements(Else_ $else): array
+                {
+                    return $else->stmts;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubRedeclaresPropertyOfAnotherStubWithPromotion(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/promoted_property_of_stubbed_class.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.2', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class OrderNotFound extends Exception
+                {
+                    /** @return non-empty-string */
+                    public function reason(): string
+                    {
+                        return $this->message;
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubRedeclaresPropertyOfAnotherStubWithoutDuplicateProperty(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/property_of_stubbed_class.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class OrderNotFound extends Exception
+                {
+                    /** @return non-empty-string */
+                    public function reason(): string
+                    {
+                        return $this->message;
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $stub_path = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'fixtures'
+            . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'property_of_stubbed_class.phpstub';
+        $this->assertSame(
+            [],
+            $this->project_analyzer->getCodebase()->file_storage_provider->get($stub_path)->scan_issues,
+        );
     }
 
     public function testStubFileWithPartialClassDefinitionWithMoreMethods(): void
@@ -1151,6 +1887,62 @@ final class StubTest extends TestCase
 
                 (new PartiallyStubbedClass())->foo(A::class);
                 (new PartiallyStubbedClass())->bar(5);',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubbedMethodWithConditionalReturnOverridingSource(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/conditional_return_method.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        // stubs only override classes declared outside the project directories
+        $file_path = (string) getcwd() . '/vendor/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                interface ConditionallyReturning
+                {
+                    /**
+                     * @param mixed $x
+                     * @return ($x is string ? StringResult : OtherResult)
+                     */
+                    public function m($x = null);
+                }
+
+                final class StringResult {}
+                final class OtherResult {}
+
+                function stringArg(ConditionallyReturning $c): StringResult {
+                    return $c->m("a");
+                }
+
+                function intArg(ConditionallyReturning $c): OtherResult {
+                    return $c->m(1);
+                }
+
+                function defaultArg(ConditionallyReturning $c): OtherResult {
+                    return $c->m();
+                }',
         );
 
         $this->analyzeFile($file_path, new Context());
@@ -1576,6 +2368,240 @@ final class StubTest extends TestCase
             '<?php
                 invalid_taint_sink("text");',
         );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * A stub redeclaring a method of an earlier stub (e.g. to add its purity) keeps the earlier stub's sinks
+     */
+    public function testRedeclaredStubMethodKeepsTheSinksOfTheEarlierStub(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('TaintedHtml - src/somefile.php');
+
+        $this->analyzeWithRedeclaredStubMethod(
+            '<?php
+                $html = $_GET["html"];
+                if (is_string($html)) {
+                    new StubRedeclaringASinkHolder($html, "SELECT 1");
+                }',
+        );
+    }
+
+    public function testRedeclaredStubMethodAddsItsOwnSinks(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('TaintedSql - src/somefile.php');
+
+        $this->analyzeWithRedeclaredStubMethod(
+            '<?php
+                $query = $_GET["query"];
+                if (is_string($query)) {
+                    new StubRedeclaringASinkHolder("<b>bold</b>", $query);
+                }',
+        );
+    }
+
+    private function analyzeWithRedeclaredStubMethod(string $code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/redeclared_method_taints_first.phpstub" />
+                        <file name="tests/fixtures/stubs/redeclared_method_taints_second.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->trackTaintedInputs();
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    private function analyzeWithLibraryStubs(string $code, bool $load_library_stubs = true): Config
+    {
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__),
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+                loadLibraryStubs="' . ($load_library_stubs ? 'true' : 'false') . '"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+            </psalm>',
+        );
+        $config->library_stubs_dir = self::getLibraryStubsDir();
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig($config);
+        $this->project_analyzer->trackTaintedInputs();
+
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src/somefile.php';
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context());
+
+        return $config;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function getLibraryStubsDir(): string
+    {
+        return dirname(__DIR__) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'fixtures'
+            . DIRECTORY_SEPARATOR . 'library_stubs';
+    }
+
+    public function testLibraryStubIsNotLoadedWithoutItsClassesOrFunctions(): void
+    {
+        $config = $this->analyzeWithLibraryStubs(
+            '<?php
+                echo "safe";',
+        );
+
+        $this->assertNotContains(
+            self::getLibraryStubsDir() . DIRECTORY_SEPARATOR . 'library' . DIRECTORY_SEPARATOR . 'client.phpstub',
+            $config->internal_stubs,
+        );
+        $this->assertNotContains(
+            self::getLibraryStubsDir() . DIRECTORY_SEPARATOR . 'library' . DIRECTORY_SEPARATOR . 'functions.phpstub',
+            $config->internal_stubs,
+        );
+    }
+
+    public function testLibraryStubIsNotLoadedWhenLibraryStubsAreDisabled(): void
+    {
+        $config = $this->analyzeWithLibraryStubs(
+            '<?php
+                namespace LibraryStub;
+
+                class Client
+                {
+                    public function get(string $url): string
+                    {
+                        return "";
+                    }
+                }
+
+                function f(string $url): void {
+                    (new Client())->get($url);
+                }',
+            false,
+        );
+
+        $this->assertNotContains(
+            self::getLibraryStubsDir() . DIRECTORY_SEPARATOR . 'library' . DIRECTORY_SEPARATOR . 'client.phpstub',
+            $config->internal_stubs,
+        );
+    }
+
+    /**
+     * A stub that extends a class from an already scanned real file forces its rescan during stub registration.
+     */
+    public function testRealFileRescannedDuringStubRegistrationKeepsRealClassFlags(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm errorLevel="1">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/stub_depending_on_real_file.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->scanner->addFileToShallowScan(dirname(__DIR__) . '/tests/fixtures/stub_dependency/Lib.php');
+        $codebase->scanFiles();
+        $codebase->config->visitStubFiles($codebase);
+
+        foreach (['StubDependency\Lib', 'StubDependency\Lib2'] as $class_name) {
+            $storage = $codebase->classlike_storage_provider->get($class_name);
+            $this->assertTrue($storage->user_defined, $class_name);
+            $this->assertFalse($storage->stubbed, $class_name);
+        }
+
+        $stub_defined = $codebase->classlike_storage_provider->get('StubDependency\StubbedElsewhere');
+        $this->assertFalse($stub_defined->user_defined);
+        $this->assertTrue($stub_defined->stubbed);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerStubbedBuiltinFunctionWithReturnTypeProvider(): iterable
+    {
+        yield 'sprintf' => ['sprintf("%s", $s)'];
+        yield 'mb_strtolower' => ['mb_strtolower($s)'];
+    }
+
+    #[DataProvider('providerStubbedBuiltinFunctionWithReturnTypeProvider')]
+    public function testStubThrowsOfFunctionWithReturnTypeProvider(string $call): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+
+        $this->analyzeWithThrowingBuiltinFunctionStubs(
+            '<?php
+                function f(string $s): string {
+                    return ' . $call . ';
+                }',
+        );
+    }
+
+    public function testStubThrowsOfFunctionWithReturnTypeProviderIgnoredForFirstClassCallable(): void
+    {
+        $this->analyzeWithThrowingBuiltinFunctionStubs(
+            '<?php
+                function f(): Closure {
+                    return mb_strtolower(...);
+                }',
+        );
+    }
+
+    private function analyzeWithThrowingBuiltinFunctionStubs(string $code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    checkForThrowsDocblock="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/throwing_builtin_functions.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile($file_path, $code);
 
         $this->analyzeFile($file_path, new Context());
     }

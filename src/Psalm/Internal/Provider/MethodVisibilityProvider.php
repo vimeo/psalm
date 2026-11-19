@@ -36,8 +36,7 @@ final class MethodVisibilityProvider
     }
 
     /**
-     * @param class-string<LegacyMethodVisibilityProviderInterface>
-     *     |class-string<MethodVisibilityProviderInterface> $class
+     * @param class-string<MethodVisibilityProviderInterface> $class
      */
     public function registerClass(string $class): void
     {

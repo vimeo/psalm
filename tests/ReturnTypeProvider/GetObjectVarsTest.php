@@ -13,10 +13,10 @@ final class GetObjectVarsTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         yield 'returnsPublicProperties' => [
             'code' => '<?php
@@ -121,6 +121,32 @@ final class GetObjectVarsTest extends TestCase
             'assertions' => [],
         ];
 
+        yield 'propertiesOfAnObjectOfNoKnownClassKeepStringKeys' => [
+            'code' => '<?php
+                function f(object $o): void {
+                    $ret = get_object_vars($o);
+                    /** @psalm-check-type-exact $ret = array<string, mixed> */
+                }',
+            'assertions' => [],
+        ];
+
+        yield 'propertiesOfAClassWithoutDeclaredPropertiesKeepStringKeys' => [
+            'code' => '<?php
+                class Plain {}
+
+                function f(Plain $o): void {
+                    $ret = get_object_vars($o);
+                    /** @psalm-check-type-exact $ret = array<string, mixed> */
+                }',
+            'assertions' => [],
+        ];
+
+        yield 'propertiesOfStdClassMayHaveIntKeys' => [
+            'code' => '<?php
+                $ret = get_object_vars(new stdClass());',
+            'assertions' => ['$ret===' => 'array<array-key, mixed>'],
+        ];
+
         yield 'propertiesOfCastScalar' => [
             'code' => '<?php $ret = get_object_vars((object)true);',
             'assertions' => ['$ret' => 'array{scalar: true}'],
@@ -147,7 +173,7 @@ final class GetObjectVarsTest extends TestCase
             ],
         ];
 
-        yield 'SKIPPED-dynamicProperties' => [
+        yield 'dynamicProperties' => [
             'code' => '<?php
                 class a {
                     public function __construct(public string $t) {}
@@ -157,11 +183,13 @@ final class GetObjectVarsTest extends TestCase
                 $a->b = "test";
                 $test = get_object_vars($a);',
             'assertions' => [
-                '$test===' => "array{t: 'test'}",
+                '$test===' => 'array{t: string, ...<string, mixed>}',
             ],
+            'ignored_issues' => ['UndefinedPropertyAssignment'],
+            'php_version' => '8.0',
         ];
 
-        yield 'SKIPPED-dynamicProperties82' => [
+        yield 'SKIPPED-dynamicProperties82' => [ // #8119
             'code' => '<?php
                 #[AllowDynamicProperties]
                 class a {
@@ -172,13 +200,13 @@ final class GetObjectVarsTest extends TestCase
                 $a->b = "test";
                 $test = get_object_vars($a);',
             'assertions' => [
-                '$test===' => "array{t: 'test'}",
+                '$test===' => 'array{t: string, ...<string, mixed>}',
             ],
             'ignored_issues' => [],
             'php_version' => '8.2',
         ];
 
-        yield 'SKIPPED-noDynamicProperties82' => [
+        yield 'noDynamicProperties82' => [
             'code' => '<?php
                 class a {
                     public function __construct(public string $t) {}
@@ -187,7 +215,7 @@ final class GetObjectVarsTest extends TestCase
                 $a = new a("test");
                 $test = get_object_vars($a);',
             'assertions' => [
-                '$test===' => "array{t: 'test'}",
+                '$test===' => 'array{t: string, ...<string, mixed>}',
             ],
             'ignored_issues' => [],
             'php_version' => '8.2',

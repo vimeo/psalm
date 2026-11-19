@@ -12,7 +12,11 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Report;
 
 use function count;
+use function htmlspecialchars_decode;
 use function trim;
+
+use const ENT_QUOTES;
+use const ENT_XML1;
 
 /**
  * based on https://github.com/m50/psalm-json-to-junit
@@ -46,7 +50,7 @@ final class JunitReport extends Report
 
             $tests++;
 
-            $fname = $error->file_name;
+            $fname = $this->xmlText($error->file_name);
 
             if (!isset($ndata[$fname])) {
                 $ndata[$fname] = [
@@ -167,11 +171,21 @@ final class JunitReport extends Report
     }
 
     /**
+     * xmlEncode() without the escaping, for DOM attributes, which are escaped when serialized.
+     *
+     * @psalm-mutation-free
+     */
+    private function xmlText(string $data): string
+    {
+        return htmlspecialchars_decode($this->xmlEncode($data), ENT_XML1 | ENT_QUOTES);
+    }
+
+    /**
      * @psalm-mutation-free
      */
     private function dataToOutput(IssueData $data): string
     {
-        $ret = 'message: ' . $this->xmlEncode(trim($data->message)) . "\n";
+        $ret = 'message: ' . $this->xmlEncode(trim(self::getMessageWithCwe($data))) . "\n";
         $ret .= 'type: ' . trim($data->type) . "\n";
         $ret .= 'snippet: ' . $this->xmlEncode(trim($data->snippet)) . "\n";
         $ret .= 'selected_text: ' . $this->xmlEncode(trim($data->selected_text)) . "\n";

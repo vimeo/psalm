@@ -32,7 +32,6 @@ use function explode;
 use function implode;
 use function in_array;
 use function is_bool;
-use function pathinfo;
 use function rtrim;
 use function str_contains;
 use function str_ends_with;
@@ -40,10 +39,9 @@ use function str_starts_with;
 use function strtolower;
 use function substr;
 
-use const PATHINFO_EXTENSION;
-
 /**
  * @internal
+ * @psalm-import-type CapabilitySet from Capabilities
  */
 final class Functions
 {
@@ -158,6 +156,27 @@ final class Functions
     }
 
     /**
+     * Like getStorage(), for looking up a function referenced in a file outside of analysis (e.g. by the language
+     * server). Storage of builtin functions is only registered lazily during analysis, which may not have happened
+     * in this process, and never for functions only known from the callmap (e.g. of extensions not loaded here).
+     *
+     * @param non-empty-lowercase-string $function_id
+     */
+    public function getStorageForSymbolLookup(string $function_id, string $file_path): FunctionStorage
+    {
+        try {
+            return $this->getStorage(null, $function_id, $file_path, $file_path);
+        } catch (UnexpectedValueException $e) {
+            // a function declared for the file whose storage is missing is broken, not just unregistered
+            if (isset($this->file_storage_provider->get($file_path)->declaring_function_ids[$function_id])) {
+                throw $e;
+            }
+
+            return $this->reflection->createFunctionStorage($function_id) ?? throw $e;
+        }
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     public function addGlobalFunction(string $function_id, FunctionStorage $storage): void
@@ -172,13 +191,13 @@ final class Functions
      *
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
-    public function isDeclaredInCode(string $function_id): bool
+    public function isDeclaredInCode(string $function_id, Scanner $scanner): bool
     {
         $function_id = strtolower($function_id);
 
         foreach (FileStorageProvider::getAll() as $file_path => $file_storage) {
             if (isset($file_storage->functions[$function_id])
-                && pathinfo($file_path, PATHINFO_EXTENSION) !== 'phpstub'
+                && !$scanner->isStubFile($file_path)
             ) {
                 return true;
             }
@@ -434,6 +453,7 @@ final class Functions
 
     /**
      * @param ?list<Arg> $args
+     * @return CapabilitySet
      */
     public function getCallMapFunctionCapabilities(
         ?StatementsAnalyzer $statements_analyzer,
@@ -613,11 +633,19 @@ final class Functions
             || (isset($args[0]) && !$args[0]->value instanceof ClosureNode);
 
         $mutations = Capabilities::NONE;
+        $writes_refs = false;
         foreach ($function_callable->params as $i => $param) {
             if ($type_provider && $param->type && $param->type->hasCallableType() && isset($args[$i])) {
                 $arg_type = $type_provider->getType($args[$i]->value);
 
-                if ($arg_type) {
+                // a closure literal: without what it does to the variables it captured by reference
+                $argument_purity = $statements_analyzer
+                    ? CallPurityResolver::getArgumentPurity($statements_analyzer, $args[$i])
+                    : null;
+
+                if ($argument_purity !== null && $statements_analyzer) {
+                    $mutations |= CallPurityResolver::resolvePurity($argument_purity, $statements_analyzer);
+                } elseif ($arg_type) {
                     foreach ($arg_type->getAtomicTypes() as $possible_callable) {
                         $possible_callable = CallableTypeComparator::getCallableFromAtomic(
                             $codebase,
@@ -636,12 +664,12 @@ final class Functions
 
             if ($param->by_ref && isset($args[$i])) {
                 $must_use = false;
-                // what this costs depends on the argument: see ByRefArgumentAnalyzer
-                $mutations |= Capabilities::WRITE_REFS;
+                $writes_refs = true;
             }
         }
 
-        return $mutations;
+        // what this costs depends on the argument: see ByRefArgumentAnalyzer
+        return $writes_refs ? $mutations | Capabilities::WRITE_REFS : $mutations;
     }
 
     /**

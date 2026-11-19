@@ -1,12 +1,12 @@
 # Security analysis annotations
 
-## `@psalm-taint-source <taint-type>`
+## `@psalm-taint-source <taint-type> [return['key']]`
 
 See [Custom taint sources](custom_taint_sources.md#taint-source-annotation).
 
-## `@psalm-taint-sink <taint-type> <param-name>`
+## `@psalm-taint-sink <taint-type #conditional> <param-name>`
 
-See [Custom taint sinks](custom_taint_sinks.md).
+See [Custom taint sinks](custom_taint_sinks.md) and [Conditional sinks](custom_taint_sinks.md#conditional-sinks).
 
 ## `@psalm-taint-escape <taint-type #conditional>`
 
@@ -37,6 +37,20 @@ function getRequestPath(): string {}
 The taints the native types of a value can't hold are still removed from it: a `string` returned by
 `getRequestPath()` above can't be a NoSQL query.
 
+## `@psalm-cli-only`
+
+See [Output of command-line code](avoiding_false_positives.md#output-of-command-line-code).
+
+## `@psalm-cli-only-instances`
+
+On a final class: its instances only exist in command-line processes, so the code that requires one only runs from the
+command line. See [Classes only instantiated from the command line](avoiding_false_positives.md#classes-only-instantiated-from-the-command-line).
+
+## `@psalm-taint-property-bag $<property>`
+
+On a class: the array property `$<property>` holds the properties of its objects under their names.
+See [Properties held in an array property](taint_flow.md#properties-held-in-an-array-property)
+
 ## `@psalm-taint-specialize`
 
 See [Specializing taints in functions](avoiding_false_positives.md#specializing-taints-in-functions) and [Specializing taints in classes](avoiding_false_positives.md#specializing-taints-in-classes).
@@ -50,6 +64,27 @@ Each `<arg>` is a parameter, like `$value`. With `-> return`, an `<arg>` can als
 - `$this`: the object the method is called on
 - a parameter followed by `()`, like `$compute()`: what the callables passed to that parameter return
 
+## `@psalm-flow ( <arg>, [ <arg>, ] ) -> $<callable>()`
+
+The callables given to the parameter `$<callable>` are called with what is given to the `<arg>`s. See
+[Arguments to callables](taint_flow.md#arguments-to-callables).
+
 ## `@psalm-flow ( <arg>, [ <arg>, ] ) -> <Class>::$<store>[<key>]` and `@psalm-flow <Class>::$<store>[<key>] -> return`
 
 See [Keyed stores](taint_flow.md#keyed-stores)
+
+## `@psalm-flow ( <arg>, [ <arg>, ] ) -> $this-><name>` and `@psalm-flow $this-><name> -> return`
+
+`<name>` is a parameter giving the name of the property, like `$name`, or `*` for any property.
+See [Properties set and got by name](taint_flow.md#properties-set-and-got-by-name)
+
+## `@psalm-flow ( <arg>, [ <arg>, ] ) -> $this->{key}` and `@psalm-flow $this->{key} -> return[key]`
+
+Each property is set to, or returned under, its name as a key of the array.
+See [Properties set and got by name](taint_flow.md#properties-set-and-got-by-name)
+
+## `@psalm-flow ( <arg>, [ <arg>, ] ) -> $this-><property>[<key>]` and `@psalm-flow $this-><property>[<key>] -> return`
+
+`<property>` is the name of the property, like `vars`. The optional `[<key>]` is the element of that array property
+under the key given to a parameter, like `[$name]`, or `[*]` for any element.
+See [A property and its elements](taint_flow.md#a-property-and-its-elements)

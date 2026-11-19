@@ -14,21 +14,26 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
+use Psalm\Internal\Codebase\NosqlEqualityOperand;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Provider\ReturnTypeProvider\ArrayMapReturnTypeProvider;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -40,6 +45,7 @@ use Psalm\Issue\PossiblyUndefinedVariable;
 use Psalm\Issue\TooFewArguments;
 use Psalm\Issue\TooManyArguments;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualPipeValue;
 use Psalm\Node\VirtualArg;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
@@ -53,21 +59,30 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
+use function array_any;
+use function array_key_first;
+use function array_keys;
+use function array_map;
 use function array_reduce;
 use function array_reverse;
+use function array_search;
 use function array_slice;
 use function array_values;
 use function assert;
 use function count;
 use function dirname;
+use function implode;
 use function in_array;
 use function is_int;
 use function is_string;
+use function ksort;
 use function max;
 use function min;
 use function reset;
@@ -100,6 +115,61 @@ final class ArgumentsAnalyzer
      * @return  false|null
      */
     public static function analyze(
+        StatementsAnalyzer $statements_analyzer,
+        array $args,
+        ?array $function_params,
+        ?string $method_id,
+        bool $allow_named_args,
+        Context $context,
+        ?TemplateResult $template_result = null,
+    ): ?bool {
+        // what is negated is the call, not what its arguments are made of: a `class_exists()` in an argument of a
+        // negated call checks the class where the argument is evaluated
+        $was_inside_negation = $context->inside_negation;
+        $context->inside_negation = false;
+
+        try {
+            $result = self::analyzeArguments(
+                $statements_analyzer,
+                $args,
+                $function_params,
+                $method_id,
+                $allow_named_args,
+                $context,
+                $template_result,
+            );
+        } finally {
+            $context->inside_negation = $was_inside_negation;
+        }
+
+        // the callee may call a closure it is given, which may write what the closure captured by reference
+        foreach ($args as $arg) {
+            foreach ($statements_analyzer->node_data->getType($arg->value)?->getAtomicTypes() ?? [] as $atomic) {
+                if (!$atomic instanceof TClosure) {
+                    continue;
+                }
+
+                foreach ($atomic->byref_uses as $use_name => $_) {
+                    $use_var_id = '$' . $use_name;
+
+                    $context->removeVarFromConflictingClauses(
+                        $use_var_id,
+                        $context->vars_in_scope[$use_var_id] ?? null,
+                        $statements_analyzer,
+                    );
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param   list<PhpParser\Node\Arg>          $args
+     * @param   array<int, FunctionLikeParameter>|null  $function_params
+     * @return  false|null
+     */
+    private static function analyzeArguments(
         StatementsAnalyzer $statements_analyzer,
         array $args,
         ?array $function_params,
@@ -152,6 +222,16 @@ final class ArgumentsAnalyzer
             }
 
             if ($function_params === null) {
+                if ($arg->value instanceof PhpParser\Node\Expr\Array_ && $statements_analyzer->taint_flow_graph) {
+                    NosqlEqualityOperand::markArgument(
+                        $statements_analyzer->getCodebase(),
+                        $method_id,
+                        null,
+                        null,
+                        $arg->value,
+                    );
+                }
+
                 if (self::evaluateArbitraryParam(
                     $statements_analyzer,
                     $arg,
@@ -163,23 +243,17 @@ final class ArgumentsAnalyzer
                 continue;
             }
 
-            $param = null;
+            $param = self::getParamOfArg($function_params, $last_param, $allow_named_args, $arg, $argument_offset);
 
-            if ($arg->name && $allow_named_args) {
-                foreach ($function_params as $candidate_param) {
-                    if ($candidate_param->name === $arg->name->name) {
-                        $param = $candidate_param;
-                        break;
-                    }
-                }
-
-                if ($param === null && $last_param && $last_param->is_variadic) {
-                    $param = $last_param;
-                }
-            } elseif ($argument_offset < count($function_params)) {
-                $param = $function_params[$argument_offset];
-            } elseif ($last_param && $last_param->is_variadic) {
-                $param = $last_param;
+            // the operands of the `$eq` of the fields of a MongoDB filter literal
+            if ($arg->value instanceof PhpParser\Node\Expr\Array_ && $statements_analyzer->taint_flow_graph) {
+                NosqlEqualityOperand::markArgument(
+                    $statements_analyzer->getCodebase(),
+                    $method_id,
+                    $function_params,
+                    $param,
+                    $arg->value,
+                );
             }
 
             $by_ref = $param && $param->by_ref;
@@ -203,6 +277,7 @@ final class ArgumentsAnalyzer
                     || $arg->value instanceof PhpParser\Node\Expr\Array_
                     || $arg->value instanceof PhpParser\Node\Expr\Ternary
                     || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
+                    || $arg->value instanceof VirtualPipeValue
                 )
             ) {
                 if (self::handleByRefFunctionArg(
@@ -250,7 +325,16 @@ final class ArgumentsAnalyzer
                     $args,
                     $method_id,
                     $context,
-                    $template_result ?? new TemplateResult([], []),
+                    self::withBoundsOfPrecedingByRefArgs(
+                        $statements_analyzer,
+                        $args,
+                        $function_params,
+                        $last_param,
+                        $allow_named_args,
+                        $argument_offset,
+                        $context,
+                        $template_result ?? new TemplateResult([], []),
+                    ),
                     $argument_offset,
                     $arg,
                     $param,
@@ -270,6 +354,15 @@ final class ArgumentsAnalyzer
                         $param,
                     );
                 }
+            }
+
+            if (($arg->value instanceof PhpParser\Node\Expr\MethodCall
+                    || $arg->value instanceof PhpParser\Node\Expr\StaticCall)
+                && $arg->value->isFirstClassCallable()
+                && $method_id === 'array_map'
+                && $argument_offset === 0
+            ) {
+                $arg->value->setAttribute(MethodCallReturnTypeFetcher::CALL_ARGUMENT_ATTRIBUTE, true);
             }
 
             $was_inside_call = $context->inside_call;
@@ -371,6 +464,19 @@ final class ArgumentsAnalyzer
 
         $template_types = ['ArrayValue' . $argument_offset => [$method_id => Type::getMixed()]];
 
+        // array_find(), array_find_key(), array_any() and array_all() also pass the key to the callback
+        $key_type = Type::getArrayKey();
+        if ($method_id !== 'array_map' && $method_id !== 'array_filter') {
+            $template_types['ArrayKey' . $argument_offset] = [$method_id => Type::getArrayKey()];
+            $key_type = new Union([
+                new TTemplateParam(
+                    'ArrayKey' . $argument_offset,
+                    Type::getArrayKey(),
+                    $method_id,
+                ),
+            ]);
+        }
+
         $replace_template_result = new TemplateResult(
             $template_types,
             [],
@@ -381,7 +487,7 @@ final class ArgumentsAnalyzer
         TemplateStandinTypeReplacer::fillTemplateResult(
             new Union([
                 new TArray([
-                    Type::getArrayKey(),
+                    $key_type,
                     new Union([
                         new TTemplateParam(
                             'ArrayValue' . $argument_offset,
@@ -410,6 +516,132 @@ final class ArgumentsAnalyzer
     }
 
     /**
+     * @psalm-pure
+     */
+    private static function getTemplatedCallableParam(string $template_name, string $method_id): FunctionLikeParameter
+    {
+        $type = new Union([
+            new TTemplateParam(
+                $template_name,
+                Type::getMixed(),
+                $method_id,
+            ),
+        ]);
+
+        return new FunctionLikeParameter('function', false, $type, $type);
+    }
+
+    /**
+     * What a sealed unpacked shape can pass: the parameters named by its string keys, or as many parameters as a list
+     * has elements. Null for what is not known.
+     *
+     * @return array{list<int|string>|null, int|null}
+     * @psalm-capabilities read-props
+     */
+    private static function getUnpackedShape(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Arg $arg): array
+    {
+        $unpacked_type = $statements_analyzer->node_data->getType($arg->value);
+
+        if (!$unpacked_type
+            || !$unpacked_type->isSingle()
+            || !($unpacked_atomic = $unpacked_type->getSingleAtomic()) instanceof TKeyedArray
+            || $unpacked_atomic->fallback_params !== null
+        ) {
+            return [null, null];
+        }
+
+        if ($unpacked_atomic->is_list) {
+            return [null, count($unpacked_atomic->properties)];
+        }
+
+        $keys = array_keys($unpacked_atomic->properties);
+
+        return [
+            array_all($keys, static fn(int|string $key): bool => is_string($key)) ? $keys : null,
+            null,
+        ];
+    }
+
+    /**
+     * The parameter an argument is passed to: the one it is named after (when the function allows named arguments),
+     * else the one at its position, a variadic one taking the rest
+     *
+     * @param array<int, FunctionLikeParameter> $function_params
+     * @psalm-capabilities read-props
+     */
+    private static function getParamOfArg(
+        array $function_params,
+        ?FunctionLikeParameter $last_param,
+        bool $allow_named_args,
+        PhpParser\Node\Arg $arg,
+        int $argument_offset,
+    ): ?FunctionLikeParameter {
+        if ($arg->name && $allow_named_args) {
+            foreach ($function_params as $candidate_param) {
+                if ($candidate_param->name === $arg->name->name) {
+                    return $candidate_param;
+                }
+            }
+
+            return $last_param && $last_param->is_variadic ? $last_param : null;
+        }
+
+        if ($argument_offset < count($function_params)) {
+            return $function_params[$argument_offset];
+        }
+
+        return $last_param && $last_param->is_variadic ? $last_param : null;
+    }
+
+    /**
+     * The templates of the arguments passed by reference get their bounds only once the call is checked, but a
+     * closure given after them takes its parameter types from those templates (usort($array, fn($a, $b) => ...)).
+     *
+     * @param array<int, PhpParser\Node\Arg> $args
+     * @param array<int, FunctionLikeParameter> $function_params
+     */
+    private static function withBoundsOfPrecedingByRefArgs(
+        StatementsAnalyzer $statements_analyzer,
+        array $args,
+        array $function_params,
+        ?FunctionLikeParameter $last_param,
+        bool $allow_named_args,
+        int $argument_offset,
+        Context $context,
+        TemplateResult $template_result,
+    ): TemplateResult {
+        $result = null;
+
+        foreach ($args as $offset => $arg) {
+            if ($offset >= $argument_offset) {
+                break;
+            }
+
+            $param = self::getParamOfArg($function_params, $last_param, $allow_named_args, $arg, $offset);
+            $input_type = $statements_analyzer->node_data->getType($arg->value);
+
+            if (!$param || !$param->by_ref || !$param->type || !$input_type || !$param->type->hasTemplate()) {
+                continue;
+            }
+
+            $result ??= clone $template_result;
+
+            TemplateStandinTypeReplacer::replace(
+                $param->type,
+                $result,
+                $statements_analyzer->getCodebase(),
+                $statements_analyzer,
+                $input_type,
+                $offset,
+                $context->self,
+                $context->calling_method_id ?? $context->calling_function_id,
+            );
+        }
+
+        return $result ?? $template_result;
+    }
+
+    /**
      * @param   array<int, PhpParser\Node\Arg>  $args
      */
     private static function handleClosureArg(
@@ -428,30 +660,36 @@ final class ArgumentsAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
+        $static_class_type = $template_result->static_class_type;
+        $expand_static = static fn(Union $type): Union => $static_class_type !== null
+            ? TypeExpander::expandStatic($codebase, $type, $static_class_type, $template_result->static_class_is_final)
+            : $type;
+
         if (($argument_offset === 1 && in_array($method_id, self::ARRAY_FILTERLIKE, true) && count($args) === 2)
             || ($argument_offset === 0 && $method_id === 'array_map' && count($args) >= 2)
         ) {
             $function_like_params = [];
 
-            foreach ($template_result->lower_bounds as $template_name => $_) {
-                $t = new Union([
-                    new TTemplateParam(
-                        $template_name,
-                        Type::getMixed(),
-                        $method_id,
-                    ),
-                ]);
-                $function_like_params[] = new FunctionLikeParameter(
-                    'function',
-                    false,
-                    $t,
-                    $t,
-                );
+            if ($method_id === 'array_map') {
+                foreach ($template_result->lower_bounds as $template_name => $_) {
+                    $function_like_params[] = self::getTemplatedCallableParam($template_name, $method_id);
+                }
+
+                $function_like_params = array_reverse($function_like_params);
+            } else {
+                // the callback receives the value, then the key (except for array_filter without a mode)
+                foreach (['ArrayValue0', 'ArrayKey0'] as $template_name) {
+                    if (!isset($template_result->lower_bounds[$template_name])) {
+                        break;
+                    }
+
+                    $function_like_params[] = self::getTemplatedCallableParam($template_name, $method_id);
+                }
             }
 
             $replaced_type = new Union([
                 new TCallable(
-                    array_reverse($function_like_params),
+                    $function_like_params,
                 ),
             ]);
         } else {
@@ -468,28 +706,80 @@ final class ArgumentsAnalyzer
                 );
             }
         }
-        $replace_template_result = new TemplateResult(
-            $new_bounds,
-            [],
-        );
-        unset($new_bounds);
+        // `T` of `@template TArray as array<T>` is only known through what `TArray` was given
+        foreach ($template_result->lower_bounds as $k => $template_map) {
+            foreach ($template_map as $kk => $_) {
+                $as_type = $template_result->template_types[$k][$kk] ?? null;
 
-        $replaced_type = TemplateStandinTypeReplacer::replace(
-            $replaced_type,
-            $replace_template_result,
-            $codebase,
-            $statements_analyzer,
-            null,
-            null,
-            null,
-            $context->calling_method_id ?: $context->calling_function_id,
-        );
+                if (!$as_type || !$as_type->getTemplateTypes()) {
+                    continue;
+                }
 
-        $replaced_type = TemplateInferredTypeReplacer::replace(
-            $replaced_type,
-            $replace_template_result,
-            $codebase,
-        );
+                $bound_template_result = new TemplateResult($template_result->template_types, []);
+
+                TemplateStandinTypeReplacer::replace(
+                    $as_type,
+                    $bound_template_result,
+                    $codebase,
+                    $statements_analyzer,
+                    $new_bounds[$k][$kk],
+                    $argument_offset,
+                    $context->self,
+                    $context->calling_method_id ?? $context->calling_function_id,
+                );
+
+                foreach ($bound_template_result->lower_bounds as $bound_k => $bound_template_map) {
+                    foreach ($bound_template_map as $bound_kk => $bound_lower_bounds) {
+                        if (!isset($template_result->lower_bounds[$bound_k][$bound_kk])) {
+                            $new_bounds[$bound_k][$bound_kk]
+                                = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                    $bound_lower_bounds,
+                                    $codebase,
+                                );
+                        }
+                    }
+                }
+            }
+        }
+
+        /** @param array<string, array<string, Union>> $bounds */
+        $replace = static function (Union $type, array $bounds) use ($codebase, $statements_analyzer, $context): Union {
+            $replace_template_result = new TemplateResult($bounds, []);
+
+            return TemplateInferredTypeReplacer::replace(
+                TemplateStandinTypeReplacer::replace(
+                    $type,
+                    $replace_template_result,
+                    $codebase,
+                    $statements_analyzer,
+                    null,
+                    null,
+                    null,
+                    $context->calling_method_id ?: $context->calling_function_id,
+                ),
+                $replace_template_result,
+                $codebase,
+            );
+        };
+
+        // an untyped param takes the declared types with `static` of the call, as the argument is checked against
+        // them, before the bounds, which may hold the `static` of the caller, are put in them; a typed param is
+        // narrowed to the hint, so it keeps the `static` it is declared with, the caller's
+        $untyped_bounds = $new_bounds;
+        foreach ($template_result->template_types as $k => $template_map) {
+            foreach ($template_map as $kk => $template_type) {
+                if (($new_bounds[$k][$kk] ?? null) === $template_type) {
+                    $untyped_bounds[$k][$kk] = $expand_static($template_type);
+                }
+            }
+        }
+
+        $untyped_type = $expand_static($replaced_type);
+        $untyped_replaced_type = $untyped_type === $replaced_type && $untyped_bounds === $new_bounds
+            ? null
+            : $replace($untyped_type, $untyped_bounds);
+        $replaced_type = $replace($replaced_type, $new_bounds);
+        $untyped_replaced_type ??= $replaced_type;
 
         $closure_id = strtolower($statements_analyzer->getFilePath())
             . ':' . $arg->value->getLine()
@@ -518,14 +808,37 @@ final class ArgumentsAnalyzer
             }
 
             if (!$has_different_docblock_type) {
-                foreach ($replaced_type->getAtomicTypes() as $replaced_type_part) {
+                // a param declared with a type keeps master's hint also once it was narrowed by an earlier pass (type
+                // inferred), as the closure's storage is shared by every class using a trait it is in
+                $hint_type = $param_storage->signature_type !== null ? $replaced_type : $untyped_replaced_type;
+
+                foreach ($hint_type->getAtomicTypes() as $replaced_type_part) {
                     if ($replaced_type_part instanceof TCallable
                         || $replaced_type_part instanceof TClosure
                     ) {
                         if (isset($replaced_type_part->params[$closure_param_offset]->type)) {
                             $replaced_param_type = $replaced_type_part->params[$closure_param_offset]->type;
 
-                            $type_variable_resolver = new TypeVariableResolver($codebase);
+                            // A class template inferred at a construction site is
+                            // carried as a type variable (e.g. `` `_0 ``). When it
+                            // reaches an untyped closure parameter, resolve it to
+                            // the shape inferred at the construction site: the
+                            // closure body is a separate function-like where the
+                            // bare variable would otherwise be treated as neither
+                            // array nor object.
+                            //
+                            // A variable minted for an empty construction stands
+                            // for `never` so far; a parameter typed by the closure
+                            // itself keeps that type rather than being reported as
+                            // paradoxical for a collection nothing has filled yet,
+                            // so such a variable is left live for a typed parameter
+                            // (the containment below then records a bound on it and
+                            // keeps the declared type).
+                            $type_variable_resolver = new TypeVariableResolver(
+                                $codebase,
+                                false,
+                                $param_storage->type !== null && !$param_type_inferred,
+                            );
                             $type_variable_resolver->traverse($replaced_param_type);
 
                             if ($replaced_param_type->hasTemplate()) {
@@ -588,6 +901,11 @@ final class ArgumentsAnalyzer
                     $statements_analyzer,
                     $args[1 - $argument_offset]->value,
                     $param_storage,
+                    $method_id === 'array_map'
+                        ? ArrayMapReturnTypeProvider::getElementMarker($statements_analyzer, $context, $args)
+                        : null,
+                    // array_find(), array_find_key(), array_any() and array_all() pass the key second
+                    $closure_param_offset === 1 && $method_id !== 'array_map' && $method_id !== 'array_filter',
                 );
             }
         }
@@ -595,17 +913,37 @@ final class ArgumentsAnalyzer
 
     /**
      * The parameter of the closure array_map() or a function like array_filter() is given takes the elements of the
-     * array: through its type, or, if it has none to hold them, through the node the closure assigns it from.
+     * array: through its type, or, if it has none to hold them, through the node the closure assigns it from. With
+     * $element_marker, each with its own key (see ArrayMapReturnTypeProvider::getElementMarker()). With $is_key,
+     * it takes their keys instead.
      */
     private static function taintClosureParamWithArrayElements(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $array,
         FunctionLikeParameter $param_storage,
+        ?string $element_marker,
+        bool $is_key = false,
     ): void {
-        $temp = Type::getMixed();
+        $value_type = Type::getMixed();
+        $key_type = Type::getMixed();
 
         if ($param_storage->type) {
-            ArrayFetchAnalyzer::taintArrayFetch($statements_analyzer, $array, null, $param_storage->type, $temp);
+            if ($is_key) {
+                $key_type = $param_storage->type;
+            } else {
+                $value_type = $param_storage->type;
+            }
+
+            ArrayFetchAnalyzer::taintArrayFetch(
+                $statements_analyzer,
+                $array,
+                null,
+                $value_type,
+                $key_type,
+                foreach_marker: $element_marker,
+            );
+
+            $param_storage->type = $is_key ? $key_type : $value_type;
 
             return;
         }
@@ -614,8 +952,16 @@ final class ArgumentsAnalyzer
             return;
         }
 
-        $element_type = Type::getMixed();
-        ArrayFetchAnalyzer::taintArrayFetch($statements_analyzer, $array, null, $element_type, $temp);
+        ArrayFetchAnalyzer::taintArrayFetch(
+            $statements_analyzer,
+            $array,
+            null,
+            $value_type,
+            $key_type,
+            foreach_marker: $element_marker,
+        );
+
+        $element_type = $is_key ? $key_type : $value_type;
 
         // see FunctionLikeAnalyzer::processParams()
         $param_node = DataFlowNode::getForAssignment('$' . $param_storage->name, $param_storage->location);
@@ -740,6 +1086,7 @@ final class ArgumentsAnalyzer
         TemplateResult $template_result,
         CodeLocation $code_location,
         Context $context,
+        bool $static_is_called_class = false,
     ): ?bool {
         $in_call_map = $method_id ? InternalCallMapHandler::inCallMap((string) $method_id) : false;
 
@@ -782,6 +1129,11 @@ final class ArgumentsAnalyzer
             $cased_method_id = $function_storage->cased_name;
         }
 
+        // the arguments are analysed already, and these calls are insecure whatever their types
+        if ($method_id !== null && $method_id !== '') {
+            InsecureCallAnalyzer::analyze($statements_analyzer, $method_id, $args, $function_params, $code_location);
+        }
+
         $calling_class_storage = $class_storage;
 
         $static_fq_class_name = $fq_class_name;
@@ -822,10 +1174,34 @@ final class ArgumentsAnalyzer
 
         $class_generic_params = [];
 
+        // what replaces the templates in the types of the parameters: a template of the function itself that an
+        // argument outside its bound gave is not replaced, as the bound is compared with the argument then
+        $param_class_generic_params = [];
+
         foreach ($template_result->lower_bounds as $template_name => $type_map) {
             foreach ($type_map as $class => $lower_bounds) {
-                if (count($lower_bounds) === 1) {
-                    $class_generic_params[$template_name][$class] = reset($lower_bounds)->type;
+                if (count($lower_bounds) !== 1) {
+                    continue;
+                }
+
+                $lower_bound_type = reset($lower_bounds)->type;
+                $class_generic_params[$template_name][$class] = $lower_bound_type;
+
+                $template_bound = $function_storage->template_types[$template_name][$class] ?? null;
+                $bound_comparison = new TypeComparisonResult();
+
+                if ($template_bound === null
+                    || UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $lower_bound_type,
+                        $template_bound,
+                        false,
+                        false,
+                        $bound_comparison,
+                    )
+                    || $bound_comparison->type_coerced
+                ) {
+                    $param_class_generic_params[$template_name][$class] = $lower_bound_type;
                 }
             }
         }
@@ -885,10 +1261,11 @@ final class ArgumentsAnalyzer
                             ),
                             $default_type,
                             $context,
-                            $class_generic_params,
+                            $param_class_generic_params,
                             $template_result,
                             $specialize_taint,
                             $in_call_map,
+                            $static_is_called_class,
                         );
                     }
                 }
@@ -899,9 +1276,32 @@ final class ArgumentsAnalyzer
             $args = array_reverse($args, true);
         }
 
+        /**
+         * The parameters each argument is checked against, keyed by their offset
+         *
+         * @var array<int, non-empty-array<int, FunctionLikeParameter>>
+         */
         $arg_function_params = [];
         $matched_args = [];
+        // names given as named arguments to the variadic parameter: positional ones are not duplicates of them
+        $named_variadic_args = [];
         $named_args_was_used = false;
+
+        // the parameter each argument starts at: an unpacked list of known length consumes several parameters
+        $param_offsets = [];
+        $next_param_offset = 0;
+        $args_in_order = $args;
+        ksort($args_in_order);
+
+        foreach ($args_in_order as $argument_offset => $arg) {
+            $param_offsets[$argument_offset] = $next_param_offset;
+
+            if ($arg->unpack) {
+                $next_param_offset += self::getUnpackedShape($statements_analyzer, $arg)[1] ?? 0;
+            } elseif (!$arg->name) {
+                $next_param_offset++;
+            }
+        }
 
         foreach ($args as $argument_offset => $arg) {
             if ($named_args_was_used && !$arg->name) {
@@ -916,10 +1316,35 @@ final class ArgumentsAnalyzer
             }
 
             if ($arg->unpack) {
-                if ($function_param_count > $argument_offset) {
-                    for ($i = $argument_offset; $i < $function_param_count; $i++) {
-                        $arg_function_params[$argument_offset][] = $function_params[$i];
+                [$unpacked_names, $unpacked_count] = self::getUnpackedShape($statements_analyzer, $arg);
+
+                $param_offset = $param_offsets[$argument_offset];
+
+                if ($function_param_count > $param_offset) {
+                    for ($i = $param_offset; $i < $function_param_count; $i++) {
+                        if (!$function_params[$i]->is_variadic
+                            && (($unpacked_names !== null
+                                    && !in_array($function_params[$i]->name, $unpacked_names, true))
+                                || ($unpacked_count !== null && $i >= $param_offset + $unpacked_count))
+                        ) {
+                            continue;
+                        }
+
+                        // a parameter passed by name cannot also receive an unpacked value, but a named argument
+                        // for the variadic parameter is collected next to the unpacked ones
+                        if (!$function_params[$i]->is_variadic && array_any(
+                            $args,
+                            static fn(PhpParser\Node\Arg $named_arg): bool => $named_arg->name !== null
+                                && $named_arg->name->name === $function_params[$i]->name,
+                        )) {
+                            continue;
+                        }
+
+                        $arg_function_params[$argument_offset][$i] = $function_params[$i];
                     }
+                } elseif ($last_param && $last_param->is_variadic) {
+                    // what the arguments before consumed already is every parameter: the rest goes to the variadic
+                    $arg_function_params[$argument_offset][$param_offset] = $last_param;
                 }
 
                 if (($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
@@ -944,7 +1369,10 @@ final class ArgumentsAnalyzer
                             foreach ($function_params as $candidate_param) {
                                 if ($candidate_param->name === $key_type->value || $candidate_param->is_variadic) {
                                     if ($candidate_param->name === $key_type->value) {
-                                        if (isset($matched_args[$candidate_param->name])) {
+                                        if (($candidate_param->is_variadic
+                                                ? isset($named_variadic_args[$candidate_param->name])
+                                                : isset($matched_args[$candidate_param->name]))
+                                        ) {
                                             IssueBuffer::maybeAdd(
                                                 new InvalidNamedArgument(
                                                     'Parameter $' . $key_type->value . ' has already been used in '
@@ -956,7 +1384,11 @@ final class ArgumentsAnalyzer
                                             );
                                         }
 
-                                        $matched_args[$candidate_param->name] = true;
+                                        if ($candidate_param->is_variadic) {
+                                            $named_variadic_args[$candidate_param->name] = true;
+                                        } else {
+                                            $matched_args[$candidate_param->name] = true;
+                                        }
                                     }
 
                                     $param_found = true;
@@ -981,10 +1413,13 @@ final class ArgumentsAnalyzer
             } elseif ($arg->name && (!$function_storage || $function_storage->allowsNamedArguments())) {
                 $named_args_was_used = true;
 
-                foreach ($function_params as $candidate_param) {
+                foreach ($function_params as $candidate_offset => $candidate_param) {
                     if ($candidate_param->name === $arg->name->name || $candidate_param->is_variadic) {
                         if ($candidate_param->name === $arg->name->name) {
-                            if (isset($matched_args[$candidate_param->name])) {
+                            if (($candidate_param->is_variadic
+                                    ? isset($named_variadic_args[$candidate_param->name])
+                                    : isset($matched_args[$candidate_param->name]))
+                            ) {
                                 IssueBuffer::maybeAdd(
                                     new InvalidNamedArgument(
                                         'Parameter $' . $arg->name->name . ' has already been used in '
@@ -996,10 +1431,19 @@ final class ArgumentsAnalyzer
                                 );
                             }
 
-                            $matched_args[$candidate_param->name] = true;
+                            if ($candidate_param->is_variadic) {
+                                $named_variadic_args[$candidate_param->name] = true;
+                            } else {
+                                $matched_args[$candidate_param->name] = true;
+                            }
                         }
 
-                        $arg_function_params[$argument_offset] = [$candidate_param];
+                        // like a positional argument, one collected by the variadic parameter is numbered after
+                        // the arguments before it
+                        $param_offset = $candidate_param->is_variadic
+                            ? max($candidate_offset, $param_offsets[$argument_offset])
+                            : $candidate_offset;
+                        $arg_function_params[$argument_offset] = [$param_offset => $candidate_param];
                         break;
                     }
                 }
@@ -1015,11 +1459,12 @@ final class ArgumentsAnalyzer
                         $statements_analyzer->getSuppressedIssues(),
                     );
                 }
-            } elseif ($function_param_count > $argument_offset) {
-                $arg_function_params[$argument_offset] = [$function_params[$argument_offset]];
-                $matched_args[$function_params[$argument_offset]->name] = true;
+            } elseif ($function_param_count > $param_offsets[$argument_offset]) {
+                $param = $function_params[$param_offsets[$argument_offset]];
+                $arg_function_params[$argument_offset] = [$param_offsets[$argument_offset] => $param];
+                $matched_args[$param->name] = true;
             } elseif ($last_param && $last_param->is_variadic) {
-                $arg_function_params[$argument_offset] = [$last_param];
+                $arg_function_params[$argument_offset] = [$param_offsets[$argument_offset] => $last_param];
                 $matched_args[$last_param->name] = true;
             }
         }
@@ -1029,7 +1474,9 @@ final class ArgumentsAnalyzer
                 continue;
             }
 
-            if ($arg_function_params[$argument_offset][0]->by_ref
+            $first_param_offset = array_key_first($arg_function_params[$argument_offset]);
+
+            if ($arg_function_params[$argument_offset][$first_param_offset]->by_ref
                 && $method_id !== 'extract'
             ) {
                 if (self::handlePossiblyMatchingByRefParam(
@@ -1039,13 +1486,14 @@ final class ArgumentsAnalyzer
                     $cased_method_id,
                     $last_param,
                     $function_params,
-                    $argument_offset,
+                    $first_param_offset,
                     $arg,
                     $context,
                     $template_result,
                     $method_id instanceof MethodIdentifier ? $method_id : null,
                     $in_call_map ? null : $function_storage,
                     $code_location,
+                    $specialize_taint,
                     $args,
                 ) === false) {
                     return null;
@@ -1054,7 +1502,7 @@ final class ArgumentsAnalyzer
 
             $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
 
-            foreach ($arg_function_params[$argument_offset] as $i => $function_param) {
+            foreach ($arg_function_params[$argument_offset] as $param_offset => $function_param) {
                 if (ArgumentAnalyzer::checkArgumentMatches(
                     $statements_analyzer,
                     $cased_method_id,
@@ -1064,16 +1512,17 @@ final class ArgumentsAnalyzer
                     $code_location,
                     $function_storage,
                     $function_param,
-                    $argument_offset + $i,
-                    $i,
+                    $param_offset,
+                    $param_offset - $param_offsets[$argument_offset],
                     $function_storage?->allowsNamedArguments() ?? true,
                     $arg,
                     $arg_value_type,
                     $context,
-                    $class_generic_params,
+                    $param_class_generic_params,
                     $template_result,
                     $specialize_taint,
                     $in_call_map,
+                    $static_is_called_class,
                 ) === false) {
                     return false;
                 }
@@ -1095,7 +1544,10 @@ final class ArgumentsAnalyzer
                     continue;
                 }
 
-                if ($in_call_map && $argument_offset === 1 && strtolower($cased_method_id) === 'curl_setopt_array') {
+                if ($in_call_map
+                    && array_key_first($arg_function_params[$argument_offset]) === 1
+                    && strtolower($cased_method_id) === 'curl_setopt_array'
+                ) {
                     self::addCurlOptionArraySinks(
                         $statements_analyzer->taint_flow_graph,
                         $codebase,
@@ -1106,21 +1558,27 @@ final class ArgumentsAnalyzer
                     continue;
                 }
 
-                foreach ($arg_function_params[$argument_offset] as $function_param) {
-                    $sinks = self::getArgumentSinks($cased_method_id, $argument_offset, $args, $function_param->sinks);
+                foreach ($arg_function_params[$argument_offset] as $param_offset => $function_param) {
+                    $sinks = self::getArgumentSinks(
+                        $cased_method_id,
+                        $param_offset,
+                        $args,
+                        $function_params,
+                        $function_param->sinks,
+                    );
 
                     if ($sinks || $function_param->value_sinks) {
                         if (!$function_storage) {
                             // Mirror the value-node keying in ArgumentAnalyzer::processTaintedness:
                             // when the caller has no storage, resolve it from the cased method id so
                             // the sink is keyed by the declared parameter index (via $function_param),
-                            // and only a genuinely storage-less callable falls back to the call offset.
+                            // and only a genuinely storage-less callable falls back to getForCallableArg().
                             $sink = ($in_call_map
                                 ? null
                                 : DataFlowNode::getForMethodArgumentById(
                                     $codebase->methods,
                                     $cased_method_id,
-                                    $argument_offset,
+                                    $param_offset,
                                     $code_location,
                                     $function_param,
                                 ))
@@ -1131,7 +1589,7 @@ final class ArgumentsAnalyzer
                                             ? 'magic-method'
                                             : 'callable-object'),
                                     $cased_method_id,
-                                    $argument_offset,
+                                    $param_offset,
                                     $code_location,
                                     $sinks,
                                 );
@@ -1141,7 +1599,7 @@ final class ArgumentsAnalyzer
                                 DataFlowNode::getParameterOffset(
                                     $function_storage,
                                     $function_param,
-                                    $argument_offset,
+                                    $param_offset,
                                 ),
                                 $function_storage,
                                 $code_location,
@@ -1157,7 +1615,7 @@ final class ArgumentsAnalyzer
                                 DataFlowNode::getParameterOffset(
                                     $function_storage,
                                     $function_param,
-                                    $argument_offset,
+                                    $param_offset,
                                 ),
                                 $function_storage,
                                 null,
@@ -1244,6 +1702,10 @@ final class ArgumentsAnalyzer
             $code_location,
         );
 
+        if ($template_result && $function_storage && $function_storage->template_defaults) {
+            TemplateDefaults::bindUninferred($template_result, $function_storage, $codebase);
+        }
+
         return null;
     }
 
@@ -1266,29 +1728,52 @@ final class ArgumentsAnalyzer
         ?MethodIdentifier $method_identifier,
         ?FunctionLikeStorage $function_storage,
         CodeLocation $call_location,
+        bool $specialize_taint,
         array $args,
     ): ?bool {
-        if ($arg->value instanceof PhpParser\Node\Scalar
-            || $arg->value instanceof PhpParser\Node\Expr\Cast
-            || $arg->value instanceof PhpParser\Node\Expr\Array_
-            || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
-            || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
-            || $arg->value instanceof PhpParser\Node\Expr\Ternary
-            || (
-                (
-                $arg->value instanceof PhpParser\Node\Expr\ConstFetch
-                    || $arg->value instanceof PhpParser\Node\Expr\FuncCall
-                    || $arg->value instanceof PhpParser\Node\Expr\MethodCall
-                    || $arg->value instanceof PhpParser\Node\Expr\StaticCall
-                ) && (
-                    !($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
-                    || !$arg_value_type->by_ref
-                )
-            )
+        if (self::phpTakesArgumentByReference($method_id, $argument_offset)
+            && ($arg->value instanceof VirtualPipeValue
+                || $arg->value instanceof PhpParser\Node\Scalar
+                || $arg->value instanceof PhpParser\Node\Expr\Cast
+                || $arg->value instanceof PhpParser\Node\Expr\Array_
+                || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
+                || $arg->value instanceof PhpParser\Node\Expr\Ternary
+                // an internal function may take other expressions by reference only when it prefers it, like
+                // `stream_select()`, so only functions with storage outside the call map are strict about them
+                || ($function_storage !== null
+                    && !(
+                        $arg->value instanceof PhpParser\Node\Expr\Variable
+                        || $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\PropertyFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\StaticPropertyFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\AssignRef
+                        // these are checked below, by the type of their result
+                        || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\FuncCall
+                        || $arg->value instanceof PhpParser\Node\Expr\MethodCall
+                        || $arg->value instanceof PhpParser\Node\Expr\NullsafeMethodCall
+                        || $arg->value instanceof PhpParser\Node\Expr\StaticCall
+                    ))
+                || (
+                    (
+                    $arg->value instanceof PhpParser\Node\Expr\ConstFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\FuncCall
+                        || $arg->value instanceof PhpParser\Node\Expr\MethodCall
+                        || $arg->value instanceof PhpParser\Node\Expr\StaticCall
+                    ) && (
+                        !($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
+                        || !$arg_value_type->by_ref
+                    )
+                ))
         ) {
             IssueBuffer::maybeAdd(
                 new InvalidPassByReference(
-                    'Parameter ' . ($argument_offset + 1) . ' of ' . $cased_method_id . ' expects a variable',
+                    'Parameter ' . ($argument_offset + 1) . ' of ' . $cased_method_id
+                        . ($arg->value instanceof VirtualPipeValue
+                            ? ' is passed by reference, but the pipe operator passes its left-hand side by value'
+                            : ' expects a variable'),
                     new CodeLocation($statements_analyzer->getSource(), $arg->value),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -1302,7 +1787,7 @@ final class ArgumentsAnalyzer
             [
                 'ksort', 'asort', 'krsort', 'arsort', 'natcasesort', 'natsort',
                 'reset', 'end', 'next', 'prev', 'array_pop', 'array_shift',
-                'array_push', 'array_unshift', 'socket_select', 'array_splice',
+                'array_push', 'array_unshift', 'socket_select', 'array_splice', 'FFI::memcmp',
             ],
             true,
         )) {
@@ -1387,7 +1872,7 @@ final class ArgumentsAnalyzer
                         $template_result,
                         $codebase,
                         $statements_analyzer,
-                        $statements_analyzer->node_data->getType($arg->value),
+                        null,
                         $argument_offset,
                         $context->self,
                         $context->calling_method_id ?: $context->calling_function_id,
@@ -1439,7 +1924,7 @@ final class ArgumentsAnalyzer
                     $function_storage,
                     $function_param,
                     $argument_offset,
-                    $call_location,
+                    $specialize_taint ? $call_location : null,
                 );
 
                 $graph->addNode($out_node);
@@ -1544,7 +2029,7 @@ final class ArgumentsAnalyzer
      * @param array<int, FunctionLikeParameter> $function_params
      * @psalm-mutation-free
      */
-    private static function getArgForParam(array $args, array $function_params, string $param_name): ?PhpParser\Node\Arg
+    public static function getArgForParam(array $args, array $function_params, string $param_name): ?PhpParser\Node\Arg
     {
         foreach ($args as $arg) {
             if ($arg->name !== null && $arg->name->name === $param_name) {
@@ -1585,7 +2070,7 @@ final class ArgumentsAnalyzer
 
     /**
      * The node of what the function-like called leaves in a by-reference parameter: that of the
-     * method in the class it appears in, specialized to the call like its return.
+     * method in the class it appears in, specialized to the call like its arguments and return.
      *
      * @psalm-capabilities read-props
      */
@@ -1596,7 +2081,7 @@ final class ArgumentsAnalyzer
         FunctionLikeStorage $storage,
         FunctionLikeParameter $param,
         int $argument_offset,
-        CodeLocation $call_location,
+        ?CodeLocation $specialization_location,
     ): DataFlowNode {
         if ($method_id !== null) {
             $cased_function_id = FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $method_id);
@@ -1609,7 +2094,7 @@ final class ArgumentsAnalyzer
             $cased_function_id,
             DataFlowNode::getParameterOffset($storage, $param, $argument_offset),
             $storage,
-            $storage->specialize_call ? $call_location : null,
+            $specialization_location,
         );
     }
 
@@ -1673,8 +2158,13 @@ final class ArgumentsAnalyzer
                 $statements_analyzer->registerPossiblyUndefinedVariable($var_id, $arg->value);
             }
 
-            if (!$context->hasVariable($var_id)
-                || $context->vars_in_scope[$var_id]->isNull()
+            // a reference can't create a static property, so one that isn't known yet is fetched, and checked, as
+            // is a superglobal, which is set
+            if ($context->hasVariable($var_id)
+                ? $context->vars_in_scope[$var_id]->isNull()
+                : !$arg->value instanceof PhpParser\Node\Expr\StaticPropertyFetch
+                    && !($arg->value instanceof PhpParser\Node\Expr\Variable
+                        && VariableFetchAnalyzer::isReadAsSetSuperGlobal($var_id))
             ) {
                 if (!isset($context->vars_in_scope[$var_id])
                     && $arg->value instanceof PhpParser\Node\Expr\Variable
@@ -1698,24 +2188,27 @@ final class ArgumentsAnalyzer
                 ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context);
                 $context->inside_call = $was_inside_call;
 
-                $context->removeVarFromConflictingClauses(
-                    $var_id,
-                    $context->vars_in_scope[$var_id],
-                    $statements_analyzer,
-                );
+                // an undefined static property has no type to keep
+                if (isset($context->vars_in_scope[$var_id])) {
+                    $context->removeVarFromConflictingClauses(
+                        $var_id,
+                        $context->vars_in_scope[$var_id],
+                        $statements_analyzer,
+                    );
 
-                $t = $context->vars_in_scope[$var_id]->getBuilder();
-                foreach ($t->getAtomicTypes() as $type) {
-                    if ($type instanceof TArray && $type->isEmptyArray()) {
-                        $t->removeType('array');
-                        $t->addType(
-                            new TArray(
-                                [Type::getArrayKey(), Type::getMixed()],
-                            ),
-                        );
+                    $t = $context->vars_in_scope[$var_id]->getBuilder();
+                    foreach ($t->getAtomicTypes() as $type) {
+                        if ($type instanceof TArray && $type->isEmptyArray()) {
+                            $t->removeType('array');
+                            $t->addType(
+                                new TArray(
+                                    [Type::getArrayKey(), Type::getMixed()],
+                                ),
+                            );
+                        }
                     }
+                    $context->vars_in_scope[$var_id] = $t->freeze();
                 }
-                $context->vars_in_scope[$var_id] = $t->freeze();
             }
         }
 
@@ -1732,6 +2225,30 @@ final class ArgumentsAnalyzer
     ): void {
         $property_id = $fq_class_name . '::$' . $prop_name;
 
+        $declaring_class_storage = self::getDeclaringClassStorage($statements_analyzer, $property_id, $prop_name);
+
+        if ($declaring_class_storage !== null) {
+            InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
+                $statements_analyzer,
+                $stmt,
+                $property_id,
+                $declaring_class_storage->properties[$prop_name],
+                $declaring_class_storage,
+                $context,
+                $lhs_var_id,
+                true,
+            );
+        }
+    }
+
+    /**
+     * The storage of the class declaring the property, null when it is unknown
+     */
+    public static function getDeclaringClassStorage(
+        StatementsAnalyzer $statements_analyzer,
+        string $property_id,
+        string $prop_name,
+    ): ?ClassLikeStorage {
         $codebase = $statements_analyzer->getCodebase();
         $declaring_property_class = (string) $codebase->properties->getDeclaringClassForProperty(
             $property_id,
@@ -1742,22 +2259,10 @@ final class ArgumentsAnalyzer
         try {
             $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
         } catch (InvalidArgumentException) {
-            return;
+            return null;
         }
 
-        if (isset($declaring_class_storage->properties[$prop_name])) {
-            $property_storage = $declaring_class_storage->properties[$prop_name];
-
-            InstancePropertyAssignmentAnalyzer::trackPropertyImpurity(
-                $statements_analyzer,
-                $stmt,
-                $property_id,
-                $property_storage,
-                $declaring_class_storage,
-                $context,
-                $lhs_var_id,
-            );
-        }
+        return isset($declaring_class_storage->properties[$prop_name]) ? $declaring_class_storage : null;
     }
 
     /**
@@ -1822,113 +2327,155 @@ final class ArgumentsAnalyzer
             }
         }
 
-        if (($var_id && isset($context->vars_in_scope[$var_id]))
-            || ($method_id
+        $was_inside_by_ref_offset = $context->inside_by_ref_offset;
+        $context->inside_by_ref_offset = $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
+            && self::phpTakesArgumentByReference($method_id, $argument_offset);
+
+        $read_as_set_superglobal = $var_id !== null
+            && $arg->value instanceof PhpParser\Node\Expr\Variable
+            && VariableFetchAnalyzer::isReadAsSetSuperGlobal($var_id);
+
+        try {
+            // passing a variable by reference defines it, as null when it was not set (a superglobal is read as set)
+            if ($var_id !== null
+                && !$read_as_set_superglobal
+                && $arg->value instanceof PhpParser\Node\Expr\Variable
+                && isset($context->vars_in_scope[$var_id])
+                && $context->vars_in_scope[$var_id]->possibly_undefined
+            ) {
+                $var_type = $context->vars_in_scope[$var_id]->setPossiblyUndefined(false, false);
+
+                $context->vars_in_scope[$var_id] = $var_type->isNullable() || $var_type->hasMixed()
+                    ? $var_type
+                    : $var_type->getBuilder()->addType(new TNull())->freeze();
+            }
+
+            if (($var_id && (isset($context->vars_in_scope[$var_id]) || $read_as_set_superglobal))
+                || ($method_id
+                    && in_array(
+                        $method_id,
+                        $builtin_array_functions,
+                        true,
+                    ))
+            ) {
+                $was_inside_assignment = $context->inside_assignment;
+                $context->inside_assignment = true;
+
+                // if the variable is in scope, get or we're in a special array function,
+                // figure out its type before proceeding
+                if (ExpressionAnalyzer::analyze(
+                    $statements_analyzer,
+                    $arg->value,
+                    $context,
+                ) === false) {
+                    $context->inside_assignment = $was_inside_assignment;
+
+                    return false;
+                }
+
+                $context->inside_assignment = $was_inside_assignment;
+            }
+
+            // special handling for array sort
+            if ($argument_offset === 0
+                && $method_id
                 && in_array(
                     $method_id,
                     $builtin_array_functions,
                     true,
-                ))
-        ) {
-            $was_inside_assignment = $context->inside_assignment;
-            $context->inside_assignment = true;
-
-            // if the variable is in scope, get or we're in a special array function,
-            // figure out its type before proceeding
-            if (ExpressionAnalyzer::analyze(
-                $statements_analyzer,
-                $arg->value,
-                $context,
-            ) === false) {
-                $context->inside_assignment = $was_inside_assignment;
-
-                return false;
-            }
-
-            $context->inside_assignment = $was_inside_assignment;
-        }
-
-        // special handling for array sort
-        if ($argument_offset === 0
-            && $method_id
-            && in_array(
-                $method_id,
-                $builtin_array_functions,
-                true,
-            )
-        ) {
-            if (in_array($method_id, ['array_pop', 'array_shift'], true)) {
-                ArrayFunctionArgumentsAnalyzer::handleByRefArrayAdjustment(
-                    $statements_analyzer,
-                    $arg,
-                    $context,
-                    $method_id === 'array_shift',
-                );
-
-                return null;
-            }
-
-            // noops
-            if (in_array($method_id, ['reset', 'end', 'next', 'prev', 'ksort'], true)) {
-                return null;
-            }
-
-            if (($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
-                && $arg_value_type->hasArray()
+                )
             ) {
-                /**
-                 * @var TArray|TKeyedArray
-                 */
-                $array_type = $arg_value_type->getArray();
+                if (in_array($method_id, ['array_pop', 'array_shift'], true)) {
+                    ArrayFunctionArgumentsAnalyzer::handleByRefArrayAdjustment(
+                        $statements_analyzer,
+                        $arg,
+                        $context,
+                        $method_id === 'array_shift',
+                    );
 
-                if ($array_type instanceof TKeyedArray) {
-                    $array_type = $array_type->getGenericArrayType();
+                    return null;
                 }
 
-                $by_ref_type = new Union([$array_type]);
+                // noops
+                if (in_array($method_id, ['reset', 'end', 'next', 'prev', 'ksort'], true)) {
+                    return null;
+                }
 
-                AssignmentAnalyzer::assignByRefParam(
+                if (($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
+                    && $arg_value_type->hasArray()
+                ) {
+                    /**
+                     * @var TArray|TKeyedArray
+                     */
+                    $array_type = $arg_value_type->getArray();
+
+                    if ($array_type instanceof TKeyedArray) {
+                        $array_type = $array_type->getGenericArrayType();
+                    }
+
+                    $by_ref_type = new Union([$array_type]);
+
+                    AssignmentAnalyzer::assignByRefParam(
+                        $statements_analyzer,
+                        $arg->value,
+                        $by_ref_type,
+                        $by_ref_type,
+                        $context,
+                        false,
+                    );
+
+                    return null;
+                }
+            }
+
+            if ($method_id === 'socket_select') {
+                if (ExpressionAnalyzer::analyze(
                     $statements_analyzer,
                     $arg->value,
-                    $by_ref_type,
-                    $by_ref_type,
                     $context,
-                    false,
-                );
-
-                return null;
+                ) === false) {
+                    return false;
+                }
             }
-        }
 
-        if ($method_id === 'socket_select') {
-            if (ExpressionAnalyzer::analyze(
-                $statements_analyzer,
-                $arg->value,
-                $context,
-            ) === false) {
+            if (!$arg->value instanceof PhpParser\Node\Expr\Variable
+                && ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false
+            ) {
                 return false;
             }
+
+            return null;
+        } finally {
+            $context->inside_by_ref_offset = $was_inside_by_ref_offset;
+        }
+    }
+
+    /**
+     * Whether PHP takes the argument by reference, creating the array offset passed as it: a stub may take by
+     * reference what PHP doesn't, as the one of fclose() does to close the resource it is given
+     */
+    private static function phpTakesArgumentByReference(?string $method_id, int $argument_offset): bool
+    {
+        $callables = $method_id === null ? null : InternalCallMapHandler::getCallablesFromCallMap($method_id);
+
+        if ($callables === null) {
+            return true;
         }
 
-        if (!$arg->value instanceof PhpParser\Node\Expr\Variable) {
-            $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+        foreach ($callables as $callable) {
+            $params = $callable->params ?? [];
+            $param = $params[$argument_offset] ?? null;
 
-            if (!isset($suppressed_issues['EmptyArrayAccess'])) {
-                $statements_analyzer->addSuppressedIssues(['EmptyArrayAccess']);
+            if ($param === null && $params !== [] && $params[count($params) - 1]->is_variadic) {
+                $param = $params[count($params) - 1];
             }
 
-            $v = ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context);
-
-            if (!isset($suppressed_issues['EmptyArrayAccess'])) {
-                $statements_analyzer->removeSuppressedIssues(['EmptyArrayAccess']);
-            }
-
-            if ($v === false) {
-                return false;
+            if ($param !== null && $param->by_ref) {
+                return true;
             }
         }
 
-        return null;
+        return false;
     }
 
     /**
@@ -2044,6 +2591,18 @@ final class ArgumentsAnalyzer
         ?string $cased_method_id,
         CodeLocation $code_location,
     ): void {
+        $callee = $cased_method_id ?: (string) $method_id;
+
+        if ($callee === '') {
+            // a callable value has no name: describe it by its parameter types
+            $callee = 'callable(' . implode(', ', array_map(
+                static fn(FunctionLikeParameter $param): string => $param->type
+                    ? $param->type->getId()
+                    : 'mixed',
+                $function_params,
+            )) . ')';
+        }
+
         if (!$is_variadic
             && count($args) > count($function_params)
             && (!count($function_params) || $function_params[count($function_params) - 1]->name !== '...=')
@@ -2055,7 +2614,7 @@ final class ArgumentsAnalyzer
         ) {
             IssueBuffer::maybeAdd(
                 new TooManyArguments(
-                    'Too many arguments for ' . ($cased_method_id ?: $method_id)
+                    'Too many arguments for ' . $callee
                     . ' - expecting ' . count($function_params) . ' but saw ' . count($args),
                     $code_location,
                     (string)$method_id,
@@ -2066,7 +2625,12 @@ final class ArgumentsAnalyzer
             return;
         }
 
-        if (count($args) < count($function_params)) {
+        // an unpacked array can give less (or more) than one argument
+        if (count($args) < count($function_params)
+            || array_any($args, static fn(PhpParser\Node\Arg $arg): bool => $arg->unpack)
+        ) {
+            $all_function_params = $function_params;
+
             //we're gonna loop over given args and unset them from the function_params.
             // If some mandatory params are left at the end, we'll throw an error
             foreach ($args as $arg) {
@@ -2153,8 +2717,12 @@ final class ArgumentsAnalyzer
                 if (!$param->is_optional && !$param->is_variadic) {
                     IssueBuffer::maybeAdd(
                         new TooFewArguments(
-                            'Too few arguments for ' . $cased_method_id
-                            . ' - expecting ' . $param->name . ' to be passed',
+                            'Too few arguments for ' . $callee
+                            . ' - expecting ' . (
+                                $param->name !== ''
+                                    ? $param->name
+                                    : 'parameter #' . ((int) array_search($param, $all_function_params, true) + 1)
+                            ) . ' to be passed',
                             $code_location,
                             (string)$method_id,
                         ),
@@ -2317,19 +2885,29 @@ final class ArgumentsAnalyzer
     ];
 
     /**
-     * The sinks of the argument at $argument_offset of a call of $function_id. The value given to curl_setopt()
-     * is the sink of its option (see CURL_OPTION_SINKS). An option the analysis can't tell may be any of them.
+     * The sinks of the argument passed as the parameter at $param_offset of a call of $function_id. The value given
+     * to curl_setopt() is the sink of its option (see CURL_OPTION_SINKS). An option the analysis can't tell may be
+     * any of them.
      *
      * @param array<int, PhpParser\Node\Arg> $args
+     * @param array<int, FunctionLikeParameter> $function_params
      * @psalm-capabilities read-props
      */
-    private static function getArgumentSinks(string $function_id, int $argument_offset, array $args, int $sinks): int
-    {
-        if ($argument_offset !== 2 || strtolower($function_id) !== 'curl_setopt' || !isset($args[1])) {
+    private static function getArgumentSinks(
+        string $function_id,
+        int $param_offset,
+        array $args,
+        array $function_params,
+        int $sinks,
+    ): int {
+        if ($param_offset !== 2
+            || strtolower($function_id) !== 'curl_setopt'
+            || !($option_arg = self::getArgForParam($args, $function_params, 'option'))
+        ) {
             return $sinks;
         }
 
-        $option = $args[1]->value;
+        $option = $option_arg->value;
 
         if (!$option instanceof PhpParser\Node\Expr\ConstFetch) {
             return self::CURL_ANY_OPTION_SINKS;

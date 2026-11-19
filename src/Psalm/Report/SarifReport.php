@@ -13,7 +13,7 @@ use Psalm\Report;
 use function file_exists;
 use function file_get_contents;
 use function max;
-use function str_starts_with;
+use function sprintf;
 
 /**
  * SARIF report format suitable for import into any SARIF compatible solution
@@ -24,6 +24,44 @@ use function str_starts_with;
  */
 final class SarifReport extends Report
 {
+    /**
+     * The score (0.0 to 10.0, as a string) GitHub Code Scanning sorts a security alert by: 9.0 and more is critical,
+     * 7.0 high, 4.0 medium.
+     */
+    private const SECURITY_SEVERITIES = [
+        'TaintedShell' => '9.8',
+        'TaintedEval' => '9.8',
+        'TaintedSql' => '9.8',
+        'TaintedInclude' => '9.8',
+        'TaintedUnserialize' => '9.8',
+        'TaintedCallable' => '9.8',
+        'TaintedNosql' => '9.1',
+        'TaintedLdap' => '9.1',
+        'TaintedXpath' => '9.1',
+        'TaintedExtract' => '8.8',
+        'TaintedFile' => '7.5',
+        'TaintedSSRF' => '7.5',
+        'TaintedLlmPrompt' => '7.5',
+        'TaintedUserSecret' => '7.5',
+        'TaintedSystemSecret' => '7.5',
+        'TaintedHtml' => '6.1',
+        'TaintedTextWithQuotes' => '6.1',
+        'TaintedHeader' => '6.1',
+        'TaintedCookie' => '6.1',
+        'TaintedUrlComponent' => '5.3',
+        'TaintedUrlPath' => '5.3',
+        'TaintedSleep' => '5.3',
+        // not taint issues, but security ones all the same
+        'WeakHash' => '5.3',
+        'WeakCipher' => '5.9',
+        'WeakRandom' => '5.3',
+        'InsecureCookie' => '4.3',
+        'XmlExternalEntity' => '7.5',
+    ];
+
+    private const DEFAULT_SECURITY_SEVERITY = '7.0';
+
+
     #[Override]
     public function create(): string
     {
@@ -47,29 +85,37 @@ final class SarifReport extends Report
         $rules = [];
 
         foreach ($this->issues_data as $issue_data) {
-            $rules[$issue_data->shortcode] = [
-                'id' => (string)$issue_data->shortcode,
+            $tags = $issue_data->is_security ? ['security'] : ['maintainability'];
+            foreach ($issue_data->cwe_ids as $cwe_id) {
+                // the form GitHub code scanning and CodeQL use
+                $tags[] = sprintf('external/cwe/cwe-%03d', $cwe_id);
+            }
+
+            $rules[$issue_data->type] = [
+                'id' => $issue_data->type,
                 'name' => $issue_data->type,
                 'shortDescription' => [
                     'text' => $issue_data->type,
                 ],
-                'properties' => [
-                    'tags' => [
-                        (str_starts_with($issue_data->type, 'Tainted')) ? 'security' : 'maintainability',
-                    ],
-                ],
+                'properties' => $issue_data->is_security
+                    ? [
+                        'tags' => $tags,
+                        'security-severity' => self::SECURITY_SEVERITIES[$issue_data->type]
+                            ?? self::DEFAULT_SECURITY_SEVERITY,
+                    ]
+                    : ['tags' => $tags],
                 'helpUri' => $issue_data->link,
             ];
 
             $markdown_documentation_path = __DIR__ . '/../../../docs/running_psalm/issues/' . $issue_data->type . '.md';
             if (file_exists($markdown_documentation_path)) {
                 $markdown_documentation = file_get_contents($markdown_documentation_path);
-                $rules[$issue_data->shortcode]['help']['markdown'] = $markdown_documentation;
-                $rules[$issue_data->shortcode]['help']['text'] = $markdown_documentation;
+                $rules[$issue_data->type]['help']['markdown'] = $markdown_documentation;
+                $rules[$issue_data->type]['help']['text'] = $markdown_documentation;
             }
 
             $jsonEntry = [
-                'ruleId' => (string)$issue_data->shortcode,
+                'ruleId' => $issue_data->type,
                 'message' => [
                     'text' => $issue_data->message,
                 ],

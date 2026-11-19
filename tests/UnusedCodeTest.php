@@ -5,19 +5,19 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
-use Psalm\Internal\Provider\FakeFileProvider;
-use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\MethodExistenceProviderEvent;
 use Psalm\Storage\Capabilities;
-use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function array_column;
+use function array_map;
 use function getcwd;
 use function preg_quote;
 use function sort;
@@ -32,34 +32,16 @@ final class UnusedCodeTest extends TestCase
     #[Override]
     public function setUp(): void
     {
-        RuntimeCaches::clearAll();
-
-        $this->file_provider = new FakeFileProvider();
-
-        $this->project_analyzer = new ProjectAnalyzer(
-            new TestConfig(),
-            new Providers(
-                $this->file_provider,
-                new FakeParserCacheProvider(),
-            ),
-        );
+        parent::setUp();
 
         $this->project_analyzer->getCodebase()->reportUnusedCode();
-        $this->project_analyzer->getCodebase()->config->setCustomErrorLevel(
-            'MissingPureAnnotation',
-            Config::REPORT_SUPPRESS,
-        );
-        $this->project_analyzer->getCodebase()->config->setCustomErrorLevel(
-            'MissingAbstractPureAnnotation',
-            Config::REPORT_SUPPRESS,
-        );
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
     }
 
     /**
-     * @dataProvider providerValidCodeParse
      * @param array<string> $ignored_issues
      */
+    #[DataProvider('providerValidCodeParse')]
     public function testValidCode(string $code, array $ignored_issues = []): void
     {
         $test_name = $this->getTestName();
@@ -88,10 +70,10 @@ final class UnusedCodeTest extends TestCase
     }
 
     /**
-     * @dataProvider providerInvalidCodeParse
-     * @param array<string> $ignored_issues
+     * @param array<string> $error_levels
      */
-    public function testInvalidCode(string $code, string $error_message, array $ignored_issues = []): void
+    #[DataProvider('providerInvalidCodeParse')]
+    public function testInvalidCode(string $code, string $error_message, array $error_levels = []): void
     {
         if (strpos($this->getTestName(), 'SKIPPED-') !== false) {
             $this->markTestSkipped();
@@ -102,7 +84,7 @@ final class UnusedCodeTest extends TestCase
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
-        foreach ($ignored_issues as $error_level) {
+        foreach ($error_levels as $error_level) {
             $this->project_analyzer->getCodebase()->config->setCustomErrorLevel($error_level, Config::REPORT_SUPPRESS);
         }
 
@@ -116,6 +98,143 @@ final class UnusedCodeTest extends TestCase
         $this->project_analyzer->consolidateAnalyzedData();
 
         IssueBuffer::processUnusedSuppressions($this->project_analyzer->getCodebase()->file_provider);
+    }
+
+    public function testMarkAllNonInternalCodeAsApi(): void
+    {
+        $config = $this->project_analyzer->getConfig();
+        $config->throw_exception = false;
+        $config->mark_all_non_internal_code_as_api = true;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Lib;
+
+                class Client {
+                    public int $state = 0;
+                    protected int $prot = 0;
+                    /** @internal */
+                    public int $internalState = 0;
+
+                    public function send(): void {
+                        $this->encode();
+                        new Helper();
+                    }
+                    protected function hook(): void {}
+                    private function encode(): void {}
+                    private function unused(): void {}
+                    /** @internal */
+                    public function reset(): void {}
+                }
+
+                final class FinalClient {
+                    protected function prot(): void {}
+                }
+
+                interface Contract {
+                    public function run(): void;
+                }
+
+                trait Reusable {
+                    public function reuse(): void {}
+                }
+
+                /** @internal */
+                final class Helper {
+                    public function unusedHelperMethod(): void {}
+                }
+
+                /** @internal */
+                final class UnusedHelper {}
+
+                /** @psalm-internal Lib */
+                final class UnusedPsalmInternalHelper {}
+
+                /** @internal */
+                class NonFinalHelper {}
+
+                /** @internal */
+                abstract class InternalBase {
+                    public function inherited(): void {}
+                }
+
+                class Child extends InternalBase {}
+
+                /** @api */
+                final class ExplicitApi {
+                    public function api(): void {}
+                    /** @internal */
+                    public function internalMethod(): void {}
+                }
+
+                /** @internal */
+                final class InternalWithApiMethod {
+                    /** @api */
+                    public function api(): void {}
+                }
+
+                new InternalWithApiMethod();',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            [
+                ['UnusedMethod', 16],
+                ['PossiblyUnusedMethod', 18],
+                ['PossiblyUnusedProperty', 8],
+                ['ClassMustBeFinal', 4],
+                ['PossiblyUnusedMethod', 22],
+                ['PossiblyUnusedMethod', 35],
+                ['UnusedClass', 39],
+                ['UnusedClass', 42],
+                ['UnusedClass', 45],
+                ['ClassMustBeFinal', 45],
+                ['PossiblyUnusedMethod', 49],
+                ['ClassMustBeFinal', 52],
+                ['PossiblyUnusedMethod', 58],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->type, $issue->line_from],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testMarkAllNonInternalCodeAsApiSkipsCodeTheLibraryDoesNotShip(): void
+    {
+        $config = $this->project_analyzer->getConfig();
+        $config->throw_exception = false;
+        $config->mark_all_non_internal_code_as_api = true;
+        // Psalm's composer.json autoloads Psalm\Tests\ from tests/ for development only
+        $test_file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $src_file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $test_file_path,
+            '<?php
+                namespace Psalm\Tests;
+
+                final class Helper {}',
+        );
+        $this->addFile(
+            $src_file_path,
+            '<?php
+                namespace Lib;
+
+                final class Client {}',
+        );
+        $this->analyzeFile($test_file_path, new Context(), false);
+        $this->analyzeFile($src_file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            ['UnusedClass'],
+            array_column(IssueBuffer::getIssuesDataForFile($test_file_path), 'type'),
+        );
+        $this->assertSame([], IssueBuffer::getIssuesDataForFile($src_file_path));
     }
 
     public function testSeesClassesUsedAfterUnevaluatedCodeIssue(): void
@@ -148,6 +267,45 @@ final class UnusedCodeTest extends TestCase
         $issue = IssueBuffer::getIssuesDataForFile($file_path)[0];
         $this->assertSame('UnevaluatedCode', $issue->type);
         $this->assertSame(4, $issue->line_from);
+    }
+
+    public function testTheArgumentsOfACallOfAMissingClassAreNotAnalysed(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                Missing::call($undefined);',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            ['UndefinedClass'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testTheArgumentsOfACallOfAMissingClassAreNotAnalysedWhenItsIssueIsSuppressed(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('UndefinedClass', Config::REPORT_SUPPRESS);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                Missing::call($undefined);',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            [],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
     }
 
     public function testDeadDirectCallDoesNotTriggerUnusedReturnOnLiveOverride(): void
@@ -202,14 +360,370 @@ final class UnusedCodeTest extends TestCase
         );
     }
 
+    public function testDynamicMethodCallDoesNotMakeItsDependenciesDefinitelyUnused(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Controller {
+                private string $greeting = "hello";
+
+                public function actionIndex(): string {
+                    return $this->formatGreeting();
+                }
+
+                private function formatGreeting(): string {
+                    return $this->greeting;
+                }
+            }
+            $controller = new Controller();
+            $action = "action" . ucfirst((string) getenv("ACTION"));
+            if (method_exists($controller, $action)) {
+                echo (string) $controller->$action();
+            }');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['PossiblyUnusedMethod'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testDynamicCallableKeepsReferencedPropertyAlive(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Endpoint {
+                private string $token = "ok";
+
+                public function handle(): string {
+                    return $this->token;
+                }
+            }
+            $endpoint = new Endpoint();
+            $action = (string) getenv("ACTION");
+            if (method_exists($endpoint, $action)) {
+                echo (string) call_user_func([$endpoint, $action]);
+            }');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['PossiblyUnusedMethod'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testDynamicCallThroughBaseClassKeepsSubclassPropertyAlive(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            class Base {
+                public function dispatch(string $method): void {
+                    if (method_exists($this, $method)) {
+                        $this->$method();
+                    }
+                }
+            }
+            final class Derived extends Base {
+                private string $secret = "ok";
+
+                public function action(): void {
+                    echo $this->secret;
+                }
+            }
+            (new Derived())->dispatch((string) getenv("ACTION"));');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['PossiblyUnusedMethod'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testUnreachableDynamicCallDoesNotPreserveDeadProperty(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_SUPPRESS);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Controller {
+                private string $greeting = "hello";
+
+                public function actionIndex(): string {
+                    return $this->greeting;
+                }
+
+                public function unusedDispatcher(string $method): void {
+                    $this->$method();
+                }
+            }
+            new Controller();');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['UnusedProperty'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testDynamicCallDoesNotReachPrivateMethodsFromOutsideTheClass(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Controller {
+                private string $greeting = "hello";
+
+                public function actionIndex(): string {
+                    return $this->greeting;
+                }
+
+                private function notCallable(): void {}
+            }
+            $controller = new Controller();
+            $action = "action" . ucfirst((string) getenv("ACTION"));
+            if (method_exists($controller, $action)) {
+                $controller->$action();
+            }');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $issues = array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type');
+        sort($issues);
+        self::assertSame(['PossiblyUnusedMethod', 'UnusedMethod'], $issues);
+    }
+
+    public function testSpeculativelyReachableClassStillReportsUnusedMembers(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Worker {
+                public function used(): string { return "ok"; }
+                public function unused(): void {}
+            }
+            final class DynamicDispatcher {
+                public function action(): void {
+                    echo (new Worker())->used();
+                }
+            }
+            $dispatcher = new DynamicDispatcher();
+            $method = (string) getenv("ACTION");
+            if (method_exists($dispatcher, $method)) {
+                $dispatcher->$method();
+            }');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $issues = IssueBuffer::getIssuesDataForFile($file_path);
+        self::assertNotContains('UnusedClass', array_column($issues, 'type'));
+        self::assertContains('Cannot find any calls to method Worker::unused', array_column($issues, 'message'));
+    }
+
+    public function testDynamicCallOnSubclassWithInheritedPrivateMethod(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        // Base::secret appears in Child without being declared there, as it is private
+        $this->addFile($file_path, '<?php
+            abstract class Base {
+                private string $value = "ok";
+
+                public function run(): string {
+                    return $this->secret();
+                }
+
+                private function secret(): string {
+                    return $this->value;
+                }
+            }
+            final class Child extends Base {
+                public function action(): void {}
+            }
+            $child = new Child();
+            echo $child->run();
+            $method = (string) getenv("ACTION");
+            if (method_exists($child, $method)) {
+                $child->$method();
+            }');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['Cannot find explicit calls to method Child::action (but did find some potential callers)'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'message'),
+        );
+    }
+
+    public function testPrivateMethodCalledWithDynamicNameIsNotDefinitelyUnused(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Handler {
+                private string $prefix = "on";
+
+                public function handle(string $event): void {
+                    $method = $this->prefix . ucfirst($event);
+                    if (method_exists($this, $method)) {
+                        $this->$method();
+                    }
+                }
+
+                private function onSave(): void {
+                    $this->log();
+                }
+
+                private function log(): void {}
+            }
+            (new Handler())->handle((string) getenv("EVENT"));');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame([], IssueBuffer::getIssuesDataForFile($file_path));
+    }
+
+    public function testUnrelatedDynamicCallerDoesNotReachProtectedMethods(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Target {
+                private string $secret = "unread";
+                protected function action(): string { return $this->secret; }
+            }
+            final class Dispatcher {
+                public function dispatch(Target $target, string $name): void {
+                    $target->$name();
+                }
+            }
+            (new Dispatcher())->dispatch(new Target(), (string) getenv("ACTION"));');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertContains(
+            'UnusedProperty',
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testDynamicCallFromSameClassCanReachProtectedMethod(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Controller {
+                private string $value = "used";
+                protected function action(): string { return $this->value; }
+                public function dispatch(string $name): void {
+                    if (method_exists($this, $name)) {
+                        echo (string) $this->$name();
+                    }
+                }
+            }
+            (new Controller())->dispatch((string) getenv("ACTION"));');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['PossiblyUnusedMethod'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testPrivateTraitAdaptationDoesNotReachPrivateStateFromDynamicCall(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            trait ActionTrait {
+                public function action(): string { return $this->secret; }
+            }
+            final class Controller {
+                use ActionTrait { action as private; }
+                private string $secret = "unread";
+            }
+            $controller = new Controller();
+            $name = (string) getenv("ACTION");
+            if (method_exists($controller, $name)) {
+                $controller->$name();
+            }');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertContains(
+            'UnusedProperty',
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testRecursiveDynamicEntryMethodsKeepPossiblyUnusedDiagnostics(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Controller {
+                public function first(): void { $this->second(); }
+                public function second(): void { $this->first(); }
+            }
+            $controller = new Controller();
+            $name = (string) getenv("ACTION");
+            if (method_exists($controller, $name)) {
+                $controller->$name();
+            }');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['PossiblyUnusedMethod', 'PossiblyUnusedMethod'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
     public function testClassReferencedFromExternalInterfaceOverrideIsUsed(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
-
-        foreach (['MissingImmutableAnnotation', 'MissingOverrideAttribute'] as $issue_type) {
-            $this->project_analyzer->getConfig()->setCustomErrorLevel($issue_type, Config::REPORT_SUPPRESS);
-        }
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
@@ -247,10 +761,7 @@ final class UnusedCodeTest extends TestCase
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
-        $this->project_analyzer->getConfig()->setCustomErrorLevel(
-            'MissingInterfaceImmutableAnnotation',
-            Config::REPORT_ERROR,
-        );
+        $this->project_analyzer->getConfig()->suggest_purity_annotations = true;
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
@@ -301,10 +812,7 @@ final class UnusedCodeTest extends TestCase
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
-        $this->project_analyzer->getConfig()->setCustomErrorLevel(
-            'MissingInterfaceImmutableAnnotation',
-            Config::REPORT_ERROR,
-        );
+        $this->project_analyzer->getConfig()->suggest_purity_annotations = true;
 
         $file_path = self::$src_dir_path . 'somefile.php';
 
@@ -401,6 +909,58 @@ final class UnusedCodeTest extends TestCase
         );
     }
 
+    public function testParamsOfMethodWithUnanalysedBodyAreNotReportedUnused(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface AA extends Missing\ABC {}
+
+                final class A {
+                    private AA $a;
+                    private string $b;
+                    private Undefined\Foo $c;
+
+                    public function __construct(AA $a, string $b, Undefined\Foo $c) {
+                        $this->a = $a;
+                        $this->b = $b;
+                        $this->c = $c;
+                    }
+
+                    public function usedByNobody(AA $a): void {
+                        echo get_class($a);
+                    }
+                }
+
+                echo A::class;',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $types = array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type');
+        sort($types);
+
+        self::assertSame(
+            [
+                'MissingDependency',
+                'MissingDependency',
+                'MissingDependency',
+                'PossiblyUnusedMethod',
+                'PossiblyUnusedMethod',
+                'UndefinedClass',
+                'UndefinedClass',
+                'UndefinedClass',
+                'UnusedProperty',
+                'UnusedProperty',
+                'UnusedProperty',
+            ],
+            $types,
+        );
+    }
+
     public function testSeesUnusedClassReferencedByUnevaluatedCode(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
@@ -433,13 +993,398 @@ final class UnusedCodeTest extends TestCase
         $this->assertSame(10, $issue->line_from);
     }
 
+    public function testCallStaticReachedWhenAMethodExistenceProviderAnswersForTheClass(): void
+    {
+        $this->project_analyzer->getCodebase()->methods->existence_provider->registerClosure(
+            'Factory',
+            static fn(): bool => true,
+        );
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-no-seal-methods */
+                final class Factory {
+                    /** @param list<mixed> $_arguments */
+                    public static function __callStatic(string $name, array $_arguments): void {
+                        echo $name;
+                    }
+                }
+
+                Factory::make("x");',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testCallStaticNotReachedWhenAMethodExistenceProviderDeniesCall(): void
+    {
+        $this->project_analyzer->getCodebase()->methods->existence_provider->registerClosure(
+            'Factory',
+            static fn(MethodExistenceProviderEvent $event): ?bool => $event->getMethodNameLowercase() === '__call'
+                ? false
+                : null,
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('Cannot find any calls to method Factory::__callStatic');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-no-seal-methods */
+                final class Factory {
+                    /** @param list<mixed> $_arguments */
+                    public static function __callStatic(string $name, array $_arguments): void {
+                        echo $name;
+                    }
+
+                    /** @param list<mixed> $_arguments */
+                    public function __call(string $name, array $_arguments): void {
+                        echo $name;
+                    }
+
+                    public function run(): void {
+                        self::make();
+                    }
+                }
+
+                (new Factory())->run();',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+    }
+
     /**
      * @return array<string, array{code:string, ignored_issues?: list<string>}>
      * @psalm-pure
      */
-    public function providerValidCodeParse(): array
+    public static function providerValidCodeParse(): array
     {
         return [
+            'preIncrementAsArrayAssignmentKey' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): array {
+                        $row = 1;
+                        $array = [];
+                        $array[$row] = "1";
+                        $array[++$row] = "2";
+                        $array[++$row] = "3";
+
+                        return $array;
+                    }',
+            ],
+            'libxmlEntityLoaderIsGlobalState' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): void {
+                        libxml_set_external_entity_loader(null);
+                    }',
+            ],
+            'preDecrementAsArrayLiteralKey' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): array {
+                        $i = 3;
+
+                        return [--$i => 1];
+                    }',
+            ],
+            'classExistsGuardedStaticFirstClassCallable' => [
+                'code' => '<?php
+                    if (class_exists("Nope")) {
+                        $callable = Nope::stat(...);
+                        echo $callable !== null ? "set" : "unset";
+                    }',
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'classExistsGuardedStaticCallUsesItsArguments' => [
+                'code' => '<?php
+                    if (class_exists("Nope")) {
+                        $foo = "foo";
+                        Nope::stat($foo);
+                    }',
+            ],
+            'functionExistsGuardedCallUsesItsArguments' => [
+                'code' => '<?php
+                    if (function_exists("nope_fn")) {
+                        $foo = "foo";
+                        nope_fn($foo);
+                    }',
+            ],
+            'unusedParamsOfMagicMethodsAreNotReported' => [
+                'code' => '<?php
+                    /**
+                     * @method string foo()
+                     * @method static string bar()
+                     */
+                    final class MethodTest
+                    {
+                        /** @param mixed[] $arguments */
+                        public function __call(string $name, array $arguments): string
+                        {
+                            return $name;
+                        }
+
+                        /** @param mixed[] $arguments */
+                        public static function __callStatic(string $name, array $arguments): string
+                        {
+                            return $name;
+                        }
+
+                        public function __get(string $name): string
+                        {
+                            return "x";
+                        }
+
+                        public function __set(string $name, mixed $value): void
+                        {
+                        }
+                    }
+
+                    $test = new MethodTest();
+                    echo $test->foo() . MethodTest::bar();
+                    echo $test->anything;
+                    $test->other = 1;',
+                'ignored_issues' => ['UndefinedMagicPropertyFetch', 'UndefinedMagicPropertyAssignment', 'MixedArgument'],
+            ],
+            'unusedVariableSuppressedOnItsStatement' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): void {
+                        /**
+                         * @psalm-suppress UnusedVariable
+                         */
+                        $a = 1;
+
+                        /** @psalm-suppress UnusedVariable */
+                        $b = 2;
+
+                        /** @psalm-suppress UnusedVariable */
+                        [$d, $e] = [1, 2];
+                    }
+
+                    /**
+                     * @psalm-suppress UnusedVariable
+                     */
+                    $global = 1;',
+            ],
+            'unusedVariableSuppressedOnABlockStatement' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(bool $b): void {
+                        /** @psalm-suppress UnusedVariable */
+                        if ($b) {
+                            $a = 1;
+                            $c = 2;
+                        }
+                    }',
+            ],
+            'unusedForeachValueSuppressedOnItsForeach' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-api
+                     * @param list<int> $values
+                     */
+                    function f(array $values): void {
+                        /** @psalm-suppress UnusedForeachValue */
+                        foreach ($values as $value) {
+                        }
+                    }',
+            ],
+            'unusedVariableSuppressionAlsoCoversTheForeachValue' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-api
+                     * @param list<int> $values
+                     */
+                    function f(array $values): void {
+                        /** @psalm-suppress UnusedVariable */
+                        foreach ($values as $value) {
+                        }
+                    }',
+            ],
+            'unusedVariableSuppressedInAClosure' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): Closure {
+                        return function (): int {
+                            /** @psalm-suppress UnusedVariable */
+                            $a = 1;
+
+                            return 2;
+                        };
+                    }',
+            ],
+            'usedResultOfAPureStaticMethodCall' => [
+                'code' => '<?php
+                    final class Math
+                    {
+                        /** @psalm-pure */
+                        public static function addOne(int $number): int
+                        {
+                            return $number + 1;
+                        }
+                    }
+
+                    /** @psalm-api */
+                    function f(): int {
+                        $a = Math::addOne(5);
+                        echo Math::addOne($a);
+
+                        return Math::addOne(Math::addOne(1));
+                    }',
+            ],
+            'unusedResultOfAnImpureStaticMethodCallIsNotReported' => [
+                'code' => '<?php
+                    final class Counter
+                    {
+                        public static int $count = 0;
+
+                        public static function increment(): int
+                        {
+                            return ++self::$count;
+                        }
+                    }
+
+                    Counter::increment();',
+            ],
+            'variableAssignedInTheWhileConditionIsUsedAfterTheLoop' => [
+                'code' => '<?php
+                    function next_int(): int {
+                        return 1;
+                    }
+
+                    /** @psalm-api */
+                    function f(): int {
+                        while ($value = next_int()) {
+                            echo 1;
+                        }
+
+                        return $value;
+                    }',
+            ],
+            'pureMethodCallAsTheLeftOperandOfACoalesceThatThrows' => [
+                'code' => '<?php
+                    final class A {
+                        /** @psalm-pure */
+                        public function getTransportType(): ?stdClass {
+                            return null;
+                        }
+                    }
+
+                    /** @psalm-api */
+                    function validate(A $a): void {
+                        $a->getTransportType() ?? throw new Exception("missing");
+                    }',
+            ],
+            'argumentCastToStringDoesNotReportPossiblyInvalidCast' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function a(array|string $s): string {
+                        return ucfirst($s);
+                    }',
+                'ignored_issues' => ['PossiblyInvalidArgument'],
+            ],
+            'argumentCastToStringDoesNotReportInvalidCast' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function a(array $s): string {
+                        return ucfirst($s);
+                    }',
+                'ignored_issues' => ['InvalidArgument'],
+            ],
+            'userFunctionArgumentCastToStringDoesNotReportCastIssue' => [
+                'code' => '<?php
+                    function takesString(string $s): string {
+                        return $s;
+                    }
+
+                    /** @psalm-api */
+                    function a(array|string $s, array $t): string {
+                        return takesString($s) . takesString($t);
+                    }',
+                'ignored_issues' => ['PossiblyInvalidArgument', 'InvalidArgument'],
+            ],
+            'paramReferencedByProperty' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    final class A {
+                        public \stdClass $config;
+
+                        public function __construct(\stdClass $config) {
+                            $this->config = &$config;
+                        }
+                    }',
+            ],
+            'paramReferencedByStaticProperty' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    final class A {
+                        public static int $value = 0;
+
+                        public static function set(int $value): void {
+                            self::$value = &$value;
+                            echo self::$value;
+                        }
+                    }',
+            ],
+            'paramReferencedByArrayItem' => [
+                'code' => '<?php
+                    /**
+                     * @param array<int, int> $arr
+                     * @psalm-api
+                     */
+                    function f(array &$arr, int $value): void {
+                        $arr[0] = &$value;
+                    }',
+            ],
+            'shebangBeforeNamespaceWithExit' => [
+                'code' => '#!/usr/bin/env php
+<?php
+                    namespace Foo;
+
+                    exit(1);',
+            ],
+            'shebangBeforeNamespaceWithReturn' => [
+                'code' => '#!/usr/bin/env php
+<?php
+                    namespace Foo;
+
+                    return [];',
+            ],
+            'usedExceptionsAreNotReported' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function used(bool $b): Exception {
+                        $e = new Exception("assigned");
+                        echo strlen($e->getMessage());
+                        echo strlen((new Exception("receiver"))->getMessage());
+                        if ($b) {
+                            throw new Exception("thrown");
+                        }
+                        $list = [new Exception("array")];
+                        echo count($list);
+                        return new Exception("returned");
+                    }
+
+                    /**
+                     * @return Generator<int, Exception, mixed, void>
+                     * @psalm-api
+                     */
+                    function gen(): Generator {
+                        yield new Exception("yielded");
+                    }',
+            ],
             'pureIteratorCursorMovesAreUsed' => [
                 'code' => '<?php
                     /**
@@ -788,6 +1733,38 @@ final class UnusedCodeTest extends TestCase
 
                     takesCallable([C::class, "foo"]);',
             ],
+            'methodUsedAsCallableArrayForArrayOrCallableParam' => [
+                'code' => '<?php
+                    final class C {
+                        private static int $x = 1;
+
+                        public static function foo() : void {
+                            echo self::$x;
+                        }
+                    }
+
+                    /** @param array|callable $c */
+                    function takesUnion($c) : void {
+                        if (is_callable($c)) {
+                            $c();
+                        }
+                    }
+
+                    takesUnion([C::class, "foo"]);',
+            ],
+            'plainArrayForArrayOrCallableParam' => [
+                'code' => '<?php
+                    /** @param array|callable $c */
+                    function takesUnion($c) : void {
+                        if (is_callable($c)) {
+                            $c();
+                        }
+                    }
+
+                    takesUnion(["Nope", "foo"]);
+                    takesUnion([1, 2]);',
+                'ignored_issues' => ['UndefinedClass'],
+            ],
             'propertyAndMethodOverriddenDownstream' => [
                 'code' => '<?php
                     class A {
@@ -1079,6 +2056,7 @@ final class UnusedCodeTest extends TestCase
                         "name",
                         "value",
                     );',
+                'ignored_issues' => ['InsecureCookie'],
             ],
             'usedUsort' => [
                 'code' => '<?php
@@ -1740,16 +2718,852 @@ final class UnusedCodeTest extends TestCase
                     bar(foo());
                     echo "hello";',
             ],
+            'newRelicCallsWithDiscardedResultAreUsed' => [
+                'code' => '<?php
+                    function report(): void {
+                        newrelic_custom_metric("Custom/Foo", 1.0);
+                        newrelic_record_datastore_segment(static fn (): int => 1, ["product" => "x", "collection" => 12345, "databaseName" => null]);
+                        newrelic_set_user_attributes("u", "a", "p");
+                        newrelic_get_browser_timing_header(false);
+                        newrelic_set_user_id("id");
+                        newrelic_notice_error(new Exception("e"));
+                        $h = [];
+                        newrelic_insert_distributed_trace_headers(headers: $h);
+                    }
+
+                    report();',
+            ],
+            'propertyReadInDestructorIsUsed' => [
+                'code' => '<?php
+                    final class Greeter {
+                        public function __construct(private string $name) {
+                            echo "Hello, {$this->name}!\n";
+                        }
+
+                        public function __destruct() {
+                            echo "Goodbye, {$this->name}!\n";
+                        }
+                    }
+
+                    $greeter = new Greeter("World");
+                    unset($greeter);',
+            ],
+            'privateMethodCalledOnlyFromDestructorIsUsed' => [
+                'code' => '<?php
+                    final class A {
+                        public function __destruct() {
+                            $this->close();
+                        }
+
+                        private function close(): void {
+                            echo "closed";
+                        }
+                    }
+
+                    new A();',
+            ],
+            'destructorInheritedFromAbstractParentIsUsed' => [
+                'code' => '<?php
+                    abstract class P {
+                        public function __destruct() {
+                            $this->close();
+                        }
+
+                        abstract protected function close(): void;
+                    }
+
+                    final class Q extends P {
+                        private string $name = "q";
+
+                        protected function close(): void {
+                            echo $this->name;
+                        }
+                    }
+
+                    new Q();',
+            ],
+            'destructorFromTraitIsUsed' => [
+                'code' => '<?php
+                    trait T {
+                        public function __destruct() {
+                            $this->close();
+                        }
+                    }
+
+                    final class A {
+                        use T;
+
+                        private function close(): void {
+                            echo "closed";
+                        }
+                    }
+
+                    new A();',
+            ],
+            'propertyReadInImplicitlyCalledMagicMethodsIsUsed' => [
+                'code' => '<?php
+                    final class A {
+                        private string $a = "a";
+                        private string $b = "b";
+                        private string $c = "c";
+                        private string $d = "d";
+                        private string $e = "e";
+                        private string $f = "f";
+                        private string $g = "g";
+                        private static string $h = "h";
+
+                        /** @return list<string> */
+                        public function __sleep(): array { return [$this->a]; }
+                        public function __wakeup(): void { echo $this->b; }
+                        /** @return array<string, string> */
+                        public function __serialize(): array { return ["c" => $this->c]; }
+                        /** @param array<string, string> $data */
+                        public function __unserialize(array $data): void { echo $this->d, $data["c"]; }
+                        /** @return array<string, string> */
+                        public function __debugInfo(): array { return ["e" => $this->e]; }
+                        public function __isset(string $name): bool { return $name === $this->f; }
+                        public function __unset(string $name): void { echo $this->g, $name; }
+                        /** @param array<string, string> $_properties */
+                        public static function __set_state(array $_properties): self { echo self::$h; return new self(); }
+                    }
+
+                    echo serialize(new A());',
+            ],
+            'implicitlyCalledMagicMethodsOfUsedClassAreNotReported' => [
+                'code' => '<?php
+                    final class Single {
+                        private static ?self $instance = null;
+                        private function __construct() {}
+                        private function __clone() {}
+                        public static function get(): self { return self::$instance ??= new self(); }
+                    }
+
+                    final class AllMagic {
+                        public function __destruct() {}
+                        public function __clone() {}
+                        public function __invoke(): void {}
+                        public function __isset(string $k): bool { return $k === ""; }
+                        public function __unset(string $k): void { echo $k; }
+                        /** @return list<string> */
+                        public function __sleep(): array { return []; }
+                        public function __wakeup(): void {}
+                        /** @return array<string, mixed> */
+                        public function __serialize(): array { return []; }
+                        /** @param array<string, mixed> $data */
+                        public function __unserialize(array $data): void { echo count($data); }
+                        /** @param array<string, mixed> $a */
+                        public static function __set_state(array $a): self { echo count($a); return new self(); }
+                        /** @return array<string, mixed> */
+                        public function __debugInfo(): array { return []; }
+                        public function __toString(): string { return ""; }
+                    }
+
+                    echo get_class(Single::get());
+                    new AllMagic();',
+            ],
+            'callStaticReachedByPseudoStaticCallIsUsed' => [
+                'code' => '<?php
+                    /**
+                     * @method static string make(string $name)
+                     */
+                    final class Factory {
+                        private static string $prefix = "made: ";
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return self::$prefix . $name;
+                        }
+                    }
+
+                    echo Factory::make("x");',
+            ],
+            'callStaticReachedByFirstClassCallableIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return $name;
+                        }
+                    }
+
+                    $make = Factory::make(...);
+                    echo $make("x");',
+            ],
+            'callStaticReachedByPseudoStaticFirstClassCallableIsUsed' => [
+                'code' => '<?php
+                    /**
+                     * @method static string make(string $name)
+                     */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return $name;
+                        }
+                    }
+
+                    $make = Factory::make(...);
+                    echo $make("x");',
+            ],
+            'callStaticReachedByLiteralNameFirstClassCallableIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return $name;
+                        }
+                    }
+
+                    $name = "make";
+                    $make = Factory::$name(...);
+                    $make("x");',
+            ],
+            'callStaticReachedByPrivateAndProtectedMethodCallsFromOutsideIsUsed' => [
+                'code' => '<?php
+                    final class Factory {
+                        private static function make(): string {
+                            return "private";
+                        }
+
+                        protected static function build(): string {
+                            return "protected";
+                        }
+
+                        public static function hidden(): string {
+                            return self::make() . self::build();
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return $name;
+                        }
+                    }
+
+                    echo Factory::hidden();
+                    echo Factory::make();
+                    echo Factory::build();',
+                'ignored_issues' => ['InaccessibleMethod'],
+            ],
+            'callStaticReachedByUndeclaredStaticCallOnChildIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    abstract class Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name;
+                        }
+                    }
+
+                    final class Child extends Base {}
+
+                    Child::make("x");',
+            ],
+            'callStaticReachedByParentCallWithoutCallIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    abstract class Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function run(): void {
+                            parent::make();
+                        }
+                    }
+
+                    (new Child())->run();',
+            ],
+            'callStaticReachedFromStaticMethodOfClassWithCallIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name;
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name;
+                        }
+
+                        public static function run(): void {
+                            self::make();
+                            static::other();
+                        }
+                    }
+
+                    Factory::run();
+                    (new Factory())->other();',
+            ],
+            'callStaticReachedFromClosureWithoutThisInStaticMethodIsUsed' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name;
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name;
+                        }
+
+                        public static function run(): void {
+                            $create = function (): Closure {
+                                return self::make(...);
+                            };
+                            $create()();
+                        }
+                    }
+
+                    Factory::run();
+                    (new Factory())->other();',
+            ],
+            'callStaticReachedFromParentInstanceMethodWherePossiblyNotInstanceIsUsed' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name;
+                        }
+
+                        public function run(): void {
+                            Child::make();
+                        }
+                    }
+
+                    /** @psalm-no-seal-methods */
+                    final class Child extends Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name;
+                        }
+                    }
+
+                    (new Base())->run();
+                    (new Child())->other();',
+            ],
+            'suppressUnusedPropertyOnAPromotedProperty' => [
+                'code' => '<?php
+                    final class Test
+                    {
+                        public function __construct(
+                            /** @psalm-suppress PossiblyUnusedProperty */
+                            public bool $result,
+                        ) {
+                        }
+                    }
+
+                    new Test(true);',
+            ],
+            'variableReadThroughAVariableVariableInAnIfIsUsed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    function read(bool $flag): void {
+                        $demo = 'hello world!';
+                        $name = 'demo';
+
+                        if ($flag) {
+                            echo (string) $$name;
+                        }
+                    }
+                    PHP,
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'variableReadThroughAVariableVariableIsUsed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    function read(): void {
+                        $demo = 'hello world!';
+                        $name = 'demo';
+
+                        echo (string) $$name;
+                    }
+                    PHP,
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'variableReadThroughABracedVariableVariableIsUsed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    function read(): void {
+                        $demo = 'hello world!';
+                        $name = 'demo';
+
+                        echo (string) ${$name};
+                    }
+                    PHP,
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'paramOfAMethodIsNotUnusedAfterEval' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    final class Demo
+                    {
+                        public function run(): void
+                        {
+                            $this->test(['k' => '1']);
+                        }
+
+                        protected function test(array $in): void
+                        {
+                            echo count($in);
+                            eval('1;');
+                        }
+                    }
+                    PHP,
+            ],
+            'paramOfAMethodIsNotUnusedAfterExtract' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    final class Demo
+                    {
+                        public function run(): void
+                        {
+                            $this->test(['k' => '1']);
+                        }
+
+                        protected function test(array $in): void
+                        {
+                            echo count($in);
+                            extract($_GET);
+                        }
+                    }
+                    PHP,
+            ],
+            'assignmentInABranchThatBreaksIsSeenAfterTheLoop' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        foreach ([1, 2] as $_) {
+                            try {
+                                if ($b) {
+                                    $test = "broke";
+                                    break;
+                                }
+                            } catch (Exception $e) {
+                            }
+                        }
+
+                        return $test;
+                    }
+
+                    echo test(true);',
+            ],
+            'assignmentUsedInACatchThatAlwaysReturnsIsNotUnused' => [
+                'code' => '<?php
+                    function test(): string {
+                        $x = "initial";
+
+                        try {
+                            $x = "modified";
+                            throw new RuntimeException();
+                        } catch (RuntimeException $e) {
+                            return $x;
+                        }
+                    }
+
+                    echo test();',
+            ],
+            'assignmentInABranchUsedInACatchThatAlwaysReturnsIsNotUnused' => [
+                'code' => '<?php
+                    function test(bool $flag): string {
+                        $x = "initial";
+
+                        try {
+                            if ($flag) {
+                                $x = "modified";
+                                throw new RuntimeException();
+                            }
+                        } catch (RuntimeException $e) {
+                            return $x;
+                        }
+
+                        return "done";
+                    }
+
+                    echo test(true);',
+            ],
+            'assignmentBeforeAThrowIsSeenAfterTheTryWhereAnotherMatchingCatchGoesOn' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $x = "initial";
+
+                        try {
+                            if ($b) {
+                                $x = "thrown";
+                                throw new RuntimeException();
+                            }
+                        } catch (LogicException $e) {
+                            return "logic";
+                        } catch (RuntimeException $e) {
+                        }
+
+                        return $x;
+                    }
+
+                    echo test(true);',
+            ],
+            'assignmentInABranchThatThrowsIsSeenAfterTheCatch' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test .= " true";
+                                throw new Exception();
+                            }
+                        } catch (Exception $e) {
+                        }
+
+                        return $test . "\n";
+                    }
+
+                    echo test(false);
+                    echo test(true);',
+            ],
+            'assignmentInABranchThatThrowsIsSeenInTheCatch' => [
+                'code' => '<?php
+                    function test(bool $b): void {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test = "thrown";
+                                throw new Exception();
+                            }
+                        } catch (Exception $e) {
+                            echo $test;
+                        }
+                    }
+
+                    test(true);',
+            ],
+            'assignmentInABranchThatThrowsIsSeenInTheLaterCatchThatTakesIt' => [
+                'code' => '<?php
+                    function test(bool $b): void {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test = "thrown";
+                                throw new RuntimeException();
+                            }
+                        } catch (LogicException $e) {
+                        } catch (RuntimeException $e) {
+                            echo $test;
+                        }
+                    }
+
+                    test(true);',
+            ],
+            'assignmentInABranchThatThrowsInANestedTryIsSeenAfterTheOuterTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        try {
+                            try {
+                                if ($b) {
+                                    $test = "thrown";
+                                    throw new Exception();
+                                }
+                            } catch (InvalidArgumentException $e) {
+                            }
+                        } catch (Exception $e) {
+                        }
+
+                        return $test;
+                    }
+
+                    echo test(true);',
+            ],
+            'methodOnlyCalledFromPromotedPropertyHook' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function __construct(
+                            public string $foo {
+                                set(string $value) {
+                                    $this->foo = self::sanitized($value);
+                                }
+                            }
+                        ) {}
+
+                        protected static function sanitized(string $value): string {
+                            return ucfirst(trim($value));
+                        }
+                    }
+
+                    $foo = new Foo(" foo ");
+                    echo $foo->foo;',
+            ],
+            'privateMethodOnlyCalledFromPropertyHook' => [
+                'code' => '<?php
+                    final class Foo {
+                        public string $name {
+                            get => $this->compute();
+                        }
+                        private function compute(): string { return "a"; }
+                    }
+                    echo (new Foo())->name;',
+            ],
         ];
     }
 
     /**
-     * @return array<string,array{code:string,error_message:string,ignored_issues?:list<string>}>
+     * @return array<string,array{code:string,error_message:string,error_levels?:list<string>}>
      * @psalm-pure
      */
-    public function providerInvalidCodeParse(): array
+    public static function providerInvalidCodeParse(): array
     {
         return [
+            'variableAssignedAfterAVariableVariableIsStillChecked' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    function read(): void {
+                        $demo = 'hello world!';
+                        $name = 'demo';
+
+                        echo (string) $$name;
+
+                        $later = 'unused';
+                    }
+                    PHP,
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:5',
+            ],
+            'undefinedVariableAfterAVariableVariableIsStillReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    function read(): void {
+                        $demo = 'hello world!';
+                        $name = 'demo';
+
+                        echo (string) $$name;
+                        echo $missing;
+                    }
+                    PHP,
+                'error_message' => 'UndefinedVariable',
+            ],
+            'postIncrementAsArrayKeyIsAnUnusedAssignment' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): array {
+                        $i = 0;
+
+                        return [$i++ => 1];
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'preIncrementStatementIsAnUnusedAssignment' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): void {
+                        $i = 0;
+                        ++$i;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'undefinedClassStaticFirstClassCallable' => [
+                'code' => '<?php
+                    $callable = Nope::stat(...);',
+                'error_message' => 'UndefinedClass',
+            ],
+            'classExistsGuardedStaticCallAnalysesItsArguments' => [
+                'code' => '<?php
+                    if (class_exists("Nope")) {
+                        Nope::stat($undefined);
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'functionExistsGuardedCallAnalysesItsArguments' => [
+                'code' => '<?php
+                    if (function_exists("nope_fn")) {
+                        nope_fn($undefined);
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'methodOfAShadowedMixinIsReportedAsUnused' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Repository {
+                        /** @return T|null */
+                        public function first() { return null; }
+                    }
+
+                    final class Labels {
+                        public function first(): string { return ""; }
+                    }
+
+                    /**
+                     * @mixin Repository<static>
+                     * @mixin Labels
+                     */
+                    final class Post {
+                        /** @psalm-api */
+                        public function __call(string $name, array $args) { return null; }
+                    }
+
+                    echo (new Labels)::class;
+                    echo (new Post)->first() ? "a" : "b";',
+                'error_message' => 'PossiblyUnusedMethod - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:9:41 - Cannot find any calls to method Labels::first',
+            ],
+            'callStaticOfAClassWithoutStaticMagicCallsIsReportedAsUnused' => [
+                'code' => '<?php
+                    final class Forwarder {
+                        /** @param mixed[] $arguments */
+                        public static function __callStatic(string $name, array $arguments): string
+                        {
+                            return $name;
+                        }
+
+                        public static function real(): string
+                        {
+                            return "real";
+                        }
+                    }
+
+                    echo Forwarder::real();',
+                'error_message' => 'PossiblyUnusedMethod',
+            ],
+            'unusedParamOfARegularPublicMethodIsStillReported' => [
+                'code' => '<?php
+                    final class Reader {
+                        public function read(string $path, string $unused): string
+                        {
+                            return $path;
+                        }
+                    }
+
+                    echo (new Reader())->read("x", "y");',
+                'error_message' => 'UnusedParam',
+            ],
+            'unusedVariableSuppressionDoesNotReachOtherStatements' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): void {
+                        /** @psalm-suppress UnusedVariable */
+                        $a = 1;
+                        $b = 2;
+                    }',
+                'error_message' => 'b is never referenced',
+            ],
+            'unusedVariableIsNotSuppressedByAnotherIssueType' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): void {
+                        /** @psalm-suppress UnusedForeachValue */
+                        $a = 1;
+                    }',
+                'error_message' => 'a is never referenced',
+            ],
+            'unusedVariableSuppressionOfAnUsedVariableIsUnused' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): int {
+                        /** @psalm-suppress UnusedVariable */
+                        $a = 1;
+
+                        return $a;
+                    }',
+                'error_message' => 'UnusedPsalmSuppress',
+            ],
+            'unusedResultOfAPureStaticMethodCall' => [
+                'code' => '<?php
+                    final class Math
+                    {
+                        /** @psalm-pure */
+                        public static function addOne(int $number): int
+                        {
+                            return $number + 1;
+                        }
+                    }
+
+                    Math::addOne(5);',
+                'error_message' => 'UnusedMethodCall',
+            ],
+            'argumentStillReportsPossiblyInvalidArgumentWithUnusedCode' => [
+                'code' => '<?php
+                    /**
+                     * @param array|string $s
+                     * @psalm-api
+                     */
+                    function a($s): string {
+                        return ucfirst($s);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'argumentStillReportsInvalidArgumentWithUnusedCode' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function a(array $s): string {
+                        return ucfirst($s);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'explicitStringCastStillReportsPossiblyInvalidCastWithUnusedCode' => [
+                'code' => '<?php
+                    /**
+                     * @param array|string $s
+                     * @psalm-api
+                     */
+                    function a($s): string {
+                        return (string) $s;
+                    }',
+                'error_message' => 'PossiblyInvalidCast',
+            ],
+            'explicitStringCastStillReportsInvalidCastWithUnusedCode' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function a(array $s): string {
+                        return (string) $s;
+                    }',
+                'error_message' => 'InvalidCast',
+            ],
+            'interpolationStillReportsPossiblyInvalidCastWithUnusedCode' => [
+                'code' => '<?php
+                    /**
+                     * @param array|string $s
+                     * @psalm-api
+                     */
+                    function a($s): string {
+                        return "$s";
+                    }',
+                'error_message' => 'PossiblyInvalidCast',
+            ],
+            'paramReferencedByUnusedVariable' => [
+                'code' => '<?php
+                    function f(int $value): void {
+                        $ref = &$value;
+                    }
+
+                    f(1);',
+                'error_message' => 'UnusedParam',
+                'error_levels' => ['UnusedVariable'],
+            ],
+            'unevaluatedCodeAfterExitInNamespaceWithShebang' => [
+                'code' => '#!/usr/bin/env php
+<?php
+                    namespace Foo;
+
+                    exit(1);
+                    echo "unreachable";',
+                'error_message' => 'UnevaluatedCode',
+            ],
             'unusedClass' => [
                 'code' => '<?php
                     final class A { }',
@@ -1917,7 +3731,7 @@ final class UnusedCodeTest extends TestCase
 
                     $a = new A();',
                 'error_message' => 'PossiblyUnusedProperty',
-                'ignored_issues' => ['UnusedVariable'],
+                'error_levels' => ['UnusedVariable'],
             ],
             'possiblyUnusedPropertyWrittenNeverRead' => [
                 'code' => '<?php
@@ -1929,7 +3743,6 @@ final class UnusedCodeTest extends TestCase
                     $a = new A();
                     $a->foo = "bar";',
                 'error_message' => 'PossiblyUnusedProperty',
-                'ignored_issues' => ['UnusedVariable'],
             ],
             'possiblyUnusedPropertyWithArrayWrittenNeverRead' => [
                 'code' => '<?php
@@ -1941,7 +3754,6 @@ final class UnusedCodeTest extends TestCase
                     $a = new A();
                     $a->foo[] = "bar";',
                 'error_message' => 'PossiblyUnusedProperty',
-                'ignored_issues' => ['UnusedVariable'],
             ],
             'unusedProperty' => [
                 'code' => '<?php
@@ -1952,7 +3764,7 @@ final class UnusedCodeTest extends TestCase
 
                     $a = new A();',
                 'error_message' => 'UnusedProperty',
-                'ignored_issues' => ['UnusedVariable'],
+                'error_levels' => ['UnusedVariable'],
             ],
             'privateUnusedMethod' => [
                 'code' => '<?php
@@ -2186,6 +3998,56 @@ final class UnusedCodeTest extends TestCase
                         $dt->modify("+1 day");
                     }',
                 'error_message' => 'UnusedMethodCall',
+            ],
+            'unusedPureFunctionCallExplainsThatItHasNoEffect' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(string $s): void {
+                        strlen($s);
+                    }',
+                'error_message' => 'UnusedFunctionCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:25 - The call to strlen seems to have no effect, its result is not used',
+            ],
+            'unusedMutationFreeMethodCallExplainsThatItHasNoEffect' => [
+                'code' => '<?php
+                    final class Reader {
+                        /** @psalm-pure */
+                        public function read(): string {
+                            return "x";
+                        }
+                    }
+
+                    /** @psalm-api */
+                    function f(Reader $reader): void {
+                        $reader->read();
+                    }',
+                'error_message' => 'UnusedMethodCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:11:34 - The call to Reader::read seems to have no effect, its result is not used',
+            ],
+            'unusedNewException' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): void {
+                        new Exception("not thrown");
+                    }',
+                'error_message' => 'UnusedMethodCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:25 - The Exception instance created here is never thrown or used',
+            ],
+            'unusedNewExceptionWithImpureConstructor' => [
+                'code' => '<?php
+                    final class LoggedException extends RuntimeException {
+                        public function __construct(string $message) {
+                            echo $message;
+                            parent::__construct($message);
+                        }
+                    }
+
+                    /** @psalm-api */
+                    function f(): void {
+                        new LoggedException("not thrown");
+                    }',
+                'error_message' => 'UnusedMethodCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:11:25 - The LoggedException instance created here is never thrown or used',
             ],
             'unusedClassReferencesItself' => [
                 'code' => '<?php
@@ -2486,6 +4348,350 @@ final class UnusedCodeTest extends TestCase
                     class a {}
                     new a;',
                 'error_message' => 'ClassMustBeFinal',
+            ],
+            'unusedClassWithDestructorDoesNotMakeItsReferencesUsed' => [
+                'code' => '<?php
+                    final class Helper {
+                        public function run(): void {}
+                    }
+
+                    final class Dead {
+                        public function __destruct() {
+                            (new Helper())->run();
+                        }
+                    }',
+                'error_message' => 'Class Helper is never used',
+            ],
+            'callStaticNotReachedByCallToVisibleMethodWithPseudoTag' => [
+                'code' => '<?php
+                    /**
+                     * @method static string make(string $name)
+                     */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): string {
+                            return $name;
+                        }
+
+                        public static function make(string $name): string {
+                            return $name;
+                        }
+                    }
+
+                    echo Factory::make("x");',
+                'error_message' => 'Cannot find any calls to method Factory::__callStatic',
+            ],
+            'callStaticNotReachedByParentCallInInstanceMethodWithCall' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    abstract class Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function run(): void {
+                            parent::make();
+                        }
+                    }
+
+                    (new Child())->run();',
+                'error_message' => 'Cannot find any calls to method Base::__callStatic',
+            ],
+            'callStaticNotReachedByParentFirstClassCallableInInstanceMethodWithCall' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    abstract class Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function run(): Closure {
+                            return parent::make(...);
+                        }
+                    }
+
+                    $make = (new Child())->run();
+                    $make("x");',
+                'error_message' => 'Cannot find any calls to method Base::__callStatic',
+            ],
+            'callStaticNotReachedByNarrowedThisInParentInstanceMethodWithCall' => [
+                'code' => '<?php
+                    class Base {
+                        public function run(): void {
+                            if ($this instanceof Child) {
+                                Child::make();
+                            }
+                        }
+                    }
+
+                    /** @psalm-no-seal-methods */
+                    final class Child extends Base {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+                    }
+
+                    (new Base())->run();
+                    (new Child())->run();',
+                'error_message' => 'Cannot find any calls to method Child::__callStatic',
+            ],
+            'callStaticNotReachedByClosureWithThisInInstanceMethodWithCall' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    final class Factory {
+                        /** @param list<mixed> $_arguments */
+                        public static function __callStatic(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        /** @param list<mixed> $_arguments */
+                        public function __call(string $name, array $_arguments): void {
+                            echo $name, count($_arguments);
+                        }
+
+                        public function run(): void {
+                            $create = function (): Closure {
+                                return self::make(...);
+                            };
+                            $create()();
+                        }
+                    }
+
+                    (new Factory())->run();',
+                'error_message' => 'Cannot find any calls to method Factory::__callStatic',
+            ],
+            'suppressOnAPromotedPropertyDoesNotCoverTheNextOne' => [
+                'code' => '<?php
+                    final class Test
+                    {
+                        public function __construct(
+                            /** @psalm-suppress PossiblyUnusedProperty */
+                            public bool $result,
+                            public bool $other,
+                        ) {
+                        }
+                    }
+
+                    new Test(true, false);',
+                'error_message' => 'PossiblyUnusedProperty',
+            ],
+            'assignmentBeforeAnUncaughtThrowInATryFinallyIsNotSeenAfterTheTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test = "thrown";
+                                throw new RuntimeException();
+                            }
+                        } finally {
+                            echo "done";
+                        }
+
+                        return $test;
+                    }
+
+                    echo test(true);',
+                'error_message' => 'UnusedVariable',
+                'error_levels' => [],
+            ],
+            'assignmentBeforeAThrowThatTheMatchingCatchAlwaysLeavesIsNotSeenAfterTheTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $x = "initial";
+
+                        try {
+                            if ($b) {
+                                $x = "unused";
+                                throw new RuntimeException();
+                            }
+                        } catch (RuntimeException $e) {
+                            return "caught";
+                        }
+
+                        return $x;
+                    }
+
+                    echo test(true);',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33',
+                'error_levels' => [],
+            ],
+            'assignmentBeforeAThrowThatTheMatchingCatchAlwaysThrowsIsNotSeenAfterTheTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $x = "initial";
+
+                        try {
+                            if ($b) {
+                                $x = "unused";
+                                throw new RuntimeException();
+                            }
+                        } catch (RuntimeException $e) {
+                            throw new LogicException("caught");
+                        }
+
+                        return $x;
+                    }
+
+                    echo test(true);',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33',
+                'error_levels' => [],
+            ],
+            'assignmentBeforeAThrowThatNoCatchTakesIsNotSeenAfterTheTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test = "thrown";
+                                throw new RuntimeException();
+                            }
+                        } catch (LogicException $e) {
+                        }
+
+                        return $test;
+                    }
+
+                    echo test(true);',
+                'error_message' => 'UnusedVariable',
+                'error_levels' => [],
+            ],
+            'assignmentBeforeAThrowIsNotSeenInACatchThatCannotTakeIt' => [
+                'code' => '<?php
+                    function test(bool $b): void {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test = "thrown";
+                                throw new RuntimeException();
+                            }
+                        } catch (RuntimeException $e) {
+                        } catch (LogicException $e) {
+                            echo $test;
+                        }
+                    }
+
+                    test(true);',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33',
+                'error_levels' => [],
+            ],
+            'assignmentBeforeAThrowThatOnlyTheOuterTryCatchesIsNotSeenAfterTheInnerTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        try {
+                            try {
+                                if ($b) {
+                                    $test = "thrown";
+                                    throw new RuntimeException();
+                                }
+                            } catch (LogicException $e) {
+                            }
+
+                            return $test;
+                        } catch (RuntimeException $e) {
+                            return "caught";
+                        }
+                    }
+
+                    echo test(true);',
+                'error_message' => 'UnusedVariable',
+                'error_levels' => [],
+            ],
+            'assignmentInABranchThatReturnsIsNotSeenAfterTheTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test = "returned";
+                                return "early";
+                            }
+                        } catch (Exception $e) {
+                        }
+
+                        return $test;
+                    }
+
+                    echo test(true);',
+                'error_message' => 'UnusedVariable',
+                'error_levels' => [],
+            ],
+            'assignmentInABranchThatReturnsAndOneThatThrowsInTheSameTry' => [
+                'code' => '<?php
+                    function test(int $b): string {
+                        $test = "test";
+
+                        try {
+                            if ($b === 1) {
+                                $test = "returned";
+                                return "early";
+                            }
+
+                            if ($b === 2) {
+                                $test = "thrown";
+                                throw new Exception();
+                            }
+                        } catch (Exception $e) {
+                        }
+
+                        $test = "done";
+
+                        return $test;
+                    }
+
+                    echo test(1);',
+                'error_message' => 'UnusedVariable',
+                'error_levels' => [],
+            ],
+            'assignmentInABranchThatThrowsIsOverwrittenAfterTheTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test = "thrown";
+                                throw new Exception();
+                            }
+                        } catch (Exception $e) {
+                        }
+
+                        $test = "done";
+
+                        return $test;
+                    }
+
+                    echo test(true);',
+                'error_message' => 'UnusedVariable',
+                'error_levels' => [],
             ],
         ];
     }

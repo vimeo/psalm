@@ -8,12 +8,11 @@ use Override;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\TypeVisitor\FromDocblockSetter;
 use Psalm\Storage\ImmutableNonCloneableTrait;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
-
-use function get_object_vars;
 
 /**
  * @psalm-immutable
@@ -42,7 +41,8 @@ use function get_object_vars;
  *      allow_mutations?: bool,
  *      has_mutations?: bool,
  *      different?: bool,
- *      parent_nodes?: array<string, DataFlowNode>
+ *      parent_nodes?: array<string, DataFlowNode>,
+ *      propagate_parent_nodes?: bool
  * }
  * @api
  */
@@ -50,6 +50,7 @@ final class Union implements TypeNode
 {
     use ImmutableNonCloneableTrait;
     use UnionTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     /**
      * @psalm-readonly
@@ -214,55 +215,6 @@ final class Union implements TypeNode
 
     public bool $different = false;
 
-    private const PROPERTY_KEYS_FOR_UNSERIALIZE = [
-        "\0" . self::class . "\0" . 'types' => 'types',
-        'from_docblock' => 'from_docblock',
-        'from_calculation' => 'from_calculation',
-        'int_mask_bits' => 'int_mask_bits',
-        'from_property' => 'from_property',
-        'from_static_property' => 'from_static_property',
-        'from_global_state' => 'from_global_state',
-        'initialized' => 'initialized',
-        'initialized_class' => 'initialized_class',
-        'checked' => 'checked',
-        'failed_reconciliation' => 'failed_reconciliation',
-        'ignore_nullable_issues' => 'ignore_nullable_issues',
-        'ignore_falsable_issues' => 'ignore_falsable_issues',
-        'ignore_isset' => 'ignore_isset',
-        'possibly_undefined' => 'possibly_undefined',
-        'possibly_undefined_from_try' => 'possibly_undefined_from_try',
-        'explicit_never' => 'explicit_never',
-        'had_template' => 'had_template',
-        'from_template_default' => 'from_template_default',
-        "\0" . self::class . "\0" . 'literal_string_types' => 'literal_string_types',
-        "\0" . self::class . "\0" . 'typed_class_strings' => 'typed_class_strings',
-        "\0" . self::class . "\0" . 'literal_int_types' => 'literal_int_types',
-        "\0" . self::class . "\0" . 'literal_float_types' => 'literal_float_types',
-        'by_ref' => 'by_ref',
-        'reference_free' => 'reference_free',
-        'closure_state' => 'closure_state',
-        'allow_mutations' => 'allow_mutations',
-        'has_mutations' => 'has_mutations',
-        "\0" . self::class . "\0" . 'id' => 'id',
-        "\0" . self::class . "\0" . 'exact_id' => 'exact_id',
-        'parent_nodes' => 'parent_nodes',
-        'propagate_parent_nodes' => 'propagate_parent_nodes',
-        'different' => 'different',
-    ];
-
-    /**
-     * Suppresses memory usage when unserializing objects.
-     *
-     * @see \Psalm\Storage\UnserializeMemoryUsageSuppressionTrait
-     */
-    public function __unserialize(array $properties): void
-    {
-        foreach (self::PROPERTY_KEYS_FOR_UNSERIALIZE as $key => $property_name) {
-            /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
-            $this->$property_name = $properties[$key];
-        }
-    }
-
     /**
      * @param TProperties $properties
      * @return static
@@ -296,11 +248,12 @@ final class Union implements TypeNode
     }
 
     /**
-     * @param array<string, DataFlowNode> $parent_nodes
+     * @param array<string, DataFlowNode>|list<DataFlowNode> $parent_nodes keyed by their ids, or a list of them
      * @return static
      */
     public function setParentNodes(array $parent_nodes, bool $propagate_changes = false): self
     {
+        $parent_nodes = self::keyParentNodes($parent_nodes);
         if ($parent_nodes === $this->parent_nodes) {
             return $this;
         }
@@ -312,7 +265,7 @@ final class Union implements TypeNode
 
 
     /**
-     * @param array<string, DataFlowNode> $parent_nodes
+     * @param array<string, DataFlowNode>|list<DataFlowNode> $parent_nodes keyed by their ids, or a list of them
      * @return static
      */
     public function addParentNodes(array $parent_nodes): self
@@ -320,13 +273,30 @@ final class Union implements TypeNode
         if (!$parent_nodes) {
             return $this;
         }
-        $parent_nodes = DataFlowNode::combineParentNodes($this->parent_nodes, $parent_nodes);
+        $parent_nodes = DataFlowNode::combineParentNodes($this->parent_nodes, self::keyParentNodes($parent_nodes));
         if ($parent_nodes === $this->parent_nodes) {
             return $this;
         }
         $cloned = clone $this;
         $cloned->parent_nodes = $parent_nodes;
         return $cloned;
+    }
+
+    /**
+     * The nodes keyed by their ids: plugins may give a list of nodes, whose ids are internal
+     *
+     * @param array<string, DataFlowNode>|list<DataFlowNode> $parent_nodes
+     * @return array<string, DataFlowNode>
+     * @psalm-capabilities read-props
+     */
+    private static function keyParentNodes(array $parent_nodes): array
+    {
+        $keyed = [];
+        foreach ($parent_nodes as $parent_node) {
+            $keyed[$parent_node->id] = $parent_node;
+        }
+
+        return $keyed;
     }
 
     /** @return static */
@@ -372,8 +342,7 @@ final class Union implements TypeNode
      */
     public function getBuilder(): MutableUnion
     {
-        /** @psalm-suppress InvalidArgument It's actually filtered internally */
-        return new MutableUnion($this->getAtomicTypes(), get_object_vars($this));
+        return new MutableUnion($this->types, $this->getNonDefaultProperties());
     }
 
     /**

@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Override;
 use PhpParser;
 use PhpParser\Node\Stmt\Namespace_;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Type;
@@ -51,7 +52,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         $this->namespace_name = $this->namespace->name ? $this->namespace->name->toString() : '';
     }
 
-    public function collectAnalyzableInformation(): void
+    public function collectAnalyzableInformation(bool $analyze_statements): void
     {
         $leftover_stmts = [];
 
@@ -62,15 +63,29 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         $codebase = $this->getCodebase();
 
         foreach ($this->namespace->stmts as $stmt) {
-            if ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
+            if ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
+                $leftover_stmts[] = $stmt;
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
                 $this->collectAnalyzableClassLike($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
                 $this->visitUse($stmt);
+
+                if ($stmt->getDocComment()) {
+                    $leftover_stmts[] = new PhpParser\Node\Stmt\Nop($stmt->getAttributes());
+                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
                 $this->visitGroupUse($stmt);
+
+                if ($stmt->getDocComment()) {
+                    $leftover_stmts[] = new PhpParser\Node\Stmt\Nop($stmt->getAttributes());
+                }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
-                foreach ($stmt->consts as $const) {
-                    self::$public_namespace_constants[$this->namespace_name][$const->name->name] = Type::getMixed();
+                // a placeholder until the statement is analysed below; set without that analysis, it would replace the
+                // type the file's own analysis found
+                if ($analyze_statements) {
+                    foreach ($stmt->consts as $const) {
+                        self::$public_namespace_constants[$this->namespace_name][$const->name->name] = Type::getMixed();
+                    }
                 }
 
                 $leftover_stmts[] = $stmt;
@@ -79,7 +94,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
             }
         }
 
-        if ($leftover_stmts) {
+        if ($leftover_stmts && $analyze_statements) {
             $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider(), true);
             $file_context = $this->source->context;
 
@@ -92,6 +107,14 @@ final class NamespaceAnalyzer extends SourceAnalyzer
                 $context->collect_exceptions = $codebase->config->check_for_throws_in_global_scope;
             }
             $statements_analyzer->analyze($leftover_stmts, $context);
+
+            if ($statements_analyzer->owns_type_variable_tracker) {
+                $statements_analyzer->type_variable_tracker->reconcile(
+                    $codebase,
+                    new CodeLocation($this, $leftover_stmts[0]),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
         }
     }
 
@@ -146,6 +169,14 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         }
 
         throw new InvalidArgumentException('Given $visibility not supported');
+    }
+
+    /**
+     * Forgets the constants of an earlier analysis in the same process
+     */
+    public static function clearCache(): void
+    {
+        self::$public_namespace_constants = [];
     }
 
     #[Override]

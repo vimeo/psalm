@@ -14,11 +14,29 @@ final class SuperGlobalsTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
+        yield 'aCopyOfASuperGlobalIsDefined' => [
+            'code' => '<?php
+                function save(): void {
+                    $session = $_SESSION;
+
+                    try {
+                        session_write_close();
+                    } finally {
+                        if ($_SESSION) {
+                            $_SESSION = $session;
+                        }
+                    }
+
+                    echo count($session);
+                }',
+            'assertions' => [],
+        ];
+
         yield 'http_response_headerIsList' => [
             'code' => '<?php
                 /** @return non-empty-list<non-falsy-string> */
@@ -30,6 +48,15 @@ final class SuperGlobalsTest extends TestCase
                 }
             ',
             'assertions' => [],
+        ];
+
+        yield 'COOKIE keys can be ints' => [
+            'code' => '<?php
+                $cookies = $_COOKIE;
+            ',
+            'assertions' => [
+                '$cookies===' => 'array<int|non-empty-string, string>',
+            ],
         ];
 
         yield 'ENV has scalar entries only' => [
@@ -51,13 +78,141 @@ final class SuperGlobalsTest extends TestCase
                 '$session===' => 'array<never, never>',
             ],
         ];
+
+        yield 'SERVER REQUEST_TIME range does not depend on the current time' => [
+            'code' => '<?php
+                $time = null;
+                if (isset($_SERVER["REQUEST_TIME"])) {
+                    $time = $_SERVER["REQUEST_TIME"];
+                }
+            ',
+            'assertions' => [
+                '$time===' => 'int<1, max>|null',
+            ],
+        ];
+
+        yield 'globalSuperGlobalKeepsItsType' => [
+            'code' => '<?php
+                function printers(): string {
+                    global $_SESSION;
+
+                    $session = $_SESSION;
+                    /** @psalm-check-type-exact $session = array<non-empty-string, mixed> */;
+
+                    return var_export($_SESSION["printers"], true);
+                }
+            ',
+        ];
+
+        yield 'globalSuperGlobalReadInTheFileScopeKeepsItsType' => [
+            'code' => '<?php
+                echo count($_SESSION);
+
+                function printers(): string {
+                    global $_SESSION;
+
+                    return var_export($_SESSION["printers"], true);
+                }
+            ',
+        ];
+
+        yield 'globalSuperGlobalReadInAFileScopeTryIsDefined' => [
+            'code' => '<?php
+                try {
+                    echo count($_SESSION);
+                } catch (Exception $e) {
+                }
+
+                function snapshot(): void {
+                    global $_SESSION;
+
+                    $snapshot = $_SESSION;
+                    var_export($snapshot);
+                }
+            ',
+        ];
+
+        yield 'superGlobalPassedByReferenceInAFunction' => [
+            'code' => '<?php
+                function byRef(array &$a): void {}
+
+                function f(): void {
+                    byRef($_SESSION);
+                }
+            ',
+        ];
+
+        yield 'superGlobalPassedByReferenceInTheFileScope' => [
+            'code' => '<?php
+                function byRef(array &$a): void {}
+
+                byRef($_SESSION);
+            ',
+        ];
+
+        yield 'superGlobalReadThenPassedByReference' => [
+            'code' => '<?php
+                function byRef(array &$a): void {}
+
+                echo count($_SESSION);
+                byRef($_SESSION);
+            ',
+        ];
+
+        yield 'superGlobalPassedByReferenceTakesTheOutType' => [
+            'code' => '<?php
+                /** @param-out list<int> $a */
+                function byRef(array &$a): void {
+                    $a = [1];
+                }
+
+                function f(): void {
+                    byRef($_GET);
+                    $get = $_GET;
+                    /** @psalm-check-type-exact $get = list<int> */;
+                }
+            ',
+        ];
+
+        yield 'superGlobalPassedToAMethodOfAnUnknownClass' => [
+            'code' => '<?php
+                /** @psalm-suppress MixedMethodCall */
+                function f(mixed $o): void {
+                    $o->save($_SESSION);
+                    $session = $_SESSION;
+                    /** @psalm-check-type-exact $session = array<non-empty-string, mixed> */;
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '8.0',
+        ];
+
+        yield 'superGlobalPassedToAnArraySortFunction' => [
+            'code' => '<?php
+                function f(): void {
+                    asort($_SESSION);
+                    $session = $_SESSION;
+                    /** @psalm-check-type-exact $session = array<non-empty-string, mixed> */;
+                }
+            ',
+        ];
+
+        yield 'globalHttpResponseHeaderIsNullWhenUnset' => [
+            'code' => '<?php
+                function headers(): void {
+                    global $http_response_header;
+                    /** @psalm-check-type-exact $http_response_header = non-empty-list<non-falsy-string>|null */;
+                }
+            ',
+        ];
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         yield 'undefined http_response_header' => [
             'code' => '<?php
@@ -69,6 +224,38 @@ final class SuperGlobalsTest extends TestCase
             'error_message' => 'InvalidReturnStatement',
         ];
 
+        yield 'aCopyOfHttpResponseHeaderIsPossiblyUndefined' => [
+            'code' => '<?php
+                function headers(): void {
+                    $headers = $http_response_header;
+                    echo count($headers);
+                }
+            ',
+            'error_message' => 'PossiblyUndefinedVariable',
+        ];
+
+        yield 'superGlobalPassedByReferenceKeepsItsType' => [
+            'code' => '<?php
+                function byRef(string &$a): void {}
+
+                function f(): void {
+                    byRef($_SESSION);
+                }
+            ',
+            'error_message' => 'InvalidArgument',
+        ];
+
+        yield 'httpResponseHeaderPassedByReferenceMayNotBeSet' => [
+            'code' => '<?php
+                function byRef(array &$a): void {}
+
+                function f(): void {
+                    byRef($http_response_header);
+                }
+            ',
+            'error_message' => 'NullReference',
+        ];
+
         yield 'access SESSION key after session_unset' => [
             'code' => '<?php
                 $_SESSION["foo"] = 42;
@@ -76,6 +263,13 @@ final class SuperGlobalsTest extends TestCase
                 echo $_SESSION["foo"];
             ',
             'error_message' => 'EmptyArrayAccess',
+        ];
+
+        yield 'SERVER REQUEST_TIME shape in issue message does not depend on the current time' => [
+            'code' => '<?php
+                echo $_SERVER["REQUEST_TIME"];
+            ',
+            'error_message' => 'REQUEST_TIME?: int<1, max',
         ];
     }
 }

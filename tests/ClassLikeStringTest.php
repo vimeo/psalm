@@ -11,6 +11,22 @@ use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function array_keys;
+use function assert;
+use function file_put_contents;
+use function implode;
+use function mkdir;
+use function rmdir;
+use function spl_autoload_register;
+use function spl_autoload_unregister;
+use function str_ends_with;
+use function str_starts_with;
+use function sys_get_temp_dir;
+use function uniqid;
+use function unlink;
+
+use const DIRECTORY_SEPARATOR;
+
 final class ClassLikeStringTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -33,6 +49,118 @@ final class ClassLikeStringTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * The autoloader would run the analyzed code (and any `exit` of it) inside the process of Psalm.
+     */
+    public function testClassExistsGuardDoesNotRunTheAutoloader(): void
+    {
+        $this->expectNotToPerformAssertions();
+
+        $autoloaded = [];
+        /** @psalm-capabilities read-props|write-this-props|write-refs */
+        $autoloader = static function (string $class) use (&$autoloaded): void {
+            if (str_starts_with($class, 'Guarded\\')) {
+                $autoloaded[] = $class;
+            }
+        };
+
+        spl_autoload_register($autoloader);
+
+        try {
+            $this->addFile(
+                'somefile.php',
+                '<?php
+                    if (!class_exists("Guarded\\Klass")) {
+                        class Klass {}
+                    }
+
+                    if (!interface_exists("Guarded\\Face")) {
+                        class Face {}
+                    }
+
+                    if (!enum_exists("Guarded\\Suit")) {
+                        class Suit {}
+                    }',
+            );
+
+            $this->project_analyzer->setPhpVersion('8.1', 'tests');
+            $this->analyzeFile('somefile.php', new Context());
+        } finally {
+            spl_autoload_unregister($autoloader);
+        }
+
+        if ($autoloaded) {
+            self::fail('The autoloader was run for ' . implode(', ', $autoloaded));
+        }
+    }
+
+    /**
+     * Composer's class map only names the file, so the guard must check that the file declares the guarded kind.
+     */
+    public function testExistsGuardsCheckTheKindOfTheComposerMappedSymbol(): void
+    {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'psalm_guard_' . uniqid();
+        mkdir($dir);
+
+        $declarations = [
+            'InterfaceBehindClassGuard' => ['interface', 'class_exists'],
+            'ClassBehindInterfaceGuard' => ['class', 'interface_exists'],
+            'ClassBehindEnumGuard' => ['final class', 'enum_exists'],
+            'EnumBehindClassGuard' => ['enum', 'class_exists'],
+            'ClassBehindClassGuard' => ['abstract class', 'class_exists'],
+            'AttributedInterfaceBehindClassGuard' => ['#[Attribute] interface', 'class_exists'],
+            'ClassBehindLeadingBackslashGuard' => ['class', 'class_exists', '\\'],
+        ];
+        $class_map = [];
+        $code = '<?php namespace Mapped;';
+
+        foreach ($declarations as $name => $declaration) {
+            [$keyword, $guard] = $declaration;
+            $file = $dir . DIRECTORY_SEPARATOR . $name . '.php';
+            $class_map['Mapped\\' . $name] = $file;
+            file_put_contents($file, "<?php\nnamespace Mapped;\n" . $keyword . ' ' . $name . ' {}');
+            $code .= "\n" . 'if (!' . $guard . '("' . ($declaration[2] ?? '') . 'Mapped\\' . $name . '")) { class '
+                . $name . ' {} }';
+        }
+
+        $config = Config::getInstance();
+        assert($config instanceof TestConfig);
+        $config->composer_files = $class_map;
+
+        try {
+            $this->addFile('somefile.php', $code);
+            $this->project_analyzer->setPhpVersion('8.1', 'tests');
+            $this->analyzeFile('somefile.php', new Context());
+
+            $declared_in_file = [];
+            $storage_provider = $this->project_analyzer->getCodebase()->classlike_storage_provider;
+
+            foreach (array_keys($declarations) as $name) {
+                $location = $storage_provider->get('Mapped\\' . $name)->location;
+                $declared_in_file[$name] = $location !== null && str_ends_with($location->file_path, 'somefile.php');
+            }
+
+            self::assertSame(
+                [
+                    'InterfaceBehindClassGuard' => true,
+                    'ClassBehindInterfaceGuard' => true,
+                    'ClassBehindEnumGuard' => true,
+                    'EnumBehindClassGuard' => false,
+                    'ClassBehindClassGuard' => false,
+                    'AttributedInterfaceBehindClassGuard' => true,
+                    'ClassBehindLeadingBackslashGuard' => false,
+                ],
+                $declared_in_file,
+            );
+        } finally {
+            foreach ($class_map as $file) {
+                unlink($file);
+            }
+
+            rmdir($dir);
+        }
     }
 
     public function testAllowBuiltinClassStringStandInForNewClass(): void
@@ -193,9 +321,204 @@ final class ClassLikeStringTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerValidCodeParse(): iterable
+    public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedClassExistsOnTheLeftOfAnOrAllowsTheClassOnTheRight' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return !class_exists(Missing::class) || Missing::foo();
+                    }
+
+                    function checkTwo(): bool {
+                        return (!class_exists(First::class) || !class_exists(Second::class)) || First::foo();
+                    }',
+            ],
+            'allowClassExistsChecksCombinedWithAnd' => [
+                'code' => '<?php
+                    function test(): void {
+                        if (class_exists(\\Doesnt\\Really::class) && class_exists(\\Doesnt\\Either::class)) {
+                            \\Doesnt\\Really::something();
+                            \\Doesnt\\Either::something();
+                            new \\Doesnt\\Either();
+                        }
+                    }',
+            ],
+            'allowClassExistsChecksCombinedWithOrAndAnEarlyReturn' => [
+                'code' => '<?php
+                    /** @param class-string $class */
+                    function test(string $class): void {
+                        if (!class_exists(\\Doesnt\\Really::class) || !class_exists(\\Doesnt\\Either::class)) {
+                            return;
+                        }
+
+                        if (is_subclass_of($class, \\Doesnt\\Really::class)
+                            || is_subclass_of($class, \\Doesnt\\Either::class)
+                        ) {
+                            new \\Doesnt\\Either();
+                        }
+                    }',
+            ],
+            'allowClassExistsChecksCombinedWithSeveralOperands' => [
+                'code' => '<?php
+                    function test(): void {
+                        if (class_exists("Doesnt\\One") && class_exists("Doesnt\\Two") && class_exists("Doesnt\\Three")) {
+                            \\Doesnt\\Three::something();
+                        }
+                    }',
+            ],
+            'allowInterfaceAndEnumExistsChecksCombinedWithAnd' => [
+                'code' => '<?php
+                    function test(): void {
+                        if (interface_exists(\\Doesnt\\Really::class) && enum_exists(\\Doesnt\\Either::class)) {
+                            \\Doesnt\\Really::something();
+                            \\Doesnt\\Either::something();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'isSubclassOfKeepsTheTemplateOfAClassString' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    abstract class Message {}
+                    class MessageImpl extends Message {}
+
+                    interface Builder
+                    {
+                        /**
+                         * @template T as object
+                         * @psalm-param class-string<T> $className
+                         * @return T
+                         */
+                        public function build(string $className);
+                    }
+
+                    class MessageBuilder implements Builder
+                    {
+                        public function build(string $className)
+                        {
+                            if (!is_subclass_of($className, Message::class)) {
+                                throw new \LogicException();
+                            }
+
+                            return new $className();
+                        }
+                    }
+
+                    function run(MessageBuilder $builder): MessageImpl
+                    {
+                        return $builder->build(MessageImpl::class);
+                    }',
+                'assertions' => [],
+            ],
+            'isAKeepsTheTemplateOfAClassString' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    abstract class Message {}
+
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $className
+                     * @return T
+                     */
+                    function make(string $className): object
+                    {
+                        if (!is_a($className, Message::class, true)) {
+                            throw new \LogicException();
+                        }
+
+                        return new $className();
+                    }',
+            ],
+            'isSubclassOfOfAClassStringWithAnUnrelatedBound' => [
+                'code' => '<?php
+                    interface HasName {}
+                    interface HasId {}
+
+                    /**
+                     * @template T of HasName
+                     * @param class-string<T> $className
+                     * @return T
+                     */
+                    function make(string $className): object
+                    {
+                        if (!is_subclass_of($className, HasId::class)) {
+                            throw new \LogicException();
+                        }
+
+                        return new $className();
+                    }',
+            ],
+            'staticInAListParameterOfAStaticCallNamingAClass' => [
+                'code' => '<?php
+                    class Example {
+                        private int $v = 1;
+
+                        /** @param list<static> $xs */
+                        public static function contains(array $xs, int $v): bool {
+                            foreach ($xs as $x) {
+                                if ($x->v === $v) {
+                                    return true;
+                                }
+                            }
+
+                            return false;
+                        }
+                    }
+
+                    Example::contains([new Example(), new Example()], 1);',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'staticInAStaticCallNamingAClassIsThatClass' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @param class-string<static> $class */
+                        public static function classString(string $class): void {}
+
+                        /** @param static $object */
+                        public static function object($object): void {}
+                    }
+
+                    class Bar extends Foo {}
+
+                    Foo::classString(Foo::class);
+                    Foo::classString(Bar::class);
+                    Bar::classString(Bar::class);
+                    Foo::object(new Foo);
+                    Foo::object(new Bar);
+                    Bar::object(new Bar);',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'interfaceAndEnumLiteralsForInterfaceAndEnumStrings' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Invoice {}
+                    interface Payable {}
+                    enum Status {}
+
+                    /** @param interface-string $interface */
+                    function takesInterface(string $interface): void {}
+
+                    /** @param enum-string $enum */
+                    function takesEnum(string $enum): void {}
+
+                    /** @param class-string $class */
+                    function takesClass(string $class): void {}
+
+                    takesInterface(Payable::class);
+                    takesEnum(Status::class);
+                    takesClass(Invoice::class);
+                    takesClass(Payable::class);
+                    takesClass(Status::class);
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrayOfClassConstants' => [
                 'code' => '<?php
                     /**
@@ -420,6 +743,15 @@ final class ClassLikeStringTest extends TestCase
                     class B {
                         use T;
                     }',
+            ],
+            'literalClassStringOfTraitSatisfiesTraitString' => [
+                'code' => '<?php
+                    trait MyTrait {}
+
+                    /** @param trait-string $t */
+                    function takesTrait(string $t): void {}
+
+                    takesTrait(MyTrait::class);',
             ],
             'refineStringToClassString' => [
                 'code' => '<?php
@@ -1052,6 +1384,34 @@ final class ClassLikeStringTest extends TestCase
                     '$r' => 'class-string<A>',
                 ],
             ],
+            'classStringOfAClassTemplateWithAUnionBound' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    /** @template T of object */
+                    final class Box {
+                        /** @var class-string<T> */
+                        private string $c;
+
+                        /** @param class-string<T> $c */
+                        public function __construct(string $c) {
+                            $this->c = $c;
+                        }
+
+                        /** @return class-string<T> */
+                        public function get(): string {
+                            return $this->c;
+                        }
+                    }
+
+                    /** @var Box<A|B> $box */
+                    $box = new Box(A::class);
+                    $c = $box->get();',
+                'assertions' => [
+                    '$c===' => 'class-string<A>|class-string<B>',
+                ],
+            ],
         ];
     }
 
@@ -1059,9 +1419,183 @@ final class ClassLikeStringTest extends TestCase
      * @psalm-pure
      */
     #[Override]
-    public function providerInvalidCodeParse(): iterable
+    public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classExistsOnTheLeftOfAnOrDoesNotAllowTheClassOnTheRight' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return class_exists(Missing::class) || Missing::foo();
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'negatedClassExistsOnTheLeftOfAnAndDoesNotAllowTheClassOnTheRight' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return !class_exists(Missing::class) && Missing::foo();
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'classExistsInAnOrOnTheLeftOfAnAndDoesNotAllowTheClassOnTheRight' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return (class_exists(Missing::class) || class_exists(Other::class)) && Missing::foo();
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'classExistsChecksOfOtherClassesDoNotAllowAnUncheckedOne' => [
+                'code' => '<?php
+                    function test(): void {
+                        if (class_exists(\\Doesnt\\Really::class) && class_exists(\\Doesnt\\Either::class)) {
+                            new \\Doesnt\\Unchecked();
+                        }
+                    }',
+                'error_message' => 'Class, interface or enum named Doesnt\\Unchecked does not exist',
+            ],
+            'classExistsInStandaloneAndDoesNotLeakAfterTheExpression' => [
+                'code' => '<?php
+                    function test(): void {
+                        $result = class_exists(\\Doesnt\\Really::class) && \\Doesnt\\Really::bar();
+                        new \\Doesnt\\Really();
+                    }',
+                'error_message' => 'Class, interface or enum named Doesnt\\Really does not exist',
+            ],
+            'staticInAStaticCallNamingASubclassRejectsTheParentClassString' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @param class-string<static> $class */
+                        public static function classString(string $class): void {}
+                    }
+
+                    class Bar extends Foo {}
+
+                    Bar::classString(Foo::class);',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:38 - Argument 1 of Bar::classString expects class-string<Bar>, but parent type Foo::class provided',
+            ],
+            'staticInAForwardingStaticCallStaysLateBound' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @param class-string<static> $class */
+                        public static function classString(string $class): void {}
+
+                        public static function forward(): void {
+                            static::classString(Foo::class);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:49 - Argument 1 of Foo::classString expects class-string<Foo&static>, but parent type Foo::class provided',
+            ],
+            'staticInASelfStaticCallStaysLateBound' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @param class-string<static> $class */
+                        public static function classString(string $class): void {}
+
+                        public static function forward(): void {
+                            self::classString(Foo::class);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:47 - Argument 1 of Foo::classString expects class-string<Foo&static>, but parent type Foo::class provided',
+            ],
+            'staticInAParentStaticCallStaysLateBound' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @param class-string<static> $class */
+                        public static function classString(string $class): void {}
+                    }
+
+                    class Bar extends Foo {
+                        public static function forward(): void {
+                            parent::classString(Foo::class);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:49 - Argument 1 of Foo::classString expects class-string<Foo&static>, but parent type Foo::class provided',
+            ],
+            'staticInANonStaticMethodCalledByClassNameStaysLateBound' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @param static $object */
+                        public function object($object): void {}
+
+                        public function forward(): void {
+                            Foo::object(new Foo);
+                        }
+                    }',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:41 - Argument 1 of Foo::object expects Foo&static, but parent type Foo provided',
+            ],
+            'staticInAnInstanceCallStaysLateBound' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @param static $object */
+                        public function object($object): void {}
+                    }
+
+                    (new Foo)->object(new Foo);',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:39 - Argument 1 of Foo::object expects Foo&static, but parent type Foo provided',
+            ],
+            'classLiteralForInterfaceString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Invoice {}
+                    interface Payable {}
+                    enum Status {}
+
+                    /** @param interface-string $name */
+                    function takes(string $name): void {}
+
+                    takes(Invoice::class);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'enumLiteralForInterfaceString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Invoice {}
+                    interface Payable {}
+                    enum Status {}
+
+                    /** @param interface-string $name */
+                    function takes(string $name): void {}
+
+                    takes(Status::class);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'classLiteralForEnumString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Invoice {}
+                    interface Payable {}
+                    enum Status {}
+
+                    /** @param enum-string $name */
+                    function takes(string $name): void {}
+
+                    takes(Invoice::class);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'interfaceLiteralForEnumString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Invoice {}
+                    interface Payable {}
+                    enum Status {}
+
+                    /** @param enum-string $name */
+                    function takes(string $name): void {}
+
+                    takes(Payable::class);
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'arrayOfStringClasses' => [
                 'code' => '<?php
                     /**
@@ -1128,7 +1662,7 @@ final class ClassLikeStringTest extends TestCase
                         return ["A", "B"];
                     }',
                 'error_message' => 'UndefinedClass',
-                'ignored_issues' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
+                'error_levels' => ['LessSpecificReturnStatement', 'MoreSpecificReturnType'],
             ],
             'badClassStringConstructor' => [
                 'code' => '<?php
