@@ -27,6 +27,7 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -231,12 +232,11 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
-     * The variables of the current scope that calling the analysed callable, or a closure it contains or returns,
-     * may write, also recorded for {@see \Psalm\Internal\Algebra\FormulaGenerator}. What a closure captured by
-     * reference are variables of the
-     * scopes it was made in (see getByRefUseScopes()): elsewhere, a variable of the same name is taken to be one
-     * when this scope binds it by reference to a variable outside (`use (&$x)`, `global $x`, a by-reference
-     * parameter or foreach value, ...)
+     * The variables of the current scope that calling the analysed callable may write, also recorded for
+     * {@see \Psalm\Internal\Algebra\FormulaGenerator}. Passed to a call ($passed), a closure it contains or returns
+     * may be called too. What a closure captured by reference are variables of the scopes it was made in (see
+     * getByRefUseScopes()): elsewhere, a variable of the same name is taken to be one when this scope binds it by
+     * reference to a variable outside (`use (&$x)`, `global $x`, a by-reference parameter or foreach value, ...)
      *
      * @return array<string, true>
      */
@@ -244,11 +244,24 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Context $context,
         PhpParser\Node\Expr $callable,
+        bool $passed,
     ): array {
         $var_ids = [];
         $scope_id = null;
+        $type = $statements_analyzer->node_data->getType($callable);
+        $closures = [];
 
-        foreach (ClosureByRefUsesCollector::collect($statements_analyzer->node_data->getType($callable)) as $closure) {
+        if ($passed) {
+            $closures = ClosureByRefUsesCollector::collect($type);
+        } else {
+            foreach ($type?->getAtomicTypes() ?? [] as $atomic) {
+                if ($atomic instanceof TClosure && $atomic->byref_uses) {
+                    $closures[] = $atomic;
+                }
+            }
+        }
+
+        foreach ($closures as $closure) {
             $scope_id ??= self::getScopeId($statements_analyzer);
 
             foreach ($closure->byref_uses as $use_name => $_) {

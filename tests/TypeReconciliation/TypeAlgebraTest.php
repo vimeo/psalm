@@ -4692,6 +4692,47 @@ final class TypeAlgebraTest extends TestCase
                         return 0;
                     }',
             ],
+            'nullCheckIsKeptWhenAClosureReturningAClosureCapturingItByReferenceIsCalled' => [
+                'code' => '<?php
+                    function f(?string $x): int {
+                        $g = function () use (&$x): void {
+                            $x = null;
+                        };
+                        $mk = function () use ($g): Closure {
+                            return $g;
+                        };
+                        $notNull = $x !== null;
+                        $h = $mk();
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        $h();
+
+                        return 0;
+                    }',
+            ],
+            'nullCheckIsKeptWhenAssignedWithACallOfAClosureReturningAClosureCapturingItByReference' => [
+                'code' => '<?php
+                    function f(?string $x): int {
+                        $g = function () use (&$x): void {
+                            $x = null;
+                        };
+                        $mk = function () use ($g): Closure {
+                            return $g;
+                        };
+                        $r = $x !== null && $mk() !== $g;
+
+                        if ($r) {
+                            return strlen($x);
+                        }
+
+                        $g();
+
+                        return 0;
+                    }',
+            ],
         ];
     }
 
