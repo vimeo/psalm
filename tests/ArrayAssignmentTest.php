@@ -128,6 +128,19 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignWithAScalarOffsetGivesAnArrayKey' => [
+                'code' => '<?php
+                    /** @param scalar $key */
+                    function f($key): int {
+                        $a = [];
+                        $a[$key] = 4;
+
+                        return count($a);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidArrayOffset'],
+                'php_version' => '8.0',
+            ],
             'assignWithACallableOrStringOffsetToAPropertyOfAnArrayType' => [
                 'code' => '<?php
                     final class Handlers {

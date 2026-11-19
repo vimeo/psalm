@@ -91,6 +91,7 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TSingleLetter;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
@@ -1508,6 +1509,10 @@ final class ArrayFetchAnalyzer
             } elseif ($atomic_type instanceof TCallable) {
                 // only a callable that is a string is a key
                 $atomic_type = new TCallableString();
+                $changed = true;
+            } elseif ($atomic_type instanceof TScalar) {
+                // PHP casts a bool and a float to an int, a string stays: what is left is an array key
+                $atomic_type = new TArrayKey();
                 $changed = true;
             }
 
