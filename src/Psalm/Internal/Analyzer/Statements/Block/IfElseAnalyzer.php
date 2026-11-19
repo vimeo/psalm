@@ -467,6 +467,8 @@ final class IfElseAnalyzer
             $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true);
         }
 
+        $vars_before_redefinitions = $context->vars_in_scope;
+
         if ($if_scope->redefined_vars) {
             foreach ($if_scope->redefined_vars as $var_id => $type) {
                 $previous_type = $context->vars_in_scope[$var_id] ?? null;
@@ -534,21 +536,32 @@ final class IfElseAnalyzer
             }
         }
 
-        // Context::update() left the type the if ends with for an offset or a property it narrowed: nothing is
-        // known of it once another branch reaching the end has forgotten it
-        foreach ($if_scope->updated_vars as $var_id => $_) {
-            if (!isset($context->vars_in_scope[$var_id])
-                || !isset($if_context->vars_in_scope[$var_id])
-                || (!str_contains($var_id, '[') && !str_contains($var_id, '->'))
-            ) {
+        // an offset or a property is known after the if as the branches reaching its end leave it: not at all once
+        // one of them forgot it (not unset it) or forgot the type Context::update() left, and as they all leave it
+        // when the redefinition of its variable dropped it
+        foreach ($vars_before_redefinitions + $context->vars_in_scope as $var_id => $_) {
+            if (!$if_scope->end_contexts || (!str_contains($var_id, '[') && !str_contains($var_id, '->'))) {
                 continue;
             }
 
+            $end_type = null;
+
             foreach ($if_scope->end_contexts as $end_context) {
                 if (!isset($end_context->vars_in_scope[$var_id])) {
-                    unset($context->vars_in_scope[$var_id]);
-                    break;
+                    if (isset($end_context->vars_possibly_in_scope[$var_id])
+                        || (isset($if_scope->updated_vars[$var_id]) && isset($if_context->vars_in_scope[$var_id]))
+                    ) {
+                        unset($context->vars_in_scope[$var_id]);
+                    }
+
+                    continue 2;
                 }
+
+                $end_type = Type::combineUnionTypes($end_context->vars_in_scope[$var_id], $end_type, $codebase);
+            }
+
+            if (!isset($context->vars_in_scope[$var_id])) {
+                $context->vars_in_scope[$var_id] = $end_type;
             }
         }
 

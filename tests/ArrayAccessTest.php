@@ -1617,6 +1617,65 @@ final class ArrayAccessTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment'],
             ],
+            'offsetWithAVariableKeyKeepsWhatEveryBranchLeavesIt' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $config */
+                    function implicitElse(array $config, string $key): void {
+                        if (!is_array($config[$key])) {
+                            $config[$key] = [$config[$key]];
+                        }
+
+                        $t = $config[$key];
+                        /** @psalm-check-type-exact $t = array<array-key, mixed> */
+                        $config[$key][] = 1;
+                    }
+
+                    /** @param array<string, mixed> $config */
+                    function inElseif(array $config, string $key, bool $b): void {
+                        if (!is_array($config[$key])) {
+                            $config[$key] = [$config[$key]];
+                        } elseif ($b) {
+                            $config[$key] = [];
+                        }
+
+                        $t = $config[$key];
+                        /** @psalm-check-type-exact $t = array<array-key, mixed> */
+                    }
+
+                    final class C {
+                        /** @var array<string, mixed> */
+                        public array $config = [];
+
+                        public function f(string $key): void {
+                            if (!is_array($this->config[$key])) {
+                                $this->config[$key] = [$this->config[$key]];
+                            }
+
+                            $t = $this->config[$key];
+                            /** @psalm-check-type-exact $t = array<array-key, mixed> */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'offsetWithAVariableKeyIsUnknownAfterABranchReassigningItsArray' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $config */
+                    function f(array $config, string $key): void {
+                        if (!is_array($config[$key])) {
+                            $config[$key] = [$config[$key]];
+                        } else {
+                            $config = [$key => 5];
+                        }
+
+                        $t = $config[$key];
+                        /** @psalm-check-type-exact $t = 5|list{mixed}|mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'offsetAssignedInElseKeepsItsTypeAfterTheIf' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $o */

@@ -1184,6 +1184,10 @@ final class Context
                 }
             }
 
+            if ($clause->comparesWith($remove_var_id)) {
+                continue;
+            }
+
             if (!isset($clause->possibilities[$remove_var_id])
                 || (count($clause->possibilities[$remove_var_id]) === 1
                     && isset($clause->possibilities[$remove_var_id][$new_type_string]))
