@@ -957,6 +957,76 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => ['MixedMethodCall', 'MixedArrayAccess'],
                 'php_version' => '8.0',
             ],
+            'memoizedGetterForgottenInAnElseifOrAnElseIsNotNarrowedAfterIt' => [
+                'code' => '<?php
+                    final class A {
+                        private ?string $s = null;
+
+                        /** @psalm-mutation-free */
+                        public function get(): ?string {
+                            return $this->s;
+                        }
+
+                        public function set(?string $s): void {
+                            $this->s = $s;
+                        }
+                    }
+
+                    function inElseif(A $a, int $i): void {
+                        if ($a->get() !== null) {
+                            if ($i === 1) {
+                                echo 1;
+                            } elseif ($i === 2) {
+                                $a->set(null);
+                            }
+
+                            $r = $a->get();
+                            /** @psalm-check-type-exact $r = null|string */
+                        }
+                    }
+
+                    function inElse(A $a, bool $b): void {
+                        if ($a->get() !== null) {
+                            if ($b) {
+                                echo 1;
+                            } else {
+                                $a->set(null);
+                            }
+
+                            $r = $a->get();
+                            /** @psalm-check-type-exact $r = null|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'memoizedGetterIsStillNarrowedAfterABranchThatDoesNotMutateItsReceiver' => [
+                'code' => '<?php
+                    final class A {
+                        private ?string $s = null;
+
+                        /** @psalm-mutation-free */
+                        public function get(): ?string {
+                            return $this->s;
+                        }
+                    }
+
+                    function f(A $a, bool $b): string {
+                        if ($a->get() !== null) {
+                            if ($b) {
+                                echo 1;
+                            }
+
+                            return $a->get();
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertyIsNotNarrowedAfterABranchThatCallsAMethodChangingIt' => [
                 'code' => '<?php
                     final class Quote {
@@ -3598,6 +3668,36 @@ final class MethodCallTest extends TestCase
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'memoizedGetterForgottenInANestedBranchIsNotNarrowedAfterIt' => [
+                'code' => '<?php
+                    final class A {
+                        private ?string $s = null;
+
+                        /** @psalm-mutation-free */
+                        public function get(): ?string {
+                            return $this->s;
+                        }
+
+                        public function set(?string $s): void {
+                            $this->s = $s;
+                        }
+                    }
+
+                    function f(A $a, bool $b): string {
+                        if ($a->get() !== null) {
+                            if ($b) {
+                                $a->set(null);
+                            }
+
+                            return $a->get();
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'splObjectStorageAttachChecksValueType' => [
                 'code' => '<?php

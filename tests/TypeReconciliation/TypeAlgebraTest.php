@@ -299,6 +299,92 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'comparisonWithAValueThatChangedIsForgotten' => [
+                'code' => '<?php
+                    final class C {
+                        public string $p = "";
+
+                        public function change(): void {
+                            $this->p = "other";
+                        }
+
+                        public function f(string $x, ?int $b): void {
+                            if ($x === $this->p || $b !== null) {
+                                $this->change();
+                                if ($x !== $this->p) {
+                                    /** @psalm-check-type-exact $b = int|null */
+                                    echo 1;
+                                }
+                            }
+                        }
+                    }
+
+                    /** @param list<string> $arr */
+                    function inArray(string $a, array $arr, ?int $b): void {
+                        if (in_array($a, $arr, true) || $b !== null) {
+                            $arr[] = "q";
+                            if (!in_array($a, $arr, true)) {
+                                /** @psalm-check-type-exact $b = int|null */
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function reassigned(string $x, string $y, string $z, ?int $b): void {
+                        if ($x === $y || $b !== null) {
+                            $y = $z;
+                            if ($x !== $y) {
+                                /** @psalm-check-type-exact $b = int|null */
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function reassignedInABranch(string $x, string $y, ?int $b, bool $c): void {
+                        if ($x === $y || $b !== null) {
+                            if ($c) {
+                                $y = "a";
+                            }
+                            if ($x !== $y) {
+                                /** @psalm-check-type-exact $b = int|null */
+                                echo 1;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'comparisonWithAnUnchangedValueIsKept' => [
+                'code' => '<?php
+                    final class A {
+                        public function m(): void {}
+                    }
+
+                    function f(string $x, string $y, ?int $b): void {
+                        if ($x === $y || $b !== null) {
+                            $z = 1;
+                            if ($x !== $y) {
+                                /** @psalm-check-type-exact $b = int */
+                                echo $z;
+                            }
+                        }
+                    }
+
+                    /** @param A $p */
+                    function narrowedByACall(A $o, $p, ?int $b): void {
+                        if ($o === $p || $b !== null) {
+                            $p->m();
+                            if ($o !== $p) {
+                                /** @psalm-check-type-exact $b = int */
+                                echo 1;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'inArrayOfTheSameArrayIsTheSameCondition' => [
                 'code' => '<?php
                     /** @param list<string> $allowed */

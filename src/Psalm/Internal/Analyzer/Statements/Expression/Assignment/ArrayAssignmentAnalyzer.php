@@ -1886,7 +1886,8 @@ final class ArrayAssignmentAnalyzer
     /**
      * Forgets what is known about the offsets of an array that the write may overwrite. A known offset at some
      * depth may be overwritten when, at every depth down to it, its key and the written one may be the same:
-     * they are equal, or either isn't a literal. An appended offset is a new one, so no known offset is under it.
+     * they are equal, or either isn't a literal. What is under the written offset is overwritten with it. An appended
+     * offset is a new one, so no known offset is under it.
      *
      * @param list<array{string, bool}|null> $written_offsets each written key with whether it's a literal,
      *     null for an appended one
@@ -1900,6 +1901,7 @@ final class ArrayAssignmentAnalyzer
 
             $position = strlen($root_var_id);
             $is_written_path = true;
+            $is_under_written_offset = true;
 
             foreach ($written_offsets as $written_offset) {
                 if ($written_offset === null) {
@@ -1910,6 +1912,7 @@ final class ArrayAssignmentAnalyzer
                 $key = self::getKeyAt($var_id, $position);
 
                 if ($key === null) {
+                    $is_under_written_offset = false;
                     break;
                 }
 
@@ -1924,7 +1927,7 @@ final class ArrayAssignmentAnalyzer
                 $position += strlen($key);
             }
 
-            if (!$is_written_path) {
+            if (!$is_written_path || ($is_under_written_offset && $position < strlen($var_id))) {
                 $context->remove($var_id, false);
                 $context->removeVarFromConflictingClauses($var_id);
             }
