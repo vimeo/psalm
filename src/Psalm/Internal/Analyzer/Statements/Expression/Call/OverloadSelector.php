@@ -75,7 +75,9 @@ final class OverloadSelector
     }
 
     /**
-     * The types of the arguments, from a trial analysis that leaves the context, the node types and the issues alone
+     * The types of the arguments, from a trial analysis that leaves the context, the node types and the issues alone.
+     * An argument that is itself a call with overloads is selected in the trial and again in the real analysis, so
+     * the cost doubles with each level of such nesting (about 2 s more at 14 levels)
      *
      * @param list<PhpParser\Node\Arg> $args
      * @return list<?Union>

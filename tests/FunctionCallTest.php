@@ -89,6 +89,25 @@ final class FunctionCallTest extends TestCase
                     '$byId===' => 'string',
                 ],
             ],
+            'psalmOverloadOfNestedCallsOfTheSameFunction' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-overload (int $x): int
+                     * @psalm-overload (string $x): string
+                     */
+                    function pick(int|string $x): int|string {
+                        return $x;
+                    }
+
+                    $nested = pick(pick(pick(1)));
+                    $text = pick(pick(pick("a")));',
+                'assertions' => [
+                    '$nested===' => 'int',
+                    '$text===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'psalmOverloadOfAFunctionWithATemplate' => [
                 'code' => '<?php
                     /**
