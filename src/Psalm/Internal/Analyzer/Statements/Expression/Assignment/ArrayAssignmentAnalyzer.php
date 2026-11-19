@@ -511,7 +511,7 @@ final class ArrayAssignmentAnalyzer
 
             if ($graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
                 // the array holds what was written under the key, as for an assignment of the item
-                $array_node = DataFlowNode::getForAssignment($array_id, $location);
+                $array_node = DataFlowNode::getForAssignment($array_id . ' through ' . $item_id, $location);
                 $graph->addNode($array_node);
 
                 $old_array_type = $context->vars_in_scope[$array_id];

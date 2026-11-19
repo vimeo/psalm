@@ -88,12 +88,14 @@ final class IncDecExpressionAnalyzer
 
             if ($var_id && isset($context->vars_in_scope[$var_id])) {
                 $context->vars_in_scope[$var_id] = $result_type;
-                ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem(
-                    $statements_analyzer,
-                    $context,
-                    $var_id,
-                    new CodeLocation($statements_analyzer, $stmt->var),
-                );
+                if ($context->references_in_scope) {
+                    ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem(
+                        $statements_analyzer,
+                        $context,
+                        $var_id,
+                        new CodeLocation($statements_analyzer, $stmt->var),
+                    );
+                }
 
                 if ($codebase->find_unused_variables && $stmt->var instanceof PhpParser\Node\Expr\Variable) {
                     $context->assigned_var_ids[$var_id] = (int) $stmt->var->getAttribute('startFilePos');

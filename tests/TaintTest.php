@@ -11853,6 +11853,20 @@ final class TaintTest extends TestCase
                     echo build()["x"];',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintEachArrayItemBoundToTheSameVariable' => [
+                'code' => '<?php // --taint-analysis
+                    function build(): array {
+                        $x = "";
+                        $a = ["y" => "safe"];
+                        $a["a"] = &$x;
+                        $a["b"] = &$x;
+                        $x = (string) $_GET["x"];
+                        return $a;
+                    }
+
+                    echo build()["a"];',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintArrayItemWrittenByAForeachByReference' => [
                 'code' => '<?php // --taint-analysis
                     $values = ["key" => ""];

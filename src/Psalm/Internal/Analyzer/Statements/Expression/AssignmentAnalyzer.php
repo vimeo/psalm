@@ -2283,12 +2283,14 @@ final class AssignmentAnalyzer
                     $context->possibly_assigned_var_ids[$var_id] = true;
                     $context->vars_in_scope[$var_id] = $by_ref_out_type;
                     $context->writeToReferencesPossiblyBound($var_id, $by_ref_out_type, $codebase);
-                    ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem(
-                        $statements_analyzer,
-                        $context,
-                        $var_id,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    );
+                    if ($context->references_in_scope) {
+                        ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem(
+                            $statements_analyzer,
+                            $context,
+                            $var_id,
+                            new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        );
+                    }
 
                     if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))
                         || $stmt_type->isNever()
@@ -2304,12 +2306,14 @@ final class AssignmentAnalyzer
 
             $context->vars_in_scope[$var_id] = $by_ref_out_type;
             $context->writeToReferencesPossiblyBound($var_id, $by_ref_out_type, $codebase);
-            ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem(
-                $statements_analyzer,
-                $context,
-                $var_id,
-                new CodeLocation($statements_analyzer->getSource(), $stmt),
-            );
+            if ($context->references_in_scope) {
+                ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem(
+                    $statements_analyzer,
+                    $context,
+                    $var_id,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                );
+            }
 
             $stmt_type = $statements_analyzer->node_data->getType($stmt);
 
@@ -3015,12 +3019,14 @@ final class AssignmentAnalyzer
                 $context->vars_in_scope[$var_id] = $assign_value_type;
                 $context->vars_possibly_in_scope[$var_id] = true;
                 $context->writeToReferencesPossiblyBound($var_id, $assign_value_type, $codebase);
-                ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem(
-                    $statements_analyzer,
-                    $context,
-                    $var_id,
-                    new CodeLocation($statements_analyzer, $assign_var),
-                );
+                if ($context->references_in_scope) {
+                    ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem(
+                        $statements_analyzer,
+                        $context,
+                        $var_id,
+                        new CodeLocation($statements_analyzer, $assign_var),
+                    );
+                }
 
                 $location = new CodeLocation($statements_analyzer, $assign_var);
 
