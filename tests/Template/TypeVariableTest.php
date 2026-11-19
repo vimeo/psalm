@@ -1415,8 +1415,8 @@ final class TypeVariableTest extends TestCase
             ],
             'constructorlessConstructionAsParamDefault' => [
                 'code' => '<?php
-                    /** @param SplQueue<int> $q */
-                    function f(SplQueue $q = new SplQueue()): void {}',
+                    /** @param WeakMap<stdClass, int> $m */
+                    function f(WeakMap $m = new WeakMap()): void {}',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',

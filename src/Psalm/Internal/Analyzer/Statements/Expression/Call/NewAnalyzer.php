@@ -848,23 +848,7 @@ final class NewAnalyzer extends CallAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
             );
         } elseif ($storage->template_types) {
-            // nothing binds the templates, as with a constructor without parameters
-            $statements_analyzer->node_data->setType(
-                $stmt,
-                new Union([new TGenericObject(
-                    $fq_class_name,
-                    self::getGenericParamTypes(
-                        $statements_analyzer,
-                        $stmt,
-                        $storage,
-                        new TemplateResult([], []),
-                        $fq_class_name,
-                        null,
-                    ),
-                    false,
-                    $from_static,
-                )]),
-            );
+            self::setConstructorlessType($statements_analyzer, $stmt, $storage, $fq_class_name, $from_static);
         }
 
         $is_external_mutation_free = $storage->isExternalMutationFree();
@@ -2209,6 +2193,35 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         return $generic_param_types;
+    }
+
+    /**
+     * The type of a `new` on a generic class without a constructor: nothing binds its templates, as with a
+     * constructor without parameters.
+     */
+    private static function setConstructorlessType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\New_ $stmt,
+        ClassLikeStorage $storage,
+        string $fq_class_name,
+        bool $from_static,
+    ): void {
+        $statements_analyzer->node_data->setType(
+            $stmt,
+            new Union([new TGenericObject(
+                $fq_class_name,
+                self::getGenericParamTypes(
+                    $statements_analyzer,
+                    $stmt,
+                    $storage,
+                    new TemplateResult([], []),
+                    $fq_class_name,
+                    null,
+                ),
+                false,
+                $from_static,
+            )]),
+        );
     }
 
     /**
