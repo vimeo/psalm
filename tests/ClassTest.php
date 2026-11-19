@@ -127,15 +127,23 @@ final class ClassTest extends TestCase
                 /** @param array<class-string<Countable>|Closure> $input */
                 function c(array $input): void {}
 
+                /** @param array<\'a\'|class-string> $input */
+                function d(array $input): void {}
+
+                /** @param array<numeric-string|class-string> $input */
+                function e(array $input): void {}
+
                 a(["NoSuchClassA"]);
                 b(["NoSuchClassB"]);
-                c(["NoSuchClassC"]);',
+                c(["NoSuchClassC"]);
+                d(["NoSuchClassD"]);
+                e(["NoSuchClassE"]);',
         );
         $this->analyzeFile($file_path, new Context(), false);
 
         $messages = array_column(IssueBuffer::getIssuesDataForFile($file_path), 'message');
 
-        foreach (['NoSuchClassA', 'NoSuchClassB', 'NoSuchClassC'] as $class) {
+        foreach (['NoSuchClassA', 'NoSuchClassB', 'NoSuchClassC', 'NoSuchClassD', 'NoSuchClassE'] as $class) {
             self::assertTrue(
                 array_any($messages, static fn(string $message): bool => str_contains($message, $class)
                     && str_contains($message, 'does not exist')),
