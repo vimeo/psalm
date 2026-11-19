@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\TypeVisitor\ClosureByRefUsesCollector;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\BinaryOp\VirtualEqual;
@@ -31,7 +32,6 @@ use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type\Atomic\TBool;
-use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
@@ -1326,12 +1326,8 @@ final class FormulaGenerator
                 ) {
                     $callable = $node instanceof PhpParser\Node\Arg ? $node->value : $node->name;
 
-                    foreach ($this->node_data?->getType($callable)?->getAtomicTypes() ?? [] as $atomic) {
-                        if ($atomic instanceof TClosure) {
-                            foreach ($atomic->byref_uses as $use_name => $_) {
-                                $this->targets[] = '$' . $use_name;
-                            }
-                        }
+                    foreach (ClosureByRefUsesCollector::collect($this->node_data?->getType($callable)) as $use_var_id) {
+                        $this->targets[] = $use_var_id;
                     }
                 }
 

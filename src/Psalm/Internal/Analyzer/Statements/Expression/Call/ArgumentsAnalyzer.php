@@ -38,6 +38,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\ClosureByRefUsesCollector;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\InvalidPassByReference;
@@ -140,22 +141,17 @@ final class ArgumentsAnalyzer
             $context->inside_negation = $was_inside_negation;
         }
 
-        // the callee may call a closure it is given, which may write what the closure captured by reference
+        // the callee may call a closure it is given, also inside an array or an object, which may write what the
+        // closure captured by reference
         foreach ($args as $arg) {
-            foreach ($statements_analyzer->node_data->getType($arg->value)?->getAtomicTypes() ?? [] as $atomic) {
-                if (!$atomic instanceof TClosure) {
-                    continue;
-                }
+            $type = $statements_analyzer->node_data->getType($arg->value);
 
-                foreach ($atomic->byref_uses as $use_name => $_) {
-                    $use_var_id = '$' . $use_name;
-
-                    $context->removeVarFromConflictingClauses(
-                        $use_var_id,
-                        $context->vars_in_scope[$use_var_id] ?? null,
-                        $statements_analyzer,
-                    );
-                }
+            foreach (ClosureByRefUsesCollector::collect($type) as $use_var_id) {
+                $context->removeVarFromConflictingClauses(
+                    $use_var_id,
+                    $context->vars_in_scope[$use_var_id] ?? null,
+                    $statements_analyzer,
+                );
             }
         }
 
