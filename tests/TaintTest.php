@@ -6531,6 +6531,68 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'methodImplementingASourceIsASource' => [
+                'code' => '<?php
+                    interface Input {
+                        /** @psalm-taint-source input */
+                        public function get(): string;
+                    }
+
+                    final class QueryInput implements Input {
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    function show(QueryInput $input): void {
+                        echo $input->get();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'methodOverridingASourceIsASource' => [
+                'code' => '<?php
+                    class Input {
+                        /** @psalm-taint-source input */
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    final class QueryInput extends Input {
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    function show(QueryInput $input): void {
+                        echo $input->get();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'methodOverridingAnImplementationOfASourceIsASource' => [
+                'code' => '<?php
+                    interface Input {
+                        /** @psalm-taint-source input */
+                        public function get(): string;
+                    }
+
+                    abstract class BaseInput implements Input {
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    final class QueryInput extends BaseInput {
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    function show(QueryInput $input): void {
+                        echo $input->get();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintOfAnArgumentAfterTheFirstOneReachesAVariadicOverrideCalledThroughTheParentType' => [
                 'code' => '<?php
                     /** @psalm-taint-source input */

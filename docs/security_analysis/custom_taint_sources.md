@@ -28,6 +28,27 @@ nested: `return['file']['name']`.
 function handleUpload(): array {}
 ```
 
+A method implementing or overriding a source is one too, unless it has a `@psalm-taint-source` of its own:
+
+```php
+<?php
+interface Input {
+    /** @psalm-taint-source input */
+    public function get(): string;
+}
+
+final class QueryInput implements Input {
+    public function get(): string { return ''; }
+}
+
+function show(QueryInput $input): void {
+    echo $input->get(); // TaintedHtml
+}
+```
+
+All that a PSR-7 message holds is a source: the methods of `Psr\Http\Message\ServerRequestInterface`,
+`ResponseInterface`, `UriInterface`, `StreamInterface` and `UploadedFileInterface`, and of the classes implementing them.
+
 ## Custom taints declared in the configuration
 
 Custom taints can be declared in `psalm.xml`, so that the annotations can name them without a plugin registering
