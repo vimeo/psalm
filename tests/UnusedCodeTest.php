@@ -2596,6 +2596,54 @@ final class UnusedCodeTest extends TestCase
                     $a = new A();
                     echo $a->getVal(null);',
             ],
+            'NotUnusedWhenAssertIsInheritedByAnUndocumentedOverride' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    abstract class Checker {
+                        /** @psalm-assert string $val */
+                        abstract public function check(?string $val): void;
+                    }
+
+                    /** @psalm-immutable */
+                    final class StringChecker extends Checker {
+                        public function check(?string $val): void {
+                            if ($val === null) {
+                                throw new Exception();
+                            }
+                        }
+                    }
+
+                    function getVal(StringChecker $checker, ?string $val): string {
+                        $checker->check($val);
+
+                        return $val;
+                    }
+
+                    echo getVal(new StringChecker(), null);',
+            ],
+            'NotUnusedWhenAssertIsInheritedByAnUndocumentedStaticOverride' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    abstract class Checker {
+                        /** @psalm-assert string $val */
+                        abstract public static function check(?string $val): bool;
+                    }
+
+                    /** @psalm-immutable */
+                    final class StringChecker extends Checker {
+                        public static function check(?string $val): bool {
+                            return $val !== null;
+                        }
+                    }
+
+                    function getVal(?string $val): string {
+                        StringChecker::check($val);
+
+                        return $val;
+                    }
+
+                    echo getVal(null);',
+            ],
             'NotUnusedWhenThrows' => [
                 'code' => '<?php
                     declare(strict_types=1);
