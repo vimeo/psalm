@@ -2543,4 +2543,66 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->assertFalse($stub_defined->user_defined);
         $this->assertTrue($stub_defined->stubbed);
     }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerStubbedBuiltinFunctionWithReturnTypeProvider(): iterable
+    {
+        yield 'sprintf' => ['sprintf("%s", $s)'];
+        yield 'mb_strtolower' => ['mb_strtolower($s)'];
+    }
+
+    #[DataProvider('providerStubbedBuiltinFunctionWithReturnTypeProvider')]
+    public function testStubThrowsOfFunctionWithReturnTypeProvider(string $call): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MissingThrowsDocblock');
+
+        $this->analyzeWithThrowingBuiltinFunctionStubs(
+            '<?php
+                function f(string $s): string {
+                    return ' . $call . ';
+                }',
+        );
+    }
+
+    public function testStubThrowsOfFunctionWithReturnTypeProviderIgnoredForFirstClassCallable(): void
+    {
+        $this->analyzeWithThrowingBuiltinFunctionStubs(
+            '<?php
+                function f(): Closure {
+                    return mb_strtolower(...);
+                }',
+        );
+    }
+
+    private function analyzeWithThrowingBuiltinFunctionStubs(string $code): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    checkForThrowsDocblock="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/throwing_builtin_functions.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile($file_path, $code);
+
+        $this->analyzeFile($file_path, new Context());
+    }
 }

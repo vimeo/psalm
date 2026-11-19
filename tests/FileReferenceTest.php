@@ -695,11 +695,11 @@ final class FileReferenceTest extends TestCase
                     'return foo\\d::__construct' => [
                         'file /var/www/somefile.php' => true,
                     ],
-                    'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
+                    'use-alias use:A:bcf863c38be34a3d' => [
                         'func foo\\b::__construct' => true,
                         'func foo\\c::foo' => true,
                     ],
-                    'use-alias use:C:d7863b8594fe57f85cb8183fe55a6c15' => [
+                    'use-alias use:C:bcf863c38be34a3d' => [
                         'func foo\\b::bar' => true,
                     ],
                 ],
@@ -764,7 +764,7 @@ final class FileReferenceTest extends TestCase
                     'return foo\\c::__construct' => [
                         'func foo\\d::bat' => true,
                     ],
-                    'use-alias use:C:d7863b8594fe57f85cb8183fe55a6c15' => [
+                    'use-alias use:C:bcf863c38be34a3d' => [
                         'func foo\\d::bat' => true,
                     ],
                 ],
@@ -828,7 +828,7 @@ final class FileReferenceTest extends TestCase
                         'func foo\\b::__construct' => true,
                         'func foo\\c::foo' => true,
                     ],
-                    'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
+                    'use-alias use:A:bcf863c38be34a3d' => [
                         'func foo\\b::__construct' => true,
                         'func foo\\c::foo' => true,
                     ],
@@ -867,7 +867,7 @@ final class FileReferenceTest extends TestCase
                         'func foo\\b::__construct' => true,
                         'func foo\\c::foo' => true,
                     ],
-                    'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
+                    'use-alias use:A:bcf863c38be34a3d' => [
                         'func foo\\b::__construct' => true,
                         'func foo\\c::foo' => true,
                     ],
@@ -902,7 +902,7 @@ final class FileReferenceTest extends TestCase
                     'func ns\\a::foo' => [
                         'func ns\\c::bar' => true,
                     ],
-                    'use-alias use:A:d7863b8594fe57f85cb8183fe55a6c15' => [
+                    'use-alias use:A:bcf863c38be34a3d' => [
                         'func ns\\c::bar' => true,
                     ],
                 ],
