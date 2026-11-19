@@ -129,7 +129,7 @@ final class ArgumentsAnalyzer
         $context->inside_negation = false;
 
         try {
-            return self::analyzeArguments(
+            $result = self::analyzeArguments(
                 $statements_analyzer,
                 $args,
                 $function_params,
@@ -141,6 +141,27 @@ final class ArgumentsAnalyzer
         } finally {
             $context->inside_negation = $was_inside_negation;
         }
+
+        // the callee may call a closure it is given, which may write what the closure captured by reference
+        foreach ($args as $arg) {
+            foreach ($statements_analyzer->node_data->getType($arg->value)?->getAtomicTypes() ?? [] as $atomic) {
+                if (!$atomic instanceof TClosure) {
+                    continue;
+                }
+
+                foreach ($atomic->byref_uses as $use_name => $_) {
+                    $use_var_id = '$' . $use_name;
+
+                    $context->removeVarFromConflictingClauses(
+                        $use_var_id,
+                        $context->vars_in_scope[$use_var_id] ?? null,
+                        $statements_analyzer,
+                    );
+                }
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -1234,7 +1255,7 @@ final class ArgumentsAnalyzer
                             $function_params[$i],
                             $i,
                             $i,
-                            $function_storage->allow_named_arg_calls ?? true,
+                            $function_storage?->allowsNamedArguments() ?? true,
                             new VirtualArg(
                                 StubsGenerator::getExpressionFromType($default_type),
                             ),
@@ -1339,7 +1360,7 @@ final class ArgumentsAnalyzer
 
                         foreach ($key_types as $key_type) {
                             if (!$key_type instanceof TLiteralString
-                                || ($function_storage && !$function_storage->allow_named_arg_calls)) {
+                                || ($function_storage && !$function_storage->allowsNamedArguments())) {
                                 continue;
                             }
 
@@ -1389,7 +1410,7 @@ final class ArgumentsAnalyzer
                         }
                     }
                 }
-            } elseif ($arg->name && (!$function_storage || $function_storage->allow_named_arg_calls)) {
+            } elseif ($arg->name && (!$function_storage || $function_storage->allowsNamedArguments())) {
                 $named_args_was_used = true;
 
                 foreach ($function_params as $candidate_offset => $candidate_param) {
@@ -1493,7 +1514,7 @@ final class ArgumentsAnalyzer
                     $function_param,
                     $param_offset,
                     $param_offset - $param_offsets[$argument_offset],
-                    $function_storage->allow_named_arg_calls ?? true,
+                    $function_storage?->allowsNamedArguments() ?? true,
                     $arg,
                     $arg_value_type,
                     $context,
@@ -2500,7 +2521,7 @@ final class ArgumentsAnalyzer
         foreach ($args as $argument_offset => $arg) {
             $function_param = null;
 
-            if ($arg->name && $function_storage->allow_named_arg_calls) {
+            if ($arg->name && $function_storage->allowsNamedArguments()) {
                 foreach ($function_params as $candidate_param) {
                     if ($candidate_param->name === $arg->name->name) {
                         $function_param = $candidate_param;
