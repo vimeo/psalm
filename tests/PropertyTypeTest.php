@@ -759,6 +759,43 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertySetInConstructorStaysSetAfterAnIfNarrowingThis' => [
+                'code' => '<?php
+                    interface Configurable {
+                        public function setConfiguration(array $c): void;
+                    }
+
+                    interface Aggregate {}
+
+                    abstract class PluginBase {
+                        protected array $configuration;
+
+                        public function __construct(array $configuration) {
+                            $this->configuration = $configuration;
+                        }
+                    }
+
+                    class PluginDefault extends PluginBase {
+                        public function __construct(array $configuration) {
+                            parent::__construct($configuration);
+                            if ($this instanceof Configurable) {
+                                $this->setConfiguration($configuration);
+                            }
+                        }
+                    }
+
+                    class QueryBase {
+                        protected string $condition;
+                        protected ?string $aggregate = null;
+
+                        public function __construct(string $c) {
+                            $this->condition = $c;
+                            if ($this instanceof Aggregate) {
+                                $this->aggregate = $c;
+                            }
+                        }
+                    }',
+            ],
             'declaredPropertyOfAStdClassSubclassKeepsItsTypeAndAnUndeclaredOneStaysDynamic' => [
                 'code' => '<?php
                     final class Item extends stdClass {
