@@ -109,6 +109,7 @@ use function array_pop;
 use function array_values;
 use function count;
 use function implode;
+use function in_array;
 use function is_int;
 use function spl_object_id;
 use function strlen;
@@ -850,6 +851,9 @@ final class ArrayFetchAnalyzer
 
         $has_array_access = false;
         $non_array_types = [];
+        // unlike other non-array types, these throw inside isset() too
+        $non_indexable_object_types = [];
+        $offset_call_receiver_type = false;
 
         $has_valid_expected_offset = false;
         $expected_offset_types = [];
@@ -1112,7 +1116,11 @@ final class ArrayFetchAnalyzer
                 continue;
             }
 
-            if ($type instanceof TNamedObject) {
+            if ($type instanceof TNamedObject && self::isIndexableObject($codebase, $type)) {
+                if ($offset_call_receiver_type === false) {
+                    $offset_call_receiver_type = self::getOffsetCallReceiverType($codebase, $array_type);
+                }
+
                 self::handleArrayAccessOnNamedObject(
                     $statements_analyzer,
                     $stmt,
@@ -1124,9 +1132,14 @@ final class ArrayFetchAnalyzer
                     $has_array_access,
                     // nothing replaces an item an assignment writes into, which is modified in place as well
                     $by_reference || $replacement_type === null,
+                    $offset_call_receiver_type,
                 );
             } elseif (!$array_type->hasMixed()) {
                 $non_array_types[] = (string)$type;
+
+                if ($type instanceof TNamedObject) {
+                    $non_indexable_object_types[] = (string)$type;
+                }
             }
         }
         if ($changed) {
@@ -1144,11 +1157,12 @@ final class ArrayFetchAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
-                } elseif (!$context->inside_isset) {
+                } elseif (!$context->inside_isset || $non_indexable_object_types) {
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidArrayAccess(
                             'Cannot access array value on non-array variable ' .
-                            self::describeArrayVar($extended_var_id, $stmt) . ' of type ' . $non_array_types[0],
+                            self::describeArrayVar($extended_var_id, $stmt) . ' of type '
+                                . ($context->inside_isset ? $non_indexable_object_types[0] : $non_array_types[0]),
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -2279,6 +2293,51 @@ final class ArrayFetchAnalyzer
         }
     }
 
+    /**
+     * The type to call the offset methods on: without the objects that can't be indexed, which are
+     * reported as non-array types instead. Null when there are none.
+     */
+    private static function getOffsetCallReceiverType(Codebase $codebase, Union $array_type): ?Union
+    {
+        $receiver_types = $array_type->getAtomicTypes();
+
+        foreach ($receiver_types as $key => $type) {
+            if ($type instanceof TTemplateParam && $type->as->isSingle()) {
+                $type = $type->as->getSingleAtomic();
+            }
+
+            if ($type instanceof TNamedObject && !self::isIndexableObject($codebase, $type)) {
+                unset($receiver_types[$key]);
+            }
+        }
+
+        if (!$receiver_types || count($receiver_types) === count($array_type->getAtomicTypes())) {
+            return null;
+        }
+
+        return $array_type->getBuilder()->setTypes($receiver_types)->freeze();
+    }
+
+    /**
+     * Unknown classlikes (traits included) are left to the method calls, which report them
+     */
+    private static function isIndexableObject(Codebase $codebase, TNamedObject $type): bool
+    {
+        foreach ([$type, ...$type->extra_types] as $part) {
+            if (!$part instanceof TNamedObject
+                || !$codebase->classOrInterfaceOrEnumExists($part->value)
+                || in_array(strtolower($part->value), ['arrayaccess', 'simplexmlelement', 'domnodelist'], true)
+                || $codebase->classExtendsOrImplements($part->value, 'ArrayAccess')
+                || $codebase->classExtendsOrImplements($part->value, 'SimpleXMLElement')
+                || $codebase->interfaceExtends($part->value, 'ArrayAccess')
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static function handleArrayAccessOnNamedObject(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -2289,6 +2348,7 @@ final class ArrayFetchAnalyzer
         ?Union &$array_access_type,
         bool &$has_array_access,
         bool $in_place,
+        ?Union $receiver_type,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         if (strtolower($type->value) === 'simplexmlelement'
@@ -2354,6 +2414,13 @@ final class ArrayFetchAnalyzer
                 $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
             }
 
+            $outer_node_data = $statements_analyzer->node_data;
+
+            if ($receiver_type !== null) {
+                $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+                $statements_analyzer->node_data->setType($stmt->var, $receiver_type);
+            }
+
             if ($in_assignment) {
                 // PHP does not call offsetSet() for an item modified in place, passed by reference or written into:
                 // the call is analysed for what calling the method implies, but has no arguments to check
@@ -2389,12 +2456,14 @@ final class ArrayFetchAnalyzer
                     $statements_analyzer,
                     $fake_set_method_call,
                     $context,
+                    $receiver_type === null,
                 );
 
                 $statements_analyzer->node_data = $old_node_data;
             }
 
-            if ($stmt->dim) {
+            // an item written directly is only passed to offsetSet()
+            if ($stmt->dim && (!$in_assignment || $in_place)) {
                 $old_node_data = $statements_analyzer->node_data;
 
                 // `unset($a[$k])` calls offsetUnset, `isset($a[$k])` and `$a[$k] ?? ...` call
@@ -2416,6 +2485,7 @@ final class ArrayFetchAnalyzer
                         $statements_analyzer,
                         $fake_unset_method_call,
                         $context,
+                        $receiver_type === null,
                     );
 
                     $statements_analyzer->node_data = $old_node_data;
@@ -2438,6 +2508,7 @@ final class ArrayFetchAnalyzer
                         $statements_analyzer,
                         $fake_exists_method_call,
                         $context,
+                        $receiver_type === null,
                     );
 
                     $statements_analyzer->node_data = $old_node_data;
@@ -2492,6 +2563,7 @@ final class ArrayFetchAnalyzer
                         $statements_analyzer,
                         $fake_get_method_call,
                         $context,
+                        $receiver_type === null,
                     );
 
                     $call_array_access_type =
@@ -2502,6 +2574,8 @@ final class ArrayFetchAnalyzer
             } else {
                 $call_array_access_type = Type::getVoid();
             }
+
+            $statements_analyzer->node_data = $outer_node_data;
 
             $has_array_access = true;
 
