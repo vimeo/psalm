@@ -3955,7 +3955,7 @@ final class CapabilitiesTest extends TestCase
                     function sortFirst(ReadOnlyBox $o): bool {
                         return sort($o[0]);
                     }',
-                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:37 - Method ReadOnlyBox::offsetSet does not exist',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:37 - Cannot access array value on non-array variable $o of type ReadOnlyBox',
             ],
             'itemOfAnIntersectionWithArrayObjectPassedByReferenceWritesIt' => [
                 'code' => '<?php

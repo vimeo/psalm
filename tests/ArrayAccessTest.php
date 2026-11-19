@@ -1469,6 +1469,49 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'directWriteToAnArrayAccessObjectDoesNotCallOffsetGet' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, int> */
+                    final class Box implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool { return true; }
+                        /** @deprecated */
+                        public function offsetGet(mixed $offset): int { return 1; }
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function f(Box $b): void {
+                        $b["k"] = 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfAnObjectNotImplementingArrayAccessDoesNotLeakIntoTheItemOfAUnion' => [
+                'code' => '<?php
+                    final class Markup {}
+
+                    /** @return ArrayObject<string, int>|Markup */
+                    function u() {
+                        return new Markup();
+                    }
+
+                    $u = u();
+                    /** @psalm-suppress PossiblyInvalidArrayAccess */
+                    $v = $u["k"];',
+                'assertions' => [
+                    '$v===' => 'int',
+                ],
+            ],
+            'arrayAccessOnAnIntersectionWithArrayAccess' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @param I&ArrayAccess<string, int> $x */
+                    function f($x): ?int {
+                        return $x["k"];
+                    }',
+            ],
             'falseOffsetOfAnArrayAccessObjectIsNotReportedAsZero' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<int|false, string> */
@@ -3620,6 +3663,174 @@ final class ArrayAccessTest extends TestCase
                     $result = return_array();
                     $v = $result[0]["key"];',
                 'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
+            'arrayAccessOnAnObjectNotImplementingArrayAccess' => [
+                'code' => '<?php
+                    final class Markup {}
+
+                    function f(Markup $m): void {
+                        echo $m["k"];
+                    }',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:30 - Cannot access array value on non-array variable $m of type Markup',
+            ],
+            'arrayAssignmentOnAnObjectNotImplementingArrayAccess' => [
+                'code' => '<?php
+                    final class Markup {}
+
+                    function f(Markup $m): void {
+                        $m["k"] = 1;
+                    }',
+                'error_message' => 'InvalidArrayAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - Cannot access array value on non-array variable $m[\'k\'] of type Markup',
+            ],
+            'arrayAppendOnAnObjectNotImplementingArrayAccess' => [
+                'code' => '<?php
+                    final class Markup {}
+
+                    function f(Markup $m): void {
+                        $m[] = 1;
+                    }',
+                'error_message' => 'InvalidArrayAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - Cannot access array value on non-array variable $m of type Markup',
+            ],
+            'issetOnAnObjectNotImplementingArrayAccess' => [
+                'code' => '<?php
+                    final class Markup {}
+
+                    function f(Markup $m): bool {
+                        return isset($m["k"]);
+                    }',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:38 - Cannot access array value on non-array variable $m of type Markup',
+            ],
+            'unsetOnAnObjectNotImplementingArrayAccess' => [
+                'code' => '<?php
+                    final class Markup {}
+
+                    function f(Markup $m): void {
+                        unset($m["k"]);
+                    }',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:31 - Cannot access array value on non-array variable $m of type Markup',
+            ],
+            'arrayAccessOnAnInterfaceNotExtendingArrayAccess' => [
+                'code' => '<?php
+                    interface I {}
+
+                    function f(I $i): void {
+                        echo $i["k"];
+                    }',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:30 - Cannot access array value on non-array variable $i of type I',
+            ],
+            'arrayAccessOnAnObjectWithMagicCall' => [
+                'code' => '<?php
+                    final class Magic {
+                        public function __call(string $name, array $args): mixed {
+                            return 1;
+                        }
+                    }
+
+                    function f(Magic $m): void {
+                        echo $m["k"];
+                    }',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:30 - Cannot access array value on non-array variable $m of type Magic',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayAccessOnATemplatedObjectNotImplementingArrayAccess' => [
+                'code' => '<?php
+                    final class Markup {}
+
+                    /**
+                     * @template T of Markup
+                     * @param T $t
+                     */
+                    function f($t): void {
+                        echo $t["k"];
+                    }',
+                'error_message' => 'InvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:30 - Cannot access array value on non-array variable $t of type Markup',
+            ],
+            'arrayAccessOnAnArrayOrAnObjectNotImplementingArrayAccess' => [
+                'code' => '<?php
+                    final class Markup {}
+
+                    /** @param Markup|array<string, int> $u */
+                    function f($u): void {
+                        echo $u["k"];
+                    }',
+                'error_message' => 'PossiblyInvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:30 - Cannot access array value on non-array variable $u of type Markup',
+            ],
+            'arrayAssignmentOnAnArrayOrAnObjectNotImplementingArrayAccess' => [
+                'code' => '<?php
+                    final class Markup {}
+
+                    /** @param Markup|array<string, int> $u */
+                    function f($u): void {
+                        $u["k"] = 1;
+                    }',
+                'error_message' => 'PossiblyInvalidArrayAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:25 - Cannot access array value on non-array variable $u[\'k\'] of type Markup',
+            ],
+            'arrayAccessOnAnArrayAccessObjectOrAnObjectNotImplementingIt' => [
+                'code' => '<?php
+                    final class Markup {}
+
+                    /** @param ArrayObject<string, int>|Markup $u */
+                    function f($u): void {
+                        echo $u["k"];
+                    }',
+                'error_message' => 'PossiblyInvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:30 - Cannot access array value on non-array variable $u of type Markup',
+            ],
+            'arrayAssignmentOnAnArrayAccessObjectOrAnObjectNotImplementingIt' => [
+                'code' => '<?php
+                    final class Markup {}
+
+                    /** @param ArrayObject<string, int>|Markup $u */
+                    function f($u): void {
+                        $u["k"] = 1;
+                    }',
+                'error_message' => 'PossiblyInvalidArrayAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:25 - Cannot access array value on non-array variable $u[\'k\'] of type Markup',
+            ],
+            'issetOnAnArrayAccessObjectOrAnObjectNotImplementingIt' => [
+                'code' => '<?php
+                    final class Markup {}
+
+                    /** @param ArrayObject<string, int>|Markup $u */
+                    function f($u): bool {
+                        return isset($u["k"]);
+                    }',
+                'error_message' => 'PossiblyInvalidArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:38 - Cannot access array value on non-array variable $u of type Markup',
+            ],
+            'compoundWriteToAnArrayAccessObjectCallsOffsetGet' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, int> */
+                    final class Box implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool { return true; }
+                        /** @deprecated */
+                        public function offsetGet(mixed $offset): int { return 1; }
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function f(Box $b): void {
+                        $b["k"] += 1;
+                    }',
+                'error_message' => 'DeprecatedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:25 - The method Box::offsetGet has been marked as deprecated',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfAnArrayAccessObjectPassedByReferenceResolvesOffsetSet' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, list<int>> */
+                    final class Box implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool { return true; }
+                        public function offsetGet(mixed $offset): array { return [2, 1]; }
+                        /** @deprecated */
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function f(Box $b): void {
+                        sort($b[0]);
+                    }',
+                'error_message' => 'DeprecatedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:30 - The method Box::offsetSet has been marked as deprecated',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'possiblyInvalidArrayAccess' => [
                 'code' => '<?php
