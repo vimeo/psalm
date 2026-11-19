@@ -1590,6 +1590,43 @@ final class ArrayAccessTest extends TestCase
                     '$a===' => 'string',
                 ],
             ],
+            'isArrayOfAnOffsetByAVariableIsKeptAfterAnIfThatNarrowsTheVariableAndHasALoop' => [
+                'code' => '<?php
+                    final class Parts {
+                        /** @var array<string, mixed> */
+                        private array $parts = ["select" => [], "join" => []];
+
+                        public function add(string $name, array $part, bool $append = false): void {
+                            $isMultiple = is_array($this->parts[$name]) && ! ($name === "join" && ! $append);
+
+                            if ($name === "join") {
+                                $new = [];
+
+                                foreach ($part as $k => $v) {
+                                    $new[$k] = $v;
+                                }
+
+                                $part = $new;
+                            }
+
+                            if ($append && $isMultiple) {
+                                $this->parts[$name][] = 1;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'issetOnAnIndexIsKeptWhenTheIndexIsNarrowedInALoop' => [
+                'code' => '<?php
+                    /** @var array<string, string>|ArrayAccess<string, string> $test */
+                    $test = $_GET["x"];
+                    $a = $test["a"] ?? "a";',
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+            ],
             'issetOnANullableObjectOffsetKeepsTheOffsetUnknown' => [
                 'code' => '<?php
                     function f(?SimpleXMLElement $a, bool $b): void {
