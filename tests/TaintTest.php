@@ -6661,6 +6661,16 @@ final class TaintTest extends TestCase
                     View::show($_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'foreachOverANullableArrayKeepsTheTaintOfItsValues' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? null : [(string) $_GET["x"]];
+
+                    /** @psalm-suppress PossiblyNullIterator */
+                    foreach ($a as $v) {
+                        echo $v;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'methodImplementingASourceIsASource' => [
                 'code' => '<?php
                     interface Input {

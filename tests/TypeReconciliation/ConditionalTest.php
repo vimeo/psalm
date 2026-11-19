@@ -1285,6 +1285,99 @@ final class ConditionalTest extends TestCase
                     '$result' => 'I1&I2|string',
                 ],
             ],
+            'narrowClassAndInterfaceIntersectionToSubclass' => [
+                'code' => '<?php
+                    abstract class A {}
+                    class B extends A {}
+                    interface I {}
+
+                    function getA(): A {
+                        throw new Exception();
+                    }
+
+                    $a = getA();
+
+                    if ($a instanceof I && $a instanceof B) {
+                        $result = $a;
+                    } else {
+                        $result = null;
+                    }',
+                'assertions' => [
+                    '$result' => 'B&I|null',
+                ],
+            ],
+            'narrowClassAndInterfaceIntersectionToSubclassInNestedIf' => [
+                'code' => '<?php
+                    abstract class A {}
+                    class B extends A {}
+                    interface I {}
+
+                    function getA(): A {
+                        throw new Exception();
+                    }
+
+                    $a = getA();
+                    $result = null;
+
+                    if ($a instanceof I) {
+                        if ($a instanceof B) {
+                            $result = $a;
+                        }
+                    }',
+                'assertions' => [
+                    '$result' => 'B&I|null',
+                ],
+            ],
+            'narrowClassAndTwoInterfacesIntersectionToSubclass' => [
+                'code' => '<?php
+                    abstract class A {}
+                    class B extends A {}
+                    interface I {}
+                    interface J {}
+
+                    function getA(): A {
+                        throw new Exception();
+                    }
+
+                    $a = getA();
+
+                    if ($a instanceof I && $a instanceof J && $a instanceof B) {
+                        $result = $a;
+                    } else {
+                        $result = null;
+                    }',
+                'assertions' => [
+                    '$result' => 'B&I&J|null',
+                ],
+            ],
+            'narrowClassAndInterfaceIntersectionToSubclassWithAssertion' => [
+                'code' => '<?php
+                    abstract class A {}
+                    class B extends A {}
+                    interface I {}
+
+                    /** @psalm-assert B $x */
+                    function assertB(object $x): void {
+                        if (!$x instanceof B) {
+                            throw new Exception();
+                        }
+                    }
+
+                    function getA(): A {
+                        throw new Exception();
+                    }
+
+                    $a = getA();
+                    $result = null;
+
+                    if ($a instanceof I) {
+                        assertB($a);
+                        $result = $a;
+                    }',
+                'assertions' => [
+                    '$result' => 'B&I|null',
+                ],
+            ],
             'nonStrictConditionOnMixedOrNull' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $owners */
@@ -6759,6 +6852,32 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'narrowClassAndInterfaceIntersectionToFinalSubclassWithoutInterface' => [
+                'code' => '<?php
+                    abstract class A {}
+                    final class D extends A {}
+                    interface I {}
+
+                    function f(A $a): void {
+                        if ($a instanceof I && $a instanceof D) {
+                            echo "unreachable";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'narrowClassAndInterfaceIntersectionToUnrelatedClass' => [
+                'code' => '<?php
+                    abstract class A {}
+                    class C {}
+                    interface I {}
+
+                    function f(A $a): void {
+                        if ($a instanceof I && $a instanceof C) {
+                            echo "unreachable";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'varAssignedUnderConditionIsPossiblyUndefinedAfterTheConditionChanges' => [
                 'code' => '<?php
                     function f(bool $b): void {
