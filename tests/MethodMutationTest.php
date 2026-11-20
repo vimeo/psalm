@@ -63,7 +63,7 @@ final class MethodMutationTest extends TestCase
                         $this->user_viewdata = new UserViewData();
                     }
 
-                    public function setUser(): void
+                    final public function setUser(): void
                     {
                         $user_id = (int)$_GET["id"];
 
@@ -97,7 +97,7 @@ final class MethodMutationTest extends TestCase
         new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
         $this->project_analyzer->getCodebase()->scanFiles();
         $method_context = new Context();
-        $method_context->collect_mutations = true;
+        $method_context->collect_initializations = true;
         $this->project_analyzer->getMethodMutations(
             new MethodIdentifier('FooController', 'barbar'),
             $method_context,
@@ -121,7 +121,7 @@ final class MethodMutationTest extends TestCase
                     /** @var User|null */
                     public $user;
 
-                    public function doThingWithUser(): array
+                    final public function doThingWithUser(): array
                     {
                         if (!$this->user) {
                             return [];
@@ -141,7 +141,7 @@ final class MethodMutationTest extends TestCase
         new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
         $this->project_analyzer->getCodebase()->scanFiles();
         $method_context = new Context();
-        $method_context->collect_mutations = true;
+        $method_context->collect_initializations = true;
         $this->project_analyzer->getMethodMutations(
             new MethodIdentifier('FooController', 'barbar'),
             $method_context,
@@ -178,7 +178,7 @@ final class MethodMutationTest extends TestCase
         new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
         $this->project_analyzer->getCodebase()->scanFiles();
         $method_context = new Context();
-        $method_context->collect_mutations = true;
+        $method_context->collect_initializations = true;
         $this->project_analyzer->getMethodMutations(
             new MethodIdentifier('FooController', '__construct'),
             $method_context,
@@ -217,7 +217,7 @@ final class MethodMutationTest extends TestCase
         new FileAnalyzer($this->project_analyzer, 'somefile.php', 'somefile.php');
         $this->project_analyzer->getCodebase()->scanFiles();
         $method_context = new Context();
-        $method_context->collect_mutations = true;
+        $method_context->collect_initializations = true;
         $this->project_analyzer->getMethodMutations(
             new MethodIdentifier('FooController', '__construct'),
             $method_context,
@@ -276,7 +276,7 @@ final class MethodMutationTest extends TestCase
         $codebase->scanFiles();
 
         $method_context = new Context();
-        $method_context->collect_mutations = true;
+        $method_context->collect_initializations = true;
         $this->project_analyzer->getMethodMutations($method_id, $method_context, $root_file_path, 'index.php');
 
         return (string) $method_context->vars_in_scope['$this->count'];

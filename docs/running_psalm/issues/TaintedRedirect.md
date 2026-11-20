@@ -15,13 +15,15 @@ A link to the application that redirects to a site of the attacker's choice look
 
 header('Location: ' . $_GET['next']); // TaintedRedirect
 header('Location: /' . $_GET['next']); // TaintedRedirect: `//evil.example` is another server
-header('Location: /account?tab=' . $_GET['tab']); // no issue: the server is fixed
-header('Location: https://example.com/' . $_GET['page']); // no issue
+header('Location: https://example.com' . $_GET['next']); // TaintedRedirect: `.evil.example` is another server
+header('Location: https://example.com/' . $_GET['page']); // TaintedUrlComponent: the server is fixed, but `?admin=1#` changes the query
+header('Location: /docs/' . rawurlencode((string) $_GET['page'])); // TaintedUrlPath: `..` reaches another path
+header('Location: /account?tab=' . urlencode((string) $_GET['tab'])); // no issue
 ```
 
 ## Mitigations
 
-- Redirect to a path of the application, or to a URL whose server is fixed, rather than to a URL from the request.
+- Redirect to a path of the application, or to a URL whose server is fixed, rather than to a URL from the request, and URL-encode what goes in it (see [TaintedUrlComponent](TaintedUrlComponent.md)).
 - Check the target against an allowlist of servers or paths.
 
 ## Further resources

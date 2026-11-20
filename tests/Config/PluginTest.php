@@ -1065,6 +1065,83 @@ final class PluginTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testMethodProviderHooksStaticFirstClassCallable(): void
+    {
+        require_once __DIR__ . '/Plugin/MethodPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                abstract class Model {
+                    /** @psalm-pure */
+                    public static function __callStatic(string $method_name, array $args): mixed {
+                        return null;
+                    }
+                }
+
+                final class Foo extends Model {
+                    /**
+                     * @template T of int|string
+                     * @param T $first
+                     * @return T
+                     */
+                    public static function sourcedGenericMethod(int|string $first): int|string {
+                        return $first;
+                    }
+                }
+
+                final class Ghost {}
+
+                $magic = Foo::magicMethod(...);
+                /** @psalm-check-type-exact $magic = \Closure[pure](string=) */
+
+                $sourced = Foo::sourcedMagicMethod(...);
+                /** @psalm-check-type-exact $sourced = \Closure[pure](int=) */
+
+                $generic = Foo::sourcedGenericMethod(...);
+                $generic_result = $generic(5);
+                /** @psalm-check-type-exact $generic_result = 5 */
+
+                $paramless = Foo::paramlessMagicMethod(...);
+                /** @psalm-check-type-exact $paramless = \Closure[pure] */
+
+                $ghost = Ghost::anything(...);
+                /** @psalm-check-type-exact $ghost = \Closure[impure] */
+
+                $name = "magicMethod";
+                $dynamic = Foo::$name(...);
+                /** @psalm-check-type-exact $dynamic = \Closure */
+
+                $instance_dynamic = (new Foo())->$name(...);
+                /** @psalm-check-type-exact $instance_dynamic = \Closure */',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testFunctionProviderHooks(): void
     {
         require_once __DIR__ . '/Plugin/FunctionPlugin.php';

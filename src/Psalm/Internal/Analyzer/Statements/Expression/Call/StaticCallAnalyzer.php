@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
+use PhpParser\NodeFinder;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
@@ -20,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
+use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
@@ -228,7 +230,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
                         $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
                         null,
                         null,
-                        true,
                         $context,
                     );
 
@@ -254,7 +255,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
                         $fq_class_name,
                         new CodeLocation($source, $stmt->class),
                         !$context->collect_initializations
-                            && !$context->collect_mutations
                             ? $context
                             : null,
                         $statements_analyzer->getSuppressedIssues(),
@@ -272,9 +272,28 @@ final class StaticCallAnalyzer extends CallAnalyzer
                             $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
                             null,
                             null,
-                            true,
                             $context,
                         );
+                    } elseif ($statements_analyzer->data_flow_graph && !$stmt->isFirstClassCallable()) {
+                        // not evaluated, but written: the variables its arguments name are used by it
+                        $variables = (new NodeFinder())->findInstanceOf(
+                            $stmt->getArgs(),
+                            PhpParser\Node\Expr\Variable::class,
+                        );
+
+                        foreach ($variables as $variable) {
+                            $variable_type = is_string($variable->name)
+                                ? $context->vars_in_scope['$' . $variable->name] ?? null
+                                : null;
+
+                            foreach ($variable_type !== null ? $variable_type->parent_nodes : [] as $parent_node) {
+                                $statements_analyzer->data_flow_graph->addPath(
+                                    $parent_node,
+                                    DataFlowNode::getForVariableUse(),
+                                    'variable-use',
+                                );
+                            }
+                        }
                     }
 
                     return $does_class_exist !== false;
@@ -284,7 +303,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
             if ($codebase->store_node_types
                 && $fq_class_name
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
@@ -313,7 +331,6 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             ) === false) {
                 return false;
@@ -655,6 +672,19 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 $cased_method_id,
                 $method_id,
                 $specialization_location,
+            );
+
+            $return_type_candidate = DatabaseTaints::taintCall(
+                $statements_analyzer,
+                $taint_flow_graph,
+                DatabaseTaints::getSpecs(
+                    (string) ($codebase->methods->getDeclaringMethodId($method_id) ?? $method_id),
+                    $method_storage,
+                ),
+                $method_storage,
+                $stmt->getArgs(),
+                $node_location,
+                $return_type_candidate,
             );
 
             ConditionalTaintSinks::taintCall(

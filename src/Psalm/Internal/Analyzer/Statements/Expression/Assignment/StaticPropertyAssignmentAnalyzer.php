@@ -115,7 +115,6 @@ final class StaticPropertyAssignmentAnalyzer
 
             if ($codebase->store_node_types
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),
@@ -242,6 +241,22 @@ final class StaticPropertyAssignmentAnalyzer
                 true,
                 $union_comparison_results,
             );
+
+            if ($type_match_found
+                && ($union_comparison_results->type_variable_lower_bounds
+                    || $union_comparison_results->type_variable_upper_bounds)
+            ) {
+                $statements_analyzer->type_variable_tracker->addPropertyAssignmentBounds(
+                    $union_comparison_results,
+                    $property_id,
+                    new CodeLocation(
+                        $statements_analyzer->getSource(),
+                        $assignment_value ?? $stmt,
+                        $context->include_location,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
 
             if ($union_comparison_results->type_coerced) {
                 if ($union_comparison_results->type_coerced_from_mixed) {

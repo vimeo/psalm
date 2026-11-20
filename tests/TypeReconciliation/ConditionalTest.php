@@ -196,6 +196,56 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'varAssignedUnderConditionIsDefinedUnderTheSameCondition' => [
+                'code' => '<?php
+                    function f(bool $b): void {
+                        if ($b) {
+                            $x = 1;
+                        }
+                        if ($b) {
+                            echo $x;
+                        }
+                    }',
+            ],
+            'varAssignedUnderNotNullIsDefinedUnderTheSameCheck' => [
+                'code' => '<?php
+                    interface Span {
+                        public function child(): Span;
+                        public function finish(): void;
+                    }
+
+                    function process(?Span $parent): void {
+                        if ($parent !== null) {
+                            $span = $parent->child();
+                        }
+                        if ($parent !== null) {
+                            $span->finish();
+                        }
+                    }',
+            ],
+            'varAssignedUnderConjunctionIsDefinedUnderTheSameConjunction' => [
+                'code' => '<?php
+                    function f(bool $b, bool $c): void {
+                        if ($b && $c) {
+                            $x = 1;
+                        }
+                        if ($b && $c) {
+                            echo $x;
+                        }
+                    }',
+            ],
+            'varAssignedUnderNegatedConditionIsDefinedAfterLeavingOtherwise' => [
+                'code' => '<?php
+                    function f(bool $b): void {
+                        if (!$b) {
+                            $x = 1;
+                        }
+                        if ($b) {
+                            return;
+                        }
+                        echo $x;
+                    }',
+            ],
             'getClassComparedToAClassStringConstantNarrowsToItsBound' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1233,6 +1283,99 @@ final class ConditionalTest extends TestCase
                     }',
                 'assertions' => [
                     '$result' => 'I1&I2|string',
+                ],
+            ],
+            'narrowClassAndInterfaceIntersectionToSubclass' => [
+                'code' => '<?php
+                    abstract class A {}
+                    class B extends A {}
+                    interface I {}
+
+                    function getA(): A {
+                        throw new Exception();
+                    }
+
+                    $a = getA();
+
+                    if ($a instanceof I && $a instanceof B) {
+                        $result = $a;
+                    } else {
+                        $result = null;
+                    }',
+                'assertions' => [
+                    '$result' => 'B&I|null',
+                ],
+            ],
+            'narrowClassAndInterfaceIntersectionToSubclassInNestedIf' => [
+                'code' => '<?php
+                    abstract class A {}
+                    class B extends A {}
+                    interface I {}
+
+                    function getA(): A {
+                        throw new Exception();
+                    }
+
+                    $a = getA();
+                    $result = null;
+
+                    if ($a instanceof I) {
+                        if ($a instanceof B) {
+                            $result = $a;
+                        }
+                    }',
+                'assertions' => [
+                    '$result' => 'B&I|null',
+                ],
+            ],
+            'narrowClassAndTwoInterfacesIntersectionToSubclass' => [
+                'code' => '<?php
+                    abstract class A {}
+                    class B extends A {}
+                    interface I {}
+                    interface J {}
+
+                    function getA(): A {
+                        throw new Exception();
+                    }
+
+                    $a = getA();
+
+                    if ($a instanceof I && $a instanceof J && $a instanceof B) {
+                        $result = $a;
+                    } else {
+                        $result = null;
+                    }',
+                'assertions' => [
+                    '$result' => 'B&I&J|null',
+                ],
+            ],
+            'narrowClassAndInterfaceIntersectionToSubclassWithAssertion' => [
+                'code' => '<?php
+                    abstract class A {}
+                    class B extends A {}
+                    interface I {}
+
+                    /** @psalm-assert B $x */
+                    function assertB(object $x): void {
+                        if (!$x instanceof B) {
+                            throw new Exception();
+                        }
+                    }
+
+                    function getA(): A {
+                        throw new Exception();
+                    }
+
+                    $a = getA();
+                    $result = null;
+
+                    if ($a instanceof I) {
+                        assertB($a);
+                        $result = $a;
+                    }',
+                'assertions' => [
+                    '$result' => 'B&I|null',
                 ],
             ],
             'nonStrictConditionOnMixedOrNull' => [
@@ -5991,6 +6134,97 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'andWhoseRightSideReassignsWhatTheLeftOneTestedUsesTheAssignedValue' => [
+                'code' => '<?php
+                    function getDefaultName(): ?string {
+                        return null;
+                    }
+
+                    function test(?string $name): int {
+                        if (null === $name && null !== $name = getDefaultName()) {
+                            return strlen($name);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'logicalAndWhoseRightSideReassignsWhatTheLeftOneTestedUsesTheAssignedValue' => [
+                'code' => '<?php
+                    function getDefaultName(): ?string {
+                        return null;
+                    }
+
+                    function test(?string $name): int {
+                        if (null === $name and null !== $name = getDefaultName()) {
+                            return strlen($name);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'andWhoseRightSideAssignsAnotherVariableKeepsWhatTheLeftOneTested' => [
+                'code' => '<?php
+                    function test(?string $s): int {
+                        if ($s !== null && ($n = strlen($s)) > 5) {
+                            return strlen($s) + $n;
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'negatedAndWhoseRightSideAssignsAnotherOffsetKeepsWhatTheLeftOneTestedOfAnOffset' => [
+                'code' => '<?php
+                    /** @param array{x?: int, y?: string} $a */
+                    function test(array $a): int {
+                        if (!(isset($a["y"]) && ($a["x"] = 5) > 0)) {
+                            return 0;
+                        }
+
+                        return strlen($a["y"]);
+                    }',
+            ],
+            'andWhoseRightSideAssignsAnotherOffsetKeepsWhatTheLeftOneTestedOfAnOffsetAfterTheIf' => [
+                'code' => '<?php
+                    /** @param array{x?: int, y?: string} $a */
+                    function test(array $a): int {
+                        if (isset($a["y"]) && ($a["x"] = 5) > 0) {
+                        } else {
+                            return 0;
+                        }
+
+                        return strlen($a["y"]);
+                    }',
+            ],
+            'andWhoseRightSideAssignsAnotherOffsetKeepsAnOrredClauseOfTheLeftOneOnAnOffset' => [
+                'code' => '<?php
+                    /** @param array{x?: int, y?: string} $a */
+                    function test(array $a, bool $b): int {
+                        if ((isset($a["y"]) || $b) && ($a["x"] = 5) > 0) {
+                            if (!$b) {
+                                return strlen($a["y"]);
+                            }
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'andWhoseRightSideAssignsAnotherPropertyKeepsAnOrredClauseOfTheLeftOneOnAProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public ?string $q = null;
+                        public int $p = 0;
+                    }
+
+                    function test(A $o, bool $b): int {
+                        if (($o->q !== null || $b) && ($o->p = 5) > 0) {
+                            if (!$b) {
+                                return strlen($o->q);
+                            }
+                        }
+
+                        return 0;
+                    }',
+            ],
             'classEqualToAClassConstantIsNotTheClassOfTheConstantFetch' => [
                 'code' => '<?php
                     class Bar {}
@@ -6699,6 +6933,28 @@ final class ConditionalTest extends TestCase
                     '$b' => 'A',
                 ],
             ],
+            'andWhoseBothSidesAssignTheSameVariableKnowsOnlyTheRightValue' => [
+                'code' => '<?php
+                    interface A {}
+                    final class C {}
+
+                    function f1(): ?object {
+                        return null;
+                    }
+
+                    function f2(): ?C {
+                        return null;
+                    }
+
+                    function test(): void {
+                        if (($x = f1()) instanceof A && ($x = f2())) {
+                            /** @psalm-check-type-exact $x = C */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -6709,6 +6965,98 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'narrowClassAndInterfaceIntersectionToFinalSubclassWithoutInterface' => [
+                'code' => '<?php
+                    abstract class A {}
+                    final class D extends A {}
+                    interface I {}
+
+                    function f(A $a): void {
+                        if ($a instanceof I && $a instanceof D) {
+                            echo "unreachable";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'narrowClassAndInterfaceIntersectionToUnrelatedClass' => [
+                'code' => '<?php
+                    abstract class A {}
+                    class C {}
+                    interface I {}
+
+                    function f(A $a): void {
+                        if ($a instanceof I && $a instanceof C) {
+                            echo "unreachable";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'varAssignedUnderConditionIsPossiblyUndefinedAfterTheConditionChanges' => [
+                'code' => '<?php
+                    function f(bool $b): void {
+                        if ($b) {
+                            $x = 1;
+                        }
+                        $b = !$b;
+                        if ($b) {
+                            echo $x;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varAssignedUnderConditionIsPossiblyUndefinedUnderAnotherCondition' => [
+                'code' => '<?php
+                    function f(bool $b, bool $c): void {
+                        if ($b) {
+                            $x = 1;
+                        }
+                        if ($c) {
+                            echo $x;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varAssignedUnderConjunctionIsPossiblyUndefinedUnderOneOperand' => [
+                'code' => '<?php
+                    function f(bool $b, bool $c): void {
+                        if ($b && $c) {
+                            $x = 1;
+                        }
+                        if ($b) {
+                            echo $x;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varAssignedInNestedIfIsPossiblyUndefinedUnderTheOuterCondition' => [
+                'code' => '<?php
+                    function f(bool $b, bool $c): void {
+                        if ($b) {
+                            if ($c) {
+                                $x = 1;
+                            }
+                        }
+                        if ($b) {
+                            echo $x;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'varAssignedUnderConditionIsPossiblyUndefinedAfterUnset' => [
+                'code' => '<?php
+                    function f(bool $b): void {
+                        if ($b) {
+                            $x = 1;
+                        }
+                        if ($b) {
+                            unset($x);
+                        }
+                        if ($b) {
+                            echo $x;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'gettypeNotIdenticalToTheOnlyPossibleType' => [
                 'code' => '<?php
                     function f(int $x): void {
@@ -7700,6 +8048,31 @@ final class ConditionalTest extends TestCase
                         echo $i;
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'andWhoseRightSideReassignsAnObjectForgetsAnOrredClauseOfTheLeftOneOnItsProperty' => [
+                'code' => '<?php
+                    final class P {
+                        public ?string $r = null;
+                    }
+
+                    final class A {
+                        public P $p;
+
+                        public function __construct() {
+                            $this->p = new P();
+                        }
+                    }
+
+                    function test(A $o, bool $b): int {
+                        if (($o->p->r !== null || $b) && ($o->p = new P()) instanceof P) {
+                            if (!$b) {
+                                return strlen($o->p->r);
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
             ],
             'ternaryElseOfAndDoesNotKnowVarAssignedInCondition' => [
                 'code' => '<?php

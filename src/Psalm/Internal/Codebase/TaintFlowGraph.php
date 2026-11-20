@@ -27,7 +27,6 @@ use Psalm\Issue\TaintedLlmPrompt;
 use Psalm\Issue\TaintedNosql;
 use Psalm\Issue\TaintedRedirect;
 use Psalm\Issue\TaintedSSRF;
-use Psalm\Issue\TaintedSession;
 use Psalm\Issue\TaintedShell;
 use Psalm\Issue\TaintedSleep;
 use Psalm\Issue\TaintedSql;
@@ -165,6 +164,15 @@ final class TaintFlowGraph extends DataFlowGraph
      * @var array<string, string>
      */
     private array $string_starts = [];
+
+    /**
+     * The ids of the nodes holding prepared statements => the nodes of those statements, which the values given to
+     * the statements' placeholders go through (see DatabaseTaints). Only used while analysing the function-like they
+     * are in, so never merged by addGraph().
+     *
+     * @var array<string, array<string, DataFlowNode>>
+     */
+    private array $database_statements = [];
 
     /**
      * The ids of the nodes of hosts parse_url() took from a URL (`parse_url($url, PHP_URL_HOST)`) => the id of the
@@ -608,6 +616,32 @@ final class TaintFlowGraph extends DataFlowGraph
     public function addStringStart(DataFlowNode $node, string $start): void
     {
         $this->string_starts[$node->id] = $start;
+    }
+
+    /**
+     * @param array<string, DataFlowNode> $statements
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function addDatabaseStatements(DataFlowNode $node, array $statements): void
+    {
+        $this->database_statements[$node->id] = [...$this->database_statements[$node->id] ?? [], ...$statements];
+    }
+
+    /**
+     * The prepared statements the nodes hold
+     *
+     * @param array<string, DataFlowNode> $nodes
+     * @return array<string, DataFlowNode>
+     * @psalm-mutation-free
+     */
+    public function getDatabaseStatements(array $nodes): array
+    {
+        $statements = [];
+        foreach ($nodes as $node) {
+            $statements += $this->database_statements[$node->id] ?? [];
+        }
+
+        return $statements;
     }
 
     /**
@@ -1552,12 +1586,6 @@ final class TaintFlowGraph extends DataFlowGraph
                 ),
                 TaintKind::INPUT_REDIRECT => new TaintedRedirect(
                     'Detected tainted redirect target',
-                    $issue_location,
-                    $issue_trace,
-                    $path,
-                ),
-                TaintKind::INPUT_SESSION => new TaintedSession(
-                    'Detected tainted session data',
                     $issue_location,
                     $issue_trace,
                     $path,

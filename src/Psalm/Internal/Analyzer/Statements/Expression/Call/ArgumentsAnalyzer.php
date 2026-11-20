@@ -10,6 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\AttributesAnalyzer;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
@@ -120,7 +121,6 @@ final class ArgumentsAnalyzer
         array $args,
         ?array $function_params,
         ?string $method_id,
-        bool $allow_named_args,
         Context $context,
         ?TemplateResult $template_result = null,
     ): ?bool {
@@ -129,19 +129,44 @@ final class ArgumentsAnalyzer
         $was_inside_negation = $context->inside_negation;
         $context->inside_negation = false;
 
+        // assert() reconciles its own argument, not the arguments of another call inside it
+        $was_inside_assert = $context->inside_assert;
+        $context->inside_assert = $was_inside_assert && $method_id === 'assert';
+
         try {
-            return self::analyzeArguments(
+            $result = self::analyzeArguments(
                 $statements_analyzer,
                 $args,
                 $function_params,
                 $method_id,
-                $allow_named_args,
                 $context,
                 $template_result,
             );
         } finally {
             $context->inside_negation = $was_inside_negation;
+            $context->inside_assert = $was_inside_assert;
         }
+
+        // the callee may call a closure it is given, also inside an array or an object, which may write what the
+        // closure captured by reference
+        foreach ($args as $arg) {
+            $written_var_ids = ClosureAnalyzer::analyzeVarIdsWrittenByCall(
+                $statements_analyzer,
+                $context,
+                $arg->value,
+                true,
+            );
+
+            foreach ($written_var_ids as $var_id => $_) {
+                $context->removeVarFromConflictingClauses(
+                    $var_id,
+                    $context->vars_in_scope[$var_id] ?? null,
+                    $statements_analyzer,
+                );
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -154,13 +179,21 @@ final class ArgumentsAnalyzer
         array $args,
         ?array $function_params,
         ?string $method_id,
-        bool $allow_named_args,
         Context $context,
         ?TemplateResult $template_result = null,
     ): ?bool {
         $last_param = $function_params
             ? $function_params[count($function_params) - 1]
             : null;
+
+        foreach ($args as $arg) {
+            // PhpParser attaches the docblock in front of an argument to the argument, the expression is analysed
+            $arg_docblock = $arg->getDocComment();
+
+            if ($arg_docblock !== null) {
+                $arg->value->setAttribute(ExpressionAnalyzer::ARGUMENT_DOCBLOCK_ATTRIBUTE, $arg_docblock);
+            }
+        }
 
         // if this modifies the array type based on further args
         if (in_array($method_id, ['array_push', 'array_unshift'], true)
@@ -223,7 +256,7 @@ final class ArgumentsAnalyzer
                 continue;
             }
 
-            $param = self::getParamOfArg($function_params, $last_param, $allow_named_args, $arg, $argument_offset);
+            $param = self::getParamOfArg($function_params, $last_param, $arg, $argument_offset);
 
             // the operands of the `$eq` of the fields of a MongoDB filter literal
             if ($arg->value instanceof PhpParser\Node\Expr\Array_ && $statements_analyzer->taint_flow_graph) {
@@ -310,7 +343,6 @@ final class ArgumentsAnalyzer
                         $args,
                         $function_params,
                         $last_param,
-                        $allow_named_args,
                         $argument_offset,
                         $context,
                         $template_result ?? new TemplateResult([], []),
@@ -543,8 +575,8 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * The parameter an argument is passed to: the one it is named after (when the function allows named arguments),
-     * else the one at its position, a variadic one taking the rest
+     * The parameter an argument is passed to: the one it is named after, else the one at its position, a variadic one
+     * taking the rest
      *
      * @param array<int, FunctionLikeParameter> $function_params
      * @psalm-capabilities read-props
@@ -552,11 +584,10 @@ final class ArgumentsAnalyzer
     private static function getParamOfArg(
         array $function_params,
         ?FunctionLikeParameter $last_param,
-        bool $allow_named_args,
         PhpParser\Node\Arg $arg,
         int $argument_offset,
     ): ?FunctionLikeParameter {
-        if ($arg->name && $allow_named_args) {
+        if ($arg->name) {
             foreach ($function_params as $candidate_param) {
                 if ($candidate_param->name === $arg->name->name) {
                     return $candidate_param;
@@ -585,7 +616,6 @@ final class ArgumentsAnalyzer
         array $args,
         array $function_params,
         ?FunctionLikeParameter $last_param,
-        bool $allow_named_args,
         int $argument_offset,
         Context $context,
         TemplateResult $template_result,
@@ -597,7 +627,7 @@ final class ArgumentsAnalyzer
                 break;
             }
 
-            $param = self::getParamOfArg($function_params, $last_param, $allow_named_args, $arg, $offset);
+            $param = self::getParamOfArg($function_params, $last_param, $arg, $offset);
             $input_type = $statements_analyzer->node_data->getType($arg->value);
 
             if (!$param || !$param->by_ref || !$param->type || !$input_type || !$param->type->hasTemplate()) {
@@ -684,6 +714,11 @@ final class ArgumentsAnalyzer
                     $lower_bounds,
                     $codebase,
                 );
+
+                // nothing was inferred for the template yet: the closure parameter is not `never`
+                if ($new_bounds[$k][$kk]->isNever() && isset($template_result->template_types[$k][$kk])) {
+                    $new_bounds[$k][$kk] = $template_result->template_types[$k][$kk];
+                }
             }
         }
         // `T` of `@template TArray as array<T>` is only known through what `TArray` was given
@@ -1235,7 +1270,7 @@ final class ArgumentsAnalyzer
                             $function_params[$i],
                             $i,
                             $i,
-                            $function_storage->allow_named_arg_calls ?? true,
+                            $function_storage?->allowsNamedArguments() ?? true,
                             new VirtualArg(
                                 StubsGenerator::getExpressionFromType($default_type),
                             ),
@@ -1339,8 +1374,7 @@ final class ArgumentsAnalyzer
                         $key_types = $array_type->type_params[0]->getAtomicTypes();
 
                         foreach ($key_types as $key_type) {
-                            if (!$key_type instanceof TLiteralString
-                                || ($function_storage && !$function_storage->allow_named_arg_calls)) {
+                            if (!$key_type instanceof TLiteralString) {
                                 continue;
                             }
 
@@ -1390,7 +1424,7 @@ final class ArgumentsAnalyzer
                         }
                     }
                 }
-            } elseif ($arg->name && (!$function_storage || $function_storage->allow_named_arg_calls)) {
+            } elseif ($arg->name) {
                 $named_args_was_used = true;
 
                 foreach ($function_params as $candidate_offset => $candidate_param) {
@@ -1482,8 +1516,14 @@ final class ArgumentsAnalyzer
 
             $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
 
+            // the docblock in front of the argument also covers what the check of the argument reports
+            $argument_suppressed_issues = ExpressionAnalyzer::addDocblockSuppressions(
+                $statements_analyzer,
+                $arg->value,
+            );
+
             foreach ($arg_function_params[$argument_offset] as $param_offset => $function_param) {
-                if (ArgumentAnalyzer::checkArgumentMatches(
+                $argument_matches = ArgumentAnalyzer::checkArgumentMatches(
                     $statements_analyzer,
                     $cased_method_id,
                     $method_id instanceof MethodIdentifier ? $method_id : null,
@@ -1494,7 +1534,7 @@ final class ArgumentsAnalyzer
                     $function_param,
                     $param_offset,
                     $param_offset - $param_offsets[$argument_offset],
-                    $function_storage->allow_named_arg_calls ?? true,
+                    $function_storage?->allowsNamedArguments() ?? true,
                     $arg,
                     $arg_value_type,
                     $context,
@@ -1503,10 +1543,16 @@ final class ArgumentsAnalyzer
                     $specialize_taint,
                     $in_call_map,
                     $static_is_called_class,
-                ) === false) {
+                );
+
+                if ($argument_matches === false) {
+                    $statements_analyzer->removeSuppressedIssues($argument_suppressed_issues);
+
                     return false;
                 }
             }
+
+            $statements_analyzer->removeSuppressedIssues($argument_suppressed_issues);
         }
 
         if ($statements_analyzer->taint_flow_graph
@@ -2502,7 +2548,7 @@ final class ArgumentsAnalyzer
         foreach ($args as $argument_offset => $arg) {
             $function_param = null;
 
-            if ($arg->name && $function_storage->allow_named_arg_calls) {
+            if ($arg->name) {
                 foreach ($function_params as $candidate_param) {
                     if ($candidate_param->name === $arg->name->name) {
                         $function_param = $candidate_param;
@@ -2729,6 +2775,26 @@ final class ArgumentsAnalyzer
                         $default_type = new Union([$default_type_atomic]);
                     }
 
+                    // a default that is one of the own atomic types of the parameter (`null` for `T|null`) says
+                    // nothing about a template that an argument bound already, and that has no default of its own
+                    // to fall back to
+                    if ($default_type->isSingle()
+                        && !$param->type->isSingle()
+                        && isset($param->type->getAtomicTypes()[$default_type->getSingleAtomic()->getKey()])
+                        && array_all(
+                            $param->type->getTemplateTypes(),
+                            static fn(TTemplateParam $template_type): bool
+                                => !isset($function_storage?->template_defaults[$template_type->param_name])
+                                && isset(
+                                    $template_result->lower_bounds[$template_type->param_name][
+                                        $template_type->defining_class
+                                    ],
+                                ),
+                        )
+                    ) {
+                        continue;
+                    }
+
                     TemplateStandinTypeReplacer::fillTemplateResult(
                         $param->type,
                         $template_result,
@@ -2906,8 +2972,9 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * The sinks of a header given to header() that the analysis can tell is a `Location` header: its value is where
-     * the client is sent (`redirect` taint), unless it starts with a URL fixing the server (see
+     * The sinks of a header given to header() that the analysis can tell is a `Location` header: its value is the URL
+     * the client is sent to (`redirect` taint), where URL syntax can change the path, query or fragment
+     * (`url_component` and `url_path` taints), apart from those a start fixing the server removes (see
      * ConcatAnalyzer::getTaintsRemovedAfterUrlOrigin()). The name of the header is fixed, and header() rejects a
      * line break, so it can't add another header. Null if it can be any header.
      *
@@ -2933,9 +3000,8 @@ final class ArgumentsAnalyzer
             $urls[] = $matches[1] ?? '';
         }
 
-        return ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($urls) & TaintKind::INPUT_SSRF
-            ? 0
-            : TaintKind::INPUT_REDIRECT;
+        return (TaintKind::INPUT_REDIRECT | TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH)
+            & ~ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($urls);
     }
 
     /**

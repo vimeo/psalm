@@ -71,9 +71,12 @@ final class FunctionCallInfo
      */
     public ?Union $callable_return_type = null;
 
-    public bool $allow_named_args = true;
-
-    public array $byref_uses = [];
+    /**
+     * The variables of the scope the called closure may write, as it captured them by reference
+     *
+     * @var array<string, true>
+     */
+    public array $closure_written_var_ids = [];
 
     /**
      * @mutation-free

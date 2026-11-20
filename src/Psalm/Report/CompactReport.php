@@ -24,9 +24,9 @@ final class CompactReport extends Report
         foreach ($this->issues_data as $issue_data) {
             $severity = $this->getSeverityLabel($issue_data);
 
-            $output .= $severity . ' ' . $issue_data->file_name . ':' . $issue_data->line_from
-                . ':' . $issue_data->column_from . ' ' . $issue_data->type . ': '
-                . self::getMessageWithCwe($issue_data) . "\n";
+            $output .= $severity . ' ' . $this->escapeControlCharacters($issue_data->file_name)
+                . ':' . $issue_data->line_from . ':' . $issue_data->column_from . ' ' . $issue_data->type . ': '
+                . $this->escapeControlCharacters(self::getMessageWithCwe($issue_data)) . "\n";
         }
 
         return $output;

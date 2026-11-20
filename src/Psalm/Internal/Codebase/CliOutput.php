@@ -386,7 +386,6 @@ final class CliOutput
         CodeLocation $code_location,
     ): void {
         if ($context->collect_initializations
-            || $context->collect_mutations
             || self::isInCliOnlyCode($statements_analyzer, $context)
         ) {
             return;
@@ -466,7 +465,6 @@ final class CliOutput
     public static function isInstanceGuard(Codebase $codebase, MethodStorage $storage, Context $context): bool
     {
         if ($context->collect_initializations
-            || $context->collect_mutations
             || $context->self === null
             || $storage->cased_name === null
             || !$codebase->classlike_storage_provider->has($context->self)
