@@ -364,6 +364,19 @@ abstract class CallAnalyzer
                 }
             }
 
+            // the parameter types inherited from overridden methods refer to their templates
+            if ($declaring_class_storage->user_defined && !$method_storage->has_docblock_param_types) {
+                foreach ($class_storage->overridden_method_ids[$method_name] ?? [] as $overridden_method_id) {
+                    $overridden_method_storage = $codebase->methods->hasStorage($overridden_method_id)
+                        ? $codebase->methods->getStorage($overridden_method_id)
+                        : null;
+
+                    if ($overridden_method_storage?->has_docblock_param_types) {
+                        $template_result->template_types += $overridden_method_storage->template_types ?? [];
+                    }
+                }
+            }
+
             if (!$context->isSuppressingExceptions($statements_analyzer)) {
                 $context->mergeFunctionExceptions(
                     $method_storage,

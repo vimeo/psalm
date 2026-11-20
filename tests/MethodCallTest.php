@@ -3450,6 +3450,60 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'overrideOfAStubMethodWithATemplateKeepsItsParameterType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-immutable */
+                    final class MyEnumReflection extends ReflectionEnum
+                    {
+                        #[\Override]
+                        public function isSubclassOf(ReflectionClass|string $class): bool
+                        {
+                            return false;
+                        }
+                    }
+
+                    /** @param class-string $name */
+                    function f(MyEnumReflection $r, ReflectionEnum $core, string $name): bool
+                    {
+                        return $core->isSubclassOf($name) || $r->isSubclassOf($name);
+                    }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'overrideOfAMethodWithATemplateWithoutDocblock' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Base
+                    {
+                        /**
+                         * @template J as object
+                         * @param class-string<J> $class
+                         */
+                        public function take(string $class): bool
+                        {
+                            return true;
+                        }
+                    }
+
+                    final class Child extends Base
+                    {
+                        #[\Override]
+                        public function take(string $class): bool
+                        {
+                            return false;
+                        }
+                    }
+
+                    /** @param class-string<stdClass> $name */
+                    function f(Child $c, string $name): bool
+                    {
+                        return $c->take($name);
+                    }
+                PHP,
+            ],
         ];
     }
 
@@ -4677,6 +4731,27 @@ final class MethodCallTest extends TestCase
                     $_a = (new A)->foo(...);
                 PHP,
                 'error_message' => 'UndefinedMethod',
+            ],
+            'overrideOfAStubMethodWithATemplateStillChecksTheArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class MyEnumReflection extends ReflectionEnum
+                    {
+                        #[\Override]
+                        public function isSubclassOf(ReflectionClass|string $class): bool
+                        {
+                            return false;
+                        }
+                    }
+
+                    function f(MyEnumReflection $r): bool
+                    {
+                        return $r->isSubclassOf(1);
+                    }
+                PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
