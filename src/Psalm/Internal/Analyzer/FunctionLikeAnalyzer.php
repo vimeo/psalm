@@ -1817,7 +1817,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 new VirtualPropertyFetch(
                     new VirtualVariable('this', $attributes),
                     new VirtualIdentifier($name, $attributes),
-                    $attributes,
+                    ['promoted_parameter' => true] + $attributes,
                 ),
                 $name,
                 new VirtualVariable($name, $var->getAttributes()),

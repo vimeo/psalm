@@ -1318,6 +1318,17 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'deprecatedPromotedPropertyIsNotUsedByItsOwnDeclaration' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(
+                            /** @deprecated */
+                            public string $foo,
+                        ) {}
+                    }
+
+                    new A("x");',
+            ],
             'untaintedArgumentAfterTheFirstOneAVariadicCollects' => [
                 'code' => '<?php
                     /** @psalm-taint-source input */
