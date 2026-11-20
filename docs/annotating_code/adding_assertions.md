@@ -86,6 +86,27 @@ function takesA(A $a) : void {
 }
 ```
 
+A function can make several of them, about different variables too:
+
+```php
+<?php
+/**
+ * @psalm-assert-if-false string $name
+ * @psalm-assert-if-false int $age
+ */
+function isInvalid(mixed $name, mixed $age): bool {
+    return !is_string($name) || !is_int($age);
+}
+
+function describe(mixed $name, mixed $age): string {
+    if (isInvalid($name, $age)) {
+        return 'invalid';
+    }
+
+    return $name . ' turns ' . ($age + 1); // $name is string, $age is int
+}
+```
+
 As well as getting Psalm to understand that the given data must be a certain type, you can also show that a variable must be not null:
 
 ```php
