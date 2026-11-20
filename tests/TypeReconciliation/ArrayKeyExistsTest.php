@@ -34,6 +34,35 @@ final class ArrayKeyExistsTest extends TestCase
                 'ignored_issues' => ['MixedArgument'],
                 'php_version' => '8.0',
             ],
+            'arrayKeyExistsOfAnUnknownKeyDoesNotSayAMissingKeyIsNotInAnArray' => [
+                'code' => '<?php
+                    function k(): string {
+                        return "a";
+                    }
+
+                    function afterReturn(mixed $d): void {
+                        if (array_key_exists(k(), $d)) {
+                            return;
+                        }
+
+                        if (is_array($d)) {}
+                    }
+
+                    function inElse(mixed $d): void {
+                        if (array_key_exists(k(), $d)) {
+                        } else {
+                            if (is_array($d)) {}
+                        }
+                    }
+
+                    function inElseif(mixed $d): void {
+                        if (array_key_exists(k(), $d)) {
+                        } elseif (is_array($d)) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.0',
+            ],
             'arrayKeyExistsAndOffsetOfAMixedContainerNarrowItToAnArray' => [
                 'code' => '<?php
                     function contains(array $data, array $needle): bool {

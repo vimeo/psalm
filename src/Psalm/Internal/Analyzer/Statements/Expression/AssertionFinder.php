@@ -3706,8 +3706,10 @@ final class AssertionFinder
             $if_types[$template_key_var_name] = [[$template_key_assertion]];
         }
 
-        // a mixed container that has the key is an array
-        if (isset($expr->getArgs()[1])
+        // a mixed container that has the key is an array. Alone, its negation would say that a container missing
+        // the key is not an array
+        if ($if_types
+            && isset($expr->getArgs()[1])
             && $source instanceof StatementsAnalyzer
             && ($array_type = $source->node_data->getType($expr->getArgs()[1]->value))
             && $array_type->hasMixed()
