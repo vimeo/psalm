@@ -10,11 +10,13 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IncludeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
@@ -64,12 +66,14 @@ use function ltrim;
 use function preg_match;
 use function preg_split;
 use function str_starts_with;
+use function strlen;
 use function strpos;
 use function strtolower;
 use function substr_count;
 
 use const EXTR_OVERWRITE;
 use const EXTR_SKIP;
+use const E_USER_ERROR;
 use const PREG_SPLIT_NO_EMPTY;
 
 /**
@@ -82,6 +86,21 @@ final class NamedFunctionCallHandler
 
     /** the number of filters a php://filter URL can chain without the filter.max_filter_count context option */
     private const MAX_FILTERS = 16;
+
+    /** the pgsql functions using the last connection, by the number of arguments they then take */
+    private const PGSQL_LAST_CONNECTION_ARGUMENTS = [
+        'pg_client_encoding' => 0, 'pg_clientencoding' => 0, 'pg_close' => 0, 'pg_dbname' => 0, 'pg_end_copy' => 0,
+        'pg_errormessage' => 0, 'pg_host' => 0, 'pg_last_error' => 0, 'pg_lo_create' => 0, 'pg_locreate' => 0,
+        'pg_options' => 0, 'pg_ping' => 0, 'pg_port' => 0, 'pg_tty' => 0, 'pg_untrace' => 0, 'pg_version' => 0,
+        'pg_escape_bytea' => 1, 'pg_escape_identifier' => 1, 'pg_escape_literal' => 1, 'pg_escape_string' => 1,
+        'pg_exec' => 1, 'pg_query' => 1, 'pg_lo_unlink' => 1, 'pg_lounlink' => 1, 'pg_parameter_status' => 1,
+        'pg_put_line' => 1, 'pg_set_client_encoding' => 1, 'pg_setclientencoding' => 1, 'pg_set_error_verbosity' => 1,
+        'pg_execute' => 2, 'pg_lo_export' => 2, 'pg_loexport' => 2, 'pg_lo_open' => 2, 'pg_loopen' => 2,
+        'pg_prepare' => 2, 'pg_query_params' => 2,
+    ];
+
+    /** the functions reading CSV, by the position of their escape parameter */
+    private const CSV_ESCAPE_POSITIONS = ['fgetcsv' => 4, 'fputcsv' => 4, 'str_getcsv' => 3];
 
     /**
      * @param lowercase-string $function_id
@@ -99,6 +118,10 @@ final class NamedFunctionCallHandler
             || $function_id === 'gettype'
             || $function_id === 'get_debug_type'
         ) {
+            if (!$stmt->isFirstClassCallable()) {
+                self::checkDeprecatedArguments($statements_analyzer, $stmt, $function_id);
+            }
+
             self::handleDependentTypeFunction(
                 $statements_analyzer,
                 $stmt,
@@ -137,7 +160,7 @@ final class NamedFunctionCallHandler
         if ($function_id === 'class_alias') {
             $alias_name = self::getClassNameOfArgument($stmt->getArgs()[1] ?? null);
             $alias_name_parts = explode('\\', (string) $alias_name);
-            $alias_message = PhpDeprecations::getClassLikeNameMessage('an alias', array_pop($alias_name_parts));
+            $alias_message = PhpDeprecations::getClassLikeNameMessage('an alias', array_pop($alias_name_parts), false);
 
             if ($alias_message !== null) {
                 IssueBuffer::maybeAdd(
@@ -920,19 +943,359 @@ final class NamedFunctionCallHandler
         string $function_id,
     ): void {
         $types = [];
+        $names = [];
 
         foreach ($stmt->getArgs() as $arg) {
-            // a named or unpacked argument has no known position
-            if ($arg->name !== null || $arg->unpack) {
+            if ($arg->unpack) {
                 return;
             }
 
-            $types[] = $statements_analyzer->node_data->getType($arg->value);
+            if ($arg->name !== null) {
+                $names[$arg->name->toLowerString()] = true;
+            } elseif ($names === []) {
+                $types[] = $statements_analyzer->node_data->getType($arg->value);
+            }
         }
 
         $message = null;
 
+        if (isset(self::CSV_ESCAPE_POSITIONS[$function_id])
+            && !isset($names['escape'])
+            && count($types) <= self::CSV_ESCAPE_POSITIONS[$function_id]
+        ) {
+            $message = PhpDeprecations::getDeprecatedSinceMessage(
+                'Relying on the default escape argument of ' . $function_id . '()',
+                8_04_00,
+                null,
+            ) . ', pass it explicitly';
+        }
+
+        // the checks below need the position of every argument
+        $positional_function_id = $names === [] ? $function_id : '';
+
+        if (isset(self::PGSQL_LAST_CONNECTION_ARGUMENTS[$positional_function_id])
+            && count($types) === self::PGSQL_LAST_CONNECTION_ARGUMENTS[$positional_function_id]
+        ) {
+            $message = PhpDeprecations::getDeprecatedSinceMessage(
+                'Calling ' . $function_id . '() without a connection',
+                8_01_00,
+                null,
+            ) . ', pass the connection as the first argument';
+        }
+
+        if (str_starts_with($positional_function_id, 'mb_')) {
+            self::checkDeprecatedEncodings($statements_analyzer, $stmt, $positional_function_id, $types);
+        }
+
+        $message ??= self::getDeprecatedCallShapeMessage($positional_function_id, $types)
+            ?? self::getDeprecatedArgumentMessage($statements_analyzer, $stmt, $positional_function_id, $types);
+
+        if ($message !== null) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedFunction($message, new CodeLocation($statements_analyzer, $stmt), $function_id),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+    }
+
+    /**
+     * Why calling the builtin $function_id with these arguments is deprecated, given how many there are
+     *
+     * @param list<?Union> $types the types of the arguments
+     * @psalm-pure
+     */
+    private static function getDeprecatedCallShapeMessage(
+        string $function_id,
+        array $types,
+    ): ?string {
         switch ($function_id) {
+            case 'mb_check_encoding':
+                if ($types === []) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'Calling mb_check_encoding() without arguments',
+                        8_01_00,
+                        null,
+                    );
+                }
+
+                return null;
+
+            case 'mysqli_get_client_info':
+                if ($types !== []) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'Passing a connection to mysqli_get_client_info()',
+                        8_01_00,
+                        null,
+                    ) . ', leave it out';
+                }
+
+                return null;
+
+            case 'imagepolygon':
+            case 'imageopenpolygon':
+            case 'imagefilledpolygon':
+                if (count($types) > 3) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'The num_points argument of ' . $function_id . '()',
+                        8_01_00,
+                        null,
+                    ) . ', leave it out';
+                }
+
+                return null;
+
+            case 'get_class':
+            case 'get_parent_class':
+                if ($types === []) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'Calling ' . $function_id . '() without arguments',
+                        8_03_00,
+                        $function_id === 'get_class' ? 'self::class or static::class' : 'get_parent_class($this)',
+                    );
+                }
+
+                return null;
+
+            case 'ldap_connect':
+                if (count($types) > 1) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'Calling ldap_connect() with more than one argument',
+                        8_03_00,
+                        null,
+                    ) . ', pass an LDAP URI';
+                }
+
+                return null;
+
+            case 'dba_fetch':
+                if (count($types) === 3 && ($types[1] ?? null)?->isInt()) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'Passing the connection as the third argument of dba_fetch()',
+                        8_03_00,
+                        null,
+                    ) . ', pass it second and skip third';
+                }
+
+                return null;
+
+            case 'pg_fetch_result':
+            case 'pg_field_prtlen':
+            case 'pg_field_is_null':
+                if (count($types) === 2) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'Calling ' . $function_id . '() with two arguments',
+                        8_04_00,
+                        null,
+                    ) . ', pass null as the row';
+                }
+
+                return null;
+
+            case 'intlcal_set':
+                if (count($types) > 3) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'Calling intlcal_set() with more than three arguments',
+                        8_04_00,
+                        'IntlCalendar::setDate() or IntlCalendar::setDateTime()',
+                    );
+                }
+
+                return null;
+
+            case 'intlgregcal_create_instance':
+                if (count($types) > 2) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'Calling intlgregcal_create_instance() with more than two arguments',
+                        8_04_00,
+                        'IntlGregorianCalendar::createFromDate() or IntlGregorianCalendar::createFromDateTime()',
+                    );
+                }
+
+                return null;
+
+            case 'ldap_exop':
+                if (count($types) > 4) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'Calling ldap_exop() with more than four arguments',
+                        8_04_00,
+                        'ldap_exop_sync()',
+                    );
+                }
+
+                return null;
+
+            case 'mysqli_store_result':
+                if (count($types) > 1) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'The mode argument of mysqli_store_result()',
+                        8_04_00,
+                        null,
+                    ) . ', leave it out';
+                }
+
+                return null;
+
+            case 'stream_context_set_option':
+                if (count($types) === 2) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'Calling stream_context_set_option() with an array of options',
+                        8_04_00,
+                        'stream_context_set_options()',
+                    );
+                }
+
+                return null;
+
+            case 'openssl_pkey_derive':
+                if (count($types) > 2) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'The key_length argument of openssl_pkey_derive()',
+                        8_05_00,
+                        null,
+                    ) . ', leave it out';
+                }
+
+                return null;
+
+            case 'finfo_buffer':
+                if (count($types) > 3) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'The context argument of finfo_buffer()',
+                        8_05_00,
+                        null,
+                    ) . ', leave it out';
+                }
+
+                return null;
+
+            case 'readdir':
+            case 'rewinddir':
+            case 'closedir':
+                if ($types === [] || $types[0]?->isNull() === true) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'Calling ' . $function_id . '() without a directory handle',
+                        8_05_00,
+                        null,
+                    ) . ', pass the handle opendir() returned';
+                }
+
+                return null;
+
+            case 'define':
+                if (count($types) > 2) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'The case_insensitive argument of define()',
+                        8_06_00,
+                        null,
+                    ) . ', leave it out';
+                }
+
+                return null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Why passing these arguments to the builtin $function_id is deprecated, given their values
+     *
+     * @param list<?Union> $types the types of the arguments
+     */
+    private static function getDeprecatedArgumentMessage(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        string $function_id,
+        array $types,
+    ): ?string {
+        switch ($function_id) {
+            case 'ini_set':
+            case 'ini_alter':
+                if (isset($types[0]) && $types[0]->isSingleStringLiteral()) {
+                    return PhpDeprecations::getIniSettingMessage($types[0]->getSingleStringLiteral()->value);
+                }
+
+                return null;
+
+            case 'mb_strimwidth':
+                if (self::isNegativeInt($types[2] ?? null)) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'A negative width argument of mb_strimwidth()',
+                        8_03_00,
+                        null,
+                    );
+                }
+
+                return null;
+
+            case 'trigger_error':
+            case 'user_error':
+                if (self::isIntLiteral($types[1] ?? null, E_USER_ERROR)) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'Calling ' . $function_id . '() with E_USER_ERROR',
+                        8_04_00,
+                        null,
+                    ) . ', throw an exception or call exit()';
+                }
+
+                return null;
+
+            case 'dba_key_split':
+                if (($types[0] ?? null)?->isNull() || ($types[0] ?? null)?->isFalse()) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'Passing null or false to dba_key_split()',
+                        8_04_00,
+                        null,
+                    );
+                }
+
+                return null;
+
+            case 'chr':
+                if (self::isIntOutside($types[0] ?? null, 0, 255)) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'Passing an integer outside of 0..255 to chr()',
+                        8_05_00,
+                        null,
+                    );
+                }
+
+                return null;
+
+            case 'ord':
+                if (isset($types[0])
+                    && $types[0]->isSingleStringLiteral()
+                    && strlen($types[0]->getSingleStringLiteral()->value) !== 1
+                ) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'Passing a string that is not one byte to ord()',
+                        8_05_00,
+                        null,
+                    );
+                }
+
+                return null;
+
+            case 'pow':
+                if (isset($types[0], $types[1])) {
+                    ArithmeticOpAnalyzer::checkZeroToNegativePower($statements_analyzer, $types[0], $types[1], $stmt);
+                }
+
+                return null;
+
+            case 'spl_autoload_unregister':
+                if (isset($types[0])
+                    && $types[0]->isSingleStringLiteral()
+                    && strtolower($types[0]->getSingleStringLiteral()->value) === 'spl_autoload_call'
+                ) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'Unregistering spl_autoload_call() to unregister every autoloader',
+                        8_05_00,
+                        null,
+                    ) . ', unregister each of spl_autoload_functions()';
+                }
+
+                return null;
+
             case 'http_build_query':
                 if (self::canBeObject($types[0] ?? null)) {
                     self::reportDeprecatedObjectArgument(
@@ -943,7 +1306,7 @@ final class NamedFunctionCallHandler
                     );
                 }
 
-                return;
+                return null;
 
             case 'deflate_init':
             case 'inflate_init':
@@ -956,7 +1319,7 @@ final class NamedFunctionCallHandler
                     );
                 }
 
-                return;
+                return null;
 
             case 'mb_convert_variables':
                 for ($position = 2, $count = count($types); $position < $count; $position++) {
@@ -968,11 +1331,11 @@ final class NamedFunctionCallHandler
                             'the vars argument of mb_convert_variables()',
                         );
 
-                        return;
+                        return null;
                     }
                 }
 
-                return;
+                return null;
 
             case 'stream_filter_append':
             case 'stream_filter_prepend':
@@ -987,18 +1350,7 @@ final class NamedFunctionCallHandler
                     );
                 }
 
-                return;
-
-            case 'define':
-                if (count($types) > 2) {
-                    $message = PhpDeprecations::getDeprecatedSinceMessage(
-                        'The case_insensitive argument of define()',
-                        8_06_00,
-                        null,
-                    ) . ', leave it out';
-                }
-
-                break;
+                return null;
 
             case 'is_a':
             case 'is_subclass_of':
@@ -1008,25 +1360,31 @@ final class NamedFunctionCallHandler
                     : !$allow_string->isFalse();
 
                 if (!$allows_strings && self::canBeString($types[0] ?? null)) {
-                    $message = PhpDeprecations::getDeprecatedSinceMessage(
+                    return PhpDeprecations::getDeprecatedSinceMessage(
                         'Calling ' . $function_id . '() with a class name when allow_string is false',
                         8_06_00,
                         null,
                     ) . ', check class_exists() first and pass true for allow_string';
                 }
 
-                break;
+                return null;
 
             case 'session_set_save_handler':
-                if (self::lacksSessionIdMethods($statements_analyzer, $types[0] ?? null)) {
-                    $message = PhpDeprecations::getDeprecatedSinceMessage(
+                if (count($types) > 2) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
+                        'Passing the session handler callables to session_set_save_handler()',
+                        8_04_00,
+                        null,
+                    ) . ', pass an object implementing SessionHandlerInterface';
+                } elseif (self::lacksSessionIdMethods($statements_analyzer, $types[0] ?? null)) {
+                    return PhpDeprecations::getDeprecatedSinceMessage(
                         'A session handler without the create_sid() and validateId() methods',
                         8_06_00,
                         null,
                     ) . ', implement SessionIdInterface and SessionUpdateTimestampHandlerInterface';
                 }
 
-                break;
+                return null;
 
             case 'fopen':
             case 'file_get_contents':
@@ -1038,21 +1396,56 @@ final class NamedFunctionCallHandler
                 if (self::chainsTooManyFilters($types[0] ?? null)
                     || ($function_id === 'copy' && self::chainsTooManyFilters($types[1] ?? null))
                 ) {
-                    $message = PhpDeprecations::getDeprecatedSinceMessage(
+                    return PhpDeprecations::getDeprecatedSinceMessage(
                         'A php://filter URL chaining more than ' . self::MAX_FILTERS . ' filters',
                         8_06_00,
                         null,
                     ) . ', append them with stream_filter_append() or raise the filter.max_filter_count context option';
                 }
 
-                break;
+                return null;
         }
 
-        if ($message !== null) {
-            IssueBuffer::maybeAdd(
-                new DeprecatedFunction($message, new CodeLocation($statements_analyzer, $stmt), $function_id),
-                $statements_analyzer->getSuppressedIssues(),
-            );
+        return null;
+    }
+
+    /**
+     * Reports the encodings mbstring deprecates, given to its function $function_id
+     *
+     * @param list<?Union> $types the types of the arguments
+     */
+    private static function checkDeprecatedEncodings(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        string $function_id,
+        array $types,
+    ): void {
+        $params = InternalCallMapHandler::getCallablesFromCallMap($function_id)[0]->params ?? [];
+
+        foreach ($params as $position => $param) {
+            if (!isset($types[$position])
+                || !in_array($param->name, ['encoding', 'to_encoding', 'from_encoding', 'encodings', 'charset'], true)
+            ) {
+                continue;
+            }
+
+            foreach ($types[$position]->getLiteralStrings() as $literal) {
+                // from_encoding and encodings can list several, separated by commas
+                foreach (explode(',', $literal->value) as $encoding) {
+                    $message = PhpDeprecations::getMbEncodingMessage($encoding);
+
+                    if ($message !== null) {
+                        IssueBuffer::maybeAdd(
+                            new DeprecatedFunction(
+                                $message,
+                                new CodeLocation($statements_analyzer, $stmt),
+                                $function_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
+                }
+            }
         }
     }
 
@@ -1088,6 +1481,36 @@ final class NamedFunctionCallHandler
         }
 
         return false;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isNegativeInt(?Union $type): bool
+    {
+        return $type !== null && $type->isSingleIntLiteral() && $type->getSingleIntLiteral()->value < 0;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isIntLiteral(?Union $type, int $value): bool
+    {
+        return $type !== null && $type->isSingleIntLiteral() && $type->getSingleIntLiteral()->value === $value;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isIntOutside(?Union $type, int $min, int $max): bool
+    {
+        if ($type === null || !$type->isSingleIntLiteral()) {
+            return false;
+        }
+
+        $value = $type->getSingleIntLiteral()->value;
+
+        return $value < $min || $value > $max;
     }
 
     /**

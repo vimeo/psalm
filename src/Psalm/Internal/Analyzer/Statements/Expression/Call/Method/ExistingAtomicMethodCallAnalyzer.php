@@ -333,6 +333,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $method_id,
                 new CodeLocation($statements_analyzer, $stmt_name),
                 $statements_analyzer->getSuppressedIssues(),
+                $stmt_name->name,
             );
         } else {
             $name_code_location = new CodeLocation($statements_analyzer, $stmt_name);

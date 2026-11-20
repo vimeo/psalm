@@ -23,6 +23,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
@@ -2555,6 +2556,24 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 IssueBuffer::maybeAdd(
                     new DeprecatedInterface(
                         $fq_interface_name . ' is marked deprecated',
+                        $code_location,
+                        $fq_interface_name,
+                    ),
+                    $storage->suppressed_issues + $this->getSuppressedIssues(),
+                );
+            }
+
+            if ($fq_interface_name_lc === 'serializable'
+                && (!$codebase->methodExists($fq_class_name . '::__serialize')
+                    || !$codebase->methodExists($fq_class_name . '::__unserialize'))
+            ) {
+                IssueBuffer::maybeAdd(
+                    new DeprecatedInterface(
+                        PhpDeprecations::getDeprecatedSinceMessage(
+                            'Implementing Serializable without __serialize() and __unserialize()',
+                            8_01_00,
+                            null,
+                        ) . ', add them',
                         $code_location,
                         $fq_interface_name,
                     ),

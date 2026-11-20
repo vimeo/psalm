@@ -14,11 +14,13 @@ use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnal
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Issue\DeprecatedSyntax;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitFloatToIntCast;
 use Psalm\Issue\InvalidOperand;
@@ -1894,5 +1896,32 @@ final class ArithmeticOpAnalyzer
             $new_result_type,
             $result_type,
         );
+    }
+
+    /**
+     * Reports raising 0 to a negative power, with `**` or pow(), which PHP deprecates whatever PHP version is analysed
+     */
+    public static function checkZeroToNegativePower(
+        StatementsAnalyzer $statements_analyzer,
+        Union $base,
+        Union $exponent,
+        PhpParser\Node $node,
+    ): void {
+        $base_value = $base->isSingleIntLiteral()
+            ? $base->getSingleIntLiteral()->value
+            : ($base->isSingleFloatLiteral() ? $base->getSingleFloatLiteral()->value : null);
+        $exponent_value = $exponent->isSingleIntLiteral()
+            ? $exponent->getSingleIntLiteral()->value
+            : ($exponent->isSingleFloatLiteral() ? $exponent->getSingleFloatLiteral()->value : null);
+
+        if ($base_value !== null && $exponent_value !== null && (float) $base_value === 0.0 && $exponent_value < 0) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage('Raising 0 to a negative power', 8_04_00, 'fpow()'),
+                    new CodeLocation($statements_analyzer, $node),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
     }
 }

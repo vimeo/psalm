@@ -188,6 +188,22 @@ final class ReturnAnalyzer
 
         self::analyzeReturn($statements_analyzer, $stmt, $context);
 
+        $source = $statements_analyzer->getSource();
+
+        if ($source instanceof MethodAnalyzer
+            && strtolower((string) $source->getMethodName()) === '__debuginfo'
+            && $stmt->expr !== null
+            && $statements_analyzer->node_data->getType($stmt->expr)?->isNull() === true
+        ) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedSyntax(
+                    PhpDeprecations::getDeprecatedSinceMessage('Returning null from __debugInfo()', 8_05_00, '[]'),
+                    new CodeLocation($statements_analyzer, $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
         // what a closure wrote to a variable it captures by reference stays written when it returns
         $closure = $statements_analyzer->getSource();
 

@@ -197,6 +197,11 @@ final class ConstFetchAnalyzer
             return Type::getResource();
         }
 
+        // defined once a session starts: empty, or the session name and id when the id isn't in a cookie
+        if ($const_name === 'SID') {
+            return Type::getString();
+        }
+
         if ($fq_const_name) {
             $stubbed_const_type = $codebase->getStubbedConstantType(
                 $fq_const_name,

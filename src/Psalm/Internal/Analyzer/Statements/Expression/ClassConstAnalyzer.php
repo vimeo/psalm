@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
@@ -56,6 +57,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
+use function array_values;
 use function assert;
 use function explode;
 use function in_array;
@@ -643,6 +645,25 @@ final class ClassConstAnalyzer
                 ),
                 $statements_analyzer->getSuppressedIssues(),
             );
+        } elseif (!$const_class_storage->user_defined) {
+            $builtin_message = PhpDeprecations::getClassConstantMessage(
+                [
+                    $const_class_storage->name,
+                    ...array_values($const_class_storage->parent_classes),
+                    ...array_values($const_class_storage->class_implements),
+                ],
+                $const_name,
+            );
+
+            if ($builtin_message !== null) {
+                IssueBuffer::maybeAdd(
+                    new DeprecatedConstant(
+                        $builtin_message,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
         }
 
         $class_keyword = $stmt->class instanceof PhpParser\Node\Name

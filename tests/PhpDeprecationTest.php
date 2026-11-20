@@ -162,6 +162,93 @@ final class PhpDeprecationTest extends TestCase
                         }
                     }',
             ],
+            'canonicalCastsAndInterpolation' => [
+                'code' => '<?php
+                    function f(string $var): string {
+                        $a = (int) "1";
+                        $b = (bool) $a;
+                        return "{$var} $var {${\'var\'}}" . (string) $b . (float) $a;
+                    }',
+            ],
+            'caseEndingWithAColon' => [
+                'code' => '<?php
+                    function f(string $s): int {
+                        switch ($s) {
+                            case "a": /* ; */
+                                return 1;
+                            default:
+                                return 2;
+                        }
+                    }',
+            ],
+            'explicitlyNullableParametersAndOptionalOnesLast' => [
+                'code' => '<?php
+                    function f(int $a, ?stdClass $b = null, stdClass|null $c = null, mixed $d = null, int ...$e): void {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'csvFunctionsGivenTheEscapeArgument' => [
+                'code' => '<?php
+                    /** @param resource $stream */
+                    function f($stream): void {
+                        fputcsv($stream, ["a"], ",", "\"", "");
+                        fgetcsv($stream, null, ",", "\"", escape: "");
+                        str_getcsv("a", ",", "\"", "");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callablesNotRelativeToTheCallingClass' => [
+                'code' => '<?php
+                    class A {
+                        /** @param list<int> $l */
+                        public function sort(array $l): void {
+                            usort($l, [self::class, "compare"]);
+                            usort($l, self::compare(...));
+                        }
+
+                        public static function compare(int $a, int $b): int {
+                            return $a <=> $b;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'functionsGivenValuesTheyStillAccept' => [
+                'code' => '<?php
+                    $a = chr(65) . ord("a") . pow(2, -1) . 0 ** 2;',
+            ],
+            'staticMemberOfAClassUsingATrait' => [
+                'code' => '<?php
+                    trait T {
+                        public static function make(): int {
+                            return 1;
+                        }
+                    }
+                    final class A {
+                        use T;
+                    }
+                    $a = A::make();',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'serializableWithTheMagicMethods' => [
+                'code' => '<?php
+                    final class A implements Serializable {
+                        public function serialize(): string { return ""; }
+                        public function unserialize(string $data): void {}
+                        /** @return array<string, int> */
+                        public function __serialize(): array { return []; }
+                        /** @param array<string, int> $data */
+                        public function __unserialize(array $data): void {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
             'deprecatedSyntaxSuppressedOnTheClass' => [
                 'code' => '<?php
                     /** @psalm-suppress DeprecatedSyntax */
@@ -489,6 +576,218 @@ final class PhpDeprecationTest extends TestCase
 
                     use function strlen as is;',
                 'error_message' => 'Naming an alias is is deprecated since PHP 8.6',
+            ],
+            'functionDeprecatedInPhp81' => [
+                'code' => '<?php
+                    $a = date_sunrise(1);',
+                'error_message' => 'The function date_sunrise is deprecated since PHP 8.1, use date_sun_info',
+            ],
+            'functionDeprecatedInPhp82' => [
+                'code' => '<?php
+                    $a = utf8_encode("a");',
+                'error_message' => 'The function utf8_encode is deprecated since PHP 8.2, use mb_convert_encoding',
+            ],
+            'functionDeprecatedInPhp84' => [
+                'code' => '<?php
+                    $a = lcg_value();',
+                'error_message' => 'The function lcg_value is deprecated since PHP 8.4',
+            ],
+            'methodDeprecatedInPhp85' => [
+                'code' => '<?php
+                    function f(SplObjectStorage $s): void {
+                        $s->attach(new stdClass());
+                    }',
+                'error_message' => 'The method SplObjectStorage::attach is deprecated since PHP 8.5, use SplObjectStorage::offsetSet',
+            ],
+            'constantDeprecatedInPhp81' => [
+                'code' => '<?php
+                    $a = filter_var("a", FILTER_SANITIZE_STRING);',
+                'error_message' => 'The constant FILTER_SANITIZE_STRING is deprecated since PHP 8.1',
+            ],
+            'constantDeprecatedInPhp84' => [
+                'code' => '<?php
+                    error_reporting(E_ALL & ~E_STRICT);',
+                'error_message' => 'The constant E_STRICT is deprecated since PHP 8.4',
+            ],
+            'classConstantDeprecatedInPhp85' => [
+                'code' => '<?php
+                    $a = DateTime::RFC7231;',
+                'error_message' => 'The constant DateTimeInterface::RFC7231 is deprecated since PHP 8.5',
+            ],
+            'sessionIdConstant' => [
+                'code' => '<?php
+                    $a = SID;',
+                'error_message' => 'The constant SID is deprecated since PHP 8.4',
+            ],
+            'getClassWithoutArguments' => [
+                'code' => '<?php
+                    final class A {
+                        public function name(): string {
+                            return get_class();
+                        }
+                    }',
+                'error_message' => 'Calling get_class() without arguments is deprecated since PHP 8.3',
+            ],
+            'triggerErrorWithUserError' => [
+                'code' => '<?php
+                    trigger_error("failed", E_USER_ERROR);',
+                'error_message' => 'Calling trigger_error() with E_USER_ERROR is deprecated since PHP 8.4',
+            ],
+            'csvFunctionRelyingOnTheDefaultEscape' => [
+                'code' => '<?php
+                    $a = str_getcsv("a,b");',
+                'error_message' => 'Relying on the default escape argument of str_getcsv() is deprecated since PHP 8.4',
+            ],
+            'chrOutsideOfAByte' => [
+                'code' => '<?php
+                    $a = chr(300);',
+                'error_message' => 'Passing an integer outside of 0..255 to chr() is deprecated since PHP 8.5',
+            ],
+            'ordOfSeveralBytes' => [
+                'code' => '<?php
+                    $a = ord("ab");',
+                'error_message' => 'Passing a string that is not one byte to ord() is deprecated since PHP 8.5',
+            ],
+            'changingADeprecatedIniSetting' => [
+                'code' => '<?php
+                    ini_set("assert.active", "1");',
+                'error_message' => 'Changing the ini setting assert.active is deprecated since PHP 8.3, use zend.assertions',
+            ],
+            'reflectionMethodWithOneArgument' => [
+                'code' => '<?php
+                    $a = new ReflectionMethod("ArrayObject::count");',
+                'error_message' => 'Constructing ReflectionMethod with one argument is deprecated since PHP 8.4, use ReflectionMethod::createFromMethodName',
+            ],
+            'arrayObjectWrappingAnObject' => [
+                'code' => '<?php
+                    $a = new ArrayObject(new stdClass());',
+                'error_message' => 'Wrapping an object in ArrayObject or ArrayIterator is deprecated since PHP 8.5, use get_object_vars',
+            ],
+            'nonCanonicalCast' => [
+                'code' => '<?php
+                    $a = (integer) "1";',
+                'error_message' => 'DeprecatedSyntax - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:26 - The (integer) cast is deprecated since PHP 8.5, use (int) instead',
+            ],
+            'backtickOperator' => [
+                'code' => '<?php
+                    $a = `ls`;',
+                'error_message' => 'The backtick operator is deprecated since PHP 8.5, use shell_exec',
+            ],
+            'dollarBraceInterpolation' => [
+                'code' => '<?php
+                    function f(string $name): string {
+                        return "Hello ${name}";
+                    }',
+                'error_message' => 'Interpolating "${var}" in a string is deprecated since PHP 8.2',
+            ],
+            'caseEndingWithASemicolon' => [
+                'code' => '<?php
+                    function f(string $s): int {
+                        switch ($s) {
+                            case "a";
+                                return 1;
+                        }
+
+                        return 2;
+                    }',
+                'error_message' => 'Ending a case with a semicolon is deprecated since PHP 8.5, use a colon instead',
+            ],
+            'httpResponseHeaderVariable' => [
+                'code' => '<?php
+                    function f(): void {
+                        file_get_contents("https://example.com");
+                        var_dump($http_response_header);
+                    }',
+                'error_message' => 'The $http_response_header variable is deprecated since PHP 8.5, use http_get_last_response_headers',
+            ],
+            'nullReturnedFromDebugInfo' => [
+                'code' => '<?php
+                    final class A {
+                        /** @return array<string, int>|null */
+                        public function __debugInfo() {
+                            return null;
+                        }
+                    }',
+                'error_message' => 'Returning null from __debugInfo() is deprecated since PHP 8.5',
+            ],
+            'referenceReturnedFromAVoidFunction' => [
+                'code' => '<?php
+                    function &f(): void {}',
+                'error_message' => 'Returning by reference from a void function is deprecated since PHP 8.1',
+            ],
+            'optionalParameterBeforeARequiredOne' => [
+                'code' => '<?php
+                    function f(int $a = 1, int $b): void {}',
+                'error_message' => 'Declaring the optional parameter $a before the required parameter $b is deprecated since PHP 8.0',
+            ],
+            'implicitlyNullableParameter' => [
+                'code' => '<?php
+                    function f(stdClass $a = null): void {}',
+                'error_message' => 'Making the type of $a nullable with its null default is deprecated since PHP 8.4, declare the type nullable',
+            ],
+            'sleepNotReturningAnArray' => [
+                'code' => '<?php
+                    final class A {
+                        public function __sleep(): string {
+                            return "";
+                        }
+                    }',
+                'error_message' => 'A __sleep() not returning an array is deprecated since PHP 8.1',
+            ],
+            'zeroRaisedToANegativePower' => [
+                'code' => '<?php
+                    $a = 0 ** -1;',
+                'error_message' => 'Raising 0 to a negative power is deprecated since PHP 8.4, use fpow',
+            ],
+            'zeroRaisedToANegativePowerWithPow' => [
+                'code' => '<?php
+                    $a = pow(0, -1);',
+                'error_message' => 'Raising 0 to a negative power is deprecated since PHP 8.4, use fpow',
+            ],
+            'classNamedUnderscore' => [
+                'code' => '<?php
+                    final class _ {}',
+                'error_message' => 'Naming a class _ is deprecated since PHP 8.4',
+            ],
+            'serializableWithoutTheMagicMethods' => [
+                'code' => '<?php
+                    final class A implements Serializable {
+                        public function serialize(): string { return ""; }
+                        public function unserialize(string $data): void {}
+                    }',
+                'error_message' => 'Implementing Serializable without __serialize() and __unserialize() is deprecated since PHP 8.1',
+                'error_levels' => ['MissingOverrideAttribute'],
+            ],
+            'staticMethodCalledOnATrait' => [
+                'code' => '<?php
+                    trait T {
+                        public static function make(): int {
+                            return 1;
+                        }
+                    }
+                    $a = T::make();',
+                'error_message' => 'Accessing a static member directly on the trait T is deprecated since PHP 8.1',
+            ],
+            'callableRelativeToTheCallingClass' => [
+                'code' => '<?php
+                    class A {
+                        /** @param list<int> $l */
+                        public function sort(array $l): void {
+                            usort($l, "self::compare");
+                        }
+
+                        public static function compare(int $a, int $b): int {
+                            return $a <=> $b;
+                        }
+                    }',
+                'error_message' => 'A callable relative to the calling class is deprecated since PHP 8.2',
+            ],
+            'deprecatedMbstringEncoding' => [
+                'code' => '<?php
+                    function f(string $s): string {
+                        return mb_convert_encoding($s, "HTML-ENTITIES", "UTF-8");
+                    }',
+                'error_message' => 'The mbstring encoding HTML-ENTITIES is deprecated since PHP 8.2',
             ],
             'useAliasedToAReservedName' => [
                 'code' => '<?php

@@ -25,7 +25,6 @@ use Psalm\Internal\Analyzer\Statements\GlobalAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
-use Psalm\Internal\Codebase\PhpDeprecations;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -39,7 +38,6 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableBounds;
 use Psalm\Issue\AbstractInstantiation;
 use Psalm\Issue\DeprecatedClass;
-use Psalm\Issue\DeprecatedMethod;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InterfaceInstantiation;
 use Psalm\Issue\InternalClass;
@@ -558,29 +556,6 @@ final class NewAnalyzer extends CallAnalyzer
         ClassLikeStorage $storage,
         string $fq_class_name,
     ): void {
-        // PHP deprecates it whatever PHP version is analysed
-        if (!$stmt->isFirstClassCallable()
-            && count($stmt->getArgs()) === 1
-            && !$stmt->getArgs()[0]->unpack
-            && $stmt->getArgs()[0]->name?->toLowerString() !== 'query'
-            && strtolower((string) $statements_analyzer->getCodebase()->methods->getDeclaringMethodId(
-                new MethodIdentifier($fq_class_name, '__construct'),
-            )) === 'mysqli_stmt::__construct'
-        ) {
-            IssueBuffer::maybeAdd(
-                new DeprecatedMethod(
-                    PhpDeprecations::getDeprecatedSinceMessage(
-                        'Calling mysqli_stmt::__construct() without the query argument',
-                        8_06_00,
-                        'mysqli::prepare()',
-                    ),
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    'mysqli_stmt::__construct',
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        }
-
         if ($storage->deprecated && strtolower($fq_class_name) !== strtolower((string)$context->self)) {
             IssueBuffer::maybeAdd(
                 new DeprecatedClass(

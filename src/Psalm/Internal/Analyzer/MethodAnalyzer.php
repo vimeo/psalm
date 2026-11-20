@@ -407,26 +407,35 @@ final class MethodAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
-     * Reports a nullable return type of __debugInfo(), which PHP deprecates whatever PHP version is analysed
+     * Reports the return types of magic methods PHP deprecates, whatever PHP version is analysed
      *
      * @param array<array-key, string> $suppressed_issues
      */
-    public static function checkDebugInfoReturnType(
+    public static function checkDeprecatedMagicMethodSignature(
         MethodStorage $method_storage,
         CodeLocation $code_location,
         array $suppressed_issues,
     ): void {
-        if ($method_storage->cased_name !== null
-            && strtolower($method_storage->cased_name) === '__debuginfo'
-            && $method_storage->signature_return_type?->isNullable()
-        ) {
+        $return_type = $method_storage->signature_return_type;
+
+        if ($method_storage->cased_name === null || $return_type === null) {
+            return;
+        }
+
+        $message = match (strtolower($method_storage->cased_name)) {
+            '__debuginfo' => $return_type->isNullable()
+                ? PhpDeprecations::getDeprecatedSinceMessage('A nullable return type of __debugInfo()', 8_06_00, null)
+                : null,
+            '__sleep' => !$return_type->hasArray() && !$return_type->hasMixed()
+                ? PhpDeprecations::getDeprecatedSinceMessage('A __sleep() not returning an array', 8_01_00, null)
+                : null,
+            default => null,
+        };
+
+        if ($message !== null) {
             IssueBuffer::maybeAdd(
                 new DeprecatedSyntax(
-                    PhpDeprecations::getDeprecatedSinceMessage(
-                        'A nullable return type of __debugInfo()',
-                        8_06_00,
-                        null,
-                    ) . ', declare array',
+                    $message . ', declare array',
                     $method_storage->signature_return_type_location ?? $code_location,
                 ),
                 $suppressed_issues,

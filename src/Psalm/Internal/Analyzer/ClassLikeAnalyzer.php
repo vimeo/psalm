@@ -332,6 +332,33 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * Reports a static member of the trait $fq_class_name accessed on the trait, and returns whether it is one
+     */
+    public static function checkTraitMemberAccess(
+        StatementsAnalyzer $statements_analyzer,
+        string $fq_class_name,
+        PhpParser\Node $class_node,
+    ): bool {
+        if (!$statements_analyzer->getCodebase()->classlikes->traitExists($fq_class_name)) {
+            return false;
+        }
+
+        IssueBuffer::maybeAdd(
+            new DeprecatedSyntax(
+                PhpDeprecations::getDeprecatedSinceMessage(
+                    'Accessing a static member directly on the trait ' . $fq_class_name,
+                    8_01_00,
+                    null,
+                ) . ', access it on a class using the trait',
+                new CodeLocation($statements_analyzer, $class_node),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+
+        return true;
+    }
+
+    /**
      * Reports a class-like named after a keyword PHP adds
      *
      * @param array<array-key, string> $suppressed_issues
@@ -342,7 +369,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         PhpParser\Node\Identifier $name,
         array $suppressed_issues,
     ): void {
-        $message = PhpDeprecations::getClassLikeNameMessage($kind, $name->name);
+        $message = PhpDeprecations::getClassLikeNameMessage($kind, $name->name, true);
 
         if ($message !== null) {
             IssueBuffer::maybeAdd(
