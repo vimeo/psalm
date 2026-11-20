@@ -54,6 +54,7 @@ use Psalm\Issue\InvalidTraversableImplementation;
 use Psalm\Issue\MethodSignatureMismatch;
 use Psalm\Issue\MismatchingDocblockPropertyType;
 use Psalm\Issue\MissingConstructor;
+use Psalm\Issue\MissingOverrideAttribute;
 use Psalm\Issue\MissingPropertyType;
 use Psalm\Issue\MutableDependency;
 use Psalm\Issue\NoEnumProperties;
@@ -120,6 +121,7 @@ use function reset;
 use function str_replace;
 use function strtolower;
 use function substr;
+use function substr_count;
 
 /**
  * @internal
@@ -707,6 +709,73 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         }
     }
 
+    private static function checkOverrideAttributeOfProperty(
+        StatementsSource $statements_source,
+        ClassLikeStorage $storage,
+        PropertyStorage $property_storage,
+        string $property_name,
+    ): void {
+        $codebase = $statements_source->getCodebase();
+
+        foreach ($property_storage->attributes as $attribute) {
+            if ($attribute->fq_class_name === 'Override') {
+                return;
+            }
+        }
+
+        $overrides_a_parent_property = false;
+
+        foreach ($storage->overridden_property_ids[$property_name] ?? [] as $overridden_property_id) {
+            [$guide_class_name] = explode('::$', $overridden_property_id);
+            $guide_property_storage = $codebase->classlike_storage_provider->get($guide_class_name)
+                ->properties[$property_name] ?? null;
+
+            if ($guide_property_storage !== null
+                && $guide_property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+            ) {
+                $overrides_a_parent_property = true;
+                break;
+            }
+        }
+
+        if (!$overrides_a_parent_property) {
+            foreach ($storage->class_implements as $interface_name) {
+                $interface_property = $codebase->classlikes->getStorageFor($interface_name)
+                    ?->properties[$property_name] ?? null;
+
+                if ($interface_property !== null) {
+                    $overrides_a_parent_property = true;
+                    break;
+                }
+            }
+        }
+
+        if (!$overrides_a_parent_property || $property_storage->location === null) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new MissingOverrideAttribute(
+                'Property ' . $storage->name . '::$' . $property_name . ' should have the "Override" attribute',
+                $property_storage->location,
+            ),
+            $property_storage->suppressed_issues ?: $storage->suppressed_issues,
+            true,
+        );
+
+        // a statement declaring several properties would give the attribute to all of them
+        if ($codebase->alter_code
+            && $property_storage->stmt_location !== null
+            && substr_count($property_storage->stmt_location->getSnippet(), '$') === 1
+            && isset(ProjectAnalyzer::getInstance()->getIssuesToFix()['MissingOverrideAttribute'])
+        ) {
+            $idx = $property_storage->stmt_location->getSelectionBounds()[0];
+            FileManipulationBuffer::add($property_storage->stmt_location->file_path, [
+                new FileManipulation($idx, $idx, "#[\\Override]\n", true),
+            ]);
+        }
+    }
+
     public static function addContextProperties(
         StatementsSource $statements_source,
         ClassLikeStorage $storage,
@@ -740,6 +809,16 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     ),
                     $property_storage->suppressed_issues,
                 );
+            }
+
+            // PHP 8.5: a property that overrides a property of a parent class needs #[\Override]
+            if ($property_class_name === $fq_class_name
+                && $codebase->analysis_php_version_id >= 8_05_00
+                && $codebase->config->ensure_override_attribute
+                && $property_storage->location
+                && !$property_storage->is_static
+            ) {
+                self::checkOverrideAttributeOfProperty($statements_source, $storage, $property_storage, $property_name);
             }
 
             if (isset($storage->overridden_property_ids[$property_name])) {
