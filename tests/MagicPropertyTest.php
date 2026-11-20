@@ -1376,6 +1376,8 @@ final class MagicPropertyTest extends TestCase
 
                     /** @psalm-no-seal-properties */
                     final class M {
+                        public ?C $cache = null;
+
                         /** @var array<string, ?C> */
                         private array $data = [];
 
@@ -1397,7 +1399,7 @@ final class MagicPropertyTest extends TestCase
                     }
 
                     function t(M $m): void {
-                        if (!$m->p instanceof C) {
+                        if (!$m->p instanceof C || !$m->{"cache-key"} instanceof C) {
                             return;
                         }
 
@@ -1409,6 +1411,10 @@ final class MagicPropertyTest extends TestCase
                         $m->reset();
 
                         if ($m->p instanceof C) {
+                            echo "still set";
+                        }
+
+                        if ($m->{"cache-key"} instanceof C) {
                             echo "still set";
                         }
                     }',
@@ -1485,6 +1491,17 @@ final class MagicPropertyTest extends TestCase
                         }
                     }
 
+                    final class Other {
+                        /** @var C|string|null */
+                        public $p = null;
+
+                        public int $q = 0;
+
+                        public function reset(): void {
+                            $this->q = 1;
+                        }
+                    }
+
                     /** @param Annotated|Declared $x */
                     function annotatedFirst($x): ?int {
                         if (!$x->p instanceof C) {
@@ -1527,6 +1544,40 @@ final class MagicPropertyTest extends TestCase
                         $x->reset();
 
                         return is_int($x->p) ? $x->p : null;
+                    }
+
+                    /**
+                     * @param Annotated|Other $x
+                     * @return int|C|null
+                     */
+                    function keepsWhatTheOtherTypeHeld($x) {
+                        if (!$x->p instanceof C) {
+                            return null;
+                        }
+
+                        $x->reset();
+
+                        return $x->p;
+                    }
+
+                    /** @param Annotated|Other $x */
+                    function inSwitchCase($x, int $i): void {
+                        if (!$x->p instanceof C) {
+                            return;
+                        }
+
+                        switch ($i) {
+                            case 1:
+                                $x->reset();
+                                break;
+
+                            default:
+                                break;
+                        }
+
+                        if ($x->p instanceof C) {
+                            echo "still set";
+                        }
                     }',
             ],
             'magicPropertyIsForgottenAfterCallInTheSameCondition' => [

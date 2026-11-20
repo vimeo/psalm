@@ -49,8 +49,8 @@ use function array_values;
 use function count;
 use function explode;
 use function preg_match;
+use function str_ends_with;
 use function str_starts_with;
-use function strcspn;
 use function strlen;
 use function strrpos;
 use function strtolower;
@@ -789,12 +789,11 @@ final class MethodCallPurityAnalyzer
                 continue;
             }
 
-            // `$a->p` of `$a->p->q` and `$a->p['k']` too
-            $name_length = strcspn($var_id, '[-(', $prefix_length);
-            $name = substr($var_id, $prefix_length, $name_length);
+            // `$a->p` of `$a->p->q` and `$a->p['k']` too; a literal name (`$a->{'b-c'}`) may hold any other character
+            $name = explode('[', explode('->', substr($var_id, $prefix_length), 2)[0], 2)[0];
 
             // a method result is forgotten with those of every receiver
-            if (($var_id[$prefix_length + $name_length] ?? '') !== '('
+            if (!str_ends_with($name, '()')
                 && !isset($class_storage->declaring_property_ids[$name])
                 && !isset($written_properties[$name])
             ) {
@@ -809,21 +808,30 @@ final class MethodCallPurityAnalyzer
             $declared_type = $class_storage->pseudo_property_get_types['$' . $name] ?? null;
 
             if ($declared_type !== null && !$is_generic) {
+                $type_before_call = $context->vars_in_scope[$property_id] ?? null;
+
+                // the call is analysed once for each type of a receiver of several
+                if (!array_key_exists($property_id, $result->property_types_before_call)) {
+                    $result->property_types_before_call[$property_id] = $type_before_call;
+                }
+
                 $context->forgetPropertyDescendents($property_id);
 
-                // assigned rather than forgotten, so that it holds this type after the branches of a condition too
-                self::setPropertyTypeAfterCall(
-                    $context,
-                    $result,
-                    $property_id,
-                    TypeExpander::expandUnion(
-                        $codebase,
-                        $declared_type,
-                        $class_storage->name,
-                        $class_storage->name,
-                        $class_storage->parent_class,
-                    ),
+                $type = TypeExpander::expandUnion(
+                    $codebase,
+                    $declared_type,
+                    $class_storage->name,
+                    $class_storage->name,
+                    $class_storage->parent_class,
                 );
+
+                // a fetch through the var id reuses this type, so it keeps the flow of what the property held
+                if ($type_before_call !== null) {
+                    $type = $type->addParentNodes($type_before_call->parent_nodes);
+                }
+
+                // assigned rather than forgotten, so that it holds this type after the branches of a condition too
+                self::setPropertyTypeAfterCall($context, $result, $property_id, $type);
                 $context->possibly_assigned_var_ids[$property_id] = true;
             } else {
                 $context->forgetWrittenProperty($property_id);
