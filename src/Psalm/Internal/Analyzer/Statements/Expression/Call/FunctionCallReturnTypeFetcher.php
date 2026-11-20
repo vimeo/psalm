@@ -134,6 +134,7 @@ final class FunctionCallReturnTypeFetcher
             $context->mergeFunctionExceptions(
                 $function_storage,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getCodebase(),
             );
         }
 

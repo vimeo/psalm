@@ -58,7 +58,9 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosure;
@@ -68,7 +70,10 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TScalar;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
@@ -80,6 +85,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_numeric;
 use function is_string;
 use function max;
 use function mb_ord;
@@ -1709,6 +1715,28 @@ final class ArgumentAnalyzer
     }
 
     /**
+     * Whether the function that calls the callback does not run in the scope of the class of the method
+     * (a native function outside of PHP_NATIVE_NON_PUBLIC_CB, or a function or method of another class),
+     * so only a public callback is reachable
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isCalledOutsideOfTheClassScope(
+        MethodIdentifier $potential_method_id,
+        ?string $cased_method_id,
+        ?MethodIdentifier $method_id,
+        Context $context,
+    ): bool {
+        return $potential_method_id->fq_class_name !== $context->self
+            || ($cased_method_id !== null
+                && !$method_id
+                && !in_array($cased_method_id, self::PHP_NATIVE_NON_PUBLIC_CB, true))
+            || ($method_id
+                && $method_id->fq_class_name !== $context->self
+                && $method_id->fq_class_name !== 'Closure');
+    }
+
+    /**
      * A `callable` parameter checks the callable in the scope of the function it is declared by, and a protected
      * method is accessible from that scope when its class and the scope's class are in one hierarchy.
      *
@@ -1765,14 +1793,12 @@ final class ArgumentAnalyzer
                         || ($lhs_atomic instanceof TNamedObject
                             && !$lhs_atomic->definite_class
                             && $lhs_atomic->value === $context->self))) {
-                    if ($potential_method_id->fq_class_name !== $context->self
-                        || ($cased_method_id !== null
-                            && !$method_id
-                            && !in_array($cased_method_id, self::PHP_NATIVE_NON_PUBLIC_CB, true))
-                        || ($method_id
-                            && $method_id->fq_class_name !== $context->self
-                            && $method_id->fq_class_name !== 'Closure')
-                    ) {
+                    if (self::isCalledOutsideOfTheClassScope(
+                        $potential_method_id,
+                        $cased_method_id,
+                        $method_id,
+                        $context,
+                    )) {
                         if ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
                             && !self::isProtectedCallableAccessibleFromCallee(
                                 $codebase,
@@ -1794,9 +1820,23 @@ final class ArgumentAnalyzer
                         }
                     }
                 } elseif ($lhs->isSingle()) {
+                    // a function calling the callback from the class of its method reaches the non-public ones
+                    $non_public_reachable = !self::isCalledOutsideOfTheClassScope(
+                        $potential_method_id,
+                        $cased_method_id,
+                        $method_id,
+                        $context,
+                    ) || self::isProtectedCallableAccessibleFromCallee(
+                        $codebase,
+                        $method_storage->visibility,
+                        $potential_method_id,
+                        $method_id,
+                    );
+
                     // instance from e.g. new Foo() or static string like Foo::bar
                     if ((!$method_storage->is_static && !$lhs->hasNamedObjectType())
-                        || $method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
+                        || ($method_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                            && !$non_public_reachable)) {
                         IssueBuffer::maybeAdd(
                             new InvalidArgument(
                                 'Argument ' . ($argument_offset + 1) . $method_identifier
@@ -1820,6 +1860,37 @@ final class ArgumentAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Whether a member of the union other than a class-string takes the string literal for what it is: the same
+     * literal, `numeric-string` for a numeric one, any other `string`, `array-key`, `scalar` or `mixed`
+     *
+     * @psalm-pure
+     */
+    private static function acceptsAStringThatIsNoClassString(Union $type, string $literal): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TLiteralString) {
+                if ($atomic_type->value === $literal) {
+                    return true;
+                }
+            } elseif ($atomic_type instanceof TNumericString) {
+                if (is_numeric($literal)) {
+                    return true;
+                }
+            } elseif (($atomic_type instanceof TString
+                    && !$atomic_type instanceof TClassString
+                    && !$atomic_type instanceof TCallableString)
+                || $atomic_type instanceof TArrayKey
+                || $atomic_type instanceof TScalar
+                || $atomic_type instanceof TMixed
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1856,7 +1927,12 @@ final class ArgumentAnalyzer
                 foreach ($param_type_part->type_params[1]->getAtomicTypes() as $param_array_type_part) {
                     if ($param_array_type_part instanceof TClassString) {
                         foreach ($input_expr->items as $item) {
-                            if ($item->value instanceof PhpParser\Node\Scalar\String_) {
+                            if ($item->value instanceof PhpParser\Node\Scalar\String_
+                                && !self::acceptsAStringThatIsNoClassString(
+                                    $param_type_part->type_params[1],
+                                    $item->value->value,
+                                )
+                            ) {
                                 if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                                     $statements_analyzer,
                                     $item->value->value,
