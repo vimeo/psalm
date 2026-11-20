@@ -20,6 +20,7 @@ use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TDecimalIntString;
+use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
@@ -1162,6 +1163,28 @@ final class TypeCombiner
         ?Codebase $codebase,
         int $literal_limit,
     ): void {
+        // beside other strings, the class name `get_class()` gives is a non-falsy string
+        $existing_string = $combination->value_types['string'] ?? null;
+        $is_class_string = $type instanceof TClassString || $type instanceof TLiteralClassString;
+
+        if ($existing_string instanceof TDependentGetClass
+            && !$type instanceof TDependentGetClass
+            && !$is_class_string
+        ) {
+            $combination->value_types['string'] = new TNonFalsyString();
+        }
+
+        if ($type instanceof TDependentGetClass
+            && (($existing_string !== null && !$existing_string instanceof TDependentGetClass)
+                || array_any(
+                    $combination->strings ?? [],
+                    static fn(TLiteralString $string): bool => !$string instanceof TLiteralClassString,
+                ))
+        ) {
+            $type = new TNonFalsyString();
+            $type_key = 'string';
+        }
+
         if ($type instanceof TCallableString && isset($combination->value_types['callable[impure]'])) {
             return;
         }

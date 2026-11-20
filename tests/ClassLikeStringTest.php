@@ -324,6 +324,43 @@ final class ClassLikeStringTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'getClassCombinedWithOtherStringsIsNonFalsy' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    function shape(): Shape {
+                        return new class implements Shape {};
+                    }
+
+                    $shape = shape();
+
+                    $key = get_class($shape);
+                    if (rand(0, 1)) {
+                        $key = $key . "|";
+                    }
+
+                    $literal = get_class($shape);
+                    if (rand(0, 1)) {
+                        $literal = "x";
+                    }
+
+                    $ternary = rand(0, 1) ? get_class($shape) : "|" . get_class($shape);
+
+                    $empty = get_class($shape);
+                    if (rand(0, 1)) {
+                        $empty = "";
+                    }
+
+                    $same = rand(0, 1) ? get_class($shape) : get_class($shape);',
+                'assertions' => [
+                    '$key===' => 'non-falsy-string',
+                    '$literal===' => 'non-falsy-string',
+                    '$ternary===' => 'non-falsy-string',
+                    '$empty===' => 'string',
+                    '$same===' => 'class-string<Shape>',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
             'negatedClassExistsOnTheLeftOfAnOrAllowsTheClassOnTheRight' => [
                 'code' => '<?php
                     function check(): bool {
