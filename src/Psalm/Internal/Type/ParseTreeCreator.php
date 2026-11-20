@@ -898,6 +898,8 @@ final class ParseTreeCreator
 
         if ($next_token !== null
             && ($next_token[0][0] === '$'
+                // `m(string & $x)` is rejected as the param it looks like
+                || ($next_token[0] === ' ' && $current_parent instanceof MethodTree)
                 || ($next_token[0] === '...' && ($current_parent instanceof MethodTree
                     || ($token_after_next !== null && $token_after_next[0][0] === '$'))))
         ) {
