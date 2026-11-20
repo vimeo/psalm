@@ -29,6 +29,32 @@ final class MatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'matchFalseNarrowsTheVariablesOfItsConditions' => [
+                'code' => '<?php
+                    function narrowed(int|string $x): int {
+                        return match (false) {
+                            is_string($x) => $x,
+                            default => 0,
+                        };
+                    }
+
+                    function narrowedByTheArmBeforeIt(int|string $x): int {
+                        return match (false) {
+                            is_int($x) => 1,
+                            default => $x,
+                        };
+                    }
+
+                    function comparison(int $i): string {
+                        return match (false) {
+                            $i > 3 => "small",
+                            default => "big",
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'exhaustiveMatchOverAnEnumWithMoreCasesThanTheMaximumShapedArraySize' => [
                 'code' => '<?php
                     enum Id: string {
@@ -407,6 +433,18 @@ final class MatchTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'matchFalseArmDoesNotNarrowTheOtherCases' => [
+                'code' => '<?php
+                    function f(int|string $x): int {
+                        return match (false) {
+                            is_string($x) => $x,
+                            default => $x,
+                        };
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'matchOverAnEnumWithMoreCasesThanTheMaximumShapedArraySizeMissingOne' => [
                 'code' => '<?php
                     enum Id: string {

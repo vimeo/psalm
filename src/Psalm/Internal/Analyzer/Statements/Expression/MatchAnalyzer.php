@@ -81,8 +81,9 @@ final class MatchAnalyzer
 
         $match_condition = $stmt->cond;
 
+        // the conditions of `match (true)` and `match (false)` are assertions on their own
         $is_match_true = $stmt->cond instanceof PhpParser\Node\Expr\ConstFetch
-            && $stmt->cond->name->toString() === 'true';
+            && in_array($stmt->cond->name->toString(), ['true', 'false'], true);
 
         if (!$switch_var_id) {
             if ($stmt->cond instanceof PhpParser\Node\Expr\FuncCall
