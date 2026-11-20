@@ -196,6 +196,60 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'countComparedToAClassConstantNarrowsTheArray' => [
+                'code' => '<?php
+                    final class Terms {
+                        private const LIMIT = 4;
+                        private const ONE = 1;
+                        private const ZERO = 0;
+
+                        /** @param non-empty-list<int> $terms */
+                        private static function widen(array $terms): int {
+                            return 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function greater(array $terms): int {
+                            return count($terms) > self::LIMIT ? self::widen($terms) : 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function greaterOrEqual(array $terms): int {
+                            return count($terms) >= self::ONE ? self::widen($terms) : 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function constantOnTheLeft(array $terms): int {
+                            return self::ZERO < count($terms) ? self::widen($terms) : 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function equal(array $terms): int {
+                            return count($terms) === self::ONE ? self::widen($terms) : 0;
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function smaller(array $terms): int {
+                            if (count($terms) < self::ONE) {
+                                return 0;
+                            }
+
+                            return self::widen($terms);
+                        }
+
+                        /** @param list<int> $terms */
+                        public static function smallerOrEqual(array $terms): int {
+                            if (count($terms) <= self::ZERO) {
+                                return 0;
+                            }
+
+                            return self::widen($terms);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'varAssignedUnderConditionIsDefinedUnderTheSameCondition' => [
                 'code' => '<?php
                     function f(bool $b): void {
