@@ -106,7 +106,10 @@ final class AtomicPropertyFetchAnalyzer
         }
 
         if ($lhs_type_part instanceof TMixed) {
-            $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                self::getDynamicPropertyType($statements_analyzer, $stmt, $stmt_var_type, $prop_name),
+            );
             return;
         }
 
@@ -171,7 +174,10 @@ final class AtomicPropertyFetchAnalyzer
         ) {
             $has_valid_fetch_type = true;
 
-            $statements_analyzer->node_data->setType($stmt, Type::getMixed());
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                self::getDynamicPropertyType($statements_analyzer, $stmt, $stmt_var_type, $prop_name),
+            );
 
             return;
         }
@@ -420,7 +426,6 @@ final class AtomicPropertyFetchAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
@@ -673,6 +678,35 @@ final class AtomicPropertyFetchAnalyzer
     }
 
     /**
+     * A dynamic property of an object (a database row, a decoded document), or of a value whose type isn't known,
+     * holds what the object holds under that name, as an array does under a key
+     */
+    public static function getDynamicPropertyType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        Union $stmt_var_type,
+        string $prop_name,
+    ): Union {
+        $graph = $statements_analyzer->getDataFlowGraphWithSuppressed();
+
+        if ($graph === null) {
+            return Type::getMixed();
+        }
+
+        $property_node = DataFlowNode::getForAssignment(
+            ExpressionIdentifier::getExtendedVarId($stmt, null, $statements_analyzer) ?? '$object->' . $prop_name,
+            new CodeLocation($statements_analyzer->getSource(), $stmt),
+        );
+        $graph->addNode($property_node);
+
+        foreach ($stmt_var_type->parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $property_node, 'arrayvalue-fetch-\'' . $prop_name . '\'');
+        }
+
+        return Type::getMixed()->setParentNodes([$property_node->id => $property_node]);
+    }
+
+    /**
      * @param PropertyFetch|StaticPropertyFetch $stmt
      */
     public static function checkPropertyDeprecation(
@@ -741,7 +775,6 @@ final class AtomicPropertyFetchAnalyzer
                     ? new CodeLocation($statements_analyzer->getSource(), $stmt)
                     : null,
                 !$context->collect_initializations
-                    && !$context->collect_mutations
                     ? $statements_analyzer
                     : null,
                 $statements_analyzer->getFilePath(),

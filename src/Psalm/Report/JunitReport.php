@@ -185,7 +185,7 @@ final class JunitReport extends Report
      */
     private function dataToOutput(IssueData $data): string
     {
-        $ret = 'message: ' . $this->xmlEncode(trim($data->message)) . "\n";
+        $ret = 'message: ' . $this->xmlEncode(trim(self::getMessageWithCwe($data))) . "\n";
         $ret .= 'type: ' . trim($data->type) . "\n";
         $ret .= 'snippet: ' . $this->xmlEncode(trim($data->snippet)) . "\n";
         $ret .= 'selected_text: ' . $this->xmlEncode(trim($data->selected_text)) . "\n";

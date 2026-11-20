@@ -84,7 +84,7 @@ final class UnusedVariableManipulationTest extends FileManipulationTestCase
                         }
                         echo "Hello world\n";
 
-                        if ($i === 1) {
+                        if ($i > 0) {
                             echo $b;
                         }
                     }',
@@ -96,7 +96,7 @@ final class UnusedVariableManipulationTest extends FileManipulationTestCase
                         }
                         echo "Hello world\n";
 
-                        if ($i === 1) {
+                        if ($i > 0) {
                             echo $b;
                         }
                     }',
