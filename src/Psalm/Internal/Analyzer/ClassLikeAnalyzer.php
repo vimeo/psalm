@@ -955,6 +955,8 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         CodeLocation $code_location,
         int $given_param_count,
     ): void {
+        $written_type_args = $storage->template_extended_offsets[strtolower($parent_storage->name)] ?? null;
+
         $expected_param_count = $parent_storage->template_types === null
             ? 0
             : count($parent_storage->template_types);
@@ -969,8 +971,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                 $storage->suppressed_issues + $this->getSuppressedIssues(),
             );
         } elseif ($expected_param_count < $given_param_count
-            || (isset($storage->template_extended_offsets[$parent_storage->name])
-                && !PurityArguments::fit($storage->template_extended_offsets[$parent_storage->name], $parent_storage))
+            || ($written_type_args !== null && !PurityArguments::fit($written_type_args, $parent_storage))
         ) {
             IssueBuffer::maybeAdd(
                 new TooManyTemplateParams(
@@ -1013,7 +1014,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
             // the written arguments, but for the purity arguments, which come last
             $written_type_arg_count = $given_param_count
-                - count(PurityArguments::split($storage->template_extended_offsets[$parent_storage->name] ?? [])[1]);
+                - count(PurityArguments::split($written_type_args ?? [])[1]);
 
             // the bounds of type templates may use purity templates, which come after them
             $previous_extended = [];

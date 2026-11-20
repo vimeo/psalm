@@ -1745,8 +1745,6 @@
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$storage->template_types]]></code>
-      <code><![CDATA[$storage->template_types]]></code>
-      <code><![CDATA[$storage->template_types]]></code>
       <code><![CDATA[$this->aliases->namespace]]></code>
       <code><![CDATA[$this->aliases->namespace]]></code>
       <code><![CDATA[$var_comment->line_number]]></code>
