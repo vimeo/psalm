@@ -881,10 +881,20 @@ final class FunctionLikeDocblockParser
         $names = [];
 
         foreach ($lines as $line) {
-            $split_by_dollar = explode('$', $line, 2);
-            if (count($split_by_dollar) > 1) {
-                $split_by_space = explode(' ', $split_by_dollar[1], 2);
-                $names[] = $split_by_space[0];
+            // the type comes first and may hold `$` of its own, as in `callable(int $value): bool`
+            try {
+                $line_parts = CommentAnalyzer::splitDocLine($line);
+            } catch (DocblockParseException | IncorrectDocblockException) {
+                // reported where the tag is parsed
+                continue;
+            }
+
+            foreach ($line_parts as $part) {
+                if (preg_match('/^(?:&|\.\.\.)*\$(\S+)/', $part, $matches) === 1 && isset($matches[1])) {
+                    $names[] = $matches[1];
+
+                    break;
+                }
             }
         }
 
