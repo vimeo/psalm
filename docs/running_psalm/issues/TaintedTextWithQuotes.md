@@ -43,3 +43,4 @@ Passing `');alert('injection');//` as a `GET` param here would cause the `alert`
 
 - [OWASP Wiki for Cross Site Scripting (XSS)](https://owasp.org/www-community/attacks/xss/)
 - [Content-Security-Policy - Web Fundamentals](https://developers.google.com/web/fundamentals/security/csp)
+- [CWE-79](https://cwe.mitre.org/data/definitions/79.html)

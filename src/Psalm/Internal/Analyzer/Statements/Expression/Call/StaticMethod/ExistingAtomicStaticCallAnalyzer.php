@@ -97,7 +97,7 @@ final class ExistingAtomicStaticCallAnalyzer
 
         if ($class_storage->user_defined
             && $context->self
-            && ($context->collect_mutations || $context->collect_initializations)
+            && $context->collect_initializations
         ) {
             $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
@@ -115,37 +115,32 @@ final class ExistingAtomicStaticCallAnalyzer
 
                 $file_analyzer = $statements_analyzer->getFileAnalyzer();
 
-                if ($context->collect_mutations) {
+                $local_vars_in_scope = [];
+                $local_vars_possibly_in_scope = [];
+
+                foreach ($context->vars_in_scope as $var => $_) {
+                    if (!str_starts_with($var, '$this->') && $var !== '$this') {
+                        $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
+                    }
+                }
+
+                foreach ($context->vars_possibly_in_scope as $var => $_) {
+                    if (!str_starts_with($var, '$this->') && $var !== '$this') {
+                        $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
+                    }
+                }
+
+                if (!isset($context->initialized_methods[(string) $appearing_method_id])) {
+                    $context->initialized_methods[(string) $appearing_method_id] = true;
+
                     $file_analyzer->getMethodMutations($appearing_method_id, $context);
-                } else {
-                    // collecting initializations
-                    $local_vars_in_scope = [];
-                    $local_vars_possibly_in_scope = [];
 
-                    foreach ($context->vars_in_scope as $var => $_) {
-                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
-                            $local_vars_in_scope[$var] = $context->vars_in_scope[$var];
-                        }
+                    foreach ($local_vars_in_scope as $var => $type) {
+                        $context->vars_in_scope[$var] = $type;
                     }
 
-                    foreach ($context->vars_possibly_in_scope as $var => $_) {
-                        if (!str_starts_with($var, '$this->') && $var !== '$this') {
-                            $local_vars_possibly_in_scope[$var] = $context->vars_possibly_in_scope[$var];
-                        }
-                    }
-
-                    if (!isset($context->initialized_methods[(string) $appearing_method_id])) {
-                        $context->initialized_methods[(string) $appearing_method_id] = true;
-
-                        $file_analyzer->getMethodMutations($appearing_method_id, $context);
-
-                        foreach ($local_vars_in_scope as $var => $type) {
-                            $context->vars_in_scope[$var] = $type;
-                        }
-
-                        foreach ($local_vars_possibly_in_scope as $var => $type) {
-                            $context->vars_possibly_in_scope[$var] = $type;
-                        }
+                    foreach ($local_vars_possibly_in_scope as $var => $type) {
+                        $context->vars_possibly_in_scope[$var] = $type;
                     }
                 }
 
@@ -207,7 +202,6 @@ final class ExistingAtomicStaticCallAnalyzer
             ->static_property_mutations;
 
         if ($static_property_mutations !== null
-            && !$context->collect_mutations
             && !$context->collect_initializations
         ) {
             $appearing_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
@@ -396,10 +390,8 @@ final class ExistingAtomicStaticCallAnalyzer
                 && ($signature_return_type === null
                     || !($signature_return_type->isVoid() || $signature_return_type->isNever()))
                 && Capabilities::allowsAnyOf(Capabilities::MUTATION_FREE, $call_capabilities)
-                && !$method_storage->assertions
-                && !$method_storage->if_true_assertions
-                && !$method_storage->if_false_assertions
                 && !$method_storage->throws
+                && !(new AssertionsFromInheritanceResolver($codebase))->hasAny($method_storage, $class_storage)
                 && !MethodCallPurityAnalyzer::isCalledForItsTemplatesEffects($method_storage)
             ) {
                 IssueBuffer::maybeAdd(
@@ -451,7 +443,13 @@ final class ExistingAtomicStaticCallAnalyzer
                     $stmt_name,
                     null,
                     CallAnalyzer::resolveStaticPropertyAssertionClasses(
-                        CallAnalyzer::getAssertionsOnArgs($assertions, $method_storage, $stmt->getArgs()),
+                        CallAnalyzer::getAssertionsOnArgs(
+                            $assertions,
+                            $method_storage,
+                            $stmt->getArgs(),
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
+                        ),
                         $codebase,
                         $context,
                         $trait_self_class,
@@ -467,7 +465,9 @@ final class ExistingAtomicStaticCallAnalyzer
                 );
             }
 
-            if ($method_storage->if_true_assertions) {
+            $if_true_assertions = $assertionsResolver->resolveIfTrue($method_storage, $class_storage);
+
+            if ($if_true_assertions) {
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
@@ -477,9 +477,11 @@ final class ExistingAtomicStaticCallAnalyzer
                         ),
                         CallAnalyzer::resolveStaticPropertyAssertionClasses(
                             CallAnalyzer::getAssertionsOnArgs(
-                                $method_storage->if_true_assertions,
+                                $if_true_assertions,
                                 $method_storage,
                                 $stmt->getArgs(),
+                                $statements_analyzer->node_data,
+                                $context->strict_types,
                             ),
                             $codebase,
                             $context,
@@ -491,7 +493,9 @@ final class ExistingAtomicStaticCallAnalyzer
                 );
             }
 
-            if ($method_storage->if_false_assertions) {
+            $if_false_assertions = $assertionsResolver->resolveIfFalse($method_storage, $class_storage);
+
+            if ($if_false_assertions) {
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
@@ -501,9 +505,11 @@ final class ExistingAtomicStaticCallAnalyzer
                         ),
                         CallAnalyzer::resolveStaticPropertyAssertionClasses(
                             CallAnalyzer::getAssertionsOnArgs(
-                                $method_storage->if_false_assertions,
+                                $if_false_assertions,
                                 $method_storage,
                                 $stmt->getArgs(),
+                                $statements_analyzer->node_data,
+                                $context->strict_types,
                             ),
                             $codebase,
                             $context,
@@ -651,7 +657,6 @@ final class ExistingAtomicStaticCallAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),

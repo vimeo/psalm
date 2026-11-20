@@ -21,6 +21,7 @@ abstract class FileManipulationTestCase extends DeferredAnalyzerTestCase
     /**
      * @param string[] $issues_to_fix
      * @param array<string, string> $other_files the contents of the files analysed along with somefile.php
+     * @param (callable(TestConfig): void)|null $configure
      */
     #[DataProvider('providerValidCodeParse')]
     public function testValidCode(
@@ -31,6 +32,7 @@ abstract class FileManipulationTestCase extends DeferredAnalyzerTestCase
         bool $safe_types,
         bool $allow_backwards_incompatible_changes = true,
         array $other_files = [],
+        ?callable $configure = null,
     ): void {
         $test_name = $this->getTestName();
         if (strpos($test_name, 'SKIPPED-') !== false) {
@@ -38,6 +40,9 @@ abstract class FileManipulationTestCase extends DeferredAnalyzerTestCase
         }
 
         $config = new TestConfig();
+        if ($configure !== null) {
+            $configure($config);
+        }
 
         $this->project_analyzer = new ProjectAnalyzer(
             $config,
@@ -94,7 +99,7 @@ abstract class FileManipulationTestCase extends DeferredAnalyzerTestCase
     }
 
     /**
-     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:array<string>,safe_types:bool,allow_backwards_incompatible_changes?:bool,other_files?:array<string, string>}>
+     * @return array<string,array{input:string,output:string,php_version:string,issues_to_fix:array<string>,safe_types:bool,allow_backwards_incompatible_changes?:bool,other_files?:array<string, string>,configure?:callable(TestConfig):void}>
      */
     abstract public static function providerValidCodeParse(): array;
 }
