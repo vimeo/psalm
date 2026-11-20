@@ -34,6 +34,81 @@ final class IntRangeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'comparisonAndItsNegationNarrowAlike' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, 10>|null $a
+                     * @param int|false $b
+                     * @param 3|7|12 $c
+                     */
+                    function scope(?int $a, int|false $b, int $c): void {
+                        if ($a > 4) {
+                            /** @psalm-check-type-exact $a = int<5, 10> */;
+                        } else {
+                            /** @psalm-check-type-exact $a = int<0, 4>|null */;
+                        }
+                        if (!($a <= 4)) {
+                            /** @psalm-check-type-exact $a = int<5, 10> */;
+                        }
+                        if ($a < 5) {
+                            /** @psalm-check-type-exact $a = int<0, 4>|null */;
+                        } else {
+                            /** @psalm-check-type-exact $a = int<5, 10> */;
+                        }
+                        if (!($a >= 5)) {
+                            /** @psalm-check-type-exact $a = int<0, 4>|null */;
+                        }
+                        if ($b >= 1) {
+                            /** @psalm-check-type-exact $b = int<1, max> */;
+                        } else {
+                            /** @psalm-check-type-exact $b = false|int<min, 0> */;
+                        }
+                        if ($c > 3 && $c < 12) {
+                            /** @psalm-check-type-exact $c = 7 */;
+                        } else {
+                            /** @psalm-check-type-exact $c = 12|3 */;
+                        }
+                    }
+
+                    /**
+                     * @template T of int<0, 10>
+                     * @param T $n
+                     * @return int<5, 10>
+                     */
+                    function above(int $n): int {
+                        return $n > 4 ? $n : 5;
+                    }
+
+                    /**
+                     * @template T of int<0, 10>
+                     * @param T $n
+                     * @return int<0, 4>
+                     */
+                    function notAbove(int $n): int {
+                        return $n > 4 ? 0 : $n;
+                    }
+
+                    /**
+                     * @template T of int<0, 10>
+                     * @param T $n
+                     * @return int<0, 4>
+                     */
+                    function below(int $n): int {
+                        return $n < 5 ? $n : 0;
+                    }
+
+                    /**
+                     * @template T of int<0, 10>
+                     * @param T $n
+                     * @return int<5, 10>
+                     */
+                    function notBelow(int $n): int {
+                        return $n < 5 ? 5 : $n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'comparisonsNarrowTheRangeNextToItsBounds' => [
                 'code' => '<?php
                     /**
