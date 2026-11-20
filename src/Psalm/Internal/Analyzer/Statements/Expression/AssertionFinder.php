@@ -3723,7 +3723,7 @@ final class AssertionFinder
             $literal_value_comparison,
         );
 
-        if ($count_equality_position) {
+        if ($count_equality_position !== false) {
             /** @var PhpParser\Node\Expr\FuncCall $counted_expr */
             $counted_expr = $count_equality_position === self::ASSIGNMENT_TO_RIGHT
                 ? $conditional->left
@@ -3750,7 +3750,7 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
-        if ($count_inequality_position) {
+        if ($count_inequality_position !== false) {
             /** @var PhpParser\Node\Expr\FuncCall $count_expr */
             $count_expr = $count_inequality_position === self::ASSIGNMENT_TO_RIGHT
                 ? $conditional->left
@@ -3773,7 +3773,7 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
-        if ($literal_value_position && $literal_value_comparison !== null) {
+        if ($literal_value_position !== false && $literal_value_comparison !== null) {
             $var_name = self::getComparedVarId(
                 $literal_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->left : $conditional->right,
                 $literal_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->right : null,
