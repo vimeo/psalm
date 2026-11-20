@@ -18,6 +18,8 @@ use function array_merge;
 use function array_reduce;
 use function array_values;
 use function get_loaded_extensions;
+use function htmlspecialchars;
+use function htmlspecialchars_decode;
 use function implode;
 use function ksort;
 use function min;
@@ -29,6 +31,10 @@ use function str_replace;
 use function trim;
 use function usort;
 
+use const ENT_DISALLOWED;
+use const ENT_QUOTES;
+use const ENT_SUBSTITUTE;
+use const ENT_XML1;
 use const LIBXML_NOBLANKS;
 use const PHP_VERSION;
 
@@ -57,6 +63,21 @@ final class ErrorBaseline
         }
 
         return $totalIssues;
+    }
+
+    /**
+     * The selected text of an issue as the baseline holds it: characters XML 1.0 forbids, even inside a CDATA
+     * section, and invalid UTF-8 become U+FFFD. The text written to the baseline and the text of an issue are
+     * compared in this form.
+     *
+     * @psalm-pure
+     */
+    public static function normalizeSelectedText(string $selected_text): string
+    {
+        return htmlspecialchars_decode(
+            htmlspecialchars($selected_text, ENT_XML1 | ENT_QUOTES | ENT_SUBSTITUTE | ENT_DISALLOWED),
+            ENT_XML1 | ENT_QUOTES,
+        );
     }
 
     /**
@@ -210,7 +231,7 @@ final class ErrorBaseline
                 }
 
                 ++$carry[$fileName][$issueType]['o'];
-                $carry[$fileName][$issueType]['s'][] = $issue->selected_text;
+                $carry[$fileName][$issueType]['s'][] = self::normalizeSelectedText($issue->selected_text);
 
                 return $carry;
             },

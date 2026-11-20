@@ -20,6 +20,16 @@ final class BaselineMatcherTest extends TestCase
         self::assertSame(['src/A.php' => ['UndefinedFunction' => ['o' => 1, 's' => ['a()']]]], $baseline);
     }
 
+    public function testAnEntryWithACharacterXmlForbidsCoversTheIssueWithTheCharacter(): void
+    {
+        $baseline = ['src/A.php' => ['InvalidScalarArgument' => ['o' => 1, 's' => ["\"a\u{FFFD}\""]]]];
+        $config = new TestConfig();
+
+        self::assertTrue(
+            BaselineMatcher::consume($config, $baseline, 'src/A.php', 'InvalidScalarArgument', "\"a\x1b\""),
+        );
+    }
+
     public function testEachEntryCoversOneIssue(): void
     {
         $baseline = ['src/A.php' => ['UndefinedFunction' => ['o' => 1, 's' => ['a()']]]];

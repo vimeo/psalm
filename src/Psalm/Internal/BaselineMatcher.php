@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal;
 
 use Psalm\Config;
+use Psalm\ErrorBaseline;
 
 use function array_search;
 use function array_splice;
@@ -47,7 +48,7 @@ final class BaselineMatcher
 
         if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
             $position = array_search(
-                str_replace("\r\n", "\n", trim($selected_text)),
+                str_replace("\r\n", "\n", trim(ErrorBaseline::normalizeSelectedText($selected_text))),
                 $issue_baseline[$file][$type]['s'],
                 true,
             );
