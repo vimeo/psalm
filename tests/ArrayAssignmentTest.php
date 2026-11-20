@@ -1177,7 +1177,7 @@ final class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[][][] = "hello";',
                 'assertions' => [
-                    '$foo' => 'non-empty-list<list<non-empty-list<string>>>',
+                    '$foo' => 'non-empty-list<non-empty-list<non-empty-list<string>>>',
                 ],
             ],
             'implicit4dIntArrayCreation' => [
@@ -1185,7 +1185,7 @@ final class ArrayAssignmentTest extends TestCase
                     $foo = [];
                     $foo[][][][] = "hello";',
                 'assertions' => [
-                    '$foo' => 'non-empty-list<list<list<non-empty-list<string>>>>',
+                    '$foo' => 'non-empty-list<non-empty-list<non-empty-list<non-empty-list<string>>>>',
                 ],
             ],
             'implicitIndexedIntArrayCreation' => [
