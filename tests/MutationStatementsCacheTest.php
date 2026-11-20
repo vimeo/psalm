@@ -82,7 +82,7 @@ final class MutationStatementsCacheTest extends TestCase
                         $this->user_viewdata = new UserViewData();
                     }
 
-                    public function setUser(): void
+                    final public function setUser(): void
                     {
                         $this->user_viewdata->name = "bob";
                     }
@@ -106,7 +106,7 @@ final class MutationStatementsCacheTest extends TestCase
 
         for ($i = 0; $i < 5; $i++) {
             $method_context = new Context();
-            $method_context->collect_mutations = true;
+            $method_context->collect_initializations = true;
             $this->project_analyzer->getMethodMutations(
                 new MethodIdentifier('FooController', 'barbar'),
                 $method_context,
@@ -134,7 +134,7 @@ final class MutationStatementsCacheTest extends TestCase
                 class Controller {
                     public ?string $title = null;
 
-                    public function setTitle(): void
+                    final public function setTitle(): void
                     {
                         $this->title = "hello";
                     }
@@ -158,7 +158,7 @@ final class MutationStatementsCacheTest extends TestCase
 
             for ($i = 0; $i < 5; $i++) {
                 $method_context = new Context();
-                $method_context->collect_mutations = true;
+                $method_context->collect_initializations = true;
                 $this->project_analyzer->getMethodMutations(
                     new MethodIdentifier('FooController', 'barbar'),
                     $method_context,

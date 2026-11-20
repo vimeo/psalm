@@ -7,6 +7,7 @@ namespace Psalm\Plugin;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionStorage;
+use Psalm\Storage\NamedArguments;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -39,9 +40,9 @@ final class DynamicFunctionStorage
     public array $templates = [];
 
     /**
-     * Determines if a function can be called with named arguments.
+     * Determines how a function can be called with named arguments.
      */
-    public bool $allow_named_arg_calls = true;
+    public ?NamedArguments $named_arguments = null;
 
     /**
      * Function purity.
@@ -65,7 +66,7 @@ final class DynamicFunctionStorage
         $storage->cased_name = $function_cased_name;
         $storage->setParams($this->params);
         $storage->return_type = $this->return_type;
-        $storage->allow_named_arg_calls = $this->allow_named_arg_calls;
+        $storage->named_arguments = $this->named_arguments;
         $storage->capabilities = $this->capabilities;
         $storage->variadic = $this->variadic;
 
