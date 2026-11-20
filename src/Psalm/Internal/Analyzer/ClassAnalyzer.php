@@ -2146,7 +2146,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         if ($codebase->diff_methods
             && $method_already_analyzed
             && !$class_context->collect_initializations
-            && !$class_context->collect_mutations
         ) {
             $project_analyzer->progress->debug(
                 'Skipping analysis of pre-analyzed method ' . $analyzed_method_id . "\n",
@@ -2208,7 +2207,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
         if (!$method_already_analyzed
             && !$class_context->collect_initializations
-            && !$class_context->collect_mutations
         ) {
             $codebase->analyzer->setAnalyzedMethod($included_file_path, $trait_safe_method_id);
         }
