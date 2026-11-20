@@ -225,6 +225,26 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedIsResourceOnResourceOrTemplateIsNotRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @param resource|T $x
+                     */
+                    function f($x): void {
+                        if (!is_resource($x)) {}
+                    }',
+            ],
+            'negatedIsResourceOnUnboundedTemplateIsNotRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $x
+                     */
+                    function f($x): void {
+                        if (!is_resource($x)) {}
+                    }',
+            ],
             'redundantNegatedAssertionOnATemplateKeepsTheTemplate' => [
                 'code' => '<?php
                     /**
@@ -1848,6 +1868,18 @@ final class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:7:30 - Docblock-defined type T:fn-f as int for $x is never bool',
+            ],
+            'negatedIsResourceOnTemplateOfStringIsRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @param T $x
+                     */
+                    function f($x): void {
+                        if (!is_resource($x)) {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:7:30 - Docblock-defined type T:fn-f as string for $x is never resource',
             ],
             'secondFalsyTwiceWithOffsetAdded' => [
                 'code' => '<?php
