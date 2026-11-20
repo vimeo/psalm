@@ -720,7 +720,7 @@ final class DatabaseTaints
     /**
      * Stores what flows into $write in the column of the table, and in the rows of the table under the column's name
      */
-    private static function addWrite(TaintFlowGraph $graph, ?string $table, ?string $column, DataFlowNode $write): void
+    public static function addWrite(TaintFlowGraph $graph, ?string $table, ?string $column, DataFlowNode $write): void
     {
         TaintStore::addWrite($graph, self::STORE, [self::getName($table, $column)], $write, '=');
 
@@ -733,6 +733,14 @@ final class DatabaseTaints
         }
 
         TaintStore::addWrite($graph, self::ROWS_STORE, $rows, $write, 'arrayvalue-assignment-' . self::getKey($column));
+    }
+
+    /**
+     * Makes what the column of the table holds flow into $read, as a query selecting it reads it
+     */
+    public static function addRead(TaintFlowGraph $graph, ?string $table, ?string $column, DataFlowNode $read): void
+    {
+        TaintStore::addRead($graph, self::STORE, [self::getName($table, $column)], $read, '=');
     }
 
     /**

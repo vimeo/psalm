@@ -1843,6 +1843,71 @@ final class PluginTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testTaintDatabaseOfPlugin(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="6"
+                    runTaintAnalysis="true"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <plugin filename="examples/plugins/TaintModelTables.php" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+        $models = '<?php // --taint-analysis
+            namespace app;
+
+            abstract class Model {
+                abstract public function getTableName(): string;
+            }
+
+            /**
+             * @property string $title
+             * @property string $body
+             */
+            final class Post extends Model {
+                public function getTableName(): string {
+                    return "posts";
+                }
+            }
+
+            function save(Post $post): void {
+                $post->title = (string) ($_GET["title"] ?? "");
+            }
+            ';
+
+        $this->addFile(
+            $file_path,
+            $models . 'echo (string) (new \PDO("sqlite::memory:"))->query("SELECT body FROM posts")->fetch()["body"];',
+        );
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context());
+
+        $this->addFile(
+            $file_path,
+            $models . 'echo (string) (new \PDO("sqlite::memory:"))->query("SELECT title FROM posts")->fetch()["title"];',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/TaintedHtml/');
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testTaintPathsOfPlugin(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

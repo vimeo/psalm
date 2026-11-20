@@ -519,10 +519,16 @@ Plugins can add flows that annotations can't express with these `Codebase` metho
   parameter at `$offset` and of the object it runs on, for a call the code doesn't show (e.g. a framework's). Given
   the location of the call, these are the nodes of that call if Psalm tells its calls apart (see
   `@psalm-taint-specialize`); the receiver node only exists then (null otherwise).
++ `addTaintDatabaseWrite($source, $node, $table, $column)` and `addTaintDatabaseRead($source, $table, $column, $node)`:
+  paths from a node into a column of a table of the [database](#databases), and from the column to a node, for
+  values the code stores and reads in ways the queries don't show (the fields of ORM models stored in the columns of
+  their table). A null table or column is any.
 + `tracksTaintFlow($source)`: false when taints aren't tracked there, e.g. when `TaintedInput` is suppressed. The
   methods above then add nothing.
 
 See [examples/plugins/TaintModelFields.php](https://github.com/vimeo/psalm/blob/master/examples/plugins/TaintModelFields.php),
-which tracks ORM model fields from `set()` to `get()`, and
+which tracks ORM model fields from `set()` to `get()`,
+[examples/plugins/TaintModelTables.php](https://github.com/vimeo/psalm/blob/master/examples/plugins/TaintModelTables.php),
+which stores the fields of models in the columns of their table, and
 [examples/plugins/TaintPageComponents.php](https://github.com/vimeo/psalm/blob/master/examples/plugins/TaintPageComponents.php),
 which outputs what the components of a page render, as a framework would.
