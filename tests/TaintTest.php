@@ -1728,6 +1728,19 @@ final class TaintTest extends TestCase
                         echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
                     }',
             ],
+            'sprintfOfAFormatInAVariableIsParsedFromWhatTheFormatStartsWith' => [
+                'code' => '<?php
+                    function run(PDO $pdo, float $delta, int $id): void {
+                        $pdo->exec(sprintf("INSERT INTO users (name, bio) VALUES (\'admin\', %s)", $pdo->quote($_GET["bio"])));
+                        if ($delta > 0) {
+                            $sql = "UPDATE accounts SET balance = balance+{$delta} WHERE id=%s";
+                        } else {
+                            $sql = "UPDATE accounts SET balance = balance-" . (-$delta) . " WHERE id=%s";
+                        }
+                        $pdo->exec(sprintf($sql, $id));
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+            ],
             'queryInAVariableIsReadFromWhatItStartsWith' => [
                 'code' => '<?php
                     /** @param list<string> $messages */
@@ -7926,6 +7939,15 @@ final class TaintTest extends TestCase
                 'code' => '<?php
                     function run(PDO $pdo): void {
                         $pdo->exec(sprintf("INSERT INTO %s (name, bio) VALUES (\'admin\', %s)", "users", $pdo->quote($_GET["bio"])));
+                        echo (string) $pdo->query("SELECT bio FROM users")->fetch()["bio"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'sprintfOfAFormatInAVariableStoresItsArgumentsInTheColumnTheFormatStartsWith' => [
+                'code' => '<?php
+                    function run(PDO $pdo, string $where): void {
+                        $sql = "UPDATE users SET bio = %s " . $where;
+                        $pdo->exec(sprintf($sql, $pdo->quote($_GET["bio"])));
                         echo (string) $pdo->query("SELECT bio FROM users")->fetch()["bio"];
                     }',
                 'error_message' => 'TaintedHtml',
