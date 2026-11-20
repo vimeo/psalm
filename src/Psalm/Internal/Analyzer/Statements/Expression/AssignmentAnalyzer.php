@@ -2565,9 +2565,6 @@ final class AssignmentAnalyzer
         return false;
     }
 
-    /**
-     * @param int-mask-of<TaintKind::*> $removed_taints
-     */
     private static function assignDestructuredItem(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
