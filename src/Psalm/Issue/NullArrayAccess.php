@@ -14,4 +14,5 @@ final class NullArrayAccess extends CodeIssue
 {
     public const ERROR_LEVEL = -1;
     public const SHORTCODE = 52;
+    public const CWE_IDS = [476];
 }

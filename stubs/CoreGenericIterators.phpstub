@@ -386,7 +386,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template TStorage
      */
-    public function asort() { }
+    public function asort(int $flags = SORT_REGULAR) { }
 
     /**
      * @return true
@@ -394,7 +394,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
      * @psalm-capabilities read-props|write-this-props
      * @psalm-purity-from-template TStorage
      */
-    public function ksort() { }
+    public function ksort(int $flags = SORT_REGULAR) { }
 
     /**
      * @psalm-purity-template P
