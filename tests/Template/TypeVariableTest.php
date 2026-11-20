@@ -1944,6 +1944,50 @@ final class TypeVariableTest extends TestCase
                         }
                     }',
             ],
+            'constructionCoalesceAssignedToItemOfAnotherObjectPropertyTakesItsType' => [
+                'code' => '<?php
+                    final class D {
+                        /** @var array<string, SplObjectStorage<object, array<string, bool>>> */
+                        public array $r = [];
+                    }
+
+                    $d = new D();
+                    $w = $d->r["e"] ??= new SplObjectStorage();
+                    $m = $w[new stdClass()] ?? [];',
+                'assertions' => [
+                    '$m===' => 'array<string, bool>',
+                ],
+            ],
+            'constructionCoalesceAssignedToStaticPropertyItemTakesItsType' => [
+                'code' => '<?php
+                    final class H {}
+
+                    final class S {
+                        /** @var array<string, SplObjectStorage<H, array<int, string>>> */
+                        private static array $r = [];
+
+                        /** @return array<int, string> */
+                        public static function f(H $h, string $e): array {
+                            return (self::$r[$e] ??= new SplObjectStorage())[$h] ?? [];
+                        }
+                    }',
+            ],
+            'constructionAssignedThroughAPropertyReferenceTakesItsType' => [
+                'code' => '<?php
+                    final class H {}
+
+                    final class R {
+                        /** @var SplObjectStorage<H, array<int, string>>|null */
+                        private ?SplObjectStorage $m = null;
+
+                        /** @return array<int, string> */
+                        public function f(H $h): array {
+                            $ref = &$this->m;
+                            $ref = new SplObjectStorage();
+                            return $ref[$h] ?? [];
+                        }
+                    }',
+            ],
             'constructionAssignedToPropertyItemTakesItsType' => [
                 'code' => '<?php
                     final class H {}
@@ -2727,6 +2771,23 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . "somefile.php:11:38 - Type 5 should be a subtype of array",
+            ],
+            'constructionAssignedThroughAPropertyReferenceRejectsOtherValues' => [
+                'code' => '<?php
+                    final class H {}
+
+                    final class R {
+                        /** @var SplObjectStorage<H, array<int, string>>|null */
+                        private ?SplObjectStorage $m = null;
+
+                        public function f(H $h): void {
+                            $ref = &$this->m;
+                            $ref = new SplObjectStorage();
+                            $ref[$h] = 5;
+                        }
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:11:40 - Type 5 should be a subtype of array",
             ],
             'constructionAssignedToPropertyItemRejectsOtherValues' => [
                 'code' => '<?php

@@ -3592,10 +3592,17 @@ final class ArrayAccessTest extends TestCase
                 'code' => '<?php
                     /** @implements ArrayAccess<int, string> */
                     final class AA implements ArrayAccess {
-                        public function offsetExists(mixed $o): bool { return true; }
-                        public function offsetGet(mixed $o): string { return ""; }
-                        public function offsetSet(mixed $o, mixed $v): void {}
-                        public function offsetUnset(mixed $o): void {}
+                        /** @param int $o */
+                        public function offsetExists($o): bool { return true; }
+                        /** @param int $o */
+                        public function offsetGet($o): string { return ""; }
+                        /**
+                         * @param ?int $o
+                         * @param string $v
+                         */
+                        public function offsetSet($o, $v): void {}
+                        /** @param int $o */
+                        public function offsetUnset($o): void {}
                     }
 
                     final class C {
@@ -3609,9 +3616,6 @@ final class ArrayAccessTest extends TestCase
                             return ($this->a ??= new AA())[0] ?? null;
                         }
                     }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
             ],
             'domNodeListItemOnCoalesceAssignmentEvaluatesItOnce' => [
                 'code' => '<?php
