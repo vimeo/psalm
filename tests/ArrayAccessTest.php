@@ -1493,6 +1493,39 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'destructuringAndForeachIntoAnArrayAccessItemHaveNoValueToCheck' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, list<int>> */
+                    final class Bag implements ArrayAccess {
+                        #[Override]
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @return list<int> */
+                        #[Override]
+                        public function offsetGet(mixed $offset): array {
+                            return [];
+                        }
+
+                        /** @param list<int> $value */
+                        #[Override]
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        #[Override]
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function fill(Bag $bag): void {
+                        [$bag["a"]] = [[1]];
+
+                        foreach ([[2]] as $bag["b"]) {
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'emptyNestedOffsetIsForgottenWhenItsParentOffsetIsAssigned' => [
                 'code' => '<?php
                     function g(array $m, string $l, string $p): string {
@@ -3746,6 +3779,36 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'plainWriteOfAWrongValueIntoAnArrayAccessItemIsStillChecked' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, list<int>> */
+                    final class Bag implements ArrayAccess {
+                        #[Override]
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @return list<int> */
+                        #[Override]
+                        public function offsetGet(mixed $offset): array {
+                            return [];
+                        }
+
+                        /** @param list<int> $value */
+                        #[Override]
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        #[Override]
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function fill(Bag $bag): void {
+                        $bag["a"] = "x";
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'destructureNullableShapeAndGenericArrayByKey' => [
                 'code' => '<?php
                     /** @return array{x: int}|array<string, string>|null */
