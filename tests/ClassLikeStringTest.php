@@ -822,6 +822,20 @@ final class ClassLikeStringTest extends TestCase
                         }
                     }',
             ],
+            'getParentClassWithoutArgumentIsBoundToTheParent' => [
+                'code' => '<?php
+                    class A {}
+
+                    class B extends A {
+                        public function f(): void {
+                            $parent = get_parent_class();
+                            $object = new $parent();
+                            /** @psalm-check-type-exact $object = A */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnsafeInstantiation'],
+            ],
             'createClassOfTypeFromString' => [
                 'code' => '<?php
                     class A {}
