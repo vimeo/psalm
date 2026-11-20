@@ -15,6 +15,8 @@ use Psalm\Issue\InternalClass;
 use Psalm\Issue\InternalMethod;
 use Psalm\IssueBuffer;
 
+use function strtolower;
+
 /**
  * @internal
  */
@@ -35,6 +37,10 @@ final class MethodCallProhibitionAnalyzer
         $codebase_methods = $codebase->methods;
 
         CliOutput::checkMethodCall($statements_analyzer, $context, $method_id, $code_location);
+
+        // a class that reaches its own members, from its body or from a trait, can't break their restriction
+        $is_own_method = $context->self !== null
+            && strtolower($method_id->fq_class_name) === strtolower($context->self);
 
         $method_id = $codebase_methods->getDeclaringMethodId($method_id);
 
@@ -58,7 +64,7 @@ final class MethodCallProhibitionAnalyzer
 
         if (!$context->collect_initializations
         ) {
-            if (!NamespaceAnalyzer::isWithinAny($caller_identifier ?? "", $storage->internal)) {
+            if (!$is_own_method && !NamespaceAnalyzer::isWithinAny($caller_identifier ?? "", $storage->internal)) {
                 IssueBuffer::maybeAdd(
                     new InternalMethod(
                         'The method ' . $codebase_methods->getCasedMethodId($method_id)

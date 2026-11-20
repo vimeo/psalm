@@ -570,6 +570,7 @@ final class NewAnalyzer extends CallAnalyzer
         $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
 
         if (!$context->collect_initializations
+            && $fq_class_name !== $context->self
             && !NamespaceAnalyzer::isWithinAny($caller_identifier, $storage->internal)
         ) {
             IssueBuffer::maybeAdd(
