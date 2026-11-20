@@ -358,6 +358,24 @@ final class ArrayAssignmentAnalyzer
                     : $root_type;
             $context->writeToReferencesPossiblyBound($root_var_id, $root_type, $codebase);
 
+            if ($context->references_possibly_bound_to) {
+                foreach ($child_stmts as $child_stmt) {
+                    $child_var_id = ExpressionIdentifier::getExtendedVarId(
+                        $child_stmt,
+                        $statements_analyzer->getFQCLN(),
+                        $statements_analyzer,
+                    );
+
+                    if ($child_var_id !== null && isset($context->vars_in_scope[$child_var_id])) {
+                        $context->writeToReferencesPossiblyBound(
+                            $child_var_id,
+                            $context->vars_in_scope[$child_var_id],
+                            $codebase,
+                        );
+                    }
+                }
+            }
+
             if ($context->references_in_scope) {
                 $location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
@@ -543,6 +561,106 @@ final class ArrayAssignmentAnalyzer
             $context->vars_in_scope[$array_id] = $array_type;
             $item_type = $array_type;
         }
+    }
+
+    /**
+     * The key an offset of a var id stands for, or null when it is a variable or an expression
+     *
+     * @psalm-pure
+     */
+    public static function getLiteralKeyOfOffset(string $offset): int|string|null
+    {
+        if (preg_match('/^-?[0-9]+$/', $offset) === 1) {
+            return (int) $offset;
+        }
+
+        if ($offset[0] !== '\'' && $offset[0] !== '"') {
+            return null;
+        }
+
+        $key = ExpressionIdentifier::unquoteOffset($offset);
+
+        // PHP takes a decimal integer string key as that integer
+        return preg_match('/^(0|-?[1-9][0-9]*)$/', $key) === 1 ? (int) $key : $key;
+    }
+
+    /**
+     * The type of the array with $type added to the items under the keys (null: any key), or null when it holds no
+     * such item
+     *
+     * @param non-empty-list<int|string|null> $keys
+     * @psalm-external-mutation-free
+     */
+    public static function addToItemsUnderKeys(
+        Union $array_type,
+        array $keys,
+        Union $type,
+        Codebase $codebase,
+    ): ?Union {
+        $key = array_shift($keys);
+        $atomic_types = [];
+        $holds_item = false;
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray) {
+                $properties = $atomic_type->properties;
+
+                foreach ($properties as $property_key => $property_type) {
+                    if (($key === null || $property_key === $key)
+                        && ($new_property_type = self::addToItem($property_type, $keys, $type, $codebase))
+                    ) {
+                        $properties[$property_key] = $new_property_type;
+                        $holds_item = true;
+                    }
+                }
+
+                $fallback_params = $atomic_type->fallback_params;
+
+                if ($fallback_params !== null
+                    && ($key === null || !isset($properties[$key]))
+                    && ($new_value_type = self::addToItem($fallback_params[1], $keys, $type, $codebase))
+                ) {
+                    $fallback_params[1] = $new_value_type;
+                    $holds_item = true;
+                }
+
+                $atomic_type = TKeyedArray::make(
+                    $properties,
+                    $atomic_type->class_strings,
+                    $fallback_params,
+                    $atomic_type->is_list,
+                    $atomic_type->from_docblock,
+                );
+            } elseif ($atomic_type instanceof TArray
+                && !$atomic_type->isEmptyArray()
+                && ($new_value_type = self::addToItem($atomic_type->type_params[1], $keys, $type, $codebase))
+            ) {
+                $atomic_type = $atomic_type->setTypeParams([$atomic_type->type_params[0], $new_value_type]);
+                $holds_item = true;
+            }
+
+            $atomic_types[] = $atomic_type;
+        }
+
+        if (!$holds_item) {
+            return null;
+        }
+
+        // what is written through the item is used where the array is
+        return $array_type->setTypes($atomic_types)->addParentNodes($type->parent_nodes);
+    }
+
+    /**
+     * @param list<int|string|null> $keys the keys of the item under this one
+     * @psalm-external-mutation-free
+     */
+    private static function addToItem(Union $item_type, array $keys, Union $type, Codebase $codebase): ?Union
+    {
+        $new_item_type = $keys
+            ? self::addToItemsUnderKeys($item_type, $keys, $type, $codebase)
+            : Type::combineUnionTypes($item_type, $type, $codebase);
+
+        return $new_item_type?->setPossiblyUndefined($item_type->possibly_undefined);
     }
 
     /**
