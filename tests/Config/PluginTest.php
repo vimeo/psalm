@@ -1142,6 +1142,102 @@ final class PluginTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testMethodProviderHooksInstanceFirstClassCallable(): void
+    {
+        require_once __DIR__ . '/Plugin/MethodPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                /** @psalm-no-seal-methods */
+                final class Foo {
+                    public function __call(string $method_name, array $args): mixed {
+                        return null;
+                    }
+                }
+
+                function test(Foo $foo): void {
+                    $foo->magicMethod();
+                    $magic = $foo->magicMethod(...);
+                    /** @psalm-check-type-exact $magic = \Closure */
+                    $magic();
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testMethodProviderHooksInstanceFirstClassCallableOfAnUnconfirmedMethod(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UndefinedMagicMethod');
+
+        require_once __DIR__ . '/Plugin/MethodPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                /** @psalm-no-seal-methods */
+                final class Foo {
+                    public function __call(string $method_name, array $args): mixed {
+                        return null;
+                    }
+                }
+
+                function test(Foo $foo): void {
+                    $foo->unknownMethod(...);
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testFunctionProviderHooks(): void
     {
         require_once __DIR__ . '/Plugin/FunctionPlugin.php';

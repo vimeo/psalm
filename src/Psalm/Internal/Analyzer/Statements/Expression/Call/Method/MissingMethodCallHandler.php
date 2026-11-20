@@ -61,6 +61,7 @@ final class MissingMethodCallHandler
         ?Atomic $lhs_type_part,
         ?string $lhs_var_id,
         ?array $mixin,
+        bool $confirmed_by_existence_provider = false,
     ): ?AtomicCallContext {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
@@ -87,6 +88,10 @@ final class MissingMethodCallHandler
                     $pseudo_method_class_storage,
                     $mixin_type ?? $lhs_type_part,
                 );
+            } elseif ($confirmed_by_existence_provider) {
+                $result->has_valid_method_call_type = true;
+                $result->existent_method_ids[$method_id->__toString()] = true;
+                $result->return_type = Type::getClosure();
             } else {
                 $result->non_existent_magic_method_ids[] = $method_id->__toString();
                 $result->return_type = Type::getClosure();

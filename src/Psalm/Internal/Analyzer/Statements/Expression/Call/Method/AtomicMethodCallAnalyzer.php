@@ -507,6 +507,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $lhs_type_part,
                     $lhs_var_id,
                     $pseudo_method_mixin,
+                    $fake_method_exists,
                 );
 
                 if ($new_call_context) {
