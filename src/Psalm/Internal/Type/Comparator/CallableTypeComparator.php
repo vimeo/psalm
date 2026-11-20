@@ -12,7 +12,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
-use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -178,6 +177,125 @@ final class CallableTypeComparator
         }
 
         return true;
+    }
+
+    /**
+     * Resolves a method's templates against the callable it is expected to satisfy: they are bound
+     * to the argument types that callable passes in and to the return type it expects.
+     * The templates are left unresolved if one is inferred outside its declared bound, or if the
+     * resolved parameter types reject any of those arguments (including default values the
+     * expected callable may fall back on), since the callable comparison skips some of them.
+     *
+     * @param array<string, array<string, Union>> $template_types
+     */
+    private static function resolveMethodTemplates(
+        Codebase $codebase,
+        TCallable $callable,
+        TCallable $container_type_part,
+        array $template_types,
+    ): TCallable {
+        $template_result = new TemplateResult($template_types, []);
+        $container_params = $container_type_part->params ?? [];
+        $container_variadic_param = end($container_params) ?: null;
+
+        if ($container_variadic_param && !$container_variadic_param->is_variadic) {
+            $container_variadic_param = null;
+        }
+
+        // [param offset, param type, arg offset, arg type]
+        $args = [];
+
+        foreach ($callable->params ?? [] as $offset => $param) {
+            if (!$param->type) {
+                continue;
+            }
+
+            $default_type = null;
+
+            if ($param->is_variadic) {
+                $arg_params = array_slice($container_params, $offset, null, true)
+                    ?: [$offset => $container_variadic_param];
+            } else {
+                $container_param = $container_params[$offset] ?? $container_variadic_param;
+                $arg_params = [$offset => $container_param];
+
+                // the method gets its default if the expected callable may leave the argument out;
+                // constant defaults are not resolved here, as that depends on the declaring scope
+                if ($param->is_optional
+                    && (!$container_param || $container_param->is_optional || $container_param->is_variadic)
+                ) {
+                    $default_type = $param->default_type instanceof Union ? $param->default_type : Type::getMixed();
+                }
+            }
+
+            foreach ($arg_params as $arg_offset => $arg_param) {
+                if ($arg_param && $arg_param->type) {
+                    $args[] = [$offset, $param->type, $arg_offset, $arg_param->type];
+                }
+            }
+
+            if ($default_type) {
+                $args[] = [$offset, $param->type, $offset, $default_type];
+            }
+        }
+
+        // distinct offsets keep every argument's bound, rather than only the deepest one
+        foreach ($args as [, $param_type, $arg_offset, $arg_type]) {
+            TemplateStandinTypeReplacer::fillTemplateResult(
+                $param_type,
+                $template_result,
+                $codebase,
+                null,
+                $arg_type,
+                $arg_offset,
+            );
+        }
+
+        // a void expected return means the caller discards the value
+        if ($callable->return_type
+            && $container_type_part->return_type
+            && !$container_type_part->return_type->isVoid()
+        ) {
+            TemplateStandinTypeReplacer::fillTemplateResult(
+                $callable->return_type,
+                $template_result,
+                $codebase,
+                null,
+                $container_type_part->return_type,
+            );
+        }
+
+        // a template inferred outside its declared bound would erase that constraint
+        foreach ($template_result->lower_bounds as $template_name => $lower_bounds_by_class) {
+            foreach ($lower_bounds_by_class as $defining_class => $lower_bounds) {
+                $template_as = $template_types[$template_name][$defining_class] ?? null;
+
+                if ($template_as
+                    && !$template_as->isMixed()
+                    && !UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds($lower_bounds, $codebase),
+                        $template_as,
+                    )
+                ) {
+                    return $callable;
+                }
+            }
+        }
+
+        $resolved_callable = $callable->replaceTemplateTypesWithArgTypes($template_result, $codebase);
+
+        foreach ($args as [$offset, , , $arg_type]) {
+            $resolved_param_type = $resolved_callable->params[$offset]->type ?? null;
+
+            if ($resolved_param_type
+                && !UnionTypeComparator::isContainedBy($codebase, $arg_type, $resolved_param_type)
+            ) {
+                return $callable;
+            }
+        }
+
+        return $resolved_callable;
     }
 
     /**
@@ -424,21 +542,12 @@ final class CallableTypeComparator
                     // Resolve method-level templates against the expected callable shape, so
                     // `[Id::class, 'id']` with `@template B` matches `callable(int): int` etc.
                     if ($method_storage->template_types !== null && $container_type_part !== null) {
-                        $template_result = new TemplateResult($method_storage->template_types, []);
-
-                        TemplateStandinTypeReplacer::fillTemplateResult(
-                            new Union([$callable]),
-                            $template_result,
+                        $callable = self::resolveMethodTemplates(
                             $codebase,
-                            null,
-                            new Union([$container_type_part]),
+                            $callable,
+                            $container_type_part,
+                            $method_storage->template_types,
                         );
-
-                        $callable = TemplateInferredTypeReplacer::replace(
-                            new Union([$callable]),
-                            $template_result,
-                            $codebase,
-                        )->getSingleAtomic();
                     }
 
                     return $callable;
@@ -512,14 +621,9 @@ final class CallableTypeComparator
                     );
 
                     if ($template_result) {
-                        $callable = TemplateInferredTypeReplacer::replace(
-                            new Union([$callable]),
-                            $template_result,
-                            $codebase,
-                        )->getSingleAtomic();
+                        $callable = $callable->replaceTemplateTypesWithArgTypes($template_result, $codebase);
                     }
 
-                    /** @psalm-suppress LessSpecificReturnStatement */
                     return $callable;
                 }
             }
