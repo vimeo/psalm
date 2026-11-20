@@ -126,6 +126,8 @@ class PDO
     public function query(string $query, ?int $fetchMode = null) {}
 
     /**
+     * @psalm-flow ($string) -> return
+     * @psalm-taint-escape sql
      * @return string|false
      */
     public function quote(string $string, int $type = PDO::PARAM_STR) {}

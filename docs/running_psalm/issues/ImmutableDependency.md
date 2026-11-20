@@ -40,7 +40,7 @@ final class Child extends Parent_ {
 }
 ```
 
-Will also be emitted for a class extending a class with `@psalm-taint-specialize` without having it: the class is specialized, and held to the rules of [specialized classes](../../security_analysis/avoiding_false_positives.md#specializing-taints-in-classes), all the same.
+Will also be emitted for a class extending a class with `@psalm-taint-specialize` without having it: the class is specialized, and held to the rules of [specialized classes](../../security_analysis/index.md#specializing-classes), all the same.
 
 ```php
 <?php

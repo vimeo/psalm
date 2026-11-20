@@ -35,6 +35,11 @@ final class HttpLibraryStubsTest extends LibraryStubsTestCase
                         return [];
                     }
                 }
+
+                abstract class UploadedFile implements \Psr\Http\Message\UploadedFileInterface {
+                    public function moveTo(string $targetPath): void {
+                    }
+                }
             }
 
             namespace Psr\Http\Client {
@@ -199,6 +204,20 @@ final class HttpLibraryStubsTest extends LibraryStubsTestCase
                 [
                     'TaintedHtml on line 4',
                     'TaintedTextWithQuotes on line 4',
+                ],
+            ],
+            'uploadedFileMovedToAPathTheClientChooses' => [
+                '<?php
+                    use Psr\Http\Message\UploadedFileInterface;
+
+                    function store(UploadedFileInterface $file, Laminas\Diactoros\UploadedFile $laminas): void {
+                        $file->moveTo("/uploads/" . (string) $file->getClientFilename());
+                        $file->moveTo("/uploads/avatar.png");
+                        $laminas->moveTo("/uploads/" . (string) $laminas->getClientFilename());
+                    }',
+                [
+                    'TaintedFile on line 5',
+                    'TaintedFile on line 7',
                 ],
             ],
             'serverRequestImplementation' => [
