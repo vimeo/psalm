@@ -31,6 +31,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\StringContext;
 use Psalm\Internal\Codebase\TaintValidations;
@@ -1673,9 +1674,9 @@ final class AssertionFinder
         }
 
         $functions = $source->getCodebase()->functions;
-        $function_id = strtolower($functions->getFullyQualifiedFunctionNameFromString(
+        $function_id = strtolower(Functions::getFullyQualifiedFunctionNameFromString(
             $expr->name->toString(),
-            $source,
+            $source->getAliases(),
         ));
 
         return $function_id === $function_name || $functions->functionExists($source, $function_id)

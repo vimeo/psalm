@@ -29,6 +29,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
@@ -960,7 +961,7 @@ final class ForeachAnalyzer
         $function_name = $call->name->toString();
 
         foreach ([
-            $functions->getFullyQualifiedFunctionNameFromString($function_name, $statements_analyzer),
+            Functions::getFullyQualifiedFunctionNameFromString($function_name, $statements_analyzer->getAliases()),
             $function_name,
         ] as $function_id) {
             $function_id = strtolower($function_id);

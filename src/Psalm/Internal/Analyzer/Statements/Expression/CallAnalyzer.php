@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
@@ -622,9 +623,9 @@ abstract class CallAnalyzer
 
             if (!$callable->name instanceof Name\FullyQualified) {
                 $functions = $statements_analyzer->getCodebase()->functions;
-                $namespaced_function_id = $functions->getFullyQualifiedFunctionNameFromString(
+                $namespaced_function_id = Functions::getFullyQualifiedFunctionNameFromString(
                     $function_id,
-                    $statements_analyzer,
+                    $statements_analyzer->getAliases(),
                 );
 
                 if ($functions->functionExists($statements_analyzer, strtolower($namespaced_function_id))) {
