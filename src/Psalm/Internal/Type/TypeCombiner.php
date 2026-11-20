@@ -1913,6 +1913,7 @@ final class TypeCombiner
             $objectlike_generic_type = null;
 
             $objectlike_keys = [];
+            $class_string_keys = array_filter($combination->objectlike_class_string_keys);
 
             foreach ($combination->objectlike_entries as $property_name => $property_type) {
                 $objectlike_generic_type = Type::combineUnionTypes(
@@ -1927,7 +1928,7 @@ final class TypeCombiner
 
                 if (is_int($property_name)) {
                     $objectlike_keys[$property_name] = new TLiteralInt($property_name, $from_docblock);
-                } elseif ($type instanceof TKeyedArray && isset($type->class_strings[$property_name])) {
+                } elseif (isset($class_string_keys[$property_name])) {
                     $objectlike_keys[$property_name] = new TLiteralClassString($property_name, $from_docblock);
                 } else {
                     $objectlike_keys[$property_name] = Type::getAtomicStringFromLiteral($property_name, $from_docblock);
