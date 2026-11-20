@@ -51,6 +51,32 @@ final class InArrayTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'stringCastOfAScalarFoundInAListOfWords' => [
+                'code' => '<?php
+                    /** @return string|int|null */
+                    function value() {
+                        return null;
+                    }
+
+                    $value = value();
+                    $found = in_array((string) $value, ["ls", "cat"], true) ? $value : "none";',
+                'assertions' => [
+                    '$found===' => "'cat'|'ls'|'none'",
+                ],
+            ],
+            'stringCastOfAScalarFoundInAListWithANumber' => [
+                'code' => '<?php
+                    /** @return string|int|null */
+                    function value() {
+                        return null;
+                    }
+
+                    $value = value();
+                    $found = in_array((string) $value, ["ls", "1"], true) ? $value : "none";',
+                'assertions' => [
+                    '$found===' => 'int|null|string',
+                ],
+            ],
             'notInTwoDifferentArraysOfTheSameType' => [
                 'code' => '<?php
                     class User {}
@@ -64,6 +90,29 @@ final class InArrayTest extends TestCase
                             throw new Exception();
                         }
                     }',
+            ],
+            'negatedInArrayOfLiteralListOrCall' => [
+                'code' => '<?php
+                    final class A {
+                        public const NAMES = [\'a\', \'b\', \'c\', \'d\', \'e\', \'f\', \'g\', \'h\', \'i\', \'j\', \'k\', \'l\'];
+                    }
+
+                    function known(string $s): bool {
+                        return $s !== \'\';
+                    }
+
+                    function getName(): string {
+                        return \'\';
+                    }
+
+                    $name = getName();
+
+                    if (!in_array($name, A::NAMES, true) || !known($name)) {
+                        exit;
+                    }',
+                'assertions' => [
+                    '$name===' => '\'a\'|\'b\'|\'c\'|\'d\'|\'e\'|\'f\'|\'g\'|\'h\'|\'i\'|\'j\'|\'k\'|\'l\'',
+                ],
             ],
             'inTwoDifferentArraysOfTheSameType' => [
                 'code' => '<?php
