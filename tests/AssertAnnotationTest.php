@@ -4714,6 +4714,62 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'assertOfAMethodCalledInTheArgumentOfASelfCall' => [
+                'code' => '<?php
+                    class Entity {
+                        public ?int $id = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->id
+                         */
+                        public function getIdAssert(): int {
+                            return 1;
+                        }
+
+                        public function viaSelf(): void {
+                            self::consume($this->getIdAssert());
+                        }
+
+                        public function viaStatic(): void {
+                            static::consume($this->getIdAssert());
+                        }
+
+                        public function consume(int $id): void {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertOfAMethodCalledInTheArgumentOfAParentOrNamedClassCall' => [
+                'code' => '<?php
+                    class Base {
+                        public function consume(int $id): void {}
+                    }
+
+                    class Entity extends Base {
+                        public ?int $id = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->id
+                         */
+                        public function getIdAssert(): int {
+                            return 1;
+                        }
+
+                        public function viaParent(): void {
+                            parent::consume($this->getIdAssert());
+                        }
+
+                        public function viaName(): void {
+                            Entity::consume($this->getIdAssert());
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assertNonEmptyArrayOnAPossiblyEmptyArray' => [
                 'code' => '<?php
                     /**
@@ -4934,6 +4990,27 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertOfAMethodCalledTwiceInTheArgumentsOfASelfCall' => [
+                'code' => '<?php
+                    class Entity {
+                        public ?int $id = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->id
+                         */
+                        public function getIdAssert(): int {
+                            return 1;
+                        }
+
+                        public function viaSelf(): void {
+                            self::consume($this->getIdAssert(), $this->getIdAssert());
+                        }
+
+                        public function consume(int $id, int $other): void {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
             'assertAnOffsetOfAnArgumentIsIgnoredForANamedArgument' => [
                 'code' => <<<'PHP'
                     <?php
