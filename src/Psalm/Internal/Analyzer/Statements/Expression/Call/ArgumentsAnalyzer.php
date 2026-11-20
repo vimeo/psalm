@@ -568,6 +568,16 @@ final class ArgumentsAnalyzer
 
         $keys = array_keys($unpacked_atomic->properties);
 
+        // integer keys that are not a list's pass as many arguments as there are keys, in the order of the shape
+        if (array_all($keys, static fn(int|string $key): bool => is_int($key))
+            && array_all(
+                $unpacked_atomic->properties,
+                static fn(Union $property): bool => !$property->possibly_undefined,
+            )
+        ) {
+            return [null, count($keys)];
+        }
+
         return [
             array_all($keys, static fn(int|string $key): bool => is_string($key)) ? $keys : null,
             null,
@@ -2781,6 +2791,11 @@ final class ArgumentsAnalyzer
                         if ($arg_value_type->isSingle()
                             && ($atomic_arg_type = $arg_value_type->getSingleAtomic()) instanceof TKeyedArray
                             && !$atomic_arg_type->is_list
+                            // integer keys name no parameter: they pass as many arguments as there are keys
+                            && !array_all(
+                                array_keys($atomic_arg_type->properties),
+                                static fn(int|string $key): bool => is_int($key),
+                            )
                         ) {
                             //if we have a single shape, we'll check param names
                             foreach ($atomic_arg_type->properties as $property_name => $_property_type) {
