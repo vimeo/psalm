@@ -744,6 +744,39 @@ final class CastAnalyzer
         );
     }
 
+    /**
+     * The type of the values of what $type may be as an array, or null if it can't be one
+     */
+    public static function getArrayValueType(?Union $type): ?Union
+    {
+        if (!$type) {
+            return null;
+        }
+
+        $value_types = [];
+        $atomic_types = $type->getAtomicTypes();
+
+        while ($atomic_types) {
+            $atomic_type = array_pop($atomic_types);
+
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_types = [...$atomic_types, ...array_values($atomic_type->as->getAtomicTypes())];
+
+                continue;
+            }
+
+            if ($atomic_type instanceof TKeyedArray) {
+                $atomic_type = $atomic_type->getGenericArrayType();
+            }
+
+            if ($atomic_type instanceof TArray) {
+                $value_types[] = $atomic_type->type_params[1];
+            }
+        }
+
+        return $value_types ? Type::combineUnionTypeArray($value_types, null) : null;
+    }
+
     public static function castStringAttempt(
         StatementsAnalyzer $statements_analyzer,
         Context $context,
