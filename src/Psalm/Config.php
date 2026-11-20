@@ -871,15 +871,15 @@ final class Config
 
     private static function getDefaultCacheDirectory(): string
     {
-        $xdg_cache_home = getenv('XDG_CACHE_HOME');
+        $xdg_cache_home = CliUtils::chosenByOperator(getenv('XDG_CACHE_HOME'));
         if ($xdg_cache_home !== false && $xdg_cache_home !== '') {
             return $xdg_cache_home . '/psalm';
         }
 
-        $home = getenv('HOME');
+        $home = CliUtils::chosenByOperator(getenv('HOME'));
         if ($home === false || $home === '') {
-            $home_drive = getenv('HOMEDRIVE');
-            $home_path = getenv('HOMEPATH');
+            $home_drive = CliUtils::chosenByOperator(getenv('HOMEDRIVE'));
+            $home_path = CliUtils::chosenByOperator(getenv('HOMEPATH'));
             $home = $home_drive !== false && $home_drive !== '' && $home_path !== false && $home_path !== ''
                 ? $home_drive . $home_path
                 : null;
