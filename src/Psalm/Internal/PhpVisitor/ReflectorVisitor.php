@@ -12,6 +12,7 @@ use PhpParser\Node\Name;
 use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\DocComment;
 use Psalm\Exception\CodeException;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\TypeParseTreeException;
@@ -325,12 +326,20 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
             $classlike_node_scanner->handleTraitUse($node);
         } elseif ($node instanceof PhpParser\Node\Stmt\Const_) {
+            $since_php_version_id = null;
             $var_type = null;
 
-            // a docblock type overrides the declared value to make stub constants configurable
+            // like define(), a docblock type overrides the declared value to make stub constants configurable
             $doc_comment = $node->getDocComment();
             if ($doc_comment && $this->codebase->register_stub_files) {
                 try {
+                    if (($this->aliases->namespace ?? '') === '') {
+                        $since_php_version_id = ClassLikeNodeScanner::parseSincePhpVersionId(
+                            DocComment::parsePreservingLength($doc_comment, true),
+                            $this->file_path,
+                        );
+                    }
+
                     foreach (CommentAnalyzer::getTypeFromComment(
                         $this->codebase,
                         $doc_comment,
@@ -368,7 +377,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                     || $this->codebase->all_constants_global
                     ) && (!defined($fq_const_name) || !$const_type->isMixed())
                 ) {
-                    $this->codebase->addGlobalConstantType($fq_const_name, $const_type);
+                    $this->codebase->addGlobalConstantType($fq_const_name, $const_type, $since_php_version_id);
 
                     if ($unresolved !== null) {
                         $this->codebase->addUnresolvedGlobalConstant($fq_const_name, $unresolved);
