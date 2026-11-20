@@ -127,6 +127,35 @@ final class ArrayFunctionCallTest extends TestCase
         self::assertSame(['InvalidArgument 8:27', 'NoValue 8:17'], $issues);
     }
 
+    public function testSortFlagsAreCheckedWithoutReadingTheDeprecatedLocaleStringConstant(): void
+    {
+        // PHP 8.6+ reports SORT_LOCALE_STRING as deprecated when its value is read
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @var list<string> $strings */
+                $strings = [];
+                sort($strings);
+
+                /** @var list<stdClass> $objects */
+                $objects = [];
+                array_unique($objects, SORT_LOCALE_STRING);',
+        );
+
+        $this->withErrorsThrown(fn() => $this->analyzeFile($file_path, new Context()));
+
+        $issues = array_map(
+            static fn(IssueData $issue): string => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+            IssueBuffer::getIssuesDataForFile($file_path),
+        );
+
+        self::assertSame(['InvalidArgument 8:30'], $issues);
+    }
+
     /**
      * @psalm-pure
      */

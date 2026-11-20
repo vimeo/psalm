@@ -389,7 +389,6 @@ final class ReturnAnalyzer
                 if ($storage instanceof MethodStorage
                     // the purity of the calls, telling which of them return `$this`, is only analyzed then
                     && !$context->collect_initializations
-                    && !$context->collect_mutations
                     && !MethodCallPurityAnalyzer::isReceiverThis($stmt->expr)
                     && self::mustReturnThis($codebase, $storage, MethodIdentifier::wrap($cased_method_id))
                 ) {
@@ -489,7 +488,6 @@ final class ReturnAnalyzer
                         }
 
                         if (!$context->collect_initializations
-                            && !$context->collect_mutations
                             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                             && !($source->getSource() instanceof TraitAnalyzer)
                         ) {
@@ -542,7 +540,6 @@ final class ReturnAnalyzer
                     }
 
                     if (!$context->collect_initializations
-                        && !$context->collect_mutations
                         && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                         && !($source->getSource() instanceof TraitAnalyzer)
                     ) {

@@ -450,6 +450,42 @@ final class MethodCallReturnTypeFetcher
     }
 
     /**
+     * The taints the methods $method_id implements or overrides are sources of (`@psalm-taint-source`), through the
+     * ones that don't say it themselves
+     *
+     * @param array<string, true> $visited
+     * @psalm-capabilities read-props
+     */
+    private static function getInheritedTaintSources(
+        Codebase $codebase,
+        MethodIdentifier $method_id,
+        array $visited,
+    ): int {
+        $visited[(string) $method_id] = true;
+
+        if (!$codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
+            return 0;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+        $taints = 0;
+
+        foreach ($class_storage->overridden_method_ids[$method_id->method_name] ?? [] as $overridden_method_id) {
+            if (isset($visited[(string) $overridden_method_id])
+                || !$codebase->methods->hasStorage($overridden_method_id)
+            ) {
+                continue;
+            }
+
+            $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
+            $taints |= $overridden_storage->taint_source_types
+                ?: self::getInheritedTaintSources($codebase, $overridden_method_id, $visited);
+        }
+
+        return $taints;
+    }
+
+    /**
      * @param list<PhpParser\Node\Arg> $args
      */
     public static function taintMethodCallResult(
@@ -793,6 +829,19 @@ final class MethodCallReturnTypeFetcher
             $method_call_node,
             $codebase->getInputTaints(),
         );
+
+        // a method implementing or overriding a source is one too, unless it says what it returns itself: a source
+        // replaces the one of the node taintUsingStorage() added, so it adds the taints of the method too
+        if ($method_storage->taint_source_types === 0) {
+            $inherited_taints = self::getInheritedTaintSources($codebase, $method_id, []);
+            $taints = ($inherited_taints === 0 ? 0 : $inherited_taints | $method_storage->added_taints)
+                & ~$method_storage->removed_taints
+                & ~($method_storage->signature_return_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0);
+
+            if ($taints !== 0) {
+                $taint_flow_graph->addSource($method_call_node->setTaints($taints));
+            }
+        }
 
         $return_type_candidate = TaintStore::taintCall(
             $statements_analyzer,

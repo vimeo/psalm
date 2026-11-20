@@ -1,0 +1,554 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Psalm\Tests\TypeReconciliation;
+
+use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
+use Psalm\Tests\TestCase;
+use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
+use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
+
+use const DIRECTORY_SEPARATOR;
+
+/**
+ * The assertions of `===`, `==`, `!==` and `!=`, which are built for both polarities of each kind of comparison
+ */
+final class ComparisonAssertionTest extends TestCase
+{
+    use ValidCodeAnalysisTestTrait;
+    use InvalidCodeAnalysisTestTrait;
+
+    public function testANullComparisonOfANonNullableValueIsReportedOnce(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function f(int $i): void {
+                    if ($i === null) {}
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $this->assertSame(
+            ['TypeDoesNotContainNull: int does not contain null'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testALooseComparisonOfNumericStringsIsNotAnIdentityCheck(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function f(): void {
+                    $a = "1";
+                    $b = "01";
+                    if ($a == $b) {}
+                    if ($a != $b) {}
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+
+        // "1" == "01" is true; issues of the reconciler about it are out of scope here
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $this->assertStringNotContainsString('cannot be identical', $issue->message);
+            $this->assertStringNotContainsString('can never contain', $issue->message);
+        }
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerValidCodeParse(): iterable
+    {
+        return [
+            'identicalToNull' => [
+                'code' => '<?php
+                    function f(?int $n): void {
+                        if ($n === null) {
+                            /** @psalm-check-type-exact $n = null */;
+                        } else {
+                            /** @psalm-check-type-exact $n = int */;
+                        }
+                    }',
+            ],
+            'notIdenticalToNull' => [
+                'code' => '<?php
+                    function f(?int $n): void {
+                        if ($n !== null) {
+                            /** @psalm-check-type-exact $n = int */;
+                        } else {
+                            /** @psalm-check-type-exact $n = null */;
+                        }
+                    }',
+            ],
+            'looselyEqualToNull' => [
+                'code' => '<?php
+                    function f(?int $n): void {
+                        if ($n == null) {
+                            /** @psalm-check-type-exact $n = 0|null */;
+                        } else {
+                            /** @psalm-check-type-exact $n = int */;
+                        }
+                    }',
+            ],
+            'notLooselyEqualToNull' => [
+                'code' => '<?php
+                    function f(?int $n): void {
+                        if ($n != null) {
+                            /** @psalm-check-type-exact $n = int */;
+                        } else {
+                            /** @psalm-check-type-exact $n = 0|null */;
+                        }
+                    }',
+            ],
+            'nullsafePropertyNotIdenticalToNullNarrowsTheReceiver' => [
+                'code' => '<?php
+                    final class A { public ?int $p = null; }
+
+                    function f(?A $a): void {
+                        if ($a?->p !== null) {
+                            /** @psalm-check-type-exact $a = A */;
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyIdenticalToNullDoesNotNarrowTheReceiver' => [
+                'code' => '<?php
+                    final class A { public ?int $p = null; }
+
+                    function f(?A $a): void {
+                        if ($a?->p === null) {
+                            /** @psalm-check-type-exact $a = A|null */;
+                        } else {
+                            /** @psalm-check-type-exact $a = A */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'identicalToTrue' => [
+                'code' => '<?php
+                    /** @param int|bool $b */
+                    function f($b): void {
+                        if ($b === true) {
+                            /** @psalm-check-type-exact $b = true */;
+                        } else {
+                            /** @psalm-check-type-exact $b = false|int */;
+                        }
+                    }',
+            ],
+            'notIdenticalToTrue' => [
+                'code' => '<?php
+                    /** @param int|bool $b */
+                    function f($b): void {
+                        if ($b !== true) {
+                            /** @psalm-check-type-exact $b = false|int */;
+                        } else {
+                            /** @psalm-check-type-exact $b = true */;
+                        }
+                    }',
+            ],
+            'identicalToFalse' => [
+                'code' => '<?php
+                    /** @param int|bool $b */
+                    function f($b): void {
+                        if ($b === false) {
+                            /** @psalm-check-type-exact $b = false */;
+                        } else {
+                            /** @psalm-check-type-exact $b = int|true */;
+                        }
+                    }',
+            ],
+            'notIdenticalToFalse' => [
+                'code' => '<?php
+                    /** @param int|bool $b */
+                    function f($b): void {
+                        if ($b !== false) {
+                            /** @psalm-check-type-exact $b = int|true */;
+                        } else {
+                            /** @psalm-check-type-exact $b = false */;
+                        }
+                    }',
+            ],
+            'functionCallComparedWithTrueOrFalse' => [
+                'code' => '<?php
+                    /** @param mixed $m */
+                    function f($m): void {
+                        if (is_int($m) === true) {
+                            /** @psalm-check-type-exact $m = int */;
+                        }
+                        if (is_int($m) !== true) {
+                        } else {
+                            /** @psalm-check-type-exact $m = int */;
+                        }
+                        if (is_int($m) === false) {
+                        } else {
+                            /** @psalm-check-type-exact $m = int */;
+                        }
+                        if (is_int($m) !== false) {
+                            /** @psalm-check-type-exact $m = int */;
+                        }
+                    }',
+            ],
+            'templateOfBoolComparedWithTrueOrFalseIsNotRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @template T of bool
+                     * @param T $t
+                     */
+                    function f($t): void {
+                        if ($t === true) {}
+                        if ($t !== true) {}
+                        if ($t === false) {}
+                        if ($t !== false) {}
+                    }',
+            ],
+            'templateOfArrayComparedWithAnEmptyArrayIsNotRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array
+                     * @param T $t
+                     */
+                    function f($t): void {
+                        if ($t === []) {}
+                        if ($t !== []) {}
+                    }',
+            ],
+            'identicalToAnEmptyArray' => [
+                'code' => '<?php
+                    function f(array $a): void {
+                        if ($a === []) {
+                            /** @psalm-check-type-exact $a = array<never, never> */;
+                        } else {
+                            /** @psalm-check-type-exact $a = non-empty-array<array-key, mixed> */;
+                        }
+                    }',
+            ],
+            'notIdenticalToAnEmptyArray' => [
+                'code' => '<?php
+                    function f(array $a): void {
+                        if ($a !== []) {
+                            /** @psalm-check-type-exact $a = non-empty-array<array-key, mixed> */;
+                        } else {
+                            /** @psalm-check-type-exact $a = array<never, never> */;
+                        }
+                    }',
+            ],
+            'getDebugTypeIdentical' => [
+                'code' => '<?php
+                    final class A {}
+
+                    function f(mixed $m): void {
+                        if (get_debug_type($m) === "int") {
+                            /** @psalm-check-type-exact $m = int */;
+                        }
+                        if (get_debug_type($m) === A::class) {
+                            /** @psalm-check-type-exact $m = A */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'getDebugTypeNotIdentical' => [
+                'code' => '<?php
+                    final class A {}
+
+                    function f(mixed $m): void {
+                        if (get_debug_type($m) !== "int") {
+                        } else {
+                            /** @psalm-check-type-exact $m = int */;
+                        }
+                        if (get_debug_type($m) !== A::class) {
+                        } else {
+                            /** @psalm-check-type-exact $m = A */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'getDebugTypeComparedWithAStringThatIsNotATypeName' => [
+                'code' => '<?php
+                    function f(mixed $m): void {
+                        if (get_debug_type($m) === "1") {}
+                        if (get_debug_type($m) !== "1") {}
+                        if (get_debug_type($m) === "") {}
+                        if (get_debug_type($m) !== "") {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'getClassIdentical' => [
+                'code' => '<?php
+                    class A {}
+                    final class B extends A {}
+
+                    function f(A $a): void {
+                        if (get_class($a) === B::class) {
+                            /** @psalm-check-type-exact $a = B */;
+                        } else {
+                            /** @psalm-check-type-exact $a = A */;
+                        }
+                    }',
+            ],
+            'getClassNotIdentical' => [
+                'code' => '<?php
+                    class A {}
+                    final class B extends A {}
+
+                    function f(A $a): void {
+                        if (get_class($a) !== B::class) {
+                            /** @psalm-check-type-exact $a = A */;
+                        } else {
+                            /** @psalm-check-type-exact $a = B */;
+                        }
+                    }',
+            ],
+            'typedValueIdentical' => [
+                'code' => '<?php
+                    /** @param "a"|"b" $s */
+                    function f(string $s): void {
+                        if ($s === "a") {
+                            /** @psalm-check-type-exact $s = "a" */;
+                        } else {
+                            /** @psalm-check-type-exact $s = "b" */;
+                        }
+                        if ($s == "a") {
+                            /** @psalm-check-type-exact $s = "a" */;
+                        } else {
+                            /** @psalm-check-type-exact $s = "b" */;
+                        }
+                    }',
+            ],
+            'typedValueNotIdentical' => [
+                'code' => '<?php
+                    /** @param "a"|"b" $s */
+                    function f(string $s): void {
+                        if ($s !== "a") {
+                            /** @psalm-check-type-exact $s = "b" */;
+                        } else {
+                            /** @psalm-check-type-exact $s = "a" */;
+                        }
+                        if ($s != "a") {
+                            /** @psalm-check-type-exact $s = "b" */;
+                        } else {
+                            /** @psalm-check-type-exact $s = "a" */;
+                        }
+                    }',
+            ],
+            'countIdentical' => [
+                'code' => '<?php
+                    function f(array $a): void {
+                        if (count($a) === 2) {
+                            /** @psalm-check-type-exact $a = non-empty-array<array-key, mixed> */;
+                        }
+                        if (count($a) === 0) {
+                            /** @psalm-check-type-exact $a = array<never, never> */;
+                        } else {
+                            /** @psalm-check-type-exact $a = non-empty-array<array-key, mixed> */;
+                        }
+                    }',
+            ],
+            'countNotIdentical' => [
+                'code' => '<?php
+                    function f(array $a): void {
+                        if (count($a) !== 2) {
+                        } else {
+                            /** @psalm-check-type-exact $a = non-empty-array<array-key, mixed> */;
+                        }
+                        if (count($a) !== 0) {
+                            /** @psalm-check-type-exact $a = non-empty-array<array-key, mixed> */;
+                        } else {
+                            /** @psalm-check-type-exact $a = array<never, never> */;
+                        }
+                    }',
+            ],
+            'intLiteralOnEitherSideOfAnOrderComparison' => [
+                'code' => '<?php
+                    function f(int $i): void {
+                        if ($i > 5) {
+                            /** @psalm-check-type-exact $i = int<6, max> */;
+                        }
+                        if (-5 > $i) {
+                            /** @psalm-check-type-exact $i = int<min, -6> */;
+                        }
+                        if ($i < +3) {
+                            /** @psalm-check-type-exact $i = int<min, 2> */;
+                        }
+                        if (3 <= $i) {
+                            /** @psalm-check-type-exact $i = int<3, max> */;
+                        }
+                    }',
+            ],
+        ];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        return [
+            'nullNeverIdenticalToANonNullableValue' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        if ($s === null) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainNull - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - string does not contain null',
+            ],
+            'nullNeverNotIdenticalToANonNullableValue' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        if ($s !== null) {}
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - string can never be null',
+            ],
+            'trueNeverIdenticalToAnInt' => [
+                'code' => '<?php
+                    function f(int $i): void {
+                        if ($i === true) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - int does not contain true',
+            ],
+            'trueNeverNotIdenticalToAnInt' => [
+                'code' => '<?php
+                    function f(int $i): void {
+                        if ($i !== true) {}
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - int can never be true',
+            ],
+            'falseNeverIdenticalToADocblockInt' => [
+                'code' => '<?php
+                    /** @param int $i */
+                    function f($i): void {
+                        if ($i === false) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - int does not contain false',
+            ],
+            'falseNeverNotIdenticalToADocblockInt' => [
+                'code' => '<?php
+                    /** @param int $i */
+                    function f($i): void {
+                        if ($i !== false) {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Docblock-defined type int can never be false',
+            ],
+            'emptyArrayNeverIdenticalToAString' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        if ($s === []) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - string does not contain an empty array',
+            ],
+            'emptyArrayNeverNotIdenticalToAString' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        if ($s !== []) {}
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - string can never be an empty array',
+            ],
+            'gettypeIdenticalToAValueItCannotReturn' => [
+                'code' => '<?php
+                    /** @param mixed $m */
+                    function f($m): void {
+                        if (gettype($m) === "int") {}
+                    }',
+                'error_message' => 'UnevaluatedCode',
+            ],
+            'gettypeNotIdenticalToAValueItCannotReturn' => [
+                'code' => '<?php
+                    /** @param mixed $m */
+                    function f($m): void {
+                        if (gettype($m) !== "int") {}
+                    }',
+                'error_message' => 'UnevaluatedCode',
+            ],
+            'getClassIdenticalToAnUndefinedClass' => [
+                'code' => '<?php
+                    function f(object $o): void {
+                        if (get_class($o) === Missing::class) {}
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'getClassNotIdenticalToAnUndefinedClass' => [
+                'code' => '<?php
+                    function f(object $o): void {
+                        if (get_class($o) !== Missing::class) {}
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'firstClassCallableComparedWithTrueOrFalse' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (strlen(...) !== false) {}
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableIdenticalToFalse' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (strlen(...) === false) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'docblockValuesThatCannotBeIdenticalComparedNotIdentical' => [
+                'code' => '<?php
+                    /**
+                     * @param 1 $a
+                     * @param 2 $b
+                     */
+                    function f($a, $b): void {
+                        if ($a !== $b) {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - Docblock-defined type 2 can never contain 1',
+            ],
+            'looseEqualityOfIntsThatCannotBeIdentical' => [
+                'code' => '<?php
+                    function f(): void {
+                        $one = 1;
+                        $two = 2;
+                        if ($one == $two) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29 - 2 cannot be identical to 1',
+            ],
+            'looseInequalityOfIntsThatCannotBeIdentical' => [
+                'code' => '<?php
+                    function f(): void {
+                        $one = 1;
+                        $two = 2;
+                        if ($one != $two) {}
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29 - 2 can never contain 1',
+            ],
+        ];
+    }
+}
