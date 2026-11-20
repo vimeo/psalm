@@ -1398,25 +1398,32 @@ final class TypeExpander
                 ) {
                     continue;
                 }
-                if ($property->is_static || !$property->type) {
+                if ($property->is_static) {
                     continue;
                 }
+                // an untyped property exists and holds anything
+                $property_type = $property->type ?? Type::getMixed();
                 $type = $return_type->classlike_type instanceof TGenericObject
                     ? AtomicPropertyFetchAnalyzer::localizePropertyType(
                         $codebase,
-                        $property->type,
+                        $property_type,
                         $return_type->classlike_type,
                         $storage,
                         $storage,
                     )
-                    : $property->type
+                    : $property_type
                 ;
                 $properties[$key] = $type;
             }
         }
 
         if ($properties === []) {
-            return [$return_type];
+            // an empty `properties` is no shape: a sealed class without properties has none, another may have some
+            return [
+                $all_sealed
+                    ? Type::getEmptyArrayAtomic()
+                    : new TArray([Type::getString(), Type::getMixed()]),
+            ];
         }
         return [TKeyedArray::make(
             $properties,

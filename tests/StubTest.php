@@ -592,6 +592,10 @@ final class StubTest extends DeferredAnalyzerTestCase
                     <stubs>
                         <file name="tests/fixtures/stubs/phpstorm.meta.php" />
                     </stubs>
+
+                    <issueHandlers>
+                        <WrongCaseFunction errorLevel="suppress" />
+                    </issueHandlers>
                 </psalm>',
             ),
         );
