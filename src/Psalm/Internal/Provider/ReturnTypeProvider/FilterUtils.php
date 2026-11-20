@@ -108,7 +108,8 @@ final class FilterUtils
 {
     /**
      * FILTER_THROW_ON_FAILURE exists as of PHP 8.5: a failure throws a Filter\FilterFailedException instead of
-     * returning false or null, and a default option is not used
+     * returning false or null, and a default option is not used. Before PHP 8.5 its value is that of
+     * FILTER_FLAG_GLOBAL_RANGE, so the flag only counts when analysing PHP 8.5 or later.
      */
     public const FILTER_THROW_ON_FAILURE = 0x10000000;
 
@@ -381,9 +382,9 @@ final class FilterUtils
      * @return array{Union, Union, Union}
      * @psalm-pure
      */
-    public static function getFailsNotSetType(int $flags_int_used): array
+    public static function getFailsNotSetType(int $flags_int_used, bool $throws_on_failure = false): array
     {
-        if (self::hasFlag($flags_int_used, self::FILTER_THROW_ON_FAILURE)) {
+        if ($throws_on_failure) {
             return array(Type::getNever(), Type::getNever(), Type::getNever());
         }
 
@@ -400,6 +401,16 @@ final class FilterUtils
             $not_set_type,
             $fails_or_not_set_type,
         );
+    }
+
+    /**
+     * Whether the flags make a failure throw
+     *
+     * @psalm-mutation-free
+     */
+    public static function throwsOnFailure(Codebase $codebase, int $flags): bool
+    {
+        return $codebase->analysis_php_version_id >= 8_05_00 && self::hasFlag($flags, self::FILTER_THROW_ON_FAILURE);
     }
 
     /**
