@@ -31,6 +31,31 @@ final class OverrideTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'overrideOfAPropertyOfAParentClassOrAnInterface' => [
+                'code' => '<?php
+                    interface HasName {
+                        public string $name { get; }
+                    }
+
+                    class Base {
+                        public int $a = 1;
+                        protected int $b = 1;
+                    }
+
+                    final class Child extends Base implements HasName {
+                        #[Override]
+                        public int $a = 2;
+
+                        #[Override]
+                        protected int $b = 2;
+
+                        #[Override]
+                        public string $name = "x";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'constructor' => [
                 'code' => '<?php
                     /**
@@ -333,6 +358,36 @@ final class OverrideTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'overrideOfAPropertyWithoutAParentProperty' => [
+                'code' => '<?php
+                    class Base {
+                        public int $a = 1;
+                        private int $secret = 1;
+                    }
+
+                    final class Child extends Base {
+                        #[Override]
+                        public int $b = 2;
+                    }',
+                'error_message' => 'InvalidOverride - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:8:27 - Property Child::$b does not match any parent property',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'overrideOfAPropertyWhoseParentPropertyIsPrivate' => [
+                'code' => '<?php
+                    class Base {
+                        private int $secret = 1;
+                    }
+
+                    final class Child extends Base {
+                        #[Override]
+                        public int $secret = 2;
+                    }',
+                'error_message' => 'InvalidOverride',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
             'noParent' => [
                 'code' => '<?php
                     class C {
