@@ -2927,8 +2927,9 @@ final class ArgumentsAnalyzer
     }
 
     /**
-     * The sinks of a header given to header() that the analysis can tell is a `Location` header: its value is where
-     * the client is sent (`redirect` taint), unless it starts with a URL fixing the server (see
+     * The sinks of a header given to header() that the analysis can tell is a `Location` header: its value is the URL
+     * the client is sent to (`redirect` taint), where URL syntax can change the path, query or fragment
+     * (`url_component` and `url_path` taints), apart from those a start fixing the server removes (see
      * ConcatAnalyzer::getTaintsRemovedAfterUrlOrigin()). The name of the header is fixed, and header() rejects a
      * line break, so it can't add another header. Null if it can be any header.
      *
@@ -2954,9 +2955,8 @@ final class ArgumentsAnalyzer
             $urls[] = $matches[1] ?? '';
         }
 
-        return ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($urls) & TaintKind::INPUT_SSRF
-            ? 0
-            : TaintKind::INPUT_REDIRECT;
+        return (TaintKind::INPUT_REDIRECT | TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH)
+            & ~ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($urls);
     }
 
     /**

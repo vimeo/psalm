@@ -1167,12 +1167,13 @@ final class TaintTest extends TestCase
     }
 
     /**
-     * The sinks of the curl options with several, which a test expecting an issue can't check: it only sees the first
-     * one reported.
+     * The sinks of the curl options and of the `Location` header with several, which a test expecting an issue can't
+     * check: it only sees the first one reported.
      *
      * @param list<string> $expected_issues
      */
     #[DataProvider('providerCurlSinks')]
+    #[DataProvider('providerLocationHeaderSinks')]
     public function testCurlSinks(string $code, array $expected_issues, bool $track_unused_variables): void
     {
         if ($track_unused_variables) {
@@ -1196,6 +1197,62 @@ final class TaintTest extends TestCase
         sort($taint_issues);
 
         self::assertSame($expected_issues, $taint_issues);
+    }
+
+    /**
+     * @return array<string, array{string, list<string>, bool}>
+     * @psalm-pure
+     */
+    public static function providerLocationHeaderSinks(): array
+    {
+        $cases = [
+            // a value choosing the server is reported as the redirect alone, a value after a fixed server as the URL
+            // syntax it can inject: `?`, `&` or `#` in the path, query or fragment, and `..` in the path
+            'locationHeader' => [
+                '<?php
+                    $next = (string) $_GET["next"];
+                    header("Location: " . $next);
+                    header("Location: /" . $next);
+                    header("Location: https://example.com" . $next);
+                    header("Location: https://example.com/" . $next);
+                    header("Location: https://example.com/?page=" . $next);
+                    header("Location: https://example.com/#" . $next);
+                    header("Location: /docs/" . $next);
+                    header("Location: /account?tab=" . $next);
+                    header("Location: https://example.com/" . rawurlencode($next));
+                    header("Location: /docs/" . rawurlencode($next));
+                    header("Location: https://example.com/?page=" . urlencode($next));
+                    header("Location: /account?tab=" . rawurlencode($next));
+                    header("Location: https://example.com/?" . http_build_query(["page" => $next]));
+                    $url = "https://example.com/" . $next;
+                    header("Location: " . $url);
+                    $path = "/docs/" . rawurlencode($next);
+                    header("Location: $path");',
+                [
+                    'TaintedRedirect on line 3',
+                    'TaintedRedirect on line 4',
+                    'TaintedRedirect on line 5',
+                    'TaintedUrlComponent on line 10',
+                    'TaintedUrlComponent on line 17',
+                    'TaintedUrlComponent on line 6',
+                    'TaintedUrlComponent on line 7',
+                    'TaintedUrlComponent on line 8',
+                    'TaintedUrlComponent on line 9',
+                    'TaintedUrlPath on line 11',
+                    'TaintedUrlPath on line 12',
+                    'TaintedUrlPath on line 19',
+                ],
+            ],
+        ];
+
+        $data = [];
+
+        foreach ($cases as $name => [$code, $expected_issues]) {
+            $data[$name] = [$code, $expected_issues, false];
+            $data[$name . ' tracking unused variables'] = [$code, $expected_issues, true];
+        }
+
+        return $data;
     }
 
     /**
@@ -1417,9 +1474,28 @@ final class TaintTest extends TestCase
             ],
             'locationHeaderWithAFixedServerIsNoRedirect' => [
                 'code' => '<?php
-                    header("Location: https://example.com/" . (string) $_GET["page"]);
-                    header("Location: /account?tab=" . (string) $_GET["tab"]);
-                    header("location : /docs/" . (string) $_GET["page"]);',
+                    header("Location: https://example.com/?page=" . rawurlencode((string) $_GET["page"]));
+                    header("Location: /account?tab=" . urlencode((string) $_GET["tab"]));
+                    header("location : /docs/?" . http_build_query(["page" => (string) $_GET["page"]]));',
+            ],
+            'urlPathSinkOfAQueryAfterARootPath' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-sink ssrf $path
+                     * @psalm-taint-sink url_component $path
+                     * @psalm-taint-sink url_path $path
+                     */
+                    function fetchFromApi(string $path): void {}
+
+                    fetchFromApi("/search?q=" . rawurlencode((string) $_GET["q"]));',
+            ],
+            'redirectSinkOfAUrlWithAFixedServer' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink redirect $url */
+                    function redirectTo(string $url): void {}
+
+                    redirectTo("https://example.com/" . (string) $_GET["page"]);
+                    redirectTo("/docs/" . (string) $_GET["page"]);',
             ],
             'sessionItemWhereTaintedInputIsSuppressed' => [
                 'code' => '<?php
@@ -6870,6 +6946,18 @@ final class TaintTest extends TestCase
 
                     redirectTo((string) $_GET["next"]);',
                 'error_message' => 'TaintedRedirect',
+            ],
+            'locationHeaderPathAfterAFixedServer' => [
+                'code' => '<?php
+                    // `?admin=1#` changes the query of the URL
+                    header("Location: https://example.com/" . (string) $_GET["page"]);',
+                'error_message' => 'TaintedUrlComponent',
+            ],
+            'locationHeaderPathSegmentAfterAFixedServer' => [
+                'code' => '<?php
+                    // `..` reaches another path of the server
+                    header("Location: https://example.com/docs/" . rawurlencode((string) $_GET["page"]));',
+                'error_message' => 'TaintedUrlPath',
             ],
             'headerWhoseNameIsTaintedIsNoRedirect' => [
                 'code' => '<?php

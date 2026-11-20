@@ -77,7 +77,14 @@ Psalm currently defines a number of different sinks for builtin functions and me
 
 What is written to a stream opened on a literal `php://output` path, which is the response, or `php://stdout`, which is the response under the CGI SAPI, is a sink as what `echo` outputs is: `file_put_contents()` to such a path, and `fwrite()`, `fputs()`, `fputcsv()`, `fprintf()`, `vfprintf()`, `stream_copy_to_stream()` and the `fwrite()` and `fputcsv()` methods of `SplFileObject` on a stream opened with `fopen()` or `new SplFileObject()` on such a path in the same function, and held by its variables.
 
-What is stored in `$_SESSION` is a `session` sink, and a `Location` header given to `header()` a `redirect` sink rather than a `header` one, unless what follows `Location:` fixes the server (`https://example.com/`, or a path such as `/account?`).
+What is stored in `$_SESSION` is a `session` sink, and a `Location` header given to `header()` a `redirect`, `url_component` and `url_path` sink rather than a `header` one. After a start fixing the server (`https://example.com/`, or a path such as `/account`), in the header or in the URL given to it, only the URL syntax a value can inject in the path, the query or the fragment is reported:
+
+```php
+<?php
+header('Location: ' . $_GET['next']); // TaintedRedirect
+header('Location: https://example.com/' . $_GET['page']); // TaintedUrlComponent
+header('Location: /account?tab=' . urlencode((string) $_GET['tab'])); // no issue
+```
 
 You can also [define your own taint sinks](custom_taint_sinks.md).
 
