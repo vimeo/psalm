@@ -22,6 +22,7 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
 use function array_map;
+use function substr_count;
 
 final class StubsGeneratorTest extends TestCase
 {
@@ -73,6 +74,42 @@ final class StubsGeneratorTest extends TestCase
         );
 
         self::assertStringContainsString('function f(string|int|float|bool|null $x)', $stub);
+    }
+
+    public function testTheGeneratedStubKeepsTheIntersectionOfAThrows(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                interface Marker {}
+
+                /**
+                 * @throws Marker&\\Throwable
+                 * @throws \\RuntimeException
+                 */
+                function f(): void {}
+
+                class C {
+                    /**
+                     * @throws Marker&\\Throwable
+                     */
+                    public function m(): void {}
+                }',
+        );
+        $this->analyzeFile('somefile.php', new Context());
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $stub = StubsGenerator::getAll(
+            $codebase,
+            $codebase->classlike_storage_provider,
+            $codebase->file_storage_provider,
+        );
+
+        self::assertSame(3, substr_count($stub, '@throws'));
+        self::assertSame(2, substr_count($stub, '@throws Marker&Throwable'));
+        self::assertSame(1, substr_count($stub, '@throws RuntimeException'));
     }
 
     public function testAnIntIsAnIdentifier(): void
