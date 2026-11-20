@@ -1091,6 +1091,7 @@ final class PreloaderList {
         \Psalm\Internal\Type\IterationPurity::class,
         \Psalm\Internal\Type\LiteralCast::class,
         \Psalm\Internal\Type\NegatedAssertionReconciler::class,
+        \Psalm\Internal\Type\ObjectShapeIntersection::class,
         \Psalm\Internal\Type\ParseTree::class,
         \Psalm\Internal\Type\ParseTreeCreator::class,
         \Psalm\Internal\Type\ParseTree\CallableParamTree::class,

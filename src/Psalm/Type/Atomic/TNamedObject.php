@@ -7,6 +7,7 @@ namespace Psalm\Type\Atomic;
 use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
@@ -153,7 +154,9 @@ class TNamedObject extends Atomic
             return 'static';
         }
 
-        $intersection_types = $this->getNamespacedIntersectionTypes(
+        // an object shape has no phpdoc counterpart: `Foo&object{a: int}` is written `Foo`
+        $type = $use_phpdoc_format ? ObjectShapeIntersection::withoutShape($this) : $this;
+        $intersection_types = $type->getNamespacedIntersectionTypes(
             $namespace,
             $aliased_classes,
             $this_class,
@@ -188,7 +191,8 @@ class TNamedObject extends Atomic
             return $analysis_php_version_id >= 8_00_00 ? 'static' : 'self';
         }
 
-        $result = $this->toNamespacedString($namespace, $aliased_classes, $this_class, false);
+        $result = ObjectShapeIntersection::withoutShape($this)
+            ->toNamespacedString($namespace, $aliased_classes, $this_class, false);
         $intersection = strrpos($result, '&');
         if ($intersection === false || $analysis_php_version_id >= 8_01_00) {
             return $result;
@@ -199,6 +203,10 @@ class TNamedObject extends Atomic
     #[Override]
     public function canBeFullyExpressedInPhp(int $analysis_php_version_id): bool
     {
+        if (ObjectShapeIntersection::getShape($this) !== null) {
+            return false;
+        }
+
         return ($this->value !== 'static' && $this->is_static === false) || $analysis_php_version_id >= 8_00_00;
     }
 

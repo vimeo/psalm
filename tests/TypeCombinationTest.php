@@ -243,11 +243,67 @@ final class TypeCombinationTest extends TestCase
                     'object{a: int}',
                 ],
             ],
-            'objectShapesKeepTheirCommonIntersection' => [
-                'object{a:string}&Iterator',
+            'objectShapesOfTheSameIntersectionAreMerged' => [
+                'Iterator&object{a:string}',
+                [
+                    'object{a: string}&Iterator',
+                    'object{a: string, b: int}&Iterator',
+                ],
+            ],
+            'optionalPropertyOfObjectShapesOfTheSameIntersection' => [
+                'stdClass&object{a?:int}',
+                [
+                    'stdClass&object{a: int}',
+                    'stdClass&object{a?: int}',
+                ],
+            ],
+            'objectShapesOfIntersectionsWithOtherClassesAreNotMerged' => [
+                'Iterator&Countable&object{a:string, b:int}|Iterator&object{a:string}',
                 [
                     'object{a: string}&Iterator',
                     'object{a: string, b: int}&Iterator&Countable',
+                ],
+            ],
+            'objectShapesOfTheSameGenericIntersectionAreMerged' => [
+                'ArrayObject<int, int>&object{a?:int}',
+                [
+                    'ArrayObject<int, int>&object{a: int}',
+                    'ArrayObject<int, int>&object{a?: int}',
+                ],
+            ],
+            'optionalPropertyOfObjectShapesOfTheSameGenericIntersectionFirst' => [
+                'ArrayObject<int, int>&object{a?:int}',
+                [
+                    'ArrayObject<int, int>&object{a?: int}',
+                    'ArrayObject<int, int>&object{a: int}',
+                ],
+            ],
+            'objectShapesOfTheSameTraversableIntersectionCombineTheirTypeParams' => [
+                'Traversable<int, int|string>&object{a:int}',
+                [
+                    'Traversable<int, int>&object{a: int}',
+                    'Traversable<int, string>&object{a: int}',
+                ],
+            ],
+            'optionalPropertyOfObjectShapesOfTheSameTraversableIntersection' => [
+                'Traversable<int, int>&object{a?:int}',
+                [
+                    'Traversable<int, int>&object{a?: int}',
+                    'Traversable<int, int>&object{a: int}',
+                ],
+            ],
+            'optionalPropertyOfObjectShapesOfTheSameTraversableIntersectionLast' => [
+                'Traversable<int, int>&object{a?:int}',
+                [
+                    'Traversable<int, int>&object{a: int}',
+                    'Traversable<int, int>&object{a?: int}',
+                ],
+            ],
+            'objectShapeOfAGenericIntersectionIsNotSpreadToAnotherClass' => [
+                'ArrayIterator<int, int>|ArrayObject<int, int>&object{a:int}',
+                [
+                    'ArrayObject<int, int>&object{a: int}',
+                    'ArrayIterator<int, int>',
                 ],
             ],
             'objectAbsorbsObjectShapes' => [

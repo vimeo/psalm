@@ -442,6 +442,56 @@ final class TypeCombiner
     }
 
     /**
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function combineShapeIntersection(
+        TNamedObject|TTemplateParam $type,
+        TObjectWithProperties $shape,
+        TypeCombination $combination,
+        ?Codebase $codebase,
+    ): void {
+        if ($type::class === TNamedObject::class && $combination->named_object_types === null) {
+            return;
+        }
+
+        $shapeless_type = ObjectShapeIntersection::withoutShape($type);
+        $shapeless_key = $shapeless_type->getKey() . '&object';
+        $existing_type = $combination->value_types[$shapeless_key] ?? null;
+
+        if ($existing_type instanceof TTemplateParam
+            && $shapeless_type instanceof TTemplateParam
+            && !$existing_type->as->equals($shapeless_type->as)
+        ) {
+            $shapeless_type = $shapeless_type->replaceAs(Type::combineUnionTypes(
+                $shapeless_type->as,
+                $existing_type->as,
+                $codebase,
+                false,
+                false,
+            ));
+        } elseif ($existing_type instanceof TNamedObject && $shapeless_type instanceof TNamedObject) {
+            // `static&object{..}|Foo&object{..}` is `Foo&object{..}`, as `static|Foo` is `Foo`
+            $shapeless_type = $shapeless_type->setIsStatic(
+                $existing_type->is_static && $shapeless_type->is_static,
+                $existing_type->is_static_resolved && $shapeless_type->is_static_resolved,
+            );
+        }
+
+        $combined_shape = self::combineObjects(
+            $existing_type ? ObjectShapeIntersection::getShape($existing_type) : null,
+            $shape,
+            $codebase,
+        );
+
+        if ($combined_shape instanceof TObjectWithProperties) {
+            $combination->value_types[$shapeless_key] = ObjectShapeIntersection::intersect([
+                $shapeless_type,
+                $combined_shape,
+            ]);
+        }
+    }
+
+    /**
      * `object` is every object, shapes included. Shapes are open, so an object matching one shape may have any
      * additional property: two shapes are only known to share the properties both declare
      *
@@ -623,16 +673,40 @@ final class TypeCombiner
             );
         }
 
+        // `Foo&object{a: int}|Foo&object{a?: int}` is `Foo&object{a?: int}`: intersections that differ in their shape
+        // only combine their shapes, as leading shapes do, and the shape isn't spread to other classes. Traversable
+        // and Generator, keyed by their name to combine their type params, are left to that.
+        if (($type::class === TNamedObject::class
+                || $type instanceof TGenericObject
+                || $type instanceof TTemplateParam)
+            && $type_key === $type->getKey()
+            && ($shape = ObjectShapeIntersection::getShape($type)) !== null
+        ) {
+            self::combineShapeIntersection($type, $shape, $combination, $codebase);
+
+            return null;
+        }
+
         if ($type instanceof TNamedObject
             || $type instanceof TTemplateParam
             || $type instanceof TIterable
             || $type instanceof TObjectWithProperties
         ) {
-            if ($type->extra_types) {
-                $combination->extra_types = array_merge(
-                    $combination->extra_types,
-                    $type->extra_types,
-                );
+            foreach ($type->extra_types as $key => $extra_type) {
+                $existing_extra_type = $combination->extra_types[$key] ?? null;
+
+                // a shape of one member and a shape of another are known to share the properties both declare
+                if ($existing_extra_type instanceof TObjectWithProperties
+                    && $extra_type instanceof TObjectWithProperties
+                ) {
+                    $combined_shape = self::combineObjects($existing_extra_type, $extra_type, $codebase);
+
+                    if ($combined_shape instanceof TObjectWithProperties) {
+                        $extra_type = $combined_shape;
+                    }
+                }
+
+                $combination->extra_types[$key] = $extra_type;
             }
         }
 
@@ -920,6 +994,15 @@ final class TypeCombiner
             // an object with properties is a shape, which a named object doesn't have to match
             if (!$type instanceof TObjectWithProperties) {
                 $combination->named_object_types = null;
+
+                // as the named objects, which `object` holds with any shape
+                foreach ($combination->value_types as $key => $value_type) {
+                    if ($value_type::class === TNamedObject::class
+                        && ObjectShapeIntersection::getShape($value_type) !== null
+                    ) {
+                        unset($combination->value_types[$key]);
+                    }
+                }
             }
 
             $combined_object = self::combineObjects(

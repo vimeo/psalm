@@ -20,6 +20,7 @@ use Psalm\Internal\Clause;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -1431,15 +1432,22 @@ class Reconciler
                         $existing_key_type_part = array_shift($atomic_types);
 
                         if ($existing_key_type_part instanceof TTemplateParam) {
-                            $atomic_types = array_merge($atomic_types, $existing_key_type_part->as->getAtomicTypes());
+                            $atomic_types = [
+                                ...$atomic_types,
+                                ...ObjectShapeIntersection::getBoundTypes($existing_key_type_part),
+                            ];
                             continue;
                         }
 
+                        $shape = ObjectShapeIntersection::getShape($existing_key_type_part);
+
                         if ($existing_key_type_part instanceof TNull) {
                             $class_property_type = Type::getNull();
-                        } elseif ($existing_key_type_part instanceof TObjectWithProperties) {
-                            $class_property_type =
-                                $existing_key_type_part->properties[$property_name] ?? Type::getMixed();
+                        } elseif ($existing_key_type_part instanceof TObjectWithProperties
+                            // `Foo&object{a: int}` has the property of its shape
+                            || isset($shape->properties[$property_name])
+                        ) {
+                            $class_property_type = $shape->properties[$property_name] ?? Type::getMixed();
                         } elseif ($existing_key_type_part instanceof TMixed
                             || $existing_key_type_part instanceof TObject
                             || ($existing_key_type_part instanceof TNamedObject
@@ -2203,19 +2211,16 @@ class Reconciler
         $changed = false;
 
         foreach ($base_type->getAtomicTypes() as $base_atomic_type) {
-            if ($base_atomic_type instanceof TObjectWithProperties
-                && isset($base_atomic_type->properties[$property_name])
-                && !$base_atomic_type->properties[$property_name]->equals($narrowed_type)
-            ) {
-                $properties = $base_atomic_type->properties;
-                $narrowed_from = $base_atomic_type->narrowed_from;
-                $narrowed_from[$property_name] ??= $properties[$property_name];
-                $properties[$property_name] = $narrowed_type;
-                $base_atomic_type = $base_atomic_type->setProperties($properties)->setNarrowedFrom($narrowed_from);
-                $changed = true;
+            $new_atomic_type = $base_atomic_type;
+            $shape = ObjectShapeIntersection::getShape($base_atomic_type);
+            $narrowed_shape = $shape ? self::narrowShapeProperty($shape, $property_name, $narrowed_type) : null;
+
+            if ($narrowed_shape !== null && $narrowed_shape !== $shape) {
+                $new_atomic_type = ObjectShapeIntersection::replaceShape($base_atomic_type, $narrowed_shape);
             }
 
-            $new_atomic_types[] = $base_atomic_type;
+            $changed = $changed || $new_atomic_type !== $base_atomic_type;
+            $new_atomic_types[] = $new_atomic_type;
         }
 
         if (!$changed) {
@@ -2227,6 +2232,26 @@ class Reconciler
         $changed_var_ids[$base_key . '->' . $property_name] = true;
 
         self::adjustTObjectWithPropertiesType($key_parts, $existing_types, $changed_var_ids, $new_base_type);
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function narrowShapeProperty(
+        TObjectWithProperties $shape,
+        string $property_name,
+        Union $narrowed_type,
+    ): TObjectWithProperties {
+        if (!isset($shape->properties[$property_name]) || $shape->properties[$property_name]->equals($narrowed_type)) {
+            return $shape;
+        }
+
+        $properties = $shape->properties;
+        $narrowed_from = $shape->narrowed_from;
+        $narrowed_from[$property_name] ??= $properties[$property_name];
+        $properties[$property_name] = $narrowed_type;
+
+        return $shape->setProperties($properties)->setNarrowedFrom($narrowed_from);
     }
 
     /**

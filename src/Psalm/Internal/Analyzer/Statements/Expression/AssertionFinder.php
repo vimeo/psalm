@@ -35,6 +35,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Internal\Type\PatternCharacters;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DocblockTypeContradiction;
@@ -4277,6 +4278,11 @@ final class AssertionFinder
             $property_definition = $class_definition->properties[$property] ?? null;
 
             if (!$property_definition instanceof PropertyStorage) {
+                // `Foo&object{a: int}` has the property of its shape
+                if (isset(ObjectShapeIntersection::getShape($type)?->properties[$property])) {
+                    continue;
+                }
+
                 $magic_type = $class_definition->pseudo_property_get_types['$' . $property] ?? null;
                 if ($magic_type === null) {
                     return sprintf(

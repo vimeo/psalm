@@ -20,6 +20,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\LiteralCast;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
@@ -265,11 +266,12 @@ final class CastAnalyzer
                     ) {
                         // a closure has no properties: it becomes the only element
                         $permissible_atomic_types[] = TKeyedArray::make([new Union([$type])], null, null, true);
-                    } elseif ($type instanceof TObjectWithProperties) {
-                        $array_type = $type->properties === []
+                    } elseif (($shape = ObjectShapeIntersection::getShape($type)) !== null) {
+                        // `Foo&object{a: int}` has the properties of its shape, and maybe others
+                        $array_type = $shape->properties === []
                             ? Type::getArrayAtomic()
                             : TKeyedArray::make(
-                                $type->properties,
+                                $shape->properties,
                                 null,
                                 [Type::getArrayKey(), Type::getMixed()],
                             );
@@ -1342,14 +1344,17 @@ final class CastAnalyzer
      */
     public static function getObjectCastType(Union $operand_type): Union
     {
-        $std_class = ['stdclass' => new TNamedObject('stdClass')];
         $object_types = [];
 
         foreach ($operand_type->getAtomicTypes() as $type) {
             if ($type instanceof Scalar) {
-                $object_types[] = new TObjectWithProperties(['scalar' => new Union([$type])], [], $std_class);
+                $object_types[] = new TNamedObject('stdClass', false, false, [
+                    'object' => new TObjectWithProperties(['scalar' => new Union([$type])]),
+                ]);
             } elseif ($type instanceof TKeyedArray) {
-                $object_types[] = new TObjectWithProperties($type->properties, [], $std_class);
+                $object_types[] = new TNamedObject('stdClass', false, false, [
+                    'object' => new TObjectWithProperties($type->properties),
+                ]);
             } elseif ($type instanceof TArray || $type instanceof TNull) {
                 $object_types[] = new TNamedObject('stdClass');
             } else {

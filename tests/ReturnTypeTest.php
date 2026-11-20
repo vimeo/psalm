@@ -1644,7 +1644,7 @@ final class ReturnTypeTest extends TestCase
                     $obj = (object)returnsInt();
                 ',
                 'assertions' => [
-                    '$obj' => 'object{scalar:int}&stdClass',
+                    '$obj' => 'stdClass&object{scalar:int}',
                 ],
             ],
             'infersObjectShapeOfCastArray' => [
@@ -1659,7 +1659,7 @@ final class ReturnTypeTest extends TestCase
                     $obj = (object)returnsArray();
                 ',
                 'assertions' => [
-                    '$obj' => 'object{a:int}&stdClass',
+                    '$obj' => 'stdClass&object{a:int}',
                 ],
             ],
             'mixedAssignmentWithUnderscore' => [
@@ -2481,7 +2481,7 @@ final class ReturnTypeTest extends TestCase
                     takesShape($o);
                     $same = identity($o);',
                 'assertions' => [
-                    '$same===' => 'object{a:1}&stdClass',
+                    '$same===' => 'stdClass&object{a:1}',
                 ],
             ],
             'objectCastOfAnUnshapedArrayIsAStdClass' => [
@@ -2530,7 +2530,7 @@ final class ReturnTypeTest extends TestCase
                 'code' => '<?php
                     $e = array_filter([(object) ["a" => 1], null], fn($i) => $i);',
                 'assertions' => [
-                    '$e===' => 'array<int<0, 1>, object{a:1}&stdClass>',
+                    '$e===' => 'array<int<0, 1>, stdClass&object{a:1}>',
                 ],
             ],
             'objectCastOfAScalarIsAStdClass' => [
@@ -2802,7 +2802,7 @@ final class ReturnTypeTest extends TestCase
                     function takesArrayObject(ArrayObject $o): void {}
 
                     takesArrayObject((object) ["a" => 1]);',
-                'error_message' => 'ArgumentTypeCoercion',
+                'error_message' => 'InvalidArgument',
             ],
             'methodOfAnAnonymousClassThatThrowsAfterAnotherStatementIsInvalid' => [
                 'code' => '<?php

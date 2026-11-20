@@ -13,6 +13,7 @@ use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\IntMask;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Internal\Type\StringRefinement;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeParser;
@@ -1320,21 +1321,12 @@ abstract class Type
 
             $intersection_performed = true;
 
-            $wider_type_clone = $wider_type->setIntersectionTypes([]);
-
-            $final_intersection = array_merge(
-                [$wider_type_clone->getKey() => $wider_type_clone],
-                $intersection_atomic->getIntersectionTypes(),
-            );
-
-            $wider_type_intersection_types = $wider_type->getIntersectionTypes();
-
-            foreach ($wider_type_intersection_types as $wider_type_intersection_type) {
-                $final_intersection[$wider_type_intersection_type->getKey()]
-                    = $wider_type_intersection_type;
-            }
-
-            return $intersection_atomic->setIntersectionTypes($final_intersection);
+            return ObjectShapeIntersection::intersect([
+                $intersection_atomic->setIntersectionTypes([]),
+                $wider_type->setIntersectionTypes([]),
+                ...array_values($intersection_atomic->getIntersectionTypes()),
+                ...array_values($wider_type->getIntersectionTypes()),
+            ]);
         }
 
         return $intersection_atomic;

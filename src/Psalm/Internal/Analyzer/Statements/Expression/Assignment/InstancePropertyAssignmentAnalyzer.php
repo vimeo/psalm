@@ -35,6 +35,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -83,7 +84,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_merge;
 use function array_pop;
 use function count;
 use function explode;
@@ -1127,10 +1127,7 @@ final class InstancePropertyAssignmentAnalyzer
             $lhs_type_part = array_pop($lhs_atomic_types);
 
             if ($lhs_type_part instanceof TTemplateParam) {
-                $lhs_atomic_types = array_merge(
-                    $lhs_atomic_types,
-                    $lhs_type_part->as->getAtomicTypes(),
-                );
+                $lhs_atomic_types = [...$lhs_atomic_types, ...ObjectShapeIntersection::getBoundTypes($lhs_type_part)];
 
                 continue;
             }
@@ -1670,6 +1667,14 @@ final class InstancePropertyAssignmentAnalyzer
             && $codebase->properties->getStorage($property_id)->is_static
         )
         ) {
+            if (self::isShapeProperty($codebase, $lhs_type_part, $prop_name)) {
+                if ($var_id !== null) {
+                    $context->vars_in_scope[$var_id] = Type::getMixed();
+                }
+
+                return null;
+            }
+
             if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this') {
                 IssueBuffer::maybeAdd(
                     new UndefinedThisPropertyAssignment(
@@ -2145,5 +2150,19 @@ final class InstancePropertyAssignmentAnalyzer
         }
 
         $statements_analyzer->node_data = $old_data_provider;
+    }
+
+    /**
+     * A property of the shape of `Foo&object{a: int}` that `Foo` doesn't have is assigned as on a lone shape,
+     * unless `Foo` is final, as its properties are read
+     */
+    private static function isShapeProperty(
+        Codebase $codebase,
+        TNamedObject $lhs_type_part,
+        string $prop_name,
+    ): bool {
+        return isset(ObjectShapeIntersection::getShape($lhs_type_part)?->properties[$prop_name])
+            && !($codebase->classExists($lhs_type_part->value)
+                && $codebase->classlike_storage_provider->get($lhs_type_part->value)->final);
     }
 }

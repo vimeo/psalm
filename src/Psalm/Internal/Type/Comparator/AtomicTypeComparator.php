@@ -8,6 +8,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\AtomicParts;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Internal\Type\StringRefinement;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -899,19 +900,51 @@ final class AtomicTypeComparator
         if ($container_type_part instanceof TObject
             && $input_type_part instanceof TNamedObject
         ) {
-            if ($container_type_part instanceof TObjectWithProperties
-                && $input_type_part->value !== 'stdClass'
-            ) {
-                return KeyedArrayComparator::isContainedByObjectWithProperties(
+            if (!$container_type_part instanceof TObjectWithProperties) {
+                return true;
+            }
+
+            // `Foo&object{a: int}` matches a shape through its own shape, else through the properties `Foo` declares,
+            // one or the other (vimeo/psalm#13899)
+            $input_shape = ObjectShapeIntersection::getShape($input_type_part);
+
+            if ($input_type_part->value === 'stdClass') {
+                return $input_shape === null || self::isContainedBy(
                     $codebase,
-                    $input_type_part,
+                    $input_shape,
                     $container_type_part,
                     $allow_interface_equality,
+                    $allow_float_int_equality,
                     $atomic_comparison_result,
                 );
             }
 
-            return true;
+            // the class's properties can match where its shape doesn't, so the comparison of the shape mustn't
+            // leave its flags in the result before that
+            if ($input_shape !== null && self::isContainedBy(
+                $codebase,
+                $input_shape,
+                $container_type_part,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+            )) {
+                return self::isContainedBy(
+                    $codebase,
+                    $input_shape,
+                    $container_type_part,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                    $atomic_comparison_result,
+                );
+            }
+
+            return KeyedArrayComparator::isContainedByObjectWithProperties(
+                $codebase,
+                $input_type_part,
+                $container_type_part,
+                $allow_interface_equality,
+                $atomic_comparison_result,
+            );
         }
 
         if ($container_type_part instanceof TNamedObject
