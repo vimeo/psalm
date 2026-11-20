@@ -522,9 +522,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                         $is_equality,
                     ));
 
-                    $redundant = false;
+                    $redundant = $redundant && $template_did_fail === Reconciler::RECONCILIATION_REDUNDANT;
 
-                    if (!$template_did_fail) {
+                    if ($template_did_fail !== Reconciler::RECONCILIATION_EMPTY) {
                         $non_bool_types[] = $type;
                     }
                 } else {
@@ -1003,7 +1003,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                         $recursive_check,
                     ));
 
-                    if (!$template_did_fail) {
+                    if ($template_did_fail !== Reconciler::RECONCILIATION_EMPTY) {
                         $existing_var_type->removeType($type_key);
                         $existing_var_type->addType($existing_var_atomic_type);
                     }
@@ -1049,9 +1049,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                         $is_equality,
                     ));
 
-                    $redundant = false;
+                    $redundant = $redundant && $template_did_fail === Reconciler::RECONCILIATION_REDUNDANT;
 
-                    if (!$template_did_fail) {
+                    if ($template_did_fail !== Reconciler::RECONCILIATION_EMPTY) {
                         $non_scalar_types[] = $type;
                     }
                 } else {
@@ -1125,9 +1125,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                         $is_equality,
                     ));
 
-                    $redundant = false;
+                    $redundant = $redundant && $template_did_fail === Reconciler::RECONCILIATION_REDUNDANT;
 
-                    if (!$template_did_fail) {
+                    if ($template_did_fail !== Reconciler::RECONCILIATION_EMPTY) {
                         $non_object_types[] = $type;
                     }
                 } else {
@@ -1218,9 +1218,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                         $is_equality,
                     ));
 
-                    $redundant = false;
+                    $redundant = $redundant && $template_did_fail === Reconciler::RECONCILIATION_REDUNDANT;
 
-                    if (!$template_did_fail) {
+                    if ($template_did_fail !== Reconciler::RECONCILIATION_EMPTY) {
                         $non_numeric_types[] = $type;
                     }
                 } else {
@@ -1304,9 +1304,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                         $is_equality,
                     ));
 
-                    $redundant = false;
+                    $redundant = $redundant && $template_did_fail === Reconciler::RECONCILIATION_REDUNDANT;
 
-                    if (!$template_did_fail) {
+                    if ($template_did_fail !== Reconciler::RECONCILIATION_EMPTY) {
                         $non_int_types[] = $type;
                     }
                 } else {
@@ -1399,9 +1399,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                         $is_equality,
                     ));
 
-                    $redundant = false;
+                    $redundant = $redundant && $template_did_fail === Reconciler::RECONCILIATION_REDUNDANT;
 
-                    if (!$template_did_fail) {
+                    if ($template_did_fail !== Reconciler::RECONCILIATION_EMPTY) {
                         $non_float_types[] = $type;
                     }
                 } else {
@@ -1487,9 +1487,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                         $is_equality,
                     ));
 
-                    $redundant = false;
+                    $redundant = $redundant && $template_did_fail === Reconciler::RECONCILIATION_REDUNDANT;
 
-                    if (!$template_did_fail) {
+                    if ($template_did_fail !== Reconciler::RECONCILIATION_EMPTY) {
                         $non_string_types[] = $type;
                     }
                 } else {
@@ -1586,9 +1586,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                         $is_equality,
                     ));
 
-                    $redundant = false;
+                    $redundant = $redundant && $template_did_fail === Reconciler::RECONCILIATION_REDUNDANT;
 
-                    if (!$template_did_fail) {
+                    if ($template_did_fail !== Reconciler::RECONCILIATION_EMPTY) {
                         $non_array_types[] = $type;
                     }
                 } else {

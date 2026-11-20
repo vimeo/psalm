@@ -225,6 +225,23 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'redundantNegatedAssertionOnATemplateKeepsTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $x
+                     * @return T
+                     */
+                    function f($x) {
+                        if (!is_bool($x)) {
+                            return $x;
+                        }
+
+                        throw new Exception();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType'],
+            ],
             'notNullAfterAnIssetOfAnArrayAccessOffsetOrAMagicPropertyIsNotRedundant' => [
                 'code' => '<?php
                     /** @implements ArrayAccess<string, mixed> */
@@ -1716,6 +1733,20 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'redundantNegatedAssertionOnATemplateIsReportedAsRedundant' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $x
+                     */
+                    function f($x): void {
+                        if (!is_bool($x)) {
+                            echo $x;
+                        }
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:7:30 - Docblock-defined type T:fn-f as int for $x is never bool',
+            ],
             'secondFalsyTwiceWithOffsetAdded' => [
                 'code' => '<?php
                     /**
