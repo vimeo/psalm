@@ -160,14 +160,19 @@ final class CallableTest extends TestCase
                     /**
                      * @param list<string> $list
                      * @param non-empty-list<scalar> $nonEmptyList
+                     * @param list<object|string> $objectOrStringList
                      */
-                    function f(array $list, array $nonEmptyList): void {
+                    function f(array $list, array $nonEmptyList, array $objectOrStringList): void {
                         if (is_callable($list)) {
                             /** @psalm-check-type-exact $list = callable-array{0: class-string, 1: non-empty-string} */
                         }
 
                         if (is_callable($nonEmptyList)) {
                             /** @psalm-check-type-exact $nonEmptyList = callable-array{0: class-string, 1: non-empty-string} */
+                        }
+
+                        if (is_callable($objectOrStringList)) {
+                            /** @psalm-check-type-exact $objectOrStringList = callable-array{0: class-string|object, 1: non-empty-string} */
                         }
                     }',
             ],
