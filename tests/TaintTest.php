@@ -1730,13 +1730,9 @@ final class TaintTest extends TestCase
             ],
             'queryInAVariableIsReadFromWhatItStartsWithWhenKnownTextFollows' => [
                 'code' => '<?php
-                    function run(PDO $pdo, bool $active): void {
+                    function run(PDO $pdo, string $status): void {
                         $pdo->prepare("INSERT INTO users (name, bio) VALUES (?, ?)")->execute(["admin", $_GET["bio"]]);
-                        if ($active) {
-                            $sql = "SELECT name FROM users WHERE active = 1";
-                        } else {
-                            $sql = "SELECT name FROM users WHERE active = 0";
-                        }
+                        $sql = "SELECT name FROM users WHERE status = " . $pdo->quote($status);
                         echo (string) $pdo->query($sql . " LIMIT 1")->fetch()["name"];
                     }',
             ],
@@ -7960,13 +7956,9 @@ final class TaintTest extends TestCase
             ],
             'queryInAVariableTheAnalysisKnowsOnlyTheStartOfCantBeParsed' => [
                 'code' => '<?php
-                    function run(PDO $pdo, bool $active): void {
+                    function run(PDO $pdo, string $status): void {
                         $pdo->prepare("INSERT INTO users (name, bio) VALUES (?, ?)")->execute(["admin", $_GET["bio"]]);
-                        if ($active) {
-                            $sql = "SELECT name FROM users WHERE active = 1";
-                        } else {
-                            $sql = "SELECT name FROM users WHERE active = 0";
-                        }
+                        $sql = "SELECT name FROM users WHERE status = " . $pdo->quote($status);
                         echo (string) $pdo->query($sql)->fetch()["name"];
                     }',
                 'error_message' => 'TaintedHtml',

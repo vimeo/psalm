@@ -284,14 +284,13 @@ function show(PDO $pdo, string $table): void {
 
 - A query it can't parse, a table name that isn't a literal and `INSERT INTO t VALUES (...)` without the column
   list read or write any column. A table name that isn't a literal can be any table.
-- A part of the SQL the analysis doesn't know the text of is a value only when known text follows it. A statement
-  that ends with such a part can't be parsed, because the part can continue the statement (more assignments,
-  `ON DUPLICATE KEY UPDATE`, `ON CONFLICT`, `RETURNING`, a `UNION`, another statement): `"UPDATE t SET a = " . $a`,
-  a `sprintf()` format ending with a conversion, or a variable the analysis knows only the start of (`$sql` assigned
-  in two branches, `'INSERT INTO t (a) VALUES ' . implode(',', $rows)`). A part that is a number (an `int`, a
-  `float`, a `bool` or `null`) can't continue it. A query with such a part in a comment can't be parsed either, as
-  the part can end the comment. The data of a ClickHouse `INSERT ... FORMAT` runs to the end of the query and holds
-  no SQL.
+- A part of the SQL the analysis doesn't know the text of is a value only when known text follows it. A statement that
+  ends with such a part can't be parsed, because the part can continue the statement (more assignments, `ON DUPLICATE
+  KEY UPDATE`, `ON CONFLICT`, `RETURNING`, a `UNION`, another statement): `"UPDATE t SET a = " . $a`, a `sprintf()`
+  format ending with a conversion, or a variable the analysis knows only the start of (`$sql` assigned `'SELECT a FROM t
+  WHERE b = ' . $b` or `'INSERT INTO t (a) VALUES ' . implode(',', $rows)`). A part that is a number (an `int`, a
+  `float`, a `bool` or `null`) can't continue it. A query with such a part in a comment can't be parsed either, as the
+  part can end the comment. The data of a ClickHouse `INSERT ... FORMAT` runs to the end of the query and holds no SQL.
 - A column a `UNION` of `SELECT *` gives can be any column of their tables.
 - The values given to a prepared statement it can't follow back to the query that prepared it (a statement passed
   to another function) are stored in every column of every table.
