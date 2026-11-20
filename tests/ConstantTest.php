@@ -309,6 +309,30 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'importedConstantShadowsAPhpConstantInAParameterDefault' => [
+                'code' => '<?php
+                    namespace One {
+                        const VALUE = 10;
+                    }
+
+                    namespace Lib {
+                        use const One\VALUE as JSON_THROW_ON_ERROR;
+
+                        /**
+                         * @template T
+                         * @param T $v
+                         * @return T
+                         */
+                        function f($v = JSON_THROW_ON_ERROR) {
+                            return $v;
+                        }
+
+                        /** @return 10 */
+                        function check(): int {
+                            return f();
+                        }
+                    }',
+            ],
             'staticConstantMapOffsetWithANullDefaultOfDestructuredValues' => [
                 'code' => '<?php
                     class Handler

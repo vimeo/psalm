@@ -300,6 +300,11 @@ final class SimpleTypeInferer
                 return Type::getString($aliases->namespace);
             }
 
+            // `use const A\SOME;` makes `SOME` the constant of A, not the global one of that name
+            if ($stmt->name->isUnqualified() && isset($aliases->constants[$name])) {
+                return null;
+            }
+
             // a constant depending on classes, e.g. an enum case, is known once they are, see ReflectorVisitor
             if ($codebase->getUnresolvedGlobalConstant($name) !== null) {
                 return null;
