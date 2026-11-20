@@ -10,6 +10,8 @@ No annotation is suggested for a function-like whose parameter default values ne
 
 To automatically add pure annotations where needed, run Psalm with `--alter --issues=MissingPureAnnotation` (it does not need the config flag).  
 
+A function-like marked pure has its taints [specialized](../../security_analysis/avoiding_false_positives.md#specializing-taints-in-functions) per call: only the arguments of that call taint its result. Without the annotation this still happens for functions Psalm infers to be pure, but not for methods that can be overridden, whose result then carries the taints of every call. The annotation is also enforced, so a later change that makes the function-like impure is reported (see the [purity model](../../annotating_code/purity_model.md)).  
+
 ```php
 <?php
 

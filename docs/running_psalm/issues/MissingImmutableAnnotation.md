@@ -4,6 +4,8 @@ Emitted when the config flag [`suggestPurityAnnotations`](../configuration.md#su
 
 To automatically add immutable annotations where needed, run Psalm with `--alter --issues=MissingImmutableAnnotation` (it does not need the config flag).  
 
+Taint analysis can [specialize](../../security_analysis/avoiding_false_positives.md#specializing-taints-in-classes) the taints of an immutable class per instance, instead of mixing the taints of every instance. The annotation is also enforced, so a later change that mutates the class is reported (see the [purity model](../../annotating_code/purity_model.md#class-level-contracts)).  
+
 ```php
 <?php
 
