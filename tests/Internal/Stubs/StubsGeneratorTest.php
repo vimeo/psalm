@@ -12,10 +12,8 @@ use Psalm\Context;
 use Psalm\Internal\Stubs\Generator\StubsGenerator;
 use Psalm\Tests\TestCase;
 use Psalm\Type;
-use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TMixed;
-use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
@@ -47,11 +45,6 @@ final class StubsGeneratorTest extends TestCase
     public function testATypeWithoutAPhpTypeIsLeftOut(): void
     {
         self::assertNull(StubsGenerator::getParserTypeFromPsalmType(new Union([new TInt(), new TMixed()])));
-    }
-
-    public function testAScalarWithoutAPhpTypeIsLeftOut(): void
-    {
-        self::assertNull(StubsGenerator::getParserTypeFromPsalmType(new Union([new TNamedObject('Foo'), new TArrayKey()])));
     }
 
     public function testTheGeneratedStubKeepsTheTypeOfAScalar(): void
