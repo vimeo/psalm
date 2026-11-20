@@ -894,7 +894,6 @@ final class Populator
 
                     if (($declaring_method_storage->has_docblock_param_types
                             || $declaring_method_storage->has_docblock_return_type)
-                        && !$method_storage->has_docblock_param_types
                         && !$method_storage->has_docblock_return_type
                         && $inherited_return_type !== null
                     ) {

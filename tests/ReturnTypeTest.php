@@ -97,6 +97,37 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'returnTypeIsInheritedWhenTheImplementationDocumentsOnlyItsParams' => [
+                'code' => '<?php
+                    interface Node {}
+                    final class Leaf implements Node {}
+                    final class Message {}
+
+                    /** @template T of Node */
+                    interface Handler {
+                        /**
+                         * @param T $node
+                         * @return list<Message>
+                         */
+                        public function handle(Node $node): array;
+                    }
+
+                    /** @implements Handler<Leaf> */
+                    final class LeafHandler implements Handler {
+                        /** @param Leaf $node */
+                        #[Override]
+                        public function handle(Node $node): array {
+                            return [new Message()];
+                        }
+                    }
+
+                    $messages = (new LeafHandler())->handle(new Leaf());',
+                'assertions' => [
+                    '$messages===' => 'list<Message>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'doWhileBodyAlwaysReturning' => [
                 'code' => '<?php
                     function f(int $i): string {
@@ -2718,6 +2749,29 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'returnTypeDocumentedByTheImplementationIsStillCheckedAgainstTheParent' => [
+                'code' => '<?php
+                    final class Message {}
+
+                    interface Handler {
+                        /** @return list<Message> */
+                        public function handle(string $node): array;
+                    }
+
+                    final class LeafHandler implements Handler {
+                        /**
+                         * @param string $node
+                         * @return array<int, Message>
+                         */
+                        #[Override]
+                        public function handle(string $node): array {
+                            return [];
+                        }
+                    }',
+                'error_message' => 'LessSpecificImplementedReturnType',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'doWhileBodyContinuingToAFalseCondition' => [
                 'code' => '<?php
                     function f(int $i): string {
