@@ -129,6 +129,45 @@ final class TaintTest extends TestCase
             function show(): void {
                 echo (string) ($_SESSION["value"] ?? "");
             }
+
+            function changeGlobal(): void {
+                global $g;
+                $g = (string) $_GET["g"];
+            }
+
+            function globalChangedByACall(): void {
+                global $g;
+                $g = (string) $_GET["f"];
+                $validator = Validator::make($g, "/^[a-z]+$/D");
+                changeGlobal();
+                if ($validator->passes()) {
+                    echo (string) $g;
+                }
+            }
+
+            function assignedThroughAReference(): void {
+                $value = (string) $_GET["h"];
+                $alias = &$value;
+                $validator = Validator::make($value, "/^[a-z]+$/D");
+                $alias = (string) $_GET["i"];
+                if ($validator->passes()) {
+                    echo $value;
+                }
+            }
+
+            /** @param-out string $s */
+            function replace(?string &$s): void {
+                $s = (string) $_GET["k"];
+            }
+
+            function replacedByAReferenceArgument(): void {
+                $value = (string) $_GET["j"];
+                $validator = Validator::make($value, "/^[a-z]+$/D");
+                replace($value);
+                if ($validator->passes()) {
+                    echo $value;
+                }
+            }
         ');
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
         $this->project_analyzer->trackTaintedInputs();
@@ -185,6 +224,12 @@ final class TaintTest extends TestCase
                 [17, 'TaintedTextWithQuotes'],
                 [38, 'TaintedHtml'],
                 [38, 'TaintedTextWithQuotes'],
+                [65, 'TaintedHtml'],
+                [65, 'TaintedTextWithQuotes'],
+                [75, 'TaintedHtml'],
+                [75, 'TaintedTextWithQuotes'],
+                [89, 'TaintedHtml'],
+                [89, 'TaintedTextWithQuotes'],
             ],
             array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
         );
