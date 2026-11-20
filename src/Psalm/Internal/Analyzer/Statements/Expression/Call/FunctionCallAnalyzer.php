@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\PurityWildcardInference;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -43,6 +44,7 @@ use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\ImpureMethodCall;
+use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\InvalidFunctionCall;
 use Psalm\Issue\MixedFunctionCall;
 use Psalm\Issue\NullFunctionCall;
@@ -407,6 +409,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $function_call_info->function_id,
                 $code_location,
             );
+        }
+
+        if (!$is_first_class_callable
+            && ($function_call_info->function_id === 'array_key_exists'
+                || $function_call_info->function_id === 'key_exists')
+        ) {
+            self::checkArrayKeyExistsKey($statements_analyzer, $stmt);
         }
 
         CallAnalyzer::checkTemplateResult(
@@ -2537,6 +2546,69 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     {
         foreach ($type->getAtomicTypes() as $atomic) {
             if (!$atomic instanceof TNamedObject && !$atomic instanceof TObject) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * `array_key_exists()` of a key that the array, whose keys are all ints, can't have
+     */
+    private static function checkArrayKeyExistsKey(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $stmt,
+    ): void {
+        $args = $stmt->getArgs();
+
+        if (!isset($args[0], $args[1])) {
+            return;
+        }
+
+        $key_type = $statements_analyzer->node_data->getType($args[0]->value);
+        $array_type = $statements_analyzer->node_data->getType($args[1]->value);
+
+        if ($key_type === null
+            || $array_type === null
+            || !self::isNonNumericStringKeyOfIntKeyedArray($key_type, $array_type)
+        ) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new InvalidArrayOffset(
+                'Cannot check offset ' . $key_type->getId() . ' in ' . $array_type->getId()
+                    . ', which only has int keys',
+                new CodeLocation($statements_analyzer, $args[0]->value),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+    }
+
+    /**
+     * A non-numeric string literal is never a key of a list or of an array whose keys are all ints
+     *
+     * @psalm-pure
+     */
+    private static function isNonNumericStringKeyOfIntKeyedArray(Union $key_type, Union $array_type): bool
+    {
+        if (!$key_type->allStringLiterals()) {
+            return false;
+        }
+
+        foreach ($key_type->getLiteralStrings() as $literal_string) {
+            if (ArrayAnalyzer::getLiteralArrayKeyInt($literal_string->value) !== false) {
+                return false;
+            }
+        }
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray && $atomic_type->is_list) {
+                continue;
+            }
+
+            if (!$atomic_type instanceof TArray || !$atomic_type->type_params[0]->isInt()) {
                 return false;
             }
         }
