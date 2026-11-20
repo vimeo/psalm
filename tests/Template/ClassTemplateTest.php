@@ -285,6 +285,32 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'receiverOfTheClassWithTheClassOwnTemplateAsATypeArgumentKeepsItForAMethodWithItsOwnTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    abstract class Coll {
+                        /** @return static<int, TKey> */
+                        abstract public function keys(): static;
+
+                        /**
+                         * @template U
+                         * @param TValue $v
+                         * @param U $u
+                         */
+                        public function put2(mixed $v, mixed $u): void {}
+
+                        /** @param TKey $k */
+                        public function p(mixed $k): void {
+                            $this->keys()->put2($k, 1);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'newOfTheClassItselfInsideItsMethodAcceptsAnotherTemplate' => [
                 'code' => '<?php
                     /** @template T */
@@ -6463,6 +6489,31 @@ final class ClassTemplateTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:40 - Argument 1 of ArrayList::add expects int, but \'x\' provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'callableOfAReceiverWithTheClassOwnTemplateAsATypeArgumentKeepsItForAMethodWithItsOwnTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    abstract class Coll {
+                        /** @return static<int, TKey> */
+                        abstract public function keys(): static;
+
+                        /**
+                         * @template TMapValue
+                         * @param callable(TValue, TKey): TMapValue $callback
+                         * @return static<TKey, TMapValue>
+                         */
+                        abstract public function map(callable $callback): static;
+
+                        public function m(): void {
+                            $this->keys()->map(function (int $key) { return $key; });
+                        }
+                    }',
+                'error_message' => 'MixedArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:48 - Argument 1 of Coll::map expects callable[impure](TKey:Coll as array-key, int',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],

@@ -310,8 +310,12 @@ final class TemplateStandinTypeReplacer
             );
         }
 
+        // a template of the class being analysed here is the caller's own: a call's bindings of the receiver's class
+        // templates were applied to the declared type before
         if ($atomic_type instanceof TTemplateParam
             && isset($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
+            && ($atomic_type->defining_class !== $calling_class
+                || $template_result->isForAnotherObject($calling_class))
         ) {
             $most_specific_type = self::getMostSpecificTypeFromBounds(
                 $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
