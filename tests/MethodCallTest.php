@@ -3460,6 +3460,33 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'mixedMethodCallOnAnObjectShapeNamesItsMethods' => [
+                'code' => '<?php
+                    /** @param object{exp_month: int} $card */
+                    function f(object $card): void {
+                        $card->offsetGet("a");
+                    }',
+                'error_message' => 'MixedMethodCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:32 - Cannot determine the methods of $card (object{exp_month:int})'
+                    . ' when calling method offsetGet',
+            ],
+            'mixedMethodCallOnAnObjectNamesItsMethods' => [
+                'code' => '<?php
+                    function f(object $o): void {
+                        $o->foo();
+                    }',
+                'error_message' => 'MixedMethodCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:3:29 - Cannot determine the methods of $o (object) when calling method foo',
+            ],
+            'mixedMethodCallOnAMixedValueStillNamesItsType' => [
+                'code' => '<?php
+                    /** @param mixed $m */
+                    function f($m): void {
+                        $m->foo();
+                    }',
+                'error_message' => 'MixedMethodCall - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:4:29 - Cannot determine the type of $m when calling method foo',
+            ],
             'memoizedGetterForgottenInANestedBranchIsNotNarrowedAfterIt' => [
                 'code' => '<?php
                     final class A {

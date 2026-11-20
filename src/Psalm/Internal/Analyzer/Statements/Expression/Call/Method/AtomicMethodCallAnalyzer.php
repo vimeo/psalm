@@ -778,11 +778,17 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     }
 
                     if ($context->check_methods) {
-                        $message = 'Cannot determine the type of the object'
-                            . ' on the left hand side of this expression';
+                        // `object` and an object shape are known types that have no method table
+                        $known_type = $lhs_type_part instanceof TObject
+                            ? ' (' . $lhs_type_part->getId() . ')'
+                            : '';
+                        $what = $known_type !== '' ? 'the methods of' : 'the type of';
+
+                        $message = 'Cannot determine ' . $what . ' the object'
+                            . ' on the left hand side of this expression' . $known_type;
 
                         if ($lhs_var_id) {
-                            $message = 'Cannot determine the type of ' . $lhs_var_id;
+                            $message = 'Cannot determine ' . $what . ' ' . $lhs_var_id . $known_type;
 
                             if ($stmt->name instanceof PhpParser\Node\Identifier) {
                                 $message .= ' when calling method ' . $stmt->name->name;
