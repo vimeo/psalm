@@ -789,7 +789,8 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     $is_equality,
                 ));
 
-                if ($new !== $type) {
+                // a template bounded by mixed can be instantiated with the literal
+                if ($new !== $type || $type->as->hasMixed()) {
                     $redundant = false;
                 }
                 $type = $new;
