@@ -688,6 +688,8 @@ final class FunctionLikeNodeScanner
             }
         }
 
+        $docblock_has_mutations_annotation = $storage->has_mutations_annotation;
+
         foreach ($stmt->getAttrGroups() as $attr_group) {
             foreach ($attr_group->attrs as $attr) {
                 $attribute = AttributeResolver::resolve(
@@ -702,7 +704,7 @@ final class FunctionLikeNodeScanner
                 // like `@pure`, the PhpStorm attribute gives way to a purity tag of the docblock
                 if ($attribute->fq_class_name === 'Psalm\\Pure'
                     || ($attribute->fq_class_name === 'JetBrains\\PhpStorm\\Pure'
-                        && !$storage->has_mutations_annotation)
+                        && !$docblock_has_mutations_annotation)
                 ) {
                     $storage->specialize_call = true;
                     $storage->capabilities = Capabilities::NONE;

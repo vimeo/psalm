@@ -8242,6 +8242,96 @@ final class CapabilitiesTest extends TestCase
                 'error_levels' => ['InaccessibleProperty'],
                 'php_version' => '8.0',
             ],
+            'psalmAttributeBeforePhpStormImmutableStillNarrows' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace Psalm {
+                        #[\\Attribute]
+                        final class ExternalMutationFree {}
+                    }
+
+                    namespace {
+                        #[\\Psalm\\ExternalMutationFree]
+                        #[\\JetBrains\\PhpStorm\\Immutable]
+                        final class Counter {
+                            private int $n = 0;
+
+                            public function next(): int {
+                                return ++$this->n;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+                'error_levels' => ['InaccessibleProperty'],
+                'php_version' => '8.0',
+            ],
+            'psalmAttributeAfterPhpStormImmutableStillNarrows' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace Psalm {
+                        #[\\Attribute]
+                        final class ExternalMutationFree {}
+                    }
+
+                    namespace {
+                        #[\\JetBrains\\PhpStorm\\Immutable]
+                        #[\\Psalm\\ExternalMutationFree]
+                        final class Counter {
+                            private int $n = 0;
+
+                            public function next(): int {
+                                return ++$this->n;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+                'error_levels' => ['InaccessibleProperty'],
+                'php_version' => '8.0',
+            ],
+            'psalmAttributeBeforePhpStormPureStillNarrows' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace Psalm {
+                        #[\\Attribute]
+                        final class ExternalMutationFree {}
+                    }
+
+                    namespace {
+                        final class Counter {
+                            private int $n = 0;
+
+                            #[\\Psalm\\ExternalMutationFree]
+                            #[\\JetBrains\\PhpStorm\\Pure]
+                            public function next(): int {
+                                return ++$this->n;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImpureVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:42 - The context is pure but $this requires read-props',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
