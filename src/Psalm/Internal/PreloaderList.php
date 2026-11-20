@@ -989,6 +989,7 @@ final class PreloaderList {
         \Psalm\Internal\Provider\ReturnTypeProvider\MbStrtolowerReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\MinMaxReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\MktimeReturnTypeProvider::class,
+        \Psalm\Internal\Provider\ReturnTypeProvider\NumericCastFunctionReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\ParseUrlReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\PdoStatementReturnTypeProvider::class,
         \Psalm\Internal\Provider\ReturnTypeProvider\PdoStatementSetFetchMode::class,
