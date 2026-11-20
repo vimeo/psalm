@@ -198,7 +198,6 @@ final class InstancePropertyAssignmentAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
             && count($assigned_properties) === 1
         ) {
             $codebase->analyzer->addNodeType(
@@ -1051,7 +1050,6 @@ final class InstancePropertyAssignmentAnalyzer
 
         if ($lhs_type->hasMixed()) {
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -1080,7 +1078,6 @@ final class InstancePropertyAssignmentAnalyzer
         }
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
                     instanceof FunctionLikeAnalyzer)
@@ -1285,6 +1282,44 @@ final class InstancePropertyAssignmentAnalyzer
                 }
             }
 
+            // the object holds the value under the name of the property, as an array does under a key
+            $graph = $statements_analyzer->getDataFlowGraphWithSuppressed();
+            if ($graph
+                && $lhs_var_id !== null
+                && $lhs_var_id !== '$this'
+                && isset($context->vars_in_scope[$lhs_var_id])
+                && $assignment_value_type->parent_nodes !== []
+            ) {
+                $object_type = $context->vars_in_scope[$lhs_var_id];
+                $object_node = DataFlowNode::getForAssignment(
+                    $lhs_var_id,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt->var),
+                );
+                $graph->addNode($object_node);
+
+                foreach ($object_type->parent_nodes as $parent_node) {
+                    $graph->addPath($parent_node, $object_node, '=');
+                }
+
+                $removed_taints = $graph instanceof VariableUseGraph
+                    ? 0
+                    : $assignment_value_type->getTaintsToRemove($codebase->getInputTaints());
+
+                foreach ($assignment_value_type->parent_nodes as $parent_node) {
+                    $graph->addPath(
+                        $parent_node,
+                        $object_node,
+                        'arrayvalue-assignment-\'' . $prop_name . '\'',
+                        0,
+                        $removed_taints,
+                    );
+                }
+
+                $context->vars_in_scope[$lhs_var_id] = $object_type->setParentNodes(
+                    [$object_node->id => $object_node],
+                );
+            }
+
             return null;
         }
 
@@ -1482,7 +1517,6 @@ final class InstancePropertyAssignmentAnalyzer
                         ? new CodeLocation($statements_analyzer->getSource(), $stmt)
                         : null,
                     !$context->collect_initializations
-                    && !$context->collect_mutations
                         ? $statements_analyzer
                         : null,
                     $statements_analyzer->getFilePath(),
@@ -1522,7 +1556,7 @@ final class InstancePropertyAssignmentAnalyzer
 
                     $has_regular_setter = true;
 
-                    if (!$context->collect_initializations && !$context->collect_mutations) {
+                    if (!$context->collect_initializations) {
                         self::taintProperty(
                             $statements_analyzer,
                             $stmt,
@@ -1559,7 +1593,7 @@ final class InstancePropertyAssignmentAnalyzer
              * not in that list, fall through
              */
             if ($var_id === null || !$class_storage->hasSealedProperties($codebase->config)) {
-                if (!$context->collect_initializations && !$context->collect_mutations) {
+                if (!$context->collect_initializations) {
                     self::taintProperty(
                         $statements_analyzer,
                         $stmt,
@@ -1630,7 +1664,6 @@ final class InstancePropertyAssignmentAnalyzer
 
         if ($statements_analyzer->data_flow_graph
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
 
@@ -1657,11 +1690,6 @@ final class InstancePropertyAssignmentAnalyzer
         )
         ) {
             if ($stmt->var instanceof PhpParser\Node\Expr\Variable && $stmt->var->name === 'this') {
-                // if this is a proper error, we'll see it on the first pass
-                if ($context->collect_mutations) {
-                    return null;
-                }
-
                 IssueBuffer::maybeAdd(
                     new UndefinedThisPropertyAssignment(
                         'Instance property ' . $property_id . ' is not defined',
@@ -1697,7 +1725,6 @@ final class InstancePropertyAssignmentAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
@@ -1707,30 +1734,16 @@ final class InstancePropertyAssignmentAnalyzer
         }
 
         if (!$override_property_visibility) {
-            if (!$context->collect_mutations) {
-                if (ClassLikeAnalyzer::checkPropertyVisibility(
-                    $property_id,
-                    $context,
-                    $statements_analyzer,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $statements_analyzer->getSuppressedIssues(),
-                    true,
-                    true,
-                ) === false) {
-                    return null;
-                }
-            } else {
-                if (ClassLikeAnalyzer::checkPropertyVisibility(
-                    $property_id,
-                    $context,
-                    $statements_analyzer,
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $statements_analyzer->getSuppressedIssues(),
-                    false,
-                    true,
-                ) !== true) {
-                    return null;
-                }
+            if (ClassLikeAnalyzer::checkPropertyVisibility(
+                $property_id,
+                $context,
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getSuppressedIssues(),
+                true,
+                true,
+            ) === false) {
+                return null;
             }
         }
 
