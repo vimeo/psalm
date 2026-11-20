@@ -28,7 +28,6 @@ use function array_unique;
 use function count;
 use function implode;
 
-use const SORT_LOCALE_STRING;
 use const SORT_STRING;
 
 /**
@@ -39,6 +38,11 @@ use const SORT_STRING;
  */
 final class ArrayUniqueReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
+    /**
+     * The value of `SORT_LOCALE_STRING`, which is deprecated since PHP 8.6: reading it would emit a deprecation.
+     */
+    private const SORT_LOCALE_STRING = 5;
+
     /**
      * @return array<lowercase-string>
      * @psalm-pure
@@ -99,7 +103,7 @@ final class ArrayUniqueReturnTypeProvider implements FunctionReturnTypeProviderI
             if (!$flags_type
                 || !$flags_type->isSingleIntLiteral()
                 || ($flags_type->getSingleIntLiteral()->value !== SORT_STRING
-                    && $flags_type->getSingleIntLiteral()->value !== SORT_LOCALE_STRING)
+                    && $flags_type->getSingleIntLiteral()->value !== self::SORT_LOCALE_STRING)
             ) {
                 return null;
             }

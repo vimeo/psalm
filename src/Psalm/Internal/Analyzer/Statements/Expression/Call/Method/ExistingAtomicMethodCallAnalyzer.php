@@ -115,7 +115,6 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         if ($codebase->store_node_types
             && !$stmt->isFirstClassCallable()
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             ArgumentMapPopulator::recordArgumentPositions(
                 $statements_analyzer,
@@ -157,7 +156,6 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeReference(
                 $statements_analyzer->getFilePath(),
@@ -178,7 +176,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         if ($stmt->var instanceof PhpParser\Node\Expr\Variable
-            && ($context->collect_initializations || $context->collect_mutations)
+            && $context->collect_initializations
             && $stmt->var->name === 'this'
             && $source instanceof FunctionLikeAnalyzer
         ) {
@@ -276,7 +274,6 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         if ($codebase->store_node_types
             && !$stmt->isFirstClassCallable()
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             ArgumentMapPopulator::recordArgumentPositions(
                 $statements_analyzer,
@@ -418,7 +415,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 $context->vars_in_scope[$lhs_var_id] = $self_out_candidate;
             }
 
-            if (!$context->collect_mutations && !$context->collect_initializations) {
+            if (!$context->collect_initializations) {
                 // a method of a mixin runs through the __call() of the class using the mixin
                 $magic_method_id = $mixin_user_class !== null
                     ? $codebase->methods->getDeclaringMethodId(new MethodIdentifier($mixin_user_class, '__call'))
@@ -500,7 +497,13 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $stmt_name,
                     ExpressionIdentifier::getExtendedVarId($stmt->var, null, $statements_analyzer),
                     self::resolveStaticPropertyAssertionClasses(
-                        self::getAssertionsOnArgs($assertions, $method_storage, $args),
+                        self::getAssertionsOnArgs(
+                            $assertions,
+                            $method_storage,
+                            $args,
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
+                        ),
                         $codebase,
                         $context,
                         $trait_self_class,
@@ -530,7 +533,13 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $trait_self_class,
                     ),
                     self::resolveStaticPropertyAssertionClasses(
-                        self::getAssertionsOnArgs($if_true_assertions, $method_storage, $args),
+                        self::getAssertionsOnArgs(
+                            $if_true_assertions,
+                            $method_storage,
+                            $args,
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
+                        ),
                         $codebase,
                         $context,
                         $trait_self_class,
@@ -566,7 +575,13 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $trait_self_class,
                     ),
                     self::resolveStaticPropertyAssertionClasses(
-                        self::getAssertionsOnArgs($if_false_assertions, $method_storage, $args),
+                        self::getAssertionsOnArgs(
+                            $if_false_assertions,
+                            $method_storage,
+                            $args,
+                            $statements_analyzer->node_data,
+                            $context->strict_types,
+                        ),
                         $codebase,
                         $context,
                         $trait_self_class,

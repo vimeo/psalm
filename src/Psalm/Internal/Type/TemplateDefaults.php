@@ -216,8 +216,7 @@ final class TemplateDefaults
 
     /**
      * What the templates of a class are bound to by a use binding some by name (`@extends Foo<A>`) or none (a class
-     * without `@extends`, `new Foo()` without a constructor): their defaults and, with $others_to_bound, the others'
-     * bounds. Without $purity_defaults, purity templates are treated as having no default, as in a `new` type.
+     * without `@extends`): their defaults and, with $others_to_bound, the others' bounds.
      *
      * @param array<string, Union> $given
      * @return array<string, Union>
@@ -227,7 +226,6 @@ final class TemplateDefaults
         ClassLikeStorage $storage,
         array $given,
         bool $others_to_bound,
-        bool $purity_defaults = true,
     ): array {
         $bound = [];
 
@@ -235,9 +233,7 @@ final class TemplateDefaults
             $defining_class = array_key_first($type_map);
 
             if (!isset($given[$template_name])) {
-                if (isset($storage->template_defaults[$template_name])
-                    && ($purity_defaults || !isset($storage->purity_templates[$template_name]))
-                ) {
+                if (isset($storage->template_defaults[$template_name])) {
                     $given[$template_name] = self::resolve(
                         $storage->template_defaults[$template_name],
                         new TemplateResult([], $bound),
