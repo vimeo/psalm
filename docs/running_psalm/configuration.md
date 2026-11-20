@@ -631,7 +631,7 @@ Whether or not to report issues only for files that were passed explicitly as ar
 ```
 The directory used to store Psalm's cache data. Psalm creates it recursively when initializing the cache.
 
-Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or empty, a default equal to `$HOME/.cache/psalm` is used or `sys_get_temp_dir() . '/psalm'` when not defined.
+Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or empty, `$HOME/.cache/psalm` is used (on Windows, `%HOMEDRIVE%%HOMEPATH%` is used when `$HOME` is not set). If no home directory is set, or it is not writable (for example `$HOME` is `/` or does not exist), `sys_get_temp_dir() . '/psalm'` is used.
 
 #### allowFileIncludes
 ```xml

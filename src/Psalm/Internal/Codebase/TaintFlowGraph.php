@@ -167,6 +167,15 @@ final class TaintFlowGraph extends DataFlowGraph
     private array $string_starts = [];
 
     /**
+     * The ids of the nodes holding prepared statements => the nodes of those statements, which the values given to
+     * the statements' placeholders go through (see DatabaseTaints). Only used while analysing the function-like they
+     * are in, so never merged by addGraph().
+     *
+     * @var array<string, array<string, DataFlowNode>>
+     */
+    private array $database_statements = [];
+
+    /**
      * The ids of the nodes of variables assigned an empty array, whose items the next item assigned starts the start
      * of (see TaintStore::recordItemAssignment()), and only used while analysing the function-like they are in
      *
@@ -599,6 +608,32 @@ final class TaintFlowGraph extends DataFlowGraph
     public function addStringStart(DataFlowNode $node, string $start): void
     {
         $this->string_starts[$node->id] = $start;
+    }
+
+    /**
+     * @param array<string, DataFlowNode> $statements
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function addDatabaseStatements(DataFlowNode $node, array $statements): void
+    {
+        $this->database_statements[$node->id] = [...$this->database_statements[$node->id] ?? [], ...$statements];
+    }
+
+    /**
+     * The prepared statements the nodes hold
+     *
+     * @param array<string, DataFlowNode> $nodes
+     * @return array<string, DataFlowNode>
+     * @psalm-mutation-free
+     */
+    public function getDatabaseStatements(array $nodes): array
+    {
+        $statements = [];
+        foreach ($nodes as $node) {
+            $statements += $this->database_statements[$node->id] ?? [];
+        }
+
+        return $statements;
     }
 
     /**

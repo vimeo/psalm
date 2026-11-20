@@ -337,4 +337,5 @@
  - [WeakCipher](issues/WeakCipher.md)
  - [WeakHash](issues/WeakHash.md)
  - [WeakRandom](issues/WeakRandom.md)
+ - [WrongCaseFunction](issues/WrongCaseFunction.md)
  - [XmlExternalEntity](issues/XmlExternalEntity.md)

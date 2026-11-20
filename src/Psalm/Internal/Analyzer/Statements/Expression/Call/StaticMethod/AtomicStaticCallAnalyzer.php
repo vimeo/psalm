@@ -330,7 +330,6 @@ final class AtomicStaticCallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             ) === false) {
                 return;
@@ -688,6 +687,9 @@ final class AtomicStaticCallAnalyzer
                 );
 
                 if ($is_dynamic_this_method) {
+                    // the forwarded instance call analyses the arguments
+                    $args_analyzed = true;
+
                     return self::forwardCallToInstanceMethod(
                         $statements_analyzer,
                         $stmt,
@@ -768,7 +770,6 @@ final class AtomicStaticCallAnalyzer
                         $args,
                         null,
                         null,
-                        true,
                         $context,
                     ) === false) {
                         return false;
@@ -876,7 +877,6 @@ final class AtomicStaticCallAnalyzer
                     $stmt->getArgs(),
                     null,
                     null,
-                    true,
                     $context,
                 ) === false) {
                     return false;
@@ -910,7 +910,6 @@ final class AtomicStaticCallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             ) === false) {
                 return false;
@@ -1070,6 +1069,7 @@ final class AtomicStaticCallAnalyzer
             $context->mergeFunctionExceptions(
                 $pseudo_method_storage,
                 new CodeLocation($statements_analyzer, $stmt),
+                $statements_analyzer->getCodebase(),
             );
         }
 
@@ -1098,7 +1098,6 @@ final class AtomicStaticCallAnalyzer
             $args,
             $pseudo_method_storage->params,
             (string) $method_id,
-            true,
             $context,
             $template_result->template_types !== [] || $template_result->lower_bounds !== []
                 ? $template_result
@@ -1157,7 +1156,6 @@ final class AtomicStaticCallAnalyzer
                     $args,
                     $method_storage->params,
                     (string) $method_id,
-                    true,
                     $context,
                 );
 

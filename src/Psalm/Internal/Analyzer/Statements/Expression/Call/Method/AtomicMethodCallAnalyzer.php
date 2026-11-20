@@ -208,7 +208,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             );
 
@@ -315,7 +314,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             );
 
@@ -829,7 +827,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         $stmt->getArgs(),
                         null,
                         null,
-                        true,
                         $context,
                     ) === false) {
                         return;
@@ -941,7 +938,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 $lhs_type_part_callable->params,
                 $method_id,
-                false,
                 $context,
                 $template_result,
             );
