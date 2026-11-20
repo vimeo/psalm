@@ -317,18 +317,10 @@ final class AssertionFinder
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Greater
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
-        ) {
-            return self::getGreaterAssertions(
-                $conditional,
-                $source,
-                $this_class_name,
-            );
-        }
-
-        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Smaller
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
         ) {
-            return self::getSmallerAssertions(
+            return self::getOrderComparisonAssertions(
                 $conditional,
                 $source,
                 $this_class_name,
@@ -2003,7 +1995,7 @@ final class AssertionFinder
     }
 
     /**
-     * @param PhpParser\Node\Expr\BinaryOp\Greater|PhpParser\Node\Expr\BinaryOp\GreaterOrEqual $conditional
+     * @param Greater|GreaterOrEqual|Smaller|SmallerOrEqual $conditional
      */
     private static function hasReconcilableNonEmptyCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
@@ -3710,11 +3702,11 @@ final class AssertionFinder
     }
 
     /**
-     * @param PhpParser\Node\Expr\BinaryOp\Greater|PhpParser\Node\Expr\BinaryOp\GreaterOrEqual $conditional
+     * @param Greater|GreaterOrEqual|Smaller|SmallerOrEqual $conditional
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
-    private static function getGreaterAssertions(
-        PhpParser\Node\Expr $conditional,
+    private static function getOrderComparisonAssertions(
+        PhpParser\Node\Expr\BinaryOp $conditional,
         FileSource $source,
         ?string $this_class_name,
     ): array {
@@ -3724,21 +3716,19 @@ final class AssertionFinder
         $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $source, $min_count);
         $max_count = null;
         $count_inequality_position = self::hasLessThanCountEqualityCheck($conditional, $source, $max_count);
-        $superior_value_comparison = null;
-        $superior_value_position = self::hasIntLiteralComparison(
+        $literal_value_comparison = null;
+        $literal_value_position = self::hasIntLiteralComparison(
             $source,
             $conditional,
-            $superior_value_comparison,
+            $literal_value_comparison,
         );
 
-        if ($count_equality_position) {
-            if ($count_equality_position === self::ASSIGNMENT_TO_RIGHT) {
-                $counted_expr = $conditional->left;
-            } else {
-                throw new UnexpectedValueException('$count_equality_position value');
-            }
-
+        if ($count_equality_position !== false) {
             /** @var PhpParser\Node\Expr\FuncCall $counted_expr */
+            $counted_expr = $count_equality_position === self::ASSIGNMENT_TO_RIGHT
+                ? $conditional->left
+                : $conditional->right;
+
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $counted_expr->getArgs()[0]->value,
                 $this_class_name,
@@ -3760,14 +3750,12 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
-        if ($count_inequality_position) {
-            if ($count_inequality_position === self::ASSIGNMENT_TO_LEFT) {
-                $count_expr = $conditional->right;
-            } else {
-                throw new UnexpectedValueException('$count_inequality_position value');
-            }
-
+        if ($count_inequality_position !== false) {
             /** @var PhpParser\Node\Expr\FuncCall $count_expr */
+            $count_expr = $count_inequality_position === self::ASSIGNMENT_TO_RIGHT
+                ? $conditional->left
+                : $conditional->right;
+
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $count_expr->getArgs()[0]->value,
                 $this_class_name,
@@ -3785,28 +3773,29 @@ final class AssertionFinder
             return $if_types ? [$if_types] : [];
         }
 
-        if ($superior_value_position && $superior_value_comparison !== null) {
+        if ($literal_value_position !== false && $literal_value_comparison !== null) {
             $var_name = self::getComparedVarId(
-                $superior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->left : $conditional->right,
-                $superior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->right : null,
+                $literal_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->left : $conditional->right,
+                $literal_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->right : null,
                 $this_class_name,
                 $source,
-                $superior_value_comparison,
+                $literal_value_comparison,
             );
 
             if ($var_name !== null) {
-                if ($superior_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                    if ($conditional instanceof GreaterOrEqual) {
-                        $if_types[$var_name] = [[new IsGreaterThanOrEqualTo($superior_value_comparison)]];
-                    } else {
-                        $if_types[$var_name] = [[new IsGreaterThan($superior_value_comparison)]];
-                    }
+                $or_equal = $conditional instanceof GreaterOrEqual || $conditional instanceof SmallerOrEqual;
+
+                // the variable is on the greater side of the comparison
+                if (($literal_value_position === self::ASSIGNMENT_TO_RIGHT)
+                    === ($conditional instanceof Greater || $conditional instanceof GreaterOrEqual)
+                ) {
+                    $if_types[$var_name] = [[$or_equal
+                        ? new IsGreaterThanOrEqualTo($literal_value_comparison)
+                        : new IsGreaterThan($literal_value_comparison)]];
                 } else {
-                    if ($conditional instanceof GreaterOrEqual) {
-                        $if_types[$var_name] = [[new IsLessThanOrEqualTo($superior_value_comparison)]];
-                    } else {
-                        $if_types[$var_name] = [[new IsLessThan($superior_value_comparison)]];
-                    }
+                    $if_types[$var_name] = [[$or_equal
+                        ? new IsLessThanOrEqualTo($literal_value_comparison)
+                        : new IsLessThan($literal_value_comparison)]];
                 }
             }
 
@@ -3971,110 +3960,6 @@ final class AssertionFinder
         return $first_argument && !$first_argument->unpack && !$first_argument->name
             ? $first_argument->value
             : null;
-    }
-
-    /**
-     * @param PhpParser\Node\Expr\BinaryOp\Smaller|PhpParser\Node\Expr\BinaryOp\SmallerOrEqual $conditional
-     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
-     */
-    private static function getSmallerAssertions(
-        PhpParser\Node\Expr $conditional,
-        FileSource $source,
-        ?string $this_class_name,
-    ): array {
-        $if_types = [];
-        $min_count = null;
-        $count_equality_position = self::hasNonEmptyCountEqualityCheck($conditional, $source, $min_count);
-        $max_count = null;
-        $count_inequality_position = self::hasLessThanCountEqualityCheck($conditional, $source, $max_count);
-        $inferior_value_comparison = null;
-        $inferior_value_position = self::hasIntLiteralComparison(
-            $source,
-            $conditional,
-            $inferior_value_comparison,
-        );
-
-        if ($count_equality_position) {
-            if ($count_equality_position === self::ASSIGNMENT_TO_LEFT) {
-                $count_expr = $conditional->right;
-            } else {
-                throw new UnexpectedValueException('$count_equality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $count_expr */
-            $var_name = ExpressionIdentifier::getExtendedVarId(
-                $count_expr->getArgs()[0]->value,
-                $this_class_name,
-                $source,
-            );
-
-            if ($var_name) {
-                if ($min_count > 0) {
-                    $if_types[$var_name] = [[new HasAtLeastCount($min_count)]];
-                } else {
-                    $if_types[$var_name] = [[new NonEmptyCountable(false)]];
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
-        }
-
-        if ($count_inequality_position) {
-            if ($count_inequality_position === self::ASSIGNMENT_TO_RIGHT) {
-                $count_expr = $conditional->left;
-            } else {
-                throw new UnexpectedValueException('$count_inequality_position value');
-            }
-
-            /** @var PhpParser\Node\Expr\FuncCall $count_expr */
-            $var_name = ExpressionIdentifier::getExtendedVarId(
-                $count_expr->getArgs()[0]->value,
-                $this_class_name,
-                $source,
-            );
-
-            if ($var_name) {
-                if ($max_count > 0) {
-                    $if_types[$var_name] = [[new DoesNotHaveAtLeastCount($max_count + 1)]];
-                } else {
-                    $if_types[$var_name] = [[new NotNonEmptyCountable()]];
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
-        }
-
-        if ($inferior_value_position) {
-            $var_name = $inferior_value_comparison !== null
-                ? self::getComparedVarId(
-                    $inferior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->left : $conditional->right,
-                    $inferior_value_position === self::ASSIGNMENT_TO_RIGHT ? $conditional->right : null,
-                    $this_class_name,
-                    $source,
-                    $inferior_value_comparison,
-                )
-                : null;
-
-            if ($var_name !== null && $inferior_value_comparison !== null) {
-                if ($inferior_value_position === self::ASSIGNMENT_TO_RIGHT) {
-                    if ($conditional instanceof SmallerOrEqual) {
-                        $if_types[$var_name] = [[new IsLessThanOrEqualTo($inferior_value_comparison)]];
-                    } else {
-                        $if_types[$var_name] = [[new IsLessThan($inferior_value_comparison)]];
-                    }
-                } else {
-                    if ($conditional instanceof SmallerOrEqual) {
-                        $if_types[$var_name] = [[new IsGreaterThanOrEqualTo($inferior_value_comparison)]];
-                    } else {
-                        $if_types[$var_name] = [[new IsGreaterThan($inferior_value_comparison)]];
-                    }
-                }
-            }
-
-            return $if_types ? [$if_types] : [];
-        }
-
-        return [];
     }
 
     /**
