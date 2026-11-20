@@ -2611,6 +2611,24 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                 '<psalm></psalm>',
                 ['Psalm\SymfonyPsalmPlugin\Plugin'],
             ],
+            'requiredDoctrineOrm' => [
+                ['composer.json' => '{"require": {"doctrine/orm": "^3"}}'],
+                '<psalm></psalm>',
+                ['Weirdan\DoctrinePsalmPlugin\Plugin'],
+            ],
+            'requiredDoctrineDbal' => [
+                ['composer.json' => '{"require": {"doctrine/dbal": "^4"}}'],
+                '<psalm></psalm>',
+                ['Weirdan\DoctrinePsalmPlugin\Plugin'],
+            ],
+            'requiredSeveralDoctrineLibraries' => [
+                [
+                    'composer.json' => '{"require": {"doctrine/orm": "^3", "doctrine/dbal": "^4", '
+                        . '"doctrine/collections": "^2", "doctrine/persistence": "^4"}}',
+                ],
+                '<psalm></psalm>',
+                ['Weirdan\DoctrinePsalmPlugin\Plugin'],
+            ],
             'requiredLaravel' => [
                 ['composer.json' => '{"require": {"laravel/framework": "^12"}}'],
                 '<psalm></psalm>',
@@ -2654,7 +2672,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                 [],
             ],
             'requiredOtherLibraries' => [
-                ['composer.json' => '{"require": {"symfony/console": "^7", "doctrine/orm": "^3"}}'],
+                ['composer.json' => '{"require": {"symfony/console": "^7", "guzzlehttp/guzzle": "^7"}}'],
                 '<psalm></psalm>',
                 [],
             ],
