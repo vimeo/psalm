@@ -375,6 +375,7 @@ final class IfConditionalAnalyzer
             $if_context,
             $context,
             $codebase,
+            true,
         );
 
         $entry_clauses = $context->clauses;
@@ -473,13 +474,14 @@ final class IfConditionalAnalyzer
      *
      * @return array{list<Clause>, Closure(): list<Clause>}
      */
-    private static function getConditionClauses(
+    public static function getConditionClauses(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $cond,
         int $cond_object_id,
         Context $if_context,
         Context $context,
         Codebase $codebase,
+        bool $rebuild_when_too_complicated,
     ): array {
         // whether each mixed variable may be unset
         $mixed_vars = [];
@@ -518,7 +520,7 @@ final class IfConditionalAnalyzer
                 $context->self,
                 $statements_analyzer,
                 $codebase,
-                true,
+                $rebuild_when_too_complicated,
             ),
             ...FormulaGenerator::getNegatedSetMixedVarClauses(
                 $cond_clauses,
