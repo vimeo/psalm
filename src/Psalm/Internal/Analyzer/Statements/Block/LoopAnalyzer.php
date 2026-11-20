@@ -45,6 +45,7 @@ use function array_slice;
 use function array_unique;
 use function array_values;
 use function count;
+use function end;
 use function in_array;
 use function is_numeric;
 use function is_string;
@@ -939,6 +940,9 @@ final class LoopAnalyzer
             $pre_context = clone $context;
         }
 
+        // the variables the condition is first evaluated with
+        $entry_vars_in_scope = $context->vars_in_scope;
+
         $for_context = clone $context;
 
         $for_context->inside_loop = true;
@@ -975,7 +979,9 @@ final class LoopAnalyzer
             throw new UnexpectedValueException('There should be an inner loop context');
         }
 
-        $always_enters_loop = $while_true || self::doesEnterLoop($statements_analyzer, $stmt, $init_var_types);
+        $always_enters_loop = $while_true
+            || self::doesEnterLoop($statements_analyzer, $stmt, $init_var_types)
+            || self::isConditionTrueOnEntry($statements_analyzer, $context, $pre_conditions, $entry_vars_in_scope);
 
         $can_leave_loop = !$while_true
             || in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
@@ -1450,6 +1456,92 @@ final class LoopAnalyzer
                 $context->vars_in_scope[$var_id] = $type;
             }
         }
+    }
+
+    /**
+     * Whether the condition holds the first time it is evaluated, as the types of the variables before the loop rule
+     * out its negation: `while ($value instanceof Link)` inside `if ($value instanceof Link)`
+     *
+     * @param list<PhpParser\Node\Expr> $pre_conditions
+     * @param array<string, Union> $entry_vars_in_scope
+     */
+    private static function isConditionTrueOnEntry(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        array $pre_conditions,
+        array $entry_vars_in_scope,
+    ): bool {
+        // the last condition of a for decides, and what the conditions change is not known on entry
+        $condition = end($pre_conditions);
+
+        if ($condition === false
+            || (new PhpParser\NodeFinder())->findFirst(
+                $pre_conditions,
+                static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
+                    || $node instanceof PhpParser\Node\Expr\AssignOp
+                    || $node instanceof PhpParser\Node\Expr\AssignRef
+                    || $node instanceof PhpParser\Node\Expr\PreInc
+                    || $node instanceof PhpParser\Node\Expr\PreDec
+                    || $node instanceof PhpParser\Node\Expr\PostInc
+                    || $node instanceof PhpParser\Node\Expr\PostDec
+                    || $node instanceof PhpParser\Node\Expr\CallLike,
+            ) !== null
+        ) {
+            return false;
+        }
+
+        $condition_id = spl_object_id($condition);
+
+        try {
+            $negated_clauses = Algebra::negateFormula(FormulaGenerator::getFormula(
+                $condition_id,
+                $condition_id,
+                $condition,
+                $context->self,
+                $statements_analyzer,
+                $statements_analyzer->getCodebase(),
+                cache: false,
+            ));
+        } catch (ComplicatedExpressionException) {
+            return false;
+        }
+
+        $active_truths = [];
+        $negated_truths = Algebra::getTruthsFromFormula($negated_clauses, $condition_id, active_truths: $active_truths);
+
+        foreach ($negated_truths as $var_id => $_) {
+            if (!isset($entry_vars_in_scope[$var_id])) {
+                return false;
+            }
+        }
+
+        if ($negated_truths === []) {
+            return false;
+        }
+
+        $changed_var_ids = [];
+
+        [$reconciled_vars] = Reconciler::reconcileKeyedTypes(
+            $negated_truths,
+            $active_truths,
+            $entry_vars_in_scope,
+            [],
+            $changed_var_ids,
+            [],
+            $statements_analyzer,
+            [],
+            false,
+            null,
+        );
+
+        // the condition is false for none of the values the variables can have on entry
+        foreach ($negated_truths as $var_id => $_) {
+            if (isset($reconciled_vars[$var_id]) && $reconciled_vars[$var_id]->isNever()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

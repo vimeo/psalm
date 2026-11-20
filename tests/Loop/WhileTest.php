@@ -2426,6 +2426,49 @@ final class WhileTest extends TestCase
                         return $z;
                     }',
             ],
+            'whileWhoseConditionHoldsOnEntryRunsAtLeastOnce' => [
+                'code' => '<?php
+                    final class Link {
+                        public function __construct(public Link|string $inner) {}
+                    }
+
+                    /** @param non-empty-list<Link> $links */
+                    function take(array $links): void {}
+
+                    function f(Link|string $value): void {
+                        if ($value instanceof Link) {
+                            $stack = [];
+                            while ($value instanceof Link) {
+                                $stack[] = $value;
+                                $value = $value->inner;
+                            }
+                            take($stack);
+                        }
+                    }
+
+                    function nullable(?int $x): void {
+                        if ($x !== null) {
+                            $seen = [];
+                            while ($x !== null) {
+                                $seen[] = $x;
+                                $x = rand(0, 1) ? null : $x + 1;
+                            }
+                            /** @psalm-check-type-exact $seen = non-empty-list<int> */;
+                        }
+                    }
+
+                    function notEntered(Link|string $value): void {
+                        $stack = [];
+                        while ($value instanceof Link) {
+                            $stack[] = $value;
+                            $value = $value->inner;
+                        }
+                        /** @psalm-check-type-exact $stack = list<Link> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
