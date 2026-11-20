@@ -140,7 +140,7 @@ final class InheritedMethodTaints
         // the body of the declaring class, run on an object of $class
         $context = new Context($declaring_class);
         $context->vars_in_scope['$this'] = new Union([new TNamedObject($class)]);
-        // not the scope of an analysis collecting mutations, which may be skipped (see FunctionLikeAnalyzer)
+        // not the scope of an analysis collecting initializations, which may be skipped (see FunctionLikeAnalyzer)
         $context->vars_in_scope['$__inherited_body_for'] = new Union([new TNamedObject($class)]);
 
         $old_body_suffix = DataFlowNode::$body_suffix;

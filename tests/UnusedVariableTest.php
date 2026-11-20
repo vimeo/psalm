@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -14,6 +19,30 @@ final class UnusedVariableTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testStaticCallOnUndefinedClassReportsOnlyTheClassWhenItsArgumentUsesAVariable(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $foo = "foo";
+
+                return Missing::config(["foo" => $foo]);',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            ['UndefinedClass'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
 
     #[Override]
     public function setUp(): void
@@ -29,6 +58,26 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'variableUsedInArgumentOfStaticCallOnUndefinedClass' => [
+                'code' => '<?php
+                    $foo = "foo";
+
+                    return Missing::config(["foo" => $foo]);',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedClass'],
+            ],
+            'variableUsedInArgumentOfStaticCallOnUndefinedClassInFunction' => [
+                'code' => '<?php
+                    function f(string $a): string {
+                        $b = strtoupper($a);
+
+                        return Missing::config($b);
+                    }
+
+                    echo f("x");',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedClass', 'MixedReturnStatement', 'MixedInferredReturnType'],
+            ],
             'assignmentBeforeABreakInTheElseIsReadAfterTheIf' => [
                 'code' => '<?php
                     /** @param list<string> $list */
@@ -3241,6 +3290,28 @@ final class UnusedVariableTest extends TestCase
                     takesArray($arr);
 
                     function takesArray(array $_arr): void {}
+                ',
+            ],
+            'arrayHoldingReferenceToOffsetIsUsed' => [ // #14112
+                'code' => '<?php
+                    /** @param array<string, int|null> $arr */
+                    function f(array $arr, string $k): array {
+                        $out = [];
+                        $out["a"] = &$arr[$k];
+                        $out["a"] = 5;
+                        return $arr;
+                    }
+                ',
+            ],
+            'writeToVariableAnArrayItemIsBoundToIsUsedByTheArray' => [
+                'code' => '<?php
+                    function f(): array {
+                        $x = 1;
+                        $out = [];
+                        $out["a"] = &$x;
+                        $x = 2;
+                        return $out;
+                    }
                 ',
             ],
             'usedPlusInAddition' => [

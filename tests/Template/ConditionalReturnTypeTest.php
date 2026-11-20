@@ -21,6 +21,34 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalOnClosureKeepsTheIfBranchForAnInterfaceNarrowedToClosure' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface Factory {}
+
+                    /**
+                     * @template T of object
+                     * @param T $v
+                     * @return (T is Closure ? 'closure' : 'other')
+                     */
+                    function kind(object $v): string {
+                        return 'other';
+                    }
+
+                    function f(Factory $factory): void {
+                        /** @psalm-check-type-exact $plain = 'other' */
+                        $plain = kind($factory);
+
+                        if ($factory instanceof Closure) {
+                            /** @psalm-check-type-exact $narrowed = 'closure'|'other' */
+                            $narrowed = kind($factory);
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'conditionalOnNeverOfAnOptionalKeyIsTheKeyTypeWhenSet' => [
                 'code' => '<?php
                     /**
@@ -2367,6 +2395,55 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$fromInt===' => 'int',
                 ],
             ],
+            'conditionalReturnTypeOnClosureNeverTakesInterfacesIterablesOrBoundedTemplates' => [
+                'code' => '<?php
+                    interface Factory {
+                        /** @psalm-impure */
+                        public function __invoke(): int;
+                    }
+
+                    /**
+                     * @template A
+                     * @template B
+                     * @param A|(Closure(): B) $v
+                     * @return ($v is Closure ? B : A)
+                     * @psalm-pure
+                     */
+                    function pick($v) {
+                        return $v;
+                    }
+
+                    /**
+                     * @template T of string
+                     * @param T $t
+                     * @return T
+                     */
+                    function bounded(string $t): string {
+                        return pick($t);
+                    }
+
+                    /**
+                     * @template T of Countable
+                     * @param T $t
+                     * @return T
+                     */
+                    function boundedObject(Countable $t): Countable {
+                        return pick($t);
+                    }
+
+                    /** @param iterable<int, int> $iterable */
+                    function f(Factory $factory, iterable $iterable): void {
+                        $a = pick($factory);
+                        /** @psalm-check-type-exact $a = Factory */
+                        $b = pick($iterable);
+                        /** @psalm-check-type-exact $b = iterable<int, int> */
+                        $d = pick(static fn(): int => 1);
+                        /** @psalm-check-type-exact $d = 1 */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -2497,6 +2574,29 @@ final class ConditionalReturnTypeTest extends TestCase
                 'error_message' => 'InvalidTemplateParam',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'conditionalReturnTypeOnClosureMayTakeAnObjectBoundedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     * @param A|(Closure(): B) $v
+                     * @return ($v is Closure ? B : A)
+                     * @psalm-pure
+                     */
+                    function pick($v) {
+                        return $v;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @param T $t
+                     * @return T
+                     */
+                    function mayBeAClosure(object $t): object {
+                        return pick($t);
+                    }',
+                'error_message' => 'MixedReturnStatement',
             ],
         ];
     }

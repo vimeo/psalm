@@ -51,6 +51,12 @@ final class SarifReport extends Report
         'TaintedUrlComponent' => '5.3',
         'TaintedUrlPath' => '5.3',
         'TaintedSleep' => '5.3',
+        // not taint issues, but security ones all the same
+        'WeakHash' => '5.3',
+        'WeakCipher' => '5.9',
+        'WeakRandom' => '5.3',
+        'InsecureCookie' => '4.3',
+        'XmlExternalEntity' => '7.5',
     ];
 
     private const DEFAULT_SECURITY_SEVERITY = '7.0';

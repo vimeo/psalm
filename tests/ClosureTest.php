@@ -1207,6 +1207,8 @@ final class ClosureTest extends TestCase
                             usort($arr, "fooBar");
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['WrongCaseFunction'],
             ],
             'closureSelf' => [
                 'code' => '<?php
@@ -2162,6 +2164,25 @@ final class ClosureTest extends TestCase
                 ',
                 'assertions' => [
                     '$c===' => 'Closure[impure]:int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            // guard: the capabilities of an inherited __callStatic are read from its declaring class
+            'FirstClassCallable:InheritedPureMagicStaticMethod' => [
+                'code' => '<?php
+                    abstract class Facade {
+                        /** @psalm-pure */
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+                    final class Encrypter extends Facade {}
+
+                    $closure = Encrypter::encrypt(...);
+                ',
+                'assertions' => [
+                    '$closure' => 'Closure[pure]:mixed',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',

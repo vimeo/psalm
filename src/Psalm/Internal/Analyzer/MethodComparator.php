@@ -38,6 +38,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\NamedArguments;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -802,7 +803,7 @@ final class MethodComparator
             // a variadic parameter takes the arguments that follow it by position, whatever their names
             if ($guide_param->name !== $implementer_param->name
                 && !$implementer_param->is_variadic
-                && $guide_method_storage->allow_named_arg_calls
+                && $guide_method_storage->allowsNamedArguments()
                 && $implementer_classlike_storage->user_defined
                 && $implementer_param->location
                 && $guide_method_storage->cased_name
@@ -818,6 +819,8 @@ final class MethodComparator
                     || ($guide_classlike_storage->location
                         && !$config->isInProjectDirs($guide_classlike_storage->location->file_path)
                     )
+                    || $guide_method_storage->named_arguments === NamedArguments::STABLE
+                    || $guide_method_storage->requiresNamedArgument($guide_param)
                 ) {
                     if ($codebase->alter_code) {
                         $project_analyzer = ProjectAnalyzer::getInstance();
@@ -1211,6 +1214,16 @@ final class MethodComparator
             );
         }
 
+        self::mapTemplatesOfTheCalledClass(
+            $codebase,
+            $implementer_classlike_storage,
+            $implementer_method_storage,
+            $implementer_called_class_name,
+            $guide_class_name,
+            $guide_method_storage_param_type,
+            $implementer_method_storage_param_type,
+        );
+
         $union_comparison_results = new TypeComparisonResult();
 
         if (!UnionTypeComparator::isContainedBy(
@@ -1512,6 +1525,16 @@ final class MethodComparator
             }
         }
 
+        self::mapTemplatesOfTheCalledClass(
+            $codebase,
+            $implementer_classlike_storage,
+            $implementer_method_storage,
+            $implementer_called_class_name,
+            $guide_class_name,
+            $guide_method_storage_return_type,
+            $implementer_method_storage_return_type,
+        );
+
         if ($implementer_classlike_storage->is_trait) {
             $implementer_called_class_storage = $codebase->classlike_storage_provider->get(
                 $implementer_called_class_name,
@@ -1667,6 +1690,71 @@ final class MethodComparator
         (new FunctionPurityTemplateReplacer())->traverse($type);
 
         return $type;
+    }
+
+    /**
+     * A class that gets the method from a parent and the interface from elsewhere knows the templates of both
+     */
+    private static function mapTemplatesOfTheCalledClass(
+        Codebase $codebase,
+        ClassLikeStorage $implementer_classlike_storage,
+        MethodStorage $implementer_method_storage,
+        string $implementer_called_class_name,
+        string $guide_class_name,
+        Union &$guide_type,
+        Union &$implementer_type,
+    ): void {
+        if ($implementer_classlike_storage->is_trait
+            || $implementer_method_storage->defining_fqcln === null
+            || strtolower($implementer_called_class_name) === strtolower($implementer_classlike_storage->name)
+        ) {
+            return;
+        }
+
+        // the declaring class implements the interface itself: it was checked in its own context
+        if ($codebase->classExtendsOrImplements($implementer_method_storage->defining_fqcln, $guide_class_name)) {
+            return;
+        }
+
+        $called_class_storage = $codebase->classlike_storage_provider->get($implementer_called_class_name);
+        $called_class_params = $called_class_storage->template_extended_params;
+
+        if ($called_class_params === null) {
+            return;
+        }
+
+        self::transformTemplates(
+            $called_class_params,
+            $guide_class_name,
+            $guide_type,
+            $codebase,
+            $implementer_called_class_name,
+            $implementer_called_class_name,
+            $called_class_storage->parent_class,
+            $called_class_storage->final,
+        );
+
+        // the guide's templates may be the ones of the class declaring the method by now
+        self::transformTemplates(
+            $called_class_params,
+            $implementer_method_storage->defining_fqcln,
+            $guide_type,
+            $codebase,
+            $implementer_called_class_name,
+            $implementer_called_class_name,
+            $called_class_storage->parent_class,
+            $called_class_storage->final,
+        );
+        self::transformTemplates(
+            $called_class_params,
+            $implementer_method_storage->defining_fqcln,
+            $implementer_type,
+            $codebase,
+            $implementer_called_class_name,
+            $implementer_called_class_name,
+            $called_class_storage->parent_class,
+            $called_class_storage->final,
+        );
     }
 
     /**
