@@ -2315,6 +2315,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     {
         return [
             'the name of a built-in taint' => ['<taint name="html" />', 'has the name of a built-in taint'],
+            'no taint' => ['<taint name="none" />', 'can\'t be named "none"'],
             'not a word' => ['<taint name="~html" />', 'Invalid custom taint name'],
             'declared twice' => ['<taint name="a" /><taint name="a" />', 'is declared twice'],
             'added to a built-in kind' => [

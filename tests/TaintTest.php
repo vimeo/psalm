@@ -831,6 +831,67 @@ final class TaintTest extends TestCase
         );
     }
 
+    public function testAnInheritedSinkReportsEachCallOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            interface Runner {
+                /** @psalm-taint-sink shell $command */
+                public function run(string $command): void;
+            }
+
+            class LocalRunner implements Runner {
+                public function run(string $command): void {}
+            }
+
+            class LoggingRunner extends LocalRunner {
+                public function run(string $command): void {}
+            }
+
+            function run(Runner $runner): void {
+                $runner->run((string) $_GET["a"]);
+            }
+
+            (new LocalRunner())->run((string) $_GET["b"]);
+            (new LoggingRunner())->run((string) $_GET["c"]);
+            (new LoggingRunner())->run("ls");
+
+            class QueryRunner implements Runner {
+                /** @psalm-taint-sink sql $command */
+                public function run(string $command): void {}
+            }
+
+            (new QueryRunner())->run((string) $_GET["d"]);
+
+            final class LoggingQueryRunner extends QueryRunner {
+                public function run(string $command): void {}
+            }
+
+            (new LoggingQueryRunner())->run((string) $_GET["e"]);
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [4, 'TaintedShell'],
+                [19, 'TaintedShell'],
+                [20, 'TaintedShell'],
+                [25, 'TaintedSql'],
+                [25, 'TaintedSql'],
+                [34, 'TaintedSql'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
     public function testTaintFlowsFromTheLeftHandSideOfAPipe(): void
     {
         $this->testConfig->throw_exception = false;
@@ -1482,6 +1543,86 @@ final class TaintTest extends TestCase
                     $row = toObject(["name" => $_GET["name"], "id" => "1"]);
                     /** @psalm-suppress MixedPropertyFetch */
                     echo $row->id;',
+            ],
+            'keyOfAnArrayGivenToAMethodImplementingAValuesSinkIsNotASink' => [
+                'code' => '<?php
+                    interface Runner {
+                        /**
+                         * @param array<string, string> $env
+                         * @psalm-taint-sink shell $env[*]
+                         */
+                        public function runWith(array $env): void;
+                    }
+
+                    final class LocalRunner implements Runner {
+                        public function runWith(array $env): void {}
+                    }
+
+                    (new LocalRunner())->runWith([(string) $_GET["name"] => "1"]);',
+            ],
+            'argumentOfAConstructorOverridingOneWithASinkIsNotASink' => [
+                'code' => '<?php
+                    class Runner {
+                        /** @psalm-taint-sink shell $command */
+                        public function __construct(string $command) {}
+                    }
+
+                    final class NamedRunner extends Runner {
+                        public function __construct(string $name) {
+                            parent::__construct("ls");
+                        }
+                    }
+
+                    new NamedRunner((string) $_GET["name"]);',
+            ],
+            'argumentOfAMethodWithoutTheSinkItWouldInheritIsNotASink' => [
+                'code' => '<?php
+                    interface Runner {
+                        /** @psalm-taint-sink shell $command */
+                        public function run(string $command): void;
+                    }
+
+                    final class SafeRunner implements Runner {
+                        /** @psalm-taint-sink none $command */
+                        public function run(string $command): void {}
+                    }
+
+                    (new SafeRunner())->run((string) $_GET["command"]);',
+            ],
+            'argumentOfAMethodOverridingOneWithoutTheSinkItWouldInheritIsNotASink' => [
+                'code' => '<?php
+                    interface Runner {
+                        /** @psalm-taint-sink shell $command */
+                        public function run(string $command): void;
+                    }
+
+                    class SafeRunner implements Runner {
+                        /** @psalm-taint-sink none $command */
+                        public function run(string $command): void {}
+                    }
+
+                    final class LoggingRunner extends SafeRunner {
+                        public function run(string $command): void {}
+                    }
+
+                    (new LoggingRunner())->run((string) $_GET["command"]);',
+            ],
+            'valueOfAnArrayGivenToAMethodWithoutTheValuesSinkItWouldInheritIsNotASink' => [
+                'code' => '<?php
+                    interface Runner {
+                        /**
+                         * @param array<string, string> $env
+                         * @psalm-taint-sink shell $env[*]
+                         */
+                        public function runWith(array $env): void;
+                    }
+
+                    final class SafeRunner implements Runner {
+                        /** @psalm-taint-sink none $env */
+                        public function runWith(array $env): void {}
+                    }
+
+                    (new SafeRunner())->runWith(["PATH" => (string) $_GET["path"]]);',
             ],
             'propertyOfAnObjectTheCodeBuiltIsNotTainted' => [
                 'code' => '<?php
@@ -6700,6 +6841,124 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedSql',
             ],
+            'argumentOfAMethodImplementingASinkIsASink' => [
+                'code' => '<?php
+                    interface Runner {
+                        /** @psalm-taint-sink shell $command */
+                        public function run(string $command): void;
+                    }
+
+                    class LocalRunner implements Runner {
+                        public function run(string $command): void {}
+                    }
+
+                    (new LocalRunner())->run((string) $_GET["command"]);',
+                'error_message' => 'TaintedShell',
+            ],
+            'argumentOfAMethodOverridingAnImplementationOfASinkIsASink' => [
+                'code' => '<?php
+                    interface Runner {
+                        /** @psalm-taint-sink shell $command */
+                        public function run(string $command): void;
+                    }
+
+                    class LocalRunner implements Runner {
+                        public function run(string $command): void {}
+                    }
+
+                    class LoggingRunner extends LocalRunner {
+                        public function run(string $command): void {}
+                    }
+
+                    (new LoggingRunner())->run((string) $_GET["command"]);',
+                'error_message' => 'TaintedShell',
+            ],
+            'argumentOfATraitMethodImplementingASinkIsASink' => [
+                'code' => '<?php
+                    interface Runner {
+                        /** @psalm-taint-sink shell $command */
+                        public function run(string $command): void;
+                    }
+
+                    trait RunsLocally {
+                        public function run(string $command): void {}
+                    }
+
+                    final class LocalRunner implements Runner {
+                        use RunsLocally;
+                    }
+
+                    (new LocalRunner())->run((string) $_GET["command"]);',
+                'error_message' => 'TaintedShell',
+            ],
+            'argumentAfterTheFirstOfAVariadicImplementingASinkIsASink' => [
+                'code' => '<?php
+                    interface Runner {
+                        /** @psalm-taint-sink shell $commands */
+                        public function runAll(string ...$commands): void;
+                    }
+
+                    final class LocalRunner implements Runner {
+                        public function runAll(string ...$commands): void {}
+                    }
+
+                    (new LocalRunner())->runAll("ls", (string) $_GET["command"]);',
+                'error_message' => 'TaintedShell',
+            ],
+            'valueOfAnArrayGivenToAMethodImplementingAValuesSinkIsASink' => [
+                'code' => '<?php
+                    interface Runner {
+                        /**
+                         * @param array<string, string> $env
+                         * @psalm-taint-sink shell $env[*]
+                         */
+                        public function runWith(array $env): void;
+                    }
+
+                    final class LocalRunner implements Runner {
+                        public function runWith(array $env): void {}
+                    }
+
+                    (new LocalRunner())->runWith(["PATH" => (string) $_GET["path"]]);',
+                'error_message' => 'TaintedShell',
+            ],
+            'traitMethodImplementingASourceIsASource' => [
+                'code' => '<?php
+                    interface Input {
+                        /** @psalm-taint-source input */
+                        public function get(): string;
+                    }
+
+                    trait ReadsQuery {
+                        public function get(): string {
+                            return "";
+                        }
+                    }
+
+                    final class QueryInput implements Input {
+                        use ReadsQuery;
+                    }
+
+                    echo (new QueryInput())->get();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'argumentOfACallThroughTheInterfaceOfAMethodWithoutItsSinkIsASink' => [
+                'code' => '<?php
+                    interface Runner {
+                        /** @psalm-taint-sink shell $command */
+                        public function run(string $command): void;
+                    }
+
+                    final class SafeRunner implements Runner {
+                        /** @psalm-taint-sink none $command */
+                        public function run(string $command): void {}
+                    }
+
+                    function run(Runner $runner): void {
+                        $runner->run((string) $_GET["command"]);
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
             'methodOverridingASourceIsASource' => [
                 'code' => '<?php
                     class Input {
@@ -8581,6 +8840,14 @@ final class TaintTest extends TestCase
                     /** @psalm-taint-sink html $txt */
                     function show(string $text): void {}',
                 'error_message' => 'names $txt, which is not a parameter',
+            ],
+            'taintSourceOfNoTaint' => [
+                'code' => '<?php
+                    /** @psalm-taint-source none */
+                    function read(): string {
+                        return "";
+                    }',
+                'error_message' => 'is not a taint: it means no taint',
             ],
             'assertUntaintedOfAParameterThatDoesNotExist' => [
                 'code' => '<?php

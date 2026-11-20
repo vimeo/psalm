@@ -492,7 +492,9 @@ final class FunctionLikeDocblockParser
                     throw new AssertionError(preg_last_error_msg());
                 }
 
-                if (count($param_parts) >= 2) {
+                if (count($param_parts) >= 2 && $param_parts[0] === 'none') {
+                    $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => 0];
+                } elseif (count($param_parts) >= 2) {
                     $t = self::registerTaint($codebase, $param_parts[0], $code_location, $info->scan_issues);
                     if ($t !== null) {
                         $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $t];
