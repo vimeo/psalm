@@ -241,8 +241,9 @@ A value stored in the database comes back out of it: what a query stores in a co
 queries selecting that column read, wherever they are. Psalm reads the SQL of the queries run with `PDO`, `mysqli`,
 `pgsql` and `SQLite3`:
 
-- an `INSERT`, `REPLACE` or `UPDATE` stores in each column the value of its placeholder, or the part of the SQL the
-  analysis doesn't know the text of (a variable concatenated into it);
+- an `INSERT`, `REPLACE`, `UPDATE` or `ALTER TABLE ... UPDATE` (ClickHouse) stores in each column the value of its
+  placeholder, or the part of the SQL the analysis doesn't know the text of (a variable concatenated into it, or given
+  to `sprintf()` with a literal format);
 - a `SELECT` reads each column it names into the key of that name of the rows fetched. `SELECT *` reads each
   column of the table under its name, and any of them by position, as the order of the columns isn't known.
 
@@ -275,14 +276,22 @@ function store(PDO $pdo): void {
 }
 
 function show(PDO $pdo, string $table): void {
-    echo (string) $pdo->query("SELECT name FROM $table")->fetchColumn(); // TaintedHtml
-    echo (string) $pdo->query("SELECT * FROM $table")->fetch()['body'];  // TaintedHtml
-    echo (string) $pdo->query("SELECT * FROM $table")->fetch()['name'];  // no issue
+    echo (string) $pdo->query("SELECT name FROM $table LIMIT 1")->fetchColumn(); // TaintedHtml
+    echo (string) $pdo->query("SELECT * FROM $table LIMIT 1")->fetch()['body'];  // TaintedHtml
+    echo (string) $pdo->query("SELECT * FROM $table LIMIT 1")->fetch()['name'];  // no issue
 }
 ```
 
 - A query it can't parse, a table name that isn't a literal and `INSERT INTO t VALUES (...)` without the column
-  list read or write any column. A table name that isn't a literal can be any table.
+  list read or write any column. A table name that isn't a literal can be any table. A query it can't parse also reads
+  the rows of any table, as `SELECT *` gives them.
+- A part of the SQL the analysis doesn't know the text of is a value only when known text follows it. A statement that
+  ends with such a part can't be parsed, because the part can continue the statement (more assignments, `ON DUPLICATE
+  KEY UPDATE`, `ON CONFLICT`, `RETURNING`, a `UNION`, another statement): `"UPDATE t SET a = " . $a`, a `sprintf()`
+  format ending with a conversion, or a variable the analysis knows only the start of (`$sql` assigned `'SELECT a FROM t
+  WHERE b = ' . $b` or `'INSERT INTO t (a) VALUES ' . implode(',', $rows)`). A part that is a number (an `int`, a
+  `float`, a `bool` or `null`) can't continue it. A query with such a part in a comment can't be parsed either, as the
+  part can end the comment. The data of a ClickHouse `INSERT ... FORMAT` runs to the end of the query and holds no SQL.
 - A column a `UNION` of `SELECT *` gives can be any column of their tables.
 - The values given to a prepared statement it can't follow back to the query that prepared it (a statement passed
   to another function) are stored in every column of every table.

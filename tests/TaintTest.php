@@ -2009,6 +2009,77 @@ final class TaintTest extends TestCase
                         echo (string) $row[0];
                     }',
             ],
+            'rowsInsertedAsAListKeepTheirColumnsApart' => [
+                'code' => '<?php
+                    final class Table {
+                        /**
+                         * @psalm-database-insert $table $data
+                         */
+                        public function insert(string $table, array $data): void {}
+
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql
+                         */
+                        public function all(string $sql): array {
+                            return [];
+                        }
+                    }
+
+                    function run(Table $db): void {
+                        $db->insert("users", [["name" => "admin", "bio" => $_GET["bio"]]]);
+                        foreach ($db->all("SELECT name FROM users") as $user) {
+                            echo (string) $user["name"];
+                        }
+                    }',
+            ],
+            'sprintfQueryKeepsTheColumnsApart' => [
+                'code' => '<?php
+                    function run(PDO $pdo): void {
+                        $pdo->exec(sprintf("INSERT INTO %s (name, bio) VALUES (\'admin\', %s)", "users", $pdo->quote($_GET["bio"])));
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+            ],
+            'queryInAVariableIsReadFromWhatItStartsWithWhenKnownTextFollows' => [
+                'code' => '<?php
+                    function run(PDO $pdo, string $status): void {
+                        $pdo->prepare("INSERT INTO users (name, bio) VALUES (?, ?)")->execute(["admin", $_GET["bio"]]);
+                        $sql = "SELECT name FROM users WHERE status = " . $pdo->quote($status);
+                        echo (string) $pdo->query($sql . " LIMIT 1")->fetch()["name"];
+                    }',
+            ],
+            'partTheAnalysisDoesntKnowIsAValueWhenKnownTextOrANumberFollows' => [
+                'code' => '<?php
+                    function run(PDO $pdo, int $id): void {
+                        $pdo->exec("UPDATE users SET bio = " . $pdo->quote($_GET["bio"]) . " WHERE id = " . $id);
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+            ],
+            'readonlyQueryTheAnalysisCantParseStoresNothing' => [
+                'code' => '<?php
+                    final class Client {
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql $bindings rows readonly
+                         */
+                        public function select(string $sql, array $bindings = []): array {
+                            return [];
+                        }
+
+                        /**
+                         * @psalm-database-query $sql $bindings none
+                         */
+                        public function write(string $sql, array $bindings = []): void {}
+                    }
+
+                    function run(Client $db, string $sql): void {
+                        $db->write("INSERT INTO users (name, bio) VALUES (:name, :bio)", ["name" => "admin", "bio" => $_GET["bio"]]);
+                        $db->select($sql, [$_GET["x"]]);
+                        foreach ($db->select("SELECT name FROM users") as $user) {
+                            echo (string) $user["name"];
+                        }
+                    }',
+            ],
             'annotationsOfAQueryMethodReplaceItsBody' => [
                 'code' => '<?php
                     final class Db {
@@ -2051,7 +2122,7 @@ final class TaintTest extends TestCase
                     }
 
                     function show(PDO $pdo, string $table): void {
-                        echo (string) $pdo->query("SELECT * FROM $table")->fetch()["name"];
+                        echo (string) $pdo->query("SELECT * FROM $table LIMIT 1")->fetch()["name"];
                     }',
             ],
             'columnsStoredFromOneValueStayApartInAllColumns' => [
@@ -8322,6 +8393,160 @@ final class TaintTest extends TestCase
 
                     function show(PDO $pdo): void {
                         echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'valueOfARowInsertedAsAListIsStoredInItsColumn' => [
+                'code' => '<?php
+                    final class Table {
+                        /**
+                         * @psalm-database-insert $table $data
+                         */
+                        public function insert(string $table, array $data): void {}
+
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql
+                         */
+                        public function all(string $sql): array {
+                            return [];
+                        }
+                    }
+
+                    function run(Table $db): void {
+                        $db->insert("users", [["name" => "admin", "bio" => $_GET["bio"]]]);
+                        foreach ($db->all("SELECT bio FROM users") as $user) {
+                            echo (string) $user["bio"];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'positionalValueOfARowCanBeInAnyColumn' => [
+                'code' => '<?php
+                    final class Table {
+                        /**
+                         * @param list<list<mixed>> $rows
+                         * @psalm-database-insert $table $rows
+                         */
+                        public function insert(string $table, array $rows): void {}
+
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql
+                         */
+                        public function all(string $sql): array {
+                            return [];
+                        }
+                    }
+
+                    function run(Table $db): void {
+                        $db->insert("users", [["admin", $_GET["bio"]]]);
+                        foreach ($db->all("SELECT name FROM users") as $user) {
+                            echo (string) $user["name"];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'sprintfQueryStoresTheTextOfItsArguments' => [
+                'code' => '<?php
+                    function run(PDO $pdo): void {
+                        $pdo->exec(sprintf("INSERT INTO %s (name, bio) VALUES (\'admin\', %s)", "users", $pdo->quote($_GET["bio"])));
+                        echo (string) $pdo->query("SELECT bio FROM users")->fetch()["bio"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'alterTableUpdateStoresInItsColumns' => [
+                'code' => '<?php
+                    function run(PDO $pdo): void {
+                        $pdo->exec("ALTER TABLE users UPDATE bio = " . $pdo->quote($_GET["bio"]) . " WHERE id = 1");
+                        echo (string) $pdo->query("SELECT bio FROM users")->fetch()["bio"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'rowsEndingAQueryInAVariableCanBeStoredInAnyColumn' => [
+                'code' => '<?php
+                    /** @param list<string> $messages */
+                    function store(PDO $pdo, array $messages): void {
+                        $sql = "INSERT INTO logs (message) VALUES " . implode(",", array_map(
+                            fn(string $message): string => "(" . $pdo->quote($message) . ")",
+                            $messages,
+                        ));
+                        $pdo->exec($sql);
+                    }
+
+                    store(new PDO("sqlite::memory:"), [(string) $_GET["message"]]);
+                    echo (string) (new PDO("sqlite::memory:"))->query("SELECT name FROM users")->fetch()["name"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'queryInAVariableTheAnalysisKnowsOnlyTheStartOfCantBeParsed' => [
+                'code' => '<?php
+                    function run(PDO $pdo, string $status): void {
+                        $pdo->prepare("INSERT INTO users (name, bio) VALUES (?, ?)")->execute(["admin", $_GET["bio"]]);
+                        $sql = "SELECT name FROM users WHERE status = " . $pdo->quote($status);
+                        echo (string) $pdo->query($sql)->fetch()["name"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'statementEndingWithAPartTheAnalysisDoesntKnowCantBeParsed' => [
+                'code' => '<?php
+                    function run(PDO $pdo, string $id): void {
+                        $pdo->exec("UPDATE users SET bio = " . $pdo->quote($_GET["bio"]) . " WHERE id = " . $id);
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'sprintfOfAFormatInAVariableCantBeParsed' => [
+                'code' => '<?php
+                    function run(PDO $pdo, float $delta, int $id): void {
+                        $pdo->exec(sprintf("INSERT INTO users (name, bio) VALUES (\'admin\', %s)", $pdo->quote($_GET["bio"])));
+                        if ($delta > 0) {
+                            $sql = "UPDATE accounts SET balance = balance+{$delta} WHERE id=%s";
+                        } else {
+                            $sql = "UPDATE accounts SET balance = balance-" . (-$delta) . " WHERE id=%s";
+                        }
+                        $pdo->exec(sprintf($sql, $id));
+                        echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'selectOfATableNotKnownEndingTheQueryCanReadAnyColumn' => [
+                'code' => '<?php
+                    function store(PDO $pdo): void {
+                        $pdo->prepare("INSERT INTO users (name, bio) VALUES (?, ?)")->execute(["admin", $_GET["bio"]]);
+                    }
+
+                    function show(PDO $pdo, string $table): void {
+                        echo (string) $pdo->query("SELECT * FROM $table")->fetch()["name"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'quotedStringKeepsItsTaintsButSql' => [
+                'code' => '<?php
+                    echo (new PDO("sqlite::memory:"))->quote((string) $_GET["message"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'readonlyQueryTheAnalysisCantParseReadsAnyColumn' => [
+                'code' => '<?php
+                    final class Client {
+                        /**
+                         * @return list<array<string, mixed>>
+                         * @psalm-database-query $sql $bindings rows readonly
+                         */
+                        public function select(string $sql, array $bindings = []): array {
+                            return [];
+                        }
+
+                        /**
+                         * @psalm-database-query $sql $bindings none
+                         */
+                        public function write(string $sql, array $bindings = []): void {}
+                    }
+
+                    function run(Client $db, string $sql): void {
+                        $db->write("INSERT INTO users (name, bio) VALUES ({name:String}, {bio:String})", ["name" => "admin", "bio" => $_GET["bio"]]);
+                        foreach ($db->select($sql) as $row) {
+                            echo (string) $row["anything"];
+                        }
                     }',
                 'error_message' => 'TaintedHtml',
             ],

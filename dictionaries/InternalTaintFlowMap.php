@@ -17,6 +17,7 @@ declare(strict_types=1);
 return [
     // standard: strings
     'count_chars' => ['string'],
+    'pdo::quote' => ['string'],
     'hebrev' => ['string'],
     'number_format' => ['decimal_separator', 'thousands_separator'],
     'strtok' => ['string'],
