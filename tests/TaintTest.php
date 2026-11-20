@@ -9866,6 +9866,11 @@ final class TaintTest extends TestCase
                     function t(Bag $m): void {
                         $m->p = (string) $_GET["x"];
                         $m->touch();
+
+                        if ($m->{"p"} === null) {
+                            return;
+                        }
+
                         echo $m->{"p"};
                     }',
                 'error_message' => 'TaintedHtml',
