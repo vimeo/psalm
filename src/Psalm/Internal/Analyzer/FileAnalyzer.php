@@ -91,6 +91,13 @@ class FileAnalyzer extends SourceAnalyzer
      */
     public array $class_analyzers_to_analyze = [];
 
+    /**
+     * The declarations of classes whose name was taken by another declaration
+     *
+     * @var list<ClassAnalyzer>
+     */
+    private array $duplicate_class_analyzers = [];
+
     public ?Context $context = null;
 
     public Codebase $codebase;
@@ -220,7 +227,7 @@ class FileAnalyzer extends SourceAnalyzer
 
         // check any leftover classes not already evaluated
 
-        foreach ($this->class_analyzers_to_analyze as $class_analyzer) {
+        foreach ([...$this->class_analyzers_to_analyze, ...$this->duplicate_class_analyzers] as $class_analyzer) {
             $class_analyzer->analyze(null, $this->context);
         }
 
@@ -302,6 +309,7 @@ class FileAnalyzer extends SourceAnalyzer
         $codebase->config->eventDispatcher->dispatchAfterFileAnalysis($event);
 
         $this->class_analyzers_to_analyze = [];
+        $this->duplicate_class_analyzers = [];
         $this->interface_analyzers_to_analyze = [];
     }
 
@@ -376,9 +384,7 @@ class FileAnalyzer extends SourceAnalyzer
 
             $class_analyzer = new ClassAnalyzer($stmt, $this, $stmt->name->name);
 
-            $fq_class_name = $class_analyzer->getFQCLN();
-
-            $this->class_analyzers_to_analyze[strtolower($fq_class_name)] = $class_analyzer;
+            $this->addNamespacedClassAnalyzer($class_analyzer->getFQCLN(), $class_analyzer);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
             if (!$stmt->name) {
                 return;
@@ -402,6 +408,12 @@ class FileAnalyzer extends SourceAnalyzer
      */
     public function addNamespacedClassAnalyzer(string $fq_class_name, ClassAnalyzer $class_analyzer): void
     {
+        if ($class_analyzer->is_duplicate) {
+            $this->duplicate_class_analyzers[] = $class_analyzer;
+
+            return;
+        }
+
         $this->class_analyzers_to_analyze[strtolower($fq_class_name)] = $class_analyzer;
     }
 
