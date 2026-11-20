@@ -47,6 +47,19 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'filterVarGlobalRangeBeforePhp85KeepsTheFailureValue' => [
+                'code' => '<?php
+                    /** @var string */
+                    $input = $_GET["ip"];
+                    $ip = filter_var($input, FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE);
+                    $fromInput = filter_input(INPUT_GET, "x", FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE);',
+                'assertions' => [
+                    '$ip===' => 'false|non-falsy-string',
+                    '$fromInput===' => 'false|non-falsy-string|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'functionImportedWithAnAliasIsCalledWithoutAWrongCaseIssue' => [
                 'code' => '<?php
                     namespace App;
@@ -4343,6 +4356,17 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'RedundantFlag',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'filterVarGlobalRangeBeforePhp85IsNotAFlagOfEveryFilter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function filter(string $s): void {
+                        filter_var($s, FILTER_VALIDATE_INT, 268435456); // FILTER_FLAG_GLOBAL_RANGE up to PHP 8.4
+                    }
+                    PHP,
+                'error_message' => 'RedundantFlag - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:5 - Not all flags used are supported by the filter used',
+                'error_levels' => [],
+                'php_version' => '8.4',
             ],
             'classExistsIdenticalToFalseDoesNotGuardTheRightOperandOfAnd' => [
                 'code' => '<?php

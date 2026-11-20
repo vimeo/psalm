@@ -1621,8 +1621,11 @@ final class FilterUtils
             FILTER_REQUIRE_ARRAY,
             FILTER_FORCE_ARRAY,
             FILTER_FLAG_NONE, // does nothing, default
-            self::FILTER_THROW_ON_FAILURE,
         );
+
+        if ($codebase->analysis_php_version_id >= 8_05_00) {
+            $general_filter_flags[] = self::FILTER_THROW_ON_FAILURE;
+        }
 
         // https://www.php.net/manual/en/filter.filters.sanitize.php
         $sanitize_filters = array(
