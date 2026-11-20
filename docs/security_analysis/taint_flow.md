@@ -242,7 +242,7 @@ queries selecting that column read, wherever they are. Psalm reads the SQL of th
 `pgsql` and `SQLite3`:
 
 - an `INSERT`, `REPLACE` or `UPDATE` stores in each column the value of its placeholder, or the part of the SQL the
-  analysis doesn't know the text of (a variable concatenated into it);
+  analysis doesn't know the text of (a variable concatenated into it, or given to `sprintf()` with a literal format);
 - a `SELECT` reads each column it names into the key of that name of the rows fetched. `SELECT *` reads each
   column of the table under its name, and any of them by position, as the order of the columns isn't known.
 
