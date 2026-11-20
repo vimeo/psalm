@@ -194,7 +194,10 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
             ['--rename', 'Ns\A', '--to', 'Ns\C'],
             'Destination class Ns\C already exists',
         ];
-        yield from self::provideMalformedRefactorMappings();
+        yield 'valid mapping followed by a malformed one' => [
+            ['--rename', 'Ns\A::foo', '--to', 'Ns\A::baz', '--rename', 'Ns\B', '--to', 'Foo'],
+            'Renaming a namespaced class into the global namespace is not supported',
+        ];
         yield '--into value that is also a directory' => [
             ['--move', 'Ns\A::foo', '--into', 'src'],
             'Destination class src doesn’t exist',

@@ -214,8 +214,6 @@ final class Refactor
         $path_to_config = CliUtils::getPathToConfig($options);
 
         // `--move=X` is the same as `--move X`.
-        // Normalize --into/--to values while building $args.
-        // Doing it in the mapping loop makes full-project taint analysis much slower.
         $args = [];
         $expects_destination = false;
 
