@@ -358,18 +358,25 @@ final class ForeachAnalyzer
             FunctionLikeAnalyzer::unbindByRefParam($codebase, $foreach_context, '$' . $stmt->valueVar->name);
         }
 
-        AssignmentAnalyzer::analyze(
-            $statements_analyzer,
-            $stmt->valueVar,
-            $stmt->expr,
-            $value_type,
-            $foreach_context,
-            $doc_comment,
-            $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
-                && is_string($stmt->valueVar->name)
-                ? ['$' . $stmt->valueVar->name => true]
-                : [],
-        );
+        // PHP evaluates the iterated expression once, and it is analysed already
+        $statements_analyzer->node_data->markEvaluated([$stmt->expr]);
+
+        try {
+            AssignmentAnalyzer::analyze(
+                $statements_analyzer,
+                $stmt->valueVar,
+                $stmt->expr,
+                $value_type,
+                $foreach_context,
+                $doc_comment,
+                $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
+                    && is_string($stmt->valueVar->name)
+                    ? ['$' . $stmt->valueVar->name => true]
+                    : [],
+            );
+        } finally {
+            $statements_analyzer->node_data->unmarkEvaluated([$stmt->expr]);
+        }
 
         if ($stmt->byRef
             && $stmt->valueVar instanceof PhpParser\Node\Expr\Variable
