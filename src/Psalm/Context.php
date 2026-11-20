@@ -443,6 +443,15 @@ final class Context
     public array $vars_assigned_in_and = [];
 
     /**
+     * The variables the last `&&` analysed outside an if condition assigns whenever it is evaluated, which is
+     * what its left operand assigns
+     *
+     * @internal
+     * @var array<string, Union>
+     */
+    public array $vars_assigned_always_in_and = [];
+
+    /**
      * A list of vars that have been may have been assigned to
      *
      * @var array<string, bool>
