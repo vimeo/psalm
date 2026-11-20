@@ -4,6 +4,10 @@ Psalm tracks untrusted input as it moves through your code — through assignmen
 properties — and reports whenever it reaches a dangerous operation. Depending on where the input lands, that prevents
 cross-site scripting (XSS), SQL injection, command injection, path traversal, and more.
 
+Input such as `$_GET['id']`, `$_POST['email']` or `$_COOKIE['token']` is a **source**. A **sink** is a place it must
+not reach unescaped, such as `<div id="section_<?= $id ?>">` or
+`$pdo->exec("select * from users where name='" . $name . "'")`.
+
 Taint analysis runs by default alongside type checking.
 
 **On this page:**
@@ -146,6 +150,9 @@ $link = '<a href="' . htmlentities((string) $_GET['url']) . '">Link</a>';
 
 // Still vulnerable on PHP < 8.1 — single quotes are not escaped without ENT_QUOTES:
 $link2 = "<a href='" . htmlentities((string) $_GET['a2']) . "'>Link</a>";
+
+// Try them all with:
+// /?id=1+OR+1%3D1&img=%2F+onerror%3Dalert%281%29&url=javascript%3Aalert%281%29&a2=%2F%27+onerror%3D%27alert%281%29
 ```
 
 Prefer parameterized queries for SQL and commands, and a context-aware template engine for HTML. You can also use
@@ -284,7 +291,9 @@ echo processVar($_GET['text'], false); // TaintedHtml
 echo processVar($_GET['text'], true); // no issue
 ```
 
-When user input itself must be HTML (for example from a rich-text editor like [TinyMCE](https://www.tiny.cloud/)),
+Where you can, accept and store user input as plain text fields rather than blocks of HTML, so that it can always be
+escaped with `htmlspecialchars()` when it is output. When user input itself must be HTML (for example from a rich-text
+editor like [TinyMCE](https://www.tiny.cloud/)),
 sanitize it with a dedicated library such as [HTML Purifier](http://htmlpurifier.org/docs) and annotate your wrapper:
 
 ```php
@@ -360,9 +369,26 @@ run($_GET['first']);
 run($_GET['second']);
 ```
 
-**Pure functions are specialized automatically**, because their return value depends only on their arguments. This
-covers functions annotated [`@psalm-pure`](../annotating_code/purity_model.md) as well as functions Psalm infers to be
-pure (as `takesInput()` would be without `error_log()`). Because a subclass could override a method with an impure
+**Pure functions are specialized automatically**, because their return value depends only on their arguments (the idea
+behind [immutability in Psalm](https://psalm.dev/articles/immutability-and-beyond)). This covers functions annotated
+[`@psalm-pure`](../annotating_code/purity_model.md):
+
+```php
+<?php
+
+/**
+ * @psalm-pure
+ */
+function takesInput(string $s): string {
+    return $s;
+}
+
+echo htmlentities(takesInput($_GET['name']));
+echo takesInput('hello'); // no issue
+```
+
+It also covers functions Psalm infers to be pure, as the first `takesInput()` would be without `error_log()`. Because a
+subclass could override a method with an impure
 implementation, Psalm only infers purity for functions, `private` methods, `final` methods, and methods of `final`
 classes — annotate other methods explicitly.
 
@@ -423,15 +449,43 @@ $user2 = new User($_GET['name']);
 echoUserName($user1);
 ```
 
-Because per-object taints follow the variables holding the object, Psalm enforces that the object cannot be mutated
-after construction:
+Per-object taints follow the variables holding the object, so a change made through one variable would be missed
+through the others holding the same object. Psalm therefore enforces that the object cannot be mutated after
+construction:
 
 - its properties are treated as readonly and cannot be reassigned outside the constructor (except on a fresh `clone`);
-- its methods cannot mutate `$this`, other objects, static properties, or global variables.
+- its methods cannot mutate `$this`;
+- its methods cannot write other objects, static properties, or global variables either, since another instance could
+  read back what this one wrote there.
 
 To update a specialized object, return a modified copy as `withName()` does above. Subclasses inherit specialization and
 must also carry the annotation, or Psalm reports
 [ImmutableDependency](../running_psalm/issues/ImmutableDependency.md).
+
+`@psalm-immutable` enforces the same rules, so an immutable class is specialized as well:
+
+```php
+<?php
+
+/**
+ * @psalm-immutable
+ */
+class User {
+    public function __construct(public string $name) {}
+}
+
+/**
+ * @psalm-taint-specialize
+ */
+function echoUserName(User $user): void {
+    echo $user->name; // no issue
+}
+
+$user1 = new User('Keith');
+$user2 = new User($_GET['name']);
+
+echoUserName($user1);
+```
 
 ## Command-line code
 
@@ -689,9 +743,24 @@ Every kind except `user_secret` and `system_secret` is user input, and built-in 
 annotations, `input` (or its alias `tainted`) matches all user-input kinds, and `input_except_sleep` matches all of them
 except `sleep`.
 
-You can declare custom taint kinds
-[in `psalm.xml` or in a plugin](custom_taint_sources.md#custom-taints-declared-in-the-configuration), and custom sinks
-with [`@psalm-taint-sink`](custom_taint_sinks.md).
+Custom taint kinds are just names. A source and a sink naming the same new kind connect without any setup, and the
+sink reports [TaintedCustom](../running_psalm/issues/TaintedCustom.md):
+
+```php
+<?php
+
+/** @psalm-taint-source tracking_id */
+function getTrackingId(): string { return ''; }
+
+/** @psalm-taint-sink tracking_id $id */
+function logTracking(string $id): void {} // TaintedCustom (from the call below)
+
+logTracking(getTrackingId());
+```
+
+To make a custom kind user input, which the built-in sources give and `input` names, declare it
+[in `psalm.xml` or in a plugin](custom_taint_sources.md#custom-taints-declared-in-the-configuration). See
+[custom taint sinks](custom_taint_sinks.md) for more on `@psalm-taint-sink`.
 
 **Response streams:** Writing to a literal `php://output` stream — or `php://stdout`, which writes to the HTTP response
 under the CGI SAPI — acts as an output sink just like `echo`. This covers:
