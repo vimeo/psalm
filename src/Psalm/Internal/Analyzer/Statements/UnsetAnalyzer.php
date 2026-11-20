@@ -44,7 +44,8 @@ use function strtok;
 final class UnsetAnalyzer
 {
     /**
-     * Marks an expression unset() is given, as opposed to one an unset expression goes through
+     * Marks the expressions unset() writes through: the one it removes (true), and the ones it holds (false), as
+     * opposed to the ones only read to name it
      */
     public const TARGET_ATTRIBUTE = 'psalmUnsetTarget';
 
@@ -71,9 +72,8 @@ final class UnsetAnalyzer
     public static function writesFetchedProperty(Context $context, PhpParser\Node\Expr $stmt, ?Union $type): bool
     {
         return $context->inside_unset
-            && ($stmt->getAttribute(self::TARGET_ATTRIBUTE) === true
-                || $type === null
-                || !$type->isObjectType());
+            && $stmt->hasAttribute(self::TARGET_ATTRIBUTE)
+            && ($stmt->getAttribute(self::TARGET_ATTRIBUTE) === true || $type === null || !$type->isObjectType());
     }
 
     public static function analyze(
@@ -84,7 +84,17 @@ final class UnsetAnalyzer
         $context->inside_unset = true;
 
         foreach ($stmt->vars as $var) {
-            $var->setAttribute(self::TARGET_ATTRIBUTE, true);
+            $node = $var;
+            $is_target = true;
+
+            while ($node instanceof PhpParser\Node\Expr\ArrayDimFetch
+                || $node instanceof PhpParser\Node\Expr\PropertyFetch
+                || $node instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            ) {
+                $node->setAttribute(self::TARGET_ATTRIBUTE, $is_target);
+                $node = $node instanceof PhpParser\Node\Expr\StaticPropertyFetch ? null : $node->var;
+                $is_target = false;
+            }
 
             $chain_node = $var;
             do {
