@@ -210,6 +210,47 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachIteratedExpressionIsAnalysedOnce' => [
+                'code' => '<?php
+                    class Entity {
+                        public ?int $id = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->id
+                         */
+                        public function getIdAssert(): int {
+                            return 1;
+                        }
+                    }
+
+                    function onlyValue(Entity $entity): void {
+                        foreach ([$entity->getIdAssert()] as $_) {
+                        }
+                    }
+
+                    function keyAndValue(Entity $entity): void {
+                        foreach ([$entity->getIdAssert()] as $_key => $_value) {
+                        }
+                    }
+
+                    function destructured(Entity $entity): void {
+                        foreach ([[$entity->getIdAssert()]] as [$_first]) {
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'foreachIteratedExpressionIncrementsOnce' => [
+                'code' => '<?php
+                    $i = 0;
+                    foreach ([$i++] as $_) {
+                    }',
+                'assertions' => [
+                    '$i===' => '1',
+                ],
+            ],
             'foreachCounterIncrementedThroughAReferenceIsWidened' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2992,6 +3033,28 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'foreachIteratedExpressionAssertedTwiceInTheLoop' => [
+                'code' => '<?php
+                    class Entity {
+                        public ?int $id = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->id
+                         */
+                        public function getIdAssert(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(Entity $entity): void {
+                        foreach ([$entity->getIdAssert(), $entity->getIdAssert()] as $_) {
+                        }
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'foreachOverATemplateReportsEveryTypeOfItsBound' => [
                 'code' => <<<'PHP'
                     <?php

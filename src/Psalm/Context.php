@@ -31,6 +31,7 @@ use Psalm\Type\Union;
 use ReflectionReference;
 use RuntimeException;
 
+use function array_any;
 use function array_diff_key;
 use function array_filter;
 use function array_intersect_key;
@@ -215,6 +216,13 @@ final class Context
      * This changes whether or not the context is cloned
      */
     public bool $inside_conditional = false;
+
+    /**
+     * Whether or not we're inside the argument of assert(), whose own check reports what its condition asserts.
+     * Not `inside_conditional`: that is also set for every `if`, where an is_*() call reports itself, and it is
+     * not reset in the arguments of a call inside assert()
+     */
+    public bool $inside_assert = false;
 
     /**
      * Whether or not we're inside an isset call
@@ -2033,11 +2041,37 @@ final class Context
     public function mergeFunctionExceptions(
         FunctionLikeStorage $function_storage,
         CodeLocation $codelocation,
+        ?Codebase $codebase = null,
     ): void {
         $hash = $codelocation->getHash();
         foreach ($function_storage->throws as $possibly_thrown_exception => $_) {
+            // a thrown value of `A&Throwable` is caught or declared as the Throwable it is, not as `A`
+            if ($codebase
+                && isset($function_storage->throw_intersections[$possibly_thrown_exception])
+                && !self::isThrowable($codebase, $possibly_thrown_exception)
+                && array_any(
+                    $function_storage->throw_intersections[$possibly_thrown_exception],
+                    static fn(array $group): bool => array_any(
+                        $group,
+                        static fn(string $member): bool => self::isThrowable($codebase, $member),
+                    ),
+                )
+            ) {
+                continue;
+            }
+
             $this->possibly_thrown_exceptions[$possibly_thrown_exception][$hash] = $codelocation;
         }
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function isThrowable(Codebase $codebase, string $fq_class_name): bool
+    {
+        return $codebase->classlike_storage_provider->has($fq_class_name)
+            && (strtolower($fq_class_name) === 'throwable'
+                || $codebase->classExtendsOrImplements($fq_class_name, 'Throwable'));
     }
 
     /**

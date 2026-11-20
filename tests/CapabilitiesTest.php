@@ -37,6 +37,26 @@ final class CapabilitiesTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'externalMutationFreeCalleesCostWriteRefsOnlyThroughTheirByReferenceArguments' => [
+                'code' => '<?php
+                    final class Box {
+                        public int $n = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props|write-refs */
+                        public function bump(): void {
+                            $this->n++;
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props|write-refs */
+                        public function __construct() {}
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|write-props */
+                    function caller(Box $b): void {
+                        $b->bump();
+                        new Box();
+                    }',
+            ],
             'parentCallOfATraitMethodReturnsThisInEveryClassUsingTheTrait' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3214,6 +3234,23 @@ final class CapabilitiesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'closureCallingAnImpureInstanceMethodIsInferredWithWriteRefs' => [
+                'code' => '<?php
+                    final class Impure {
+                        public function run(): void {}
+                    }
+
+                    function f(Impure $i): void {
+                        $c = function () use ($i): void {
+                            $i->run();
+                        };
+                        /** @psalm-check-type-exact $c = Closure[write-props|read-globals|write-globals|write-refs|io|time]():void */
+                        $c();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -3224,6 +3261,32 @@ final class CapabilitiesTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'impureInstanceMethodCostsWriteRefsLikeAnImpureFunction' => [
+                'code' => '<?php
+                    final class Impure {
+                        public function run(): void {}
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time */
+                    function caller(Impure $i): void {
+                        $i->run();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
+            'impureConstructorCostsWriteRefsLikeAnImpureFunction' => [
+                'code' => '<?php
+                    final class Impure {
+                        public function __construct() {
+                            echo "created";
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time */
+                    function caller(): void {
+                        new Impure();
+                    }',
+                'error_message' => 'ImpureMethodCall',
+            ],
             'impureToStringCalledImplicitlyByAnArgument' => [
                 'code' => '<?php
                     final class Imp {
@@ -5475,6 +5538,7 @@ final class CapabilitiesTest extends TestCase
                         return \Implode(",", $names);
                     }',
                 'error_message' => 'possibly-mutating method App\Name::__toString',
+                'error_levels' => ['WrongCaseFunction'],
             ],
             'impureToStringInLooseInArrayCalledInAnotherCase' => [
                 'code' => '<?php
