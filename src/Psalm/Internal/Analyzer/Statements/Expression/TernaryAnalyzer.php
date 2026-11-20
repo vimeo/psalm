@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\IssueBuffer;
 use Psalm\Node\Stmt\VirtualExpression;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
@@ -30,6 +31,8 @@ use function array_filter;
 use function array_intersect;
 use function array_intersect_key;
 use function array_keys;
+use function array_pop;
+use function count;
 use function spl_object_id;
 
 /**
@@ -37,6 +40,63 @@ use function spl_object_id;
  */
 final class TernaryAnalyzer
 {
+    /**
+     * Set by MatchAnalyzer on the ternaries it analyses its arms as. An arm that matches every value reaching it is
+     * not redundant: what it makes unreachable are the arms after it, which the negation of its condition reports.
+     * Under the guard that suppresses its redundancy, the ternaries written in the arm's condition keep reporting
+     * their negation, which can be their only report there
+     */
+    public const MATCH_ARM_ATTRIBUTE = 'matchArm';
+
+    /**
+     * Set by MatchAnalyzer on the arms of a match arm with several values. They share its body, which is analysed
+     * once per value, so the body is analysed under the arm's guard
+     */
+    public const SHARED_ARM_BODY_ATTRIBUTE = 'sharedArmBody';
+
+    /** @var list<list<string>> the guards of the match arms being analysed, by the issues each suppresses */
+    private static array $arm_guards = [];
+
+    /**
+     * Analyses the ternaries MatchAnalyzer built for the arms of a match
+     */
+    public static function analyzeMatchArms(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $arms,
+        Context $context,
+    ): bool {
+        $arm_guard_count = count(self::$arm_guards);
+
+        try {
+            return ExpressionAnalyzer::analyze($statements_analyzer, $arms, $context);
+        } finally {
+            // an arm that returned early or threw leaves its guard
+            while (count(self::$arm_guards) > $arm_guard_count) {
+                self::endArmGuard($statements_analyzer);
+            }
+        }
+    }
+
+    private static function startArmGuard(StatementsAnalyzer $statements_analyzer): void
+    {
+        $suppressed_issues = $statements_analyzer->getSuppressedIssues();
+        $arm_suppressions = [];
+
+        foreach (['RedundantCondition', 'RedundantConditionGivenDocblockType'] as $issue_type) {
+            if (!isset($suppressed_issues[$issue_type])) {
+                $arm_suppressions[] = $issue_type;
+            }
+        }
+
+        $statements_analyzer->addSuppressedIssues($arm_suppressions);
+        self::$arm_guards[] = $arm_suppressions;
+    }
+
+    private static function endArmGuard(StatementsAnalyzer $statements_analyzer): void
+    {
+        $statements_analyzer->removeSuppressedIssues(array_pop(self::$arm_guards) ?? []);
+    }
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Ternary $stmt,
@@ -49,6 +109,13 @@ final class TernaryAnalyzer
         $pre_cond_clauses = $context->clauses;
         $pre_cond_reconciled_clauses = $context->reconciled_expression_clauses;
         $pre_cond_remove_vars = $context->parent_remove_vars;
+
+        $is_match_arm = $stmt->getAttribute(self::MATCH_ARM_ATTRIBUTE) === true;
+        $is_shared_arm_body = $stmt->getAttribute(self::SHARED_ARM_BODY_ATTRIBUTE) === true;
+
+        if ($is_match_arm) {
+            self::startArmGuard($statements_analyzer);
+        }
 
         try {
             // the else of an `||` is analysed again from where the condition started, not from where it ended
@@ -148,6 +215,10 @@ final class TernaryAnalyzer
             );
         }
 
+        if ($is_match_arm && !$is_shared_arm_body) {
+            self::endArmGuard($statements_analyzer);
+        }
+
         if ($stmt->if) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->if, $if_context) === false) {
                 return false;
@@ -166,18 +237,41 @@ final class TernaryAnalyzer
         $changed_var_ids = [];
 
         if ($if_scope->negated_types) {
-            [$t_else_context->vars_in_scope, $t_else_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
-                $if_scope->negated_types,
-                $if_scope->negated_types,
-                $t_else_context->vars_in_scope,
-                $t_else_context->references_in_scope,
-                $changed_var_ids,
-                $cond_referenced_var_ids,
-                $statements_analyzer,
-                $statements_analyzer->getTemplateTypeMap() ?: [],
-                $t_else_context->inside_loop,
-                new CodeLocation($statements_analyzer->getSource(), $stmt->else),
-            );
+            // the condition is reported where it is written, and a match arm's negation reports the arms after it
+            // as never reached. The active types are kept: the reconcilers mark a failed reconciliation, which the
+            // types of the else depend on, only where they may report it
+            $drops_negation_issues = !$is_match_arm && self::$arm_guards === [];
+
+            if ($is_match_arm && !$is_shared_arm_body) {
+                self::startArmGuard($statements_analyzer);
+            } elseif ($drops_negation_issues) {
+                IssueBuffer::startRecording();
+            }
+
+            try {
+                [$t_else_context->vars_in_scope, $t_else_context->references_in_scope] =
+                    Reconciler::reconcileKeyedTypes(
+                        $if_scope->negated_types,
+                        $if_scope->negated_types,
+                        $t_else_context->vars_in_scope,
+                        $t_else_context->references_in_scope,
+                        $changed_var_ids,
+                        $cond_referenced_var_ids,
+                        $statements_analyzer,
+                        $statements_analyzer->getTemplateTypeMap() ?: [],
+                        $t_else_context->inside_loop,
+                        new CodeLocation($statements_analyzer->getSource(), $stmt->else),
+                    );
+            } finally {
+                if ($drops_negation_issues) {
+                    IssueBuffer::clearRecordingLevel();
+                    IssueBuffer::stopRecording();
+                }
+            }
+
+            if ($is_match_arm && !$is_shared_arm_body) {
+                self::endArmGuard($statements_analyzer);
+            }
 
             $t_else_context->clauses = AlgebraAnalyzer::removeReconciledClauses(
                 $t_else_context->clauses,
@@ -185,6 +279,11 @@ final class TernaryAnalyzer
                 $t_else_context->vars_in_scope,
                 $statements_analyzer,
             )[0];
+        }
+
+        // the arms after this one are analysed under their own guards
+        if ($is_match_arm && $is_shared_arm_body) {
+            self::endArmGuard($statements_analyzer);
         }
 
         $else_start_vars = $t_else_context->vars_in_scope;

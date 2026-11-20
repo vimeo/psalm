@@ -9,7 +9,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
+use Psalm\Node\Expr\BinaryOp\VirtualNotIdentical;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\Expr\VirtualMethodCall;
 use Psalm\Node\Expr\VirtualPropertyFetch;
@@ -119,7 +119,8 @@ final class NullsafeAnalyzer
             $stmt->var->getAttributes(),
         );
 
-        $null_comparison = new VirtualIdentical(
+        // the condition `?->` checks, so that a receiver that is never null is reported as a redundant condition
+        $not_null_comparison = new VirtualNotIdentical(
             $tmp_var,
             $null_value1,
             $stmt->var->getAttributes(),
@@ -130,21 +131,11 @@ final class NullsafeAnalyzer
             $stmt->var->getAttributes(),
         );
 
-        if ($stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
-            $ternary = new VirtualTernary(
-                $null_comparison,
-                $null_value2,
-                new VirtualPropertyFetch($tmp_var, $stmt->name, $stmt->getAttributes()),
-                $stmt->getAttributes(),
-            );
-        } else {
-            $ternary = new VirtualTernary(
-                $null_comparison,
-                $null_value2,
-                new VirtualMethodCall($tmp_var, $stmt->name, $stmt->args, $stmt->getAttributes()),
-                $stmt->getAttributes(),
-            );
-        }
+        $call = $stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            ? new VirtualPropertyFetch($tmp_var, $stmt->name, $stmt->getAttributes())
+            : new VirtualMethodCall($tmp_var, $stmt->name, $stmt->args, $stmt->getAttributes());
+
+        $ternary = new VirtualTernary($not_null_comparison, $call, $null_value2, $stmt->getAttributes());
 
         $receiver_is_known = $stmt instanceof PhpParser\Node\Expr\NullsafePropertyFetch
             && $receiver_id !== null
@@ -160,7 +151,7 @@ final class NullsafeAnalyzer
 
         $ternary_type = $statements_analyzer->node_data->getType($ternary);
 
-        $call_type = $statements_analyzer->node_data->getType($ternary->else);
+        $call_type = $statements_analyzer->node_data->getType($call);
 
         if ($receiver_is_known) {
             $fetch = new VirtualPropertyFetch($tmp_var, $stmt->name, $stmt->getAttributes());

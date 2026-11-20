@@ -16,6 +16,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use function array_filter;
 use function array_map;
 use function array_values;
+use function in_array;
 use function sort;
 
 use const DIRECTORY_SEPARATOR;
@@ -24,6 +25,14 @@ final class RedundantConditionTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    private const CONDITION_ISSUE_TYPES = [
+        'RedundantCondition',
+        'RedundantConditionGivenDocblockType',
+        'TypeDoesNotContainType',
+        'TypeDoesNotContainNull',
+        'DocblockTypeContradiction',
+    ];
 
     public function testAssertOfATypeCheckFunctionIsReportedOnce(): void
     {
@@ -55,6 +64,123 @@ final class RedundantConditionTest extends TestCase
                 static fn($issue): array => [$issue->type, $issue->line_from, $issue->column_from],
                 IssueBuffer::getIssuesDataForFile($file_path),
             ),
+        );
+    }
+
+    public function testConditionOfATernaryIsReportedOnceAtTheCondition(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class A {
+                    public ?A $next = null;
+                    public function n(): int { return 1; }
+                }
+
+                function instance(A $a): int { return $a instanceof A ? $a->n() : 0; }
+                /** @param A $a */
+                function docblock($a): int { return $a instanceof A ? 1 : 0; }
+                function identical(): int { $a = ["a"]; return $a === [] ? 0 : 1; }
+                function isNull(int $i): int { return $i === null ? 1 : 0; }
+                function isString(string $s): int { return is_string($s) ? 1 : 0; }
+                function notString(string $s): int { return !is_string($s) ? 1 : 0; }
+                function short(A $a): A|int { return $a ?: 5; }
+                function nested(?A $a): int { return $a === null ? 0 : ($a instanceof A ? 1 : 2); }
+                function coalesce(int $i): int { return $i ?? 5; }
+                function coalesceAssign(int $i): int { $i ??= 5; return $i; }
+                function nullsafe(A $a): void { echo $a?->n(); }
+                /** @param A $a */
+                function nullsafeDocblock($a): void { echo $a?->next?->n(); }
+                function nullsafeOnNull(): void { $a = null; $a?->n(); }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            [
+                ['RedundantCondition', 7, 55],
+                ['RedundantConditionGivenDocblockType', 9, 53],
+                ['TypeDoesNotContainType', 10, 64],
+                ['TypeDoesNotContainType', 10, 64],
+                ['TypeDoesNotContainNull', 11, 55],
+                ['RedundantCondition', 12, 60],
+                ['TypeDoesNotContainType', 13, 61],
+                ['RedundantCondition', 14, 54],
+                ['RedundantCondition', 15, 73],
+                ['RedundantCondition', 16, 57],
+                ['RedundantCondition', 17, 56],
+                ['RedundantCondition', 18, 54],
+                ['RedundantConditionGivenDocblockType', 20, 60],
+                ['TypeDoesNotContainType', 21, 62],
+            ],
+            array_values(array_map(
+                static fn(IssueData $issue): array => [$issue->type, $issue->line_from, $issue->column_from],
+                array_filter(
+                    IssueBuffer::getIssuesDataForFile($file_path),
+                    static fn(IssueData $issue): bool => in_array($issue->type, self::CONDITION_ISSUE_TYPES, true),
+                ),
+            )),
+        );
+    }
+
+    public function testTypesInTheElseOfATernaryAreThoseOfItsNegatedCondition(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class A {}
+                final class B {}
+                final class C {}
+
+                function alternatives(?string $x): void {
+                    $r = (!is_int($x) && !is_string($x)) ? null : $x;
+                    /** @psalm-trace $r */;
+                }
+                function impossible(A|B $x): void {
+                    $r = !$x instanceof C ? 1 : $x;
+                    /** @psalm-trace $r */;
+                }
+                function compound(int|string $s): void {
+                    $r = (is_string($s) && $s === "a") ? "a" : $s;
+                    /** @psalm-trace $r */;
+                }
+                function disjoint(A $x): A {
+                    return !$x instanceof B ? $x : $x;
+                }
+                function elseOperand(int $i): int {
+                    return $i === null ? 1 : strlen($i);
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            [
+                ['Trace', 8, 43, '$r: null|string'],
+                ['Trace', 12, 43, '$r: 1'],
+                ['Trace', 16, 43, '$r: int|string'],
+                ['InvalidScalarArgument', 22, 53, 'Argument 1 of strlen expects string, but int provided'],
+            ],
+            array_values(array_map(
+                static fn(IssueData $issue): array => [
+                    $issue->type,
+                    $issue->line_from,
+                    $issue->column_from,
+                    $issue->message,
+                ],
+                array_filter(
+                    IssueBuffer::getIssuesDataForFile($file_path),
+                    static fn(IssueData $issue): bool => !in_array($issue->type, self::CONDITION_ISSUE_TYPES, true),
+                ),
+            )),
         );
     }
 
@@ -208,8 +334,6 @@ final class RedundantConditionTest extends TestCase
         $this->assertSame(
             [
                 'RedundantConditionGivenDocblockType: Docblock-defined type object for $a->m() is never null',
-                'DocblockTypeContradiction: Cannot resolve types for $a->m() - docblock-defined type object does not '
-                    . 'contain null',
             ],
             array_map(
                 static fn(IssueData $issue): string => $issue->type . ': ' . $issue->message,

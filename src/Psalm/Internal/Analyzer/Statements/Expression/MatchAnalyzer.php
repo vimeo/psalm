@@ -163,7 +163,7 @@ final class MatchAnalyzer
                 $flattened_arms[] = new PhpParser\Node\MatchArm(
                     [$cond],
                     $arm->body,
-                    $cond->getAttributes(),
+                    [...$cond->getAttributes(), TernaryAnalyzer::SHARED_ARM_BODY_ATTRIBUTE => count($arm->conds) > 1],
                 );
             }
         }
@@ -209,7 +209,12 @@ final class MatchAnalyzer
                         $stmt->getAttributes(),
                     ),
                 ),
-                $stmt->getAttributes(),
+                [
+                    ...$stmt->getAttributes(),
+                    TernaryAnalyzer::MATCH_ARM_ATTRIBUTE => true,
+                    TernaryAnalyzer::SHARED_ARM_BODY_ATTRIBUTE
+                        => $last_arm->getAttribute(TernaryAnalyzer::SHARED_ARM_BODY_ATTRIBUTE) === true,
+                ],
             );
         }
 
@@ -222,32 +227,16 @@ final class MatchAnalyzer
                 self::convertCondsToConditional($arm->conds, $match_condition, $arm->getAttributes(), $is_match_true),
                 $arm->body,
                 $ternary,
-                $arm->getAttributes(),
+                [...$arm->getAttributes(), TernaryAnalyzer::MATCH_ARM_ATTRIBUTE => true],
             );
         }
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-        if (!isset($suppressed_issues['RedundantCondition'])) {
-            $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
-        }
-
-        if (!isset($suppressed_issues['RedundantConditionGivenDocblockType'])) {
-            $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
-        }
-
         // the arms narrow the subject for what follows the match, but its exhaustiveness is judged on the type it had
         $subject_type_before_arms = $switch_var_id !== null ? ($context->vars_in_scope[$switch_var_id] ?? null) : null;
 
-        $v = ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $context);
-
-        if (!isset($suppressed_issues['RedundantCondition'])) {
-            $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
-        }
-
-        if (!isset($suppressed_issues['RedundantConditionGivenDocblockType'])) {
-            $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
-        }
+        $v = TernaryAnalyzer::analyzeMatchArms($statements_analyzer, $ternary, $context);
 
         if ($v === false) {
             return false;
