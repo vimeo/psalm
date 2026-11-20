@@ -96,6 +96,21 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'isArrayAndNotListThatDoesNotHoldKeepsTheOtherTypesOfTheUnion' => [
+                'code' => '<?php
+                    function test(array|int $value): void {
+                        if (is_array($value) && !array_is_list($value)) {
+                            return;
+                        }
+
+                        if (is_array($value)) {
+                            echo "array";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'notIdenticalKeepsNullOfBothOperandsWhereTheyDiffer' => [
                 'code' => '<?php
                     function f(int|null $a, string|null $b): void {
