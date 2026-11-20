@@ -10,4 +10,5 @@ namespace Psalm\Issue;
 final class TaintedEval extends TaintedInput
 {
     public const SHORTCODE = 252;
+    public const CWE_IDS = [95, 94];
 }

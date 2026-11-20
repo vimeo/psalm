@@ -967,7 +967,7 @@ final class AssertionReconciler extends Reconciler
 
     /**
      * The matching types of the parts of two types neither of which contains the other: e.g. callable filtered with
-     * string is a callable-string
+     * string is a callable-string, A&I filtered with a subclass B of A is B&I
      *
      * @return list<Atomic>
      */
@@ -981,7 +981,14 @@ final class AssertionReconciler extends Reconciler
         $type_2_parts = $type_1_parts === null ? AtomicParts::split($type_2_atomic, $type_1_atomic, $codebase) : null;
 
         if ($type_1_parts === null && $type_2_parts === null) {
-            return [];
+            $refined_type = self::refineWithIntersectionParts(
+                $type_1_atomic,
+                $type_2_atomic,
+                $codebase,
+                $any_scalar_type_match_found,
+            );
+
+            return $refined_type ? [$refined_type] : [];
         }
 
         $matching_atomic_types = [];
@@ -2452,6 +2459,48 @@ final class AssertionReconciler extends Reconciler
         } else {
             return [new TMixed()];
         }
+    }
+
+    /**
+     * The second type refined with each part of the first, an intersection of named objects
+     */
+    private static function refineWithIntersectionParts(
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+        Codebase $codebase,
+        bool &$any_scalar_type_match_found,
+    ): ?TNamedObject {
+        if (!$type_1_atomic instanceof TNamedObject
+            || !$type_1_atomic->extra_types
+            || !$type_2_atomic instanceof TNamedObject
+        ) {
+            return null;
+        }
+
+        $type_1_parts = [$type_1_atomic->setIntersectionTypes([])];
+
+        foreach ($type_1_atomic->extra_types as $extra_type) {
+            if (!$extra_type instanceof TNamedObject || $extra_type->extra_types) {
+                return null;
+            }
+
+            $type_1_parts[] = $extra_type;
+        }
+
+        foreach ($type_1_parts as $type_1_part) {
+            $type_2_atomic = self::filterAtomicWithAnother(
+                $type_1_part,
+                $type_2_atomic,
+                $codebase,
+                $any_scalar_type_match_found,
+            );
+
+            if (!$type_2_atomic instanceof TNamedObject) {
+                return null;
+            }
+        }
+
+        return $type_2_atomic;
     }
 
     /**

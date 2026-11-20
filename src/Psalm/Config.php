@@ -103,6 +103,7 @@ use function get_defined_constants;
 use function get_defined_functions;
 use function getcwd;
 use function glob;
+use function hash;
 use function implode;
 use function in_array;
 use function interface_exists;
@@ -128,7 +129,6 @@ use function reset;
 use function rmdir;
 use function rtrim;
 use function scandir;
-use function sha1;
 use function simplexml_import_dom;
 use function sort;
 use function str_contains;
@@ -201,6 +201,10 @@ final class Config
         'symfony/framework-bundle' => 'Psalm\SymfonyPsalmPlugin\Plugin',
         'laravel/framework' => 'Psalm\LaravelPlugin\Plugin',
         'orchestra/testbench' => 'Psalm\LaravelPlugin\Plugin',
+        'doctrine/orm' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
+        'doctrine/dbal' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
+        'doctrine/collections' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
+        'doctrine/persistence' => 'Weirdan\DoctrinePsalmPlugin\Plugin',
     ];
 
     /**
@@ -644,6 +648,7 @@ final class Config
         "mysqli" => null,
         "openssl" => null,
         "pdo" => null,
+        "protobuf" => null,
         "random" => null,
         "rdkafka" => null,
         "redis" => null,
@@ -821,7 +826,7 @@ final class Config
 
         try {
             $config = self::loadFromXML($base_dir, $file_contents, $current_dir, $file_path);
-            $config->hash = sha1($file_contents . PSALM_VERSION);
+            $config->hash = hash('xxh3', $file_contents . PSALM_VERSION);
         } catch (ConfigException $e) {
             throw new ConfigException(
                 'Problem parsing ' . $file_path . ":\n" . '  ' . $e->getMessage(),
@@ -838,7 +843,7 @@ final class Config
      */
     public function computeHash(): string
     {
-        return sha1($this->hash . ':' . $this->level);
+        return hash('xxh3', $this->hash . ':' . $this->level);
     }
 
     /**
@@ -1058,7 +1063,7 @@ final class Config
     ): void {
         $config->config_issues = [];
 
-        // Attributes to be removed in Psalm 6
+        // Attributes to be removed in the next major version
         $deprecated_attributes = [];
 
         /** @var list<string> */
@@ -1268,7 +1273,7 @@ final class Config
         $config->global_cache_directory = $config->cache_directory;
 
         if ($config->cache_directory !== null) {
-            $config->cache_directory .= DIRECTORY_SEPARATOR . sha1($base_dir);
+            $config->cache_directory .= DIRECTORY_SEPARATOR . hash('xxh3', $base_dir);
         }
 
         if (isset($config_xml['serializer'])) {
@@ -2404,7 +2409,6 @@ final class Config
             && $e instanceof PluginIssue
             && !isset($this->issue_handlers[$issue_type])
         ) {
-            /** @var int */
             $issue_level = $e::ERROR_LEVEL;
 
             if ($issue_level > 0 && $issue_level < $this->level) {
@@ -2766,54 +2770,16 @@ final class Config
 
         $core_generic_files = [];
 
-        if (PHP_VERSION_ID < 8_00_00 && $codebase->analysis_php_version_id >= 8_00_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php80.phpstub';
+        foreach ([8_04_00 => '8.4', 8_06_00 => '8.6'] as $version_id => $version) {
+            if (PHP_VERSION_ID < $version_id && $codebase->analysis_php_version_id >= $version_id) {
+                $stub_path = dirname(__DIR__, 2) . '/stubs/Php' . str_replace('.', '', $version) . '.phpstub';
 
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.0 classes');
+                if (!file_exists($stub_path)) {
+                    throw new UnexpectedValueException('Cannot locate PHP ' . $version . ' classes');
+                }
+
+                $core_generic_files[] = $stub_path;
             }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (PHP_VERSION_ID < 8_01_00 && $codebase->analysis_php_version_id >= 8_01_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php81.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.1 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (PHP_VERSION_ID < 8_02_00 && $codebase->analysis_php_version_id >= 8_02_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php82.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.2 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (PHP_VERSION_ID < 8_04_00 && $codebase->analysis_php_version_id >= 8_04_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php84.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.4 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
-        }
-
-        if (PHP_VERSION_ID < 8_06_00 && $codebase->analysis_php_version_id >= 8_06_00) {
-            $stringable_path = dirname(__DIR__, 2) . '/stubs/Php86.phpstub';
-
-            if (!file_exists($stringable_path)) {
-                throw new UnexpectedValueException('Cannot locate PHP 8.6 classes');
-            }
-
-            $core_generic_files[] = $stringable_path;
         }
 
         // Genuinely-new classes from every version live in PhpVersionedClasses.phpstub (always
