@@ -23,7 +23,9 @@ use Psalm\Storage\Assertion\Empty_;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsGreaterThanOrEqualTo;
 use Psalm\Storage\Assertion\IsLessThanOrEqualTo;
+use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotIsset;
+use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\NotInArray;
 use Psalm\Storage\Assertion\NotNonEmptyCountable;
 use Psalm\Type;
@@ -441,7 +443,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
             );
         }
 
-        if ($assertion_type instanceof TCallable) {
+        if ($assertion_type instanceof TCallable && !self::isComparedWithOneValue($assertion)) {
             return self::reconcileCallable(
                 $existing_var_type,
                 $codebase,
@@ -500,6 +502,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         bool $is_equality,
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
+        $compared_with_one_value = self::isComparedWithOneValue($assertion);
         $non_bool_types = [];
         $redundant = true;
 
@@ -528,6 +531,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     $redundant = false;
                     $non_bool_types[] = $type;
                 }
+            } elseif ($compared_with_one_value && ($type instanceof TBool || $type instanceof TScalar)) {
+                $redundant = false;
+                $non_bool_types[] = $type;
             } elseif (!$type instanceof TBool
                 || ($is_equality && $type::class === TBool::class)
             ) {
@@ -1099,6 +1105,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         bool $is_equality,
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
+        $compared_with_one_value = self::isComparedWithOneValue($assertion);
         $non_object_types = [];
         $redundant = true;
 
@@ -1127,6 +1134,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     $redundant = false;
                     $non_object_types[] = $type;
                 }
+            } elseif ($compared_with_one_value && ($type instanceof TCallable || $type instanceof TIterable)) {
+                $redundant = false;
+                $non_object_types[] = $type;
             } elseif ($type instanceof TCallable) {
                 $non_object_types[] = TKeyedArray::makeCallable([
                     new Union([new TClassString, new TObject]),
@@ -1187,6 +1197,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         bool $is_equality,
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
+        $compared_with_one_value = self::isComparedWithOneValue($assertion);
         $non_numeric_types = [];
         $redundant = !($existing_var_type->hasString()
             || $existing_var_type->hasScalar());
@@ -1216,6 +1227,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     $redundant = false;
                     $non_numeric_types[] = $type;
                 }
+            } elseif ($compared_with_one_value && ($type instanceof TArrayKey || $type instanceof TScalar)) {
+                $redundant = false;
+                $non_numeric_types[] = $type;
             } elseif ($type instanceof TArrayKey) {
                 $redundant = false;
                 $non_numeric_types[] = new TString();
@@ -1270,6 +1284,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         bool $is_equality,
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
+        $compared_with_one_value = self::isComparedWithOneValue($assertion);
         $non_int_types = [];
         $redundant = true;
 
@@ -1298,6 +1313,11 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     $redundant = false;
                     $non_int_types[] = $type;
                 }
+            } elseif ($compared_with_one_value
+                && ($type instanceof TArrayKey || $type instanceof TScalar || $type instanceof TNumeric)
+            ) {
+                $redundant = false;
+                $non_int_types[] = $type;
             } elseif ($type instanceof TArrayKey) {
                 $redundant = false;
                 $non_int_types[] = new TString();
@@ -1359,6 +1379,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         bool $is_equality,
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
+        $compared_with_one_value = self::isComparedWithOneValue($assertion);
         $non_float_types = [];
         $redundant = true;
 
@@ -1387,6 +1408,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     $redundant = false;
                     $non_float_types[] = $type;
                 }
+            } elseif ($compared_with_one_value && ($type instanceof TScalar || $type instanceof TNumeric)) {
+                $redundant = false;
+                $non_float_types[] = $type;
             } elseif ($type instanceof TScalar) {
                 $redundant = false;
                 $non_float_types[] = new TString();
@@ -1443,6 +1467,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         bool $is_equality,
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
+        $compared_with_one_value = self::isComparedWithOneValue($assertion);
         $non_string_types = [];
         $redundant = !$existing_var_type->hasScalar();
 
@@ -1471,6 +1496,11 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     $redundant = false;
                     $non_string_types[] = $type;
                 }
+            } elseif ($compared_with_one_value
+                && ($type instanceof TArrayKey || $type instanceof TCallable || $type instanceof TScalar)
+            ) {
+                $redundant = false;
+                $non_string_types[] = $type;
             } elseif ($type instanceof TArrayKey) {
                 $non_string_types[] = new TInt();
                 $redundant = false;
@@ -1536,6 +1566,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         bool $is_equality,
     ): Union {
         $old_var_type_string = $existing_var_type->getId();
+        $compared_with_one_value = self::isComparedWithOneValue($assertion);
         $non_array_types = [];
         $redundant = !$existing_var_type->hasScalar();
 
@@ -1564,6 +1595,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     $redundant = false;
                     $non_array_types[] = $type;
                 }
+            } elseif ($compared_with_one_value && ($type instanceof TCallable || $type instanceof TIterable)) {
+                $redundant = false;
+                $non_array_types[] = $type;
             } elseif ($type instanceof TCallable) {
                 $non_array_types[] = new TCallableString();
                 $non_array_types[] = new TCallableObject($type->from_docblock, $type);
@@ -1626,11 +1660,15 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
     ): Union {
         $types = $existing_var_type->getAtomicTypes();
         $old_var_type_string = $existing_var_type->getId();
+        $compared_with_one_value = self::isComparedWithOneValue($assertion);
         $redundant = true;
 
         if (isset($types['resource'])) {
             $redundant = false;
-            unset($types['resource']);
+
+            if (!$compared_with_one_value) {
+                unset($types['resource']);
+            }
         }
 
         foreach ($types as &$type) {
@@ -2032,5 +2070,17 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
 
         return Type::getNever();
+    }
+
+    /**
+     * Whether the value is compared with one value of a type that has more than one: not being equal to it, the
+     * value can still be of that type
+     *
+     * @psalm-pure
+     */
+    private static function isComparedWithOneValue(Assertion $assertion): bool
+    {
+        return ($assertion instanceof IsNotIdentical || $assertion instanceof IsNotLooselyEqual)
+            && $assertion->comparand !== null;
     }
 }
