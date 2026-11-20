@@ -35,8 +35,9 @@ final class TaintKind
     public const INPUT_NOSQL = (1 << 17);
     public const INPUT_URL_COMPONENT = (1 << 18);
     public const INPUT_URL_PATH = (1 << 19);
-    public const USER_SECRET = (1 << 20);
-    public const SYSTEM_SECRET = (1 << 21);
+    public const INPUT_REDIRECT = (1 << 20);
+    public const USER_SECRET = (1 << 21);
+    public const SYSTEM_SECRET = (1 << 22);
 
     /**
      * Bitmask of all INPUT_* taint types. Used as the default taint for
@@ -45,7 +46,7 @@ final class TaintKind
      * Excludes USER_SECRET and SYSTEM_SECRET, which represent
      * sensitive data leaking out rather than untrusted data flowing in.
      */
-    public const ALL_INPUT = (1 << 20) - 1;
+    public const ALL_INPUT = (1 << 21) - 1;
 
     /** @internal */
     public const NUMERIC_ONLY = self::INPUT_SLEEP;
@@ -65,7 +66,7 @@ final class TaintKind
     public const ALL = -1;
 
     /** @internal Keep this synced with the above */
-    public const BUILTIN_TAINT_COUNT = 22;
+    public const BUILTIN_TAINT_COUNT = 23;
 
 
     // Map of taint kind names to their bitmask values, used in taint annotations
@@ -83,6 +84,7 @@ final class TaintKind
         'ssrf' => self::INPUT_SSRF,
         'url_component' => self::INPUT_URL_COMPONENT,
         'url_path' => self::INPUT_URL_PATH,
+        'redirect' => self::INPUT_REDIRECT,
         'file' => self::INPUT_FILE,
         'cookie' => self::INPUT_COOKIE,
         'header' => self::INPUT_HEADER,

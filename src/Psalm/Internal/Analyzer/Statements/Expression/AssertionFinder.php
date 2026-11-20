@@ -32,6 +32,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\TaintValidations;
+use Psalm\Internal\Codebase\UrlHosts;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -161,6 +163,39 @@ final class AssertionFinder
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     public static function scrapeAssertions(
+        PhpParser\Node\Expr $conditional,
+        ?string $this_class_name,
+        FileSource $source,
+        ?Codebase $codebase = null,
+        bool $inside_negation = false,
+        bool $cache = true,
+        bool $inside_conditional = true,
+    ): array {
+        // what the result of a validation tells of the value it validated, which the negation of the condition must
+        // tell alone: it would be one of several possibilities next to what the condition says of the result
+        if ($source instanceof StatementsAnalyzer
+            && ($validation = TaintValidations::getAssertions($source, $conditional)) !== []
+        ) {
+            return $validation;
+        }
+
+        return self::scrapeAssertionsOfConditional(
+            $conditional,
+            $this_class_name,
+            $source,
+            $codebase,
+            $inside_negation,
+            $cache,
+            $inside_conditional,
+        );
+    }
+
+    /**
+     * Gets all the type assertions in a conditional
+     *
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     */
+    private static function scrapeAssertionsOfConditional(
         PhpParser\Node\Expr $conditional,
         ?string $this_class_name,
         FileSource $source,
@@ -3093,14 +3128,22 @@ final class AssertionFinder
             return [];
         }
 
-        $removed_taints = PatternCharacters::getTaintsRemoved($pattern_type->getSingleStringLiteral()->value);
+        $pattern = $pattern_type->getSingleStringLiteral()->value;
+        $removed_taints = PatternCharacters::getTaintsRemoved($pattern);
         $subject_var_id = self::getStringFormVarId($subject_arg->value, $this_class_name, $source);
 
-        if ($removed_taints === 0 || $subject_var_id === null) {
-            return [];
+        $assertions = [];
+        if ($removed_taints !== 0 && $subject_var_id !== null) {
+            $assertions[$subject_var_id] = [[new MatchesPattern($removed_taints, $negated)]];
         }
 
-        return [[$subject_var_id => [[new MatchesPattern($removed_taints, $negated)]]]];
+        // the host of a URL matching a list of hosts
+        $url_assertion = UrlHosts::getAssertion($source, $pattern, $subject_arg->value, $negated);
+        if ($url_assertion !== null) {
+            $assertions[$url_assertion[0]] = [[$url_assertion[1]]];
+        }
+
+        return $assertions === [] ? [] : [$assertions];
     }
 
     /**
