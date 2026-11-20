@@ -259,21 +259,21 @@ echo '<p>' . $city . '</p>'; // TaintedHtml
 
 ### Your own escaping functions
 
-Use `@psalm-taint-escape <kind>` to tell Psalm that a function or assignment removes a taint kind:
+Use `@psalm-taint-escape <kind>` to tell Psalm that a function removes a taint kind from what it returns:
 
 ```php
 <?php
 
-function echoVar(string $str): void {
-    /**
-     * @psalm-taint-escape html
-     * @psalm-taint-escape has_quotes
-     */
-    $str = str_replace(['<', '>', '"', "'"], '', $str);
-    echo $str; // no issue
+/**
+ * @psalm-taint-escape html
+ * @psalm-taint-escape has_quotes
+ */
+function stripMarkup(string $str): string {
+    return str_replace(['<', '>', '"', "'"], '', $str);
 }
 
-echoVar($_GET['text']);
+echo stripMarkup((string) $_GET['text']); // no issue
+echo (string) $_GET['text']; // TaintedHtml
 ```
 
 Use a conditional type when escaping depends on an argument:
