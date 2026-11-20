@@ -52,6 +52,7 @@ use Psalm\Issue\MixedPropertyAssignment;
 use Psalm\Issue\MixedPropertyTypeCoercion;
 use Psalm\Issue\NoInterfaceProperties;
 use Psalm\Issue\NullPropertyAssignment;
+use Psalm\Issue\ParseError;
 use Psalm\Issue\PossiblyFalsePropertyAssignmentValue;
 use Psalm\Issue\PossiblyInvalidPropertyAssignment;
 use Psalm\Issue\PossiblyInvalidPropertyAssignmentValue;
@@ -156,6 +157,8 @@ final class InstancePropertyAssignmentAnalyzer
                 ),
             ];
         } else {
+            self::checkConstantObjectWrite($statements_analyzer, $stmt);
+
             // `$a->p .= ...` and `$a->p++` are analysed as an assignment of an operation on that same fetch
             $modifies_value = $modifies_value
                 || ($assignment_value instanceof PhpParser\Node\Expr\BinaryOp
@@ -586,6 +589,34 @@ final class InstancePropertyAssignmentAnalyzer
         }
 
         return $can_set_readonly_property;
+    }
+
+    /**
+     * Writing a property of a constant (`CONFIG->debug = true`) is a compile error before PHP 8.6
+     */
+    private static function checkConstantObjectWrite(
+        StatementsAnalyzer $statements_analyzer,
+        PropertyFetch $stmt,
+    ): void {
+        if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 8_06_00) {
+            return;
+        }
+
+        $root = $stmt->var;
+
+        while ($root instanceof PropertyFetch || $root instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $root = $root->var;
+        }
+
+        if ($root instanceof PhpParser\Node\Expr\ConstFetch || $root instanceof PhpParser\Node\Expr\ClassConstFetch) {
+            IssueBuffer::maybeAdd(
+                new ParseError(
+                    'Cannot use temporary expression in write context before PHP 8.6',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
     }
 
     public static function analyzeStatement(
