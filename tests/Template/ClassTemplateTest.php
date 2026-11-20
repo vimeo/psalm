@@ -1411,6 +1411,115 @@ final class ClassTemplateTest extends TestCase
                     '$e===' => "E<`_0:'bar'>",
                 ],
             ],
+            'templateDefaultOfASelfObjectBuiltWithAConstantDeclaredLater' => [
+                'code' => '<?php
+                    final class Opt {
+                        public function __construct(public int $x = 0) {}
+
+                        /**
+                         * @template T
+                         * @param T $o
+                         * @return T
+                         */
+                        public static function make($o = new self(self::Y)) {
+                            return $o;
+                        }
+
+                        public const Y = 1;
+                    }
+
+                    $o = Opt::make();',
+                'assertions' => [
+                    '$o===' => 'Opt',
+                ],
+                // an object default doesn't match a parameter typed by a template
+                'ignored_issues' => ['InvalidParamDefault'],
+                'php_version' => '8.1',
+            ],
+            'templateDefaultOfAnObjectBuiltWithTheConstantOfAnotherClass' => [
+                'code' => '<?php
+                    namespace ObjTest;
+
+                    use ObjTest\Payload as P;
+
+                    final class Payload {
+                        public function __construct(public int $x) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return T
+                     */
+                    function obj($v = new P(Num::TEN)) {
+                        return $v;
+                    }
+
+                    $o = obj();
+
+                    final class Num {
+                        public const TEN = 10;
+                    }',
+                'assertions' => [
+                    '$o===' => 'ObjTest\Payload',
+                ],
+                // an object default doesn't match a parameter typed by a template
+                'ignored_issues' => ['InvalidParamDefault'],
+                'php_version' => '8.1',
+            ],
+            'templateDefaultOfExpressionsOfTheConstantsOfAClassDeclaredLater' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return T
+                     */
+                    function concat($v = A::KEY . "_ok") {
+                        return $v;
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return T
+                     */
+                    function negated($v = !A::ENABLED) {
+                        return $v;
+                    }
+
+                    $c = concat();
+                    $n = negated();
+
+                    final class A {
+                        public const KEY = "open";
+                        public const ENABLED = false;
+                    }',
+                'assertions' => [
+                    '$c===' => "'open_ok'",
+                    '$n===' => 'true',
+                ],
+            ],
+            'templateDefaultOwnAnnotatedClassConstantKeepsItsValue' => [
+                'code' => '<?php
+                    final class C {
+                        /** @var string */
+                        public const FOO = "bar";
+
+                        /**
+                         * @template T
+                         * @param T $t
+                         * @return T
+                         */
+                        public static function f($t = self::FOO) {
+                            return $t;
+                        }
+                    }
+
+                    $f = C::f();',
+                'assertions' => [
+                    '$f===' => "'bar'",
+                ],
+            ],
             'templateDefaultClassConstant' => [
                 'code' => '<?php
                     class D {}

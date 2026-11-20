@@ -5,10 +5,15 @@ declare(strict_types=1);
 namespace Psalm\Internal\Codebase;
 
 use InvalidArgumentException;
+use Psalm\Aliases;
+use Psalm\Codebase;
 use Psalm\Exception\CircularReferenceException;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayOffsetFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArraySpread;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayValue;
@@ -25,6 +30,7 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseOr;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseXor;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedConcatOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedDivisionOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedExpression;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShift;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShiftLeft;
@@ -66,6 +72,76 @@ use function spl_object_id;
  */
 final class ConstantTypeResolver
 {
+    /**
+     * The expressions being inferred, by object id: an expression reached again through the constants it reads is
+     * circular
+     *
+     * @var array<int, true>
+     */
+    private static array $inferring_expression_ids = [];
+
+    /**
+     * The type of a value the scanner left unresolved, as a parameter default
+     */
+    public static function resolveToUnion(
+        Codebase $codebase,
+        UnresolvedConstantComponent $c,
+        ?StatementsAnalyzer $statements_analyzer = null,
+    ): Union {
+        if ($c instanceof UnresolvedExpression) {
+            return self::inferExpression($codebase, $c, []) ?? Type::getMixed();
+        }
+
+        return new Union([self::resolve($codebase->classlikes, $c, $statements_analyzer)]);
+    }
+
+    /**
+     * The expression is inferred as the scanner would have if every class had been scanned before its file. Where
+     * that gives no single literal, the structural form of the expression may: SimpleTypeInferer gives `10 / 2` as
+     * `float|int`.
+     */
+    private static function inferExpression(
+        Codebase $codebase,
+        UnresolvedExpression $c,
+        array $visited_constant_ids,
+    ): ?Union {
+        $c_id = spl_object_id($c);
+
+        if (isset(self::$inferring_expression_ids[$c_id])) {
+            throw new CircularReferenceException('Found a circular reference');
+        }
+
+        self::$inferring_expression_ids[$c_id] = true;
+
+        try {
+            $type = SimpleTypeInferer::infer(
+                $codebase,
+                new NodeDataProvider(),
+                $c->expr,
+                new Aliases($c->namespace),
+                null,
+                null,
+                $c->fq_classlike_name,
+            );
+
+            if (($type !== null && $type->isSingleLiteral()) || $c->fallback === null) {
+                return $type;
+            }
+
+            $structural_type = self::resolve($codebase->classlikes, $c->fallback, null, $visited_constant_ids);
+
+            return $type === null
+                || $structural_type instanceof TLiteralInt
+                || $structural_type instanceof TLiteralFloat
+                || $structural_type instanceof TLiteralString
+                || $structural_type instanceof TNever
+                ? new Union([$structural_type])
+                : $type;
+        } finally {
+            unset(self::$inferring_expression_ids[$c_id]);
+        }
+    }
+
     /**
      * Without an analyzer to resolve the name, the constant is looked up in the scanned files
      */
@@ -135,6 +211,16 @@ final class ConstantTypeResolver
             return self::getLiteralTypeFromScalarValue($c->value);
         }
 
+        if ($c instanceof UnresolvedExpression) {
+            $type = self::inferExpression(
+                $statements_analyzer?->getCodebase() ?? ProjectAnalyzer::getInstance()->getCodebase(),
+                $c,
+                $visited_constant_ids,
+            );
+
+            return $type !== null && $type->isSingle() ? $type->getSingleAtomic() : new TMixed;
+        }
+
         if ($c instanceof UnresolvedBinaryOp) {
             $left = self::resolve(
                 $classlikes,
@@ -185,38 +271,7 @@ final class ConstantTypeResolver
                 || $c instanceof UnresolvedDivisionOp
                 || $c instanceof UnresolvedMultiplicationOp
             ) {
-                if (($left instanceof TLiteralFloat || $left instanceof TLiteralInt)
-                    && ($right instanceof TLiteralFloat || $right instanceof TLiteralInt)
-                ) {
-                    if ($c instanceof UnresolvedAdditionOp) {
-                        return self::getLiteralTypeFromScalarValue($left->value + $right->value);
-                    }
-
-                    if ($c instanceof UnresolvedSubtractionOp) {
-                        return self::getLiteralTypeFromScalarValue($left->value - $right->value);
-                    }
-
-                    if ($c instanceof UnresolvedDivisionOp) {
-                        // a division by zero throws, so the constant has no value
-                        if ($right->value == 0) {
-                            return new TNever();
-                        }
-
-                        return self::getLiteralTypeFromScalarValue($left->value / $right->value);
-                    }
-
-                    return self::getLiteralTypeFromScalarValue($left->value * $right->value);
-                }
-
-                if ($left instanceof TKeyedArray && $right instanceof TKeyedArray) {
-                    $type = TKeyedArray::make(
-                        $left->properties + $right->properties,
-                        null,
-                    );
-                    return $type;
-                }
-
-                return new TMixed;
+                return self::resolveArithmeticOp($c, $left, $right);
             }
 
             return new TMixed;
@@ -424,6 +479,41 @@ final class ConstantTypeResolver
                     }
                 }
             }
+        }
+
+        return new TMixed;
+    }
+
+    private static function resolveArithmeticOp(UnresolvedBinaryOp $c, Atomic $left, Atomic $right): Atomic
+    {
+        if (($left instanceof TLiteralFloat || $left instanceof TLiteralInt)
+            && ($right instanceof TLiteralFloat || $right instanceof TLiteralInt)
+        ) {
+            if ($c instanceof UnresolvedAdditionOp) {
+                return self::getLiteralTypeFromScalarValue($left->value + $right->value);
+            }
+
+            if ($c instanceof UnresolvedSubtractionOp) {
+                return self::getLiteralTypeFromScalarValue($left->value - $right->value);
+            }
+
+            if ($c instanceof UnresolvedDivisionOp) {
+                // a division by zero throws, so the constant has no value
+                if ($right->value == 0) {
+                    return new TNever();
+                }
+
+                return self::getLiteralTypeFromScalarValue($left->value / $right->value);
+            }
+
+            return self::getLiteralTypeFromScalarValue($left->value * $right->value);
+        }
+
+        if ($left instanceof TKeyedArray && $right instanceof TKeyedArray) {
+            return TKeyedArray::make(
+                $left->properties + $right->properties,
+                null,
+            );
         }
 
         return new TMixed;

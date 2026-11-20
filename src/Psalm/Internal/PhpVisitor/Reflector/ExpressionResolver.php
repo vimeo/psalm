@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\PhpVisitor\Reflector;
 
+use Override;
 use PhpParser;
 use PhpParser\ConstExprEvaluationException;
 use PhpParser\ConstExprEvaluator;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ConstFetch;
+use PhpParser\NodeFinder;
+use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitorAbstract;
 use Psalm\Aliases;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
@@ -28,12 +32,14 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseOr;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseXor;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedConcatOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedDivisionOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedExpression;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShiftLeft;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShiftRight;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Storage\ClassConstantStorage;
 use ReflectionClass;
 use ReflectionFunction;
 
@@ -70,6 +76,83 @@ use const T_WHITESPACE;
  */
 final class ExpressionResolver
 {
+    /**
+     * While a file is scanned, the value of an expression reading a class constant whose value is not known yet (one
+     * of another class, or one of the class being scanned not inferred so far) is left as it is written, to be
+     * inferred when it is read: the storage of the file is cached for its own contents, and the other class may not
+     * be scanned yet.
+     *
+     * @param array<string, ClassConstantStorage> $known_constants the constants of the class being scanned so far
+     */
+    public static function getUnresolvedExpression(
+        PhpParser\Node\Expr $expr,
+        Aliases $aliases,
+        ?string $fq_classlike_name,
+        ?string $parent_fq_class_name,
+        array $known_constants,
+    ): ?UnresolvedExpression {
+        $reads_unknown_constant = (new NodeFinder())->findFirst(
+            $expr,
+            static function (PhpParser\Node $node) use ($aliases, $fq_classlike_name, $known_constants): bool {
+                if (!$node instanceof PhpParser\Node\Expr\ClassConstFetch
+                    || !$node->class instanceof PhpParser\Node\Name
+                    || !$node->name instanceof PhpParser\Node\Identifier
+                    || strtolower($node->name->name) === 'class'
+                ) {
+                    return false;
+                }
+
+                $is_own = $node->class->getParts() === ['self']
+                    || ($fq_classlike_name !== null
+                        && !$node->class->isSpecialClassName()
+                        && strtolower(ClassLikeAnalyzer::getFQCLNFromNameObject($node->class, $aliases))
+                            === strtolower($fq_classlike_name));
+
+                return !$is_own || ($known_constants[$node->name->name]->type ?? null) === null;
+            },
+        );
+
+        if ($reads_unknown_constant === null) {
+            return null;
+        }
+
+        $visitor = new class ($aliases) extends NodeVisitorAbstract {
+            public function __construct(private readonly Aliases $aliases)
+            {
+            }
+
+            #[Override]
+            public function enterNode(PhpParser\Node $node): PhpParser\Node
+            {
+                $node = clone $node;
+                $node->setAttributes([]);
+
+                // the expression is inferred without the aliases of its file
+                if (($node instanceof PhpParser\Node\Expr\ClassConstFetch || $node instanceof PhpParser\Node\Expr\New_)
+                    && $node->class instanceof PhpParser\Node\Name
+                    && !$node->class->isSpecialClassName()
+                ) {
+                    $node->class = new PhpParser\Node\Name\FullyQualified(
+                        ClassLikeAnalyzer::getFQCLNFromNameObject($node->class, $this->aliases),
+                    );
+                }
+
+                return $node;
+            }
+        };
+
+        $traverser = new NodeTraverser($visitor);
+        [$stripped_expr] = $traverser->traverse([$expr]);
+        assert($stripped_expr instanceof PhpParser\Node\Expr);
+
+        return new UnresolvedExpression(
+            $stripped_expr,
+            $aliases->namespace,
+            $fq_classlike_name,
+            self::getUnresolvedClassConstExpr($expr, $aliases, $fq_classlike_name, $parent_fq_class_name),
+        );
+    }
+
     public static function getUnresolvedClassConstExpr(
         PhpParser\Node\Expr $stmt,
         Aliases $aliases,

@@ -534,7 +534,12 @@ final class SimpleTypeInferer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\New_) {
-            $resolved_class_name = $stmt->class->getAttribute('resolvedName');
+            // an expression the scanner left unresolved has no attributes: its class names are qualified instead
+            // (ExpressionResolver), and `self`, `static` and `parent` are kept, as the name resolver keeps them
+            $resolved_class_name = $stmt->class instanceof PhpParser\Node\Name
+                && ($stmt->class instanceof PhpParser\Node\Name\FullyQualified || $stmt->class->isSpecialClassName())
+                ? $stmt->class->toString()
+                : $stmt->class->getAttribute('resolvedName');
 
             if (!is_string($resolved_class_name)) {
                 return null;

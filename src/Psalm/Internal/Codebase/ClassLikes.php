@@ -2555,19 +2555,9 @@ final class ClassLikes
                                 continue;
                             }
 
-                            if ($method_storage->params[$offset]->default_type) {
-                                if ($method_storage->params[$offset]->default_type instanceof Union) {
-                                    $default_type = $method_storage->params[$offset]->default_type;
-                                } else {
-                                    $default_type_atomic = ConstantTypeResolver::resolve(
-                                        $codebase->classlikes,
-                                        $method_storage->params[$offset]->default_type,
-                                        null,
-                                    );
+                            $default_type = $method_storage->params[$offset]->getDefaultType($codebase);
 
-                                    $default_type = new Union([$default_type_atomic]);
-                                }
-
+                            if ($default_type) {
                                 $possible_type = Type::combineUnionTypes(
                                     $possible_type,
                                     $default_type,

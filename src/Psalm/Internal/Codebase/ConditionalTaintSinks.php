@@ -103,7 +103,6 @@ final class ConditionalTaintSinks
      *
      * @param array<int, list<Arg>> $args_by_param
      * @return array<string, array<string, Union>>
-     * @psalm-external-mutation-free
      */
     private static function getParamBounds(
         StatementsAnalyzer $statements_analyzer,
@@ -133,8 +132,8 @@ final class ConditionalTaintSinks
 
                     $type = $type === null ? $arg_type : Type::combineUnionTypes($type, $arg_type);
                 }
-            } elseif ($param->default_type instanceof Union) {
-                $type = $param->default_type;
+            } else {
+                $type = $param->getDefaultType($statements_analyzer->getCodebase(), $statements_analyzer);
             }
 
             if ($type === null) {

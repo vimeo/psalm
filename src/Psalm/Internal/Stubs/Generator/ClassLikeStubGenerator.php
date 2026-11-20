@@ -39,7 +39,7 @@ final class ClassLikeStubGenerator
         string $classlike_name
     ) : PhpParser\Node\Stmt\ClassLike {
         $subnodes = [
-            'stmts' => [...self::getConstantNodes($codebase, $storage), ...self::getPropertyNodes($storage), ...self::getMethodNodes($storage)]
+            'stmts' => [...self::getConstantNodes($codebase, $storage), ...self::getPropertyNodes($storage), ...self::getMethodNodes($codebase, $storage)]
         ];
 
         $docblock = new ParsedDocblock('', []);
@@ -212,7 +212,7 @@ final class ClassLikeStubGenerator
     /**
      * @return list<PhpParser\Node\Stmt\ClassMethod>
      */
-    private static function getMethodNodes(ClassLikeStorage $storage): array {
+    private static function getMethodNodes(Codebase $codebase, ClassLikeStorage $storage): array {
         $namespace_name = implode('\\', array_slice(explode('\\', $storage->name), 0, -1));
         $method_nodes = [];
 
@@ -242,7 +242,7 @@ final class ClassLikeStubGenerator
 
             foreach ($method_storage->params as $param) {
                 if ($param->type && $param->type !== $param->signature_type) {
-                    $docblock->tags['param'][] = $param->type->toNamespacedString(
+                    $docblock->tags['param'][] = StubsGenerator::getParamDocblockType($codebase, $param->type)->toNamespacedString(
                         $namespace_name,
                         [],
                         null,
@@ -278,7 +278,7 @@ final class ClassLikeStubGenerator
                     'flags' => $flag
                         | ($method_storage->is_static ? PhpParser\Modifiers::STATIC : 0)
                         | ($method_storage->abstract ? PhpParser\Modifiers::ABSTRACT : 0),
-                    'params' => StubsGenerator::getFunctionParamNodes($method_storage),
+                    'params' => StubsGenerator::getFunctionParamNodes($codebase, $method_storage),
                     'returnType' => $method_storage->signature_return_type
                         ? StubsGenerator::getParserTypeFromPsalmType($method_storage->signature_return_type)
                         : null,
