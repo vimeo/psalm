@@ -3709,6 +3709,24 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'isArrayClauseOfAVariableTheLoopChangesIsDroppedAfterTheLoop' => [
+                'code' => '<?php
+                    /** @param array<int, mixed> $items */
+                    function f(array $items, mixed $m): void {
+                        $isArray = is_array($m);
+
+                        foreach ($items as $item) {
+                            $m = $item;
+                        }
+
+                        if ($isArray) {
+                            $m[] = 1;
+                        }
+                    }',
+                'error_message' => 'MixedArrayAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:29',
+                'error_levels' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'destructureNullableShapeAndGenericArrayByKey' => [
                 'code' => '<?php
                     /** @return array{x: int}|array<string, string>|null */
