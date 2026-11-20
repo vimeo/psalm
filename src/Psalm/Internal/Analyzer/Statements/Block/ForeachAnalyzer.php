@@ -2229,10 +2229,12 @@ final class ForeachAnalyzer
         // only the type is wanted here: the loop is charged for the call
         $context->inside_type_only_call = true;
 
+        // the iterated expression was analysed by the loop, which also may have side effects (`$a ??= new B()`)
         MethodCallAnalyzer::analyze(
             $statements_analyzer,
             $fake_method_call,
             $context,
+            receiver_analyzed: true,
         );
 
         $context->inside_call = $was_inside_call;

@@ -210,6 +210,29 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachOverAnIteratorAggregateGivenByACoalesceAssignment' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Items implements IteratorAggregate {
+                        #[Override]
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator(["a"]);
+                        }
+                    }
+
+                    final class Holder {
+                        private ?Items $items = null;
+
+                        public function names(): void {
+                            foreach (($this->items ??= new Items()) as $name) {
+                                echo $name;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'foreachIteratedExpressionIsAnalysedOnce' => [
                 'code' => '<?php
                     class Entity {
