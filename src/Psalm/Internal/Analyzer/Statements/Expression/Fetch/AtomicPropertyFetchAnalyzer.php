@@ -284,7 +284,22 @@ final class AtomicPropertyFetchAnalyzer
         // add method before changing fq_class_name
         $get_method_id = new MethodIdentifier($fq_class_name, '__get');
 
-        if (!$naive_property_exists) {
+        // outside the class a property that isn't accessible is read through __get(), which the mixins of the class
+        // document, as they do for a property the class doesn't have
+        $inaccessible_property_read_by_getter = $naive_property_exists
+            && $stmt_var_id !== '$this'
+            && $fq_class_name !== $context->self
+            && isset($class_storage->declaring_method_ids['__get'])
+            && ClassLikeAnalyzer::checkPropertyVisibility(
+                $property_id,
+                $context,
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getSuppressedIssues(),
+                false,
+            ) !== true;
+
+        if (!$naive_property_exists || $inaccessible_property_read_by_getter) {
             // Resolve explicit shape properties before consulting other class-like types.
             // Keep final classes closed unless they provide a magic getter.
             if ($intersection_types !== []
