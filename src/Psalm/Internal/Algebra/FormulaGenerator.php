@@ -1154,7 +1154,9 @@ final class FormulaGenerator
 
         foreach (self::getWrittenExprs([$expr], false, $node_data) as $target) {
             $exact = true;
-            $target_id = self::getAssignedTargetId($target, $this_class_name, $exact);
+            $target_id = is_string($target)
+                ? $target
+                : self::getAssignedTargetId($target, $this_class_name, $exact);
 
             if ($target_id !== null) {
                 $target_ids[$target_id] = true;
