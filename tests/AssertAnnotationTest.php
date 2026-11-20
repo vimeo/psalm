@@ -4815,6 +4815,72 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'callAssertingThreePropertiesIsNotRedundantIfOnlyTheThirdChangesAType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Triple {
+                        public ?int $a = null;
+                        public ?int $b = null;
+                        public ?int $c = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->a
+                         * @psalm-assert !null $this->b
+                         * @psalm-assert !null $this->c
+                         */
+                        public function assertAll(): void {
+                            if ($this->a === null || $this->b === null || $this->c === null) {
+                                throw new Exception();
+                            }
+                        }
+
+                        public function test(): void {
+                            if ($this->a === null || $this->b === null) {
+                                return;
+                            }
+
+                            $this->assertAll();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callAssertingSeveralPropertiesIsNotRedundantIfOneOfThemChangesAType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Pair {
+                        public ?int $a = null;
+                        public ?int $b = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->a
+                         * @psalm-assert !null $this->b
+                         */
+                        public function assertBoth(): void {
+                            if ($this->a === null || $this->b === null) {
+                                throw new Exception();
+                            }
+                        }
+
+                        public function test(): int {
+                            if ($this->a === null) {
+                                return 0;
+                            }
+
+                            $this->assertBoth();
+
+                            return $this->b;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'assertedPropertyNamedLikeTheArgumentIndexIsKept' => [
                 'code' => '<?php
                     final class A {
@@ -4849,6 +4915,22 @@ final class AssertAnnotationTest extends TestCase
                     function always(A $a): void { assert($a->p0 !== null); }
 
                     function i(A $x): int { always($x); return $x->p0; }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'callAssertingSeveralArgumentsIsNotRedundantIfOneOfThemChangesAType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert string $a
+                     * @psalm-assert int $b
+                     */
+                    function assertBoth(mixed $a, mixed $b): void {}
+
+                    function f(string $a, mixed $b): void {
+                        assertBoth($a, $b);
+                        /** @psalm-check-type-exact $b = int */
+                    }',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -5636,6 +5718,37 @@ final class AssertAnnotationTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 'error_levels' => [],
                 'php_version' => '8.2',
+            ],
+            'callAssertingSeveralPropertiesIsRedundantIfAllOfThemAre' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Pair {
+                        public ?int $a = null;
+                        public ?int $b = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->a
+                         * @psalm-assert !null $this->b
+                         */
+                        public function assertBoth(): void {
+                            if ($this->a === null || $this->b === null) {
+                                throw new Exception();
+                            }
+                        }
+
+                        public function test(): void {
+                            if ($this->a === null || $this->b === null) {
+                                return;
+                            }
+
+                            $this->assertBoth();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'assertAnOffsetOfAnArgumentDoesNotAssertAnotherOffset' => [
                 'code' => '<?php
