@@ -3040,6 +3040,27 @@ final class UnusedVariableTest extends TestCase
                         $d += $l;
                     }',
             ],
+            'arrayAccessObjectWrittenThroughAnOffset' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, string> */
+                    final class Bag implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetGet(mixed $offset): string { return ""; }
+                        public function offsetSet(mixed $offset, mixed $value): void { echo "set"; }
+                        public function offsetUnset(mixed $offset): void { echo "unset"; }
+                    }
+
+                    function push(Bag $bag): void { $bag[] = "a"; }                    function set(Bag $bag): void { $bag[1] = "a"; }
+                    function setArrayObject(ArrayObject $object): void { $object["k"] = "a"; }
+                    function setLocal(): void { $bag = new Bag(); $bag[] = "a"; }
+                    function unsetOffset(Bag $bag): void { unset($bag[1]); }
+                    function coalesce(Bag $bag): void { $bag[1] ??= "a"; }
+                    function concat(Bag $bag): void { $bag[1] .= "a"; }
+                    function byReference(Bag &$bag): void { $bag[] = "a"; }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'mixedArrayAccessMightBeObject' => [
                 'code' => '<?php
                     function takesResults(array $arr) : void {

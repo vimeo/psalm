@@ -207,6 +207,11 @@ workaround explicitly in the report.
   Show behaviour with a code example whose lines end in their result (`// TaintedNosql`,
   `// safe`, `// no issue`), cases that stay reported included, and keep the prose around
   it to a sentence. Check each line's result on the branch before writing it.
+- Write plain, direct sentences in docs, comments and PR text: subject, verb, then the condition. Say what Psalm
+  does and when ("For a `Location` header, `header()` reports `redirect` instead of `header`"), not a noun-heavy
+  inversion that hides the actor ("After a start fixing the server, only the URL syntax a value can inject is
+  reported"). Name the function or check the user writes ("check the host `parse_url()` extracts"), and prefer
+  "if"/"when" clauses to stacked relative clauses.
 - Hot loops (`TaintFlowGraph::connectSinksAndSources()`, `TaintFlowResolution`): keep the
   branch structure inline and call `getChildNodes()` directly in each branch. Don't
   collect nodes into intermediate arrays (allocation per iteration), and avoid new
