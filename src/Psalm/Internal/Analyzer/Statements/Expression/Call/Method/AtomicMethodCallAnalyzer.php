@@ -178,7 +178,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
                     instanceof FunctionLikeAnalyzer)
@@ -209,7 +208,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             );
 
@@ -268,35 +266,39 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     )) {
                         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_identifier)
                             ?? $method_identifier;
-                        $declaring_class_storage = $codebase->classlike_storage_provider->get(
-                            $declaring_method_id->fq_class_name,
-                        );
-                        [$closure, $method_template_types] = MethodCallReturnTypeFetcher::getInheritedClosure(
-                            $codebase,
-                            $declaring_method_id,
-                            $codebase->methods->getStorage($declaring_method_id),
-                            $statements_analyzer,
-                        );
 
-                        $return_type_candidate = MethodCallReturnTypeFetcher::getFirstClassCallableType(
-                            $codebase,
-                            $stmt,
-                            $closure,
-                            new TemplateResult([], ClassTemplateParamCollector::collect(
+                        // A method confirmed only by an existence provider has no storage.
+                        if ($codebase->methods->hasStorage($declaring_method_id)) {
+                            $declaring_class_storage = $codebase->classlike_storage_provider->get(
+                                $declaring_method_id->fq_class_name,
+                            );
+                            [$closure, $method_template_types] = MethodCallReturnTypeFetcher::getInheritedClosure(
                                 $codebase,
-                                $declaring_class_storage,
-                                $class_storage,
-                                $method_identifier->method_name,
-                                $lhs_type_part,
-                                $lhs_var_id === '$this',
-                            ) ?? []),
-                            $method_template_types,
-                            $fq_class_name,
-                            $static_type,
-                            $declaring_class_storage->parent_class,
-                            MethodCallReturnTypeFetcher::bindsStaticToReceiverClass($codebase, $static_type),
-                            true,
-                        );
+                                $declaring_method_id,
+                                $codebase->methods->getStorage($declaring_method_id),
+                                $statements_analyzer,
+                            );
+
+                            $return_type_candidate = MethodCallReturnTypeFetcher::getFirstClassCallableType(
+                                $codebase,
+                                $stmt,
+                                $closure,
+                                new TemplateResult([], ClassTemplateParamCollector::collect(
+                                    $codebase,
+                                    $declaring_class_storage,
+                                    $class_storage,
+                                    $method_identifier->method_name,
+                                    $lhs_type_part,
+                                    $lhs_var_id === '$this',
+                                ) ?? []),
+                                $method_template_types,
+                                $fq_class_name,
+                                $static_type,
+                                $declaring_class_storage->parent_class,
+                                MethodCallReturnTypeFetcher::bindsStaticToReceiverClass($codebase, $static_type),
+                                true,
+                            );
+                        }
                     }
                 }
 
@@ -311,7 +313,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 null,
                 null,
-                true,
                 $context,
             );
 
@@ -355,7 +356,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 ? new CodeLocation($source, $stmt->name)
                 : null,
             !$context->collect_initializations
-                && !$context->collect_mutations
                 ? $statements_analyzer
                 : null,
             $statements_analyzer->getFilePath(),
@@ -486,7 +486,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         ? new CodeLocation($source, $stmt->name)
                         : null,
                     !$context->collect_initializations
-                        && !$context->collect_mutations
                         ? $statements_analyzer
                         : null,
                     $statements_analyzer->getFilePath(),
@@ -753,7 +752,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             case TObject::class:
             case TObjectWithProperties::class:
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)
@@ -828,7 +826,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         $stmt->getArgs(),
                         null,
                         null,
-                        true,
                         $context,
                     ) === false) {
                         return;
@@ -890,7 +887,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         ? new CodeLocation($statements_analyzer->getSource(), $stmt->name)
                         : null,
                     !$context->collect_initializations
-                    && !$context->collect_mutations
                         ? $statements_analyzer
                         : null,
                     $statements_analyzer->getFilePath(),
@@ -941,7 +937,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $stmt->getArgs(),
                 $lhs_type_part_callable->params,
                 $method_id,
-                false,
                 $context,
                 $template_result,
             );

@@ -69,19 +69,7 @@ use const SORT_STRING;
  * }
  *
  * @psalm-type  PoolData = array{
- *     classlikes_data:array{
- *         array<lowercase-string, bool>,
- *         array<lowercase-string, bool>,
- *         array<lowercase-string, bool>,
- *         array<string, bool>,
- *         array<lowercase-string, bool>,
- *         array<string, bool>,
- *         array<lowercase-string, bool>,
- *         array<string, bool>,
- *         array<string, bool>,
- *         array<lowercase-string, string>,
- *         array<string, bool>
- *     },
+ *     classlikes_data: ClassLikesThreadData,
  *     scanner_data: ThreadData,
  *     issues:array<string, list<IssueData>>,
  *     changed_members:array<string, array<string, bool>>,
@@ -102,6 +90,7 @@ use const SORT_STRING;
  * @internal
  *
  * Contains methods that aid in the scanning of Psalm's codebase
+ * @psalm-import-type ClassLikesThreadData from ClassLikes
  */
 final class Scanner
 {

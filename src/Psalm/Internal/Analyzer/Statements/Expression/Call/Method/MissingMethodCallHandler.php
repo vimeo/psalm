@@ -188,7 +188,6 @@ final class MissingMethodCallHandler
                 $stmt->getArgs(),
                 $pseudo_method_storage->params,
                 (string) $method_id,
-                true,
                 $context,
                 $template_result->template_types !== [] || $template_result->lower_bounds !== []
                     ? $template_result
@@ -451,7 +450,6 @@ final class MissingMethodCallHandler
                 $stmt->getArgs(),
                 $pseudo_method_storage->params,
                 (string) $method_id,
-                true,
                 $context,
                 $template_result,
             ) === false) {
@@ -522,7 +520,6 @@ final class MissingMethodCallHandler
             $stmt->getArgs(),
             null,
             null,
-            true,
             $context,
         ) === false) {
             return;
