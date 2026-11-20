@@ -125,6 +125,10 @@ final class TaintTest extends TestCase
                     $_SESSION["value"] = $value;
                 }
             }
+
+            function show(): void {
+                echo (string) ($_SESSION["value"] ?? "");
+            }
         ');
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
         $this->project_analyzer->trackTaintedInputs();
