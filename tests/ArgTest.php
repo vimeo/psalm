@@ -73,6 +73,23 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'namedArgumentsOfArrayObjectAndArrayIteratorUseThePhp8Names' => [
+                'code' => '<?php
+                    $object = new ArrayObject(array: [3, 1, 2]);
+                    $object->uasort(callback: fn(int $a, int $b): int => $a <=> $b);
+                    $object->uksort(callback: fn(int $a, int $b): int => $a <=> $b);
+                    $object->exchangeArray(array: [1]);
+                    $object->setIteratorClass(iteratorClass: ArrayIterator::class);
+                    $object->unserialize(data: "");
+
+                    $iterator = new ArrayIterator([1, 2, 3]);
+                    $iterator->seek(offset: 1);
+                    $iterator->uasort(callback: fn(int $a, int $b): int => $a <=> $b);
+                    $iterator->unserialize(data: "");',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'namedKeysSplitOverSeveralUnpackedArrays' => [
                 'code' => '<?php
                     function foo(int $a, string $b, float $c): void {
