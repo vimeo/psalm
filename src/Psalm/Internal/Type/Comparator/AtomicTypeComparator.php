@@ -1179,26 +1179,29 @@ final class AtomicTypeComparator
             return $type1_part->value === $type2_part->value;
         }
 
-        if (($type1_part instanceof TClassString && !$type1_part instanceof TTemplateParamClass
-                || $type1_part instanceof TDependentGetClass)
+        // the class a template stands for is bounded by what the template is: any class of that bound can be it
+        if (($type1_part instanceof TClassString || $type1_part instanceof TDependentGetClass)
             && $type2_part::class === TLiteralString::class
         ) {
             return ClassLikeStringComparator::canLiteralNameBeClassString(
                 $codebase,
                 $type2_part,
-                $type1_part,
+                $type1_part instanceof TTemplateParamClass
+                    ? new TClassString($type1_part->as, $type1_part->as_type)
+                    : $type1_part,
                 $allow_interface_equality,
             );
         }
 
-        if (($type2_part instanceof TClassString && !$type2_part instanceof TTemplateParamClass
-                || $type2_part instanceof TDependentGetClass)
+        if (($type2_part instanceof TClassString || $type2_part instanceof TDependentGetClass)
             && $type1_part::class === TLiteralString::class
         ) {
             return ClassLikeStringComparator::canLiteralNameBeClassString(
                 $codebase,
                 $type1_part,
-                $type2_part,
+                $type2_part instanceof TTemplateParamClass
+                    ? new TClassString($type2_part->as, $type2_part->as_type)
+                    : $type2_part,
                 $allow_interface_equality,
             );
         }

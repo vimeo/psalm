@@ -324,6 +324,22 @@ final class ClassLikeStringTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'templateClassStringIsComparedWithAClassName' => [
+                'code' => '<?php
+                    final class Special {}
+
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $name
+                     */
+                    function isSpecial(string $name): bool {
+                        return $name === "Special";
+                    }
+
+                    echo isSpecial(Special::class) ? "yes" : "no";',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidStringClass'],
+            ],
             'negatedClassExistsOnTheLeftOfAnOrAllowsTheClassOnTheRight' => [
                 'code' => '<?php
                     function check(): bool {
@@ -1422,6 +1438,17 @@ final class ClassLikeStringTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'templateClassStringIsNeverAClassThatDoesNotExist' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $name
+                     */
+                    function isNope(string $name): bool {
+                        return $name === "Nope";
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'classExistsOnTheLeftOfAnOrDoesNotAllowTheClassOnTheRight' => [
                 'code' => '<?php
                     function check(): bool {
