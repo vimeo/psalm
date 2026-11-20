@@ -7,11 +7,10 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 use Override;
 use Psalm\Internal\Analyzer\Statements\Expression\CastAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type\Union;
-
-use function count;
 
 /**
  * intval() and floatval() cast their argument as (int) and (float) do, so they report what the casts report
@@ -44,9 +43,11 @@ final class NumericCastFunctionReturnTypeProvider implements FunctionReturnTypeP
             return null;
         }
 
-        if ($event->getFunctionId() === 'intval' && count($call_args) <= 2) {
+        $value_type = TypeExpander::expandTemplateKeyOfAndValueOf($statements_source->getCodebase(), $value_type);
+
+        if ($event->getFunctionId() === 'intval') {
             CastAnalyzer::castIntAttempt($statements_source, $value_type, $call_args[0]->value, true);
-        } elseif ($event->getFunctionId() !== 'intval' && count($call_args) === 1) {
+        } else {
             CastAnalyzer::castFloatAttempt($statements_source, $value_type, $call_args[0]->value, true);
         }
 

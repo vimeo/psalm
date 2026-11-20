@@ -629,6 +629,44 @@ final class ToStringTest extends TestCase
                     }',
                 'error_message' => 'InvalidCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:39',
             ],
+            'riskyValueOfArrayTemplateToIntvalCall' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, array>
+                     * @param value-of<T> $page
+                     */
+                    function f($page): int {
+                        return intval($page);
+                    }',
+                'error_message' => 'RiskyCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:39',
+            ],
+            'riskyValueOfArrayTemplateToFloatvalCall' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, array>
+                     * @param value-of<T> $page
+                     */
+                    function f($page): float {
+                        return floatval($page);
+                    }',
+                'error_message' => 'RiskyCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:41',
+            ],
+            'riskyArrayToIntvalCallWithTooManyArguments' => [
+                'code' => '<?php
+                    function f(array $page): int {
+                        return intval($page, 16, 1);
+                    }',
+                'error_message' => 'RiskyCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:39',
+                'error_levels' => ['TooManyArguments'],
+            ],
+            'riskyArrayToFloatvalCallWithTooManyArguments' => [
+                'code' => '<?php
+                    function f(array $page): float {
+                        return floatval($page, 1);
+                    }',
+                'error_message' => 'RiskyCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:41',
+                'error_levels' => ['TooManyArguments'],
+            ],
         ];
     }
 }
