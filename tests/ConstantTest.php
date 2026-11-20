@@ -309,6 +309,25 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'sameInterfaceConstantInheritedThroughPathsOfDifferentDepthIsNotAmbiguous' => [
+                'code' => '<?php
+                    interface A {
+                        public const int TTL = 60;
+                    }
+
+                    interface B extends A {}
+
+                    interface C extends B {}
+
+                    class Base implements A {}
+
+                    final class Foo extends Base implements C {}
+
+                    echo Foo::TTL;',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'staticConstantMapOffsetWithANullDefaultOfDestructuredValues' => [
                 'code' => '<?php
                     class Handler
@@ -2794,6 +2813,24 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'differentInterfaceConstantsInheritedThroughAParentAndAnInterfaceAreAmbiguous' => [
+                'code' => '<?php
+                    interface X {
+                        public const int TTL = 1;
+                    }
+
+                    interface Y {
+                        public const int TTL = 2;
+                    }
+
+                    class P implements X {}
+
+                    final class Q extends P implements Y {}',
+                'error_message' => 'AmbiguousConstantInheritance - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:3:42 - Ambiguous inheritance of Q::TTL from X and Y',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'constantDeclaredWithClassConstantWildcardTypeRejectsOtherValues' => [
                 'code' => '<?php
                     class Foo
