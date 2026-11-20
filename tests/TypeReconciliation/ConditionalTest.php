@@ -584,7 +584,7 @@ final class ConditionalTest extends TestCase
                         }
 
                         $width = $streams[0]["width"];
-                        /** @psalm-check-type-exact $width = mixed */
+                        /** @psalm-check-type-exact $width = non-empty-mixed */
                     }
 
                     /** @param list<mixed> $l */
