@@ -115,7 +115,6 @@ final class StaticPropertyAssignmentAnalyzer
 
             if ($codebase->store_node_types
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 $codebase->analyzer->addNodeReference(
                     $statements_analyzer->getFilePath(),

@@ -8,6 +8,7 @@ use PhpParser;
 
 use function assert;
 use function end;
+use function max;
 use function substr;
 
 /**
@@ -18,8 +19,8 @@ final class FileStatementsDiffer extends AstDiffer
     /**
      * Calculate diff (edit script) from $a to $b.
      *
-     * @param list<PhpParser\Node\Stmt> $a
-     * @param list<PhpParser\Node\Stmt> $b
+     * @param array<int, PhpParser\Node\Stmt> $a
+     * @param array<int, PhpParser\Node\Stmt> $b
      * @return array{
      *      0: list<string>,
      *      1: list<string>,
@@ -28,8 +29,13 @@ final class FileStatementsDiffer extends AstDiffer
      *      4: list<array{int, int}>
      * }
      */
-    public static function diff(array $a, array $b, string $a_code, string $b_code): array
-    {
+    public static function diff(
+        array $a,
+        array $b,
+        string $a_code,
+        string $b_code,
+        string $namespace = '',
+    ): array {
         [$trace, $x, $y, $bc] = self::calculateTrace(
             static function (
                 PhpParser\Node\Stmt $a,
@@ -89,12 +95,12 @@ final class FileStatementsDiffer extends AstDiffer
                 if ($diff_elem->old instanceof PhpParser\Node\Stmt\Namespace_
                         && $diff_elem->new instanceof PhpParser\Node\Stmt\Namespace_
                 ) {
-                    $namespace_keep = NamespaceStatementsDiffer::diff(
-                        (string) $diff_elem->old->name,
+                    $namespace_keep = self::diff(
                         $diff_elem->old->stmts,
                         $diff_elem->new->stmts,
                         $a_code,
                         $b_code,
+                        (string) $diff_elem->old->name,
                     );
 
                     $keep = [...$keep, ...$namespace_keep[0]];
@@ -110,14 +116,16 @@ final class FileStatementsDiffer extends AstDiffer
                         && $diff_elem->new instanceof PhpParser\Node\Stmt\Trait_)
                 ) {
                     $class_keep = ClassStatementsDiffer::diff(
-                        (string) $diff_elem->old->name,
+                        ($namespace !== '' ? $namespace . '\\' : '') . (string) $diff_elem->old->name,
                         $diff_elem->old->stmts,
                         $diff_elem->new->stmts,
                         $a_code,
                         $b_code,
                     );
 
-                    if ($diff_elem->old->getDocComment() === $diff_elem->new->getDocComment()) {
+                    if (self::getClassHeader($diff_elem->old, $a_code)
+                        === self::getClassHeader($diff_elem->new, $b_code)
+                    ) {
                         $keep = [...$keep, ...$class_keep[0]];
                     } else {
                         $add_or_delete = [...$add_or_delete, ...$class_keep[0]];
@@ -174,5 +182,30 @@ final class FileStatementsDiffer extends AstDiffer
         }
 
         return [$keep, $keep_signature, $add_or_delete, $diff_map, $deletion_ranges];
+    }
+
+    /**
+     * The docblock, attributes, modifiers, name and parents of a class-like
+     */
+    private static function getClassHeader(PhpParser\Node\Stmt\ClassLike $node, string $code): string
+    {
+        $start = (int) $node->getAttribute('startFilePos');
+        $end = (int) $node->name?->getAttribute('endFilePos');
+
+        if ($node instanceof PhpParser\Node\Stmt\Class_) {
+            $parents = [$node->extends, ...$node->implements];
+        } elseif ($node instanceof PhpParser\Node\Stmt\Interface_) {
+            $parents = $node->extends;
+        } else {
+            $parents = [];
+        }
+
+        foreach ($parents as $parent) {
+            if ($parent !== null) {
+                $end = max($end, (int) $parent->getAttribute('endFilePos'));
+            }
+        }
+
+        return $node->getDocComment()?->getText() . "\n" . substr($code, $start, $end - $start + 1);
     }
 }

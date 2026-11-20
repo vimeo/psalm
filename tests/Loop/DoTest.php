@@ -30,6 +30,49 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'doCounterIncrementedThroughAReferenceIsWidened' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $i = 0;
+                        $r = &$i;
+                        do {
+                            $r += rand(1, 3);
+                        } while (rand(0, 1));
+                        /** @psalm-check-type-exact $i = int<1, max> */;
+                    }
+                    PHP,
+            ],
+            'doCounterIncrementedThroughAReferenceInTheConditionIsWidened' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $i = 0;
+                        $r = &$i;
+                        do {
+                            echo "a";
+                        } while (($r += rand(1, 3)) < 100);
+                        /** @psalm-check-type-exact $i = int<1, max> */;
+                    }
+                    PHP,
+            ],
+            'doTypeGoingIntoAByReferenceArgumentReachesTheVariablesItFeeds' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = [0];
+                        $b = [0];
+                        $c = 0;
+                        do {
+                            $z = 1;
+                            $a = $b;
+                            array_push($b, $c);
+                            $c = "s";
+                        } while (rand(0, 1));
+                        /** @psalm-check-type-exact $a = list{0: 0, 1?: 's'|0, ...<'s'|0>} */;
+                    }
+                    PHP,
+            ],
             'doChainThroughNestedForeachValuesIsAnalysedUntilItReachesTheFirst' => [
                 'code' => <<<'PHP'
                     <?php

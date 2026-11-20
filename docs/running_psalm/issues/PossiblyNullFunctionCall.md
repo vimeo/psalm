@@ -9,3 +9,7 @@ function foo(?callable $a) : void {
     $a();
 }
 ```
+
+## Further resources
+
+- [CWE-476](https://cwe.mitre.org/data/definitions/476.html)

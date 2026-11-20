@@ -361,8 +361,7 @@ abstract class SourceAnalyzer implements StatementsSource
 
         if (!Capabilities::allowsAnyOf($context->capabilities, $mutation_level)
 
-            // These are secondary scan modes that shouldn't report this issue
-            && !$context->collect_mutations
+            // the initialization scan shouldn't report this issue
             && !$context->collect_initializations
         ) {
             $msg = $overrideMsg ? $msg : $context->getImpureMessage(

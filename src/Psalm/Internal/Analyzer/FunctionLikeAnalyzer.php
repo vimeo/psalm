@@ -103,14 +103,17 @@ use function array_search;
 use function array_values;
 use function count;
 use function end;
+use function explode;
+use function hash;
+use function implode;
 use function in_array;
 use function is_string;
 use function krsort;
 use function mb_strpos;
-use function md5;
 use function microtime;
 use function preg_match;
 use function reset;
+use function sort;
 use function str_ends_with;
 use function str_starts_with;
 use function strpos;
@@ -399,11 +402,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         $statements_analyzer = new StatementsAnalyzer($this, $type_provider, true);
 
-        // A method can be analyzed again to collect the properties it initializes or mutates, in the context of a
+        // A method can be analyzed again to collect the properties it initializes, in the context of a
         // class calling or inheriting it (see CallAnalyzer::collectSpecialInformation()): its parameters stay those of
         // every call, so linking its nodes to those of that class there would make any call to it, on any object,
         // reach the properties of that class. Its regular analysis adds its taint paths.
-        if ($context->collect_initializations || $context->collect_mutations) {
+        if ($context->collect_initializations) {
             $statements_analyzer->taint_flow_graph = null;
             $statements_analyzer->data_flow_graph = $statements_analyzer->variable_use_graph;
         }
@@ -681,10 +684,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        if ($storage instanceof MethodStorage && $storage->location && !$storage->allow_named_arg_calls) {
+        if ($storage instanceof MethodStorage && $storage->location && !$storage->allowsNamedArguments()) {
             foreach ($overridden_method_ids as $overridden_method_id) {
                 $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
-                if ($overridden_storage->allow_named_arg_calls) {
+                if ($overridden_storage->allowsNamedArguments()) {
                     IssueBuffer::maybeAdd(new MethodSignatureMismatch(
                         'Method ' . (string) $method_id . ' should accept named arguments '
                             . ' as ' . (string) $overridden_method_id . ' does',
@@ -730,9 +733,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        // a signature that fails the check skips the body, but what the body initialises or mutates still counts:
+        // a signature that fails the check skips the body, but what the body initialises still counts:
         // its regular analysis reports the signature
-        if (!$check_stmts && !$context->collect_initializations && !$context->collect_mutations) {
+        if (!$check_stmts && !$context->collect_initializations) {
             // the body is not analysed, so its uses of the params are unknown
             if ($storage instanceof MethodStorage
                 && $this instanceof MethodAnalyzer
@@ -744,7 +747,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             return false;
         }
 
-        if ($context->collect_initializations || $context->collect_mutations) {
+        if ($context->collect_initializations) {
             $statements_analyzer->addSuppressedIssues([
                 'DocblockTypeContradiction',
                 'InvalidReturnStatement',
@@ -753,15 +756,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 'TypeDoesNotContainNull',
                 'TypeDoesNotContainType',
                 'LoopInvalidation',
+                'UndefinedInterfaceMethod',
+                'UndefinedMethod',
+                'PossiblyUndefinedMethod',
             ]);
-
-            if ($context->collect_initializations) {
-                $statements_analyzer->addSuppressedIssues([
-                    'UndefinedInterfaceMethod',
-                    'UndefinedMethod',
-                    'PossiblyUndefinedMethod',
-                ]);
-            }
         } elseif ($cased_method_id && strpos($cased_method_id, '__destruct')) {
             $statements_analyzer->addSuppressedIssues([
                 'InvalidPropertyAssignmentValue',
@@ -823,7 +821,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         if (!$this->function instanceof VirtualNode
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             if ($storage instanceof MethodStorage
                 && $storage->has_mutations_annotation
@@ -953,7 +950,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && $project_analyzer->debug_performance
             && $cased_method_id
         ) {
@@ -1118,6 +1114,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                             $closure_atomic->extra_types,
                             $closure_atomic->from_docblock,
                             $closure_atomic->callable_id,
+                            $closure_atomic->byref_use_scopes,
                         ),
                     ], ['reference_free' => true]),
                 );
@@ -1126,7 +1123,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         if ($codebase->collect_references
             && !$context->collect_initializations
-            && !$context->collect_mutations
             && $codebase->find_unused_variables
         ) {
             $this->checkParamReferences(
@@ -1136,6 +1132,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $context,
             );
         }
+
+        $reported_throw_groups = [];
 
         foreach ($storage->throws as $expected_exception => $_) {
             if (($expected_exception === 'self'
@@ -1163,10 +1161,45 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $input_type = new Union([new TNamedObject($expected_exception)]);
                     $container_type = new Union([new TNamedObject('Exception'), new TNamedObject('Throwable')]);
 
-                    if (!UnionTypeComparator::isContainedBy($codebase, $input_type, $container_type)) {
+                    // each intersection type (`A&B`) the class is part of has to be a throwable
+                    $thrown_types = [$expected_exception => $input_type];
+
+                    foreach ($storage->throw_intersections[$expected_exception] ?? [] as $intersected_exceptions) {
+                        $intersected_types = [];
+
+                        foreach ($intersected_exceptions as $intersected_exception) {
+                            $intersected_type = new TNamedObject($intersected_exception);
+                            $intersected_types[$intersected_type->getKey()] = $intersected_type;
+                        }
+
+                        $thrown_types[implode('&', [$expected_exception, ...$intersected_exceptions])] = new Union([
+                            new TNamedObject($expected_exception, false, false, $intersected_types),
+                        ]);
+                    }
+
+                    if (isset($storage->throw_intersections[$expected_exception])) {
+                        unset($thrown_types[$expected_exception]);
+                    }
+
+                    foreach ($thrown_types as $thrown_name => $thrown_type) {
+                        if (UnionTypeComparator::isContainedBy($codebase, $thrown_type, $container_type)) {
+                            continue;
+                        }
+
+                        // a group is reported once, not for each of its classes
+                        $group_members = explode('&', $thrown_name);
+                        sort($group_members);
+                        $group_key = implode('&', $group_members);
+
+                        if (isset($reported_throw_groups[$group_key])) {
+                            continue;
+                        }
+
+                        $reported_throw_groups[$group_key] = true;
+
                         IssueBuffer::maybeAdd(
                             new InvalidThrow(
-                                'Class supplied for @throws ' . $expected_exception
+                                'Class supplied for @throws ' . $thrown_name
                                     . ' does not implement Throwable',
                                 $storage->throw_locations[$expected_exception],
                                 $expected_exception,
@@ -1188,7 +1221,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
         }
 
-        $missingThrowsDocblockErrors = [];
+        $fix_missing_throws = $codebase->alter_code
+            && isset($project_analyzer->getIssuesToFix()['MissingThrowsDocblock']);
+        $missing_throws_docblock_errors = [];
         foreach ($statements_analyzer->getUncaughtThrows($context) as $possibly_thrown_exception => $codelocations) {
             $is_expected = false;
 
@@ -1208,30 +1243,43 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             if (!$is_expected) {
-                $missing_docblock_exception = new TNamedObject($possibly_thrown_exception);
-                $missingThrowsDocblockErrors[] = $missing_docblock_exception->toNamespacedString(
-                    $this->source->getNamespace(),
-                    $this->source->getAliasedClassesFlipped(),
-                    $this->source->getFQCLN(),
-                    true,
-                );
-
+                $add_to_docblock = false;
                 foreach ($codelocations as $codelocation) {
                     // issues are suppressed in ThrowAnalyzer, CallAnalyzer, etc.
+                    $issue = new MissingThrowsDocblock(
+                        $possibly_thrown_exception . ' is thrown but not caught - please either catch'
+                        . ' or add a @throws annotation',
+                        $codelocation,
+                        $possibly_thrown_exception,
+                    );
+
                     IssueBuffer::maybeAdd(
-                        new MissingThrowsDocblock(
-                            $possibly_thrown_exception . ' is thrown but not caught - please either catch'
-                                . ' or add a @throws annotation',
-                            $codelocation,
-                            $possibly_thrown_exception,
-                        ),
+                        $issue,
+                        $this->getSuppressedIssues(),
+                        true,
+                    );
+
+                    if ($fix_missing_throws
+                        && !$add_to_docblock
+                        && !IssueBuffer::isSuppressed($issue, $this->getSuppressedIssues())
+                    ) {
+                        $add_to_docblock = true;
+                    }
+                }
+
+                if ($add_to_docblock) {
+                    $missing_docblock_exception = new TNamedObject($possibly_thrown_exception);
+                    $missing_throws_docblock_errors[] = $missing_docblock_exception->toNamespacedString(
+                        $this->source->getNamespace(),
+                        $this->source->getAliasedClassesFlipped(),
+                        $this->source->getFQCLN(),
+                        true,
                     );
                 }
             }
         }
 
-        if ($codebase->alter_code
-            && isset($project_analyzer->getIssuesToFix()['MissingThrowsDocblock'])
+        if ($missing_throws_docblock_errors !== []
             && !$this->function instanceof VirtualNode
         ) {
             $manipulator = FunctionDocblockManipulator::getForFunction(
@@ -1239,7 +1287,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $this->source->getFilePath(),
                 $this->function,
             );
-            $manipulator->addThrowsDocblock($missingThrowsDocblockErrors);
+            $manipulator->addThrowsDocblock($missing_throws_docblock_errors);
         }
 
         if ($codebase->taint_flow_graph
@@ -1332,7 +1380,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 && $this instanceof MethodAnalyzer
                 && !$context->collect_initializations
             ) {
-                $new_hash = md5($real_method_id . '::' . $context->getScopeSummary());
+                $new_hash = hash('xxh3', $real_method_id . '::' . $context->getScopeSummary());
 
                 if ($new_hash === $hash) {
                     self::$no_effects_hashes[$hash] = true;
@@ -1859,13 +1907,29 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         null,
                     );
 
+                    $removed_taints = $function_param->signature_type?->getTaintsToRemove($codebase->getInputTaints())
+                        ?? 0;
+
                     $statements_analyzer->data_flow_graph->addPath(
                         $type_source,
                         $param_assignment,
                         'param',
                         0,
-                        $function_param->signature_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0,
+                        $removed_taints,
                     );
+
+                    // the arguments after the first, see ArgumentAnalyzer::addVariadicArgumentPath()
+                    if ($function_param->is_variadic) {
+                        $variadic_source = DataFlowNode::getForVariadicArguments($type_source);
+
+                        $statements_analyzer->data_flow_graph->addPath(
+                            $variadic_source,
+                            $param_assignment,
+                            'param',
+                            0,
+                            $removed_taints,
+                        );
+                    }
                 }
 
                 if ($storage->variadic) {
@@ -1942,9 +2006,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $var_type = $param_type;
 
             if ($function_param->is_variadic) {
-                if ($storage->allow_named_arg_calls) {
+                if ($storage->allowsNamedArguments()) {
                     $var_type = new Union([
-                        new TArray([Type::getArrayKey(), $param_type]),
+                        new TArray([self::getVariadicKeyType($storage), $param_type]),
                     ], [
                         'by_ref' => $function_param->by_ref,
                         'parent_nodes' => $parent_nodes,
@@ -2162,6 +2226,21 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         }
 
         return $check_stmts;
+    }
+
+    /**
+     * A variadic parameter gets arguments passed by position only when the parameters before it are passed by
+     * position too, which `@arguments-by-name` and `@optional-arguments-by-name` may forbid
+     */
+    private static function getVariadicKeyType(FunctionLikeStorage $storage): Union
+    {
+        foreach ($storage->params as $param) {
+            if ($storage->requiresNamedArgument($param)) {
+                return Type::getString();
+            }
+        }
+
+        return Type::getArrayKey();
     }
 
     /**
@@ -2903,7 +2982,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             if ($add_mutations) {
                 if (!$context->collect_initializations) {
-                    $hash = md5($real_method_id . '::' . $context->getScopeSummary());
+                    $hash = hash('xxh3', $real_method_id . '::' . $context->getScopeSummary());
 
                     // if we know that the function has no effects on vars, we don't bother rechecking
                     if (isset(self::$no_effects_hashes[$hash])) {
@@ -3037,7 +3116,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     $this->getSuppressedIssues(),
                     true,
                 );
-                    
+
                 if ($codebase->alter_code
                     && $storage->stmt_location !== null
                     && isset($this->getProjectAnalyzer()->getIssuesToFix()['MissingOverrideAttribute'])
@@ -3051,7 +3130,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             if ($overridden_method_ids
                 && !$context->collect_initializations
-                && !$context->collect_mutations
             ) {
                 foreach ($overridden_method_ids as $overridden_method_id) {
                     $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
@@ -3161,12 +3239,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     : $param;
             }
 
+            $byref_uses = $storage instanceof FunctionStorage ? $storage->byref_uses : [];
+
             $closure_type = new TClosure(
                 $closure_params,
                 $closure_return_type,
                 $storage->capabilities,
-                $storage instanceof FunctionStorage ? $storage->byref_uses : [],
+                $byref_uses,
                 callable_id: $this->getClosureId(),
+                byref_use_scopes: ClosureAnalyzer::getByRefUseScopes($this->source, $byref_uses),
             );
 
             $type_provider->setType(
