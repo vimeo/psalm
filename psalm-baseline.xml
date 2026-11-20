@@ -521,8 +521,6 @@
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
-      <code><![CDATA[$count_expr->getArgs()[0]]]></code>
-      <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$counted_expr->getArgs()[0]]]></code>
       <code><![CDATA[$expr->getArgs()[0]]]></code>
       <code><![CDATA[$expr->getArgs()[0]]]></code>
@@ -544,10 +542,6 @@
       <code><![CDATA[!strpos($first_var_name, '[')]]></code>
       <code><![CDATA[$array_root]]></code>
       <code><![CDATA[$count_equality_position]]></code>
-      <code><![CDATA[$count_equality_position]]></code>
-      <code><![CDATA[$count_equality_position]]></code>
-      <code><![CDATA[$count_inequality_position]]></code>
-      <code><![CDATA[$count_inequality_position]]></code>
       <code><![CDATA[$false_position]]></code>
       <code><![CDATA[$first_var_name]]></code>
       <code><![CDATA[$first_var_name]]></code>
@@ -566,15 +560,11 @@
       <code><![CDATA[$gettype_position]]></code>
       <code><![CDATA[$if_false_assertions]]></code>
       <code><![CDATA[$if_true_assertions]]></code>
-      <code><![CDATA[$inferior_value_position]]></code>
       <code><![CDATA[$other_var_name]]></code>
-      <code><![CDATA[$superior_value_position]]></code>
       <code><![CDATA[$true_position]]></code>
       <code><![CDATA[$typed_value_position]]></code>
       <code><![CDATA[$var_id]]></code>
       <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_name]]></code>
-      <code><![CDATA[$var_name]]></code>
       <code><![CDATA[$var_name]]></code>
       <code><![CDATA[$var_name]]></code>
       <code><![CDATA[$var_name]]></code>

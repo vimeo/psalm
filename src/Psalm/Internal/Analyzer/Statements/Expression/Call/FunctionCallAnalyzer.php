@@ -1582,7 +1582,6 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $statements_analyzer,
             $context,
             $function_name,
-            false,
         );
 
         if ($stmt_name_type = $statements_analyzer->node_data->getType($function_name)) {

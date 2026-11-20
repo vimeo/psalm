@@ -18,6 +18,6 @@ interface a {
 
 ## Why this is useful
 
-An abstract method has no body to infer anything from, so Psalm has to assume the implementations may do anything. The annotation says what they may do, and every implementation is then checked against it (`ImmutableDependency`). For [taint analysis](https://psalm.dev/docs/security_analysis/), an annotated `@psalm-pure` method keeps the taint of its arguments apart from one call to the next, which cannot be inferred for abstract and overridable methods: see [specializing taints in functions](../../security_analysis/avoiding_false_positives.md#specializing-taints-in-functions).
+An abstract method has no body to infer anything from, so Psalm has to assume the implementations may do anything. The annotation says what they may do, and every implementation is then checked against it (`ImmutableDependency`). For [taint analysis](https://psalm.dev/docs/security_analysis/), an annotated `@psalm-pure` method keeps the taint of its arguments apart from one call to the next, which cannot be inferred for abstract and overridable methods: see [specializing taints in functions](../../security_analysis/index.md#specializing-functions).
 
 See [class-level contracts](../../annotating_code/purity_model.md#class-level-contracts) in the purity model.
