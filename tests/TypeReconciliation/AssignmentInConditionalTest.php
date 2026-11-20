@@ -72,6 +72,20 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedInThePossiblySkippedOperandOfAnAndHasItsType' => [
+                'code' => '<?php
+                    function check(string $s): bool {
+                        return $s === "b";
+                    }
+
+                    $enabled = (bool) rand(0, 1);
+                    $matches = $enabled && check($captured = "b");',
+                'assertions' => [
+                    '$captured===' => "'b'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'variableAssignedBeforeABreakInTheElseIsNotTypedByTheIf' => [
                 'code' => '<?php
                     /** @return list<string> */
