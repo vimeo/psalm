@@ -21,10 +21,12 @@ use Psalm\Issue\TaintedExtract;
 use Psalm\Issue\TaintedFile;
 use Psalm\Issue\TaintedHeader;
 use Psalm\Issue\TaintedHtml;
+use Psalm\Issue\TaintedHtmlAttribute;
 use Psalm\Issue\TaintedInclude;
 use Psalm\Issue\TaintedLdap;
 use Psalm\Issue\TaintedLlmPrompt;
 use Psalm\Issue\TaintedNosql;
+use Psalm\Issue\TaintedRedirect;
 use Psalm\Issue\TaintedSSRF;
 use Psalm\Issue\TaintedShell;
 use Psalm\Issue\TaintedSleep;
@@ -34,6 +36,7 @@ use Psalm\Issue\TaintedTextWithQuotes;
 use Psalm\Issue\TaintedUnserialize;
 use Psalm\Issue\TaintedUrlComponent;
 use Psalm\Issue\TaintedUrlPath;
+use Psalm\Issue\TaintedUrlScheme;
 use Psalm\Issue\TaintedUserSecret;
 use Psalm\Issue\TaintedXpath;
 use Psalm\IssueBuffer;
@@ -50,6 +53,7 @@ use Psalm\Type\Union;
 use function array_flip;
 use function array_pop;
 use function array_unshift;
+use function array_values;
 use function count;
 use function end;
 use function get_object_vars;
@@ -163,6 +167,40 @@ final class TaintFlowGraph extends DataFlowGraph
      * @var array<string, string>
      */
     private array $string_starts = [];
+
+    /**
+     * The ids of the nodes holding prepared statements => the nodes of those statements, which the values given to
+     * the statements' placeholders go through (see DatabaseTaints). Only used while analysing the function-like they
+     * are in, so never merged by addGraph().
+     *
+     * @var array<string, array<string, DataFlowNode>>
+     */
+    private array $database_statements = [];
+
+    /**
+     * The ids of the nodes of hosts parse_url() took from a URL (`parse_url($url, PHP_URL_HOST)`) => the id of the
+     * variable holding the URL and the ids of the nodes it held then (see UrlHosts). Only used while analysing the
+     * function-like they are in, so never merged by addGraph().
+     *
+     * @var array<string, array{string, list<string>}>
+     */
+    private array $url_hosts = [];
+
+    /**
+     * The ids of the nodes holding the result of a validation => what it validated (see TaintValidations). Only used
+     * while analysing the function-like they are in, so never merged by addGraph().
+     *
+     * @var array<string, list<array{string, list<string>, int, 'validator'|'violations'}>>
+     */
+    private array $taint_validations = [];
+
+    /**
+     * The validations each call (its file and position) is the result of, by the variable validated, which plugins
+     * record before the analysis gives the value of the call its nodes: analysing the call again replaces them
+     *
+     * @var array<string, array<string, array{string, list<string>, int, 'validator'|'violations'}>>
+     */
+    private array $taint_validations_of_calls = [];
 
     /**
      * The ids of the nodes of variables assigned an empty array, whose items the next item assigned starts the start
@@ -597,6 +635,111 @@ final class TaintFlowGraph extends DataFlowGraph
     public function addStringStart(DataFlowNode $node, string $start): void
     {
         $this->string_starts[$node->id] = $start;
+    }
+
+    /**
+     * @param array<string, DataFlowNode> $statements
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function addDatabaseStatements(DataFlowNode $node, array $statements): void
+    {
+        $this->database_statements[$node->id] = [...$this->database_statements[$node->id] ?? [], ...$statements];
+    }
+
+    /**
+     * The prepared statements the nodes hold
+     *
+     * @param array<string, DataFlowNode> $nodes
+     * @return array<string, DataFlowNode>
+     * @psalm-mutation-free
+     */
+    public function getDatabaseStatements(array $nodes): array
+    {
+        $statements = [];
+        foreach ($nodes as $node) {
+            $statements += $this->database_statements[$node->id] ?? [];
+        }
+
+        return $statements;
+    }
+
+    /**
+     * @param array{string, list<string>} $url
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function addUrlHost(DataFlowNode $node, array $url): void
+    {
+        $this->url_hosts[$node->id] = $url;
+    }
+
+    /**
+     * The URL the nodes hold the host of: the variable and the ids of the nodes it held, if all of them hold the host
+     * of the same
+     *
+     * @param array<string, DataFlowNode> $nodes
+     * @return ?array{string, list<string>}
+     * @psalm-mutation-free
+     */
+    public function getUrlOfHost(array $nodes): ?array
+    {
+        $url = null;
+        foreach ($nodes as $node) {
+            $node_url = $this->url_hosts[$node->id] ?? null;
+            if ($node_url === null || ($url !== null && $url !== $node_url)) {
+                return null;
+            }
+
+            $url = $node_url;
+        }
+
+        return $url;
+    }
+
+    /**
+     * @param list<array{string, list<string>, int, 'validator'|'violations'}> $validations
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function addTaintValidations(DataFlowNode $node, array $validations): void
+    {
+        $this->taint_validations[$node->id] = [...$this->taint_validations[$node->id] ?? [], ...$validations];
+    }
+
+    /**
+     * @param array{string, list<string>, int, 'validator'|'violations'} $validation
+     * @psalm-capabilities read-props|write-this-props
+     */
+    public function addTaintValidationOfCall(string $call, array $validation): void
+    {
+        $this->taint_validations_of_calls[$call][$validation[0]] = $validation;
+    }
+
+    /**
+     * @return list<array{string, list<string>, int, 'validator'|'violations'}>
+     * @psalm-mutation-free
+     */
+    public function getTaintValidationsOfCall(string $call): array
+    {
+        return array_values($this->taint_validations_of_calls[$call] ?? []);
+    }
+
+    /**
+     * The validations all the nodes hold the result of
+     *
+     * @param array<string, DataFlowNode> $nodes
+     * @return list<array{string, list<string>, int, 'validator'|'violations'}>
+     * @psalm-mutation-free
+     */
+    public function getTaintValidations(array $nodes): array
+    {
+        $validations = null;
+        foreach ($nodes as $node) {
+            $node_validations = $this->taint_validations[$node->id] ?? [];
+            $validations = $validations === null ? $node_validations : ($validations === $node_validations
+                ? $validations
+                : []);
+        }
+
+        return $validations ?? [];
     }
 
     /**
@@ -1429,6 +1572,12 @@ final class TaintFlowGraph extends DataFlowGraph
                     $issue_trace,
                     $path,
                 ),
+                TaintKind::INPUT_SQL_UNQUOTED => new TaintedSql(
+                    'Detected tainted SQL outside of quotes',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
                 TaintKind::INPUT_NOSQL => new TaintedNosql(
                     'Detected tainted NoSQL query',
                     $issue_location,
@@ -1443,6 +1592,18 @@ final class TaintFlowGraph extends DataFlowGraph
                 ),
                 TaintKind::INPUT_HAS_QUOTES => new TaintedTextWithQuotes(
                     'Detected tainted text with possible quotes',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_HTML_ATTRIBUTE => new TaintedHtmlAttribute(
+                    'Detected tainted unquoted attribute value',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_URL_SCHEME => new TaintedUrlScheme(
+                    'Detected tainted URL scheme',
                     $issue_location,
                     $issue_trace,
                     $path,
@@ -1503,6 +1664,12 @@ final class TaintFlowGraph extends DataFlowGraph
                 ),
                 TaintKind::INPUT_HEADER => new TaintedHeader(
                     'Detected tainted header',
+                    $issue_location,
+                    $issue_trace,
+                    $path,
+                ),
+                TaintKind::INPUT_REDIRECT => new TaintedRedirect(
+                    'Detected tainted redirect target',
                     $issue_location,
                     $issue_trace,
                     $path,
