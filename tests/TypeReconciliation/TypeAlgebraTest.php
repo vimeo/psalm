@@ -96,6 +96,300 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'isArrayAndNotListThatDoesNotHoldKeepsTheOtherTypesOfTheUnion' => [
+                'code' => '<?php
+                    function test(array|int $value): void {
+                        if (is_array($value) && !array_is_list($value)) {
+                            return;
+                        }
+
+                        if (is_array($value)) {
+                            echo "array";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'notIdenticalKeepsNullOfBothOperandsWhereTheyDiffer' => [
+                'code' => '<?php
+                    function f(int|null $a, string|null $b): void {
+                        if ($a !== $b) {
+                            /** @psalm-check-type-exact $a = int|null */
+                            /** @psalm-check-type-exact $b = null|string */
+                        } else {
+                            /** @psalm-check-type-exact $a = int|null */
+                            /** @psalm-check-type-exact $b = null|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalKeepsFalseOfBothOperandsWhereTheyDiffer' => [
+                'code' => '<?php
+                    function f(array|false $a, string|false $b): void {
+                        if ($a !== $b) {
+                            /** @psalm-check-type-exact $a = array<array-key, mixed>|false */
+                            /** @psalm-check-type-exact $b = false|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalKeepsNullOfAScalarWhereTheyDiffer' => [
+                'code' => '<?php
+                    /**
+                     * @param \'int\'|\'string\' $scalar
+                     * @param \'int\'|\'string\'|null $other
+                     */
+                    function f($scalar, $other): void {
+                        if ($scalar !== $other) {
+                            /** @psalm-check-type-exact $other = \'int\'|\'string\'|null */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'assertionOfADocblockNotIdenticalIsNotNegated' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true !=string $x */
+                    function notStr(mixed $x): bool {
+                        return !is_string($x);
+                    }
+
+                    function g(int|string|null $x): void {
+                        if (!notStr($x)) {
+                            /** @psalm-check-type-exact $x = int|null|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalToAnArrayKeepsTheNonArrayOfTheOtherOperand' => [
+                'code' => '<?php
+                    /** @param bool|list<string> $skip */
+                    function k($skip): void {
+                        if (is_array($skip) && [\'*\'] !== $skip) {
+                        } else {
+                            /** @psalm-check-type-exact $skip = bool|list{\'*\'} */
+                        }
+
+                        if (!is_array($skip) || [\'*\'] === $skip) {
+                            /** @psalm-check-type-exact $skip = bool|list{\'*\'} */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalToAListAfterArrayIsListKeepsTheArrayInTheElse' => [
+                'code' => '<?php
+                    /** @return array<string> */
+                    function g(): array {
+                        return [];
+                    }
+
+                    $x = g();
+
+                    if (array_is_list($x) && [\'*\'] !== $x) {
+                        $r = 0;
+                    } else {
+                        $r = $x;
+                    }',
+                'assertions' => [
+                    '$r===' => '0|array<array-key, string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'notIdenticalToAListAfterIsArrayAndArrayIsListKeepsTheArrayAfterTheExit' => [
+                'code' => '<?php
+                    /** @return array<string>|false */
+                    function g() {
+                        return false;
+                    }
+
+                    $x = g();
+
+                    if (is_array($x) && array_is_list($x) && [\'*\'] !== $x) {
+                        exit;
+                    }
+
+                    $r = $x;',
+                'assertions' => [
+                    '$r===' => 'array<array-key, string>|false',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'notIdenticalKeepsTheArrayKeyOfAVariableComparedWithANullableString' => [
+                'code' => '<?php
+                    /** @param array-key $dir */
+                    function t($dir, ?string $skip): void {
+                        if ($dir !== $skip) {
+                            /** @psalm-check-type-exact $dir = array-key */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalOfTwoPartiallyOverlappingUnionsKeepsBothUnions' => [
+                'code' => '<?php
+                    function h(int|string $a, string|bool $b): string {
+                        if ($a !== $b) {
+                            return "";
+                        }
+
+                        /** @psalm-check-type-exact $a = int|string */
+                        /** @psalm-check-type-exact $b = bool|string */
+                        return (string) $a;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalOfAnOrChainGivesTheOperandsTheTypeOfTheComparedValues' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $metadata */
+                    function check(array $metadata, string $command): string {
+                        $version = $metadata["version"] ?? null;
+                        $metadataCommand = $metadata["command"] ?? null;
+                        $reason = $metadata["reason"] ?? null;
+
+                        if ($version !== 1 || $metadataCommand !== $command || $reason !== "OK") {
+                            throw new Exception("unexpected");
+                        }
+
+                        /** @psalm-check-type-exact $version = 1 */
+                        /** @psalm-check-type-exact $metadataCommand = string */
+                        /** @psalm-check-type-exact $reason = "OK" */
+                        return $metadataCommand;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
+            'notIdenticalOfAFalsableValueKeepsTheNarrowingToFalse' => [
+                'code' => '<?php
+                    function eqFalse(string|false|null $a): string {
+                        if ($a === false) {
+                            /** @psalm-check-type-exact $a = false */
+                            return "no";
+                        }
+
+                        /** @psalm-check-type-exact $a = string|null */
+                        return (string) $a;
+                    }
+
+                    function sameFalsable(string|false $a, string|false $b): string {
+                        if ($a !== $b) {
+                            return "different";
+                        }
+
+                        /** @psalm-check-type-exact $a = false|string */
+                        return "same";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'notIdenticalKeepsTheIgnoredFalseOfTheNarrowedVariable' => [
+                'code' => '<?php
+                    /** @psalm-ignore-falsable-return */
+                    function path(string $p): string|false {
+                        return $p === "" ? false : $p;
+                    }
+
+                    /** @return non-empty-string|false */
+                    function other(string $p) {
+                        return $p === "" ? false : $p;
+                    }
+
+                    function takesString(string $s): void {
+                        echo $s;
+                    }
+
+                    function f(): void {
+                        $file = path("a");
+
+                        if (other("b") !== $file) {
+                            return;
+                        }
+
+                        takesString($file);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalToAStringVariableThenExitingGivesTheString' => [
+                'code' => '<?php
+                    /** @param mixed $b */
+                    function f(string $a, $b): string {
+                        if ($b !== $a) {
+                            throw new Exception("not equal");
+                        }
+
+                        /** @psalm-check-type-exact $b = string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalWithTheTypedVariableOnTheLeftGivesTheString' => [
+                'code' => '<?php
+                    /** @param mixed $b */
+                    function f(string $a, $b): string {
+                        if ($a !== $b) {
+                            throw new Exception("not equal");
+                        }
+
+                        /** @psalm-check-type-exact $b = string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalOfTwoUnionsKeepsTheUnion' => [
+                'code' => '<?php
+                    function f(int|string $a, int|string $b): int|string {
+                        if ($a !== $b) {
+                            return 0;
+                        }
+
+                        /** @psalm-check-type-exact $a = int|string */
+                        /** @psalm-check-type-exact $b = int|string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalElseBranchOfAnUnrelatedPairIsUnchanged' => [
+                'code' => '<?php
+                    function f(string $a, string $b): string {
+                        if ($a !== $b) {
+                            return $a;
+                        }
+
+                        /** @psalm-check-type-exact $b = string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'aTernaryBranchKnowsTheOrOfItsCondition' => [
                 'code' => '<?php
                     final class A {
