@@ -399,14 +399,6 @@
       <code><![CDATA[$source_pos = strpos($source, '*')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Internal/Analyzer/SourceAnalyzer.php">
-    <UnsafeInstantiation>
-      <code><![CDATA[new $class(
-                    $msg,
-                    new CodeLocation($this, $node),
-                )]]></code>
-    </UnsafeInstantiation>
-  </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Block/ForAnalyzer.php">
     <ArgumentTypeCoercion>
       <code><![CDATA[$stmt->cond]]></code>
@@ -1496,11 +1488,6 @@
       <code><![CDATA[DataFlowGraph]]></code>
     </ImmutableDependency>
   </file>
-  <file src="src/Psalm/Internal/Composer.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[getenv('COMPOSER')]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="src/Psalm/Internal/DataFlow/DataFlowNode.php">
     <ImpureMethodCall>
       <code><![CDATA[self::getAssignmentSuffix($var_id)]]></code>
@@ -2286,10 +2273,6 @@
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
       <code><![CDATA[strpos($key, '[')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
@@ -2310,10 +2293,6 @@
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Type/TemplateInferredTypeReplacer.php">
@@ -3595,9 +3574,6 @@
     <MixedReturnStatement>
       <code><![CDATA[ReflectionMethod::createFromMethodName($functionName)]]></code>
     </MixedReturnStatement>
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[empty($normalizedEntry['type'])]]></code>
-    </RiskyTruthyFalsyComparison>
   </file>
   <file src="tests/Internal/Provider/CountingParserCacheProvider.php">
     <InvalidExtendClass>

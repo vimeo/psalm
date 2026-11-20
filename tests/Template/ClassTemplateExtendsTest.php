@@ -23,6 +23,98 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'templatedMethodOfAMiddleParentImplementsAnInterfaceOfTheChild' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    interface DomainRepository
+                    {
+                        /** @return T */
+                        public function oneOfId(string $id): object;
+                    }
+
+                    class Foo {}
+                    class Bar {}
+
+                    /** @template-extends DomainRepository<Foo> */
+                    interface FooRepositoryInterface extends DomainRepository {}
+
+                    /** @template B of object */
+                    abstract class BaseRepository
+                    {
+                        /** @return B */
+                        public function oneOfId(string $id): object
+                        {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template C of object
+                     * @template-extends BaseRepository<C>
+                     */
+                    abstract class MidRepository extends BaseRepository {}
+
+                    /** @template-extends MidRepository<Foo> */
+                    class FooRepository extends MidRepository implements FooRepositoryInterface {}',
+            ],
+            'templatedParentMethodWithAParamImplementsAnInterfaceOfTheChild' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    interface DomainRepository
+                    {
+                        /** @param T $entity */
+                        public function add(object $entity): void;
+                    }
+
+                    class Foo {}
+
+                    /** @template-extends DomainRepository<Foo> */
+                    interface FooRepositoryInterface extends DomainRepository {}
+
+                    /** @template B of object */
+                    abstract class BaseRepository
+                    {
+                        /** @param B $entity */
+                        public function add(object $entity): void {}
+                    }
+
+                    /** @template-extends BaseRepository<Foo> */
+                    final class FooRepository extends BaseRepository implements FooRepositoryInterface {}',
+            ],
+            'templatedParentMethodImplementsAnInterfaceOfTheChild' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    interface DomainRepository
+                    {
+                        /** @return T */
+                        public function oneOfId(string $id): object;
+                    }
+
+                    class Foo {}
+                    class Bar {}
+
+                    /** @template-extends DomainRepository<Foo> */
+                    interface FooRepositoryInterface extends DomainRepository {}
+
+                    /** @template-extends DomainRepository<Bar> */
+                    interface BarRepositoryInterface extends DomainRepository {}
+
+                    /** @template B of object */
+                    abstract class BaseRepository
+                    {
+                        /** @return B */
+                        public function oneOfId(string $id): object
+                        {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @template-extends BaseRepository<Foo> */
+                    class FooRepository extends BaseRepository implements FooRepositoryInterface {}
+
+                    /** @template-extends BaseRepository<Bar> */
+                    class BarRepository extends BaseRepository implements BarRepositoryInterface {}',
+            ],
             'methodTemplateBoundToAnIntermediateClassTemplateOfAnObjectWithoutTypeParams' => [
                 'code' => <<<'PHP'
                     <?php
@@ -5534,6 +5626,135 @@ final class ClassTemplateExtendsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'inheritedClassStringOfGenericReturnType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Coll {}
+
+                    /** @implements Coll<bool> */
+                    final class BoolColl implements Coll {}
+
+                    /** @template T */
+                    abstract class Base
+                    {
+                        /** @return class-string<Coll<T>> */
+                        abstract protected function getType(): string;
+                    }
+
+                    /** @extends Base<bool> */
+                    final class Child extends Base
+                    {
+                        protected function getType(): string
+                        {
+                            return BoolColl::class;
+                        }
+                    }',
+            ],
+            'implementedClassStringOfGenericReturnType' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Coll {}
+
+                    /** @implements Coll<bool> */
+                    final class BoolColl implements Coll {}
+
+                    /** @template T */
+                    abstract class Base
+                    {
+                        /** @return class-string<Coll<list<T>>> */
+                        abstract protected function getType(): string;
+                    }
+
+                    /** @extends Base<bool> */
+                    final class Child extends Base
+                    {
+                        /** @return class-string<Coll<list<bool>>> */
+                        protected function getType(): string
+                        {
+                            throw new RuntimeException();
+                        }
+                    }',
+            ],
+            'classStringOfGenericReplacedOnCallerSide' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Coll {}
+
+                    /** @template T */
+                    abstract class Base
+                    {
+                        /** @var class-string<Coll<T>>|null */
+                        public $prop = null;
+
+                        /** @return class-string<Coll<T>> */
+                        abstract public function getType(): string;
+
+                        /** @return class-string<Coll<list<T>>> */
+                        abstract public function nested(): string;
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $_t
+                     * @return class-string<Coll<T>>
+                     */
+                    function f($_t): string
+                    {
+                        throw new RuntimeException();
+                    }
+
+                    /** @return Base<int> */
+                    function makeBase(): Base
+                    {
+                        throw new RuntimeException();
+                    }
+
+                    $b = makeBase();
+                    $type = $b->getType();
+                    $nested = $b->nested();
+                    $prop = $b->prop;
+                    $fromFunction = f(true);',
+                'assertions' => [
+                    '$type===' => 'class-string<Coll<int>>',
+                    '$nested===' => 'class-string<Coll<list<int>>>',
+                    '$prop===' => 'class-string<Coll<int>>|null',
+                    '$fromFunction===' => 'class-string<Coll<true>>',
+                ],
+            ],
+            'classStringOfGenericAsExtendsArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template V */
+                    class Base
+                    {
+                        /** @return V */
+                        public function get(): mixed
+                        {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template T of object
+                     * @extends Base<class-string<Box<T>>>
+                     */
+                    final class Cls extends Base {}
+
+                    /** @return Cls<DateTime> */
+                    function makeCls(): Cls
+                    {
+                        throw new RuntimeException();
+                    }
+
+                    $l = makeCls()->get();',
+                'assertions' => [
+                    '$l===' => 'class-string<Box<DateTime>>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -5544,6 +5765,99 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'templatedMethodOfAMiddleParentDoesNotImplementTheInterfaceOfTheChildWithAnotherType' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    interface DomainRepository
+                    {
+                        /** @return T */
+                        public function oneOfId(string $id): object;
+                    }
+
+                    class Foo {}
+                    class Bar {}
+
+                    /** @template-extends DomainRepository<Foo> */
+                    interface FooRepositoryInterface extends DomainRepository {}
+
+                    /** @template B of object */
+                    abstract class BaseRepository
+                    {
+                        /** @return B */
+                        public function oneOfId(string $id): object
+                        {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template C of object
+                     * @template-extends BaseRepository<C>
+                     */
+                    abstract class MidRepository extends BaseRepository {}
+
+                    /** @template-extends MidRepository<Bar> */
+                    class BarRepository extends MidRepository implements FooRepositoryInterface {}',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
+            'templatedParentMethodWithAParamDoesNotImplementTheInterfaceOfTheChildWithAnotherType' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    interface DomainRepository
+                    {
+                        /** @param T $entity */
+                        public function add(object $entity): void;
+                    }
+
+                    class Foo {}
+                    class Bar {}
+
+                    /** @template-extends DomainRepository<Foo> */
+                    interface FooRepositoryInterface extends DomainRepository {}
+
+                    /** @template B of object */
+                    abstract class BaseRepository
+                    {
+                        /** @param B $entity */
+                        public function add(object $entity): void {}
+                    }
+
+                    /** @template-extends BaseRepository<Bar> */
+                    final class BadRepository extends BaseRepository implements FooRepositoryInterface {}',
+                'error_message' => 'ImplementedParamTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:52 - Argument 1 of BaseRepository::add has wrong type',
+            ],
+            'templatedParentMethodDoesNotImplementTheInterfaceOfTheChildWithAnotherType' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    interface DomainRepository
+                    {
+                        /** @return T */
+                        public function oneOfId(string $id): object;
+                    }
+
+                    class Foo {}
+                    class Bar {}
+
+                    /** @template-extends DomainRepository<Foo> */
+                    interface FooRepositoryInterface extends DomainRepository {}
+
+                    /** @template-extends DomainRepository<Bar> */
+                    interface BarRepositoryInterface extends DomainRepository {}
+
+                    /** @template B of object */
+                    abstract class BaseRepository
+                    {
+                        /** @return B */
+                        public function oneOfId(string $id): object
+                        {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @template-extends BaseRepository<Bar> */
+                    class BarRepository extends BaseRepository implements FooRepositoryInterface {}',
+                'error_message' => 'ImplementedReturnTypeMismatch',
+            ],
             'untypedOverrideChecksTheClosureAgainstTheBoundMethodTemplate' => [
                 'code' => '<?php
                     class Base
@@ -7056,6 +7370,57 @@ final class ClassTemplateExtendsTest extends TestCase
                     /** @extends Two<string> */
                     final class OneArg extends Two {}',
                 'error_message' => 'OneArg has missing template params when extending Two, expecting 2',
+            ],
+            'inheritedClassStringOfGenericReturnTypeWithWrongClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Coll {}
+
+                    /** @implements Coll<int> */
+                    final class IntColl implements Coll {}
+
+                    /** @template T */
+                    abstract class Base
+                    {
+                        /** @return class-string<Coll<T>> */
+                        abstract protected function getType(): string;
+                    }
+
+                    /** @extends Base<bool> */
+                    final class Child extends Base
+                    {
+                        protected function getType(): string
+                        {
+                            return IntColl::class;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:36'
+                    . " - The inferred type 'IntColl::class' does not match the declared return type"
+                    . " 'class-string<Coll<bool>>' for Child::getType",
+            ],
+            'implementedClassStringOfGenericReturnTypeMismatch' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Coll {}
+
+                    /** @template T */
+                    abstract class Base
+                    {
+                        /** @return class-string<Coll<T>> */
+                        abstract protected function getType(): string;
+                    }
+
+                    /** @extends Base<bool> */
+                    final class Child extends Base
+                    {
+                        /** @return class-string<Coll<int>> */
+                        protected function getType(): string
+                        {
+                            throw new RuntimeException();
+                        }
+                    }',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:37'
+                    . " - The inherited return type 'class-string<Coll<bool>>' for Base::getType",
             ],
         ];
     }

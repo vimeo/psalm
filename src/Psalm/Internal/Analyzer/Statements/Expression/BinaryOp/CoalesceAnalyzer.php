@@ -100,7 +100,15 @@ final class CoalesceAnalyzer
             || $root_expr instanceof PhpParser\Node\Expr\NullsafeMethodCall
             || $root_expr instanceof PhpParser\Node\Expr\Ternary
             || $root_expr instanceof PhpParser\Node\Expr\BinaryOp\Pipe
-            || $root_expr instanceof PartialApplication;
+            || $root_expr instanceof PartialApplication
+            // an assignment must run once, and isset() can't take it
+            || $root_expr instanceof PhpParser\Node\Expr\Assign
+            || $root_expr instanceof PhpParser\Node\Expr\AssignRef
+            || $root_expr instanceof PhpParser\Node\Expr\AssignOp
+            || $root_expr instanceof PhpParser\Node\Expr\PreInc
+            || $root_expr instanceof PhpParser\Node\Expr\PreDec
+            || $root_expr instanceof PhpParser\Node\Expr\PostInc
+            || $root_expr instanceof PhpParser\Node\Expr\PostDec;
 
         $has_untracked_offset = !$has_call_root
             && $left_expr instanceof PhpParser\Node\Expr\ArrayDimFetch
@@ -204,7 +212,11 @@ final class CoalesceAnalyzer
 
                 foreach ($changed_var_ids as $changed_var_id => $_) {
                     // narrowed, not written: the enclosing scopes keep their clauses about it
-                    $context->clauses = Context::filterClauses($changed_var_id, $context->clauses);
+                    $context->clauses = Context::filterClauses(
+                        $changed_var_id,
+                        $context->clauses,
+                        value_changed: false,
+                    );
                 }
             }
         }

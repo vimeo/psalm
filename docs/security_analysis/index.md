@@ -233,6 +233,25 @@ function search(DOMXPath $xpath): void {
 > **Tip:** In PCRE, `$` matches before a trailing newline as well as the end of the string — and a newline can split a
 > shell command. Add the `D` modifier or end the pattern with `\z` to forbid trailing newlines.
 
+Matching the host `parse_url()` takes from a URL against a list of hosts fixes the server PHP's stream wrappers reach,
+as long as the local variable holding the URL isn't assigned again:
+
+```php
+<?php
+
+$url = getParam('next');
+$host = (string) parse_url($url, PHP_URL_HOST);
+if (preg_match('/^(api\.example\.com|cdn\.example\.com)$/', $host)) {
+    fsockopen($url, 80);           // no issue
+    file_get_contents($url);       // TaintedFile: compress.zlib://api.example.com/etc/passwd is a local file
+    header('Location: ' . $url);   // TaintedRedirect: a browser goes to evil.example for http://evil.example\@api.example.com/
+}
+
+if (preg_match('/^api.example.com$/', $host)) {
+    fsockopen($url, 80);           // TaintedSSRF: `.` matches apixexample.com
+}
+```
+
 #### Allowlist helper functions
 
 If a helper validates input against a list of allowed values, annotate it with `@psalm-assert-if-true` and those
@@ -682,10 +701,13 @@ Psalm treats the following built-in inputs as taint sources:
 | Category | Built-in sources |
 |---|---|
 | **Request superglobals** | `$_GET`, `$_POST`, `$_COOKIE`, `$_REQUEST` |
+| **Environment** | `getenv()` and `$_ENV` (chosen by whoever starts the process) |
 | **Client-controlled `$_SERVER` entries** | Request headers (`HTTP_*`), URI fields (`REQUEST_URI`, `QUERY_STRING`, `PATH_INFO`, `PHP_SELF`, `argv`, ...), `REQUEST_METHOD`, `CONTENT_TYPE`, HTTP auth credentials, redirected equivalents (`REDIRECT_*`), and any read using a non-literal key (`$_SERVER[$key]`) |
 | **Uploaded files** | Each file's `name`, `type`, and `full_path` in `$_FILES` |
 | **PSR-7 HTTP messages** | Return values of `Psr\Http\Message\ServerRequestInterface`, `ResponseInterface`, `UriInterface`, `StreamInterface`, `UploadedFileInterface`, and implementations (covering framework requests and HTTP client responses such as Guzzle) |
 | **Input streams** | `STDIN`; `fopen()`, `file_get_contents()`, and `file()` on literal `php://input` or `php://stdin`; and stream readers (`fgets()`, `fread()`, `stream_get_contents()`, ...) reading those handles |
+| **Server responses** | `fopen()`, `file_get_contents()`, and `file()` on a URL starting with a literal `http://`, `https://`, `ftp://` or `ftps://` (as `file_get_contents('https://api.example.com/items/' . $id)`), and stream readers reading those handles |
+| **Databases** | What the program stored in a database, where it reads it back (see [Databases](taint_flow.md#databases)) |
 | **Network I/O** | `socket_read()`, `stream_socket_recvfrom()`, `curl_exec()`, `curl_multi_getcontent()`; by-reference data from `socket_recv()`, `socket_recvfrom()`, `socket_recvmsg()`; and streams opened with `fsockopen()`, `pfsockopen()`, `stream_socket_client()`, `stream_socket_accept()`, `socket_export_stream()` |
 | **DNS lookups** | `dns_get_record()`, `gethostbyaddr()`, and by-reference hosts from `getmxrr()` (controlled by remote nameservers) |
 | **CLI options** | `getopt()` |
@@ -721,6 +743,7 @@ issue:
 | `has_quotes` | [TaintedTextWithQuotes](../running_psalm/issues/TaintedTextWithQuotes.md) | Quotes breaking out of an HTML attribute |
 | `cookie` | [TaintedCookie](../running_psalm/issues/TaintedCookie.md) | Attacker-controlled HTTP cookies |
 | `header` | [TaintedHeader](../running_psalm/issues/TaintedHeader.md) | HTTP header injection |
+| `redirect` | [TaintedRedirect](../running_psalm/issues/TaintedRedirect.md) | Choosing where a redirect sends the client (open redirect) |
 | `sql` | [TaintedSql](../running_psalm/issues/TaintedSql.md) | SQL injection |
 | `nosql` | [TaintedNosql](../running_psalm/issues/TaintedNosql.md) | NoSQL query structure (MongoDB filters, updates, pipelines; arrays and objects only) |
 | `ldap` | [TaintedLdap](../running_psalm/issues/TaintedLdap.md) | LDAP DN or filter injection |
@@ -769,6 +792,33 @@ under the CGI SAPI — acts as an output sink just like `echo`. This covers:
 - `file_put_contents()` with that path;
 - `fwrite()`, `fputs()`, `fputcsv()`, `fprintf()`, `vfprintf()`, `stream_copy_to_stream()`, and
   `SplFileObject::fwrite()` / `fputcsv()`, on a handle opened on that path in the same function.
+
+**Redirects:** A `Location` header given to `header()` is a `redirect`, `url_component` and `url_path` sink rather than
+a `header` one. After a start fixing the server (`https://example.com/`, or a path such as `/account`), only the URL
+syntax a value can inject in the path, the query or the fragment is reported:
+
+```php
+<?php
+header('Location: ' . $_GET['next']); // TaintedRedirect
+header('Location: https://example.com/' . $_GET['page']); // TaintedUrlComponent
+header('Location: /account?tab=' . urlencode((string) $_GET['tab'])); // no issue
+```
+
+**Sessions:** What is stored in `$_SESSION` flows into what reads it back under the same key, wherever the code reading
+it is. Like with [keyed stores](taint_flow.md#keyed-stores), each read is checked against what it is used for:
+
+```php
+<?php
+function login(): void {
+    $_SESSION['name'] = htmlspecialchars((string) $_GET['name'], ENT_QUOTES);
+}
+
+function show(): void {
+    echo (string) $_SESSION['name']; // no issue
+    exec('greet ' . (string) $_SESSION['name']); // TaintedShell
+    echo (string) $_SESSION['page']; // no issue
+}
+```
 
 ## Security issues in reports
 

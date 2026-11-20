@@ -515,6 +515,7 @@
             <xs:element name="TaintedLdap" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedLlmPrompt" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedNosql" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="TaintedRedirect" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedShell" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedSleep" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="TaintedSql" type="IssueHandlerType" minOccurs="0" />
@@ -585,6 +586,7 @@
             <xs:element name="WeakCipher" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="WeakHash" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="WeakRandom" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="WrongCaseFunction" type="FunctionIssueHandlerType" minOccurs="0" />
             <xs:element name="XmlExternalEntity" type="IssueHandlerType" minOccurs="0" />
         </xs:choice>
         <xs:anyAttribute processContents="skip" />
@@ -853,6 +855,7 @@
             <xs:enumeration value="mysqli"/>
             <xs:enumeration value="openssl"/>
             <xs:enumeration value="pdo"/>
+            <xs:enumeration value="protobuf"/>
             <xs:enumeration value="random"/>
             <xs:enumeration value="rdkafka"/>
             <xs:enumeration value="redis"/>

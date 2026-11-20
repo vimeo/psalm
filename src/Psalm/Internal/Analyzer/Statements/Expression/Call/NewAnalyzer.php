@@ -838,22 +838,8 @@ final class NewAnalyzer extends CallAnalyzer
                     new Union([$result_atomic_type]),
                 );
             }
-        } elseif ($stmt->getArgs()) {
-            IssueBuffer::maybeAdd(
-                new TooManyArguments(
-                    'Class ' . $fq_class_name . ' has no __construct, but arguments were passed',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $fq_class_name . '::__construct',
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        } elseif (($type_params = array_values(TemplateDefaults::bindOmitted($storage, [], true, false))) !== []) {
-            $result_atomic_type = new TGenericObject($fq_class_name, $type_params, false, $from_static);
-
-            $statements_analyzer->node_data->setType(
-                $stmt,
-                new Union([$result_atomic_type]),
-            );
+        } else {
+            self::analyzeConstructorlessNew($statements_analyzer, $stmt, $storage, $fq_class_name, $from_static);
         }
 
         $is_external_mutation_free = $storage->isExternalMutationFree();
@@ -1201,6 +1187,7 @@ final class NewAnalyzer extends CallAnalyzer
             $resolved_capabilities,
             $method_storage->params,
             $args,
+            $own_capabilities === Capabilities::ALL,
         );
 
         $stmt->setAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE, $constructor_capabilities);
@@ -2198,6 +2185,47 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         return $generic_param_types;
+    }
+
+    /**
+     * A `new` on a class without a constructor: nothing binds the templates of a generic one, as with a
+     * constructor without parameters.
+     */
+    private static function analyzeConstructorlessNew(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\New_ $stmt,
+        ClassLikeStorage $storage,
+        string $fq_class_name,
+        bool $from_static,
+    ): void {
+        if ($stmt->getArgs()) {
+            IssueBuffer::maybeAdd(
+                new TooManyArguments(
+                    'Class ' . $fq_class_name . ' has no __construct, but arguments were passed',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $fq_class_name . '::__construct',
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+
+            return;
+        }
+
+        $type_params = self::getGenericParamTypes(
+            $statements_analyzer,
+            $stmt,
+            $storage,
+            new TemplateResult([], []),
+            $fq_class_name,
+            null,
+        );
+
+        if ($type_params !== []) {
+            $statements_analyzer->node_data->setType(
+                $stmt,
+                new Union([new TGenericObject($fq_class_name, $type_params, false, $from_static)]),
+            );
+        }
     }
 
     /**

@@ -32,6 +32,8 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\Internal\Codebase\TaintValidations;
+use Psalm\Internal\Codebase\UrlHosts;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -169,6 +171,39 @@ final class AssertionFinder
         bool $cache = true,
         bool $inside_conditional = true,
     ): array {
+        // what the result of a validation tells of the value it validated, which the negation of the condition must
+        // tell alone: it would be one of several possibilities next to what the condition says of the result
+        if ($source instanceof StatementsAnalyzer
+            && ($validation = TaintValidations::getAssertions($source, $conditional)) !== []
+        ) {
+            return $validation;
+        }
+
+        return self::scrapeAssertionsOfConditional(
+            $conditional,
+            $this_class_name,
+            $source,
+            $codebase,
+            $inside_negation,
+            $cache,
+            $inside_conditional,
+        );
+    }
+
+    /**
+     * Gets all the type assertions in a conditional
+     *
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     */
+    private static function scrapeAssertionsOfConditional(
+        PhpParser\Node\Expr $conditional,
+        ?string $this_class_name,
+        FileSource $source,
+        ?Codebase $codebase = null,
+        bool $inside_negation = false,
+        bool $cache = true,
+        bool $inside_conditional = true,
+    ): array {
         $if_types = [];
 
         if ($conditional instanceof PhpParser\Node\Expr\Instanceof_) {
@@ -211,17 +246,6 @@ final class AssertionFinder
             }
 
             return $if_types ? [$if_types] : [];
-        }
-
-        // the value of `$a ??= $b` is the value `$a` has afterwards
-        if ($conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce) {
-            $coalesce_var_name = ExpressionIdentifier::getExtendedVarId(
-                $conditional->var,
-                $this_class_name,
-                $source,
-            );
-
-            return $coalesce_var_name !== null ? [[$coalesce_var_name => [[new Truthy()]]]] : [];
         }
 
         $var_name = ExpressionIdentifier::getExtendedVarId(
@@ -2298,6 +2322,7 @@ final class AssertionFinder
         if ($var_name) {
             if ($base_conditional instanceof PhpParser\Node\Expr\Assign
                 || $base_conditional instanceof PhpParser\Node\Expr\AssignRef
+                || $base_conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce
             ) {
                 $var_name = '=' . $var_name;
             }
@@ -3023,6 +3048,7 @@ final class AssertionFinder
 
             while ($operand instanceof PhpParser\Node\Expr\Assign
                 || $operand instanceof PhpParser\Node\Expr\AssignRef
+                || $operand instanceof PhpParser\Node\Expr\AssignOp\Coalesce
                 || $operand instanceof PhpParser\Node\Expr\PreInc
                 || $operand instanceof PhpParser\Node\Expr\PreDec
             ) {
@@ -3047,7 +3073,7 @@ final class AssertionFinder
      *
      * @psalm-pure
      */
-    private static function getComparand(Atomic $type, string $operand_id): ?string
+    public static function getComparand(Atomic $type, string $operand_id): ?string
     {
         return $type instanceof TLiteralInt
             || $type instanceof TLiteralFloat
@@ -3102,14 +3128,22 @@ final class AssertionFinder
             return [];
         }
 
-        $removed_taints = PatternCharacters::getTaintsRemoved($pattern_type->getSingleStringLiteral()->value);
+        $pattern = $pattern_type->getSingleStringLiteral()->value;
+        $removed_taints = PatternCharacters::getTaintsRemoved($pattern);
         $subject_var_id = self::getStringFormVarId($subject_arg->value, $this_class_name, $source);
 
-        if ($removed_taints === 0 || $subject_var_id === null) {
-            return [];
+        $assertions = [];
+        if ($removed_taints !== 0 && $subject_var_id !== null) {
+            $assertions[$subject_var_id] = [[new MatchesPattern($removed_taints, $negated)]];
         }
 
-        return [[$subject_var_id => [[new MatchesPattern($removed_taints, $negated)]]]];
+        // the host of a URL matching a list of hosts
+        $url_assertion = UrlHosts::getAssertion($source, $pattern, $subject_arg->value, $negated);
+        if ($url_assertion !== null) {
+            $assertions[$url_assertion[0]] = [[$url_assertion[1]]];
+        }
+
+        return $assertions === [] ? [] : [$assertions];
     }
 
     /**
@@ -3306,8 +3340,8 @@ final class AssertionFinder
 
         if ($first_var_name
             && ($second_arg_type = $source->node_data->getType($expr->getArgs()[1]->value))
-            && isset($expr->getArgs()[0]->value)
-            && !$expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\ClassConstFetch
+            && ($first_arg = $expr->getArgs()[0]->value ?? null)
+            && !$first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
         ) {
             foreach ($second_arg_type->getAtomicTypes() as $atomic_type) {
                 if ($atomic_type instanceof TArray
@@ -3369,7 +3403,7 @@ final class AssertionFinder
                     )]);
 
                     // the values of two templates can't be intersected
-                    if (($first_var_type = $source->node_data->getType($expr->getArgs()[0]->value))
+                    if (($first_var_type = $source->node_data->getType($first_arg))
                         && Type::intersectUnionTypes($value_of_type, $first_var_type, $source->getCodebase()) !== null
                     ) {
                         $if_types[$first_var_name] = [[new InArray($value_of_type, $haystack)]];

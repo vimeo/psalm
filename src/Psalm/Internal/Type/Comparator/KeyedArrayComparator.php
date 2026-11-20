@@ -145,6 +145,8 @@ final class KeyedArrayComparator
                             || $property_type_comparison->to_string_cast === true;
                     }
                 }
+
+                $atomic_comparison_result?->addTypeVariableBounds($property_type_comparison);
             }
         }
         if ($container_sealed && $input_properties) {
@@ -232,6 +234,8 @@ final class KeyedArrayComparator
                     }
                     $all_types_contain = false;
                 }
+
+                $atomic_comparison_result?->addTypeVariableBounds($property_type_comparison);
             }
         }
 
@@ -276,6 +280,8 @@ final class KeyedArrayComparator
                     }
                     $all_types_contain = false;
                 }
+
+                $atomic_comparison_result?->addTypeVariableBounds($param_comparison);
             }
         }
 

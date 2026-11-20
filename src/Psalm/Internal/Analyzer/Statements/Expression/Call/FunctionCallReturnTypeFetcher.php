@@ -19,10 +19,12 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
+use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
+use Psalm\Internal\Codebase\UrlHosts;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
@@ -52,6 +54,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_values;
 use function count;
 use function explode;
@@ -134,6 +137,7 @@ final class FunctionCallReturnTypeFetcher
             $context->mergeFunctionExceptions(
                 $function_storage,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getCodebase(),
             );
         }
 
@@ -333,11 +337,32 @@ final class FunctionCallReturnTypeFetcher
                         $stmt_type,
                     );
                 }
+
+                if ($taint_flow_graph) {
+                    $stmt_type = DatabaseTaints::taintCall(
+                        $statements_analyzer,
+                        $taint_flow_graph,
+                        DatabaseTaints::getSpecs($function_id, null),
+                        $store_storage,
+                        $stmt->getArgs(),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $stmt_type,
+                    );
+                }
             }
         }
 
         if (!$statements_analyzer->data_flow_graph || !$function_storage) {
-            return $stmt_type;
+            return $stmt->isFirstClassCallable()
+                ? $stmt_type
+                : UrlHosts::recordParseUrl(
+                    $statements_analyzer,
+                    $context,
+                    $stmt,
+                    $function_id,
+                    $stmt->getArgs(),
+                    $stmt_type,
+                );
         }
 
         // For a first-class callable (`foo(...)`) the value produced here is the closure
@@ -395,7 +420,15 @@ final class FunctionCallReturnTypeFetcher
             }
         }
 
-        return $stmt_type;
+        // the host of a URL, which a list of hosts can fix
+        return UrlHosts::recordParseUrl(
+            $statements_analyzer,
+            $context,
+            $stmt,
+            $function_id,
+            $stmt->getArgs(),
+            $stmt_type,
+        );
     }
 
     // functions whose false return stays reported with ignoreInternalFunctionFalseReturn
@@ -1251,8 +1284,9 @@ final class FunctionCallReturnTypeFetcher
 
     /**
      * fopen()/file_get_contents()/file() called with a literal 'php://input' or
-     * 'php://stdin' path read user-controlled data, so their return value becomes a
-     * taint source.
+     * 'php://stdin' path, or with a URL the analysis can tell has a network scheme
+     * (`https://`, `ftp://`...), read user-controlled data, so their return value
+     * becomes a taint source: whoever runs the server chooses what it answers.
      *
      * This is not expressible as a stub because the source is conditional on the
      * literal argument *value*; stream reading functions that merely relay their
@@ -1286,16 +1320,24 @@ final class FunctionCallReturnTypeFetcher
             return;
         }
 
-        $arg_type = $statements_analyzer->node_data->getType($args[$offset]->value);
+        $path_arg = $args[$offset]->value;
+        $arg_type = $statements_analyzer->node_data->getType($path_arg);
 
-        if (!$arg_type || !$arg_type->isSingleStringLiteral()) {
-            return;
+        if ($arg_type && $arg_type->isSingleStringLiteral()) {
+            $path = strtolower($arg_type->getSingleStringLiteral()->value);
         }
 
-        $path = strtolower($arg_type->getSingleStringLiteral()->value);
+        if (!isset($path) || ($path !== 'php://input' && $path !== 'php://stdin')) {
+            $prefixes = ConcatAnalyzer::getLiteralPrefixes($statements_analyzer, $path_arg);
 
-        if ($path !== 'php://input' && $path !== 'php://stdin') {
-            return;
+            if ($prefixes === [] || !array_all(
+                $prefixes,
+                static fn(string $prefix): bool => preg_match('~^(https?|ftps?)://~i', $prefix) === 1,
+            )) {
+                return;
+            }
+
+            $path = 'url';
         }
 
         $stmt_type = InternalTaintSourceMap::addSource(
@@ -1743,6 +1785,16 @@ final class FunctionCallReturnTypeFetcher
                 $cased_function_id,
                 null,
                 $specialization_location,
+            );
+
+            $stmt_type = DatabaseTaints::taintCall(
+                $statements_analyzer,
+                $taint_flow_graph,
+                DatabaseTaints::getSpecs($cased_function_id, $function_storage),
+                $function_storage,
+                $stmt->getArgs(),
+                $node_location,
+                $stmt_type,
             );
 
             ConditionalTaintSinks::taintCall(

@@ -10,6 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\AttributesAnalyzer;
+use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
@@ -85,6 +86,7 @@ use function is_string;
 use function ksort;
 use function max;
 use function min;
+use function preg_match;
 use function reset;
 use function str_contains;
 use function strtolower;
@@ -127,6 +129,10 @@ final class ArgumentsAnalyzer
         $was_inside_negation = $context->inside_negation;
         $context->inside_negation = false;
 
+        // assert() reconciles its own argument, not the arguments of another call inside it
+        $was_inside_assert = $context->inside_assert;
+        $context->inside_assert = $was_inside_assert && $method_id === 'assert';
+
         try {
             $result = self::analyzeArguments(
                 $statements_analyzer,
@@ -138,24 +144,23 @@ final class ArgumentsAnalyzer
             );
         } finally {
             $context->inside_negation = $was_inside_negation;
+            $context->inside_assert = $was_inside_assert;
         }
 
         // the callee may call a closure it is given, which may write what the closure captured by reference
         foreach ($args as $arg) {
-            foreach ($statements_analyzer->node_data->getType($arg->value)?->getAtomicTypes() ?? [] as $atomic) {
-                if (!$atomic instanceof TClosure) {
-                    continue;
-                }
+            $written_var_ids = ClosureAnalyzer::analyzeVarIdsWrittenByCall(
+                $statements_analyzer,
+                $context,
+                $arg->value,
+            );
 
-                foreach ($atomic->byref_uses as $use_name => $_) {
-                    $use_var_id = '$' . $use_name;
-
-                    $context->removeVarFromConflictingClauses(
-                        $use_var_id,
-                        $context->vars_in_scope[$use_var_id] ?? null,
-                        $statements_analyzer,
-                    );
-                }
+            foreach ($written_var_ids as $var_id => $_) {
+                $context->removeVarFromConflictingClauses(
+                    $var_id,
+                    $context->vars_in_scope[$var_id] ?? null,
+                    $statements_analyzer,
+                );
             }
         }
 
@@ -178,6 +183,15 @@ final class ArgumentsAnalyzer
         $last_param = $function_params
             ? $function_params[count($function_params) - 1]
             : null;
+
+        foreach ($args as $arg) {
+            // PhpParser attaches the docblock in front of an argument to the argument, the expression is analysed
+            $arg_docblock = $arg->getDocComment();
+
+            if ($arg_docblock !== null) {
+                $arg->value->setAttribute(ExpressionAnalyzer::ARGUMENT_DOCBLOCK_ATTRIBUTE, $arg_docblock);
+            }
+        }
 
         // if this modifies the array type based on further args
         if (in_array($method_id, ['array_push', 'array_unshift'], true)
@@ -698,6 +712,11 @@ final class ArgumentsAnalyzer
                     $lower_bounds,
                     $codebase,
                 );
+
+                // nothing was inferred for the template yet: the closure parameter is not `never`
+                if ($new_bounds[$k][$kk]->isNever() && isset($template_result->template_types[$k][$kk])) {
+                    $new_bounds[$k][$kk] = $template_result->template_types[$k][$kk];
+                }
             }
         }
         // `T` of `@template TArray as array<T>` is only known through what `TArray` was given
@@ -1495,8 +1514,14 @@ final class ArgumentsAnalyzer
 
             $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
 
+            // the docblock in front of the argument also covers what the check of the argument reports
+            $argument_suppressed_issues = ExpressionAnalyzer::addDocblockSuppressions(
+                $statements_analyzer,
+                $arg->value,
+            );
+
             foreach ($arg_function_params[$argument_offset] as $param_offset => $function_param) {
-                if (ArgumentAnalyzer::checkArgumentMatches(
+                $argument_matches = ArgumentAnalyzer::checkArgumentMatches(
                     $statements_analyzer,
                     $cased_method_id,
                     $method_id instanceof MethodIdentifier ? $method_id : null,
@@ -1516,10 +1541,16 @@ final class ArgumentsAnalyzer
                     $specialize_taint,
                     $in_call_map,
                     $static_is_called_class,
-                ) === false) {
+                );
+
+                if ($argument_matches === false) {
+                    $statements_analyzer->removeSuppressedIssues($argument_suppressed_issues);
+
                     return false;
                 }
             }
+
+            $statements_analyzer->removeSuppressedIssues($argument_suppressed_issues);
         }
 
         if ($statements_analyzer->taint_flow_graph
@@ -1553,6 +1584,7 @@ final class ArgumentsAnalyzer
 
                 foreach ($arg_function_params[$argument_offset] as $param_offset => $function_param) {
                     $sinks = self::getArgumentSinks(
+                        $statements_analyzer,
                         $cased_method_id,
                         $param_offset,
                         $args,
@@ -2741,6 +2773,26 @@ final class ArgumentsAnalyzer
                         $default_type = new Union([$default_type_atomic]);
                     }
 
+                    // a default that is one of the own atomic types of the parameter (`null` for `T|null`) says
+                    // nothing about a template that an argument bound already, and that has no default of its own
+                    // to fall back to
+                    if ($default_type->isSingle()
+                        && !$param->type->isSingle()
+                        && isset($param->type->getAtomicTypes()[$default_type->getSingleAtomic()->getKey()])
+                        && array_all(
+                            $param->type->getTemplateTypes(),
+                            static fn(TTemplateParam $template_type): bool
+                                => !isset($function_storage?->template_defaults[$template_type->param_name])
+                                && isset(
+                                    $template_result->lower_bounds[$template_type->param_name][
+                                        $template_type->defining_class
+                                    ],
+                                ),
+                        )
+                    ) {
+                        continue;
+                    }
+
                     TemplateStandinTypeReplacer::fillTemplateResult(
                         $param->type,
                         $template_result,
@@ -2880,19 +2932,27 @@ final class ArgumentsAnalyzer
     /**
      * The sinks of the argument passed as the parameter at $param_offset of a call of $function_id. The value given
      * to curl_setopt() is the sink of its option (see CURL_OPTION_SINKS). An option the analysis can't tell may be
-     * any of them.
+     * any of them. A `Location` header given to header() is a redirect (see getLocationHeaderSinks()).
      *
      * @param array<int, PhpParser\Node\Arg> $args
      * @param array<int, FunctionLikeParameter> $function_params
      * @psalm-capabilities read-props
      */
     private static function getArgumentSinks(
+        StatementsAnalyzer $statements_analyzer,
         string $function_id,
         int $param_offset,
         array $args,
         array $function_params,
         int $sinks,
     ): int {
+        if ($param_offset === 0
+            && strtolower($function_id) === 'header'
+            && ($header_arg = self::getArgForParam($args, $function_params, 'header'))
+        ) {
+            return self::getLocationHeaderSinks($statements_analyzer, $header_arg->value) ?? $sinks;
+        }
+
         if ($param_offset !== 2
             || strtolower($function_id) !== 'curl_setopt'
             || !($option_arg = self::getArgForParam($args, $function_params, 'option'))
@@ -2907,6 +2967,39 @@ final class ArgumentsAnalyzer
         }
 
         return self::CURL_OPTION_SINKS[strtoupper($option->name->toString())] ?? 0;
+    }
+
+    /**
+     * The sinks of a header given to header() that the analysis can tell is a `Location` header: its value is the URL
+     * the client is sent to (`redirect` taint), where URL syntax can change the path, query or fragment
+     * (`url_component` and `url_path` taints), apart from those a start fixing the server removes (see
+     * ConcatAnalyzer::getTaintsRemovedAfterUrlOrigin()). The name of the header is fixed, and header() rejects a
+     * line break, so it can't add another header. Null if it can be any header.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getLocationHeaderSinks(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $header,
+    ): ?int {
+        $prefixes = ConcatAnalyzer::getLiteralPrefixes($statements_analyzer, $header);
+
+        if ($prefixes === []) {
+            return null;
+        }
+
+        $urls = [];
+
+        foreach ($prefixes as $prefix) {
+            if (preg_match('/^\s*location\s*:\s*(.*)$/is', $prefix, $matches) !== 1) {
+                return null;
+            }
+
+            $urls[] = $matches[1] ?? '';
+        }
+
+        return (TaintKind::INPUT_REDIRECT | TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH)
+            & ~ConcatAnalyzer::getTaintsRemovedAfterUrlOrigins($urls);
     }
 
     /**

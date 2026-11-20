@@ -265,6 +265,7 @@
  - [TaintedLdap](issues/TaintedLdap.md)
  - [TaintedLlmPrompt](issues/TaintedLlmPrompt.md)
  - [TaintedNosql](issues/TaintedNosql.md)
+ - [TaintedRedirect](issues/TaintedRedirect.md)
  - [TaintedShell](issues/TaintedShell.md)
  - [TaintedSleep](issues/TaintedSleep.md)
  - [TaintedSql](issues/TaintedSql.md)
@@ -335,4 +336,5 @@
  - [WeakCipher](issues/WeakCipher.md)
  - [WeakHash](issues/WeakHash.md)
  - [WeakRandom](issues/WeakRandom.md)
+ - [WrongCaseFunction](issues/WrongCaseFunction.md)
  - [XmlExternalEntity](issues/XmlExternalEntity.md)

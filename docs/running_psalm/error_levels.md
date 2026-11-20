@@ -324,6 +324,7 @@ These issues become info (non-blocking) at level 7 and higher.
  - [UndefinedPropertyAssignment](issues/UndefinedPropertyAssignment.md)
  - [UndefinedPropertyFetch](issues/UndefinedPropertyFetch.md)
  - [UndefinedThisPropertyFetch](issues/UndefinedThisPropertyFetch.md)
+ - [WrongCaseFunction](issues/WrongCaseFunction.md)
 
 ## Errors at level 7 and below
 
@@ -376,6 +377,7 @@ These issues are only reported when their corresponding feature is enabled (e.g.
  - [TaintedLdap](issues/TaintedLdap.md)
  - [TaintedLlmPrompt](issues/TaintedLlmPrompt.md)
  - [TaintedNosql](issues/TaintedNosql.md)
+ - [TaintedRedirect](issues/TaintedRedirect.md)
  - [TaintedSSRF](issues/TaintedSSRF.md)
  - [TaintedShell](issues/TaintedShell.md)
  - [TaintedSleep](issues/TaintedSleep.md)

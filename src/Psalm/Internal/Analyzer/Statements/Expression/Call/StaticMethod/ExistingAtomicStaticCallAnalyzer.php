@@ -387,10 +387,8 @@ final class ExistingAtomicStaticCallAnalyzer
                 && ($signature_return_type === null
                     || !($signature_return_type->isVoid() || $signature_return_type->isNever()))
                 && Capabilities::allowsAnyOf(Capabilities::MUTATION_FREE, $call_capabilities)
-                && !$method_storage->assertions
-                && !$method_storage->if_true_assertions
-                && !$method_storage->if_false_assertions
                 && !$method_storage->throws
+                && !(new AssertionsFromInheritanceResolver($codebase))->hasAny($method_storage, $class_storage)
                 && !MethodCallPurityAnalyzer::isCalledForItsTemplatesEffects($method_storage)
             ) {
                 IssueBuffer::maybeAdd(
@@ -464,7 +462,9 @@ final class ExistingAtomicStaticCallAnalyzer
                 );
             }
 
-            if ($method_storage->if_true_assertions) {
+            $if_true_assertions = $assertionsResolver->resolveIfTrue($method_storage, $class_storage);
+
+            if ($if_true_assertions) {
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
@@ -474,7 +474,7 @@ final class ExistingAtomicStaticCallAnalyzer
                         ),
                         CallAnalyzer::resolveStaticPropertyAssertionClasses(
                             CallAnalyzer::getAssertionsOnArgs(
-                                $method_storage->if_true_assertions,
+                                $if_true_assertions,
                                 $method_storage,
                                 $stmt->getArgs(),
                                 $statements_analyzer->node_data,
@@ -490,7 +490,9 @@ final class ExistingAtomicStaticCallAnalyzer
                 );
             }
 
-            if ($method_storage->if_false_assertions) {
+            $if_false_assertions = $assertionsResolver->resolveIfFalse($method_storage, $class_storage);
+
+            if ($if_false_assertions) {
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
@@ -500,7 +502,7 @@ final class ExistingAtomicStaticCallAnalyzer
                         ),
                         CallAnalyzer::resolveStaticPropertyAssertionClasses(
                             CallAnalyzer::getAssertionsOnArgs(
-                                $method_storage->if_false_assertions,
+                                $if_false_assertions,
                                 $method_storage,
                                 $stmt->getArgs(),
                                 $statements_analyzer->node_data,
