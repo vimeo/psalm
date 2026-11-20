@@ -200,10 +200,12 @@ final class ConditionalTest extends TestCase
                 'code' => '<?php
                     /** @var numeric|"a" $x */
                     $x = $_GET["x"];
-                    $r = is_float($x) ? null : $x;
+                    if (is_float($x)) {
+                        exit;
+                    }
                 ',
                 'assertions' => [
-                    '$r===' => 'int|null|string',
+                    '$x===' => 'int|string',
                 ],
             ],
             'varAssignedUnderConditionIsDefinedUnderTheSameCondition' => [
@@ -7153,6 +7155,17 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'typeLeftByNegatedTypeChecksStaysFromDocblock' => [
+                'code' => '<?php
+                    /** @param string|float|int|bool|null $x */
+                    function f($x): void {
+                        if ($x === null) {
+                        } elseif (is_int($x) || is_float($x)) {
+                        } elseif (is_bool($x)) {
+                        } elseif (is_array($x)) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'narrowClassAndInterfaceIntersectionToFinalSubclassWithoutInterface' => [
                 'code' => '<?php
                     abstract class A {}

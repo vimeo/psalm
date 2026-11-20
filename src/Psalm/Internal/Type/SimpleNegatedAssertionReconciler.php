@@ -1576,7 +1576,8 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
     /**
      * Applies the assertion to the template's bound, or returns null when no type of the bound passes it
      *
-     * @param Closure(
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     * @param Closure[_](
      *     Assertion,
      *     Union,
      *     ?string,
