@@ -240,8 +240,9 @@ final class CliOutput
 
     /**
      * Marks the arguments of a call of a builtin function printing them, in code only running from the command line.
-     * The mark is written on every analysis of the call: the nodes of a trait method are analyzed once for each class
-     * using it, and only some of them may be command-line code.
+     * In a partial application, an argument making it return what it prints that isn't bound is left to the closure's
+     * caller. The mark is written on every analysis of the call: the nodes of a trait method are analyzed once for each
+     * class using it, and only some of them may be command-line code.
      *
      * @param array<array-key, Arg> $args
      */
@@ -250,6 +251,7 @@ final class CliOutput
         Context $context,
         ?string $function_id,
         array $args,
+        bool $partial_application = false,
     ): void {
         if ($function_id === null
             || !array_key_exists($function_id, self::PRINTING_FUNCTIONS)
@@ -261,6 +263,10 @@ final class CliOutput
         $return_offset = self::PRINTING_FUNCTIONS[$function_id];
         $printed = true;
         if ($return_offset !== null) {
+            if ($partial_application && !isset($args[$return_offset])) {
+                return;
+            }
+
             foreach ($args as $offset => $arg) {
                 if ($offset === $return_offset && !$arg->unpack) {
                     // what it returns may go anywhere: only a literal false makes it print

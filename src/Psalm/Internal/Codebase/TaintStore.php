@@ -547,18 +547,21 @@ final class TaintStore
     }
 
     /**
-     * The arguments given to each parameter, null when that can't be told
+     * The arguments given to each parameter, null when that can't be told. With $by_offset, the keys of $args are
+     * their offsets in the call, which a partial application's placeholders leave gaps in.
      *
      * @param array<array-key, Arg> $args
      * @return array<int, list<Arg>>|null
      * @psalm-capabilities read-props
      */
-    public static function getArgsByParam(FunctionLikeStorage $storage, array $args): ?array
+    public static function getArgsByParam(FunctionLikeStorage $storage, array $args, bool $by_offset = false): ?array
     {
         $by_param = [];
         $param_count = count($storage->params);
 
-        foreach (array_values($args) as $index => $arg) {
+        foreach ($by_offset ? $args : array_values($args) as $index => $arg) {
+            $index = (int) $index;
+
             if ($arg->unpack) {
                 return null;
             }
