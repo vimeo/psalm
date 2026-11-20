@@ -1187,6 +1187,7 @@ final class NewAnalyzer extends CallAnalyzer
             $resolved_capabilities,
             $method_storage->params,
             $args,
+            $own_capabilities === Capabilities::ALL,
         );
 
         $stmt->setAttribute(self::CALLEE_CAPABILITIES_ATTRIBUTE, $constructor_capabilities);

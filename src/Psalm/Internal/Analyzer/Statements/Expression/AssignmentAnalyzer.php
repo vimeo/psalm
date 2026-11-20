@@ -2538,6 +2538,75 @@ final class AssignmentAnalyzer
     }
 
     /**
+     * @param int-mask-of<TaintKind::*> $removed_taints
+     */
+    private static function assignDestructuredItem(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        PhpParser\Node\Expr $var,
+        string $list_var_id,
+        ?Union $new_assign_type,
+        bool $has_comment_type,
+        int &$removed_taints,
+    ): void {
+        if ($new_assign_type !== null
+            && $new_assign_type->hasMixed()
+            && !$has_comment_type
+            && !str_contains($list_var_id, '->')
+            && !str_starts_with($list_var_id, '$_')
+            && !$context->collect_initializations
+        ) {
+            IssueBuffer::maybeAdd(
+                new MixedAssignment(
+                    'Unable to determine the type that ' . $list_var_id . ' is being assigned to',
+                    new CodeLocation($statements_analyzer->getSource(), $var),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
+        $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
+
+        if ($statements_analyzer->data_flow_graph) {
+            $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
+
+            if (!$context->vars_in_scope[$list_var_id]->parent_nodes) {
+                $assignment_node = DataFlowNode::getForAssignment(
+                    $list_var_id,
+                    $var_location,
+                );
+
+                $context->vars_in_scope[$list_var_id] =
+                    $context->vars_in_scope[$list_var_id]->setParentNodes([
+                        $assignment_node->id => $assignment_node,
+                    ])
+                ;
+            } else {
+                if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
+                    $context->vars_in_scope[$list_var_id] =
+                        $context->vars_in_scope[$list_var_id]->setParentNodes([]);
+                } else {
+                    $event = new AddRemoveTaintsEvent($var, $context, $statements_analyzer, $codebase);
+
+                    $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+                    $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+                    self::taintAssignment(
+                        $context->vars_in_scope[$list_var_id],
+                        $graph,
+                        $list_var_id,
+                        $var_location,
+                        $removed_taints,
+                        $added_taints,
+                        $codebase->getInputTaints(),
+                    );
+                }
+            }
+        }
+    }
+
+    /**
      * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
      * @param list<VarDocblockComment> $var_comments
      */
@@ -2616,8 +2685,18 @@ final class AssignmentAnalyzer
             $new_assign_type = null;
             $assigned = false;
             $has_null = false;
+            $has_shape_with_key = false;
 
             foreach ($assign_value_type->getAtomicTypes() as $assign_value_atomic_type) {
+                // like for the items of a list, a null value is no issue when a shape has the key for sure
+                if ($assign_value_atomic_type instanceof TKeyedArray
+                    && $offset_value !== null
+                    && ($assign_value_atomic_type->properties[$offset_value] ?? null)?->possibly_undefined
+                        === false
+                ) {
+                    $has_shape_with_key = true;
+                }
+
                 if ($assign_value_atomic_type instanceof TKeyedArray
                     && !$assign_var_item->key
                 ) {
@@ -2796,7 +2875,7 @@ final class AssignmentAnalyzer
 
 
             if (!$assigned) {
-                if ($has_null) {
+                if ($has_null && !$has_shape_with_key) {
                     IssueBuffer::maybeAdd(
                         new PossiblyNullArrayAccess(
                             'Cannot access array value on null variable ' . $extended_var_id,
@@ -2840,60 +2919,16 @@ final class AssignmentAnalyzer
                 }
 
                 if ($list_var_id) {
-                    if ($new_assign_type !== null
-                        && $new_assign_type->hasMixed()
-                        && !$has_comment_type
-                        && !str_contains($list_var_id, '->')
-                        && !str_starts_with($list_var_id, '$_')
-                        && !$context->collect_initializations
-                    ) {
-                        IssueBuffer::maybeAdd(
-                            new MixedAssignment(
-                                'Unable to determine the type that ' . $list_var_id . ' is being assigned to',
-                                new CodeLocation($statements_analyzer->getSource(), $var),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-                    }
-
-                    $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
-
-                    if ($statements_analyzer->data_flow_graph) {
-                        $var_location = new CodeLocation($statements_analyzer->getSource(), $var);
-
-                        if (!$context->vars_in_scope[$list_var_id]->parent_nodes) {
-                            $assignment_node = DataFlowNode::getForAssignment(
-                                $list_var_id,
-                                $var_location,
-                            );
-
-                            $context->vars_in_scope[$list_var_id] =
-                                $context->vars_in_scope[$list_var_id]->setParentNodes([
-                                    $assignment_node->id => $assignment_node,
-                                ])
-                            ;
-                        } else {
-                            if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
-                                $context->vars_in_scope[$list_var_id] =
-                                    $context->vars_in_scope[$list_var_id]->setParentNodes([]);
-                            } else {
-                                $event = new AddRemoveTaintsEvent($var, $context, $statements_analyzer, $codebase);
-
-                                $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
-                                $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
-
-                                self::taintAssignment(
-                                    $context->vars_in_scope[$list_var_id],
-                                    $graph,
-                                    $list_var_id,
-                                    $var_location,
-                                    $removed_taints,
-                                    $added_taints,
-                                    $codebase->getInputTaints(),
-                                );
-                            }
-                        }
-                    }
+                    self::assignDestructuredItem(
+                        $statements_analyzer,
+                        $codebase,
+                        $context,
+                        $var,
+                        $list_var_id,
+                        $new_assign_type,
+                        $has_comment_type,
+                        $removed_taints,
+                    );
                 }
             }
 

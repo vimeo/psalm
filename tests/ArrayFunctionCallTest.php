@@ -1958,6 +1958,8 @@ final class ArrayFunctionCallTest extends TestCase
                     array_filter([1, 2, 3], "A::barBar");
                     array_filter([1, 2, 3], "A::BARBAR");
                     array_filter([1, 2, 3], "A::barbar");',
+                'assertions' => [],
+                'ignored_issues' => ['WrongCaseFunction'],
             ],
             'arrayFilterIgnoreMissingClass' => [
                 'code' => '<?php
@@ -4569,6 +4571,31 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedArgument', 'MixedAssignment'],
                 'php_version' => '8.0',
             ],
+            'arrayKeyExistsWithKeysThatTheArrayMayHave' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $list
+                     * @param array<int, string> $ints
+                     * @param array<string, int> $strings
+                     * @param array<array-key, int> $keys
+                     * @param list<int>|array<string, int> $either
+                     * @param array{a: int} $shape
+                     */
+                    function f(array $list, array $ints, array $strings, array $keys, array $either, array $shape, array $any, string $s): bool {
+                        return array_key_exists("5", $list)
+                            || array_key_exists("5", $ints)
+                            || array_key_exists("a", $strings)
+                            || array_key_exists("a", $keys)
+                            || array_key_exists("a", $either)
+                            || array_key_exists("b", $shape)
+                            || array_key_exists("a", $any)
+                            || array_key_exists($s, $list)
+                            || array_key_exists(1, $list);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrayMergeAccumulatesInALoop' => [
                 'code' => '<?php
                     $array = [];
@@ -5476,6 +5503,62 @@ final class ArrayFunctionCallTest extends TestCase
 
                     array_unique($values);',
                 'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'arrayKeyExistsWithStringKeyOnList' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): bool {
+                        return array_key_exists("a", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:49 - Cannot check offset',
+            ],
+            'arrayKeyExistsWithStringKeyOnIntKeyedArray' => [
+                'code' => '<?php
+                    /** @param array<int, string> $a */
+                    function f(array $a): bool {
+                        return array_key_exists("x", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:49 - Cannot check offset',
+            ],
+            'keyExistsWithStringKeyOnList' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): bool {
+                        return key_exists("a", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:43 - Cannot check offset',
+            ],
+            'arrayKeyExistsWithStringKeyOnListInAForeach' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): void {
+                        foreach ([1, 2] as $_) {
+                            if (array_key_exists("a", $a)) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:50 - Cannot check offset',
+            ],
+            'arrayKeyExistsWithStringKeyOnListInAWhile' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): void {
+                        while (rand(0, 1)) {
+                            if (array_key_exists("a", $a)) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:50 - Cannot check offset',
+            ],
+            'negatedArrayKeyExistsWithStringKeyOnList' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): bool {
+                        return !array_key_exists("a", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:50 - Cannot check offset',
             ],
         ];
     }
