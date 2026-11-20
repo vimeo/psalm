@@ -10,4 +10,5 @@ namespace Psalm\Issue;
 final class TaintedUrlPath extends TaintedInput
 {
     public const SHORTCODE = 372;
+    public const CWE_IDS = [22];
 }

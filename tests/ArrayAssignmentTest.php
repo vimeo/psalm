@@ -830,6 +830,57 @@ final class ArrayAssignmentTest extends TestCase
                     '$resultOpt===' => 'array{a?: true, b?: true}',
                 ],
             ],
+            'assignedOffsetForgetsWhatWasKnownUnderIt' => [
+                'code' => '<?php
+                    /** @param array<string, string> $m */
+                    function f(array $a, string $path, string $lang, array $m): void {
+                        if (!empty($a[$lang][$path])) {
+                            return;
+                        }
+                        if (!empty($a[$lang][$path])) {
+                            return;
+                        }
+                        $a[$lang] = $m;
+                        if (!empty($a[$lang][$path])) {
+                            return;
+                        }
+                    }
+
+                    /** @param array<string, array<string, array<string, string>>> $a */
+                    function nested(array $a, string $l, string $p, string $q): void {
+                        if (!empty($a[$l][$p][$q])) {
+                            return;
+                        }
+                        if (!empty($a[$l][$p][$q])) {
+                            return;
+                        }
+                        $a[$l][$p] = ["x" => "y"];
+                        if (!empty($a[$l][$p][$q])) {
+                            return;
+                        }
+                    }
+
+                    final class C {
+                        /** @var array<string, array<string, string>> */
+                        private array $noAlias = [];
+
+                        /** @param array<string, string> $m */
+                        public function f(string $path, string $lang, array $m): void {
+                            if (!empty($this->noAlias[$lang][$path])) {
+                                return;
+                            }
+                            if (!empty($this->noAlias[$lang][$path])) {
+                                return;
+                            }
+                            $this->noAlias[$lang] = $m;
+                            if (!empty($this->noAlias[$lang][$path])) {
+                                return;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
             'unknownKeyAssignmentForgetsTheOffsetsItMayBe' => [
                 'code' => '<?php
                     /** @var array<string, string> $a */
@@ -3349,6 +3400,22 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignedOffsetKeepsWhatIsKnownUnderAnotherLiteralKey' => [
+                'code' => '<?php
+                    function f(array $a): void {
+                        if (!empty($a["x"]["p"])) {
+                            return;
+                        }
+                        if (!empty($a["x"]["p"])) {
+                            return;
+                        }
+                        $a["y"] = [];
+                        if (!empty($a["x"]["p"])) {
+                            return;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:10',
+            ],
             'undefinedOuterOffsetOfNestedAssignmentUnderMixed' => [
                 'code' => '<?php
                     /**
@@ -3618,7 +3685,7 @@ final class ArrayAssignmentTest extends TestCase
                 'code' => '<?php
                     class A {}
                     (new A)["b"] = 1;',
-                'error_message' => 'UndefinedMethod',
+                'error_message' => 'InvalidArrayAssignment',
             ],
             'invalidArrayAccess' => [
                 'code' => '<?php

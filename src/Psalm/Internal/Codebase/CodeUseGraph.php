@@ -15,8 +15,8 @@ use Psalm\Storage\MethodStorage;
 use function array_intersect_key;
 use function array_keys;
 use function array_pop;
+use function hash;
 use function ksort;
-use function md5;
 use function serialize;
 use function str_contains;
 use function strcmp;
@@ -324,8 +324,7 @@ final class CodeUseGraph
      */
     public static function useAliasNode(string $alias, string $file_path): string
     {
-        // do NOT change this to hash, it will fail on Windows for whatever reason
-        return self::KIND_USE_ALIAS . ' use:' . $alias . ':' . md5($file_path);
+        return self::KIND_USE_ALIAS . ' use:' . $alias . ':' . hash('xxh3', $file_path);
     }
 
     /**
