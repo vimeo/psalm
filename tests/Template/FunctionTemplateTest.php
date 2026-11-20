@@ -83,6 +83,63 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'forwardedPendingObjectKeyInfersValueTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template K of string
+                     * @template V
+                     * @param K $key
+                     * @param object{K: V} $row
+                     * @return V
+                     */
+                    function decode(string $key, object $row) {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template K of string
+                     * @param K $key
+                     * @param object{K: int} $row
+                     */
+                    function wrap(string $key, object $row): int {
+                        return decode($key, $row);
+                    }',
+            ],
+            'templateAsObjectShapeKeyOfAFunction' => [
+                'code' => '<?php
+                    /**
+                     * @template K of string
+                     * @param K $key
+                     * @return object{K: int}
+                     */
+                    function make(string $key): object {
+                        return (object) [$key => 1];
+                    }
+
+                    /**
+                     * @template K of string
+                     * @return object{K: int}
+                     */
+                    function notInferred(): object {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template K of string
+                     * @param object{K: int} $row
+                     */
+                    function take(object $row): void {}
+
+                    $made = make("a");
+                    $a = $made->a;
+                    $unknown = notInferred();
+                    take((object) ["b" => 1]);',
+                'assertions' => [
+                    '$made===' => 'object{a:int}',
+                    '$a===' => 'int',
+                    '$unknown===' => 'object',
+                ],
+            ],
             'classStringOfAFinalClassKeepsItsTypeWhereTheValueIsNotItsClassConstant' => [
                 'code' => '<?php
                     final class Foo {}
@@ -3009,6 +3066,54 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'singleObjectArgumentInfersItsTemplateKeyBeforeChecking' => [
+                'code' => '<?php
+                    /**
+                     * @template K of string
+                     * @param object{key: K, K: int} $row
+                     */
+                    function take(object $row): void {}
+
+                    take((object) ["key" => "x", "x" => 1]);
+                    take((object) ["key" => "x", "x" => "wrong"]);',
+                'error_message' => "x:'wrong'}&stdClass",
+            ],
+            'singleArrayArgumentInfersItsTemplateKeyFromLaterField' => [
+                'code' => '<?php
+                    /**
+                     * @template K of string
+                     * @param array{row: object{K: int}, key: K} $input
+                     */
+                    function take(array $input): void {}
+
+                    take(["row" => (object) ["x" => 1], "key" => "x"]);
+                    take(["row" => (object) ["x" => "wrong"], "key" => "x"]);',
+                'error_message' => "x:'wrong'}&stdClass",
+            ],
+            'inferredObjectShapeKeyRejectsWrongValue' => [
+                'code' => '<?php
+                    /**
+                     * @template K of string
+                     * @param K $key
+                     * @param object{K: int} $row
+                     */
+                    function take(string $key, object $row): void {}
+
+                    take("zz", (object) ["zz" => "no"]);',
+                'error_message' => 'expects object{zz:int}, but',
+            ],
+            'inferredObjectShapeKeyRejectsWrongValueBeforeKeyArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template K of string
+                     * @param object{K: int} $row
+                     * @param K $key
+                     */
+                    function take(object $row, string $key): void {}
+
+                    take((object) ["zz" => "no"], "zz");',
+                'error_message' => 'expects object{zz:int}, but',
+            ],
             'methodTemplateBoundStillReportsTheClassStringOfANonFinalClassThatWasExcluded' => [
                 'code' => '<?php
                     interface StampInterface {}

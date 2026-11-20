@@ -464,6 +464,18 @@ final class TypeCombiner
             $properties[$name] = Type::combineUnionTypes($property, $type->properties[$name], $codebase);
         }
 
+        $template_properties = [];
+
+        foreach (array_intersect_key($existing->template_properties, $type->template_properties) as $key => $property) {
+            if ($existing->template_keys[$key]->getId() === $type->template_keys[$key]->getId()) {
+                $template_properties[$key] = Type::combineUnionTypes(
+                    $property,
+                    $type->template_properties[$key],
+                    $codebase,
+                );
+            }
+        }
+
         $extra_types = array_filter(
             array_intersect_key($existing->extra_types, $type->extra_types),
             static fn(Atomic $extra_type, string $key): bool
@@ -476,6 +488,8 @@ final class TypeCombiner
             array_intersect_assoc($existing->methods, $type->methods),
             $extra_types,
             $existing->from_docblock && $type->from_docblock,
+            template_keys: array_intersect_key($existing->template_keys, $template_properties),
+            template_properties: $template_properties,
         );
     }
 

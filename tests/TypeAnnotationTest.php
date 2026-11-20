@@ -102,6 +102,42 @@ final class TypeAnnotationTest extends TestCase
                         public array $shape = ["T" => 1];
                     }',
             ],
+            'typeAliasShapeKeyNamedLikeATemplateWhereItIsUsed' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of string
+                     * @psalm-type Row = object{TKey: int}
+                     */
+                    final class Repo {
+                        /**
+                         * @param TKey $key
+                         * @return Row
+                         */
+                        public function row(string $key): object {
+                            return (object) ["TKey" => strlen($key)];
+                        }
+                    }
+
+                    /**
+                     * @template TKey of string
+                     * @psalm-import-type Row from Repo
+                     */
+                    final class Imported {
+                        /** @return Row */
+                        public function row(): object {
+                            return (object) ["TKey" => 1];
+                        }
+                    }
+
+                    /** @var Repo<"a"> $repo */
+                    $row = $repo->row("a");
+                    /** @var Imported<"b"> $imported */
+                    $importedRow = $imported->row();',
+                'assertions' => [
+                    '$row===' => 'object{TKey:int}',
+                    '$importedRow===' => 'object{TKey:int}',
+                ],
+            ],
             'typeAliasOfAClassWithATemplateThatDoesNotUseIt' => [
                 'code' => '<?php
                     namespace Some\\Ns;

@@ -20,6 +20,7 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateShapeKeys;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Issue\DeprecatedClass;
@@ -43,6 +44,7 @@ use Psalm\Type\Atomic\TIntMask;
 use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
@@ -166,6 +168,15 @@ final class TypeChecker extends TypeVisitor
             $this->checkResource($type);
         } elseif ($type instanceof TIntersection) {
             $this->checkIntersection($type);
+        } elseif ($type instanceof TObjectWithProperties && $type->template_keys) {
+            foreach ($type->template_keys as $template) {
+                if (isset($type->properties[$template->param_name]) && !TemplateShapeKeys::canBeKey($template)) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock("Duplicate key $template->param_name detected", $this->code_location),
+                        $this->suppressed_issues,
+                    );
+                }
+            }
         } elseif ($type instanceof TKeyOf || $type instanceof TValueOf) {
             $this->checkKeyOrValueOfAlias($type);
         }

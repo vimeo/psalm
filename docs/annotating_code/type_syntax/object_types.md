@@ -27,6 +27,8 @@ Optional properties can be denoted by a trailing `?`, e.g.:
 /** @param object{optional?: string} */
 ```
 
+An unquoted key can name a template in scope. See [templates as shape keys](../templated_annotations.md#templates-as-shape-keys).
+
 ## Generic object types
 
 Psalm supports using generic object types like `ArrayObject<int, string>`. Any generic object should be typehinted with appropriate [`@template` tags](../templated_annotations.md).

@@ -51,6 +51,7 @@ use function array_merge;
 use function array_pop;
 use function array_search;
 use function array_splice;
+use function assert;
 use function count;
 use function explode;
 use function in_array;
@@ -1035,7 +1036,7 @@ final class Populator
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function extendType(
         Union $type,
@@ -1049,7 +1050,21 @@ final class Populator
                     = $storage->template_extended_params[$atomic_type->defining_class][$atomic_type->param_name]
                         ?? null;
 
-                if ($referenced_type) {
+                if ($referenced_type && $atomic_type->extra_types && !$referenced_type->hasTemplate()) {
+                    $intersected_type = TemplateInferredTypeReplacer::replaceIntersectedTemplate(
+                        $atomic_type,
+                        static fn(TTemplateParam $template): ?Union
+                            => $storage->template_extended_params[$template->defining_class][$template->param_name]
+                                ?? null,
+                        null,
+                    );
+
+                    assert($intersected_type !== null);
+
+                    foreach ($intersected_type->getAtomicTypes() as $intersected_atomic_type) {
+                        $extended_types[] = $intersected_atomic_type;
+                    }
+                } elseif ($referenced_type) {
                     foreach ($referenced_type->getAtomicTypes() as $atomic_referenced_type) {
                         if (!$atomic_referenced_type instanceof TTemplateParam) {
                             $extended_types[] = $atomic_referenced_type;

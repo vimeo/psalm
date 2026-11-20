@@ -9,6 +9,7 @@ use Psalm\Codebase;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateDefaults;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Storage\ClassLikeStorage;
@@ -265,7 +266,7 @@ final class ClassTemplateParamCollector
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private static function resolveTemplateParam(
         Codebase $codebase,
@@ -276,7 +277,23 @@ final class ClassTemplateParamCollector
     ): ?Union {
         $output_type_extends = null;
         foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {
-            if ($type_extends_atomic instanceof TTemplateParam) {
+            if ($type_extends_atomic instanceof TTemplateParam && $type_extends_atomic->extra_types) {
+                $intersected_type = TemplateInferredTypeReplacer::replaceIntersectedTemplate(
+                    $type_extends_atomic,
+                    static fn(TTemplateParam $template): ?Union => self::resolveTemplateParam(
+                        $codebase,
+                        new Union([$template]),
+                        $static_class_storage,
+                        $lhs_type_part,
+                        $template_result,
+                    ),
+                    $codebase,
+                );
+
+                if ($intersected_type !== null) {
+                    $output_type_extends = Type::combineUnionTypes($intersected_type, $output_type_extends);
+                }
+            } elseif ($type_extends_atomic instanceof TTemplateParam) {
                 if (isset(
                     $static_class_storage
                             ->template_types
@@ -323,7 +340,8 @@ final class ClassTemplateParamCollector
                 }
             } else {
                 if ($template_result !== null) {
-                    $type_extends_atomic = $type_extends_atomic->replaceTemplateTypesWithArgTypes(
+                    $type_extends_atomic = TemplateInferredTypeReplacer::replaceTemplateKeys(
+                        $type_extends_atomic->replaceTemplateTypesWithArgTypes($template_result, $codebase),
                         $template_result,
                         $codebase,
                     );

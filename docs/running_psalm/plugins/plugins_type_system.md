@@ -200,6 +200,8 @@ foreach (range(1,1) as $_) $a[(string)rand(0,1)] = rand(0,1); // array<string,in
 
 `TObjectWithProperties` - an object with specified member variables e.g. `object{foo:int, bar:string}`.
 
+`$properties` contains only named properties. For pending properties such as `object{T: int}`, read `$template_keys` for the `TTemplateParam` and `$template_properties` for the property's `Union`. The maps use the same keys. Pass both maps when constructing a new shape from an existing one so that template replacement can still resolve the pending names.
+
 ### Object types
 
 `TNamedObject` - denotes an object type where the type of the object is known e.g. `Exception`, `Throwable`, `Foo\Bar`

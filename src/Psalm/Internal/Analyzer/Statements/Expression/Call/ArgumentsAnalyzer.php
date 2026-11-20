@@ -37,6 +37,7 @@ use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateShapeKeys;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
@@ -2512,6 +2513,15 @@ final class ArgumentsAnalyzer
             $template_result->template_types = $template_types;
         }
 
+        // Even one composite argument can bind a key in one field and need it in another.
+        $infer_shape_keys = $args
+            && (count($args) > 1 || !$args[0]->value instanceof PhpParser\Node\Scalar)
+            && array_any(
+                $function_params,
+                static fn(FunctionLikeParameter $param): bool
+                    => $param->type !== null && TemplateShapeKeys::containsTemplateKeys($param->type),
+            );
+
         foreach ($args as $argument_offset => $arg) {
             $function_param = null;
 
@@ -2560,7 +2570,7 @@ final class ArgumentsAnalyzer
                 $argument_offset,
                 $context->self,
                 $context->calling_method_id ?: $context->calling_function_id,
-                false,
+                $infer_shape_keys,
             );
         }
 

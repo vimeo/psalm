@@ -2422,6 +2422,8 @@ final class TypeParser
     ): TKeyedArray|TObjectWithProperties|TArray {
         $properties = [];
         $class_strings = [];
+        $template_keys = [];
+        $template_properties = [];
 
         $type = $parse_tree->value;
 
@@ -2528,6 +2530,24 @@ final class TypeParser
                 $had_optional = true;
             }
 
+            if ($type === 'object' && !$class_string && $property_branch instanceof KeyedArrayPropertyTree) {
+                foreach ($template_type_map[$property_branch->value] ?? [] as $defining_class => $template_as) {
+                    $template = new TTemplateParam($property_branch->value, $template_as, $defining_class);
+                    if (!TemplateShapeKeys::canBeKey($template)) {
+                        break;
+                    }
+
+                    $key = TemplateShapeKeys::getKey($template);
+                    if (isset($template_properties[$key])) {
+                        throw new TypeParseTreeException("Duplicate key $template->param_name detected");
+                    }
+
+                    $template_keys[$key] = $template;
+                    $template_properties[$key] = $property_type;
+                    continue 2;
+                }
+            }
+
             if (isset($properties[$property_key])) {
                 throw new TypeParseTreeException("Duplicate key $property_key detected");
             }
@@ -2543,7 +2563,12 @@ final class TypeParser
         }
 
         if ($type === 'object') {
-            return new TObjectWithProperties($properties, [], [], $from_docblock);
+            return new TObjectWithProperties(
+                $properties,
+                from_docblock: $from_docblock,
+                template_keys: $template_keys,
+                template_properties: $template_properties,
+            );
         }
 
         $callable = str_starts_with($type, 'callable-');
