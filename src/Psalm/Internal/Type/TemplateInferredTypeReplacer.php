@@ -751,6 +751,15 @@ final class TemplateInferredTypeReplacer
             return true;
         }
 
+        // `Factory&Closure`, what `$factory instanceof Closure` leaves, is of what one of its parts is
+        if ($candidate instanceof TIterable || $candidate instanceof TNamedObject) {
+            foreach ($candidate->getIntersectionTypes() as $intersection_type) {
+                if (!self::isDisjoint($codebase, $intersection_type, $conditional_type)) {
+                    return false;
+                }
+            }
+        }
+
         // the empty array is never a non-empty one, nor the reverse
         $overlapping_atomic_types = [];
 
