@@ -9,8 +9,6 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Union;
 
-use function str_contains;
-
 /**
  * @internal
  */
@@ -57,10 +55,7 @@ final class FunctionCallInfo
      */
     public function addCallableId(string $callable_id): void
     {
-        // a method's taint behavior isn't re-dispatched from its id: its closure is tainted as any other
-        if (!str_contains($callable_id, '::')) {
-            $this->callable_ids[$callable_id] = true;
-        }
+        $this->callable_ids[$callable_id] = true;
     }
 
     /**
@@ -76,9 +71,12 @@ final class FunctionCallInfo
      */
     public ?Union $callable_return_type = null;
 
-    public bool $allow_named_args = true;
-
-    public array $byref_uses = [];
+    /**
+     * The variables of the scope the called closure may write, as it captured them by reference
+     *
+     * @var array<string, true>
+     */
+    public array $closure_written_var_ids = [];
 
     /**
      * @mutation-free

@@ -186,6 +186,8 @@ These issues become info (non-blocking) at level 3 and higher.
  - [UnsafeGenericInstantiation](issues/UnsafeGenericInstantiation.md)
  - [UnsafeInstantiation](issues/UnsafeInstantiation.md)
  - [UnsupportedReferenceUsage](issues/UnsupportedReferenceUsage.md)
+ - [WeakHash](issues/WeakHash.md)
+ - [WeakRandom](issues/WeakRandom.md)
 
 ## Errors at level 3 and below
 
@@ -194,6 +196,7 @@ These issues become info (non-blocking) at level 4 and higher.
  - [ArgumentTypeCoercion](issues/ArgumentTypeCoercion.md)
  - [CallableByReferenceMismatch](issues/CallableByReferenceMismatch.md)
  - [ImplicitFloatToIntCast](issues/ImplicitFloatToIntCast.md)
+ - [InsecureCookie](issues/InsecureCookie.md)
  - [LessSpecificReturnStatement](issues/LessSpecificReturnStatement.md)
  - [MoreSpecificReturnType](issues/MoreSpecificReturnType.md)
  - [NonInvariantDocblockPropertyType](issues/NonInvariantDocblockPropertyType.md)
@@ -283,6 +286,8 @@ These issues become info (non-blocking) at level 6 and higher.
  - [NullableReturnStatement](issues/NullableReturnStatement.md)
  - [UndefinedInterfaceMethod](issues/UndefinedInterfaceMethod.md)
  - [UndefinedThisPropertyAssignment](issues/UndefinedThisPropertyAssignment.md)
+ - [WeakCipher](issues/WeakCipher.md)
+ - [XmlExternalEntity](issues/XmlExternalEntity.md)
 
 ## Errors at level 6 and below
 
@@ -337,6 +342,7 @@ These issues become info (non-blocking) at level 8.
  - [NonVariableReferenceReturn](issues/NonVariableReferenceReturn.md)
  - [OverriddenMethodAccess](issues/OverriddenMethodAccess.md)
  - [ParamNameMismatch](issues/ParamNameMismatch.md)
+ - [PositionalArgumentNotAllowed](issues/PositionalArgumentNotAllowed.md)
  - [ReservedWord](issues/ReservedWord.md)
  - [UnhandledMatchCondition](issues/UnhandledMatchCondition.md)
  - [UninitializedProperty](issues/UninitializedProperty.md)

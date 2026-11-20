@@ -1338,6 +1338,115 @@ final class TypeVariableTest extends TestCase
                         }
                     }',
             ],
+            'constructorlessConstructionReturnedAsTypedGeneric' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class NoCtor {
+                        /** @param T $x */
+                        public function add($x): void {}
+                    }
+
+                    /** @return NoCtor<int> */
+                    function make(): NoCtor {
+                        return new NoCtor();
+                    }',
+            ],
+            'constructorlessConstructionWidenedPastTemplateDefault' => [
+                // as with an empty constructor, the default only stands for a
+                // template nothing can constrain after construction
+                'code' => '<?php
+                    /** @template T = int */
+                    final class NoCtor {
+                        /** @param T $x */
+                        public function add($x): void {}
+                    }
+
+                    /** @return NoCtor<string> */
+                    function make(): NoCtor {
+                        $n = new NoCtor();
+                        $n->add("a");
+                        return $n;
+                    }',
+            ],
+            'constructorlessConstructionOfUnconstrainableTemplate' => [
+                'code' => '<?php
+                    /** @template T = int */
+                    final class WithDefault {}
+
+                    /** @template T of string */
+                    final class WithConstraint {}
+
+                    $a = new WithDefault();
+                    $b = new WithConstraint();',
+                'assertions' => [
+                    '$a===' => 'WithDefault<int>',
+                    '$b===' => 'WithConstraint<string>',
+                ],
+            ],
+            'constructorlessWeakMapReturnedAsTypedGeneric' => [
+                'code' => '<?php
+                    /** @return WeakMap<stdClass, int> */
+                    function make(): WeakMap {
+                        return new WeakMap();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'constructorlessWeakMapSatisfiesTypedProperty' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    final class Cache {
+                        /** @var WeakMap<Foo, int> */
+                        private WeakMap $map;
+
+                        public function __construct() {
+                            $this->map = new WeakMap();
+                        }
+
+                        public function get(Foo $key): int {
+                            return $this->map[$key] ??= 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'constructorlessCovariantConstructionSatisfiesTwoInstantiations' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    final class Coll {
+                        /**
+                         * @template U
+                         * @param callable(T): U $f
+                         * @return Coll<U>
+                         */
+                        public function map(callable $f): Coll {
+                            return new Coll();
+                        }
+                    }
+
+                    /** @param Coll<int> $c */
+                    function takesInts(Coll $c): void {}
+
+                    /** @param Coll<string> $c */
+                    function takesStrings(Coll $c): void {}
+
+                    function both(): void {
+                        $c = new Coll();
+                        takesInts($c);
+                        takesStrings($c);
+                    }',
+            ],
+            'constructorlessConstructionAsParamDefault' => [
+                'code' => '<?php
+                    /** @param WeakMap<stdClass, int> $m */
+                    function f(WeakMap $m = new WeakMap()): void {}',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'readSitesResolveTypeVariableFromForeach' => [
                 'code' => '<?php
                     /** @template T */
@@ -1857,6 +1966,58 @@ final class TypeVariableTest extends TestCase
                     }',
                 'error_message' => 'MixedReturnTypeCoercion - src' . DIRECTORY_SEPARATOR
                     . "somefile.php:20:32 - The type 'Box<mixed>' is more general than the declared return type 'Box<Foo>' for boxMixed",
+            ],
+            'constructorlessConstructionSeesValuesAddedAfterward' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class NoCtor {
+                        /** @param T $x */
+                        public function add($x): void {}
+                    }
+
+                    /** @return NoCtor<int> */
+                    function make(): NoCtor {
+                        $n = new NoCtor();
+                        $n->add("a");
+                        return $n;
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:11:33 - Type 'a' should be a subtype of int",
+            ],
+            'constructorlessInvariantConstructionRejectsTwoInstantiations' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @param T $x */
+                        public function add($x): void {}
+                    }
+
+                    /** @param Coll<int> $c */
+                    function takesInts(Coll $c): void {}
+
+                    /** @param Coll<string> $c */
+                    function takesStrings(Coll $c): void {}
+
+                    function both(): void {
+                        $c = new Coll();
+                        takesInts($c);
+                        takesStrings($c);
+                    }',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:17:38 - Type int should be a subtype of string',
+            ],
+            'constructorlessConstructionKeepsTemplateConstraint' => [
+                'code' => '<?php
+                    /** @template T of int */
+                    final class NoCtor {
+                        /** @param T $x */
+                        public function add($x): void {}
+                    }
+
+                    $n = new NoCtor();
+                    $n->add("a");',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:9:29 - Type 'a' should be a subtype of int",
             ],
             'mixedConstructionAssignedToTypedProperty' => [
                 'code' => '<?php
