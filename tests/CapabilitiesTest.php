@@ -3355,6 +3355,81 @@ final class CapabilitiesTest extends TestCase
                         return time();
                     }',
             ],
+            'psalmCapabilitiesWinOverPhpStormPure' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace {
+                        interface Message {
+                            /** @psalm-capabilities read-props */
+                            #[\\JetBrains\\PhpStorm\\Pure]
+                            public function body(): string;
+                        }
+
+                        final class MyMessage implements Message {
+                            public function __construct(private string $body) {}
+
+                            public function body(): string {
+                                return $this->body;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmImpureWinsOverPhpStormPure' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace {
+                        /** @psalm-impure */
+                        #[\\JetBrains\\PhpStorm\\Pure]
+                        function now(): int {
+                            return time();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmCapabilitiesWinOverPhpStormImmutable' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace {
+                        /** @psalm-capabilities read-props|write-this-props */
+                        #[\\JetBrains\\PhpStorm\\Immutable]
+                        final class Counter {
+                            private int $n = 0;
+
+                            public function next(): int {
+                                return ++$this->n;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -8080,6 +8155,92 @@ final class CapabilitiesTest extends TestCase
                         echo $name;
                     }',
                 'error_message' => 'ImpureFunctionCall',
+            ],
+            'phpStormPureAloneStillForbidsReadingProps' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace {
+                        interface Message {
+                            #[\\JetBrains\\PhpStorm\\Pure]
+                            public function body(): string;
+                        }
+
+                        final class MyMessage implements Message {
+                            public function __construct(private string $body) {}
+
+                            public function body(): string {
+                                return $this->body;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:37 - Message::body is pure, but MyMessage::body additionally requires read-props',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'psalmPureAttributeStillWinsOverPsalmCapabilities' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace Psalm {
+                        #[\\Attribute]
+                        final class Pure {}
+                    }
+
+                    namespace {
+                        interface Message {
+                            /** @psalm-capabilities read-props */
+                            #[\\Psalm\\Pure]
+                            public function body(): string;
+                        }
+
+                        final class MyMessage implements Message {
+                            public function __construct(private string $body) {}
+
+                            public function body(): string {
+                                return $this->body;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImmutableDependency - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:37 - Message::body is pure, but MyMessage::body additionally requires read-props',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'phpStormImmutableAloneIsStillReadProps' => [
+                'code' => '<?php
+                    namespace JetBrains\\PhpStorm {
+                        #[\\Attribute]
+                        final class Pure {}
+
+                        #[\\Attribute]
+                        final class Immutable {}
+                    }
+
+                    namespace {
+                        #[\\JetBrains\\PhpStorm\\Immutable]
+                        final class Counter {
+                            private int $n = 0;
+
+                            public function next(): int {
+                                return ++$this->n;
+                            }
+                        }
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+                'error_levels' => ['InaccessibleProperty'],
+                'php_version' => '8.0',
             ],
         ];
     }

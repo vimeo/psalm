@@ -699,8 +699,10 @@ final class FunctionLikeNodeScanner
                     $this->classlike_storage->name ?? null,
                 );
 
+                // like `@pure`, the PhpStorm attribute gives way to a purity tag of the docblock
                 if ($attribute->fq_class_name === 'Psalm\\Pure'
-                    || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Pure'
+                    || ($attribute->fq_class_name === 'JetBrains\\PhpStorm\\Pure'
+                        && !$storage->has_mutations_annotation)
                 ) {
                     $storage->specialize_call = true;
                     $storage->capabilities = Capabilities::NONE;

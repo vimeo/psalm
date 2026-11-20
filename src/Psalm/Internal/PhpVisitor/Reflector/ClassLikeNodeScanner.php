@@ -1143,8 +1143,10 @@ final class ClassLikeNodeScanner
                     $storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name)];
                 }
 
+                // the PhpStorm attribute gives way to a purity tag of the docblock
                 if ($attribute->fq_class_name === 'Psalm\\Immutable'
-                    || $attribute->fq_class_name === 'JetBrains\\PhpStorm\\Immutable'
+                    || ($attribute->fq_class_name === 'JetBrains\\PhpStorm\\Immutable'
+                        && !$storage->has_mutations_annotation)
                 ) {
                     $storage->capabilities = Capabilities::MUTATION_FREE & $storage->capabilities;
                     $storage->has_mutations_annotation = true;
