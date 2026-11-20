@@ -237,21 +237,24 @@ function search(DOMXPath $xpath): void {
 
 #### Allowlist helper functions
 
-If a helper validates input against a trusted list, annotate it with `@psalm-assert-if-true literal-string`. Once the
-check succeeds, Psalm strips all user-input taints:
+If a helper validates input against a list of allowed values, annotate it with `@psalm-assert-if-true` and those
+values. Once the check succeeds, the value is one of the literals, which can't carry user input:
 
 ```php
 <?php
 
-/** @psalm-assert-if-true literal-string $city */
+/**
+ * @psalm-assert-if-true 'london'|'paris'|'tokyo' $city
+ */
 function isKnownCity(string $city): bool {
-    return in_array($city, getCityKeysFromDatabase(), true);
+    return in_array($city, ['london', 'paris', 'tokyo'], true);
 }
 
 $city = getParam('city');
 if (isKnownCity($city)) {
-    $organization->city = $city; // no issue: stored without any taint
+    echo '<p>' . $city . '</p>'; // no issue
 }
+echo '<p>' . $city . '</p>'; // TaintedHtml
 ```
 
 ### Your own escaping functions
