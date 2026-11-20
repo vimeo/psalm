@@ -188,6 +188,8 @@ final class ArrayTypeComparator
                                 || $param_comparison_result->to_string_cast === true;
                     }
                 }
+
+                $atomic_comparison_result?->addTypeVariableBounds($param_comparison_result);
             }
         }
 

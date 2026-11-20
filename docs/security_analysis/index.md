@@ -41,6 +41,7 @@ Psalm recognises a number of taint types by default, defined in the [Psalm\Type\
 - `file` - used for strings that could contain a path
 - `cookie` - used for strings that could contain a http cookie
 - `header` - used for strings that could contain a http header
+- `redirect` - used for strings that could choose where a redirect sends the client (a `Location` header)
 - `sleep` - used for values that could set how long the code waits (`sleep()`, curl timeouts, ...). Unlike the other taints, `int` and `float` values carry it
 - `llm_prompt` - used for strings that could contain instructions passed to an LLM prompt (prompt injection)
 - `user_secret` - used for strings that could contain user-supplied secrets
@@ -58,9 +59,12 @@ You're also free to define your own taint types when defining custom taint sourc
 Psalm defines the following default taint sources:
 
  - the `$_GET`, `$_POST`, `$_COOKIE` and `$_REQUEST` server variables;
+ - the environment, which whoever starts the process chooses: `getenv()` and `$_ENV`;
  - the entries of `$_SERVER` the client sends: the request headers (`HTTP_*`), the URI and what is taken from it (`REQUEST_URI`, `QUERY_STRING`, `PATH_INFO`, `PHP_SELF`, `argv`, ...), `REQUEST_METHOD`, `CONTENT_TYPE` and the HTTP authentication credentials, the same entries of a redirected request (`REDIRECT_*`), and any entry read with a key that is not a literal;
  - the names, types and full paths of the uploaded files in `$_FILES`;
  - reading from the input stream: `fopen()`, `file_get_contents()` and `file()` called with a literal `php://input` or `php://stdin` path, and the stream reading functions (`fgets()`, `fread()`, `stream_get_contents()`, ...) applied to such a handle;
+ - reading from a server: the same functions called with a URL starting with a literal `http://`, `https://`, `ftp://` or `ftps://`, as `file_get_contents('https://api.example.com/items/' . $id)`;
+ - what the program stored in a database, where it reads it back: see [Databases](taint_flow.md#databases);
  - the predefined `STDIN` constant (the `php://stdin` stream).
  - reading from the network: `socket_read()`, the data `socket_recv()`, `socket_recvfrom()` and `socket_recvmsg()` write to their by-reference parameter, `stream_socket_recvfrom()`, `curl_exec()` and `curl_multi_getcontent()`, and the streams opened with `fsockopen()`, `pfsockopen()`, `stream_socket_client()`, `stream_socket_accept()` and `socket_export_stream()` (so reading from them with `fgets()`, `fread()`, ... is a source too).
  - DNS answers, which whoever runs the name servers of a domain chooses: `dns_get_record()`, the hosts `getmxrr()` writes to its by-reference parameter, and `gethostbyaddr()`.
@@ -74,6 +78,30 @@ You can also [define your own taint sources](custom_taint_sources.md).
 Psalm currently defines a number of different sinks for builtin functions and methods, including `echo`, `include`, `header`.
 
 What is written to a stream opened on a literal `php://output` path, which is the response, or `php://stdout`, which is the response under the CGI SAPI, is a sink as what `echo` outputs is: `file_put_contents()` to such a path, and `fwrite()`, `fputs()`, `fputcsv()`, `fprintf()`, `vfprintf()`, `stream_copy_to_stream()` and the `fwrite()` and `fputcsv()` methods of `SplFileObject` on a stream opened with `fopen()` or `new SplFileObject()` on such a path in the same function, and held by its variables.
+
+A `Location` header given to `header()` is a `redirect`, `url_component` and `url_path` sink rather than a `header` one. After a start fixing the server (`https://example.com/`, or a path such as `/account`), in the header or in the URL given to it, only the URL syntax a value can inject in the path, the query or the fragment is reported:
+
+```php
+<?php
+header('Location: ' . $_GET['next']); // TaintedRedirect
+header('Location: https://example.com/' . $_GET['page']); // TaintedUrlComponent
+header('Location: /account?tab=' . urlencode((string) $_GET['tab'])); // no issue
+```
+
+What is stored in `$_SESSION` flows into what reads it back under the same key, wherever the code reading it is. Like with [keyed stores](taint_flow.md#keyed-stores), each read is checked against what it is used for:
+
+```php
+<?php
+function login(): void {
+    $_SESSION['name'] = htmlspecialchars((string) $_GET['name'], ENT_QUOTES);
+}
+
+function show(): void {
+    echo (string) $_SESSION['name']; // no issue
+    exec('greet ' . (string) $_SESSION['name']); // TaintedShell
+    echo (string) $_SESSION['page']; // no issue
+}
+```
 
 You can also [define your own taint sinks](custom_taint_sinks.md).
 

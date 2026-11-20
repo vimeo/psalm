@@ -95,6 +95,7 @@ use function ksort;
 use function preg_match;
 use function preg_quote;
 use function reset;
+use function sort;
 use function str_contains;
 use function str_ends_with;
 use function str_split;
@@ -505,7 +506,8 @@ class Reconciler
                 // parent nodes, that no taint goes through. One that can't carry some taints the type it is
                 // narrowed from could (e.g. a scalar, nosql) gets nodes those don't go through.
                 $narrowed_taints = $can_carry_taints
-                    ? ($taints_to_remove | (self::getTaintsRemovedByPatterns($new_type_parts) & $input_taints))
+                    ? ($taints_to_remove
+                        | (self::getTaintsRemovedByPatterns($new_type_parts, $before_adjustment) & $input_taints))
                         & ~($before_adjustment?->getTaintsToRemove($input_taints) ?? 0)
                     : TaintKind::ALL;
 
@@ -1330,10 +1332,6 @@ class Reconciler
                         }
 
                         if ($existing_key_type_part instanceof TArray) {
-                            if ($has_empty) {
-                                return null;
-                            }
-
                             $new_base_type_candidate = $existing_key_type_part->type_params[1];
 
                             if ($new_base_type_candidate->isMixed()
@@ -1344,10 +1342,10 @@ class Reconciler
                                 return $new_base_type_candidate;
                             }
 
-                            if (($has_isset || $has_inverted_isset || $has_inverted_key_exists)
+                            if (($has_isset || $has_inverted_isset || $has_inverted_key_exists || $has_empty)
                                 && isset($new_assertions[$new_base_key])
                             ) {
-                                if ($has_inverted_isset && $new_base_key === $key) {
+                                if (($has_inverted_isset || $has_empty) && $new_base_key === $key) {
                                     $new_base_type_candidate = $new_base_type_candidate->getBuilder();
                                     $new_base_type_candidate->addType(new TNull);
                                     $new_base_type_candidate->possibly_undefined = true;
@@ -2279,15 +2277,20 @@ class Reconciler
      * @param array<array<Assertion>> $new_type_parts
      * @psalm-pure
      */
-    private static function getTaintsRemovedByPatterns(array $new_type_parts): int
+    private static function getTaintsRemovedByPatterns(array $new_type_parts, ?Union $existing_type): int
     {
+        $existing_node_ids = array_keys($existing_type?->parent_nodes ?? []);
+        sort($existing_node_ids);
+
         $removed_taints = 0;
 
         foreach ($new_type_parts as $alternatives) {
             $removed_by_alternatives = null;
 
             foreach ($alternatives as $alternative) {
-                $removed = $alternative instanceof MatchesPattern && !$alternative->negated
+                $removed = $alternative instanceof MatchesPattern
+                    && !$alternative->negated
+                    && ($alternative->parent_node_ids === null || $alternative->parent_node_ids === $existing_node_ids)
                     ? $alternative->removed_taints
                     : 0;
                 $removed_by_alternatives = $removed_by_alternatives === null

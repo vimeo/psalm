@@ -1488,11 +1488,6 @@
       <code><![CDATA[DataFlowGraph]]></code>
     </ImmutableDependency>
   </file>
-  <file src="src/Psalm/Internal/Composer.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[getenv('COMPOSER')]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="src/Psalm/Internal/DataFlow/DataFlowNode.php">
     <ImpureMethodCall>
       <code><![CDATA[self::getAssignmentSuffix($var_id)]]></code>
@@ -2278,10 +2273,6 @@
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
       <code><![CDATA[strpos($key, '[')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
@@ -2302,10 +2293,6 @@
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
       <code><![CDATA[$key]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
-      <code><![CDATA[$var_id]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Type/TemplateInferredTypeReplacer.php">
