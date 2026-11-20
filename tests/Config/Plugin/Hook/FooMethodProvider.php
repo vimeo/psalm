@@ -17,6 +17,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
 use function in_array;
+use function strtolower;
 
 /**
  * @psalm-suppress UnusedClass registered as a plugin via test config, instantiated by reflection
@@ -33,7 +34,7 @@ final class FooMethodProvider implements
     #[Override]
     public static function getClassLikeNames(): array
     {
-        return ['Ns\Foo'];
+        return ['Ns\Foo', 'Ns\Ghost'];
     }
 
     /**
@@ -43,7 +44,17 @@ final class FooMethodProvider implements
     public static function doesMethodExist(MethodExistenceProviderEvent $event): ?bool
     {
         $method_name_lowercase = $event->getMethodNameLowercase();
-        if (in_array($method_name_lowercase, ['magicmethod', 'magicmethod2', 'magicmethod3'], true)) {
+
+        // a magic method dispatcher the class doesn't declare
+        if (strtolower($event->getFqClasslikeName()) === 'ns\ghost') {
+            return $method_name_lowercase === '__callstatic' ? true : null;
+        }
+
+        if (in_array(
+            $method_name_lowercase,
+            ['magicmethod', 'magicmethod2', 'magicmethod3', 'sourcedmagicmethod', 'paramlessmagicmethod'],
+            true,
+        )) {
             return true;
         }
 
@@ -66,6 +77,13 @@ final class FooMethodProvider implements
             $type = $event->getCodeLocation() !== null ? Type::getString() : Type::getInt();
 
             return [new FunctionLikeParameter('first', false, $type, $type)];
+        }
+
+        // Mirrors providers that need the codebase, which they reach through the statements source.
+        if (($method_name_lowercase === 'sourcedmagicmethod' || $method_name_lowercase === 'sourcedgenericmethod')
+            && $event->getStatementsSource() !== null
+        ) {
+            return [new FunctionLikeParameter('first', false, Type::getInt(), Type::getInt())];
         }
 
         return null;

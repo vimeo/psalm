@@ -10,6 +10,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ThrowAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -406,6 +407,13 @@ final class TryAnalyzer
                         'variable-use',
                     );
                 }
+
+                ArrayAssignmentAnalyzer::updateArraysHoldingBoundItem(
+                    $statements_analyzer,
+                    $catch_context,
+                    $catch_var_id,
+                    $location,
+                );
 
                 $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
                 if ($taint_flow_graph) {

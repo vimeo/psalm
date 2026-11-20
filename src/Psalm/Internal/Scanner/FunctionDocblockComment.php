@@ -7,6 +7,7 @@ namespace Psalm\Internal\Scanner;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\NamedArguments;
 
 /**
  * @internal
@@ -239,7 +240,8 @@ final class FunctionDocblockComment
      */
     public array $capabilities_expressions = [];
 
-    public bool $no_named_args = false;
+    /** How the arguments can be passed */
+    public ?NamedArguments $named_arguments = null;
 
     public bool $stub_override = false;
 

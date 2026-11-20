@@ -10,4 +10,5 @@ namespace Psalm\Issue;
 final class TaintedNosql extends TaintedInput
 {
     public const SHORTCODE = 369;
+    public const CWE_IDS = [943];
 }

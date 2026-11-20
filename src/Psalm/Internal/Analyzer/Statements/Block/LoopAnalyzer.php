@@ -38,6 +38,7 @@ use function array_filter;
 use function array_flip;
 use function array_intersect_key;
 use function array_keys;
+use function array_map;
 use function array_merge;
 use function array_reverse;
 use function array_slice;
@@ -464,7 +465,7 @@ final class LoopAnalyzer
                 $continue_context->clauses = $pre_loop_context->clauses;
                 $continue_context->byref_constraints = $pre_loop_context->byref_constraints;
 
-                $vars_at_iteration_start = $continue_context->vars_in_scope;
+                $vars_at_iteration_start = self::copyWithoutReferences($continue_context->vars_in_scope);
 
                 $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
                 $bounds_at_kept_pass_start = $type_variable_tracker->snapshotBounds();
@@ -520,7 +521,7 @@ final class LoopAnalyzer
 
                 $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
 
-                $vars_at_pass_start = $continue_context->vars_in_scope;
+                $vars_at_pass_start = self::copyWithoutReferences($continue_context->vars_in_scope);
 
                 $loop_scope->vars_at_breaks = null;
                 $loop_scope->vars_at_continues = null;
@@ -605,7 +606,10 @@ final class LoopAnalyzer
                     }
 
                     if ($widened_var_types || $widening_passes === 1) {
-                        $continue_context->vars_in_scope = $widened_var_types + $continue_context->vars_in_scope;
+                        // in place: a variable keeps the references it shares
+                        foreach ($widened_var_types as $var_id => $widened_type) {
+                            $continue_context->vars_in_scope[$var_id] = $widened_type;
+                        }
                         ++$max_passes;
                         ++$widening_passes;
                         $force_pass = true;
@@ -881,6 +885,19 @@ final class LoopAnalyzer
     }
 
     /**
+     * A copy of the types of a context that writes through a reference don't change: a copied array shares its PHP
+     * references with the original
+     *
+     * @param array<string, Union> $vars_in_scope
+     * @return array<string, Union>
+     * @psalm-pure
+     */
+    private static function copyWithoutReferences(array $vars_in_scope): array
+    {
+        return array_map(static fn(Union $type): Union => $type, $vars_in_scope);
+    }
+
+    /**
      * @param array<string, Union> $before
      * @param array<string, Union> $after
      * @psalm-pure
@@ -1135,6 +1152,7 @@ final class LoopAnalyzer
         array &$var_ids,
     ): void {
         if ($expr instanceof PhpParser\Node\Expr\Assign
+            || $expr instanceof PhpParser\Node\Expr\AssignRef
             || ($expr instanceof PhpParser\Node\Expr\AssignOp
                 && !$expr instanceof PhpParser\Node\Expr\AssignOp\Coalesce)
         ) {
@@ -1218,7 +1236,7 @@ final class LoopAnalyzer
         array &$defined_here,
         bool $is_only_left_by_the_condition,
     ): void {
-        if ($expr instanceof PhpParser\Node\Expr\Assign) {
+        if ($expr instanceof PhpParser\Node\Expr\Assign || $expr instanceof PhpParser\Node\Expr\AssignRef) {
             // the value is evaluated before it is assigned
             self::setVarsAssignedInCondition(
                 $statements_analyzer,
@@ -1632,7 +1650,7 @@ final class LoopAnalyzer
         array &$vars_after_condition = [],
         array &$written_var_ids = [],
     ): array {
-        $vars_before_condition = $loop_context->vars_in_scope;
+        $vars_before_condition = self::copyWithoutReferences($loop_context->vars_in_scope);
         $pre_referenced_var_ids = $loop_context->cond_referenced_var_ids;
         $loop_context->cond_referenced_var_ids = [];
 
