@@ -490,6 +490,28 @@ final class Php85Test extends TestCase
                 'error_levels' => ['MixedOperand'],
                 'php_version' => '8.5',
             ],
+            'writeToAnArrayAccessPropertyOfAConstantObjectBeforePhp86' => [
+                'code' => '<?php
+                    final class Bag implements ArrayAccess {
+                        public ArrayObject $items;
+
+                        public function __construct() {
+                            $this->items = new ArrayObject();
+                        }
+
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    const CONFIG = new Bag();
+
+                    CONFIG->items[] = 1;',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:21 - Cannot use temporary expression in write context before PHP 8.6',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
             'writeToANestedPropertyOfAConstantObjectBeforePhp86' => [
                 'code' => '<?php
                     const CONFIG = new stdClass();
