@@ -1335,7 +1335,8 @@ function preg_replace($pattern, $replacement, $subject, int $limit = -1, &$count
  * @psalm-purity-from-template P
  *
  * @psalm-taint-specialize
- * @psalm-flow ($subject) -> return
+ * @psalm-flow ($subject, $callback()) -> return
+ * @psalm-flow ($subject) -> $callback()
  */
 function preg_replace_callback($pattern, $callback, $subject, int $limit = -1, &$count = null, int $flags = 0) {}
 
@@ -1354,7 +1355,8 @@ function preg_replace_callback($pattern, $callback, $subject, int $limit = -1, &
  * @psalm-purity-from-template P
  *
  * @psalm-taint-specialize
- * @psalm-flow ($subject) -> return
+ * @psalm-flow ($subject, $pattern()) -> return
+ * @psalm-flow ($subject) -> $pattern()
  */
 function preg_replace_callback_array(array $pattern, $subject, int $limit = -1, &$count = null, int $flags = 0) {}
 
@@ -1844,6 +1846,48 @@ function get_defined_constants(bool $categorize = false): array {}
  * @return ($allow_string is false ? ($object_or_class is object ? bool : false) : bool)
  */
 function is_a($object_or_class, string $class, $allow_string = false): bool{}
+
+// The file tests read the file system, so they are deliberately not `@psalm-pure`: they only assert that the
+// path they found is not empty.
+/**
+ * @psalm-assert-if-true =non-empty-string $filename
+ */
+function file_exists(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true =non-empty-string $filename
+ */
+function is_dir(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true =non-empty-string $filename
+ */
+function is_executable(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true =non-empty-string $filename
+ */
+function is_file(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true =non-empty-string $filename
+ */
+function is_link(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true =non-empty-string $filename
+ */
+function is_readable(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true =non-empty-string $filename
+ */
+function is_writable(string $filename): bool {}
+
+/**
+ * @psalm-assert-if-true =non-empty-string $filename
+ */
+function is_writeable(string $filename): bool {}
 
 /**
  * @template T of array|string

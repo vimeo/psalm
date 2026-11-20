@@ -3020,7 +3020,8 @@ final class Codebase
 
     /**
      * Whether taints are tracked in the statements of $source: false without taint analysis, while they suppress
-     * TaintedInput, or while Psalm re-analyzes them only to collect mutations. Adding paths does nothing then.
+     * TaintedInput, or while Psalm re-analyzes them only to collect the properties they initialize. Adding paths
+     * does nothing then.
      *
      * @psalm-mutation-free
      */
