@@ -39,6 +39,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\InvalidPassByReference;
@@ -68,6 +69,7 @@ use UnexpectedValueException;
 
 use function array_all;
 use function array_any;
+use function array_intersect_key;
 use function array_key_first;
 use function array_keys;
 use function array_map;
@@ -1481,6 +1483,10 @@ final class ArgumentsAnalyzer
             }
         }
 
+        $postponed_by_ref_offsets = $method_id === 'extract' || $template_result === null
+            ? []
+            : self::getByRefOffsetsReadingLaterParams($template_result, $arg_function_params, $function_params);
+
         foreach ($args as $argument_offset => $arg) {
             if (!isset($arg_function_params[$argument_offset])) {
                 continue;
@@ -1490,6 +1496,7 @@ final class ArgumentsAnalyzer
 
             if ($arg_function_params[$argument_offset][$first_param_offset]->by_ref
                 && $method_id !== 'extract'
+                && !isset($postponed_by_ref_offsets[$argument_offset])
             ) {
                 if (self::handlePossiblyMatchingByRefParam(
                     $statements_analyzer,
@@ -1551,6 +1558,29 @@ final class ArgumentsAnalyzer
             }
 
             $statements_analyzer->removeSuppressedIssues($argument_suppressed_issues);
+        }
+
+        // the out type of these by-ref params reads templates that later params bind: handled once they are bound
+        foreach ($postponed_by_ref_offsets as $argument_offset => $_) {
+            if (self::handlePossiblyMatchingByRefParam(
+                $statements_analyzer,
+                $codebase,
+                (string) $method_id,
+                $cased_method_id,
+                $last_param,
+                $function_params,
+                array_key_first($arg_function_params[$argument_offset]),
+                $args[$argument_offset],
+                $context,
+                $template_result,
+                $method_id instanceof MethodIdentifier ? $method_id : null,
+                $in_call_map ? null : $function_storage,
+                $code_location,
+                $specialize_taint,
+                $args,
+            ) === false) {
+                return null;
+            }
         }
 
         if ($statements_analyzer->taint_flow_graph
@@ -1732,6 +1762,85 @@ final class ArgumentsAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * The offsets of the by-ref arguments whose out type reads templates that only a later parameter binds, and
+     * whose own parameter type doesn't (the `TOutput` of exec() is bound by the by-ref argument itself)
+     *
+     * @param array<int, non-empty-array<int, FunctionLikeParameter>> $arg_function_params
+     * @param array<int, FunctionLikeParameter> $function_params
+     * @return array<int, true>
+     * @psalm-capabilities read-props
+     */
+    private static function getByRefOffsetsReadingLaterParams(
+        TemplateResult $template_result,
+        array $arg_function_params,
+        array $function_params,
+    ): array {
+        if ($template_result->template_types === []) {
+            return [];
+        }
+
+        $offsets = [];
+
+        foreach ($arg_function_params as $argument_offset => $params) {
+            $param = $params[array_key_first($params)];
+            $out_type = $param->by_ref ? $param->out_type : null;
+
+            if ($out_type === null) {
+                continue;
+            }
+
+            $out_template_names = self::getTemplateNames($out_type);
+
+            if ($out_template_names === []
+                || array_intersect_key($out_template_names, self::getTemplateNames($param->type)) !== []
+            ) {
+                continue;
+            }
+
+            $later_template_names = [];
+            $is_later = false;
+
+            foreach ($function_params as $function_param) {
+                if ($function_param->name === $param->name) {
+                    $is_later = true;
+                } elseif ($is_later) {
+                    $later_template_names += self::getTemplateNames($function_param->type);
+                }
+            }
+
+            if (array_intersect_key($out_template_names, $later_template_names) !== []) {
+                $offsets[$argument_offset] = true;
+            }
+        }
+
+        return $offsets;
+    }
+
+    /**
+     * The names of the templates $type uses anywhere, also through `key-of<T>`, `value-of<T>` and `T[K]`
+     *
+     * @return array<string, true>
+     * @psalm-pure
+     */
+    private static function getTemplateNames(?Union $type): array
+    {
+        if ($type === null) {
+            return [];
+        }
+
+        $collector = new TemplateTypeCollector(true);
+        $collector->traverseArray($type->getAtomicTypes());
+
+        $names = [];
+
+        foreach ($collector->getTemplateTypes() as $template_type) {
+            $names[$template_type->param_name] = true;
+        }
+
+        return $names;
     }
 
     /**
