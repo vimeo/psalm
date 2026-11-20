@@ -65,6 +65,16 @@ jobs:
       - run: |
           git ls-files | grep \\\.php$ | grep -v ^dictionaries/scripts/* | ./vendor/bin/parallel-lint --stdin
 
+      # The "Build docker image for stubs" workflow regenerates the reflected callmaps whose stamp
+      # in dictionaries/autogen/CallMapInputs.php doesn't match bin/stubs/image_lock.php.
+      - name: Check the reflected callmaps match the stub image lock
+        run: |
+          stale="$(php bin/stubs/build_docker.php --stale-plain)"
+          if [ -n "$stale" ]; then
+            echo "::error::The reflected callmaps of PHP $stale weren't generated from the images of bin/stubs/image_lock.php: let the \"Build docker image for stubs\" workflow regenerate them (docs/contributing/editing_callmaps.md)"
+            exit 1
+          fi
+
   code-style:
     name: Code Style Analysis
     runs-on: ubuntu-latest
