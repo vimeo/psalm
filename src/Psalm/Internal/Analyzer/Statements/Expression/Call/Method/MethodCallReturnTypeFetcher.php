@@ -33,6 +33,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AddRemoveCallTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -351,6 +352,7 @@ final class MethodCallReturnTypeFetcher
     ): Union {
         $result_added_taints = 0;
         $result_removed_taints = 0;
+        $call_added_taints = 0;
         $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
 
         // the event of taintMethodCallResult() is about the receiver; this one is about the call
@@ -365,6 +367,18 @@ final class MethodCallReturnTypeFetcher
 
             $result_added_taints = $dispatcher->dispatchAddTaints($event);
             $result_removed_taints = $dispatcher->dispatchRemoveTaints($event);
+
+            [$call_added_taints, $call_removed_taints] = $dispatcher->dispatchAddRemoveCallTaints(
+                new AddRemoveCallTaintsEvent(
+                    $statements_analyzer->getCodebase(),
+                    $cased_method_id,
+                    null,
+                    null,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                ),
+            );
+            $result_added_taints |= $call_added_taints;
+            $result_removed_taints |= $call_removed_taints;
         }
 
         self::taintMethodCallResult(
@@ -380,6 +394,7 @@ final class MethodCallReturnTypeFetcher
             $template_result,
             $result_added_taints,
             $result_removed_taints,
+            $call_added_taints,
         );
 
         // a builtin method that only the call map describes, such as one the stub of its extension leaves out when
@@ -517,6 +532,7 @@ final class MethodCallReturnTypeFetcher
         ?TemplateResult $template_result = null,
         int $result_added_taints = 0,
         int $result_removed_taints = 0,
+        int $result_source_taints = 0,
     ): void {
         if (!($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
             || !$declaring_method_id
@@ -921,6 +937,12 @@ final class MethodCallReturnTypeFetcher
             $return_type_candidate = $return_type_candidate->setParentNodes([
                 $call_result_node->id => $call_result_node,
             ]);
+
+            // what a handler adds to the call is there whatever the call is given
+            $result_source_taints &= ~$removed_taints;
+            if ($result_source_taints !== 0) {
+                $taint_flow_graph->addSource($call_result_node->setTaints($result_source_taints));
+            }
         }
     }
 
