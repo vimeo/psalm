@@ -42,10 +42,27 @@ final class GlobalAnalyzer
     private const VARIABLE_ID_PATTERN = '/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/D';
 
     /**
+     * Of the file being analyzed ($globals_written_by_file): a function called by name resolves to the declaration
+     * that file sees
+     *
      * @see getGlobalsWrittenBy()
      * @var ?WeakMap<FunctionLikeStorage, array<string, bool>>
      */
     private static ?WeakMap $globals_written_by = null;
+
+    /**
+     * The root and checked file paths of $globals_written_by
+     */
+    private static ?string $globals_written_by_file = null;
+
+    /**
+     * @psalm-capabilities write-globals
+     */
+    public static function clearCache(): void
+    {
+        self::$globals_written_by = null;
+        self::$globals_written_by_file = null;
+    }
 
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -92,6 +109,11 @@ final class GlobalAnalyzer
             $var_id = '$' . $var_name;
 
             FunctionLikeAnalyzer::unbindByRefParam($codebase, $context, $var_id);
+
+            // the variable is bound to the global instead: what it was bound to by reference keeps its value
+            if (isset($context->references_in_scope[$var_id]) || ($context->referenced_counts[$var_id] ?? 0) > 0) {
+                $context->removePossibleReference($var_id);
+            }
 
             $doc_comment = $stmt->getDocComment();
             $comment_type = null;
@@ -187,11 +209,6 @@ final class GlobalAnalyzer
             $context->references_to_external_scope[$var_id] = true;
             $context->forgetReferencesPossiblyBound($var_id);
 
-            if (isset($context->references_in_scope[$var_id])) {
-                // Global shadows existing reference
-                $context->decrementReferenceCount($var_id);
-                unset($context->references_in_scope[$var_id]);
-            }
             $statements_analyzer->registerVariable(
                 $var_id,
                 new CodeLocation($statements_analyzer, $var),
@@ -297,6 +314,7 @@ final class GlobalAnalyzer
                 )
                 : $declared_type;
 
+            $context->removeVarFromConflictingClauses($var_id, $type, $statements_analyzer);
             $context->vars_in_scope[$var_id] = self::taintGlobalRead($statements_analyzer, $context, $var_id, $type);
             $context->vars_possibly_in_scope[$var_id] = true;
         }
@@ -316,9 +334,12 @@ final class GlobalAnalyzer
             return $storage->global_variables;
         }
 
-        if (self::$globals_written_by === null) {
+        $file_key = $statements_analyzer->getRootFilePath() . "\0" . $statements_analyzer->getFilePath();
+
+        if (self::$globals_written_by === null || self::$globals_written_by_file !== $file_key) {
             /** @var WeakMap<FunctionLikeStorage, array<string, bool>> */
             self::$globals_written_by = new WeakMap();
+            self::$globals_written_by_file = $file_key;
         }
 
         $memoized = self::$globals_written_by[$storage] ?? null;
@@ -423,6 +444,17 @@ final class GlobalAnalyzer
         );
 
         return $global_node;
+    }
+
+    /**
+     * The node of what the program stores in the session (see DataFlowNode::getForSession())
+     */
+    public static function getSessionNode(TaintFlowGraph $graph): DataFlowNode
+    {
+        $session_node = DataFlowNode::getForSession();
+        $graph->addNode($session_node);
+
+        return $session_node;
     }
 
     /**

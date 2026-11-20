@@ -30,8 +30,6 @@ final class PatternCharactersTest extends TestCase
         yield 'no trailing newline' => ['/^[a-z]+$/D', TaintKind::INPUT_SHELL, true];
         yield 'a space, which can make an unquoted XPath predicate' => ['/^[a-z0-9 ]+$/', TaintKind::INPUT_XPATH, false];
         yield 'a trailing newline, which nothing in an XPath query follows' => ['/^\d+$/', TaintKind::INPUT_XPATH, true];
-        yield 'a restricted pattern, which validates a value for the session' => ['/^[a-z ]+$/', TaintKind::INPUT_SESSION, true];
-        yield 'a pattern restricting nothing' => ['/^.*$/s', TaintKind::INPUT_SESSION, false];
         yield 'not anchored' => ['/[a-z]+/', TaintKind::INPUT_HTML, false];
         yield 'anchored in one alternative only' => ['/^a|b$/', TaintKind::INPUT_HTML, false];
         yield 'anchored at each line' => ['/^[a-z]+$/m', TaintKind::INPUT_HTML, false];

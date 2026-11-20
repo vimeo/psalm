@@ -51,6 +51,7 @@ use function file_put_contents;
 use function function_exists;
 use function get_class;
 use function getcwd;
+use function getenv;
 use function glob;
 use function implode;
 use function in_array;
@@ -59,6 +60,7 @@ use function is_dir;
 use function json_encode;
 use function mkdir;
 use function preg_match;
+use function putenv;
 use function realpath;
 use function restore_error_handler;
 use function restore_exception_handler;
@@ -129,6 +131,126 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $p->initProjectFiles();
 
         return $p;
+    }
+
+    /**
+     * @param array<string, ?string> $env null unsets the variable; "{root}" is a scratch directory
+     *     containing a writable "home", a writable "home_with_cache/.cache" and "home_with_file/.cache" (a file)
+     */
+    #[DataProvider('providerDefaultCacheDirectory')]
+    public function testDefaultCacheDirectory(array $env, string $expected): void
+    {
+        $root = sys_get_temp_dir() . '/psalm_cache_dir_test_' . uniqid();
+        mkdir($root . '/home', 0777, true);
+        mkdir($root . '/home_with_cache/.cache', 0777, true);
+        mkdir($root . '/home_with_file', 0777, true);
+        file_put_contents($root . '/home_with_file/.cache', '');
+
+        $env += [
+            'XDG_CACHE_HOME' => null,
+            'HOME' => null,
+            'HOMEDRIVE' => null,
+            'HOMEPATH' => null,
+        ];
+
+        $original_env = [];
+        foreach ($env as $name => $_) {
+            $original_env[$name] = getenv($name);
+        }
+
+        try {
+            foreach ($env as $name => $value) {
+                putenv($value === null ? $name : $name . '=' . str_replace('{root}', $root, $value));
+            }
+
+            $config = Config::loadFromXML(
+                (string) getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            );
+
+            $this->assertSame(
+                str_replace(['{root}', '{tmp}'], [$root, sys_get_temp_dir()], $expected),
+                $config->getGlobalCacheDirectory(),
+            );
+        } finally {
+            foreach ($original_env as $name => $value) {
+                putenv($value === false ? $name : $name . '=' . $value);
+            }
+
+            rmdir($root . '/home_with_cache/.cache');
+            rmdir($root . '/home_with_cache');
+            unlink($root . '/home_with_file/.cache');
+            rmdir($root . '/home_with_file');
+            rmdir($root . '/home');
+            rmdir($root);
+        }
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{env: array<string, ?string>, expected: string}>
+     */
+    public static function providerDefaultCacheDirectory(): iterable
+    {
+        yield 'XDG_CACHE_HOME wins' => [
+            'env' => ['XDG_CACHE_HOME' => '/custom/xdg', 'HOME' => '{root}/home'],
+            'expected' => '/custom/xdg/psalm',
+        ];
+
+        yield 'HOME without a .cache directory' => [
+            'env' => ['HOME' => '{root}/home'],
+            'expected' => '{root}/home/.cache/psalm',
+        ];
+
+        yield 'HOME with a writable .cache directory' => [
+            'env' => ['HOME' => '{root}/home_with_cache'],
+            'expected' => '{root}/home_with_cache/.cache/psalm',
+        ];
+
+        yield 'empty XDG_CACHE_HOME falls through to HOME' => [
+            'env' => ['XDG_CACHE_HOME' => '', 'HOME' => '{root}/home'],
+            'expected' => '{root}/home/.cache/psalm',
+        ];
+
+        yield 'HOMEDRIVE and HOMEPATH when HOME is unset' => [
+            'env' => ['HOMEDRIVE' => '{root}', 'HOMEPATH' => '/home'],
+            'expected' => '{root}/home/.cache/psalm',
+        ];
+
+        yield 'HOME unset' => [
+            'env' => [],
+            'expected' => '{tmp}/psalm',
+        ];
+
+        yield 'HOME empty' => [
+            'env' => ['HOME' => ''],
+            'expected' => '{tmp}/psalm',
+        ];
+
+        yield 'HOME is the filesystem root' => [
+            'env' => ['HOME' => '/'],
+            'expected' => '{tmp}/psalm',
+        ];
+
+        yield 'HOME/.cache is a regular file' => [
+            'env' => ['HOME' => '{root}/home_with_file'],
+            'expected' => '{tmp}/psalm',
+        ];
+
+        yield 'HOME does not exist' => [
+            'env' => ['HOME' => '{root}/missing'],
+            'expected' => '{tmp}/psalm',
+        ];
+
+        yield 'HOMEDRIVE without HOMEPATH' => [
+            'env' => ['HOMEDRIVE' => '{root}'],
+            'expected' => '{tmp}/psalm',
+        ];
     }
 
     public function testBarebonesConfig(): void
@@ -1443,6 +1565,41 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testProtobufExtensionStubIsLoadedWhenEnabled(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <enableExtensions>
+                        <extension name="protobuf"/>
+                    </enableExtensions>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $config = $this->project_analyzer->getConfig();
+        $config->visitStubFiles($this->project_analyzer->getCodebase());
+        $this->assertContains((string) realpath('stubs/extensions/protobuf.phpstub'), $config->internal_stubs);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function seconds(): int|string {
+                    return (new \\Google\\Protobuf\\Timestamp())->setSeconds(0)->getSeconds();
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testEveryExtensionOfTheSchemaCanBeEnabled(): void
     {
         $schema = new DOMDocument();
@@ -2158,6 +2315,7 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     {
         return [
             'the name of a built-in taint' => ['<taint name="html" />', 'has the name of a built-in taint'],
+            'no taint' => ['<taint name="none" />', 'can\'t be named "none"'],
             'not a word' => ['<taint name="~html" />', 'Invalid custom taint name'],
             'declared twice' => ['<taint name="a" /><taint name="a" />', 'is declared twice'],
             'added to a built-in kind' => [

@@ -43,7 +43,7 @@ final class TableReport extends Report
                     $output[] = $buffer->fetch();
                 }
 
-                $output[] = 'FILE: ' . $issue_data->file_name . "\n";
+                $output[] = 'FILE: ' . $this->escapeControlCharacters($issue_data->file_name) . "\n";
 
                 $buffer = new BufferedOutput();
                 $table = new Table($buffer);
@@ -61,7 +61,7 @@ final class TableReport extends Report
                 "\n",
                 array_map(
                     static fn(string $chunk): string => strtr($chunk, ['<' => '\\<', '\\>' => '\\\\>']),
-                    str_split(self::getMessageWithCwe($issue_data), 70),
+                    str_split($this->escapeControlCharacters(self::getMessageWithCwe($issue_data)), 70),
                 ),
             );
 

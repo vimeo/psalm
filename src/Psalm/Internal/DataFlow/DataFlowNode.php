@@ -231,6 +231,16 @@ final class DataFlowNode implements Stringable
     }
 
     /**
+     * What the program stores in $_SESSION, under its keys, which the requests reading the session back get
+     *
+     * @psalm-pure
+     */
+    public static function getForSession(): self
+    {
+        return self::make('$_SESSION', '$_SESSION', null);
+    }
+
+    /**
      * Builds a node carrying a taint bitmask at a location. Whether it behaves as a
      * source or a sink depends on whether the caller passes it to
      * {@see TaintFlowGraph::addSource()} or {@see TaintFlowGraph::addSink()}.
@@ -442,6 +452,24 @@ final class DataFlowNode implements Stringable
             $param_node->code_location,
             $param_node->specialization_key,
             $taints,
+        );
+    }
+
+    /**
+     * The node through which the arguments a variadic parameter is given after its first reach the body of the
+     * function-like, from $param_node, the node of the parameter. Each of those arguments has the node of its own
+     * position (see {@see self::getParameterOffset()}), which the sinks of the parameter are on already: this one
+     * has none, so that they don't report what reaches them a second time.
+     *
+     * @psalm-mutation-free
+     */
+    public static function getForVariadicArguments(self $param_node): self
+    {
+        return self::make(
+            ($param_node->unspecialized_id ?? $param_node->id) . ' variadic',
+            $param_node->label . '...',
+            $param_node->code_location,
+            $param_node->specialization_key,
         );
     }
 

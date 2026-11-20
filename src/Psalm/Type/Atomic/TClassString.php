@@ -172,6 +172,29 @@ class TClassString extends TString
      * @return static
      */
     #[Override]
+    public function replaceTemplateTypesWithArgTypes(
+        TemplateResult $template_result,
+        ?Codebase $codebase,
+    ): self {
+        if (!$this->as_type) {
+            return $this;
+        }
+
+        $as_type = $this->as_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
+
+        if ($as_type === $this->as_type) {
+            return $this;
+        }
+
+        $cloned = clone $this;
+        $cloned->as_type = $as_type;
+        return $cloned;
+    }
+
+    /**
+     * @return static
+     */
+    #[Override]
     public function replaceTemplateTypesWithStandins(
         TemplateResult $template_result,
         Codebase $codebase,

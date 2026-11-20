@@ -3047,6 +3047,7 @@ final class BinaryOperationTest extends TestCase
                     '$i===' => 'non-empty-string',
                     '$j===' => 'non-empty-string',
                 ],
+                'ignored_issues' => ['WrongCaseFunction'],
             ],
             'arithmeticOnATemplateBoundedByIntOrFloat' => [
                 'code' => '<?php

@@ -156,7 +156,8 @@ class Reconciler
             // To work around the issue, if there are any references, we have to recreate the array and fix the
             // references so they're properly scoped and won't affect the caller. Starting with a new array is
             // required for some unclear reason, just cloning elements of the existing array doesn't work properly.
-            $old_existing_types = $existing_types;
+            // The offsets of the variables bound (see below) are references to each other too.
+            $old_existing_types = Context::copyVarsInScope($existing_types);
             $existing_types = [];
 
             $cloned_referenceds = [];
@@ -272,6 +273,12 @@ class Reconciler
                 $has_object_array_access,
                 $statements_analyzer,
             );
+
+            // the remembered result of a function call that this context never made (the call was in the
+            // condition of an `if`): nothing is known to refine
+            if ($result_type === null && !$did_type_exist && ExpressionIdentifier::isFunctionCallId($key)) {
+                continue;
+            }
 
             if ($result_type && $result_type->isUnionEmpty()) {
                 throw new InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
@@ -1325,10 +1332,6 @@ class Reconciler
                         }
 
                         if ($existing_key_type_part instanceof TArray) {
-                            if ($has_empty) {
-                                return null;
-                            }
-
                             $new_base_type_candidate = $existing_key_type_part->type_params[1];
 
                             if ($new_base_type_candidate->isMixed()
@@ -1339,10 +1342,10 @@ class Reconciler
                                 return $new_base_type_candidate;
                             }
 
-                            if (($has_isset || $has_inverted_isset || $has_inverted_key_exists)
+                            if (($has_isset || $has_inverted_isset || $has_inverted_key_exists || $has_empty)
                                 && isset($new_assertions[$new_base_key])
                             ) {
-                                if ($has_inverted_isset && $new_base_key === $key) {
+                                if (($has_inverted_isset || $has_empty) && $new_base_key === $key) {
                                     $new_base_type_candidate = $new_base_type_candidate->getBuilder();
                                     $new_base_type_candidate->addType(new TNull);
                                     $new_base_type_candidate->possibly_undefined = true;
@@ -2098,6 +2101,23 @@ class Reconciler
                             // not known: the items it may be keep the types they have
                             if (count($array_key_offsets) === 1 || !isset($properties[$array_key_offset])) {
                                 $properties[$array_key_offset] = $result_type;
+                            }
+
+                            // a list that has an offset has all the offsets before it
+                            if ($base_atomic_type->is_list
+                                && !$result_type->possibly_undefined
+                                && !$result_type->isNever()
+                                && ($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
+                                    !== false
+                            ) {
+                                for ($x = 0; $x < $int_array_key_offset; $x++) {
+                                    if (isset($properties[$x]) && $properties[$x]->possibly_undefined) {
+                                        $properties[$x] = $properties[$x]->isNever()
+                                            && $base_atomic_type->fallback_params
+                                            ? $base_atomic_type->fallback_params[1]
+                                            : $properties[$x]->setPossiblyUndefined(false);
+                                    }
+                                }
                             }
 
                             if ($base_atomic_type->is_list

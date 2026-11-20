@@ -103,18 +103,6 @@ if (preg_match('/[a-z]+/', $id)) {
 
 `$` also matches before a final newline, unless the pattern has the `D` modifier or ends with `\z`: that newline ends a shell command.
 
-A value checked against a pattern restricting its characters is validated, so it can be kept in the session:
-
-```php
-<?php
-
-$name = getParam('name');
-if (preg_match('/^[a-z0-9_]+$/iD', $name)) {
-    $_SESSION['name'] = $name; // no issue
-}
-$_SESSION['bio'] = getParam('bio'); // TaintedSession
-```
-
 The host `parse_url()` takes from a URL, matched against a list of hosts, fixes the server PHP's stream wrappers
 reach, as long as the local variable holding the URL isn't assigned again:
 

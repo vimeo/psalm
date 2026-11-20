@@ -29,6 +29,7 @@ use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\NamedArguments;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TCapabilities;
@@ -821,6 +822,7 @@ final class Populator
                                 && (!$method_storage->throws || $method_storage->inheritdoc)
                             ) {
                                 $method_storage->throws += $interface_method_storage->throws;
+                                $method_storage->throw_intersections += $interface_method_storage->throw_intersections;
                             }
                         }
                     }
@@ -942,6 +944,17 @@ final class Populator
                         && (!$method_storage->throws || $method_storage->inheritdoc)
                     ) {
                         $method_storage->throws += $declaring_method_storage->throws;
+                        $method_storage->throw_intersections += $declaring_method_storage->throw_intersections;
+                    }
+
+                    // a method without its own tag keeps the tag of the method it overrides, while a method that
+                    // disallows named arguments is reported as MethodSignatureMismatch, as the parent allows them
+                    if ($method_storage->named_arguments === null
+                        && $declaring_method_storage->named_arguments !== null
+                        && $declaring_method_storage->named_arguments !== NamedArguments::NOT_ALLOWED
+                        && ($method_name !== '__construct' || $declaring_class_storage->preserve_constructor_signature)
+                    ) {
+                        $method_storage->named_arguments = $declaring_method_storage->named_arguments;
                     }
                 }
 

@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
+use Psalm\Internal\Codebase\DatabaseTaints;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\InternalTaintSourceMap;
 use Psalm\Internal\Codebase\TaintFlowGraph;
@@ -45,22 +46,15 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
-use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
-use Psalm\Type\Atomic\TFalse;
-use Psalm\Type\Atomic\TInt;
-use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TNonEmptyArray;
-use Psalm\Type\Atomic\TNull;
-use Psalm\Type\Atomic\TString;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_values;
 use function count;
 use function explode;
@@ -134,6 +128,19 @@ final class FunctionCallReturnTypeFetcher
             );
         }
 
+        // a return type provider only replaces the declared return type, not the declared exceptions
+        if (!$stmt->isFirstClassCallable()
+            && (!$in_call_map || $is_stubbed)
+            && $function_storage
+            && !$context->isSuppressingExceptions($statements_analyzer)
+        ) {
+            $context->mergeFunctionExceptions(
+                $function_storage,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer->getCodebase(),
+            );
+        }
+
         if (!$stmt_type) {
             if (!$in_call_map || $is_stubbed) {
                 if ($function_storage && $function_storage->template_types) {
@@ -177,13 +184,6 @@ final class FunctionCallReturnTypeFetcher
                             }
                         }
                     }
-                }
-
-                if ($function_storage && !$context->isSuppressingExceptions($statements_analyzer)) {
-                    $context->mergeFunctionExceptions(
-                        $function_storage,
-                        new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    );
                 }
 
                 try {
@@ -280,13 +280,7 @@ final class FunctionCallReturnTypeFetcher
                     throw new UnexpectedValueException('We should have a callmap callable here');
                 }
 
-                $stmt_type = self::getReturnTypeFromCallMapWithArgs(
-                    $statements_analyzer,
-                    $function_id,
-                    $stmt->getArgs(),
-                    $callmap_callable,
-                    $context,
-                );
+                $stmt_type = self::getReturnTypeFromCallMap($codebase, $function_id, $callmap_callable);
             }
         }
 
@@ -337,6 +331,18 @@ final class FunctionCallReturnTypeFetcher
                     $stmt_type = TaintStore::taintCall(
                         $statements_analyzer,
                         $taint_flow_graph,
+                        $store_storage,
+                        $stmt->getArgs(),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $stmt_type,
+                    );
+                }
+
+                if ($taint_flow_graph) {
+                    $stmt_type = DatabaseTaints::taintCall(
+                        $statements_analyzer,
+                        $taint_flow_graph,
+                        DatabaseTaints::getSpecs($function_id, null),
                         $store_storage,
                         $stmt->getArgs(),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
@@ -425,223 +431,35 @@ final class FunctionCallReturnTypeFetcher
         );
     }
 
-    /**
-     * @param  list<PhpParser\Node\Arg>   $call_args
-     */
-    private static function getReturnTypeFromCallMapWithArgs(
-        StatementsAnalyzer $statements_analyzer,
+    // functions whose false return stays reported with ignoreInternalFunctionFalseReturn
+    private const ALWAYS_FALSABLE_FUNCTIONS = [
+        'mb_strpos' => true,
+        'mb_strrpos' => true,
+        'mb_stripos' => true,
+        'mb_strripos' => true,
+        'strpos' => true,
+        'strrpos' => true,
+        'stripos' => true,
+        'strripos' => true,
+        'strstr' => true,
+        'stristr' => true,
+        'strrchr' => true,
+        'strpbrk' => true,
+        'array_search' => true,
+    ];
+
+    private static function getReturnTypeFromCallMap(
+        Codebase $codebase,
         string $function_id,
-        array $call_args,
         TCallable $callmap_callable,
-        Context $context,
     ): Union {
-        $call_map_key = strtolower($function_id);
-
-        $codebase = $statements_analyzer->getCodebase();
-
-        if (!$call_args) {
-            switch ($call_map_key) {
-                case 'hrtime':
-                    $keyed_array = TKeyedArray::make([
-                        Type::getInt(),
-                        Type::getInt(),
-                    ], null, null, true);
-                    return new Union([$keyed_array]);
-
-                case 'get_called_class':
-                    return new Union([
-                        new TClassString(
-                            $context->self ?: 'object',
-                            $context->self ? new TNamedObject($context->self, true) : null,
-                        ),
-                    ]);
-
-                case 'get_parent_class':
-                    if ($context->self && $codebase->classExists($context->self, null, $context)) {
-                        $classlike_storage = $codebase->classlike_storage_provider->get($context->self);
-
-                        if ($classlike_storage->parent_classes) {
-                            return new Union([
-                                new TClassString(
-                                    array_values($classlike_storage->parent_classes)[0],
-                                ),
-                            ]);
-                        }
-                    }
-            }
-        } else {
-            switch ($call_map_key) {
-                case 'count':
-                case 'sizeof':
-                    if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
-                        $atomic_types = $first_arg_type->getAtomicTypes();
-
-                        if (count($atomic_types) === 1) {
-                            if (isset($atomic_types['array'])) {
-                                if ($atomic_types['array'] instanceof TNonEmptyArray) {
-                                    return new Union([
-                                        $atomic_types['array']->count !== null
-                                            ? new TLiteralInt($atomic_types['array']->count)
-                                            : new TIntRange(1, null),
-                                    ]);
-                                }
-
-                                if ($atomic_types['array'] instanceof TKeyedArray) {
-                                    if ($atomic_types['array']->is_callable) {
-                                        return Type::getInt(false, 2);
-                                    }
-                                    $min = $atomic_types['array']->getMinCount();
-                                    $max = $atomic_types['array']->getMaxCount();
-
-                                    if ($min === $max) {
-                                        return new Union([new TLiteralInt($max)]);
-                                    }
-                                    return Type::getIntRange($min, $max);
-                                }
-
-                                if ($atomic_types['array'] instanceof TArray
-                                    && $atomic_types['array']->isEmptyArray()
-                                ) {
-                                    return Type::getInt(false, 0);
-                                }
-
-                                return new Union([
-                                    new TIntRange(0, null),
-                                ]);
-                            }
-                        }
-                    }
-
-                    break;
-
-                case 'hrtime':
-                    if (($first_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value))) {
-                        if ((string) $first_arg_type === 'true') {
-                            return Type::getInt(true);
-                        }
-
-                        $keyed_array = TKeyedArray::make([
-                            Type::getInt(),
-                            Type::getInt(),
-                        ], null, null, true);
-
-                        if ((string) $first_arg_type === 'false') {
-                            return new Union([$keyed_array]);
-                        }
-
-                        return new Union([
-                            $keyed_array,
-                            new TInt(),
-                        ]);
-                    }
-
-                    return Type::getInt(true);
-
-                case 'min':
-                case 'max':
-                    if (isset($call_args[0])) {
-                        $first_arg = $call_args[0]->value;
-
-                        if ($first_arg_type = $statements_analyzer->node_data->getType($first_arg)) {
-                            if ($first_arg_type->hasArray()) {
-                                $array_type = $first_arg_type->getArray();
-                                if ($array_type instanceof TKeyedArray) {
-                                    return $array_type->getGenericValueType();
-                                }
-
-                                if ($array_type instanceof TArray) {
-                                    return $array_type->type_params[1];
-                                }
-                            } elseif ($first_arg_type->hasScalarType()
-                                && ($second_arg = ($call_args[1]->value ?? null))
-                                && ($second_arg_type = $statements_analyzer->node_data->getType($second_arg))
-                                && $second_arg_type->hasScalarType()
-                            ) {
-                                return Type::combineUnionTypes($first_arg_type, $second_arg_type);
-                            }
-                        }
-                    }
-
-                    break;
-
-                case 'get_parent_class':
-                    // this is unreliable, as it's hard to know exactly what's wanted - attempted this in
-                    // https://github.com/vimeo/psalm/commit/355ed831e1c69c96bbf9bf2654ef64786cbe9fd7
-                    // but caused problems where it didn’t know exactly what level of child we
-                    // were receiving.
-                    //
-                    // Really this should only work on instances we've created with new Foo(),
-                    // but that requires more work
-                    break;
-
-                case 'fgetcsv':
-                    $string_type = new Union([
-                        new TString,
-                        new TNull,
-                    ], [
-                        'ignore_nullable_issues' => true,
-                    ]);
-
-                    $call_map_return_type = new Union([
-                        Type::getNonEmptyListAtomic(
-                            $string_type,
-                        ),
-                        new TFalse,
-                        new TNull,
-                    ], [
-                        'ignore_nullable_issues' => $codebase->config->ignore_internal_nullable_issues,
-                        'ignore_falsable_issues' => $codebase->config->ignore_internal_falsable_issues,
-                    ]);
-
-                    return $call_map_return_type;
-                case 'mb_strtolower':
-                    $string_arg_type = $statements_analyzer->node_data->getType($call_args[0]->value);
-                    if ($string_arg_type !== null && $string_arg_type->isNonEmptyString()) {
-                        $returnType = Type::getNonEmptyLowercaseString();
-                    } else {
-                        $returnType = Type::getLowercaseString();
-                    }
-                    if (count($call_args) < 2) {
-                        return $returnType;
-                    }
-
-                    $second_arg_type = $statements_analyzer->node_data->getType($call_args[1]->value);
-                    if ($second_arg_type && $second_arg_type->isNull()) {
-                        return $returnType;
-                    }
-
-                    if ($string_arg_type !== null && $string_arg_type->isNonEmptyString()) {
-                        return Type::getNonEmptyString();
-                    }
-
-                    return Type::getString();
-            }
-        }
-
         $stmt_type = $callmap_callable->return_type ?: Type::getMixed();
 
-        switch ($function_id) {
-            case 'mb_strpos':
-            case 'mb_strrpos':
-            case 'mb_stripos':
-            case 'mb_strripos':
-            case 'strpos':
-            case 'strrpos':
-            case 'stripos':
-            case 'strripos':
-            case 'strstr':
-            case 'stristr':
-            case 'strrchr':
-            case 'strpbrk':
-            case 'array_search':
-                break;
-
-            default:
-                if ($stmt_type->isFalsable()
-                    && $codebase->config->ignore_internal_falsable_issues
-                ) {
-                    $stmt_type = $stmt_type->setProperties(['ignore_falsable_issues' => true]);
-                }
+        if (!isset(self::ALWAYS_FALSABLE_FUNCTIONS[$function_id])
+            && $stmt_type->isFalsable()
+            && $codebase->config->ignore_internal_falsable_issues
+        ) {
+            $stmt_type = $stmt_type->setProperties(['ignore_falsable_issues' => true]);
         }
 
         return $stmt_type;
@@ -1344,7 +1162,8 @@ final class FunctionCallReturnTypeFetcher
     /**
      * The indices of the arguments among $args given to the parameter at offset $i of $params: the one at its
      * position or named after it, and if it is variadic those after it and those named after no other parameter. An
-     * unpacked argument may hold the arguments of every parameter from its position on.
+     * unpacked argument may hold the arguments of every parameter from its position on, and of a variadic one before
+     * it.
      *
      * @param array<int, FunctionLikeParameter> $params
      * @param array<int, PhpParser\Node\Arg> $args
@@ -1358,7 +1177,7 @@ final class FunctionCallReturnTypeFetcher
 
         foreach ($args as $arg_index => $arg) {
             if ($arg->unpack) {
-                $given = $arg_index <= $i;
+                $given = $arg_index <= $i || ($param !== null && $param->is_variadic);
             } elseif ($arg->name === null) {
                 $given = $arg_index === $i || ($param !== null && $param->is_variadic && $arg_index > $i);
             } elseif ($param === null) {
@@ -1465,8 +1284,9 @@ final class FunctionCallReturnTypeFetcher
 
     /**
      * fopen()/file_get_contents()/file() called with a literal 'php://input' or
-     * 'php://stdin' path read user-controlled data, so their return value becomes a
-     * taint source.
+     * 'php://stdin' path, or with a URL the analysis can tell has a network scheme
+     * (`https://`, `ftp://`...), read user-controlled data, so their return value
+     * becomes a taint source: whoever runs the server chooses what it answers.
      *
      * This is not expressible as a stub because the source is conditional on the
      * literal argument *value*; stream reading functions that merely relay their
@@ -1500,16 +1320,24 @@ final class FunctionCallReturnTypeFetcher
             return;
         }
 
-        $arg_type = $statements_analyzer->node_data->getType($args[$offset]->value);
+        $path_arg = $args[$offset]->value;
+        $arg_type = $statements_analyzer->node_data->getType($path_arg);
 
-        if (!$arg_type || !$arg_type->isSingleStringLiteral()) {
-            return;
+        if ($arg_type && $arg_type->isSingleStringLiteral()) {
+            $path = strtolower($arg_type->getSingleStringLiteral()->value);
         }
 
-        $path = strtolower($arg_type->getSingleStringLiteral()->value);
+        if (!isset($path) || ($path !== 'php://input' && $path !== 'php://stdin')) {
+            $prefixes = ConcatAnalyzer::getLiteralPrefixes($statements_analyzer, $path_arg);
 
-        if ($path !== 'php://input' && $path !== 'php://stdin') {
-            return;
+            if ($prefixes === [] || !array_all(
+                $prefixes,
+                static fn(string $prefix): bool => preg_match('~^(https?|ftps?)://~i', $prefix) === 1,
+            )) {
+                return;
+            }
+
+            $path = 'url';
         }
 
         $stmt_type = InternalTaintSourceMap::addSource(
@@ -1957,6 +1785,16 @@ final class FunctionCallReturnTypeFetcher
                 $cased_function_id,
                 null,
                 $specialization_location,
+            );
+
+            $stmt_type = DatabaseTaints::taintCall(
+                $statements_analyzer,
+                $taint_flow_graph,
+                DatabaseTaints::getSpecs($cased_function_id, $function_storage),
+                $function_storage,
+                $stmt->getArgs(),
+                $node_location,
+                $stmt_type,
             );
 
             ConditionalTaintSinks::taintCall(
