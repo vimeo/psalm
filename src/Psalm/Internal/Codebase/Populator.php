@@ -232,7 +232,7 @@ final class Populator
             }
         }
 
-        return $atomic_types === [] ? null : $type->setTypes($atomic_types);
+        return $type->setTypes($atomic_types);
     }
 
     /**
