@@ -23,6 +23,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\PropertyBagTaints;
+use Psalm\Internal\Codebase\ServerVariableTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -111,11 +112,9 @@ use function implode;
 use function in_array;
 use function is_int;
 use function spl_object_id;
-use function str_starts_with;
 use function strlen;
 use function strpbrk;
 use function strtolower;
-use function substr;
 
 /**
  * @internal
@@ -488,37 +487,10 @@ final class ArrayFetchAnalyzer
     }
 
     /**
-     * The entries of $_SERVER the client sends, besides the request headers (HTTP_*): the URI, and what is taken
-     * from it (the CGI SAPI keeps the values it rewrites with an ORIG_ prefix, Apache those of a redirected request
-     * with a REDIRECT_ one), and argv, which PHP builds from the query string with register_argc_argv.
-     */
-    private const USER_CONTROLLED_SERVER_KEYS = [
-        'REQUEST_URI',
-        'UNENCODED_URL',
-        'DOCUMENT_URI',
-        'QUERY_STRING',
-        'argv',
-        'PATH_INFO',
-        'ORIG_PATH_INFO',
-        'PATH_TRANSLATED',
-        'ORIG_PATH_TRANSLATED',
-        'ORIG_SCRIPT_NAME',
-        'ORIG_SCRIPT_FILENAME',
-        'PHP_SELF',
-        'SCRIPT_URI',
-        'SCRIPT_URL',
-        'REDIRECT_URL',
-        'REQUEST_METHOD',
-        'CONTENT_TYPE',
-        'PHP_AUTH_USER',
-        'PHP_AUTH_PW',
-        'PHP_AUTH_DIGEST',
-    ];
-
-    /**
-     * Most entries of $_SERVER come from the server, but the client sends the request headers and the URI. The
-     * client also chooses the type of the files it uploads, and their path in a directory it uploads, in $_FILES
-     * (their names are tainted from $_FILES itself, see VariableFetchAnalyzer::taintFiles()).
+     * Most entries of $_SERVER, and of the server params of a PSR-7 request built from it, come from the server, but
+     * the client sends the request headers and the URI (see ServerVariableTaints). The client also chooses the type
+     * of the files it uploads, and their path in a directory it uploads, in $_FILES (their names are tainted from
+     * $_FILES itself, see VariableFetchAnalyzer::taintFiles()).
      */
     private static function taintSuperGlobalFetch(
         StatementsAnalyzer $statements_analyzer,
@@ -532,22 +504,17 @@ final class ArrayFetchAnalyzer
 
         $key = $offset_type->isSingleStringLiteral() ? $offset_type->getSingleStringLiteral()->value : null;
         if ($var instanceof PhpParser\Node\Expr\Variable && $var->name === '_SERVER') {
-            $server_key = $key;
-            while ($server_key !== null
-                && $server_key !== 'REDIRECT_URL'
-                && str_starts_with($server_key, 'REDIRECT_')
-            ) {
-                $server_key = substr($server_key, 9);
-            }
-
-            if ($server_key !== null
-                && !str_starts_with($server_key, 'HTTP_')
-                && !in_array($server_key, self::USER_CONTROLLED_SERVER_KEYS, true)
-            ) {
+            if ($key !== null && !ServerVariableTaints::isUserControlled($key)) {
                 return;
             }
 
             $label = $key === null ? '$_SERVER[]' : '$_SERVER[\'' . $key . '\']';
+        } elseif (ServerVariableTaints::isServerParamsCall($statements_analyzer, $var)) {
+            if ($key !== null && !ServerVariableTaints::isUserControlled($key)) {
+                return;
+            }
+
+            $label = 'getServerParams()' . ($key === null ? '[]' : '[\'' . $key . '\']');
         } elseif ($var instanceof PhpParser\Node\Expr\ArrayDimFetch
             && $var->var instanceof PhpParser\Node\Expr\Variable
             && $var->var->name === '_FILES'
@@ -884,6 +851,9 @@ final class ArrayFetchAnalyzer
 
         $has_array_access = false;
         $non_array_types = [];
+        // unlike other non-array types, these throw inside isset() too
+        $non_indexable_object_types = [];
+        $offset_call_receiver_type = false;
 
         $has_valid_expected_offset = false;
         $expected_offset_types = [];
@@ -892,7 +862,6 @@ final class ArrayFetchAnalyzer
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
-            && !$context->collect_mutations
         ) {
             $codebase->analyzer->addNodeType(
                 $statements_analyzer->getFilePath(),
@@ -1135,7 +1104,6 @@ final class ArrayFetchAnalyzer
             }
 
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -1148,7 +1116,11 @@ final class ArrayFetchAnalyzer
                 continue;
             }
 
-            if ($type instanceof TNamedObject) {
+            if ($type instanceof TNamedObject && self::isIndexableObject($codebase, $type)) {
+                if ($offset_call_receiver_type === false) {
+                    $offset_call_receiver_type = self::getOffsetCallReceiverType($codebase, $array_type);
+                }
+
                 self::handleArrayAccessOnNamedObject(
                     $statements_analyzer,
                     $stmt,
@@ -1160,9 +1132,14 @@ final class ArrayFetchAnalyzer
                     $has_array_access,
                     // nothing replaces an item an assignment writes into, which is modified in place as well
                     $by_reference || $replacement_type === null,
+                    $offset_call_receiver_type,
                 );
             } elseif (!$array_type->hasMixed()) {
                 $non_array_types[] = (string)$type;
+
+                if ($type instanceof TNamedObject) {
+                    $non_indexable_object_types[] = (string)$type;
+                }
             }
         }
         if ($changed) {
@@ -1180,11 +1157,12 @@ final class ArrayFetchAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
-                } elseif (!$context->inside_isset) {
+                } elseif (!$context->inside_isset || $non_indexable_object_types) {
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidArrayAccess(
                             'Cannot access array value on non-array variable ' .
-                            self::describeArrayVar($extended_var_id, $stmt) . ' of type ' . $non_array_types[0],
+                            self::describeArrayVar($extended_var_id, $stmt) . ' of type '
+                                . ($context->inside_isset ? $non_indexable_object_types[0] : $non_array_types[0]),
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -1217,7 +1195,6 @@ final class ArrayFetchAnalyzer
 
         if ($offset_type->hasMixed()) {
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -1236,7 +1213,6 @@ final class ArrayFetchAnalyzer
             );
         } else {
             if (!$context->collect_initializations
-                && !$context->collect_mutations
                 && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                 && (!(($parent_source = $statements_analyzer->getSource())
                         instanceof FunctionLikeAnalyzer)
@@ -1486,7 +1462,6 @@ final class ArrayFetchAnalyzer
         bool $by_reference = false,
     ): Union {
         if (!$context->collect_initializations
-            && !$context->collect_mutations
             && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
             && (!(($parent_source = $statements_analyzer->getSource())
                     instanceof FunctionLikeAnalyzer)
@@ -2318,6 +2293,51 @@ final class ArrayFetchAnalyzer
         }
     }
 
+    /**
+     * The type to call the offset methods on: without the objects that can't be indexed, which are
+     * reported as non-array types instead. Null when there are none.
+     */
+    private static function getOffsetCallReceiverType(Codebase $codebase, Union $array_type): ?Union
+    {
+        $receiver_types = $array_type->getAtomicTypes();
+
+        foreach ($receiver_types as $key => $type) {
+            if ($type instanceof TTemplateParam && $type->as->isSingle()) {
+                $type = $type->as->getSingleAtomic();
+            }
+
+            if ($type instanceof TNamedObject && !self::isIndexableObject($codebase, $type)) {
+                unset($receiver_types[$key]);
+            }
+        }
+
+        if (!$receiver_types || count($receiver_types) === count($array_type->getAtomicTypes())) {
+            return null;
+        }
+
+        return $array_type->getBuilder()->setTypes($receiver_types)->freeze();
+    }
+
+    /**
+     * Unknown classlikes (traits included) are left to the method calls, which report them
+     */
+    private static function isIndexableObject(Codebase $codebase, TNamedObject $type): bool
+    {
+        foreach ([$type, ...$type->extra_types] as $part) {
+            if (!$part instanceof TNamedObject
+                || !$codebase->classOrInterfaceOrEnumExists($part->value)
+                || in_array(strtolower($part->value), ['arrayaccess', 'simplexmlelement', 'domnodelist'], true)
+                || $codebase->classExtendsOrImplements($part->value, 'ArrayAccess')
+                || $codebase->classExtendsOrImplements($part->value, 'SimpleXMLElement')
+                || $codebase->interfaceExtends($part->value, 'ArrayAccess')
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static function handleArrayAccessOnNamedObject(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -2328,6 +2348,7 @@ final class ArrayFetchAnalyzer
         ?Union &$array_access_type,
         bool &$has_array_access,
         bool $in_place,
+        ?Union $receiver_type,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         if (strtolower($type->value) === 'simplexmlelement'
@@ -2393,6 +2414,13 @@ final class ArrayFetchAnalyzer
                 $statements_analyzer->addSuppressedIssues(['PossiblyNullReference']);
             }
 
+            $outer_node_data = $statements_analyzer->node_data;
+
+            if ($receiver_type !== null) {
+                $statements_analyzer->node_data = clone $statements_analyzer->node_data;
+                $statements_analyzer->node_data->setType($stmt->var, $receiver_type);
+            }
+
             if ($in_assignment) {
                 // PHP does not call offsetSet() for an item modified in place, passed by reference or written into:
                 // the call is analysed for what calling the method implies, but has no arguments to check
@@ -2428,12 +2456,14 @@ final class ArrayFetchAnalyzer
                     $statements_analyzer,
                     $fake_set_method_call,
                     $context,
+                    $receiver_type === null,
                 );
 
                 $statements_analyzer->node_data = $old_node_data;
             }
 
-            if ($stmt->dim) {
+            // an item written directly is only passed to offsetSet()
+            if ($stmt->dim && (!$in_assignment || $in_place)) {
                 $old_node_data = $statements_analyzer->node_data;
 
                 // `unset($a[$k])` calls offsetUnset, `isset($a[$k])` and `$a[$k] ?? ...` call
@@ -2455,6 +2485,7 @@ final class ArrayFetchAnalyzer
                         $statements_analyzer,
                         $fake_unset_method_call,
                         $context,
+                        $receiver_type === null,
                     );
 
                     $statements_analyzer->node_data = $old_node_data;
@@ -2477,6 +2508,7 @@ final class ArrayFetchAnalyzer
                         $statements_analyzer,
                         $fake_exists_method_call,
                         $context,
+                        $receiver_type === null,
                     );
 
                     $statements_analyzer->node_data = $old_node_data;
@@ -2505,6 +2537,7 @@ final class ArrayFetchAnalyzer
                         $statements_analyzer,
                         $fake_get_method_call,
                         $context,
+                        $receiver_type === null,
                     );
 
                     $call_array_access_type =
@@ -2515,6 +2548,8 @@ final class ArrayFetchAnalyzer
             } else {
                 $call_array_access_type = Type::getVoid();
             }
+
+            $statements_analyzer->node_data = $outer_node_data;
 
             $has_array_access = true;
 
@@ -2609,7 +2644,6 @@ final class ArrayFetchAnalyzer
         if ($in_assignment && $replacement_type) {
             if ($replacement_type->hasMixed()) {
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)
@@ -2627,7 +2661,6 @@ final class ArrayFetchAnalyzer
                 );
             } else {
                 if (!$context->collect_initializations
-                    && !$context->collect_mutations
                     && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
                     && (!(($parent_source = $statements_analyzer->getSource())
                             instanceof FunctionLikeAnalyzer)

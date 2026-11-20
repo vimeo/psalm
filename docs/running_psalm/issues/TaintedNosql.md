@@ -104,3 +104,7 @@ function getUser(): MongoDB\Driver\Query {
     return new MongoDB\Driver\Query($filter);
 }
 ```
+
+## Further resources
+
+- [CWE-943](https://cwe.mitre.org/data/definitions/943.html)

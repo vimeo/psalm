@@ -171,7 +171,7 @@ final class ArgTest extends TestCase
                     setcookie("name", "value", domain: "example.com");
                     setcookie("name", "value", 1, path: "/");',
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['InsecureCookie'],
                 'php_version' => '8.0',
             ],
             'argumentUnpackingLiteral' => [
@@ -827,7 +827,7 @@ final class ArgTest extends TestCase
                 'code' => '<?php
                     setcookie("name", "value", nonexistent: "/");',
                 'error_message' => 'InvalidNamedArgument',
-                'error_levels' => [],
+                'error_levels' => ['InsecureCookie'],
                 'php_version' => '8.0',
             ],
             'namedArgumentUnknownToEveryCallmapOverloadIsNotTakenByTheVariadicOne' => [

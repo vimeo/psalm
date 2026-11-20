@@ -529,7 +529,40 @@ final class Algebra
                 }
             }
 
-            foreach ($seed_clauses as $grouped_clause) {
+            // a seed clause that already has one of the impossibilities stays as it is: adding any other one
+            // only gives a clause it subsumes, and those double the clauses with every clause grouped. So does adding
+            // one to another seed clause when the result holds a kept clause
+            $kept_seed_clauses = [];
+
+            foreach ($seed_clauses as $seed_index => $grouped_clause) {
+                foreach ($impossible_type_strings as $var => $var_impossible_type_strings) {
+                    foreach ($var_impossible_type_strings as $impossible_type_string) {
+                        if (isset($grouped_clause->possibilities[$var][$impossible_type_string])) {
+                            $kept_seed_clauses[$seed_index] = new Clause(
+                                $grouped_clause->possibilities,
+                                $grouped_clause->creating_conditional_id,
+                                $clause->creating_object_id,
+                                false,
+                                true,
+                                true,
+                                [],
+                            );
+
+                            continue 3;
+                        }
+                    }
+                }
+            }
+
+            foreach ($seed_clauses as $seed_index => $grouped_clause) {
+                if (isset($kept_seed_clauses[$seed_index])) {
+                    $new_clauses[] = $kept_seed_clauses[$seed_index];
+
+                    ++$complexity;
+
+                    continue;
+                }
+
                 foreach ($clause->impossibilities as $var => $impossible_types) {
                     foreach ($impossible_types as $index => $impossible_type) {
                         $impossible_type_string = $impossible_type_strings[$var][$index];
@@ -567,6 +600,12 @@ final class Algebra
                             true,
                             [],
                         );
+
+                        foreach ($kept_seed_clauses as $kept_seed_clause) {
+                            if ($new_clause->contains($kept_seed_clause)) {
+                                continue 2;
+                            }
+                        }
 
                         $new_clauses[] = $new_clause;
 
