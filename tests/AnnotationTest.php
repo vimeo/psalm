@@ -2336,6 +2336,16 @@ final class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:6:21 - Found duplicated @param or prefixed @param tag in docblock for dup',
             ],
+            'duplicatedParamTagsOfAVariadicParamAreReported' => [
+                'code' => '<?php
+                    /**
+                     * @param int $a
+                     * @param int ...$a
+                     */
+                    function dupVariadic(int ...$a): void {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:6:21 - Found duplicated @param or prefixed @param tag in docblock for dupVariadic',
+            ],
             'suppressDocblockInFrontOfAnArgumentDoesNotCoverTheNextArgumentCheck' => [
                 'code' => <<<'PHP'
                     <?php
