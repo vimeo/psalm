@@ -365,7 +365,8 @@ final class DatabaseTaints
 
         $statement = self::getStatementNode($statements_analyzer, $graph, $spec, $args, $call_location);
 
-        // a query that can't be parsed can store and read anything
+        // a query that can't be parsed can store and read anything: any column, and the rows of any table as a
+        // `SELECT *` reads them
 
         if (isset($spec['params'])) {
             foreach ($args[$spec['params']] ?? [] as $params_arg) {
@@ -392,7 +393,7 @@ final class DatabaseTaints
                 'reads' => [[
                     'keys' => [],
                     'any_key' => true,
-                    'all_columns' => false,
+                    'all_columns' => true,
                     'value' => ['holes' => [], 'placeholders' => [], 'columns' => [[null, null]]],
                 ]],
             ];

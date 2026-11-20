@@ -283,7 +283,8 @@ function show(PDO $pdo, string $table): void {
 ```
 
 - A query it can't parse, a table name that isn't a literal and `INSERT INTO t VALUES (...)` without the column
-  list read or write any column. A table name that isn't a literal can be any table.
+  list read or write any column. A table name that isn't a literal can be any table. A query it can't parse also reads
+  the rows of any table, as `SELECT *` gives them.
 - A part of the SQL the analysis doesn't know the text of is a value only when known text follows it. A statement that
   ends with such a part can't be parsed, because the part can continue the statement (more assignments, `ON DUPLICATE
   KEY UPDATE`, `ON CONFLICT`, `RETURNING`, a `UNION`, another statement): `"UPDATE t SET a = " . $a`, a `sprintf()`
