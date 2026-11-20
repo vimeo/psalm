@@ -58,7 +58,9 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosure;
@@ -68,7 +70,10 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TScalar;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
@@ -80,6 +85,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_numeric;
 use function is_string;
 use function max;
 use function mb_ord;
@@ -1823,6 +1829,37 @@ final class ArgumentAnalyzer
     }
 
     /**
+     * Whether a member of the union other than a class-string takes the string literal for what it is: the same
+     * literal, `numeric-string` for a numeric one, any other `string`, `array-key`, `scalar` or `mixed`
+     *
+     * @psalm-pure
+     */
+    private static function acceptsAStringThatIsNoClassString(Union $type, string $literal): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TLiteralString) {
+                if ($atomic_type->value === $literal) {
+                    return true;
+                }
+            } elseif ($atomic_type instanceof TNumericString) {
+                if (is_numeric($literal)) {
+                    return true;
+                }
+            } elseif (($atomic_type instanceof TString
+                    && !$atomic_type instanceof TClassString
+                    && !$atomic_type instanceof TCallableString)
+                || $atomic_type instanceof TArrayKey
+                || $atomic_type instanceof TScalar
+                || $atomic_type instanceof TMixed
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @param PhpParser\Node\Scalar\String_|PhpParser\Node\Expr\Array_|PhpParser\Node\Expr\BinaryOp\Concat $input_expr
      */
     private static function verifyExplicitParam(
@@ -1856,7 +1893,12 @@ final class ArgumentAnalyzer
                 foreach ($param_type_part->type_params[1]->getAtomicTypes() as $param_array_type_part) {
                     if ($param_array_type_part instanceof TClassString) {
                         foreach ($input_expr->items as $item) {
-                            if ($item->value instanceof PhpParser\Node\Scalar\String_) {
+                            if ($item->value instanceof PhpParser\Node\Scalar\String_
+                                && !self::acceptsAStringThatIsNoClassString(
+                                    $param_type_part->type_params[1],
+                                    $item->value->value,
+                                )
+                            ) {
                                 if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                                     $statements_analyzer,
                                     $item->value->value,
