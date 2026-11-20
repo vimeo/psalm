@@ -4781,8 +4781,7 @@ final class PropertyTypeTest extends TestCase
                     /** @var Holder $h */
                     $h = null;
                     $_r = $h->item?->flag;',
-                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:27 - Type Item for $h->item is never null',
-                'error_levels' => ['TypeDoesNotContainNull'],
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:27 - Item can never be null',
                 'php_version' => '8.0',
             ],
             'declaredPropertyOfAStdClassSubclassRejectsAWrongValue' => [
