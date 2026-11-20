@@ -26,6 +26,8 @@ use function trim;
  *
  * - `($a, $b) -> return` (RETURN): what a call returns holds what is given to the parameters, what the object it is
  *   called on holds for `$this`, and what the callable given to a parameter returns for `$name()`;
+ * - `($a) -> $callback()` (CALLABLE_ARGUMENTS): a call calls the callables given to `$callback` with what is given to
+ *   the parameters;
  * - `($value) -> Store::$data[$key]` (STORE_WRITE): a call stores what is given to the parameters under a key (see
  *   TaintStore);
  * - `Store::$data[$key] -> return` (STORE_READ): a call returns what is stored under a key;
@@ -61,6 +63,7 @@ final class TaintFlowAnnotation
     public const PROXY = 'proxy';
     public const PROPERTY_WRITE = 'property-write';
     public const PROPERTY_READ = 'property-read';
+    public const CALLABLE_ARGUMENTS = 'callable-arguments';
 
     private const STORE_REGEX = '/^([A-Za-z_\\\\][\w\\\\]*)::\$(\w+)\[(?:\*|\$(\w+)(\[\*\])?)\]((?:\[[^\]]*\])*)$/';
 
@@ -69,7 +72,8 @@ final class TaintFlowAnnotation
     private const PATH_TYPE_REGEX = '/-\(([a-z\-]+)\)->/';
 
     /**
-     * @param self::RETURN|self::STORE_WRITE|self::STORE_READ|self::PROXY|self::PROPERTY_WRITE|self::PROPERTY_READ $kind
+     * @param self::RETURN|self::STORE_WRITE|self::STORE_READ|self::PROXY|self::PROPERTY_WRITE|self::PROPERTY_READ|
+     *     self::CALLABLE_ARGUMENTS $kind
      * @param list<non-empty-string> $sources the parameters the data comes from: `this` for the object the call is
      *                                        on, `name()` for what the callable given to a parameter returns
      * @param ?non-empty-string $store_class the class of the store, as written (STORE_WRITE and STORE_READ)
@@ -86,6 +90,7 @@ final class TaintFlowAnnotation
      * @param ?non-empty-string $element_key the parameter the key of the element of $property is given to
      *                                       (`$this->data[$key]`)
      * @param bool $any_element whether the flow is of any element of $property (`$this->data[*]`)
+     * @param ?non-empty-string $callable_param the parameter the callables a CALLABLE_ARGUMENTS flow calls are given to
      * @psalm-mutation-free
      */
     private function __construct(
@@ -103,6 +108,7 @@ final class TaintFlowAnnotation
         public readonly ?string $property = null,
         public readonly ?string $element_key = null,
         public readonly bool $any_element = false,
+        public readonly ?string $callable_param = null,
     ) {
     }
 
@@ -170,6 +176,17 @@ final class TaintFlowAnnotation
                 return new self(self::RETURN, $path_type, $sources);
             }
 
+            if (preg_match('/^\$(\w+)\(\)$/', $target, $matches) === 1 && isset($matches[1]) && $matches[1] !== '') {
+                // what the callables are called with comes from the arguments
+                foreach ($sources as $source) {
+                    if ($source === 'this' || str_ends_with($source, '()')) {
+                        return self::getMalformedMessage($annotation);
+                    }
+                }
+
+                return new self(self::CALLABLE_ARGUMENTS, $path_type, $sources, callable_param: $matches[1]);
+            }
+
             if (str_starts_with($target, '$this->')) {
                 return self::parseProperty($target, self::PROPERTY_WRITE, $path_type, $has_path_type, $sources)
                     ?? self::getMalformedMessage($annotation);
@@ -218,6 +235,10 @@ final class TaintFlowAnnotation
 
         if ($this->element_key !== null) {
             $names[] = $this->element_key;
+        }
+
+        if ($this->callable_param !== null) {
+            $names[] = $this->callable_param;
         }
 
         return [...$names, ...$this->other_key_params];
@@ -356,7 +377,8 @@ final class TaintFlowAnnotation
      */
     private static function getMalformedMessage(string $annotation): string
     {
-        return '@psalm-flow "' . trim($annotation) . '" is neither "(...) -> return", "(...) -> Store::$data[$key]",'
+        return '@psalm-flow "' . trim($annotation) . '" is neither "(...) -> return", "(...) -> $callback()",'
+            . ' "(...) -> Store::$data[$key]",'
             . ' "Store::$data[$key] -> return", "(...) -> $this->$name", "$this->$name -> return",'
             . ' "(...) -> $this->{key}", "$this->{key} -> return[key]", "(...) -> $this->data[$key]",'
             . ' "$this->data[$key] -> return" nor "proxy ..."';
