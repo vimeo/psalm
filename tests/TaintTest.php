@@ -1728,6 +1728,20 @@ final class TaintTest extends TestCase
                         echo (string) $pdo->query("SELECT name FROM users")->fetch()["name"];
                     }',
             ],
+            'queryInAVariableIsReadFromWhatItStartsWith' => [
+                'code' => '<?php
+                    /** @param list<string> $messages */
+                    function store(PDO $pdo, array $messages): void {
+                        $sql = "INSERT INTO logs (message) VALUES " . implode(",", array_map(
+                            fn(string $message): string => "(" . $pdo->quote($message) . ")",
+                            $messages,
+                        ));
+                        $pdo->exec($sql);
+                    }
+
+                    store(new PDO("sqlite::memory:"), [(string) $_GET["message"]]);
+                    echo (string) (new PDO("sqlite::memory:"))->query("SELECT name FROM users")->fetch()["name"];',
+            ],
             'readonlyQueryTheAnalysisCantParseStoresNothing' => [
                 'code' => '<?php
                     final class Client {
@@ -7914,6 +7928,26 @@ final class TaintTest extends TestCase
                         $pdo->exec(sprintf("INSERT INTO %s (name, bio) VALUES (\'admin\', %s)", "users", $pdo->quote($_GET["bio"])));
                         echo (string) $pdo->query("SELECT bio FROM users")->fetch()["bio"];
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'rowsOfAQueryInAVariableAreStoredInItsColumns' => [
+                'code' => '<?php
+                    /** @param list<string> $messages */
+                    function store(PDO $pdo, array $messages): void {
+                        $sql = "INSERT INTO logs (message) VALUES " . implode(",", array_map(
+                            fn(string $message): string => "(" . $pdo->quote($message) . ")",
+                            $messages,
+                        ));
+                        $pdo->exec($sql);
+                    }
+
+                    store(new PDO("sqlite::memory:"), [(string) $_GET["message"]]);
+                    echo (string) (new PDO("sqlite::memory:"))->query("SELECT message FROM logs")->fetch()["message"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'quotedStringKeepsItsTaintsButSql' => [
+                'code' => '<?php
+                    echo (new PDO("sqlite::memory:"))->quote((string) $_GET["message"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'readonlyQueryTheAnalysisCantParseReadsAnyColumn' => [

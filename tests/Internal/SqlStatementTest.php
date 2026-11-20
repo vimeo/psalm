@@ -145,6 +145,10 @@ final class SqlStatementTest extends TestCase
             'INSERT INTO t (a, b) VALUES ({a:Nullable(String)}, {b})',
             'W t.a <- h[] p[a] c[]; W t.b <- h[] p[b] c[]',
         ];
+        yield 'the rows in a part the analysis doesn\'t know the text of, which can be in any of the columns' => [
+            'INSERT INTO t (a, b) VALUES %0%',
+            'W t.a <- h[0] p[] c[]; W t.b <- h[0] p[] c[]',
+        ];
         yield 'the data after FORMAT, which can be in any of the columns' => [
             'INSERT INTO t (a, b) FORMAT JSONEachRow {"a": %0%}',
             'W t.a <- h[0] p[] c[]; W t.b <- h[0] p[] c[]',
