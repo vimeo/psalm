@@ -1233,7 +1233,7 @@ final class FilterUtils
                         // the boolean is a string first
                         $filter_types[] = Type::getAtomicStringFromLiteral('1');
                         continue;
-                    } elseif ($atomic_type instanceof TBool) {
+                    } elseif ($atomic_type instanceof TBool && !$atomic_type instanceof TFalse) {
                         $filter_types[] = Type::getAtomicStringFromLiteral('1');
 
                         if (!self::hasFlag($flags_int_used, FILTER_FLAG_HOSTNAME)) {

@@ -334,11 +334,13 @@ final class FunctionCallTest extends TestCase
                     <?php
                     function f(bool $b): void {
                         $true_domain = filter_var(true, FILTER_VALIDATE_DOMAIN);
+                        $false_hostname = filter_var(false, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
                         $domain = filter_var($b, FILTER_VALIDATE_DOMAIN);
                         $hostname = filter_var($b, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
                         $regexp = filter_var($b, FILTER_VALIDATE_REGEXP, ['options' => ['regexp' => '/^1?$/']]);
 
                         /** @psalm-check-type-exact $true_domain = '1' */
+                        /** @psalm-check-type-exact $false_hostname = false */
                         /** @psalm-check-type-exact $domain = ''|'1' */
                         /** @psalm-check-type-exact $hostname = '1'|false */
                         /** @psalm-check-type-exact $regexp = ''|'1'|false */
