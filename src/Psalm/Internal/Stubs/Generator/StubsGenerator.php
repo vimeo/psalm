@@ -3,6 +3,8 @@
 namespace Psalm\Internal\Stubs\Generator;
 
 use Psalm\Codebase;
+use Psalm\Exception\CircularReferenceException;
+use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Storage\FunctionLikeStorage;
@@ -18,9 +20,12 @@ use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TParamDefault;
 use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Atomic\Scalar;
+use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\Type\TypeExpander;
 use PhpParser;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Node\Expr\VirtualArray;
@@ -121,30 +126,21 @@ final class StubsGenerator
             $namespace_name = implode('\\', $name_parts);
 
             $namespaced_nodes[$namespace_name][$fq_name] = self::getFunctionNode(
+                $codebase,
                 $function_storage,
                 $function_name,
                 $namespace_name
             );
         }
 
-        foreach ($codebase->getAllStubbedConstants() as $fq_name => $type) {
-            if ($type->isMixed()) {
-                continue;
+        $const_names = $codebase->getAllStubbedConstants();
+
+        foreach ($codebase->getAllDefinitionsResolvedLater() as $fq_name => $definitions) {
+            foreach ($definitions as [$file_path]) {
+                if (!str_starts_with($file_path, $psalm_base)) {
+                    $const_names[$fq_name] = true;
+                }
             }
-
-            $name_parts = explode('\\', $fq_name);
-            $constant_name = array_pop($name_parts);
-
-            $namespace_name = implode('\\', $name_parts);
-
-            $namespaced_nodes[$namespace_name][$fq_name] = new StmtVirtualConst_(
-                [
-                    new VirtualConst(
-                        $constant_name,
-                        self::getExpressionFromType($type)
-                    )
-                ]
-            );
         }
 
         foreach ($file_provider->getAll() as $file_storage) {
@@ -171,31 +167,40 @@ final class StubsGenerator
                 $namespace_name = implode('\\', $name_parts);
 
                 $namespaced_nodes[$namespace_name][$fq_name] = self::getFunctionNode(
+                    $codebase,
                     $function_storage,
                     $function_name,
                     $namespace_name
                 );
             }
 
-            foreach ($file_storage->constants as $fq_name => $type) {
-                if ($type->isMixed()) {
-                    continue;
-                }
+            $const_names += $file_storage->constants;
+        }
 
-                $name_parts = explode('\\', $fq_name);
-                $constant_name = array_pop($name_parts);
-
-                $namespace_name = implode('\\', $name_parts);
-
-                $namespaced_nodes[$namespace_name][$fq_name] = new StmtVirtualConst_(
-                    [
-                        new VirtualConst(
-                            $constant_name,
-                            self::getExpressionFromType($type)
-                        )
-                    ]
-                );
+        foreach ($const_names as $fq_name => $_) {
+            try {
+                $type = ConstantTypeResolver::resolveGlobalConstant($codebase, [$fq_name]);
+            } catch (CircularReferenceException) {
+                continue;
             }
+
+            if ($type === null || $type->isMixed()) {
+                continue;
+            }
+
+            $name_parts = explode('\\', $fq_name);
+            $constant_name = array_pop($name_parts);
+
+            $namespace_name = implode('\\', $name_parts);
+
+            $namespaced_nodes[$namespace_name][$fq_name] = new StmtVirtualConst_(
+                [
+                    new VirtualConst(
+                        $constant_name,
+                        self::getExpressionFromType($type)
+                    )
+                ]
+            );
         }
 
         ksort($namespaced_nodes);
@@ -217,6 +222,7 @@ final class StubsGenerator
     }
 
     private static function getFunctionNode(
+        Codebase $codebase,
         FunctionLikeStorage $function_storage,
         string $function_name,
         string $namespace_name
@@ -236,7 +242,7 @@ final class StubsGenerator
 
         foreach ($function_storage->params as $param) {
             if ($param->type && $param->type !== $param->signature_type) {
-                $docblock->tags['param'][] = $param->type->toNamespacedString(
+                $docblock->tags['param'][] = self::getParamDocblockType($codebase, $param->type)->toNamespacedString(
                     $namespace_name,
                     [],
                     null,
@@ -269,7 +275,7 @@ final class StubsGenerator
         return new VirtualFunction(
             $function_name,
             [
-                'params' => self::getFunctionParamNodes($function_storage),
+                'params' => self::getFunctionParamNodes($codebase, $function_storage),
                 'returnType' => $function_storage->signature_return_type
                     ? self::getParserTypeFromPsalmType($function_storage->signature_return_type)
                     : null,
@@ -288,17 +294,40 @@ final class StubsGenerator
     }
 
     /**
+     * The type of a parameter, with the value of a default that addParamDefaultToDocblockType added to it
+     */
+    public static function getParamDocblockType(Codebase $codebase, Union $type): Union
+    {
+        $atomic_types = [];
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TParamDefault) {
+                foreach (TypeExpander::expandAtomic($codebase, $atomic_type, null, null, null) as $default_type) {
+                    $atomic_types[] = $default_type;
+                }
+            } else {
+                $atomic_types[] = $atomic_type;
+            }
+        }
+
+        return TypeCombiner::combine($atomic_types, $codebase);
+    }
+
+    /**
      * @return list<PhpParser\Node\Param>
      */
-    public static function getFunctionParamNodes(FunctionLikeStorage $method_storage): array
+    public static function getFunctionParamNodes(Codebase $codebase, FunctionLikeStorage $method_storage): array
     {
         $param_nodes = [];
 
         foreach ($method_storage->params as $param) {
+            $default_type = $param->getDefaultType($codebase);
+
             $param_nodes[] = new VirtualParam(
                 new VirtualVariable($param->name),
-                $param->default_type instanceof Union
-                    ? self::getExpressionFromType($param->default_type)
+                // a default whose value can't be written is left out, as one that isn't a constant
+                $default_type
+                    ? self::findExpressionFromType($default_type, true)
                     : null,
                 $param->signature_type
                     ? self::getParserTypeFromPsalmType($param->signature_type)
@@ -375,6 +404,15 @@ final class StubsGenerator
 
     public static function getExpressionFromType(Union $type) : PhpParser\Node\Expr
     {
+        return self::findExpressionFromType($type, false) ?? new VirtualString('Psalm could not infer this type');
+    }
+
+    /**
+     * @param bool $strict whether an array with an item that can't be written can't be written either, rather than
+     *        be written with a placeholder for the item
+     */
+    private static function findExpressionFromType(Union $type, bool $strict) : ?PhpParser\Node\Expr
+    {
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TLiteralClassString) {
                 return new VirtualClassConstFetch(new VirtualName('\\' . $atomic_type->value), new VirtualIdentifier('class'));
@@ -420,10 +458,15 @@ final class StubsGenerator
                         $key_type = new VirtualString($property_name);
                     }
 
-                    $new_items[] = new VirtualArrayItem(
-                        self::getExpressionFromType($property_type),
-                        $key_type
-                    );
+                    $item = $strict
+                        ? self::findExpressionFromType($property_type, true)
+                        : self::getExpressionFromType($property_type);
+
+                    if ($item === null) {
+                        return null;
+                    }
+
+                    $new_items[] = new VirtualArrayItem($item, $key_type);
                 }
 
                 return new VirtualArray($new_items);
@@ -434,6 +477,6 @@ final class StubsGenerator
             }
         }
 
-        return new VirtualString('Psalm could not infer this type');
+        return null;
     }
 }

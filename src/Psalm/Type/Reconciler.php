@@ -1580,13 +1580,13 @@ class Reconciler
         );
 
         foreach ($method_storage->params as $offset => $param) {
-            if ($param->type && $param->default_type instanceof Union) {
+            if ($param->type && ($default_type = $param->getDefaultType($codebase))) {
                 TemplateStandinTypeReplacer::fillTemplateResult(
                     $param->type,
                     $template_result,
                     $codebase,
                     null,
-                    $param->default_type,
+                    $default_type,
                     $offset,
                 );
             }

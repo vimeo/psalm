@@ -6,6 +6,7 @@ namespace Psalm\Tests;
 
 use Override;
 use Psalm\Context;
+use Psalm\Exception\CircularReferenceException;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -86,6 +87,29 @@ final class EnumTest extends TestCase
         );
     }
 
+    public function testACycleThroughTheValueOfAnEnumCaseEnds(): void
+    {
+        // the exception the resolver throws for circular constants, until the circularity is reported as an issue
+        $this->expectException(CircularReferenceException::class);
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                enum E: int {
+                    case X = C::K + 1;
+                }
+
+                final class C {
+                    public const K = E::X->value;
+                }
+
+                $k = E::X->value;',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testEnumCaseValueOfANamespacedConstantBeatsTheGlobalOneOfAnotherFile(): void
     {
         $this->testConfig->throw_exception = false;
@@ -147,6 +171,104 @@ final class EnumTest extends TestCase
                         }
                     }',
                 'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'caseValueOfAModuloOrAPowerOfTheConstantOfAnotherClass' => [
+                'code' => '<?php
+                    final class A {
+                        public const Y = 10;
+                    }
+
+                    enum B: int {
+                        public const K = 1;
+
+                        case X = A::Y % 3;
+                        case Z = A::Y ** 2;
+                    }
+
+                    $x = B::X->value;
+                    $z = B::Z->value;',
+                'assertions' => [
+                    '$x===' => '1',
+                    '$z===' => '100',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'caseValueOfAQuotientOfTheConstantOfAnotherClass' => [
+                'code' => '<?php
+                    final class A {
+                        public const NUM = 10;
+                    }
+
+                    enum B: int {
+                        public const UNRELATED = 1;
+
+                        case X = A::NUM / 2;
+                    }
+
+                    final class C {
+                        public const NUM = B::X->value;
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return T
+                     */
+                    function half($v = A::NUM / 2) {
+                        return $v;
+                    }
+
+                    $x = B::X->value;
+                    $c = C::NUM;
+                    $h = half();',
+                'assertions' => [
+                    '$x===' => '5',
+                    '$c===' => '5',
+                    '$h===' => '5',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'caseValueOfAConcatenationOfTheConstantOfAClassDeclaredLater' => [
+                'code' => '<?php
+                    enum B: string {
+                        case X = A::KEY . "_ok";
+                    }
+
+                    final class A {
+                        public const KEY = "open";
+                    }
+
+                    $x = B::X->value;',
+                'assertions' => [
+                    '$x===' => "'open_ok'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'casesOfAnEnumBackedByTheConstantsOfAnotherClass' => [
+                'code' => '<?php
+                    final class K {
+                        public const OPEN = 1;
+                        public const CLOSED = 2;
+                    }
+
+                    enum Status: int {
+                        case Open = K::OPEN;
+                        case Closed = K::CLOSED;
+                    }
+
+                    $from = Status::from(2);
+                    $try = Status::tryFrom(1);
+                    $cases = Status::cases();',
+                'assertions' => [
+                    '$from===' => 'enum(Status::Closed)',
+                    '$try===' => 'enum(Status::Open)|null',
+                    '$cases===' => 'list{enum(Status::Open), enum(Status::Closed)}',
+                ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
@@ -1453,6 +1575,49 @@ final class EnumTest extends TestCase
                         case Foo = "foo";
                         case Bar = "bar";
                         case Baz = "bar";
+                    }
+                ',
+                'error_message' => 'DuplicateEnumCaseValue',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'caseValueOfAFractionalQuotientOfTheConstantOfAnotherClass' => [
+                'code' => '<?php
+                    final class A {
+                        public const NUM = 10;
+                    }
+
+                    enum B: int {
+                        case X = A::NUM / 4;
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'caseValueWithANestedDivisionByZero' => [
+                'code' => '<?php
+                    final class A {
+                        public const NUM = 10;
+                    }
+
+                    enum B: int {
+                        case X = (A::NUM / 0) + 10;
+                    }
+                ',
+                'error_message' => 'InvalidEnumCaseValue',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'duplicateValueOfTheConstantOfAClassDeclaredLater' => [
+                'code' => '<?php
+                    enum Status: int {
+                        case Open = K::OPEN;
+                        case Closed = 1;
+                    }
+
+                    final class K {
+                        public const OPEN = 1;
                     }
                 ',
                 'error_message' => 'DuplicateEnumCaseValue',

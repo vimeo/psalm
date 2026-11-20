@@ -156,6 +156,9 @@ final class Scanner
 
     private bool $is_forked = false;
 
+    /** @internal */
+    public bool $is_scanning = false;
+
     /**
      * @psalm-mutation-free
      */
@@ -375,6 +378,17 @@ final class Scanner
     }
 
     public function scanFiles(ClassLikes $classlikes, int $pool_size = 1): bool
+    {
+        $was_scanning = $this->is_scanning;
+        $this->is_scanning = true;
+        try {
+            return $this->scanQueuedFiles($classlikes, $pool_size);
+        } finally {
+            $this->is_scanning = $was_scanning;
+        }
+    }
+
+    private function scanQueuedFiles(ClassLikes $classlikes, int $pool_size): bool
     {
         $has_changes = false;
         while ($this->files_to_scan || $this->classes_to_scan) {

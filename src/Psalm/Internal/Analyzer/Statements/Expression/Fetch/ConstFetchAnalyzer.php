@@ -17,7 +17,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Provider\NodeDataProvider;
-use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
@@ -31,6 +30,7 @@ use function array_pop;
 use function explode;
 use function implode;
 use function in_array;
+use function ltrim;
 use function preg_match;
 use function preg_quote;
 use function str_contains;
@@ -267,6 +267,10 @@ final class ConstFetchAnalyzer
      */
     public static function getGlobalConstTypesByWildcard(Codebase $codebase, string $pattern): array
     {
+        if ($codebase->scanner->is_scanning) {
+            return self::findGlobalConstTypesByWildcard($codebase, $pattern);
+        }
+
         return $codebase->global_constant_types_by_wildcard[$pattern]
             ??= self::findGlobalConstTypesByWildcard($codebase, $pattern);
     }
@@ -277,34 +281,21 @@ final class ConstFetchAnalyzer
     private static function findGlobalConstTypesByWildcard(Codebase $codebase, string $pattern): array
     {
         $regex = '/^' . str_replace('\\*', '.*', preg_quote($pattern, '/')) . '$/';
-        $types = [];
+        $const_names = [];
 
         foreach ($codebase->file_storage_provider->getAll() as $file_storage) {
-            foreach ($file_storage->constants as $const_name => $const_type) {
-                if (preg_match($regex, $const_name) === 1) {
-                    $types[$const_name] = isset($file_storage->unresolved_constants[$const_name])
-                        ? new Union([ConstantTypeResolver::resolve(
-                            $codebase->classlikes,
-                            $file_storage->unresolved_constants[$const_name],
-                        )])
-                        : $const_type;
-                }
-            }
+            $const_names += $file_storage->constants;
         }
 
-        foreach ($codebase->getAllStubbedConstants() as $const_name => $const_type) {
-            if (!isset($types[$const_name]) && preg_match($regex, $const_name) === 1) {
-                $unresolved = $codebase->getUnresolvedGlobalConstant($const_name);
+        $const_names += $codebase->getAllDefinitionsResolvedLater()
+            + $codebase->getAllStubbedConstants()
+            + $codebase->config->getPredefinedConstants();
 
-                $types[$const_name] = $unresolved !== null
-                    ? new Union([ConstantTypeResolver::resolve($codebase->classlikes, $unresolved)])
-                    : $const_type;
-            }
-        }
+        $types = [];
 
-        foreach ($codebase->config->getPredefinedConstants() as $const_name => $_) {
-            if (!isset($types[$const_name]) && preg_match($regex, $const_name) === 1) {
-                $types[$const_name] = self::getGlobalConstType($codebase, $const_name, $const_name)
+        foreach ($const_names as $const_name => $_) {
+            if (preg_match($regex, $const_name) === 1) {
+                $types[$const_name] = ConstantTypeResolver::resolveGlobalConstant($codebase, [$const_name])
                     ?? Type::getMixed();
             }
         }
@@ -320,11 +311,12 @@ final class ConstFetchAnalyzer
     ): ?Union {
         $aliased_constants = $statements_analyzer->getAliases()->constants;
         $is_unqualified = !$is_fully_qualified && !str_contains($const_name, '\\');
+        $is_aliased = isset($aliased_constants[$const_name]);
 
-        if (isset($aliased_constants[$const_name])) {
+        if ($is_aliased) {
             $fq_const_name = $aliased_constants[$const_name];
         } elseif ($is_fully_qualified) {
-            $fq_const_name = $const_name;
+            $fq_const_name = ltrim($const_name, '\\');
         } else {
             $fq_const_name = Type::getFQCLNFromString($const_name, $statements_analyzer->getAliases());
         }
@@ -353,41 +345,16 @@ final class ConstFetchAnalyzer
             return $context->vars_in_scope[$const_name];
         }
 
-        $codebase = $statements_analyzer->getCodebase();
+        // PHP falls back to the global constant for an unqualified name only
+        $names = $is_unqualified && !$is_aliased && $fq_const_name !== $const_name
+            ? [$fq_const_name, $const_name]
+            : [$fq_const_name];
 
-        $file_storage_provider = $codebase->file_storage_provider;
-
-        // the constants of the file of the code are known as when the file is analysed itself, also when the root file
-        // doesn't include it (a method followed into its class's file)
-        foreach ([$statements_analyzer->getRootFilePath(), $statements_analyzer->getFilePath()] as $file_path) {
-            $file_storage = $file_storage_provider->get($file_path);
-
-            foreach ([$const_name, $fq_const_name] as $name) {
-                if (isset($file_storage->declaring_constants[$name])) {
-                    $constant_storage = $file_storage_provider->get($file_storage->declaring_constants[$name]);
-
-                    if (isset($constant_storage->unresolved_constants[$name])) {
-                        return self::resolveConstType(
-                            $statements_analyzer,
-                            $constant_storage->unresolved_constants[$name],
-                        );
-                    }
-
-                    return $constant_storage->constants[$name];
-                }
-            }
-        }
-
-        foreach ([$fq_const_name, $const_name] as $name) {
-            $unresolved = $codebase->getUnresolvedGlobalConstant($name);
-
-            if ($unresolved !== null) {
-                return self::resolveConstType($statements_analyzer, $unresolved);
-            }
-        }
-
-        return self::getGlobalConstType($codebase, $fq_const_name, $const_name)
-            ?? self::getGlobalConstType($codebase, $const_name, $const_name);
+        return ConstantTypeResolver::resolveGlobalConstant(
+            $statements_analyzer->getCodebase(),
+            $names,
+            $statements_analyzer,
+        );
     }
 
     /**
@@ -429,20 +396,6 @@ final class ConstFetchAnalyzer
             && preg_match('/^[a-zA-Z_\x80-\xff][\w\x80-\xff]*(\\\\[a-zA-Z_\x80-\xff][\w\x80-\xff]*)*$/', $var_id) === 1;
     }
 
-    /**
-     * The type of the value of a constant depending on classes, e.g. an enum case, known once they are
-     */
-    private static function resolveConstType(
-        StatementsAnalyzer $statements_analyzer,
-        UnresolvedConstantComponent $value,
-    ): Union {
-        return new Union([ConstantTypeResolver::resolve(
-            $statements_analyzer->getCodebase()->classlikes,
-            $value,
-            $statements_analyzer,
-        )]);
-    }
-
     public static function setConstType(
         StatementsAnalyzer $statements_analyzer,
         string $const_name,
@@ -474,7 +427,14 @@ final class ConstFetchAnalyzer
                 $const_name = $first_arg_type->getSingleStringLiteral()->value;
             }
         } else {
-            $simple_type = SimpleTypeInferer::infer($codebase, $type_provider, $first_arg_value, $aliases);
+            $simple_type = $codebase->scanner->is_scanning
+                ? ConstantTypeResolver::withScanTimeMemo(static fn(): ?Union => SimpleTypeInferer::infer(
+                    $codebase,
+                    $type_provider,
+                    $first_arg_value,
+                    $aliases,
+                ))
+                : SimpleTypeInferer::infer($codebase, $type_provider, $first_arg_value, $aliases);
 
             if ($simple_type && $simple_type->isSingleStringLiteral()) {
                 $const_name = $simple_type->getSingleStringLiteral()->value;

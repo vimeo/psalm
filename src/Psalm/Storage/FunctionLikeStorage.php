@@ -8,6 +8,7 @@ use Override;
 use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Issue\CodeIssue;
 use Psalm\Type\Union;
 use Stringable;
@@ -86,6 +87,14 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * @var array<string, Union>
      */
     public array $defined_constants = [];
+
+    /**
+     * Definitions of `define()` values left unresolved until the function is called.
+     *
+     * @internal
+     * @var list<array{string, UnresolvedConstantComponent}>
+     */
+    public array $unresolved_defined_constants = [];
 
     /**
      * The globals the body binds with `global` or writes through `$GLOBALS['name']`, by variable id

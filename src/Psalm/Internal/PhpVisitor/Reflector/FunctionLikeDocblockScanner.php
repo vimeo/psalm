@@ -59,6 +59,7 @@ use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TParamDefault;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -1164,11 +1165,18 @@ final class FunctionLikeDocblockScanner
                 $config = Config::getInstance();
 
                 if ($config->add_param_default_to_docblock_type
-                    && $storage_param->default_type instanceof Union
-                    && !$storage_param->default_type->hasMixed()
                     && (!$storage_param->type || !$storage_param->type->hasMixed())
                 ) {
-                    $new_param_type = Type::combineUnionTypes($new_param_type, $storage_param->default_type);
+                    if ($storage_param->default_type instanceof Union) {
+                        if (!$storage_param->default_type->hasMixed()) {
+                            $new_param_type = Type::combineUnionTypes($new_param_type, $storage_param->default_type);
+                        }
+                    } elseif ($storage_param->default_type !== null) {
+                        $new_param_type = Type::combineUnionTypes($new_param_type, new Union([new TParamDefault(
+                            $storage_param->default_type,
+                            $cased_method_id . '($' . $storage_param->name . ')',
+                        )]));
+                    }
                 }
 
                 $storage_param->type = $new_param_type;

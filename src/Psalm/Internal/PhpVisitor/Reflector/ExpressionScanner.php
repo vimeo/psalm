@@ -24,6 +24,7 @@ use Psalm\Storage\FileStorage;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Union;
 use Symfony\Component\Filesystem\Path;
 
 use function assert;
@@ -238,79 +239,16 @@ final class ExpressionScanner
             return;
         }
 
-        if ($function_id === 'define') {
-            $first_arg_value = isset($node->getArgs()[0]) ? $node->getArgs()[0]->value : null;
-            $second_arg_value = isset($node->getArgs()[1]) ? $node->getArgs()[1]->value : null;
-            if ($first_arg_value && $second_arg_value) {
-                $type_provider = new NodeDataProvider();
-                $const_name = ConstFetchAnalyzer::getConstName(
-                    $first_arg_value,
-                    $type_provider,
-                    $codebase,
-                    $aliases,
-                );
-
-                if ($const_name !== null) {
-                    $const_type = SimpleTypeInferer::infer(
-                        $codebase,
-                        $type_provider,
-                        $second_arg_value,
-                        $aliases,
-                    );
-
-                    // allow docblocks to override the declared value to make constants in stubs configurable
-                    $doc_comment = $second_arg_value->getDocComment();
-                    if ($doc_comment) {
-                        try {
-                            $var_comments = CommentAnalyzer::getTypeFromComment(
-                                $codebase,
-                                $doc_comment,
-                                $file_scanner,
-                                $aliases,
-                            );
-                            foreach ($var_comments as $var_comment) {
-                                if ($var_comment->type) {
-                                    $const_type = $var_comment->type;
-                                }
-
-                                // only check the first @var comment
-                                break;
-                            }
-                        } catch (DocblockParseException) {
-                            // do nothing
-                        }
-                    }
-
-                    if ($const_type === null) {
-                        $const_type = Type::getMixed();
-                    }
-
-                    $config = Config::getInstance();
-
-                    // defined in several branches, the constant has the value of one of the definitions
-                    $stored_const_type = Type::combineUnionTypes(
-                        ($functionlike_storage && !$config->hoist_constants
-                            ? $functionlike_storage->defined_constants[$const_name] ?? null
-                            : $file_storage->constants[$const_name] ?? null),
-                        $const_type,
-                    );
-
-                    if ($functionlike_storage && !$config->hoist_constants) {
-                        $functionlike_storage->defined_constants[$const_name] = $stored_const_type;
-                    } else {
-                        $file_storage->constants[$const_name] = $stored_const_type;
-                        $file_storage->declaring_constants[$const_name] = $file_storage->file_path;
-                    }
-
-                    if (($codebase->register_stub_files
-                        || $codebase->register_autoload_files
-                        || $codebase->all_constants_global
-                        ) && (!defined($const_name) || !$const_type->isMixed())
-                    ) {
-                        $codebase->addGlobalConstantType($const_name, $stored_const_type);
-                    }
-                }
-            }
+        if ($function_id === 'define' && isset($node->getArgs()[1])) {
+            self::scanDefine(
+                $codebase,
+                $file_storage,
+                $file_scanner,
+                $aliases,
+                $node->getArgs()[0]->value,
+                $node->getArgs()[1]->value,
+                $functionlike_storage,
+            );
         }
 
         $mapping_function_ids = [];
@@ -411,6 +349,102 @@ final class ExpressionScanner
                 $file_storage->classlike_aliases[$second_arg_value] = $first_arg_value;
             }
         }
+    }
+
+    /**
+     * A value read from constants of classes or of other files is kept unresolved, as the storage of the file is
+     * cached for its own contents: such a constant is found through Codebase::getDefinitionsResolvedLater(), or when
+     * the function defining it is called. A name is resolved while the file is scanned.
+     */
+    private static function scanDefine(
+        Codebase $codebase,
+        FileStorage $file_storage,
+        FileScanner $file_scanner,
+        Aliases $aliases,
+        PhpParser\Node\Expr $name_arg,
+        PhpParser\Node\Expr $value_arg,
+        ?FunctionLikeStorage $functionlike_storage,
+    ): void {
+        $type_provider = new NodeDataProvider();
+        $name = ConstFetchAnalyzer::getConstName($name_arg, $type_provider, $codebase, $aliases);
+
+        if ($name === null) {
+            return;
+        }
+
+        $value = self::getDefinedValue($codebase, $file_scanner, $aliases, $value_arg)
+            ?? ExpressionResolver::getUnresolvedExpression($value_arg, $aliases, null, null, [])
+            ?? SimpleTypeInferer::infer($codebase, $type_provider, $value_arg, $aliases, null, [])
+            ?? ExpressionResolver::getUnresolvedClassConstExpr($value_arg, $aliases, null)
+            ?? Type::getMixed();
+
+        $in_function = $functionlike_storage && !Config::getInstance()->hoist_constants;
+        $global = $codebase->register_stub_files
+            || $codebase->register_autoload_files
+            || $codebase->all_constants_global;
+
+        if (!$value instanceof Union) {
+            if ($in_function) {
+                $functionlike_storage->unresolved_defined_constants[] = [$name, $value];
+            }
+
+            if (!$in_function || $global) {
+                $file_storage->unresolved_defined_constants[] = [$name, $value, $global];
+            }
+
+            return;
+        }
+
+        if ($in_function) {
+            // defined in several branches, the constant has the value of one of the definitions
+            $functionlike_storage->defined_constants[$name] = Type::combineUnionTypes(
+                $functionlike_storage->defined_constants[$name] ?? null,
+                $value,
+            );
+
+            // registered in the storage of the file too, so that a cached file registers it as well; a definition
+            // that doesn't tell its type doesn't replace the constant defined in this process, as below
+            if ($global && (!defined($name) || !$value->isMixed())) {
+                $file_storage->unresolved_defined_constants[] = [$name, $value, true];
+            }
+
+            return;
+        }
+
+        $file_storage->constants[$name] = Type::combineUnionTypes($file_storage->constants[$name] ?? null, $value);
+        $file_storage->declaring_constants[$name] = $file_storage->file_path;
+
+        if ($global && (!defined($name) || !$value->isMixed())) {
+            $codebase->addGlobalConstantType($name, $file_storage->constants[$name]);
+        }
+    }
+
+    /**
+     * The value the docblock gives a constant: stubs make their constants configurable this way
+     */
+    private static function getDefinedValue(
+        Codebase $codebase,
+        FileScanner $file_scanner,
+        Aliases $aliases,
+        PhpParser\Node\Expr $value_arg,
+    ): ?Union {
+        $doc_comment = $value_arg->getDocComment();
+
+        if (!$doc_comment) {
+            return null;
+        }
+
+        try {
+            // only the first @var comment
+            $comments = CommentAnalyzer::getTypeFromComment($codebase, $doc_comment, $file_scanner, $aliases);
+
+            foreach ($comments as $comment) {
+                return $comment->type;
+            }
+        } catch (DocblockParseException) {
+        }
+
+        return null;
     }
 
     public static function visitInclude(

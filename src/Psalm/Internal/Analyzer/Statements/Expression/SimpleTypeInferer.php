@@ -14,7 +14,9 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassConstantStorage;
@@ -48,7 +50,10 @@ use const PHP_INT_MAX;
 final class SimpleTypeInferer
 {
     /**
-     * @param   ?array<string, ClassConstantStorage> $existing_class_constants
+     * @param ?array<string, ClassConstantStorage> $existing_class_constants while a file is scanned, the constants
+     *        of the class it declares: the constants of other classes, and the global constants that files declare,
+     *        are left unresolved then, as the storage of the file is cached for its own contents. Null once the
+     *        codebase is scanned.
      */
     public static function infer(
         Codebase $codebase,
@@ -58,6 +63,7 @@ final class SimpleTypeInferer
         ?FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null,
+        bool $replay_constants = false,
     ): ?Union {
         if ($stmt instanceof PhpParser\Node\Expr\BinaryOp) {
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Concat) {
@@ -69,6 +75,7 @@ final class SimpleTypeInferer
                     $file_source,
                     $existing_class_constants,
                     $fq_classlike_name,
+                    $replay_constants,
                 );
                 $right = self::infer(
                     $codebase,
@@ -78,7 +85,12 @@ final class SimpleTypeInferer
                     $file_source,
                     $existing_class_constants,
                     $fq_classlike_name,
+                    $replay_constants,
                 );
+
+                if ($replay_constants && ($left?->isNever() || $right?->isNever())) {
+                    return Type::getNever();
+                }
 
                 if ($left
                     && $right
@@ -89,6 +101,24 @@ final class SimpleTypeInferer
                         $result = $left->getSingleStringLiteral()->value . $right->getSingleStringLiteral()->value;
 
                         return Type::getString($result);
+                    }
+
+                    if ($replay_constants && $left->isSingleLiteral() && $right->isSingleLiteral()) {
+                        $left_literal = $left->getSingleAtomic();
+                        $right_literal = $right->getSingleAtomic();
+
+                        if (($left_literal instanceof TLiteralString
+                                || $left_literal instanceof TLiteralInt
+                                || $left_literal instanceof TLiteralFloat)
+                            && ($right_literal instanceof TLiteralString
+                                || $right_literal instanceof TLiteralInt
+                                || $right_literal instanceof TLiteralFloat)
+                        ) {
+                            return Type::getString(
+                                LiteralCast::toString($left_literal->value)
+                                . LiteralCast::toString($right_literal->value),
+                            );
+                        }
                     }
 
                     if ($left->isNonEmptyString()) {
@@ -141,6 +171,7 @@ final class SimpleTypeInferer
                 $file_source,
                 $existing_class_constants,
                 $fq_classlike_name,
+                $replay_constants,
             );
 
             if (!$stmt_left_type
@@ -162,6 +193,7 @@ final class SimpleTypeInferer
                 $file_source,
                 $existing_class_constants,
                 $fq_classlike_name,
+                $replay_constants,
             );
 
             if (!$stmt_right_type
@@ -173,6 +205,10 @@ final class SimpleTypeInferer
                     true,
                     null,
                 );
+            }
+
+            if ($replay_constants && ($stmt_left_type?->isNever() || $stmt_right_type?->isNever())) {
+                return Type::getNever();
             }
 
             if (!$stmt_left_type || !$stmt_right_type) {
@@ -220,6 +256,17 @@ final class SimpleTypeInferer
                 && ($stmt_left_type->hasInt() || $stmt_left_type->hasFloat())
                 && ($stmt_right_type->hasInt() || $stmt_right_type->hasFloat())
             ) {
+                if ($replay_constants && $stmt_left_type->isSingleLiteral() && $stmt_right_type->isSingleLiteral()) {
+                    $left = $stmt_left_type->getSingleAtomic();
+                    $right = $stmt_right_type->getSingleAtomic();
+
+                    if (($left instanceof TLiteralFloat || $left instanceof TLiteralInt)
+                        && ($right instanceof TLiteralFloat || $right instanceof TLiteralInt)
+                    ) {
+                        return ArithmeticOpAnalyzer::arithmeticOperation($stmt, $left->value, $right->value, true);
+                    }
+                }
+
                 return Type::combineUnionTypes(Type::getFloat(), Type::getInt());
             }
         }
@@ -233,10 +280,11 @@ final class SimpleTypeInferer
                 $file_source,
                 $existing_class_constants,
                 $fq_classlike_name,
+                $replay_constants,
             );
 
-            if ($stmt_expr_type === null) {
-                return null;
+            if ($stmt_expr_type === null || ($replay_constants && $stmt_expr_type->isNever())) {
+                return $stmt_expr_type;
             }
 
             $invalidTypes = $stmt_expr_type->getBuilder();
@@ -268,10 +316,11 @@ final class SimpleTypeInferer
                 $file_source,
                 $existing_class_constants,
                 $fq_classlike_name,
+                $replay_constants,
             );
 
-            if ($stmt_expr_type === null) {
-                return null;
+            if ($stmt_expr_type === null || ($replay_constants && $stmt_expr_type->isNever())) {
+                return $stmt_expr_type;
             } elseif ($stmt_expr_type->isAlwaysFalsy()) {
                 return Type::getTrue();
             } elseif ($stmt_expr_type->isAlwaysTruthy()) {
@@ -300,16 +349,42 @@ final class SimpleTypeInferer
                 return Type::getString($aliases->namespace);
             }
 
-            // a constant depending on classes, e.g. an enum case, is known once they are, see ReflectorVisitor
-            if ($codebase->getUnresolvedGlobalConstant($name) !== null) {
+            if ($existing_class_constants !== null) {
+                return $codebase->config->isConstantOfPhp($name)
+                    ? ConstFetchAnalyzer::getGlobalConstType($codebase, $name, $name)
+                    : null;
+            }
+
+            if (!$replay_constants && !$codebase->scanner->is_scanning) {
+                return $codebase->getUnresolvedGlobalConstant($name) === null
+                    ? ConstFetchAnalyzer::getGlobalConstType($codebase, $name, $name)
+                    : null;
+            }
+
+            // the constant the name refers to where it is written
+            $const_name = $stmt->name->toString();
+
+            if (!$replay_constants) {
+                $names = [$name];
+            } elseif ($stmt->name instanceof PhpParser\Node\Name\FullyQualified) {
+                $names = [$const_name];
+            } elseif (isset($aliases->constants[$const_name])) {
+                $names = [$aliases->constants[$const_name]];
+            } elseif ($stmt->name->isUnqualified() && $aliases->namespace !== null && $aliases->namespace !== '') {
+                $names = [$aliases->namespace . '\\' . $const_name, $const_name];
+            } else {
+                $names = [Type::getFQCLNFromString($const_name, $aliases)];
+            }
+
+            try {
+                return ConstantTypeResolver::resolveGlobalConstant(
+                    $codebase,
+                    $names,
+                    $file_source instanceof StatementsAnalyzer ? $file_source : null,
+                );
+            } catch (CircularReferenceException) {
                 return null;
             }
-
-            if ($type = ConstFetchAnalyzer::getGlobalConstType($codebase, $name, $name)) {
-                return $type;
-            }
-
-            return null;
         }
 
         if ($stmt instanceof PhpParser\Node\Scalar\MagicConst\Dir
@@ -422,6 +497,7 @@ final class SimpleTypeInferer
                 $file_source,
                 $existing_class_constants,
                 $fq_classlike_name,
+                $replay_constants,
             );
         }
 
@@ -450,7 +526,12 @@ final class SimpleTypeInferer
                 $file_source,
                 $existing_class_constants,
                 $fq_classlike_name,
+                $replay_constants,
             );
+
+            if ($replay_constants && $operand_type?->isNever()) {
+                return $operand_type;
+            }
 
             return $operand_type ? CastAnalyzer::getObjectCastType($operand_type) : Type::getObject();
         }
@@ -468,6 +549,7 @@ final class SimpleTypeInferer
                 $file_source,
                 $existing_class_constants,
                 $fq_classlike_name,
+                $replay_constants,
             );
 
             if (!$type_to_invert) {
@@ -503,6 +585,7 @@ final class SimpleTypeInferer
                     $file_source,
                     $existing_class_constants,
                     $fq_classlike_name,
+                    $replay_constants,
                 );
 
                 $dim_type = self::infer(
@@ -513,6 +596,7 @@ final class SimpleTypeInferer
                     $file_source,
                     $existing_class_constants,
                     $fq_classlike_name,
+                    $replay_constants,
                 );
 
                 if ($array_type !== null && $dim_type !== null) {
@@ -534,7 +618,12 @@ final class SimpleTypeInferer
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\New_) {
-            $resolved_class_name = $stmt->class->getAttribute('resolvedName');
+            // an expression the scanner left unresolved has no attributes: its class names are qualified instead
+            // (ExpressionResolver), and `self`, `static` and `parent` are kept, as the name resolver keeps them
+            $resolved_class_name = $stmt->class instanceof PhpParser\Node\Name
+                && ($stmt->class instanceof PhpParser\Node\Name\FullyQualified || $stmt->class->isSpecialClassName())
+                ? $stmt->class->toString()
+                : $stmt->class->getAttribute('resolvedName');
 
             if (!is_string($resolved_class_name)) {
                 return null;
@@ -559,6 +648,7 @@ final class SimpleTypeInferer
         ?FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null,
+        bool $replay_constants = false,
     ): ?Union {
         if (count($stmt->items) === 0) {
             return Type::getEmptyArray();
@@ -576,6 +666,7 @@ final class SimpleTypeInferer
                 $file_source,
                 $existing_class_constants,
                 $fq_classlike_name,
+                $replay_constants,
             )) {
                 return null;
             }
@@ -639,6 +730,7 @@ final class SimpleTypeInferer
         ?FileSource $file_source = null,
         ?array $existing_class_constants = null,
         ?string $fq_classlike_name = null,
+        bool $replay_constants = false,
     ): bool {
         if ($item->unpack) {
             $unpacked_array_type = self::infer(
@@ -649,6 +741,7 @@ final class SimpleTypeInferer
                 $file_source,
                 $existing_class_constants,
                 $fq_classlike_name,
+                $replay_constants,
             );
 
             if (!$unpacked_array_type) {
@@ -671,6 +764,7 @@ final class SimpleTypeInferer
                 $file_source,
                 $existing_class_constants,
                 $fq_classlike_name,
+                $replay_constants,
             );
 
             if ($single_item_key_type) {
@@ -724,6 +818,7 @@ final class SimpleTypeInferer
             $file_source,
             $existing_class_constants,
             $fq_classlike_name,
+            $replay_constants,
         );
 
         if (!$single_item_value_type) {

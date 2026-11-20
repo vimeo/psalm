@@ -266,6 +266,34 @@ final class ParamTypeManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['MissingParamType'],
                 'safe_types' => true,
             ],
+            'noIntParamTypeWithADefaultOfAClassDeclaredLater' => [
+                'input' => '<?php
+                    class C {
+                        public function fooFoo($a = D::ONE): void {}
+                    }
+
+                    (new C)->fooFoo(5);
+
+                    class D {
+                        public const ONE = 1;
+                    }',
+                'output' => '<?php
+                    class C {
+                        /**
+                         * @psalm-param 1|5 $a
+                         */
+                        public function fooFoo(int $a = D::ONE): void {}
+                    }
+
+                    (new C)->fooFoo(5);
+
+                    class D {
+                        public const ONE = 1;
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['MissingParamType'],
+                'safe_types' => true,
+            ],
             'noStringParamTypeParent' => [
                 'input' => '<?php
                     class C {

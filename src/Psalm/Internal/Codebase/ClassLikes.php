@@ -2555,19 +2555,9 @@ final class ClassLikes
                                 continue;
                             }
 
-                            if ($method_storage->params[$offset]->default_type) {
-                                if ($method_storage->params[$offset]->default_type instanceof Union) {
-                                    $default_type = $method_storage->params[$offset]->default_type;
-                                } else {
-                                    $default_type_atomic = ConstantTypeResolver::resolve(
-                                        $codebase->classlikes,
-                                        $method_storage->params[$offset]->default_type,
-                                        null,
-                                    );
+                            $default_type = $method_storage->params[$offset]->getDefaultType($codebase);
 
-                                    $default_type = new Union([$default_type_atomic]);
-                                }
-
+                            if ($default_type) {
                                 $possible_type = Type::combineUnionTypes(
                                     $possible_type,
                                     $default_type,
@@ -3026,17 +3016,26 @@ final class ClassLikes
             }
 
             if ($constant_storage->unresolved_node) {
-                /** @psalm-suppress InaccessibleProperty Lazy resolution */
-                $constant_storage->inferred_type = new Union([ConstantTypeResolver::resolve(
-                    $this,
+                $codebase = $statements_analyzer?->getCodebase() ?? ProjectAnalyzer::getInstance()->getCodebase();
+                $inferred_type = ConstantTypeResolver::resolveToUnion(
+                    $codebase,
                     $constant_storage->unresolved_node,
                     $statements_analyzer,
                     $visited_constant_ids,
-                )]);
+                );
 
+                if ($codebase->scanner->is_scanning) {
+                    $declared_type = $constant_storage->type;
+                    $new_atomic_types[] = ($late_static_binding && $declared_type?->from_docblock
+                        ? $declared_type : $inferred_type)->getAtomicTypes();
+                    continue;
+                }
+
+                /** @psalm-suppress InaccessibleProperty Lazy resolution */
+                $constant_storage->inferred_type = $inferred_type;
                 if ($constant_storage->type === null || !$constant_storage->type->from_docblock) {
                     /** @psalm-suppress InaccessibleProperty Lazy resolution */
-                    $constant_storage->type = $constant_storage->inferred_type;
+                    $constant_storage->type = $inferred_type;
                 }
             }
 

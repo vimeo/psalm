@@ -222,17 +222,19 @@ final class CacheTest extends TestCase
      *     type_coverage?: array{int, int},
      * }> $interactions
      * @param bool $is_diff the diff mode, which the command line does not use
+     * @param string $config_attributes attributes of the `<psalm>` element of the config
      */
     #[DataProvider('provideCacheInteractions')]
     public function testCacheInteractions(
         array $interactions,
         bool $is_diff = true,
+        string $config_attributes = '',
     ): void {
         $config = Config::loadFromXML(
             __DIR__ . DIRECTORY_SEPARATOR . 'test_base_dir',
-            <<<'XML'
+            <<<XML
                 <?xml version="1.0"?>
-                <psalm>
+                <psalm $config_attributes>
                     <projectFiles>
                         <directory name="src" />
                     </projectFiles>
@@ -265,6 +267,8 @@ final class CacheTest extends TestCase
 
             $start_time = microtime(true);
             $project_analyzer = new ProjectAnalyzer($config, $providers);
+            // as the command line does (ProjectBootstrap)
+            $project_analyzer->getCodebase()->all_constants_global = $config->all_constants_global;
             $project_analyzer->check($config->base_dir, $is_diff);
             $project_analyzer->finish($start_time, PSALM_VERSION);
 
@@ -856,6 +860,7 @@ final class CacheTest extends TestCase
      *         type_coverage?: array{int, int},
      *     }>,
      *     1?: bool,
+     *     2?: string,
      * }>
      * @psalm-pure
      */
@@ -1158,5 +1163,245 @@ final class CacheTest extends TestCase
             ],
             false,
         ];
+
+        $a = static fn(int $y): string => <<<PHP
+            <?php
+            final class A {
+                public const Y = $y;
+            }
+            PHP;
+
+        $returns = static fn(string $class, string $type, string $expr): string => <<<PHP
+            <?php
+            final class $class {
+                /** @return $type */
+                public function f(): int { return $expr; }
+            }
+            PHP;
+
+        $wrong_return = static fn(string $class, string $declared, string $got): array => [
+            "InvalidReturnStatement: The inferred type '$got' does not match the declared return type '$declared'"
+                . " for $class::f",
+            "InvalidReturnType: The declared return type '$declared' for $class::f is incorrect, got '$got'",
+        ];
+
+        yield 'enumCaseValueFollowsTheConstantOfAnotherClass' => [
+            [
+                [
+                    'files' => [
+                        'src/A.php' => $a(10),
+                        'src/B.php' => '<?php enum B: int { case X = A::Y * 2; }',
+                        'src/D.php' => $returns('D', '20', 'B::X->value'),
+                    ],
+                    'issues' => [],
+                ],
+                [
+                    'files' => ['src/A.php' => $a(11)],
+                    'issues' => ['src/D.php' => $wrong_return('D', '20', '22')],
+                ],
+            ],
+            false,
+        ];
+
+        $e = <<<'PHP'
+            <?php
+            final class E {
+                /**
+                 * @template T
+                 * @param T $i
+                 * @return T
+                 */
+                public function f($i = A::Y) { return $i; }
+            }
+            PHP;
+
+        yield 'parameterDefaultFollowsTheConstantOfAnotherClass' => [
+            [
+                [
+                    'files' => [
+                        'src/A.php' => $a(10),
+                        'src/E.php' => $e,
+                        'src/G.php' => $returns('G', '10', '(new E())->f()'),
+                    ],
+                    'issues' => [],
+                ],
+                [
+                    'files' => ['src/A.php' => $a(11)],
+                    'issues' => ['src/G.php' => $wrong_return('G', '10', '11')],
+                ],
+            ],
+            false,
+        ];
+
+        yield 'docblockParamTypeWithItsDefaultFollowsTheConstantOfAnotherClass' => [
+            [
+                [
+                    'files' => [
+                        'src/A.php' => '<?php final class M { public const NONE = null; }',
+                        'src/F.php' => <<<'PHP'
+                            <?php
+                            final class F {
+                                /** @param string $s */
+                                public function f($s = M::NONE): void { echo (string) $s; }
+                            }
+                            PHP,
+                        'src/G.php' => '<?php final class G { public function g(F $f): void { $f->f(null); } }',
+                    ],
+                    'issues' => [],
+                ],
+                [
+                    'files' => ['src/A.php' => '<?php final class M { public const NONE = 5; }'],
+                    'issues' => [
+                        'src/G.php' => [
+                            'NullArgument: Argument 1 of F::f cannot be null, null value provided to parameter with'
+                                . ' type 5|string',
+                        ],
+                    ],
+                ],
+            ],
+            false,
+            'addParamDefaultToDocblockType="true"',
+        ];
+
+        // the files are scanned in the order of their names: Z after the files reading its constant
+        yield 'constantOfAClassScannedLaterIsNotMixed' => [
+            [
+                [
+                    'files' => [
+                        'src/A.php' => '<?php final class A { public const Y = Z::V; }',
+                        'src/B.php' => '<?php enum B: int { case X = A::Y; }',
+                        'src/D.php' => $returns('D', '10', 'B::X->value'),
+                        'src/E.php' => $e,
+                        'src/G.php' => $returns('G', '10', '(new E())->f()'),
+                        'src/Z.php' => '<?php final class Z { public const V = 10; }',
+                    ],
+                    'issues' => [],
+                ],
+            ],
+            false,
+        ];
+
+        yield 'globalConstantFollowsTheConstantOfAnotherClass' => [
+            [
+                [
+                    'files' => [
+                        'src/A.php' => $a(10),
+                        'src/H.php' => '<?php const C1 = A::Y;',
+                        'src/K.php' => $returns('K', '10', 'C1'),
+                    ],
+                    'issues' => [],
+                ],
+                [
+                    'files' => ['src/A.php' => $a(11)],
+                    'issues' => ['src/K.php' => $wrong_return('K', '10', '11')],
+                ],
+            ],
+            false,
+            'allConstantsGlobal="true"',
+        ];
+
+        yield 'definedConstantFollowsTheConstantOfAnotherClass' => [
+            [
+                [
+                    'files' => [
+                        'src/A.php' => $a(10),
+                        'src/H.php' => '<?php define("C2", A::Y);',
+                        'src/K.php' => $returns('K', '10', 'C2'),
+                    ],
+                    'issues' => [],
+                ],
+                [
+                    'files' => ['src/A.php' => $a(11)],
+                    'issues' => ['src/K.php' => $wrong_return('K', '10', '11')],
+                ],
+            ],
+            false,
+            'allConstantsGlobal="true"',
+        ];
+
+        yield 'constantDefinedInAFunctionFollowsTheConstantOfAnotherClass' => [
+            [
+                [
+                    'files' => [
+                        'src/A.php' => $a(10),
+                        'src/K.php' => <<<'PHP'
+                            <?php
+                            function hf(): void { define("C3", A::Y); }
+                            final class K {
+                                /** @return 10 */
+                                public function f(): int { hf(); return C3; }
+                            }
+                            PHP,
+                    ],
+                    'issues' => [],
+                ],
+                [
+                    'files' => ['src/A.php' => $a(11)],
+                    'issues' => ['src/K.php' => $wrong_return('K', '10', '11')],
+                ],
+            ],
+            false,
+        ];
+
+        yield 'globalConstantDefinedInAFunctionFollowsTheConstantOfAnotherClass' => [
+            [
+                [
+                    'files' => [
+                        'src/A.php' => $a(10),
+                        'src/B.php' => '<?php function init(): void { define("C4", A::Y); }',
+                        'src/K.php' => $returns('K', '10', 'C4'),
+                    ],
+                    'issues' => [],
+                ],
+                [
+                    'files' => ['src/A.php' => $a(11)],
+                    'issues' => ['src/K.php' => $wrong_return('K', '10', '11')],
+                ],
+            ],
+            false,
+            'allConstantsGlobal="true"',
+        ];
+
+        $gy = static fn(int $value): string => "<?php const GY = $value;";
+        $consumers = [
+            'classConstant' => ['<?php final class B { public const X = GY; }', 'B::X'],
+            'enumCase' => ['<?php enum B: int { case X = GY; }', 'B::X->value'],
+            'parameterDefault' => [
+                <<<'PHP'
+                    <?php
+                    final class B {
+                        /**
+                         * @template T
+                         * @param T $i
+                         * @return T
+                         */
+                        public function f($i = GY) { return $i; }
+                    }
+                    PHP,
+                '(new B())->f()',
+            ],
+            'globalConstant' => ['<?php const GX = GY;', 'GX'],
+        ];
+
+        foreach ($consumers as $consumer => [$code, $expression]) {
+            yield $consumer . 'FollowsTheGlobalConstantOfAnotherFile' => [
+                [
+                    [
+                        'files' => [
+                            'src/A.php' => $gy(10),
+                            'src/B.php' => $code,
+                            'src/D.php' => $returns('D', '10', $expression),
+                        ],
+                        'issues' => [],
+                    ],
+                    [
+                        'files' => ['src/A.php' => $gy(11)],
+                        'issues' => ['src/D.php' => $wrong_return('D', '10', '11')],
+                    ],
+                ],
+                false,
+                'allConstantsGlobal="true"',
+            ];
+        }
     }
 }

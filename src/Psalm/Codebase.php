@@ -20,6 +20,7 @@ use LanguageServerProtocol\TextEdit;
 use PhpParser;
 use PhpParser\Node\Arg;
 use Psalm\CodeLocation\Raw;
+use Psalm\Exception\CircularReferenceException;
 use Psalm\Exception\UnanalyzedFileException;
 use Psalm\Exception\UnpopulatedClasslikeException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
@@ -29,12 +30,12 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\NativeClassTaintAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\Codebase\ClassLikes;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\Methods;
@@ -218,6 +219,21 @@ final class Codebase
      * @var array<string, array<string, Union>>
      */
     public array $global_constant_types_by_wildcard = [];
+
+    /**
+     * The types of the global constants resolved since the files were last scanned, by the names they were looked up
+     * with and the files reading them (see ConstantTypeResolver::resolveGlobalConstant())
+     *
+     * @internal
+     * @var array<string, ?Union>
+     */
+    public array $global_constant_types = [];
+
+    /**
+     * @see getAllDefinitionsResolvedLater()
+     * @var array<string, list<array{string, Union|UnresolvedConstantComponent, bool}>>|null
+     */
+    private ?array $definitions_resolved_later = null;
 
     public bool $server_mode = false;
 
@@ -939,6 +955,8 @@ final class Codebase
         $this->populator->populateCodebase();
         // the files scanned again may declare other constants
         $this->global_constant_types_by_wildcard = [];
+        $this->global_constant_types = [];
+        $this->definitions_resolved_later = null;
     }
 
     /**
@@ -1059,6 +1077,8 @@ final class Codebase
             $this->populator->populateCodebase();
             // the files scanned again may declare other constants
             $this->global_constant_types_by_wildcard = [];
+            $this->global_constant_types = [];
+            $this->definitions_resolved_later = null;
         }
     }
 
@@ -1279,6 +1299,39 @@ final class Codebase
     public function addGlobalConstantTypes(array $stubs): void
     {
         self::$stubbed_constants += $stubs;
+    }
+
+    /**
+     * The definitions of a constant that the files defining it couldn't resolve while they were scanned, as
+     * `define('C', A::Y)`: the file defining it, its value, and whether it is global. They are never written into
+     * the storages, which are cached for the contents of their own file.
+     *
+     * @internal
+     * @return list<array{string, Union|UnresolvedConstantComponent, bool}>
+     */
+    public function getDefinitionsResolvedLater(string $name): array
+    {
+        return $this->getAllDefinitionsResolvedLater()[$name] ?? [];
+    }
+
+    /**
+     * @internal
+     * @return array<string, list<array{string, Union|UnresolvedConstantComponent, bool}>>
+     */
+    public function getAllDefinitionsResolvedLater(): array
+    {
+        if (!$this->scanner->is_scanning && $this->definitions_resolved_later !== null) {
+            return $this->definitions_resolved_later;
+        }
+
+        $definitions = [];
+        foreach ($this->file_storage_provider->getAll() as $file_storage) {
+            foreach ($file_storage->unresolved_defined_constants as [$name, $value, $global]) {
+                $definitions[$name][] = [$file_storage->file_path, $value, $global];
+            }
+        }
+
+        return $this->scanner->is_scanning ? $definitions : ($this->definitions_resolved_later = $definitions);
     }
 
     /**
@@ -1666,6 +1719,8 @@ final class Codebase
 
         $this->file_storage_provider->remove($file_path);
         $this->global_constant_types_by_wildcard = [];
+        $this->global_constant_types = [];
+        $this->definitions_resolved_later = null;
     }
 
     public function getFunctionStorageForSymbol(string $file_path, string $symbol): ?FunctionLikeStorage
@@ -1884,29 +1939,17 @@ final class Codebase
                 );
             }
         } else {
-            $file_storage = $this->file_storage_provider->get(
-                $reference->file_path,
-            );
-            // ?
-            if (isset($file_storage->constants[$reference->symbol])) {
-                return new PHPMarkdownContent(
-                    'const ' .
-                        $reference->symbol .
-                        ' ' .
-                        $file_storage->constants[$reference->symbol],
-                    $reference->symbol,
-                );
+            try {
+                $type = ConstantTypeResolver::resolveGlobalConstant($this, [$reference->symbol]);
+            } catch (CircularReferenceException) {
+                // reported where the constants are declared
+                $type = null;
             }
-            $type = ConstFetchAnalyzer::getGlobalConstType(
-                $this,
-                $reference->symbol,
-                $reference->symbol,
-            );
 
             //Global Constant
             if ($type) {
                 return new PHPMarkdownContent(
-                    'const ' . $reference->symbol . ' ' . $type,
+                    'const ' . $reference->symbol . ' ' . $type->__toString(),
                     $reference->symbol,
                 );
             }

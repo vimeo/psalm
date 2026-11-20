@@ -233,6 +233,344 @@ final class ConstantTest extends TestCase
         $this->analyzeFile($file2, new Context());
     }
 
+    public function testConstantDefinedInBranchesWithConstantsHasTheValuesOfAllOfThem(): void
+    {
+        // the constants and functions of other files are known without including them
+        $this->project_analyzer->getCodebase()->all_constants_global = true;
+        $this->project_analyzer->getCodebase()->all_functions_global = true;
+
+        $file1 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file1.php';
+        $file2 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file2.php';
+
+        $this->addFile(
+            $file1,
+            '<?php
+                if (rand(0, 1)) {
+                    define("CHOICE", Choices::ONE);
+                } else {
+                    define("CHOICE", 2);
+                }
+
+                final class Choices {
+                    public const ONE = 1;
+                }
+            ',
+        );
+
+        $this->addFile(
+            $file2,
+            '<?php
+                // the body of a function of a file that is not analysed is not scanned
+                function init(): void {
+                    if (rand(0, 1)) {
+                        define("LOCAL_CHOICE", LocalChoices::ONE);
+                    } else {
+                        define("LOCAL_CHOICE", 2);
+                    }
+                }
+
+                /** @psalm-check-type-exact $choice = 1|2 */
+                $choice = CHOICE;
+
+                init();
+                /** @psalm-check-type-exact $local = 1|2 */
+                $local = LOCAL_CHOICE;
+                final class LocalChoices {
+                    public const ONE = 1;
+                }
+            ',
+        );
+
+        $this->analyzeFile($file2, new Context());
+    }
+
+    public function testExpressionsOfAutoloadedConstantsAreInferred(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $codebase = $this->project_analyzer->getCodebase();
+        $dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR;
+
+        // as Config::visitComposerAutoloadFiles() registers the files the autoloader included
+        $this->file_provider->registerFile($dir . 'bootstrap.php', '<?php
+            define("PRODUCTION", SettingsSource::FLAG);
+            define("LEVEL", 3);');
+        $codebase->register_autoload_files = true;
+        $codebase->scanner->addFileToDeepScan($dir . 'bootstrap.php');
+        $codebase->scanner->scanFiles($codebase->classlikes);
+        $codebase->register_autoload_files = false;
+
+        $this->addFile($dir . 'somefile.php', '<?php
+            final class SettingsSource { public const FLAG = true; }
+
+            final class Settings {
+                public const DEBUG = !PRODUCTION;
+                public const MASK = LEVEL << 2;
+            }
+
+            /**
+             * @template T
+             * @param T $d
+             * @return T
+             */
+            function debug($d = !PRODUCTION) { return $d; }
+
+            const G_DEBUG = !PRODUCTION;
+
+            enum Level: int { case Shifted = LEVEL << 2; }
+
+            /** @psalm-check-type-exact $class_constant = false */
+            $class_constant = Settings::DEBUG;
+            /** @psalm-check-type-exact $mask = 12 */
+            $mask = Settings::MASK;
+            /** @psalm-check-type-exact $default = false */
+            $default = debug();
+            /** @psalm-check-type-exact $global = false */
+            $global = G_DEBUG;
+            /** @psalm-check-type-exact $case = 12 */
+            $case = Level::Shifted->value;');
+
+        $this->analyzeFile($dir . 'somefile.php', new Context());
+    }
+
+    public function testConstantOfTheNamespaceIsReadBeforeTheGlobalOneWhereverTheyAreDefined(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        // the constants of other files are known without including them
+        $this->project_analyzer->getCodebase()->all_constants_global = true;
+
+        $dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR;
+
+        // a definition the scanner resolved and one it left to a class are alternatives of their name only
+        $this->addFile($dir . 'a.php', '<?php
+            namespace {
+                final class A {
+                    public const TWENTY = 20;
+                    public const TEN = 10;
+                }
+
+                define("LEVEL", 10);
+                define("REVERSED_LEVEL", A::TEN);
+                const NUMBER = 10;
+            }
+
+            namespace Lib {
+                define("Lib\LEVEL", \A::TWENTY);
+                define("Lib\REVERSED_LEVEL", 20);
+                const NUMBER = 20;
+            }');
+        $this->addFile($dir . 'b.php', '<?php
+            namespace Lib;
+
+            final class Value { public const VAL = NUMBER; }
+
+            enum Number: int { case X = NUMBER; }
+
+            /**
+             * @template T
+             * @param T $v
+             * @return T
+             */
+            function number($v = NUMBER) { return $v; }');
+        $this->addFile($dir . 'c.php', '<?php
+            namespace Lib;
+
+            /** @psalm-check-type-exact $level = 20 */
+            $level = LEVEL;
+            /** @psalm-check-type-exact $reversed_level = 20 */
+            $reversed_level = REVERSED_LEVEL;
+            /** @psalm-check-type-exact $class_constant = 20 */
+            $class_constant = Value::VAL;
+            /** @psalm-check-type-exact $case = 20 */
+            $case = Number::X->value;
+            /** @psalm-check-type-exact $default = 20 */
+            $default = number();');
+
+        $this->analyzeFile($dir . 'c.php', new Context());
+    }
+
+    public function testExpressionsOfConstantsReadTheConstantsTheScannerLeftUnresolved(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        // the constants and functions of other files are known without including them
+        $this->project_analyzer->getCodebase()->all_constants_global = true;
+        $this->project_analyzer->getCodebase()->all_functions_global = true;
+
+        $dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR;
+
+        $this->addFile($dir . 'a.php', '<?php
+            define("BASE", A::TEN);
+            const FLAG = A::FLAG;
+
+            final class A {
+                public const FLAG = true;
+                public const ONE = 1;
+                public const TEN = 10;
+            }
+
+            const ELEVEN = BASE + 1;
+
+            if (rand(0, 1)) {
+                define("CHOICE", A::ONE);
+            } else {
+                define("CHOICE", 2);
+            }');
+        $this->addFile($dir . 'b.php', '<?php
+            enum Remainder: int {
+                case Modulo = ELEVEN % 3;
+                case Power = ELEVEN ** 2;
+            }
+
+            /**
+             * @template T
+             * @param T $v
+             * @return T
+             */
+            function negated($v = !FLAG) { return $v; }
+
+            /**
+             * @template T
+             * @param T $v
+             * @return T
+             */
+            function choice($v = CHOICE) { return $v; }
+
+            const MODULO = ELEVEN % 3;
+
+            /** @psalm-check-type-exact $modulo = 2 */
+            $modulo = Remainder::Modulo->value;
+            /** @psalm-check-type-exact $power = 121 */
+            $power = Remainder::Power->value;
+            /** @psalm-check-type-exact $negated = false */
+            $negated = negated();
+            /** @psalm-check-type-exact $choice = 1|2 */
+            $choice = choice();
+            /** @psalm-check-type-exact $global = 2 */
+            $global = MODULO;');
+
+        $this->analyzeFile($dir . 'b.php', new Context());
+    }
+
+    public function testChainOfConstantsWithoutALiteralValueIsResolved(): void
+    {
+        // the constants of other files are known without including them
+        $this->project_analyzer->getCodebase()->all_constants_global = true;
+
+        $dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR;
+
+        // each constant reads the previous one, as paths do
+        $chain = '<?php define("PATH_0", Roots::PATH); define("N_0", Roots::NUMBER);';
+
+        for ($i = 1; $i <= 40; $i++) {
+            $chain .= $i % 2
+                ? "\ndefine('PATH_$i', PATH_" . ($i - 1) . " . '/d$i');"
+                : "\nconst PATH_$i = PATH_" . ($i - 1) . " . '/d$i';";
+            $chain .= "\ndefine('N_$i', N_" . ($i - 1) . " / 2);";
+        }
+
+        $this->addFile($dir . 'a.php', $chain);
+        $this->addFile($dir . 'b.php', '<?php
+            final class Roots {
+                public const PATH = __DIR__;
+                public const NUMBER = 5497558138880;
+            }');
+        $this->addFile($dir . 'c.php', '<?php
+            /** @psalm-check-type-exact $path = non-empty-string */
+            $path = PATH_40;
+            /** @psalm-check-type-exact $number = 5 */
+            $number = N_40;');
+
+        $this->analyzeFile($dir . 'c.php', new Context());
+    }
+
+    public function testConstantNameWithASpaceDoesNotShareTheNamespaceFallback(): void
+    {
+        $this->project_analyzer->getCodebase()->all_constants_global = true;
+
+        $dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR;
+        $this->addFile($dir . 'a.php', '<?php
+            define("Lib\LEVEL", A::V);
+            define("Lib\LEVEL LEVEL", "str");
+            final class A { public const V = 10; }');
+        $this->addFile($dir . 'b.php', '<?php
+            namespace Lib;
+            /** @psalm-check-type-exact $regular = 10 */
+            $regular = LEVEL;
+            /** @psalm-check-type-exact $spaced = "str" */
+            $spaced = constant("Lib\LEVEL LEVEL");');
+
+        $this->analyzeFile($dir . 'b.php', new Context());
+    }
+
+    public function testScanTimeDefineNamesReadDeferredGlobalValuesWithoutMemoisingThem(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->all_constants_global = true;
+        $dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR;
+        $this->addFile($dir . 'a.php', '<?php
+            const BASE = "APP";
+            const PREFIX = BASE . "_X";
+            define("DPREFIX", BASE . "_D");
+            const INCOMPLETE = LATE . "_TAIL";');
+        $this->addFile($dir . 'b.php', '<?php
+            define(PREFIX . "_DEBUG", true);
+            define(DPREFIX . "_LEVEL", 3);
+            define(INCOMPLETE . "_EARLY", 1);');
+        $this->addFile($dir . 'c.php', '<?php
+            define("LATE", BASE . "_READY");
+            define(INCOMPLETE . "_LATE", 2);');
+        $this->addFile($dir . 'd.php', '<?php
+            /** @psalm-check-type-exact $debug = true */
+            $debug = APP_X_DEBUG;
+            /** @psalm-check-type-exact $level = 3 */
+            $level = APP_D_LEVEL;
+            /** @psalm-check-type-exact $late = 2 */
+            $late = APP_READY_TAIL_LATE;
+            /** @psalm-check-type-exact $complete = "APP_READY_TAIL" */
+            $complete = INCOMPLETE;');
+
+        $codebase->scanner->scanFiles($codebase->classlikes);
+        self::assertSame([], $codebase->global_constant_types);
+        self::assertNull($codebase->getStubbedConstantType('APP_READY_TAIL_EARLY'));
+        $this->analyzeFile($dir . 'd.php', new Context());
+    }
+
+    public function testScanTimeDefineNameResolvesSharedConstantDependencies(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->all_constants_global = true;
+        $dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR;
+        $chain = '<?php define("V0", "");';
+
+        for ($i = 1; $i <= 24; $i++) {
+            $previous = 'V' . ($i - 1);
+            $chain .= "\ndefine('V$i', $previous . $previous);";
+        }
+
+        $this->addFile($dir . 'a.php', $chain);
+        $this->addFile($dir . 'b.php', '<?php define(V24 . "RESULT", 42);');
+        $this->addFile($dir . 'c.php', '<?php
+            /** @psalm-check-type-exact $result = 42 */
+            $result = RESULT;');
+
+        $codebase->scanner->scanFiles($codebase->classlikes);
+        self::assertSame([], $codebase->global_constant_types);
+        $this->analyzeFile($dir . 'c.php', new Context());
+    }
+
+    public function testDefaultWithANestedDivisionByZeroHasNoValue(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $file = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile($file, '<?php
+            final class A { public const NUM = 10; }
+            function sample($value = (A::NUM / 0) + 10): void {}');
+
+        $codebase->scanFiles();
+        $type = $codebase->file_storage_provider->get($file)->functions['sample']->params[0]->getDefaultType($codebase);
+        self::assertNotNull($type);
+        self::assertTrue($type->isNever());
+    }
+
     // TODO: Waiting for https://github.com/vimeo/psalm/issues/7125
     // public function testKeyofSelfConstDoesntImplyKeyofStaticConst(): void
     // {

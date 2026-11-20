@@ -1708,7 +1708,16 @@ final class ClassLikeNodeScanner
                 continue;
             }
 
-            $inferred_type = SimpleTypeInferer::infer(
+            // the constants of classes it reads are left to their own resolution
+            $unresolved_expression = ExpressionResolver::getUnresolvedExpression(
+                $const->value,
+                $this->aliases,
+                $fq_classlike_name,
+                $storage->parent_class,
+                null,
+            );
+
+            $inferred_type = $unresolved_expression === null ? SimpleTypeInferer::infer(
                 $this->codebase,
                 new NodeDataProvider(),
                 $const->value,
@@ -1716,7 +1725,7 @@ final class ClassLikeNodeScanner
                 null,
                 $existing_constants,
                 $fq_classlike_name,
-            );
+            ) : null;
 
             $type_location = null;
             if ($var_comment && $var_comment->type !== null) {
@@ -1769,7 +1778,7 @@ final class ClassLikeNodeScanner
                 $exists = true;
             } else {
                 $exists = false;
-                $unresolved_const_expr = ExpressionResolver::getUnresolvedClassConstExpr(
+                $unresolved_const_expr = $unresolved_expression ?? ExpressionResolver::getUnresolvedClassConstExpr(
                     $const->value,
                     $this->aliases,
                     $fq_classlike_name,
@@ -1861,6 +1870,16 @@ final class ClassLikeNodeScanner
         $case_location = new CodeLocation($this->file_scanner, $stmt);
 
         if ($stmt->expr !== null) {
+            $enum_value = ExpressionResolver::getUnresolvedExpression(
+                $stmt->expr,
+                $this->aliases,
+                $fq_classlike_name,
+                $storage->parent_class,
+                $storage->constants,
+            );
+        }
+
+        if ($stmt->expr !== null && $enum_value === null) {
             $case_type = SimpleTypeInferer::infer(
                 $this->codebase,
                 new NodeDataProvider(),

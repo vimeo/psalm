@@ -26,6 +26,7 @@ use function array_keys;
 use function getcwd;
 use function is_dir;
 use function rmdir;
+use function sort;
 use function strpos;
 use function substr;
 use function sys_get_temp_dir;
@@ -212,6 +213,81 @@ final class CachedStorageTest extends TestCase
         $declared = array_keys($codebase->file_storage_provider->get($includer)->declaring_function_ids);
 
         self::assertSame(['bar'], $declared);
+    }
+
+    public function testDefaultFollowsTheReloadedConstantOfAnotherClass(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->throw_exception = false;
+        $constants = (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php';
+        $users = (string) getcwd() . DIRECTORY_SEPARATOR . 'B.php';
+
+        $this->file_provider->registerFile($constants, '<?php final class A { public const Y = 10; }');
+        $this->file_provider->registerFile($users, '<?php
+            final class E {
+                /**
+                 * @template T
+                 * @param T $i
+                 * @return T
+                 */
+                public function f($i = A::Y) { return $i; }
+            }
+            final class G {
+                /** @return 10 */
+                public function g(): int { return (new E())->f(); }
+            }');
+
+        $codebase->addFilesToAnalyze([$constants => $constants, $users => $users]);
+        $codebase->scanFiles();
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+        self::assertSame([], IssueBuffer::getIssuesDataForFile($users));
+
+        $this->file_provider->registerFile($constants, '<?php final class A { public const Y = 11; }');
+        $codebase->reloadFiles($this->project_analyzer, [$constants]);
+        $codebase->addFilesToAnalyze([$users => $users]);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false, true);
+
+        $issues = [];
+        foreach (IssueBuffer::getIssuesDataForFile($users) as $issue) {
+            $issues[] = $issue->line_from . ' ' . $issue->type;
+        }
+        sort($issues);
+
+        self::assertSame(['11 InvalidReturnType', '12 InvalidReturnStatement'], $issues);
+    }
+
+    public function testDefinedConstantFollowsTheReloadedClassConstant(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->throw_exception = false;
+        // the constants of other files are known without including them
+        $codebase->all_constants_global = true;
+        $producer = (string) getcwd() . DIRECTORY_SEPARATOR . 'A.php';
+        $defines = (string) getcwd() . DIRECTORY_SEPARATOR . 'H.php';
+        $users = (string) getcwd() . DIRECTORY_SEPARATOR . 'K.php';
+
+        $this->file_provider->registerFile($producer, '<?php final class A { public const VALUE = 5; }');
+        $this->file_provider->registerFile($defines, '<?php define("FOO", A::VALUE);');
+        $this->file_provider->registerFile($users, '<?php
+            /** @return 5 */
+            function five(): int { return FOO; }');
+
+        $codebase->addFilesToAnalyze([$producer => $producer, $defines => $defines, $users => $users]);
+        $codebase->scanFiles();
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+        self::assertSame([], IssueBuffer::getIssuesDataForFile($users));
+
+        $this->file_provider->registerFile($producer, '<?php final class A { public const VALUE = 6; }');
+        $codebase->reloadFiles($this->project_analyzer, [$producer]);
+        $codebase->addFilesToAnalyze([$users => $users]);
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false, true);
+
+        $issue_types = [];
+        foreach (IssueBuffer::getIssuesDataForFile($users) as $issue) {
+            $issue_types[] = $issue->type;
+        }
+
+        self::assertEqualsCanonicalizing(['InvalidReturnType', 'InvalidReturnStatement'], $issue_types);
     }
 
     public function testStubbedClassIsReportedAfterItsInterfaceMethodIsRenamed(): void

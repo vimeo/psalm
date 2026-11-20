@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Codebase;
 
+use Closure;
 use InvalidArgumentException;
+use Psalm\Aliases;
+use Psalm\Codebase;
 use Psalm\Exception\CircularReferenceException;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayOffsetFetch;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArraySpread;
 use Psalm\Internal\Scanner\UnresolvedConstant\ArrayValue;
@@ -25,6 +31,7 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseOr;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseXor;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedConcatOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedDivisionOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedExpression;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShift;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShiftLeft;
@@ -32,6 +39,7 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\LiteralCast;
+use Psalm\Storage\FileStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -52,14 +60,18 @@ use Psalm\Type\Union;
 use ReflectionProperty;
 use UnitEnum;
 
-use function array_unshift;
+use function array_key_exists;
+use function count;
 use function ctype_digit;
 use function is_array;
 use function is_float;
 use function is_int;
 use function is_string;
 use function ltrim;
+use function serialize;
 use function spl_object_id;
+use function str_contains;
+use function strtolower;
 
 /**
  * @internal
@@ -67,38 +79,291 @@ use function spl_object_id;
 final class ConstantTypeResolver
 {
     /**
-     * Without an analyzer to resolve the name, the constant is looked up in the scanned files
+     * The expressions being inferred, by object id: an expression reached again through the constants it reads is
+     * circular
+     *
+     * @var array<int, true>
      */
-    private static function resolveScannedConstant(
-        ClassLikes $classlikes,
-        Constant $c,
-        array $visited_constant_ids,
-    ): Atomic {
-        $names = [ltrim($c->name, '\\')];
+    private static array $inferring_expression_ids = [];
 
-        if (!$c->is_fully_qualified && $c->namespace !== '') {
-            array_unshift($names, $c->namespace . '\\' . $c->name);
+    /**
+     * The global constants being resolved, by name: a constant reached again through the constants it reads is
+     * circular
+     *
+     * @var array<string, true>
+     */
+    private static array $resolving_constant_names = [];
+
+    /**
+     * The number of cycles found: a type resolved while one was cut may lack the definitions it skipped
+     */
+    private static int $cycles_found = 0;
+
+    /** @var array<string, ?Union>|null */
+    private static ?array $scan_time_memo = null;
+
+    /**
+     * Reuse dependencies only while evaluating one scan-time name, before storage can change.
+     *
+     * @param Closure(): ?Union $infer
+     */
+    public static function withScanTimeMemo(Closure $infer): ?Union
+    {
+        if (self::$scan_time_memo !== null) {
+            return $infer();
         }
 
-        // PHP resolves `A\SOME` of any file before the global `SOME`
-        foreach ($names as $name) {
-            foreach (FileStorageProvider::getAll() as $file_storage) {
-                if (isset($file_storage->unresolved_constants[$name])) {
-                    return self::resolve(
-                        $classlikes,
-                        $file_storage->unresolved_constants[$name],
-                        null,
-                        $visited_constant_ids,
-                    );
-                }
+        self::$scan_time_memo = [];
+        try {
+            return $infer();
+        } finally {
+            self::$scan_time_memo = null;
+        }
+    }
 
+    /**
+     * The type of a value the scanner left unresolved, as a parameter default
+     */
+    public static function resolveToUnion(
+        Codebase $codebase,
+        UnresolvedConstantComponent $c,
+        ?StatementsAnalyzer $statements_analyzer = null,
+        array $visited_constant_ids = [],
+    ): Union {
+        if ($c instanceof UnresolvedExpression) {
+            return self::inferExpression($codebase, $c, $visited_constant_ids) ?? Type::getMixed();
+        }
+
+        if ($c instanceof Constant) {
+            return self::resolveGlobalConstant($codebase, self::getNamesInItsScope($c), $statements_analyzer)
+                ?? Type::getMixed();
+        }
+
+        return new Union([self::resolve($codebase->classlikes, $c, $statements_analyzer, $visited_constant_ids)]);
+    }
+
+    /**
+     * Replay handles the expressions the scanner can infer. Use the structural form only for unsupported shapes,
+     * so a constant read during replay does not need to be resolved again by the fallback.
+     */
+    private static function inferExpression(
+        Codebase $codebase,
+        UnresolvedExpression $c,
+        array $visited_constant_ids,
+    ): ?Union {
+        $c_id = spl_object_id($c);
+
+        if (isset(self::$inferring_expression_ids[$c_id])) {
+            self::$cycles_found++;
+            throw new CircularReferenceException('Found a circular reference');
+        }
+
+        self::$inferring_expression_ids[$c_id] = true;
+
+        try {
+            $type = SimpleTypeInferer::infer(
+                $codebase,
+                new NodeDataProvider(),
+                $c->expr,
+                new Aliases($c->namespace),
+                null,
+                null,
+                $c->fq_classlike_name,
+                replay_constants: true,
+            );
+
+            if ($type !== null || $c->fallback === null) {
+                return $type;
+            }
+
+            return new Union([self::resolve($codebase->classlikes, $c->fallback, null, $visited_constant_ids)]);
+        } finally {
+            unset(self::$inferring_expression_ids[$c_id]);
+        }
+    }
+
+    /**
+     * The type of the global constant the names refer to, as PHP resolves them: the first name a definition has,
+     * `A\SOME` before the global `SOME`. Defined in several branches, the constant has the value of one of the
+     * definitions, known or resolved later. With an analyzer, only the definitions its code sees: global ones, and
+     * those of its file and of the files it includes.
+     *
+     * @param non-empty-list<string> $names
+     */
+    public static function resolveGlobalConstant(
+        Codebase $codebase,
+        array $names,
+        ?StatementsAnalyzer $statements_analyzer = null,
+    ): ?Union {
+        if ($codebase->scanner->is_scanning) {
+            if (self::$scan_time_memo === null) {
+                return self::findGlobalConstant($codebase, $names, $statements_analyzer);
+            }
+            $memo =& self::$scan_time_memo;
+        } else {
+            $memo =& $codebase->global_constant_types;
+        }
+
+        $key = serialize([
+            $names,
+            $statements_analyzer?->getRootFilePath(),
+            $statements_analyzer?->getFilePath(),
+        ]);
+
+        if (array_key_exists($key, $memo)) {
+            return $memo[$key];
+        }
+
+        $cycles_found = self::$cycles_found;
+        $type = self::findGlobalConstant($codebase, $names, $statements_analyzer);
+
+        if ($cycles_found === self::$cycles_found) {
+            $memo[$key] = $type;
+        }
+
+        return $type;
+    }
+
+    /**
+     * @param non-empty-list<string> $names
+     */
+    private static function findGlobalConstant(
+        Codebase $codebase,
+        array $names,
+        ?StatementsAnalyzer $statements_analyzer,
+    ): ?Union {
+        foreach ($names as $name) {
+            if (isset(self::$resolving_constant_names[$name])) {
+                self::$cycles_found++;
+                throw new CircularReferenceException('Found a circular reference');
+            }
+
+            self::$resolving_constant_names[$name] = true;
+
+            try {
+                $type = self::resolveDefinitionsOf($codebase, $name, $statements_analyzer);
+            } finally {
+                unset(self::$resolving_constant_names[$name]);
+            }
+
+            if ($type !== null) {
+                return $type;
+            }
+        }
+
+        // the constants of PHP, and of the files the autoloader included
+        foreach ($names as $name) {
+            $type = ConstFetchAnalyzer::getGlobalConstType($codebase, $name, $name);
+
+            if ($type !== null) {
+                return $type;
+            }
+        }
+
+        return null;
+    }
+
+    private static function resolveDefinitionsOf(
+        Codebase $codebase,
+        string $name,
+        ?StatementsAnalyzer $statements_analyzer,
+    ): ?Union {
+        $definitions = [];
+
+        // the registry of global constants: stubs, files the autoloader included, constants made global
+        $definitions[] = $codebase->getUnresolvedGlobalConstant($name) ?? $codebase->getStubbedConstantType($name);
+
+        $file_storages = [];
+
+        if ($statements_analyzer) {
+            foreach ([$statements_analyzer->getRootFilePath(), $statements_analyzer->getFilePath()] as $file_path) {
+                $file_storage = $codebase->file_storage_provider->get($file_path);
+                $file_storages[] = $file_storage;
+
+                if (isset($file_storage->declaring_constants[$name])) {
+                    $declaring_storage = $codebase->file_storage_provider->get(
+                        $file_storage->declaring_constants[$name],
+                    );
+                    $definitions[] = $declaring_storage->unresolved_constants[$name]
+                        ?? $declaring_storage->constants[$name];
+                }
+            }
+        } elseif (!$codebase->scanner->is_scanning && $definitions === [null]) {
+            // the registry has the constants of every file where they are global
+            foreach (FileStorageProvider::getAll() as $file_storage) {
                 if (isset($file_storage->constants[$name])) {
-                    return $file_storage->constants[$name]->getSingleAtomic();
+                    $definitions[] = $file_storage->unresolved_constants[$name] ?? $file_storage->constants[$name];
                 }
             }
         }
 
-        return new TMixed;
+        foreach ($codebase->getDefinitionsResolvedLater($name) as [$declaring_file_path, $value, $global]) {
+            if ($global || (!$codebase->scanner->is_scanning
+                && (!$file_storages || self::sees($file_storages, $declaring_file_path)))
+            ) {
+                $definitions[] = $value;
+            }
+        }
+
+        $type = null;
+
+        foreach ($definitions as $definition) {
+            try {
+                $definition_type = $definition instanceof UnresolvedConstantComponent
+                    ? self::resolveToUnion($codebase, $definition, $statements_analyzer)
+                    : $definition;
+            } catch (CircularReferenceException) {
+                // reported where the constants are declared
+                continue;
+            }
+
+            if ($definition_type !== null) {
+                $type = Type::combineUnionTypes($type, $definition_type);
+            }
+        }
+
+        return $type;
+    }
+
+    /**
+     * Whether the code of the files sees the constants of the declaring file: its own, or one it includes
+     *
+     * @param non-empty-list<FileStorage> $file_storages
+     * @psalm-capabilities read-props
+     */
+    private static function sees(array $file_storages, string $declaring_file_path): bool
+    {
+        $declaring_file_path_lc = strtolower($declaring_file_path);
+
+        foreach ($file_storages as $file_storage) {
+            if (strtolower($file_storage->file_path) === $declaring_file_path_lc
+                || isset($file_storage->required_file_paths[$declaring_file_path_lc])
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The names the constant may have where it was written: PHP resolves an unqualified `SOME` of namespace `A` to
+     * `A\SOME` if it exists, otherwise to the global `SOME`
+     *
+     * @return non-empty-list<string>
+     * @psalm-pure
+     */
+    private static function getNamesInItsScope(Constant $c): array
+    {
+        $name = ltrim($c->name, '\\');
+
+        if ($c->is_fully_qualified || $c->namespace === '') {
+            return [$name];
+        }
+
+        return str_contains($name, '\\')
+            ? [$c->namespace . '\\' . $name]
+            : [$c->namespace . '\\' . $name, $name];
     }
 
     private static function resolveShift(UnresolvedShift $c, Atomic $left, Atomic $right): Atomic
@@ -126,6 +391,7 @@ final class ConstantTypeResolver
         $c_id = spl_object_id($c);
 
         if (isset($visited_constant_ids[$c_id])) {
+            self::$cycles_found++;
             throw new CircularReferenceException('Found a circular reference');
         }
 
@@ -133,6 +399,16 @@ final class ConstantTypeResolver
 
         if ($c instanceof ScalarValue) {
             return self::getLiteralTypeFromScalarValue($c->value);
+        }
+
+        if ($c instanceof UnresolvedExpression) {
+            $type = self::inferExpression(
+                $statements_analyzer?->getCodebase() ?? ProjectAnalyzer::getInstance()->getCodebase(),
+                $c,
+                $visited_constant_ids,
+            );
+
+            return $type !== null && count($type->getAtomicTypes()) === 1 ? $type->getSingleAtomic() : new TMixed;
         }
 
         if ($c instanceof UnresolvedBinaryOp) {
@@ -185,38 +461,7 @@ final class ConstantTypeResolver
                 || $c instanceof UnresolvedDivisionOp
                 || $c instanceof UnresolvedMultiplicationOp
             ) {
-                if (($left instanceof TLiteralFloat || $left instanceof TLiteralInt)
-                    && ($right instanceof TLiteralFloat || $right instanceof TLiteralInt)
-                ) {
-                    if ($c instanceof UnresolvedAdditionOp) {
-                        return self::getLiteralTypeFromScalarValue($left->value + $right->value);
-                    }
-
-                    if ($c instanceof UnresolvedSubtractionOp) {
-                        return self::getLiteralTypeFromScalarValue($left->value - $right->value);
-                    }
-
-                    if ($c instanceof UnresolvedDivisionOp) {
-                        // a division by zero throws, so the constant has no value
-                        if ($right->value == 0) {
-                            return new TNever();
-                        }
-
-                        return self::getLiteralTypeFromScalarValue($left->value / $right->value);
-                    }
-
-                    return self::getLiteralTypeFromScalarValue($left->value * $right->value);
-                }
-
-                if ($left instanceof TKeyedArray && $right instanceof TKeyedArray) {
-                    $type = TKeyedArray::make(
-                        $left->properties + $right->properties,
-                        null,
-                    );
-                    return $type;
-                }
-
-                return new TMixed;
+                return self::resolveArithmeticOp($c, $left, $right);
             }
 
             return new TMixed;
@@ -384,20 +629,13 @@ final class ConstantTypeResolver
         }
 
         if ($c instanceof Constant) {
-            if ($statements_analyzer) {
-                $found_type = ConstFetchAnalyzer::getConstType(
-                    $statements_analyzer,
-                    $c->name,
-                    $c->is_fully_qualified,
-                    null,
-                );
+            $type = self::resolveGlobalConstant(
+                $statements_analyzer?->getCodebase() ?? ProjectAnalyzer::getInstance()->getCodebase(),
+                self::getNamesInItsScope($c),
+                $statements_analyzer,
+            );
 
-                if ($found_type) {
-                    return $found_type->getSingleAtomic();
-                }
-            } else {
-                return self::resolveScannedConstant($classlikes, $c, $visited_constant_ids);
-            }
+            return $type !== null && count($type->getAtomicTypes()) === 1 ? $type->getSingleAtomic() : new TMixed;
         }
 
         if ($c instanceof EnumPropertyFetch) {
@@ -424,6 +662,41 @@ final class ConstantTypeResolver
                     }
                 }
             }
+        }
+
+        return new TMixed;
+    }
+
+    private static function resolveArithmeticOp(UnresolvedBinaryOp $c, Atomic $left, Atomic $right): Atomic
+    {
+        if (($left instanceof TLiteralFloat || $left instanceof TLiteralInt)
+            && ($right instanceof TLiteralFloat || $right instanceof TLiteralInt)
+        ) {
+            if ($c instanceof UnresolvedAdditionOp) {
+                return self::getLiteralTypeFromScalarValue($left->value + $right->value);
+            }
+
+            if ($c instanceof UnresolvedSubtractionOp) {
+                return self::getLiteralTypeFromScalarValue($left->value - $right->value);
+            }
+
+            if ($c instanceof UnresolvedDivisionOp) {
+                // a division by zero throws, so the constant has no value
+                if ($right->value == 0) {
+                    return new TNever();
+                }
+
+                return self::getLiteralTypeFromScalarValue($left->value / $right->value);
+            }
+
+            return self::getLiteralTypeFromScalarValue($left->value * $right->value);
+        }
+
+        if ($left instanceof TKeyedArray && $right instanceof TKeyedArray) {
+            return TKeyedArray::make(
+                $left->properties + $right->properties,
+                null,
+            );
         }
 
         return new TMixed;

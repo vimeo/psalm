@@ -11,6 +11,7 @@ use Psalm\Exception\UnresolvableConstantException;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
+use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Internal\TypeVisitor\TemplateBoundNarrower;
 use Psalm\Storage\Assertion\IsType;
@@ -40,6 +41,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TParamDefault;
 use Psalm\Type\Atomic\TPropertiesOf;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -455,6 +457,38 @@ final class TypeExpander
             }
 
             return [$return_type];
+        }
+
+        if ($return_type instanceof TParamDefault) {
+            if (!$evaluate_class_constants) {
+                return [$return_type];
+            }
+
+            try {
+                $default_type = ConstantTypeResolver::resolveToUnion($codebase, $return_type->value);
+            } catch (CircularReferenceException) {
+                return [$return_type];
+            }
+
+            // a default whose value is not known adds nothing, as one that isn't a constant
+            if ($default_type->hasMixed()) {
+                return [new TNever()];
+            }
+
+            // as `new self()`
+            return array_values(self::expandUnion(
+                $codebase,
+                $default_type,
+                $self_class,
+                $static_class_type,
+                $parent_class,
+                $evaluate_class_constants,
+                $evaluate_conditional_types,
+                $final,
+                $expand_generic,
+                $expand_templates,
+                $throw_on_unresolvable_constant,
+            )->getAtomicTypes());
         }
 
         if ($return_type instanceof TPropertiesOf) {
